@@ -12,7 +12,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #111827;
       background-image: url("bg_wallpaper.jpg"); /* 배경 파일 이름 */
-      background-size: contain;                 /* 이미지 전체가 보이도록 */
+      background-size: contain;                 /* 이미지 전체 보이게 */
       background-repeat: no-repeat;
       background-position: center top;
       background-color: #e5dccf;               /* 남는 여백 컬러 */
@@ -178,45 +178,43 @@
       line-height: 1;
     }
 
-    /* SNS / 광고 바 */
-    .social-wrap {
-      margin-top: 18px;
-      text-align: center;
+    /* 🔸 배너 슬라이드 영역 */
+    .banner-wrap {
+      margin-top: 20px;
     }
-    .social-label {
+    .banner-label {
       font-size: 11px;
       color: #4b5563;
+      text-align: center;
       margin-bottom: 6px;
     }
-    .social-buttons {
+    .banner-carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+      background: rgba(15,23,42,0.12);
+    }
+    .banner-track {
       display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      transition: transform 0.6s ease;
     }
-    .social-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 80px;
-      padding: 6px 10px;
-      font-size: 11px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      color: #ffffff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    .banner-slide {
+      min-width: 100%;
+      flex-shrink: 0;
     }
-    .social-youtube   { background: #ff0000; }
-    .social-tiktok    { background: #111827; }
-    .social-instagram {
-      background: linear-gradient(135deg, #f97316, #ec4899, #6366f1);
+    .banner-slide a {
+      display: block;
     }
-    .social-facebook  { background: #1877f2; }
+    .banner-image {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    }
 
     .notice {
-      margin-top: 10px;
+      margin-top: 12px;
       text-align: center;
       font-size: 10px;
       color: #f9fafb;
@@ -272,8 +270,8 @@
       .card-footer {
         font-size: 10px;
       }
-      .social-wrap {
-        margin-top: 14px;
+      .banner-image {
+        height: 110px;
       }
     }
   </style>
@@ -292,14 +290,16 @@
 
     <section class="leader-grid" id="leaderGrid"></section>
 
-    <!-- 🔸 SNS / 광고 바 (leaders.json의 banner 기준) -->
-    <div class="social-wrap" id="socialWrap" style="display:none;">
-      <div class="social-label" id="socialLabel"></div>
-      <div class="social-buttons" id="socialButtons"></div>
+    <!-- 🔸 공용 광고 / 배너 슬라이드 -->
+    <div class="banner-wrap" id="bannerWrap" style="display:none;">
+      <div class="banner-label" id="bannerLabel"></div>
+      <div class="banner-carousel">
+        <div class="banner-track" id="bannerTrack"></div>
+      </div>
     </div>
 
     <p class="notice">
-      * 리더 소개 내용은 운영자가 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
+      * 리더 소개 및 하단 배너 내용은 운영자가 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
     </p>
   </div>
 </div>
@@ -366,42 +366,47 @@
   }
 
   function renderBanner(banner = {}) {
-    const wrap   = document.getElementById("socialWrap");
-    const label  = document.getElementById("socialLabel");
-    const buttonsEl = document.getElementById("socialButtons");
+    const wrap   = document.getElementById("bannerWrap");
+    const label  = document.getElementById("bannerLabel");
+    const track  = document.getElementById("bannerTrack");
 
-    const { label: labelText, youtube, tiktok, instagram, facebook } = banner;
+    const items = Array.isArray(banner.items) ? banner.items.filter(
+      (it) => it && it.imageUrl && it.linkUrl
+    ) : [];
 
-    const buttons = [];
-    if (youtube) {
-      buttons.push(
-        `<a class="social-btn social-youtube" href="${youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
-      );
-    }
-    if (tiktok) {
-      buttons.push(
-        `<a class="social-btn social-tiktok" href="${tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
-      );
-    }
-    if (instagram) {
-      buttons.push(
-        `<a class="social-btn social-instagram" href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
-      );
-    }
-    if (facebook) {
-      buttons.push(
-        `<a class="social-btn social-facebook" href="${facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
-      );
-    }
-
-    if (buttons.length === 0) {
+    if (items.length === 0) {
       wrap.style.display = "none";
       return;
     }
 
-    label.textContent = labelText || "🌏 우리의 채널에서 더 많은 여행 이야기를 만나보세요";
-    buttonsEl.innerHTML = buttons.join("");
+    label.textContent =
+      banner.label || "🌏 우리의 채널 / 광고 파트너를 소개합니다";
+
+    track.innerHTML = items
+      .map(
+        (it) => `
+        <div class="banner-slide">
+          <a href="${it.linkUrl}" target="_blank" rel="noopener noreferrer">
+            <img src="${it.imageUrl}" class="banner-image" alt="">
+          </a>
+        </div>`
+      )
+      .join("");
+
     wrap.style.display = "block";
+
+    // 간단한 왼쪽 슬라이드 애니메이션
+    let index = 0;
+    const slideCount = items.length;
+    const intervalMs = 2000; // 2초
+
+    if (slideCount <= 1) return; // 하나면 슬라이드 안 돌림
+
+    setInterval(() => {
+      index = (index + 1) % slideCount;
+      const offset = -index * 100;
+      track.style.transform = `translateX(${offset}%)`;
+    }, intervalMs);
   }
 
   loadData().then((data) => {
