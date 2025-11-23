@@ -5,6 +5,311 @@
   <title>여행 리더 소개</title>
   <style>
     * { box-sizing: border-box; }
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>여행 리더 소개</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #111827;
+      background-image: url("bg_wallpaper.jpg"); /* 같은 폴더에 있는 배경 이미지 */
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+    }
+
+    .page-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 12px 40px;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.30);
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+      padding: 24px 22px 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 16px;
+      color: #3f2a18;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .page-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: #4b3420;
+      line-height: 1.6;
+    }
+
+    /* 리더 카드 그리드: 리더 수에 맞춰 자동 줄바꿈 */
+    .leader-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 22px;
+      margin-top: 18px;
+    }
+
+    .leader-card {
+      border-radius: 24px;
+      padding: 14px 14px 16px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      background: linear-gradient(
+        to bottom,
+        rgba(17, 24, 39, 0.30),
+        rgba(17, 24, 39, 0.05)
+      );
+    }
+    .leader-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px rgba(0,0,0,0.55);
+      border-color: rgba(245, 158, 11, 0.9);
+      background: linear-gradient(
+        to bottom,
+        rgba(17, 24, 39, 0.42),
+        rgba(17, 24, 39, 0.10)
+      );
+    }
+
+    /* 사진 액자 */
+    .leader-frame {
+      padding: 6px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #facc6b, #b45309);
+      box-shadow:
+        0 8px 18px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(255,255,255,0.6) inset;
+      margin-bottom: 10px;
+    }
+    .leader-avatar {
+      display: block;
+      width: 150px;
+      height: 190px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 4px solid #fef9c3;
+      background-color: #111827;
+    }
+
+    .leader-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #fef3c7;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .leader-role {
+      font-size: 11px;
+      color: #f9fafb;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    }
+
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background-color: rgba(254, 243, 199, 0.85);
+      color: #92400e;
+      border: 1px solid #fed7aa;
+      white-space: nowrap;
+    }
+
+    .leader-intro {
+      font-size: 11px;
+      color: #f9fafb;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      min-height: 40px;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+    }
+
+    .card-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: #fde68a;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(253, 230, 138, 0.5);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-footer span {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .notice {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #f9fafb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    @media (max-width: 600px) {
+      .page-wrap {
+        padding: 14px 8px 22px;
+      }
+      .glass-panel {
+        padding: 16px 12px 16px;
+        border-radius: 20px;
+      }
+      .page-title {
+        font-size: 20px;
+      }
+      .page-subtitle {
+        font-size: 11px;
+      }
+      .leader-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .leader-card {
+        padding: 10px 10px 12px;
+        border-radius: 18px;
+      }
+      .leader-frame {
+        padding: 4px;
+      }
+      .leader-avatar {
+        width: 130px;
+        height: 165px;
+        border-width: 3px;
+      }
+      .leader-name {
+        font-size: 14px;
+      }
+      .leader-role {
+        font-size: 10px;
+      }
+      .leader-intro {
+        font-size: 10px;
+        min-height: 32px;
+      }
+      .tag {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      .card-footer {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="glass-panel">
+    <header class="page-header">
+      <div class="page-title">함께 떠날 여행 리더를 선택하세요</div>
+      <p class="page-subtitle">
+        리더의 여행 스타일과 원칙을 간단히 읽어본 뒤,<br>
+        마음에 드는 리더 카드를 눌러 상담·신청으로 이동하세요.
+      </p>
+    </header>
+
+    <section class="leader-grid" id="leaderGrid"></section>
+
+    <p class="notice">
+      * 리더 소개는 예시입니다. 실제 운영 시 각 리더의 원칙과 스타일을 충분히 확인한 후 선택해 주세요.
+    </p>
+  </div>
+</div>
+
+<script>
+  /* 여기 leaders 배열만 나중에 관리자 페이지랑 연결해서 교체하면 됨 */
+  const leaders = [
+    {
+      name: "김현수",
+      role: "베트남 장기 체류 리더 · 10년 차 가이드",
+      imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
+      link: "#",
+      tags: ["장기 체류", "로컬 생활", "루틴 여행"],
+      introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."
+    },
+    {
+      name: "이민지",
+      role: "디지털 노마드 & 카페 투어 리더",
+      imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+2",
+      link: "#",
+      tags: ["카페 탐방", "노마드 작업", "도시 감성"],
+      introShort: "일·휴식을 함께 가져가고 싶은 분들을 위해 카페와 코워킹 위주의 동선을 만듭니다."
+    },
+    {
+      name: "박영호",
+      role: "액티비티 · 자연 러버 리더",
+      imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+3",
+      link: "#",
+      tags: ["트래킹", "바다", "액티비티"],
+      introShort: "도시보다 자연, 카페보다 땀. 몸을 움직이며 머리를 비우는 여행을 좋아합니다."
+    }
+  ];
+
+  const grid = document.getElementById('leaderGrid');
+
+  function renderLeaders() {
+    grid.innerHTML = "";
+    leaders.forEach((leader) => {
+      const card = document.createElement('a');
+      card.className = "leader-card";
+      card.href = leader.link || "#";
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+
+      card.innerHTML = `
+        <div class="leader-frame">
+          <img src="${leader.imageUrl}" alt="${leader.name} 프로필 사진" class="leader-avatar">
+        </div>
+        <div class="leader-name">${leader.name}</div>
+        <div class="leader-role">${leader.role}</div>
+        <div class="tag-wrap">
+          ${(leader.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+        </div>
+        <div class="leader-intro">${leader.introShort}</div>
+        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  renderLeaders();
+</script>
+
+</body>
+</html>
+
 
     body {
       margin: 0;
@@ -319,3 +624,4 @@
 
 </body>
 </html>
+
