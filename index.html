@@ -156,11 +156,40 @@
       font-size: 11px;
       color: #f9fafb;
       line-height: 1.5;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       min-height: 40px;
       text-align: center;
       text-shadow: 0 1px 3px rgba(0,0,0,0.85);
     }
+
+    /* 리더별 SNS 버튼 */
+    .sns-wrap {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .sns-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 70px;
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      color: #ffffff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+    }
+    .sns-youtube   { background: #ff0000; }
+    .sns-tiktok    { background: #111827; }
+    .sns-instagram {
+      background: linear-gradient(135deg, #f97316, #ec4899, #6366f1);
+    }
+    .sns-facebook  { background: #1877f2; }
 
     .card-footer {
       margin-top: auto;
@@ -267,6 +296,10 @@
         font-size: 9px;
         padding: 2px 6px;
       }
+      .sns-btn {
+        font-size: 9px;
+        padding: 3px 7px;
+      }
       .card-footer {
         font-size: 10px;
       }
@@ -299,7 +332,7 @@
     </div>
 
     <p class="notice">
-      * 리더 소개 및 하단 배너 내용은 운영자가 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
+      * 리더 소개 및 하단 배너 내용은 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
     </p>
   </div>
 </div>
@@ -310,10 +343,10 @@
       const res = await fetch("leaders.json?_=" + Date.now()); // 캐시 깨기
       if (!res.ok) throw new Error("leaders.json 불러오기 실패");
       const data = await res.json();
-      return data && typeof data === "object" ? data : { banner: {}, leaders: [] };
+      return data && typeof data === "object" ? data : { ads: [], leaders: [] };
     } catch (e) {
       console.error(e);
-      return { banner: {}, leaders: [] };
+      return { ads: [], leaders: [] };
     }
   }
 
@@ -347,6 +380,34 @@
         leader.name || ""
       }">`;
 
+      // SNS 버튼 만들기 (URL 있는 것만)
+      const sns = leader.sns || {};
+      const snsButtons = [];
+      if (sns.youtube) {
+        snsButtons.push(
+          `<a class="sns-btn sns-youtube" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
+        );
+      }
+      if (sns.tiktok) {
+        snsButtons.push(
+          `<a class="sns-btn sns-tiktok" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
+        );
+      }
+      if (sns.instagram) {
+        snsButtons.push(
+          `<a class="sns-btn sns-instagram" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
+        );
+      }
+      if (sns.facebook) {
+        snsButtons.push(
+          `<a class="sns-btn sns-facebook" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
+        );
+      }
+      const snsHtml =
+        snsButtons.length > 0
+          ? `<div class="sns-wrap">${snsButtons.join("")}</div>`
+          : "";
+
       card.innerHTML = `
         <div class="leader-frame">
           ${mediaHtml}
@@ -359,35 +420,35 @@
             .join("")}
         </div>
         <div class="leader-intro">${leader.introShort || ""}</div>
+        ${snsHtml}
         <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
       `;
       grid.appendChild(card);
     });
   }
 
-  function renderBanner(banner = {}) {
+  function renderAds(ads = []) {
     const wrap   = document.getElementById("bannerWrap");
     const label  = document.getElementById("bannerLabel");
     const track  = document.getElementById("bannerTrack");
 
-    const items = Array.isArray(banner.items) ? banner.items.filter(
-      (it) => it && it.imageUrl && it.linkUrl
-    ) : [];
+    const enabledAds = ads.filter(
+      (ad) => ad && ad.enabled && ad.imageUrl && ad.linkUrl
+    );
 
-    if (items.length === 0) {
+    if (enabledAds.length === 0) {
       wrap.style.display = "none";
       return;
     }
 
-    label.textContent =
-      banner.label || "🌏 우리의 채널 / 광고 파트너를 소개합니다";
+    label.textContent = "🌏 so.t & 파트너 광고";
 
-    track.innerHTML = items
+    track.innerHTML = enabledAds
       .map(
-        (it) => `
+        (ad, i) => `
         <div class="banner-slide">
-          <a href="${it.linkUrl}" target="_blank" rel="noopener noreferrer">
-            <img src="${it.imageUrl}" class="banner-image" alt="">
+          <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
+            <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${i + 1}">
           </a>
         </div>`
       )
@@ -395,24 +456,33 @@
 
     wrap.style.display = "block";
 
-    // 간단한 왼쪽 슬라이드 애니메이션
+    // 슬라이드
     let index = 0;
-    const slideCount = items.length;
-    const intervalMs = 2000; // 2초
+    const slideCount = enabledAds.length;
+    const durations = enabledAds.map((ad) =>
+      ad.duration && ad.duration > 0 ? ad.duration * 1000 : 2000
+    );
 
-    if (slideCount <= 1) return; // 하나면 슬라이드 안 돌림
+    if (slideCount <= 1) return;
 
-    setInterval(() => {
-      index = (index + 1) % slideCount;
-      const offset = -index * 100;
-      track.style.transform = `translateX(${offset}%)`;
-    }, intervalMs);
+    function scheduleNext() {
+      const timeout = durations[index] || 2000;
+      setTimeout(() => {
+        index = (index + 1) % slideCount;
+        const offset = -index * 100;
+        track.style.transform = `translateX(${offset}%)`;
+        scheduleNext();
+      }, timeout);
+    }
+
+    scheduleNext();
   }
 
   loadData().then((data) => {
     const leaders = Array.isArray(data.leaders) ? data.leaders : [];
+    const ads     = Array.isArray(data.ads) ? data.ads : [];
     renderLeaders(leaders);
-    renderBanner(data.banner || {});
+    renderAds(ads);
   });
 </script>
 
