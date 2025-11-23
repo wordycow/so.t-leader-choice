@@ -11,7 +11,7 @@
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #111827;
-      background-image: url("bg_wallpaper.jpg"); /* 배경 파일 이름 */
+      background-image: url("bg_wallpaper.jpg");
       background-size: cover;
       background-repeat: no-repeat;
       background-position: center top;
@@ -57,7 +57,7 @@
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 22px;
       margin-top: 18px;
-      justify-content: center;   /* 마지막 줄 가운데 정렬 */
+      justify-content: center; /* 마지막 줄도 가운데 정렬 */
     }
 
     .leader-grid.single {
@@ -216,11 +216,14 @@
       display: none;
     }
 
-    /* 🔸 배너 영역: 이미지 고정 + 텍스트만 움직이기 */
+    /* 🔸 광고 배너: 여러 개 쌓이고, 이미지 고정 + 텍스트만 흘러감 */
     .banner-wrap {
       margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .banner-carousel {
+    .banner-block {
       position: relative;
       overflow: hidden;
       border-radius: 16px;
@@ -245,10 +248,11 @@
       display: inline-block;
       padding-left: 100%;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 14px; /* 글씨 크게 */
+      font-weight: 600;
       color: #fefce8;
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-      animation: banner-marquee 12s linear infinite;
+      animation: banner-marquee 15s linear infinite;
     }
 
     @keyframes banner-marquee {
@@ -319,6 +323,9 @@
       .banner-image {
         height: 110px;
       }
+      .banner-text {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -337,17 +344,8 @@
     <section class="leader-grid" id="leaderGrid"></section>
     <p id="emptyNotice">등록된 리더가 없습니다.</p>
 
-    <!-- 🔸 광고 배너 (이미지 고정 + 텍스트 흐름) -->
-    <div class="banner-wrap" id="bannerWrap" style="display:none;">
-      <div class="banner-carousel">
-        <a id="bannerLink" href="#" target="_blank" rel="noopener noreferrer">
-          <img id="bannerImage" src="" alt="광고 배너" class="banner-image">
-        </a>
-        <div class="banner-marquee">
-          <span id="bannerText" class="banner-text"></span>
-        </div>
-      </div>
-    </div>
+    <!-- 🔸 광고 배너 영역 (광고 여러 개면 아래로 쌓임) -->
+    <div class="banner-wrap" id="bannerWrap" style="display:none;"></div>
 
     <p class="notice">
       * 리더 소개 및 하단 배너 내용은 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
@@ -358,7 +356,7 @@
 <script>
   async function loadData() {
     try {
-      const res = await fetch("leaders.json?_=" + Date.now()); // 캐시 깨기
+      const res = await fetch("leaders.json?_=" + Date.now());
       if (!res.ok) throw new Error("leaders.json 불러오기 실패");
       const data = await res.json();
       return data && typeof data === "object" ? data : { ads: [], leaders: [] };
@@ -434,9 +432,7 @@
         <div class="leader-name">${leader.name || ""}</div>
         <div class="leader-role">${leader.role || ""}</div>
         <div class="tag-wrap">
-          ${(leader.tags || [])
-            .map((t) => `<span class="tag">${t}</span>`)
-            .join("")}
+          ${(leader.tags || []).map((t) => `<span class="tag">${t}</span>`).join("")}
         </div>
         <div class="leader-intro">${leader.introShort || ""}</div>
         ${snsHtml}
@@ -446,35 +442,38 @@
     });
   }
 
-  function renderAdBanner(ads = []) {
-    const wrap       = document.getElementById("bannerWrap");
-    const imgEl      = document.getElementById("bannerImage");
-    const linkEl     = document.getElementById("bannerLink");
-    const textEl     = document.getElementById("bannerText");
+  function renderAds(ads = []) {
+    const wrap = document.getElementById("bannerWrap");
+    wrap.innerHTML = "";
 
-    const enabledAds = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
-    if (enabledAds.length === 0) {
+    const enabled = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
+    if (!enabled.length) {
       wrap.style.display = "none";
       return;
     }
 
-    // 첫 번째 광고만 사용 (이미지는 고정)
-    const ad = enabledAds[0];
-    imgEl.src   = ad.imageUrl;
-    linkEl.href = ad.linkUrl;
+    enabled.forEach((ad, idx) => {
+      const block = document.createElement("div");
+      block.className = "banner-block";
+      block.innerHTML = `
+        <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
+          <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${idx + 1}">
+        </a>
+        <div class="banner-marquee">
+          <span class="banner-text">${(ad.text || ad.linkUrl || "광고").repeat(2)}   </span>
+        </div>
+      `;
+      wrap.appendChild(block);
+    });
 
-    // 텍스트는 text가 있으면 text, 아니면 linkUrl
-    const text = ad.text || ad.linkUrl || "광고";
-    textEl.textContent = " " + text + "   •   " + text + "   •   " + text; // 반복 느낌
-
-    wrap.style.display = "block";
+    wrap.style.display = "flex";
   }
 
   loadData().then((data) => {
     const leaders = Array.isArray(data.leaders) ? data.leaders : [];
     const ads     = Array.isArray(data.ads) ? data.ads : [];
     renderLeaders(leaders);
-    renderAdBanner(ads);
+    renderAds(ads);
   });
 </script>
 
