@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>여행 리더 관리자 페이지 (JSON 생성기)</title>
+  <title>여행 리더 선택</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
@@ -20,191 +20,234 @@
     .page-wrap {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 24px 12px 32px;
+      padding: 32px 12px 40px;
     }
 
     .glass-panel {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 24px;
-      border: 1px solid rgba(209,213,219,1);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-      padding: 20px 18px 22px;
+      background: rgba(255, 255, 255, 0.30);
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+      padding: 24px 22px 24px;
+      backdrop-filter: blur(10px);
     }
 
     .page-header {
       text-align: center;
       margin-bottom: 16px;
+      color: #3f2a18;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
     }
     .page-title {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
-      margin-bottom: 4px;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
     }
     .page-subtitle {
-      font-size: 12px;
-      color: #4b5563;
+      font-size: 13px;
+      color: #4b3420;
       line-height: 1.6;
     }
 
-    .admin-layout {
+    /* 기본 카드 그리드 */
+    .leader-grid {
       display: grid;
-      grid-template-columns: 1.1fr 1.1fr;
-      gap: 18px;
-      margin-top: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 22px;
+      margin-top: 18px;
     }
 
-    .admin-card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 14px 16px;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-      font-size: 13px;
-      border: 1px solid #e5e7eb;
+    /* 리더 1명일 때 중앙 배치 */
+    .leader-grid.single {
+      grid-template-columns: minmax(260px, 360px);
+      justify-content: center;
     }
 
-    .admin-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-
-    .form-row-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .form-group { margin-bottom: 8px; }
-    label {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 3px;
-      color: #374151;
-    }
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #d1d5db;
-      font-size: 12px;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-    input[type="file"] { font-size: 11px; }
-    small { font-size: 11px; color: #6b7280; }
-
-    .btn {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: none;
-      font-size: 12px;
+    .leader-card {
+      border-radius: 24px;
+      padding: 14px 14px 16px;
       cursor: pointer;
-    }
-    .btn-primary {
-      background-color: #2563eb;
-      color: #fff;
-      margin-right: 4px;
-    }
-    .btn-secondary {
-      background-color: #6b7280;
-      color: #fff;
-      margin-right: 4px;
-    }
-    .btn-danger {
-      background-color: #ef4444;
-      color: #fff;
-    }
-    .btn-outline {
-      background-color: #ffffff;
-      color: #4b5563;
-      border: 1px solid #d1d5db;
-    }
-
-    .leader-list {
-      max-height: none;
-      overflow-y: visible;
-    }
-    .leader-item {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 7px 0;
-      font-size: 12px;
-    }
-    .leader-item:last-child { border-bottom: none; }
-
-    .leader-item-header {
+      transition: transform 0.18s ease, box-shadow 0.18s ease,
+                  border-color 0.18s ease, background-color 0.18s ease;
+      text-decoration: none;
+      color: inherit;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
-      margin-bottom: 2px;
-    }
-    .leader-item-name { font-weight: 600; }
 
-    .thumb {
-      width: 32px;
-      height: 40px;
-      object-fit: cover;
-      border-radius: 5px;
-      margin-right: 6px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      background: linear-gradient(
+        to bottom,
+        rgba(17, 24, 39, 0.30),
+        rgba(17, 24, 39, 0.05)
+      );
+      touch-action: manipulation;
+    }
+    .leader-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px rgba(0,0,0,0.55);
+      border-color: rgba(245, 158, 11, 0.9);
+      background: linear-gradient(
+        to bottom,
+        rgba(17, 24, 39, 0.42),
+        rgba(17, 24, 39, 0.10)
+      );
     }
 
-    .link-small {
-      font-size: 10px;
-      color: #2563eb;
-      text-decoration: underline;
-      display: inline-block;
-      max-width: 260px;
-      white-space: nowrap;
+    .leader-frame {
+      padding: 6px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #facc6b, #b45309);
+      box-shadow:
+        0 8px 18px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(255,255,255,0.6) inset;
+      margin-bottom: 10px;
+      width: 150px;
+      height: 190px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    .drop-zone {
-      margin-top: 6px;
-      padding: 10px;
-      border-radius: 10px;
-      border: 2px dashed #cbd5f5;
-      background: #f9fafb;
+    .leader-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 4px solid #fef9c3;
+      background-color: #111827;
+    }
+
+    .leader-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #fef3c7;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .leader-role {
       font-size: 11px;
-      color: #4b5563;
+      color: #f9fafb;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    }
+
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background-color: rgba(254, 243, 199, 0.85);
+      color: #92400e;
+      border: 1px solid #fed7aa;
+      white-space: nowrap;
+    }
+
+    .leader-intro {
+      font-size: 11px;
+      color: #f9fafb;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      min-height: 40px;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+    }
+
+    .card-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: #fde68a;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(253, 230, 138, 0.5);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-footer span {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* 배너 영역 */
+    .banner-wrap {
+      margin-top: 18px;
       text-align: center;
     }
-    .drop-zone.dragover {
-      border-color: #2563eb;
-      background: #eff6ff;
-      color: #1d4ed8;
+    .banner-img {
+      max-width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
     }
 
-    .json-area {
-      width: 100%;
-      min-height: 180px;
-      font-family: "SF Mono", Menlo, Consolas, monospace;
-      font-size: 11px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      background-color: #f9fafb;
-      resize: vertical;
-      white-space: pre;
+    .notice {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #f9fafb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
-    .help-box {
-      margin-top: 8px;
-      padding: 8px;
-      border-radius: 8px;
-      background-color: #fefce8;
-      border: 1px solid #facc15;
-      font-size: 11px;
-      color: #4b5563;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 900px) {
-      .admin-layout { grid-template-columns: 1fr; }
+    /* 모바일 전용 */
+    @media (max-width: 600px) {
+      body {
+        background-attachment: scroll;
+      }
+      .page-wrap {
+        max-width: 100%;
+        padding: 16px 8px 24px;
+      }
+      .glass-panel {
+        padding: 16px 10px 18px;
+        border-radius: 20px;
+      }
+      .page-title {
+        font-size: 20px;
+      }
+      .page-subtitle {
+        font-size: 11px;
+      }
+      .leader-grid {
+        grid-template-columns: 1fr;  /* 무조건 1열 */
+        gap: 14px;
+      }
+      .leader-card {
+        padding: 12px 10px 14px;
+        border-radius: 18px;
+      }
+      .leader-frame {
+        width: 130px;
+        height: 165px;
+        padding: 4px;
+      }
+      .leader-name {
+        font-size: 14px;
+      }
+      .leader-role {
+        font-size: 10px;
+      }
+      .leader-intro {
+        font-size: 10px;
+        min-height: 32px;
+      }
+      .tag {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      .card-footer {
+        font-size: 10px;
+      }
+      .banner-wrap {
+        margin-top: 14px;
+      }
     }
   </style>
 </head>
@@ -213,364 +256,98 @@
 <div class="page-wrap">
   <div class="glass-panel">
     <header class="page-header">
-      <div class="page-title">여행 리더 관리자 페이지 (JSON 생성기)</div>
+      <div class="page-title">함께 떠날 여행 리더를 선택하세요</div>
       <p class="page-subtitle">
-        이 페이지에서 리더 정보를 추가 / 수정 / 삭제한 뒤, 아래 JSON을 복사하여<br>
-        <b>so.t-leader-choice</b> 레포의 <code>leaders.json</code> 파일에 붙여 넣으면<br>
-        PC / 모바일 / 모든 사용자의 공개 페이지가 동일하게 업데이트됩니다.
+        리더의 여행 스타일과 원칙을 간단히 읽어본 뒤,<br>
+        마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동하세요.
       </p>
     </header>
 
-    <div class="admin-layout">
-      <!-- 입력 폼 -->
-      <div class="admin-card">
-        <div class="form-row-top">
-          <div class="admin-title">리더 정보 입력 / 수정</div>
-          <button class="btn btn-outline" id="newLeaderBtn">+ 새 리더 추가</button>
-        </div>
+    <section class="leader-grid" id="leaderGrid"></section>
 
-        <input type="hidden" id="editingIndex" value="-1">
-
-        <div class="form-group">
-          <label for="leaderName">이름</label>
-          <input type="text" id="leaderName" placeholder="예) 김철수">
-        </div>
-
-        <div class="form-group">
-          <label for="leaderRole">역할 / 직함</label>
-          <input type="text" id="leaderRole" placeholder="예) 베트남 장기 체류 리더 · 10년 차 가이드">
-        </div>
-
-        <div class="form-group">
-          <label for="leaderLink">상담 / 신청 링크 (구글폼 URL)</label>
-          <input type="text" id="leaderLink" placeholder="예) https://docs.google.com/forms/...">
-        </div>
-
-        <div class="form-group">
-          <label for="leaderSheetUrl">응답 시트 링크 (구글 시트 URL)</label>
-          <input type="text" id="leaderSheetUrl" placeholder="예) https://docs.google.com/spreadsheets/...">
-        </div>
-
-        <div class="form-group">
-          <label for="leaderTags">키워드 태그 (쉼표로 구분)</label>
-          <input type="text" id="leaderTags" placeholder="예) 장기 체류, 로컬 생활, 루틴 여행">
-        </div>
-
-        <div class="form-group">
-          <label for="leaderIntro">한 줄 소개 / 짧은 설명</label>
-          <textarea id="leaderIntro" placeholder="예) 여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>프로필 이미지 (이미지 파일)</label>
-          <input type="file" id="leaderMediaFile" accept="image/*">
-          <small>파일 선택 또는 아래 영역에 드래그 앤 드롭 (이미지 전용). 큰 이미지는 브라우저가 자동으로 축소합니다.</small>
-          <div id="dropZone" class="drop-zone">
-            여기로 이미지를 끌어다 놓으세요.
-          </div>
-          <div id="imagePreviewWrap" style="margin-top:8px; display:none;">
-            <img id="imagePreview" src="" alt="미리보기"
-                 style="width:120px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
-          </div>
-        </div>
-
-        <button class="btn btn-primary" id="saveLeaderBtn">저장하기</button>
-        <button class="btn btn-secondary" id="clearFormBtn">폼 초기화</button>
-      </div>
-
-      <!-- 리스트 + JSON -->
-      <div class="admin-card">
-        <div class="admin-title">리더 리스트</div>
-        <div class="leader-list" id="leaderList"></div>
-        <hr style="margin:10px 0;">
-        <div class="admin-title" style="margin-top:4px;">leaders.json 생성 / 복사</div>
-        <button class="btn btn-primary" id="generateJsonBtn">JSON 생성하기</button>
-        <button class="btn btn-secondary" id="copyJsonBtn">JSON 복사하기</button>
-        <button class="btn btn-outline" id="openJsonBtn">GitHub leaders.json 열기</button>
-        <textarea id="jsonOutput" class="json-area" placeholder="여기에 leaders.json 내용이 생성됩니다." readonly></textarea>
-        <div class="help-box">
-          <b>[GitHub에 붙여 넣는 방법]</b><br>
-          1) 위에서 리더들을 모두 원하는 대로 추가/수정/삭제한 뒤, <b>JSON 생성하기</b> 버튼을 누릅니다.<br>
-          2) <b>JSON 복사하기</b> 버튼을 눌러 leaders.json 내용을 클립보드에 복사합니다.<br>
-          3) <b>GitHub leaders.json 열기</b> 버튼을 눌러 GitHub의 leaders.json 파일 편집 화면으로 이동합니다.<br>
-          4) GitHub에서 내용 전체 선택(Ctrl+A) 후 삭제 → 복사한 JSON을 붙여 넣기(Ctrl+V).<br>
-          5) 아래쪽 <b>Commit changes</b> 버튼을 눌러 저장.<br>
-          6) 공개 페이지(<code>https://wordycow.github.io/so.t-leader-choice/</code>)에서 새로고침하면 모든 사용자가 동일한 리더 정보를 보게 됩니다.
-        </div>
-      </div>
+    <!-- 🔸 광고 / 배너 영역 (이미지 또는 GIF) -->
+    <div class="banner-wrap" id="bannerWrap">
+      <a id="bannerLink" href="https://so-t.example.com" target="_blank" rel="noopener noreferrer">
+        <img
+          id="bannerImage"
+          src="https://via.placeholder.com/1000x180.png?text=여행+광고+배너"
+          alt="광고 배너"
+          class="banner-img"
+        >
+      </a>
     </div>
+
+    <p class="notice">
+      * 리더 소개 내용은 운영자가 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
+    </p>
   </div>
 </div>
 
 <script>
-  // 브라우저 안에서만 사용하는 임시 저장용 (관리자 편의용)
-  const DRAFT_KEY = "so_t_leaders_draft_v1";
-
-  function getDefaultLeaders() {
-    return [
-      {
-        name: "김현수",
-        role: "베트남 장기 체류 리더 · 10년 차 가이드",
-        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
-        link: "#",
-        sheetUrl: "",
-        tags: ["장기 체류", "로컬 생활", "루틴 여행"],
-        introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."
-      }
-    ];
-  }
-
-  function loadDraft() {
+  async function loadLeaders() {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return getDefaultLeaders();
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultLeaders();
-      return parsed;
-    } catch {
-      return getDefaultLeaders();
-    }
-  }
-
-  function saveDraft() {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(leaders));
-  }
-
-  let leaders = loadDraft();
-
-  const leaderListEl    = document.getElementById("leaderList");
-  const editingIndexEl  = document.getElementById("editingIndex");
-
-  const nameInput       = document.getElementById("leaderName");
-  const roleInput       = document.getElementById("leaderRole");
-  const linkInput       = document.getElementById("leaderLink");
-  const sheetInput      = document.getElementById("leaderSheetUrl");
-  const tagsInput       = document.getElementById("leaderTags");
-  const introInput      = document.getElementById("leaderIntro");
-  const mediaInput      = document.getElementById("leaderMediaFile");
-  const dropZone        = document.getElementById("dropZone");
-  const imagePreviewWrap= document.getElementById("imagePreviewWrap");
-  const imagePreview    = document.getElementById("imagePreview");
-  const newLeaderBtn    = document.getElementById("newLeaderBtn");
-
-  const jsonOutput      = document.getElementById("jsonOutput");
-  const generateJsonBtn = document.getElementById("generateJsonBtn");
-  const copyJsonBtn     = document.getElementById("copyJsonBtn");
-  const openJsonBtn     = document.getElementById("openJsonBtn");
-
-  let tempMediaDataUrl  = "";
-
-  function renderLeaderList() {
-    leaderListEl.innerHTML = "";
-    if (leaders.length === 0) {
-      leaderListEl.innerHTML = "<p style='font-size:12px;color:#6b7280;'>등록된 리더가 없습니다.</p>";
-      return;
-    }
-    leaders.forEach((leader, index) => {
-      const item = document.createElement("div");
-      item.className = "leader-item";
-      const sheetLinkHtml = leader.sheetUrl
-        ? `<a href="${leader.sheetUrl}" target="_blank" rel="noopener noreferrer" class="link-small">응답 시트 열기</a>`
-        : "<span style='font-size:10px;color:#9ca3af;'>응답 시트 링크 없음</span>";
-
-      item.innerHTML = `
-        <div class="leader-item-header">
-          <div style="display:flex;align-items:center;">
-            ${leader.mediaUrl ? `<img src="${leader.mediaUrl}" class="thumb" alt="">` : ""}
-            <div>
-              <div class="leader-item-name">${leader.name || "(이름 없음)"}</div>
-              <div style="font-size:11px;color:#6b7280;">${leader.role || ""}</div>
-              ${
-                leader.link
-                  ? `<a href="${leader.link}" target="_blank" rel="noopener noreferrer" class="link-small">${leader.link}</a>`
-                  : "<span class='link-small' style='color:#9ca3af;text-decoration:none;'>상담 링크 없음</span>"
-              }
-              <br>
-              ${sheetLinkHtml}
-            </div>
-          </div>
-          <div>
-            <button class="btn btn-outline" onclick="openSheet(${index})">결과 보기</button>
-            <button class="btn btn-secondary" onclick="editLeader(${index})">수정</button>
-            <button class="btn btn-danger" onclick="deleteLeader(${index})">삭제</button>
-          </div>
-        </div>
-        <div style="font-size:11px;color:#4b5563;">
-          태그: ${(leader.tags || []).join(", ") || "-"}
-        </div>
-      `;
-      leaderListEl.appendChild(item);
-    });
-  }
-
-  function clearPreview() {
-    imagePreviewWrap.style.display = "none";
-    imagePreview.src = "";
-    tempMediaDataUrl = "";
-  }
-
-  function showPreview(dataUrl) {
-    tempMediaDataUrl = dataUrl;
-    imagePreview.src = dataUrl;
-    imagePreviewWrap.style.display = "block";
-  }
-
-  function handleFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("이미지 파일만 업로드할 수 있습니다.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = e => {
-      const dataUrl = e.target.result;
-      showPreview(dataUrl);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  mediaInput.addEventListener("change", function () {
-    const file = this.files[0];
-    handleFile(file);
-  });
-
-  ["dragenter","dragover"].forEach(evt => {
-    dropZone.addEventListener(evt, e => {
-      e.preventDefault(); e.stopPropagation();
-      dropZone.classList.add("dragover");
-    });
-  });
-  ["dragleave","drop"].forEach(evt => {
-    dropZone.addEventListener(evt, e => {
-      e.preventDefault(); e.stopPropagation();
-      dropZone.classList.remove("dragover");
-    });
-  });
-  dropZone.addEventListener("drop", e => {
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  });
-
-  function clearForm() {
-    editingIndexEl.value = -1;
-    nameInput.value = "";
-    roleInput.value = "";
-    linkInput.value = "";
-    sheetInput.value = "";
-    tagsInput.value = "";
-    introInput.value = "";
-    mediaInput.value = "";
-    clearPreview();
-  }
-
-  document.getElementById("clearFormBtn").addEventListener("click", clearForm);
-  newLeaderBtn.addEventListener("click", clearForm);
-
-  document.getElementById("saveLeaderBtn").addEventListener("click", function () {
-    const name = nameInput.value.trim();
-    if (!name) {
-      alert("이름은 필수입니다.");
-      return;
-    }
-    const role = roleInput.value.trim();
-    const link = linkInput.value.trim();
-    const sheetUrl = sheetInput.value.trim();
-    const tags = tagsInput.value.split(",").map(t => t.trim()).filter(Boolean);
-    const introShort = introInput.value.trim();
-    const index = parseInt(editingIndexEl.value, 10);
-
-    const baseData = { name, role, link, sheetUrl, tags, introShort };
-
-    if (index >= 0) {
-      const prev = leaders[index];
-      leaders[index] = {
-        ...prev,
-        ...baseData,
-        mediaUrl: tempMediaDataUrl || prev.mediaUrl || ""
-      };
-    } else {
-      // 새 리더 추가
-      leaders.push({
-        ...baseData,
-        mediaUrl: tempMediaDataUrl || ""
-      });
-    }
-
-    saveDraft();
-    renderLeaderList();
-    alert("임시 저장되었습니다. JSON 생성하기 버튼을 눌러 leaders.json 내용을 업데이트하세요.");
-    clearForm();
-  });
-
-  window.editLeader = function (index) {
-    const leader = leaders[index];
-    editingIndexEl.value  = index;
-    nameInput.value       = leader.name || "";
-    roleInput.value       = leader.role || "";
-    linkInput.value       = leader.link || "";
-    sheetInput.value      = leader.sheetUrl || "";
-    tagsInput.value       = (leader.tags || []).join(", ");
-    introInput.value      = leader.introShort || "";
-    tempMediaDataUrl      = leader.mediaUrl || "";
-
-    if (tempMediaDataUrl) {
-      showPreview(tempMediaDataUrl);
-    } else {
-      clearPreview();
-    }
-    mediaInput.value = "";
-  };
-
-  window.deleteLeader = function (index) {
-    if (!confirm("이 리더를 삭제할까요?")) return;
-    leaders.splice(index, 1);
-    saveDraft();
-    renderLeaderList();
-    clearForm();
-  };
-
-  window.openSheet = function (index) {
-    const leader = leaders[index];
-    if (!leader.sheetUrl) {
-      alert("이 리더의 응답 시트 링크가 설정되어 있지 않습니다.");
-      return;
-    }
-    window.open(leader.sheetUrl, "_blank");
-  };
-
-  // JSON 생성 / 복사
-  generateJsonBtn.addEventListener("click", function () {
-    const json = JSON.stringify(leaders, null, 2);
-    jsonOutput.value = json;
-    jsonOutput.scrollTop = 0;
-    alert("leaders.json 내용이 생성되었습니다. 아래 영역을 복사해서 GitHub에 붙여 넣으세요.");
-  });
-
-  copyJsonBtn.addEventListener("click", async function () {
-    if (!jsonOutput.value.trim()) {
-      alert("먼저 'JSON 생성하기' 버튼을 눌러 leaders.json 내용을 생성해주세요.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(jsonOutput.value);
-      alert("JSON이 클립보드에 복사되었습니다. GitHub의 leaders.json에 붙여 넣으세요.");
+      // 캐시 깨기 위해 타임스탬프 파라미터 추가
+      const res = await fetch("leaders.json?_=" + Date.now());
+      if (!res.ok) throw new Error("leaders.json 불러오기 실패");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     } catch (e) {
-      jsonOutput.select();
-      document.execCommand("copy");
-      alert("JSON이 복사되었습니다. (클립보드 API 미지원 브라우저에서는 선택된 내용을 직접 확인해 주세요.)");
+      console.error(e);
+      return [];
     }
-  });
+  }
 
-  // GitHub leaders.json 페이지 열기
-  openJsonBtn.addEventListener("click", function () {
-    window.open(
-      "https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json",
-      "_blank"
-    );
-  });
+  function renderLeaders(leaders) {
+    const grid = document.getElementById("leaderGrid");
+    grid.innerHTML = "";
 
-  // 초기 렌더
-  renderLeaderList();
+    // 리더 수에 따라 레이아웃 조정
+    if (leaders.length === 1) {
+      grid.classList.add("single");
+    } else {
+      grid.classList.remove("single");
+    }
+
+    if (!leaders.length) {
+      grid.innerHTML =
+        "<p style='font-size:13px;color:#6b7280;text-align:center;'>등록된 리더가 없습니다.</p>";
+      return;
+    }
+
+    leaders.forEach((leader) => {
+      const card = document.createElement("a");
+      card.className = "leader-card";
+      card.href = leader.link || "#";
+      card.target = leader.link ? "_blank" : "_self";
+      card.rel = leader.link ? "noopener noreferrer" : "";
+
+      const src =
+        leader.mediaUrl ||
+        "https://via.placeholder.com/300x380.png?text=No+Image";
+      const mediaHtml = `<img class="leader-media" src="${src}" alt="${
+        leader.name || ""
+      }">`;
+
+      card.innerHTML = `
+        <div class="leader-frame">
+          ${mediaHtml}
+        </div>
+        <div class="leader-name">${leader.name || ""}</div>
+        <div class="leader-role">${leader.role || ""}</div>
+        <div class="tag-wrap">
+          ${(leader.tags || [])
+            .map((t) => `<span class="tag">${t}</span>`)
+            .join("")}
+        </div>
+        <div class="leader-intro">${leader.introShort || ""}</div>
+        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // leaders.json 불러와서 렌더링
+  loadLeaders().then(renderLeaders);
 </script>
 
 </body>
