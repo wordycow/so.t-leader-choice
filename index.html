@@ -12,24 +12,24 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #111827;
       background-image: url("bg_wallpaper.jpg"); /* 배경 파일 이름 */
-      background-size: contain;                 /* 이미지 전체 보이게 */
+      background-size: cover;                   /* 화면에 꽉 차게 */
       background-repeat: no-repeat;
       background-position: center top;
       background-color: #e5dccf;               /* 남는 여백 컬러 */
     }
 
     .page-wrap {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 12px 40px;
+      max-width: 1000px;
+      margin: 24px auto 32px;
+      padding: 0 12px 24px;
     }
 
     .glass-panel {
       background: rgba(255, 255, 255, 0.30);
-      border-radius: 28px;
+      border-radius: 24px;
       border: 1px solid rgba(255,255,255,0.55);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
-      padding: 24px 22px 24px;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.35);
+      padding: 18px 20px 18px;
       backdrop-filter: blur(10px);
     }
 
@@ -250,18 +250,28 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
+    #emptyNotice {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 14px;
+      display: none;
+    }
+
     /* 모바일 전용 */
     @media (max-width: 600px) {
       body {
         background-attachment: scroll;
+        background-position: center top;
       }
       .page-wrap {
         max-width: 100%;
-        padding: 16px 8px 24px;
+        margin: 12px auto 20px;
+        padding: 0 8px 20px;
       }
       .glass-panel {
-        padding: 16px 10px 18px;
-        border-radius: 20px;
+        padding: 14px 10px 16px;
+        border-radius: 18px;
       }
       .page-title {
         font-size: 20px;
@@ -323,9 +333,12 @@
 
     <section class="leader-grid" id="leaderGrid"></section>
 
+    <!-- 리더가 없을 때 안내 -->
+    <p id="emptyNotice">등록된 리더가 없습니다.</p>
+
     <!-- 🔸 공용 광고 / 배너 슬라이드 -->
     <div class="banner-wrap" id="bannerWrap" style="display:none;">
-      <div class="banner-label" id="bannerLabel"></div>
+      <div class="banner-label">🌏 so.t & 파트너 광고</div>
       <div class="banner-carousel">
         <div class="banner-track" id="bannerTrack"></div>
       </div>
@@ -352,18 +365,22 @@
 
   function renderLeaders(leaders) {
     const grid = document.getElementById("leaderGrid");
+    const emptyNotice = document.getElementById("emptyNotice");
     grid.innerHTML = "";
+
+    if (!leaders.length) {
+      grid.style.display = "none";
+      if (emptyNotice) emptyNotice.style.display = "block";
+      return;
+    } else {
+      grid.style.display = "grid";
+      if (emptyNotice) emptyNotice.style.display = "none";
+    }
 
     if (leaders.length === 1) {
       grid.classList.add("single");
     } else {
       grid.classList.remove("single");
-    }
-
-    if (!leaders.length) {
-      grid.innerHTML =
-        "<p style='font-size:13px;color:#6b7280;text-align:center;'>등록된 리더가 없습니다.</p>";
-      return;
     }
 
     leaders.forEach((leader) => {
@@ -380,7 +397,7 @@
         leader.name || ""
       }">`;
 
-      // SNS 버튼 만들기 (URL 있는 것만)
+      // SNS 버튼 (URL 있는 것만)
       const sns = leader.sns || {};
       const snsButtons = [];
       if (sns.youtube) {
@@ -429,7 +446,6 @@
 
   function renderAds(ads = []) {
     const wrap   = document.getElementById("bannerWrap");
-    const label  = document.getElementById("bannerLabel");
     const track  = document.getElementById("bannerTrack");
 
     const enabledAds = ads.filter(
@@ -440,8 +456,6 @@
       wrap.style.display = "none";
       return;
     }
-
-    label.textContent = "🌏 so.t & 파트너 광고";
 
     track.innerHTML = enabledAds
       .map(
@@ -456,7 +470,6 @@
 
     wrap.style.display = "block";
 
-    // 슬라이드
     let index = 0;
     const slideCount = enabledAds.length;
     const durations = enabledAds.map((ad) =>
