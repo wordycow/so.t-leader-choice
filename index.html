@@ -86,7 +86,6 @@
       );
     }
 
-    /* 미디어 프레임 */
     .leader-frame {
       padding: 6px;
       border-radius: 18px;
@@ -105,4 +104,202 @@
     .leader-media {
       width: 100%;
       height: 100%;
-      objec
+      object-fit: cover;
+      border-radius: 12px;
+      border: 4px solid #fef9c3;
+      background-color: #111827;
+    }
+
+    .leader-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #fef3c7;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .leader-role {
+      font-size: 11px;
+      color: #f9fafb;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    }
+
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background-color: rgba(254, 243, 199, 0.85);
+      color: #92400e;
+      border: 1px solid #fed7aa;
+      white-space: nowrap;
+    }
+
+    .leader-intro {
+      font-size: 11px;
+      color: #f9fafb;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      min-height: 40px;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+    }
+
+    .card-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: #fde68a;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(253, 230, 138, 0.5);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-footer span {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .notice {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #f9fafb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    @media (max-width: 600px) {
+      .page-wrap { padding: 14px 8px 22px; }
+      .glass-panel { padding: 16px 12px 16px; border-radius: 20px; }
+      .page-title { font-size: 20px; }
+      .page-subtitle { font-size: 11px; }
+      .leader-grid { grid-template-columns: 1fr; gap: 14px; }
+      .leader-card { padding: 10px 10px 12px; border-radius: 18px; }
+      .leader-frame { padding: 4px; }
+      .leader-name { font-size: 14px; }
+      .leader-role { font-size: 10px; }
+      .leader-intro { font-size: 10px; min-height: 32px; }
+      .tag { font-size: 9px; padding: 2px 6px; }
+      .card-footer { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="glass-panel">
+    <header class="page-header">
+      <div class="page-title">함께 떠날 여행 리더를 선택하세요</div>
+      <p class="page-subtitle">
+        리더의 여행 스타일과 원칙을 간단히 읽어본 뒤,<br>
+        마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동하세요.
+      </p>
+    </header>
+
+    <section class="leader-grid" id="leaderGrid"></section>
+
+    <p class="notice">
+      * 리더 소개 내용은 운영자가 관리자 페이지에서 등록합니다.
+    </p>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "so_t_leaders_v2";
+
+  function getDefaultLeaders() {
+    return [
+      {
+        name: "김현수",
+        role: "베트남 장기 체류 리더 · 10년 차 가이드",
+        mediaType: "image",
+        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
+        link: "#",
+        tags: ["장기 체류", "로컬 생활", "루틴 여행"],
+        introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."
+      },
+      {
+        name: "이민지",
+        role: "디지털 노마드 & 카페 투어 리더",
+        mediaType: "image",
+        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+2",
+        link: "#",
+        tags: ["카페 탐방", "노마드 작업", "도시 감성"],
+        introShort: "일·휴식을 함께 가져가고 싶은 분들을 위해 카페와 코워킹 위주의 동선을 만듭니다."
+      },
+      {
+        name: "박영호",
+        role: "액티비티 · 자연 러버 리더",
+        mediaType: "image",
+        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+3",
+        link: "#",
+        tags: ["트래킹", "바다", "액티비티"],
+        introShort: "도시보다 자연, 카페보다 땀. 몸을 움직이며 머리를 비우는 여행을 좋아합니다."
+      }
+    ];
+  }
+
+  function loadLeaders() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return getDefaultLeaders();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultLeaders();
+      return parsed.map(l => ({
+        mediaType: l.mediaType || (l.mediaUrl ? "image" : "image"),
+        mediaUrl: l.mediaUrl || l.imageUrl || "",
+        ...l
+      }));
+    } catch {
+      return getDefaultLeaders();
+    }
+  }
+
+  const leaders = loadLeaders();
+  const grid = document.getElementById("leaderGrid");
+
+  function renderLeaders() {
+    grid.innerHTML = "";
+    leaders.forEach(leader => {
+      const card = document.createElement("a");
+      card.className = "leader-card";
+      card.href = leader.link || "#";
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+
+      let mediaHtml = "";
+      if (leader.mediaType === "video" && leader.mediaUrl) {
+        mediaHtml = `<video class="leader-media" src="${leader.mediaUrl}" autoplay muted loop playsinline></video>`;
+      } else {
+        const src = leader.mediaUrl || "https://via.placeholder.com/300x380.png?text=No+Image";
+        mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name}">`;
+      }
+
+      card.innerHTML = `
+        <div class="leader-frame">
+          ${mediaHtml}
+        </div>
+        <div class="leader-name">${leader.name}</div>
+        <div class="leader-role">${leader.role || ""}</div>
+        <div class="tag-wrap">
+          ${(leader.tags || []).map(t => `<span class="tag">${t}</span>`).join("")}
+        </div>
+        <div class="leader-intro">${leader.introShort || ""}</div>
+        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  renderLeaders();
+</script>
+
+</body>
+</html>
