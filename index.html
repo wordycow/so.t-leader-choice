@@ -75,7 +75,7 @@
         rgba(17, 24, 39, 0.30),
         rgba(17, 24, 39, 0.05)
       );
-      touch-action: manipulation; /* 모바일 터치 반응성 개선 */
+      touch-action: manipulation;
     }
     .leader-card:hover {
       transform: translateY(-4px);
@@ -177,10 +177,9 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
-    /* ===== 모바일 전용 ===== */
     @media (max-width: 600px) {
       body {
-        background-attachment: scroll; /* 모바일에서 부드럽게 스크롤 */
+        background-attachment: scroll;
       }
       .page-wrap {
         max-width: 100%;
@@ -197,7 +196,7 @@
         font-size: 11px;
       }
       .leader-grid {
-        grid-template-columns: 1fr;  /* 무조건 1열 */
+        grid-template-columns: 1fr;
         gap: 14px;
       }
       .leader-card {
@@ -244,60 +243,33 @@
     <section class="leader-grid" id="leaderGrid"></section>
 
     <p class="notice">
-      * 리더 소개 내용은 운영자가 관리자 페이지에서 등록합니다.
+      * 리더 소개 내용은 운영자가 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
     </p>
   </div>
 </div>
 
 <script>
-  const STORAGE_KEY = "so_t_leaders_v1";
-
-  function getDefaultLeaders() {
-    return [
-      {
-        name: "김현수",
-        role: "베트남 장기 체류 리더 · 10년 차 가이드",
-        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
-        link: "#",
-        tags: ["장기 체류", "로컬 생활", "루틴 여행"],
-        introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."
-      },
-      {
-        name: "이민지",
-        role: "디지털 노마드 & 카페 투어 리더",
-        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+2",
-        link: "#",
-        tags: ["카페 탐방", "노마드 작업", "도시 감성"],
-        introShort: "일·휴식을 함께 가져가고 싶은 분들을 위해 카페와 코워킹 위주의 동선을 만듭니다."
-      },
-      {
-        name: "박영호",
-        role: "액티비티 · 자연 러버 리더",
-        mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+3",
-        link: "#",
-        tags: ["트래킹", "바다", "액티비티"],
-        introShort: "도시보다 자연, 카페보다 땀. 몸을 움직이며 머리를 비우는 여행을 좋아합니다."
-      }
-    ];
-  }
-
-  function loadLeaders() {
+  async function loadLeaders() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return getDefaultLeaders();
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultLeaders();
-      return parsed;
-    } catch {
-      return getDefaultLeaders();
+      const res = await fetch("leaders.json?_=" + Date.now()); // 캐시 깨기
+      if (!res.ok) throw new Error("leaders.json 불러오기 실패");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error(e);
+      return [];
     }
   }
 
-  const leaders = loadLeaders();
-  const grid = document.getElementById("leaderGrid");
-
-  function renderLeaders() {
+  function renderLeaders(leaders) {
+    const grid = document.getElementById("leaderGrid");
     grid.innerHTML = "";
+
+    if (!leaders.length) {
+      grid.innerHTML = "<p style='font-size:13px;color:#6b7280;text-align:center;'>등록된 리더가 없습니다.</p>";
+      return;
+    }
+
     leaders.forEach(leader => {
       const card = document.createElement("a");
       card.className = "leader-card";
@@ -306,13 +278,13 @@
       card.rel = "noopener noreferrer";
 
       const src = leader.mediaUrl || "https://via.placeholder.com/300x380.png?text=No+Image";
-      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name}">`;
+      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name || ""}">`;
 
       card.innerHTML = `
         <div class="leader-frame">
           ${mediaHtml}
         </div>
-        <div class="leader-name">${leader.name}</div>
+        <div class="leader-name">${leader.name || ""}</div>
         <div class="leader-role">${leader.role || ""}</div>
         <div class="tag-wrap">
           ${(leader.tags || []).map(t => `<span class="tag">${t}</span>`).join("")}
@@ -324,7 +296,7 @@
     });
   }
 
-  renderLeaders();
+  loadLeaders().then(renderLeaders);
 </script>
 
 </body>
