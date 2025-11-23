@@ -12,10 +12,10 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #111827;
       background-image: url("bg_wallpaper.jpg"); /* 배경 파일 이름 */
-      background-size: cover;                   /* 화면에 꽉 차게 */
+      background-size: cover;
       background-repeat: no-repeat;
       background-position: center top;
-      background-color: #e5dccf;               /* 남는 여백 컬러 */
+      background-color: #e5dccf;
     }
 
     .page-wrap {
@@ -51,15 +51,15 @@
       line-height: 1.6;
     }
 
-    /* 기본 카드 그리드 */
+    /* 카드 그리드 */
     .leader-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 22px;
       margin-top: 18px;
+      justify-content: center;   /* 마지막 줄 가운데 정렬 */
     }
 
-    /* 리더 1명일 때 중앙 배치 */
     .leader-grid.single {
       grid-template-columns: minmax(260px, 360px);
       justify-content: center;
@@ -207,15 +207,18 @@
       line-height: 1;
     }
 
-    /* 🔸 배너 슬라이드 영역 */
+    /* 리더 없음 안내 */
+    #emptyNotice {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 14px;
+      display: none;
+    }
+
+    /* 🔸 배너 영역: 이미지 고정 + 텍스트만 움직이기 */
     .banner-wrap {
       margin-top: 20px;
-    }
-    .banner-label {
-      font-size: 11px;
-      color: #4b5563;
-      text-align: center;
-      margin-bottom: 6px;
     }
     .banner-carousel {
       position: relative;
@@ -224,22 +227,33 @@
       box-shadow: 0 6px 16px rgba(0,0,0,0.25);
       background: rgba(15,23,42,0.12);
     }
-    .banner-track {
-      display: flex;
-      transition: transform 0.6s ease;
-    }
-    .banner-slide {
-      min-width: 100%;
-      flex-shrink: 0;
-    }
-    .banner-slide a {
-      display: block;
-    }
     .banner-image {
       width: 100%;
       height: 120px;
       object-fit: cover;
       display: block;
+    }
+    .banner-marquee {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .banner-text {
+      display: inline-block;
+      padding-left: 100%;
+      white-space: nowrap;
+      font-size: 12px;
+      color: #fefce8;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+      animation: banner-marquee 12s linear infinite;
+    }
+
+    @keyframes banner-marquee {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
     }
 
     .notice {
@@ -248,14 +262,6 @@
       font-size: 10px;
       color: #f9fafb;
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-
-    #emptyNotice {
-      font-size: 13px;
-      color: #6b7280;
-      text-align: center;
-      margin-top: 14px;
-      display: none;
     }
 
     /* 모바일 전용 */
@@ -280,7 +286,7 @@
         font-size: 11px;
       }
       .leader-grid {
-        grid-template-columns: 1fr;  /* 무조건 1열 */
+        grid-template-columns: 1fr;
         gap: 14px;
       }
       .leader-card {
@@ -310,9 +316,6 @@
         font-size: 9px;
         padding: 3px 7px;
       }
-      .card-footer {
-        font-size: 10px;
-      }
       .banner-image {
         height: 110px;
       }
@@ -332,15 +335,17 @@
     </header>
 
     <section class="leader-grid" id="leaderGrid"></section>
-
-    <!-- 리더가 없을 때 안내 -->
     <p id="emptyNotice">등록된 리더가 없습니다.</p>
 
-    <!-- 🔸 공용 광고 / 배너 슬라이드 -->
+    <!-- 🔸 광고 배너 (이미지 고정 + 텍스트 흐름) -->
     <div class="banner-wrap" id="bannerWrap" style="display:none;">
-      <div class="banner-label">🌏 so.t & 파트너 광고</div>
       <div class="banner-carousel">
-        <div class="banner-track" id="bannerTrack"></div>
+        <a id="bannerLink" href="#" target="_blank" rel="noopener noreferrer">
+          <img id="bannerImage" src="" alt="광고 배너" class="banner-image">
+        </a>
+        <div class="banner-marquee">
+          <span id="bannerText" class="banner-text"></span>
+        </div>
       </div>
     </div>
 
@@ -393,11 +398,8 @@
       const src =
         leader.mediaUrl ||
         "https://via.placeholder.com/300x380.png?text=No+Image";
-      const mediaHtml = `<img class="leader-media" src="${src}" alt="${
-        leader.name || ""
-      }">`;
+      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name || ""}">`;
 
-      // SNS 버튼 (URL 있는 것만)
       const sns = leader.sns || {};
       const snsButtons = [];
       if (sns.youtube) {
@@ -444,58 +446,35 @@
     });
   }
 
-  function renderAds(ads = []) {
-    const wrap   = document.getElementById("bannerWrap");
-    const track  = document.getElementById("bannerTrack");
+  function renderAdBanner(ads = []) {
+    const wrap       = document.getElementById("bannerWrap");
+    const imgEl      = document.getElementById("bannerImage");
+    const linkEl     = document.getElementById("bannerLink");
+    const textEl     = document.getElementById("bannerText");
 
-    const enabledAds = ads.filter(
-      (ad) => ad && ad.enabled && ad.imageUrl && ad.linkUrl
-    );
-
+    const enabledAds = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
     if (enabledAds.length === 0) {
       wrap.style.display = "none";
       return;
     }
 
-    track.innerHTML = enabledAds
-      .map(
-        (ad, i) => `
-        <div class="banner-slide">
-          <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
-            <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${i + 1}">
-          </a>
-        </div>`
-      )
-      .join("");
+    // 첫 번째 광고만 사용 (이미지는 고정)
+    const ad = enabledAds[0];
+    imgEl.src   = ad.imageUrl;
+    linkEl.href = ad.linkUrl;
+
+    // 텍스트는 text가 있으면 text, 아니면 linkUrl
+    const text = ad.text || ad.linkUrl || "광고";
+    textEl.textContent = " " + text + "   •   " + text + "   •   " + text; // 반복 느낌
 
     wrap.style.display = "block";
-
-    let index = 0;
-    const slideCount = enabledAds.length;
-    const durations = enabledAds.map((ad) =>
-      ad.duration && ad.duration > 0 ? ad.duration * 1000 : 2000
-    );
-
-    if (slideCount <= 1) return;
-
-    function scheduleNext() {
-      const timeout = durations[index] || 2000;
-      setTimeout(() => {
-        index = (index + 1) % slideCount;
-        const offset = -index * 100;
-        track.style.transform = `translateX(${offset}%)`;
-        scheduleNext();
-      }, timeout);
-    }
-
-    scheduleNext();
   }
 
   loadData().then((data) => {
     const leaders = Array.isArray(data.leaders) ? data.leaders : [];
     const ads     = Array.isArray(data.ads) ? data.ads : [];
     renderLeaders(leaders);
-    renderAds(ads);
+    renderAdBanner(ads);
   });
 </script>
 
