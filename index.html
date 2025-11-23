@@ -174,4 +174,553 @@
       margin-bottom: 10px;
       min-height: 40px;
       text-align: center;
-      text-shadow: 0
+      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+    }
+
+    .card-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: #fde68a;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(253, 230, 138, 0.5);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-footer span {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .notice {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #f9fafb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    /* ========== 관리자 영역 스타일 ========== */
+    .admin-section {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 18px;
+    }
+
+    .admin-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+      font-size: 13px;
+    }
+
+    .admin-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 8px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 3px;
+      color: #374151;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 12px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    input[type="file"] {
+      font-size: 11px;
+    }
+    small {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background-color: #2563eb;
+      color: #fff;
+      margin-right: 4px;
+    }
+    .btn-secondary {
+      background-color: #6b7280;
+      color: #fff;
+      margin-right: 4px;
+    }
+    .btn-danger {
+      background-color: #ef4444;
+      color: #fff;
+    }
+
+    .leader-list {
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .leader-item {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 7px 0;
+      font-size: 12px;
+    }
+    .leader-item:last-child {
+      border-bottom: none;
+    }
+    .leader-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .leader-item-name {
+      font-weight: 600;
+    }
+    .leader-admin-actions button {
+      margin-left: 4px;
+    }
+
+    .thumb {
+      width: 32px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-right: 6px;
+      border: 1px solid #e5e7eb;
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .page-wrap {
+        padding: 14px 8px 22px;
+      }
+      .glass-panel {
+        padding: 16px 12px 16px;
+        border-radius: 20px;
+      }
+      .page-title {
+        font-size: 20px;
+      }
+      .page-subtitle {
+        font-size: 11px;
+      }
+      .leader-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .leader-card {
+        padding: 10px 10px 12px;
+        border-radius: 18px;
+      }
+      .leader-frame {
+        padding: 4px;
+      }
+      .leader-avatar {
+        width: 130px;
+        height: 165px;
+        border-width: 3px;
+      }
+      .leader-name {
+        font-size: 14px;
+      }
+      .leader-role {
+        font-size: 10px;
+      }
+      .leader-intro {
+        font-size: 10px;
+        min-height: 32px;
+      }
+      .tag {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      .card-footer {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="preview">사용자 미리보기</button>
+    <button class="tab-btn" data-tab="admin">관리자 페이지</button>
+  </div>
+
+  <div class="glass-panel">
+    <!-- ====== 미리보기 탭 ====== -->
+    <section class="preview-section" id="previewSection">
+      <header class="page-header">
+        <div class="page-title">함께 떠날 여행 리더를 선택하세요</div>
+        <p class="page-subtitle">
+          리더의 여행 스타일과 원칙을 간단히 읽어본 뒤,<br>
+          마음에 드는 리더 카드를 눌러 상담·신청으로 이동하세요.
+        </p>
+      </header>
+
+      <section class="leader-grid" id="leaderGrid"></section>
+
+      <p class="notice">
+        * 리더 소개는 관리자 페이지에서 수정할 수 있습니다. (이 브라우저에만 저장됩니다.)
+      </p>
+    </section>
+
+    <!-- ====== 관리자 탭 ====== -->
+    <section class="admin-section" id="adminSection">
+      <header class="page-header" style="margin-bottom:10px;">
+        <div class="page-title" style="font-size:22px;">리더 정보 관리</div>
+        <p class="page-subtitle">
+          리더의 이름·역할·설명·이미지를 수정하면, 저장 후 미리보기 탭에 바로 반영됩니다.<br>
+          데이터는 이 브라우저의 <b>localStorage</b>에 저장됩니다.
+        </p>
+      </header>
+
+      <div class="admin-layout">
+        <!-- 입력 폼 -->
+        <div class="admin-card">
+          <div class="admin-title">리더 정보 입력 / 수정</div>
+
+          <input type="hidden" id="editingIndex" value="-1">
+
+          <div class="form-group">
+            <label for="leaderName">이름</label>
+            <input type="text" id="leaderName" placeholder="예) 김철수">
+          </div>
+
+          <div class="form-group">
+            <label for="leaderRole">역할 / 직함</label>
+            <input type="text" id="leaderRole" placeholder="예) 베트남 장기 체류 리더 · 10년 차 가이드">
+          </div>
+
+          <div class="form-group">
+            <label for="leaderLink">상담 / 신청 링크</label>
+            <input type="text" id="leaderLink" placeholder="예) https://forms.google.com/...">
+          </div>
+
+          <div class="form-group">
+            <label for="leaderTags">키워드 태그 (쉼표로 구분)</label>
+            <input type="text" id="leaderTags" placeholder="예) 장기 체류, 로컬 생활, 루틴 여행">
+          </div>
+
+          <div class="form-group">
+            <label for="leaderIntro">한 줄 소개 / 짧은 설명</label>
+            <textarea id="leaderIntro" placeholder="예) 여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="leaderImageFile">프로필 이미지 (JPG/PNG)</label>
+            <input type="file" id="leaderImageFile" accept="image/*">
+            <small>이미지를 선택하면 아래 미리보기와 함께 저장됩니다. (이 브라우저에만 저장)</small>
+            <div id="imagePreviewWrap" style="margin-top:8px; display:none;">
+              <img id="imagePreview" src="" alt="미리보기" style="width:80px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="saveLeaderBtn">저장하기</button>
+          <button class="btn btn-secondary" id="clearFormBtn">새로 입력</button>
+        </div>
+
+        <!-- 리스트 -->
+        <div class="admin-card">
+          <div class="admin-title">리더 리스트</div>
+          <div class="leader-list" id="leaderList"></div>
+          <small>※ 삭제/수정 후 반드시 <b>저장하기</b>를 눌러야 미리보기에도 반영됩니다.</small>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // ====== 데이터 로드/저장 ======
+  const STORAGE_KEY = "so_t_leaders_v1";
+
+  function getDefaultLeaders() {
+    return [
+      {
+        name: "김현수",
+        role: "베트남 장기 체류 리더 · 10년 차 가이드",
+        imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
+        link: "#",
+        tags: ["장기 체류", "로컬 생활", "루틴 여행"],
+        introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."
+      },
+      {
+        name: "이민지",
+        role: "디지털 노마드 & 카페 투어 리더",
+        imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+2",
+        link: "#",
+        tags: ["카페 탐방", "노마드 작업", "도시 감성"],
+        introShort: "일·휴식을 함께 가져가고 싶은 분들을 위해 카페와 코워킹 위주의 동선을 만듭니다."
+      },
+      {
+        name: "박영호",
+        role: "액티비티 · 자연 러버 리더",
+        imageUrl: "https://via.placeholder.com/300x380.png?text=Leader+3",
+        link: "#",
+        tags: ["트래킹", "바다", "액티비티"],
+        introShort: "도시보다 자연, 카페보다 땀. 몸을 움직이며 머리를 비우는 여행을 좋아합니다."
+      }
+    ];
+  }
+
+  function loadLeaders() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return getDefaultLeaders();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultLeaders();
+      return parsed;
+    } catch (e) {
+      console.warn("load error", e);
+      return getDefaultLeaders();
+    }
+  }
+
+  function saveLeaders() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(leaders));
+    renderLeaders();
+    renderLeaderList();
+  }
+
+  let leaders = loadLeaders();
+
+  // ====== 미리보기 렌더링 ======
+  const grid = document.getElementById("leaderGrid");
+
+  function renderLeaders() {
+    grid.innerHTML = "";
+    leaders.forEach((leader) => {
+      const card = document.createElement("a");
+      card.className = "leader-card";
+      card.href = leader.link || "#";
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+
+      card.innerHTML = `
+        <div class="leader-frame">
+          <img src="${leader.imageUrl || "https://via.placeholder.com/300x380.png?text=No+Image"}"
+               alt="${leader.name} 프로필 사진" class="leader-avatar">
+        </div>
+        <div class="leader-name">${leader.name || ""}</div>
+        <div class="leader-role">${leader.role || ""}</div>
+        <div class="tag-wrap">
+          ${(leader.tags || []).map(tag => `<span class="tag">${tag}</span>`).join("")}
+        </div>
+        <div class="leader-intro">${leader.introShort || ""}</div>
+        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ====== 관리자 리스트 렌더링 ======
+  const leaderListEl = document.getElementById("leaderList");
+  const editingIndexEl = document.getElementById("editingIndex");
+
+  function renderLeaderList() {
+    leaderListEl.innerHTML = "";
+    if (leaders.length === 0) {
+      leaderListEl.innerHTML = "<p style='font-size:12px;color:#6b7280;'>등록된 리더가 없습니다.</p>";
+      return;
+    }
+
+    leaders.forEach((leader, index) => {
+      const item = document.createElement("div");
+      item.className = "leader-item";
+
+      item.innerHTML = `
+        <div class="leader-item-header">
+          <div style="display:flex;align-items:center;">
+            ${leader.imageUrl ? `<img src="${leader.imageUrl}" class="thumb" alt="">` : ""}
+            <div>
+              <div class="leader-item-name">${leader.name || "(이름 없음)"}</div>
+              <div style="font-size:11px;color:#6b7280;">${leader.role || ""}</div>
+            </div>
+          </div>
+          <div class="leader-admin-actions">
+            <button class="btn btn-secondary" onclick="editLeader(${index})">수정</button>
+            <button class="btn btn-danger" onclick="deleteLeader(${index})">삭제</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#4b5563;">
+          태그: ${(leader.tags || []).join(", ") || "-"}
+        </div>
+      `;
+
+      leaderListEl.appendChild(item);
+    });
+  }
+
+  // ====== 관리자 폼 제어 ======
+  const nameInput = document.getElementById("leaderName");
+  const roleInput = document.getElementById("leaderRole");
+  const linkInput = document.getElementById("leaderLink");
+  const tagsInput = document.getElementById("leaderTags");
+  const introInput = document.getElementById("leaderIntro");
+  const imageInput = document.getElementById("leaderImageFile");
+  const imagePreviewWrap = document.getElementById("imagePreviewWrap");
+  const imagePreview = document.getElementById("imagePreview");
+
+  let tempImageDataUrl = "";
+
+  function clearForm() {
+    editingIndexEl.value = -1;
+    nameInput.value = "";
+    roleInput.value = "";
+    linkInput.value = "";
+    tagsInput.value = "";
+    introInput.value = "";
+    imageInput.value = "";
+    tempImageDataUrl = "";
+    imagePreviewWrap.style.display = "none";
+    imagePreview.src = "";
+  }
+
+  // 이미지 선택 → 미리보기 + temp 저장
+  imageInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      tempImageDataUrl = e.target.result;
+      imagePreview.src = tempImageDataUrl;
+      imagePreviewWrap.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 저장 버튼
+  document.getElementById("saveLeaderBtn").addEventListener("click", function () {
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert("이름은 필수입니다.");
+      return;
+    }
+    const role = roleInput.value.trim();
+    const link = linkInput.value.trim();
+    const tags = tagsInput.value.split(",").map(t => t.trim()).filter(Boolean);
+    const introShort = introInput.value.trim();
+
+    const index = parseInt(editingIndexEl.value, 10);
+
+    const baseData = {
+      name,
+      role,
+      link,
+      tags,
+      introShort
+    };
+
+    if (index >= 0) {
+      // 수정 모드
+      const prev = leaders[index];
+      leaders[index] = {
+        ...prev,
+        ...baseData,
+        imageUrl: tempImageDataUrl || prev.imageUrl
+      };
+    } else {
+      // 새로 추가
+      leaders.push({
+        ...baseData,
+        imageUrl: tempImageDataUrl || ""
+      });
+    }
+
+    saveLeaders();
+    clearForm();
+  });
+
+  // 폼만 초기화
+  document.getElementById("clearFormBtn").addEventListener("click", function () {
+    clearForm();
+  });
+
+  // 리스트에서 수정 클릭
+  window.editLeader = function (index) {
+    const leader = leaders[index];
+    editingIndexEl.value = index;
+    nameInput.value = leader.name || "";
+    roleInput.value = leader.role || "";
+    linkInput.value = leader.link || "";
+    tagsInput.value = (leader.tags || []).join(", ");
+    introInput.value = leader.introShort || "";
+
+    if (leader.imageUrl) {
+      tempImageDataUrl = leader.imageUrl;
+      imagePreview.src = leader.imageUrl;
+      imagePreviewWrap.style.display = "block";
+    } else {
+      tempImageDataUrl = "";
+      imagePreviewWrap.style.display = "none";
+      imagePreview.src = "";
+    }
+    imageInput.value = "";
+  };
+
+  // 리스트에서 삭제 클릭
+  window.deleteLeader = function (index) {
+    if (!confirm("이 리더를 삭제할까요?")) return;
+    leaders.splice(index, 1);
+    saveLeaders();
+    clearForm();
+  };
+
+  // ====== 탭 전환 ======
+  const previewSection = document.getElementById("previewSection");
+  const adminSection = document.getElementById("adminSection");
+  const tabButtons = document.querySelectorAll(".tab-btn");
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const tab = btn.dataset.tab;
+      if (tab === "preview") {
+        previewSection.style.display = "block";
+        adminSection.style.display = "none";
+      } else {
+        previewSection.style.display = "none";
+        adminSection.style.display = "block";
+      }
+    });
+  });
+
+  // 초기 렌더
+  renderLeaders();
+  renderLeaderList();
+</script>
+
+</body>
+</html>
