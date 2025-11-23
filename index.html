@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>여행 리더 선택</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
 
@@ -74,6 +75,7 @@
         rgba(17, 24, 39, 0.30),
         rgba(17, 24, 39, 0.05)
       );
+      touch-action: manipulation; /* 모바일 터치 반응성 개선 */
     }
     .leader-card:hover {
       transform: translateY(-4px);
@@ -86,7 +88,6 @@
       );
     }
 
-    /* 미디어 프레임 */
     .leader-frame {
       padding: 6px;
       border-radius: 18px;
@@ -176,19 +177,55 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
+    /* ===== 모바일 전용 ===== */
     @media (max-width: 600px) {
-      .page-wrap { padding: 14px 8px 22px; }
-      .glass-panel { padding: 16px 12px 16px; border-radius: 20px; }
-      .page-title { font-size: 20px; }
-      .page-subtitle { font-size: 11px; }
-      .leader-grid { grid-template-columns: 1fr; gap: 14px; }
-      .leader-card { padding: 10px 10px 12px; border-radius: 18px; }
-      .leader-frame { padding: 4px; }
-      .leader-name { font-size: 14px; }
-      .leader-role { font-size: 10px; }
-      .leader-intro { font-size: 10px; min-height: 32px; }
-      .tag { font-size: 9px; padding: 2px 6px; }
-      .card-footer { font-size: 10px; }
+      body {
+        background-attachment: scroll; /* 모바일에서 부드럽게 스크롤 */
+      }
+      .page-wrap {
+        max-width: 100%;
+        padding: 16px 8px 24px;
+      }
+      .glass-panel {
+        padding: 16px 10px 18px;
+        border-radius: 20px;
+      }
+      .page-title {
+        font-size: 20px;
+      }
+      .page-subtitle {
+        font-size: 11px;
+      }
+      .leader-grid {
+        grid-template-columns: 1fr;  /* 무조건 1열 */
+        gap: 14px;
+      }
+      .leader-card {
+        padding: 12px 10px 14px;
+        border-radius: 18px;
+      }
+      .leader-frame {
+        width: 130px;
+        height: 165px;
+        padding: 4px;
+      }
+      .leader-name {
+        font-size: 14px;
+      }
+      .leader-role {
+        font-size: 10px;
+      }
+      .leader-intro {
+        font-size: 10px;
+        min-height: 32px;
+      }
+      .tag {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      .card-footer {
+        font-size: 10px;
+      }
     }
   </style>
 </head>
@@ -220,7 +257,6 @@
       {
         name: "김현수",
         role: "베트남 장기 체류 리더 · 10년 차 가이드",
-        mediaType: "image",
         mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+1",
         link: "#",
         tags: ["장기 체류", "로컬 생활", "루틴 여행"],
@@ -229,7 +265,6 @@
       {
         name: "이민지",
         role: "디지털 노마드 & 카페 투어 리더",
-        mediaType: "image",
         mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+2",
         link: "#",
         tags: ["카페 탐방", "노마드 작업", "도시 감성"],
@@ -238,7 +273,6 @@
       {
         name: "박영호",
         role: "액티비티 · 자연 러버 리더",
-        mediaType: "image",
         mediaUrl: "https://via.placeholder.com/300x380.png?text=Leader+3",
         link: "#",
         tags: ["트래킹", "바다", "액티비티"],
@@ -253,11 +287,7 @@
       if (!raw) return getDefaultLeaders();
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultLeaders();
-      return parsed.map(l => ({
-        mediaType: l.mediaType || (l.mediaUrl ? "image" : "image"),
-        mediaUrl: l.mediaUrl || l.imageUrl || "",
-        ...l
-      }));
+      return parsed;
     } catch {
       return getDefaultLeaders();
     }
@@ -275,13 +305,8 @@
       card.target = "_blank";
       card.rel = "noopener noreferrer";
 
-      let mediaHtml = "";
-      if (leader.mediaType === "video" && leader.mediaUrl) {
-        mediaHtml = `<video class="leader-media" src="${leader.mediaUrl}" autoplay muted loop playsinline></video>`;
-      } else {
-        const src = leader.mediaUrl || "https://via.placeholder.com/300x380.png?text=No+Image";
-        mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name}">`;
-      }
+      const src = leader.mediaUrl || "https://via.placeholder.com/300x380.png?text=No+Image";
+      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name}">`;
 
       card.innerHTML = `
         <div class="leader-frame">
