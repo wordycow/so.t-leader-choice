@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>so.t 조직도 뷰어</title>
+  <title>so.t 조직도 텍스트 트리 뷰어 (v2)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; }
@@ -12,129 +12,322 @@
       background: #f3f4f6;
     }
     .wrap {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 24px auto;
-      padding: 0 12px;
+      padding: 0 12px 24px;
     }
-    .card {
-      display: flex;
+    h1 {
+      font-size: 18px;
+      margin: 0 0 6px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
       gap: 16px;
+    }
+
+    .card {
       background: #ffffff;
       border-radius: 16px;
-      padding: 14px 16px;
+      padding: 12px 14px 14px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.1);
-    }
-    .left, .right {
-      flex: 1 1 0;
-      overflow: auto;
-      max-height: 90vh;
-    }
-    .left img {
-      width: 100%;
-      height: auto;
-      border-radius: 12px;
       border: 1px solid #e5e7eb;
-      display: block;
     }
-    pre.tree-text {
-      white-space: pre-wrap;
+
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .small-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    textarea#rawInput {
+      width: 100%;
+      min-height: 260px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
       font-size: 11px;
+      resize: vertical;
+      background: #f9fafb;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
       line-height: 1.4;
+    }
+
+    button#parseBtn {
+      margin-top: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg,#2563eb,#1d4ed8);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(37,99,235,0.4);
+    }
+    button#parseBtn:hover {
+      background: linear-gradient(135deg,#1d4ed8,#1e40af);
+      transform: translateY(-1px);
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .hint code {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    /* 텍스트 트리 출력 */
+    .tree-box {
+      max-height: 360px;
+      overflow: auto;
       background: #f9fafb;
       border-radius: 12px;
-      padding: 10px;
       border: 1px solid #e5e7eb;
+      padding: 8px 10px;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
     }
-    @media (max-width: 800px) {
-      .card { flex-direction: column; }
+
+    .tree-line {
+      margin: 1px 0;
+    }
+
+    .tree-line.leg-1 { color: #1d4ed8; } /* 왼쪽 다리 */
+    .tree-line.leg-2 { color: #b91c1c; } /* 오른쪽 다리 */
+
+    /* 바이너리 레이아웃 */
+    .binary-wrap {
+      margin-top: 10px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 8px 10px 10px;
+      font-size: 11px;
+    }
+    .binary-title {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #111827;
+    }
+    .binary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .binary-col-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .node-card {
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      margin-bottom: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .node-card .id {
+      font-size: 10px;
+      color: #6b7280;
+    }
+    .node-card .name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .node-card.small { font-size: 10px; }
+
+    .node-card.leg-1 {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .node-card.leg-2 {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 style="font-size:18px;margin:0 0 10px;">so.t 조직도 뷰어</h1>
-  <p style="font-size:11px;color:#6b7280;margin:0 0 12px;">
-    왼쪽은 조직도 이미지, 오른쪽은 텍스트 트리입니다. 이미지는 org-tree.png 파일을 교체해서 사용하면 됩니다.
+  <h1>so.t 조직도 텍스트 트리 뷰어 · v2</h1>
+  <p class="subtitle">
+    1) ssoti 조직도 페이지에서 텍스트 트리를 전체 복사(Ctrl+A → Ctrl+C)한 뒤<br/>
+    2) 아래 입력칸에 붙여넣고 [트리 생성]을 누르면, 오른쪽에 트리 + 아래에 좌/우 레그별 카드가 표시됩니다.<br/>
+    (※ 로그인된 ssoti 페이지에서 직접 데이터를 가져올 수는 없기 때문에, 복붙 방식으로 동기화합니다.)
   </p>
-  <div class="card">
 
-    <!-- 왼쪽: 조직도 이미지 -->
-    <div class="left">
-      <!-- org-tree.png 이름으로 조직도 이미지를 업로드해 두면 자동으로 보입니다. -->
-      <img src="org-tree.png" alt="조직도 이미지" />
-    </div>
-
-    <!-- 오른쪽: 텍스트 트리 -->
-    <div class="right">
-      <pre class="tree-text">
-[1]KR-15323995 / 이유송
+  <div class="grid">
+    <!-- 왼쪽: 텍스트 붙여넣기 -->
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">A. 조직도 텍스트 붙여넣기</div>
+        <span class="small-badge">입력</span>
+      </div>
+      <textarea id="rawInput" placeholder="[1]KR-15323995 / 이유송
  ├─ [1]KR-17655693 / 임정애
  │   ├─ [1]KR-15556549 / 이동진
- │   ├─ [1]KR-12760914 / 이윤경
- │   ├─ [1]KR-10076355 / 심승철
- │   ├─ [1]KR-15355078 / 김정자
- │   └─ [2]KR-12893296 / 성낙호
- │       ├─ [1]KR-18848712 / 서일경
- │       ├─ [1]KR-19832920 / 김종한
- │       ├─ [1]KR-19291083 / 김귀숙
- │       ├─ [2]KR-14215882 / 이성국
- │       └─ [2]KR-19585093 / 이소정
- ├─ [2]KR-18255758 / 왕청혜
- │   ├─ [1]KR-13119195 / 김지윤
- │   ├─ [1]KR-19642008 / 조호준
- │   ├─ [1]KR-10248028 / 김은희
- │   └─ [2]KR-11269968 / 양소정
- │       ├─ [1]KR-17052390 / 송지율
- │       ├─ [2]KR-14570528 / 심현정
- │       ├─ [2]KR-16766505 / 홍영분
- │       └─ [2]KR-17141865 / 임혜린
- ├─ [2]KR-15165913 / 이민율
- │   ├─ [1]KR-12370327 / 김미선
- │   │   ├─ [1]KR-12037944 / 따룩아롤린
- │   │   ├─ [1]KR-14532196 / 이병관
- │   │   ├─ [1]KR-13612396 / 김미옥
- │   │   ├─ [2]KR-17683352 / 김선희
- │   │   └─ [2]KR-12231205 / 강춘복
- │   └─ [2]KR-13165946 / 김현경
- │       ├─ [1]KR-12120433 / 최선아
- │       ├─ [2]KR-10726020 / 김현영
- │       ├─ [1]KR-10921068 / 조은희
- │       └─ [2]KR-18681904 / 문은경
- ├─ [2]KR-18594222 / 윤기남
- │   ├─ [1]KR-15246407 / 윤기남
- │   ├─ [1]KR-11148534 / 윤기남
- │   ├─ [1]KR-18045558 / 한남희
- │   ├─ [1]KR-13680142 / 이부경
- │   ├─ [1]KR-10319067 / 남궁길희
- │   ├─ [1]KR-16108124 / 김수민
- │   ├─ [1]KR-12238682 / 박지인
- │   ├─ [1]KR-12685531 / 정진옥
- │   ├─ [1]KR-13116823 / 박경숙
- │   ├─ [2]KR-12482125 / 김태형
- │   ├─ [2]KR-10928863 / 이금희
- │   ├─ [1]KR-12325370 / 유하정
- │   ├─ [1]KR-17902192 / 채종숙
- │   ├─ [2]KR-17697227 / 김선영
- │   ├─ [1]KR-17586244 / 유헌주
- │   ├─ [2]KR-15749113 / 최정숙
- │   └─ [2]KR-19780601 / 임다연
- ├─ [2]KR-15879458 / 한기림
- │   ├─ [1]KR-13914547 / 김선옥
- │   ├─ [1]KR-13561887 / 한기림
- │   ├─ [1]KR-18005269 / 윤미숙
- │   ├─ [1]KR-17916478 / 정덕자
- │   ├─ [2]KR-15795878 / 한기림
- │   ├─ [2]KR-16698536 / 이순자
- │   └─ [2]KR-10503863 / 하금수
- ├─ [1]KR-19782441 / 유제준
- ├─ [1]KR-13385273 / 이도경
- ├─ [1]KR-19910800 / 유주연
- ├─ [2]KR-14150843 / 윤기선
- ├─ [2]KR-12465829 / 김은정
- └─ [2]KR-19137746 / 이완숙
-      </pre>
+ │   └─ [2]KR-18594222 / 윤기남
+..."></textarea>
+      <button id="parseBtn">트리 생성</button>
+      <div class="hint">
+        ▷ 들여쓰기/선이 포함된 트리 텍스트를 그대로 붙여넣어도 됩니다.<br/>
+        ▷ 각 줄은 보통 <code>[1]KR-12345678 / 이름</code> 형태입니다. <code>[1]</code>은 왼쪽 다리, <code>[2]</code>는 오른쪽 다리로 구분합니다.<br/>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 트리 + 바이너리 레이아웃 -->
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">B. 트리 & 간단 바이너리 레이아웃</div>
+        <span class="small-badge">결과</span>
+      </div>
+
+      <div id="treeBox" class="tree-box">
+        붙여넣고 [트리 생성] 버튼을 누르면, 여기에서 트리가 표시됩니다.
+      </div>
+
+      <div id="binaryLayout" class="binary-wrap">
+        <div class="binary-title">좌/우 레그별 단순 리스트</div>
+        <div class="binary-grid">
+          <div>
+            <div class="binary-col-title">LEFT ( [1] )</div>
+            <div id="leftCol"></div>
+          </div>
+          <div>
+            <div class="binary-col-title">RIGHT ( [2] )</div>
+            <div id="rightCol"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<script>
+  const rawInput   = document.getElementById("rawInput");
+  const parseBtn   = document.getElementById("parseBtn");
+  const treeBox    = document.getElementById("treeBox");
+  const leftCol    = document.getElementById("leftCol");
+  const rightCol   = document.getElementById("rightCol");
+
+  parseBtn.addEventListener("click", () => {
+    const text = rawInput.value;
+    if (!text.trim()) {
+      alert("ssoti 조직도 페이지에서 텍스트를 복사해 붙여넣은 뒤 다시 눌러주세요.");
+      return;
+    }
+
+    const lines = text.split(/\r?\n/);
+    const leftNodes = [];
+    const rightNodes = [];
+
+    treeBox.innerHTML = ""; // 텍스트 트리 초기화
+    leftCol.innerHTML = ""; // 좌 리스트 초기화
+    rightCol.innerHTML = ""; // 우 리스트 초기화
+
+    lines.forEach((lineRaw) => {
+      const originalLine = lineRaw.replace(/\t/g, "    "); // 탭을 스페이스로
+      const trimmedRight = originalLine.replace(/\s+$/, ""); // 오른쪽 공백 제거
+      if (!trimmedRight.trim()) return;
+
+      // 들여쓰기(공백, │, ├, └, ─ 등 트리선)를 제거해서 depth 계산
+      const leadingMatch = trimmedRight.match(/^[\s│├└─]*/);
+      const leading = leadingMatch ? leadingMatch[0] : "";
+      const depth = Math.floor(leading.replace(/[│├└─]/g, " ").length / 2); // 대략 2칸당 1레벨로 가정
+
+      // 내용 부분만 추출
+      let content = trimmedRight.replace(/^[\s│├└─]+/, "");
+      content = content.trim();
+
+      // [1] / [2] / ID / 이름 파싱
+      // 예: [1]KR-15323995 / 이유송
+      let leg = null;
+      let id = "";
+      let name = "";
+      const m = content.match(/^\[(\d)\]\s*([^/]+)\/\s*(.+)$/);
+      if (m) {
+        leg = m[1]; // "1" or "2"
+        id = m[2].trim();
+        name = m[3].trim();
+      }
+
+      // 텍스트 트리 라인 생성
+      const lineEl = document.createElement("div");
+      lineEl.className = "tree-line";
+      if (leg === "1") lineEl.classList.add("leg-1");
+      if (leg === "2") lineEl.classList.add("leg-2");
+      lineEl.style.marginLeft = (depth * 16) + "px";
+      lineEl.textContent = content;
+      treeBox.appendChild(lineEl);
+
+      // 바이너리 리스트용 노드 수집
+      if (leg === "1" || leg === "2") {
+        const node = { leg, id, name };
+        if (leg === "1") leftNodes.push(node);
+        if (leg === "2") rightNodes.push(node);
+      }
+    });
+
+    // 좌/우 노드 카드 렌더링
+    leftNodes.forEach(node => {
+      const card = document.createElement("div");
+      card.className = "node-card leg-1";
+      card.innerHTML = `
+        <div class="name">${node.name}</div>
+        <div class="id">${node.id}</div>
+      `;
+      leftCol.appendChild(card);
+    });
+
+    rightNodes.forEach(node => {
+      const card = document.createElement("div");
+      card.className = "node-card leg-2";
+      card.innerHTML = `
+        <div class="name">${node.name}</div>
+        <div class="id">${node.id}</div>
+      `;
+      rightCol.appendChild(card);
+    });
+  });
+</script>
 </body>
 </html>
