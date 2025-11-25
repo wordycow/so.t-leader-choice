@@ -352,86 +352,96 @@
   }
 
   function renderLeaders(leaders) {
-    const grid = document.getElementById("leaderGrid");
-    const emptyNotice = document.getElementById("emptyNotice");
-    grid.innerHTML = "";
+  const grid = document.getElementById("leaderGrid");
+  const emptyNotice = document.getElementById("emptyNotice");
+  grid.innerHTML = "";
 
-    // enabled !== false 인 리더만 노출 (enabled가 없으면 기본 true)
-    const visibleLeaders = leaders.filter(l => l.enabled !== false);
+  // enabled !== false 인 리더만 노출 (enabled가 없으면 기본 true)
+  const visibleLeaders = leaders.filter(l => l.enabled !== false);
 
-    if (!visibleLeaders.length) {
-      grid.style.display = "none";
-      if (emptyNotice) emptyNotice.style.display = "block";
-      return;
-    } else {
-      grid.style.display = "grid";
-      if (emptyNotice) emptyNotice.style.display = "none";
-    }
-
-    if (visibleLeaders.length === 1) {
-      grid.classList.add("single");
-    } else {
-      grid.classList.remove("single");
-    }
-
-    visibleLeaders.forEach((leader) => {
-      const card = document.createElement("a");
-      card.className = "leader-card";
-      card.href = leader.link || "#";
-      card.target = leader.link ? "_blank" : "_self";
-      card.rel = leader.link ? "noopener noreferrer" : "";
-
-      const src =
-        leader.mediaUrl ||
-        "https://via.placeholder.com/400x225.png?text=No+Image";
-
-      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name || ""}">`;
-
-      const sns = leader.sns || {};
-      const snsButtons = [];
-      if (sns.youtube) {
-        snsButtons.push(
-          `<a class="sns-btn sns-youtube" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
-        );
-      }
-      if (sns.tiktok) {
-        snsButtons.push(
-          `<a class="sns-btn sns-tiktok" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
-        );
-      }
-      if (sns.instagram) {
-        snsButtons.push(
-          `<a class="sns-btn sns-instagram" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
-        );
-      }
-      if (sns.facebook) {
-        snsButtons.push(
-          `<a class="sns-btn sns-facebook" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
-        );
-      }
-      const snsHtml =
-        snsButtons.length > 0
-          ? `<div class="sns-wrap">${snsButtons.join("")}</div>`
-          : "";
-
-      card.innerHTML = `
-        <div class="leader-frame">
-          ${mediaHtml}
-        </div>
-        <div class="leader-name">${leader.name || ""}</div>
-        <div class="leader-role">${leader.role || ""}</div>
-        <div class="tag-wrap">
-          ${(leader.tags || [])
-            .map((t) => `<span class="tag">${t}</span>`)
-            .join("")}
-        </div>
-        <div class="leader-intro">${leader.introShort || ""}</div>
-        ${snsHtml}
-        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
-      `;
-      grid.appendChild(card);
-    });
+  if (!visibleLeaders.length) {
+    grid.style.display = "none";
+    if (emptyNotice) emptyNotice.style.display = "block";
+    return;
+  } else {
+    grid.style.display = "grid";
+    if (emptyNotice) emptyNotice.style.display = "none";
   }
+
+  if (visibleLeaders.length === 1) {
+    grid.classList.add("single");
+  } else {
+    grid.classList.remove("single");
+  }
+
+  visibleLeaders.forEach((leader) => {
+    const card = document.createElement("a");
+    card.className = "leader-card";
+    card.href = leader.link || "#";
+    card.target = leader.link ? "_blank" : "_self";
+    card.rel = leader.link ? "noopener noreferrer" : "";
+
+    const src =
+      leader.mediaUrl ||
+      "https://via.placeholder.com/400x225.png?text=No+Image";
+
+    const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name || ""}">`;
+
+    const sns = leader.sns || {};
+    const snsButtons = [];
+
+    // 기존 4개 SNS
+    if (sns.youtube) {
+      snsButtons.push(
+        `<a class="sns-btn sns-youtube" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
+      );
+    }
+    if (sns.tiktok) {
+      snsButtons.push(
+        `<a class="sns-btn sns-tiktok" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
+      );
+    }
+    if (sns.instagram) {
+      snsButtons.push(
+        `<a class="sns-btn sns-instagram" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
+      );
+    }
+    if (sns.facebook) {
+      snsButtons.push(
+        `<a class="sns-btn sns-facebook" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
+      );
+    }
+
+    // ✨ 새로 추가한 Blog
+    if (sns.blog) {
+      snsButtons.push(
+        `<a class="sns-btn sns-blog" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
+      );
+    }
+
+    const snsHtml =
+      snsButtons.length > 0
+        ? `<div class="sns-wrap">${snsButtons.join("")}</div>`
+        : "";
+
+    card.innerHTML = `
+      <div class="leader-frame">
+        ${mediaHtml}
+      </div>
+      <div class="leader-name">${leader.name || ""}</div>
+      <div class="leader-role">${leader.role || ""}</div>
+      <div class="tag-wrap">
+        ${(leader.tags || [])
+          .map((t) => `<span class="tag">${t}</span>`)
+          .join("")}
+      </div>
+      <div class="leader-intro">${leader.introShort || ""}</div>
+      ${snsHtml}
+      <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
+    `;
+    grid.appendChild(card);
+  });
+}
 
   function renderAds(ads = []) {
     const wrap = document.getElementById("bannerWrap");
