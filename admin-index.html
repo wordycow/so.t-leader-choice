@@ -1058,148 +1058,181 @@
     // JSON 섹션
     // =============================
     function initJsonSection() {
-      const jsonTextarea = document.getElementById("json-textarea");
-      const generateBtn = document.getElementById("json-generate-btn");
-      const copyBtn = document.getElementById("json-copy-btn");
-      const fileBtn = document.getElementById("json-file-btn");
-      const applyBtn = document.getElementById("json-apply-btn");
-      const fileInput = document.getElementById("json-file-input");
-      const bulkTextarea = document.getElementById("bulk-form-urls");
-      const bulkBtn      = document.getElementById("apply-bulk-form-urls");
-      const bulkStatus   = document.getElementById("bulk-form-urls-status");
+  const jsonTextarea = document.getElementById("json-textarea");
+  const generateBtn  = document.getElementById("json-generate-btn");
+  const copyBtn      = document.getElementById("json-copy-btn");
+  const fileBtn      = document.getElementById("json-file-btn");
+  const applyBtn     = document.getElementById("json-apply-btn");
+  const fileInput    = document.getElementById("json-file-input");
 
-      generateBtn.addEventListener("click", () => {
-        const obj = {
-          ads: state.ads,
-          leaders: state.leaders
-        };
-        jsonTextarea.value = JSON.stringify(obj, null, 2);
-        setJsonStatus("현재 관리자 데이터를 기반으로 JSON을 생성했습니다.", "success");
-      });
+  // 🔁 엑셀 → URL 일괄 입력용
+  const bulkTextarea = document.getElementById("bulk-form-urls");
+  const bulkBtn      = document.getElementById("apply-bulk-form-urls");
+  const bulkStatus   = document.getElementById("bulk-form-urls-status");
 
-      copyBtn.addEventListener("click", () => {
-        const text = jsonTextarea.value;
-        if (!text.trim()) {
-          setJsonStatus("복사할 JSON 내용이 없습니다.", "error");
-          return;
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard
-            .writeText(text)
-            .then(() => setJsonStatus("JSON을 클립보드에 복사했습니다.", "success"))
-            .catch(() => {
-              fallbackCopy(text);
-              setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
-            });
-        } else {
+  // JSON 생성
+  generateBtn.addEventListener("click", () => {
+    const obj = {
+      ads: state.ads,
+      leaders: state.leaders
+    };
+    jsonTextarea.value = JSON.stringify(obj, null, 2);
+    setJsonStatus("현재 관리자 데이터를 기반으로 JSON을 생성했습니다.", "success");
+  });
+
+  // JSON 복사
+  copyBtn.addEventListener("click", () => {
+    const text = jsonTextarea.value;
+    if (!text.trim()) {
+      setJsonStatus("복사할 JSON 내용이 없습니다.", "error");
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => setJsonStatus("JSON을 클립보드에 복사했습니다.", "success"))
+        .catch(() => {
           fallbackCopy(text);
           setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
+        });
+    } else {
+      fallbackCopy(text);
+      setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
+    }
+  });
+
+  // JSON 파일 불러오기
+  fileBtn.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      jsonTextarea.value = reader.result;
+      setJsonStatus(
+        "JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.",
+        "info"
+      );
+      fileInput.value = "";
+    };
+    reader.onerror = () => {
+      setJsonStatus("JSON 파일을 읽는 중 오류가 발생했습니다.", "error");
+      fileInput.value = "";
+    };
+    reader.readAsText(file, "utf-8");
+  });
+
+  // JSON → 관리자에 덮어쓰기
+  applyBtn.addEventListener("click", () => {
+    const text = jsonTextarea.value.trim();
+    if (!text) {
+      setJsonStatus("덮어쓸 JSON 내용이 비어 있습니다.", "error");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(text);
+      const root = parsed.data ? parsed.data : parsed;
+
+      const adsRaw     = Array.isArray(root.ads) ? root.ads : [];
+      const leadersRaw = Array.isArray(root.leaders) ? root.leaders : [];
+
+      state.ads     = adsRaw.map((ad, idx) => normalizeAd(ad, idx));
+      state.leaders = leadersRaw.map((leader, idx) => normalizeLeader(leader, idx));
+
+      state.editingAdIndex     = null;
+      state.editingLeaderIndex = null;
+
+      clearAdForm();
+      clearLeaderForm();
+      renderAds();
+      renderLeaders();
+
+      setJsonStatus("JSON 내용을 관리자 데이터에 성공적으로 덮어썼습니다.", "success");
+    } catch (err) {
+      setJsonStatus("JSON 파싱 오류: " + err.message, "error");
+    }
+  });
+
+  // 🔁 URL → 리더 자동 매칭
+  if (bulkBtn) {
+    bulkBtn.addEventListener("click", () => {
+      const raw = (bulkTextarea.value || "").trim();
+      if (!raw) {
+        bulkStatus.textContent = "URL 목록이 비어 있습니다.";
+        return;
+      }
+
+      const lines = raw
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      if (!lines.length) {
+        bulkStatus.textContent = "유효한 URL이 없습니다.";
+        return;
+      }
+
+      // 이름 → 리더 인덱스 맵
+      const nameIndexMap = new Map();
+      state.leaders.forEach((leader, idx) => {
+        if (leader && leader.name) {
+          nameIndexMap.set(leader.name.trim(), idx);
         }
       });
 
-      // JSON 파일 불러오기
-      fileBtn.addEventListener("click", () => {
-        fileInput.click();
-      });
+      let matchedByName  = 0;
+      let matchedByIndex = 0;
+      const unmatched    = [];
 
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          jsonTextarea.value = reader.result;
-          setJsonStatus(
-            "JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.",
-            "info"
-          );
-          fileInput.value = "";
-        };
-        reader.onerror = () => {
-          setJsonStatus("JSON 파일을 읽는 중 오류가 발생했습니다.", "error");
-          fileInput.value = "";
-        };
-        reader.readAsText(file, "utf-8");
-      });
+      lines.forEach((line, idx) => {
+        let name = null;
 
-      // JSON → 관리자에 덮어쓰기
-      applyBtn.addEventListener("click", () => {
-        const text = jsonTextarea.value.trim();
-              // 🔁 URL 일괄 매핑 버튼
-      if (bulkBtn) {
-        bulkBtn.addEventListener("click", () => {
-          const raw = (bulkTextarea.value || "").trim();
-          if (!raw) {
-            bulkStatus.textContent = "URL 목록이 비어 있습니다.";
-            return;
-          }
-
-          const lines = raw
-            .split(/\r?\n/)
-            .map(l => l.trim())
-            .filter(Boolean);
-
-          if (!lines.length) {
-            bulkStatus.textContent = "유효한 URL이 없습니다.";
-            return;
-          }
-
-          // 이름 → 리더 인덱스 맵
-          const nameIndexMap = new Map();
-          state.leaders.forEach((leader, idx) => {
-            if (leader && leader.name) {
-              nameIndexMap.set(leader.name.trim(), idx);
+        // URL 안의 entry.xxxxx=이름 추출
+        try {
+          const u = new URL(line);
+          u.searchParams.forEach((val, key) => {
+            if (!name && key.startsWith("entry.")) {
+              name = decodeURIComponent(val);
             }
           });
+        } catch (e) {
+          // URL 파싱 실패는 무시
+        }
 
-          let matchedByName  = 0;
-          let matchedByIndex = 0;
-          const unmatched    = [];
+        let leaderIndex = -1;
 
-          lines.forEach((line, idx) => {
-            let name = null;
+        if (name && nameIndexMap.has(name)) {
+          // 이름 매칭
+          leaderIndex = nameIndexMap.get(name);
+          matchedByName++;
+        } else if (state.leaders[idx]) {
+          // 이름이 안 맞으면 줄 순서대로
+          leaderIndex = idx;
+          matchedByIndex++;
+        } else {
+          unmatched.push(line);
+        }
 
-            // 1) URL 안에 entry.xxxxx=이름 값이 있으면 그걸로 매칭
-            try {
-              const u = new URL(line);
-              u.searchParams.forEach((val, key) => {
-                if (!name && key.startsWith("entry.")) {
-                  name = decodeURIComponent(val);
-                }
-              });
-            } catch (e) {
-              // URL로 파싱 안 되면 그냥 패스
-            }
+        if (leaderIndex >= 0) {
+          const leader = state.leaders[leaderIndex];
+          leader.formUrl = line;   // 새 구조
+          leader.link    = line;   // 호환용
+        }
+      });
 
-            let leaderIndex = -1;
+      renderLeaders();
 
-            if (name && nameIndexMap.has(name)) {
-              // 이름으로 정확히 매칭
-              leaderIndex = nameIndexMap.get(name);
-              matchedByName++;
-            } else if (state.leaders[idx]) {
-              // 이름 매칭이 안 되면, 줄 순서대로 매칭 (1번째 줄 → 1번째 리더)
-              leaderIndex = idx;
-              matchedByIndex++;
-            } else {
-              unmatched.push(line);
-            }
-
-            if (leaderIndex >= 0) {
-              const leader = state.leaders[leaderIndex];
-              leader.formUrl = line;   // 새 구조
-              leader.link    = line;   // 옛 구조 호환
-            }
-          });
-
-          renderLeaders();
-
-          let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
-          if (unmatched.length) {
-            msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
-          }
-          bulkStatus.textContent = msg;
-        });
-      }        
+      let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
+      if (unmatched.length) {
+        msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
+      }
+      bulkStatus.textContent = msg;
+    });
+  }
+}
         if (!text) {
           setJsonStatus("덮어쓸 JSON 내용이 비어 있습니다.", "error");
           return;
