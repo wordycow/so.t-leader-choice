@@ -942,13 +942,17 @@
         const left = document.createElement("div");
         left.className = "list-top-left";
 
-        if (leader.imageUrl) {
-          const thumb = document.createElement("img");
-          thumb.className = "list-thumb";
-          thumb.src = leader.imageUrl;
-          thumb.alt = leader.name || "리더 이미지";
-          left.appendChild(thumb);
+        // imageUrl가 없고 mediaUrl만 있는 JSON도 지원
+        const thumbSrc = leader.imageUrl || leader.mediaUrl;
+
+        if (thumbSrc) {
+        const thumb = document.createElement("img");
+        thumb.className = "list-thumb";
+        thumb.src = thumbSrc;
+        thumb.alt = leader.name || "리더 이미지";
+        left.appendChild(thumb);
         }
+
 
         const title = document.createElement("div");
         title.className = "list-title";
@@ -1274,38 +1278,50 @@
     }
 
     function normalizeLeader(leader, index) {
-      const out = { ...leader };
+  const out = { ...leader };
 
-      if (!out.id) out.id = leader.id || generateId("leader");
-      if (out.visible === undefined) out.visible = leader.visible !== false;
+  // id 없으면 새로 부여
+  if (!out.id) out.id = leader.id || generateId("leader");
 
-      // 이미지 필드: 옛날 JSON에서 profileImage 같은 이름으로 저장됐을 수도 있음
-      if (!out.imageUrl) {
-        out.imageUrl =
-          leader.imageUrl ||
-          leader.profileImage ||
-          leader.profile_image ||
-          leader.profileImageUrl ||
-          leader.profile_image_url ||
-          leader.image ||
-          "";
-      }
+  // visible 값 정리
+  if (out.visible === undefined) out.visible = leader.visible !== false;
+  // 옛날 JSON에서 enabled 라는 이름을 썼다면 그것도 반영
+  if (leader.enabled !== undefined && out.visible === undefined) {
+    out.visible = !!leader.enabled;
+  }
 
-      // tags가 문자열로 들어온 경우 쉼표 기준으로 배열로 변환
-      if (!Array.isArray(out.tags) && typeof leader.tags === "string") {
-        out.tags = leader.tags
-          .split(",")
-          .map(t => t.trim())
-          .filter(Boolean);
-      }
+  // 이미지 필드: 오래된 JSON은 mediaUrl 을 쓰고 있을 수 있음
+  out.imageUrl =
+    leader.imageUrl ||       // 새 관리자에서 쓰는 필드
+    leader.mediaUrl  ||       // 예전 관리자에서 쓰던 필드
+    leader.profileImage ||
+    leader.profile_image ||
+    leader.profileImageUrl ||
+    leader.profile_image_url ||
+    leader.image ||
+    "";
 
-      // order가 없으면 "들어온 순서" 기준으로 부여해서 순서 유지
-      if (typeof out.order !== "number") {
-        out.order = index + 1;
-      }
+  // tags 가 문자열이면 쉼표로 쪼개서 배열로
+  if (!Array.isArray(out.tags) && typeof leader.tags === "string") {
+    out.tags = leader.tags
+      .split(",")
+      .map(t => t.trim())
+      .filter(Boolean);
+  }
 
-      return out;
-    }
+  // sns 없으면 기본값
+  if (!out.sns) {
+    out.sns = leader.sns || { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
+  }
+
+  // order 가 없으면 "들어온 순서"로 부여 → JSON 순서 그대로 유지
+  if (typeof out.order !== "number") {
+    out.order = index + 1;
+  }
+
+  return out;
+}
+
 
     // =============================
     // 유틸
