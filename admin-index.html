@@ -578,7 +578,7 @@
     </div>
   </div>
 
-  <script>
+    <script>
     // =============================
     // 전역 상태
     // =============================
@@ -637,9 +637,10 @@
       const position = document.getElementById("ad-position").value;
       const visible = document.getElementById("ad-visible").checked;
 
-      const id = state.editingAdIndex !== null && state.ads[state.editingAdIndex]
-        ? state.ads[state.editingAdIndex].id
-        : generateId("ad");
+      const id =
+        state.editingAdIndex !== null && state.ads[state.editingAdIndex]
+          ? state.ads[state.editingAdIndex].id
+          : generateId("ad");
 
       return {
         id,
@@ -838,9 +839,10 @@
         ? tagsStr.split(",").map(t => t.trim()).filter(Boolean)
         : [];
 
-      const id = state.editingLeaderIndex !== null && state.leaders[state.editingLeaderIndex]
-        ? state.leaders[state.editingLeaderIndex].id
-        : generateId("leader");
+      const id =
+        state.editingLeaderIndex !== null && state.leaders[state.editingLeaderIndex]
+          ? state.leaders[state.editingLeaderIndex].id
+          : generateId("leader");
 
       return {
         id,
@@ -864,7 +866,9 @@
       document.getElementById("leader-headline").value = leader.headline || "";
       document.getElementById("leader-form-url").value = leader.formUrl || "";
       document.getElementById("leader-sheet-url").value = leader.sheetUrl || "";
-      document.getElementById("leader-tags").value = Array.isArray(leader.tags) ? leader.tags.join(", ") : "";
+      document.getElementById("leader-tags").value = Array.isArray(leader.tags)
+        ? leader.tags.join(", ")
+        : "";
       document.getElementById("leader-intro").value = leader.intro || "";
 
       document.getElementById("leader-youtube").value = leader.sns?.youtube || "";
@@ -926,7 +930,7 @@
         return;
       }
 
-      leadersSorted.forEach((leader, sortedIndex) => {
+      leadersSorted.forEach(leader => {
         const originalIndex = state.leaders.indexOf(leader);
 
         const item = document.createElement("div");
@@ -961,9 +965,10 @@
 
         const sub = document.createElement("div");
         sub.className = "list-sub";
-        const tagsText = Array.isArray(leader.tags) && leader.tags.length
-          ? "태그: " + leader.tags.join(", ")
-          : "태그 없음";
+        const tagsText =
+          Array.isArray(leader.tags) && leader.tags.length
+            ? "태그: " + leader.tags.join(", ")
+            : "태그 없음";
         sub.textContent = (leader.role ? leader.role + " · " : "") + tagsText;
 
         const linkDiv = document.createElement("div");
@@ -1048,7 +1053,8 @@
           return;
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text)
+          navigator.clipboard
+            .writeText(text)
             .then(() => setJsonStatus("JSON을 클립보드에 복사했습니다.", "success"))
             .catch(() => {
               fallbackCopy(text);
@@ -1071,7 +1077,10 @@
         const reader = new FileReader();
         reader.onload = () => {
           jsonTextarea.value = reader.result;
-          setJsonStatus("JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.", "info");
+          setJsonStatus(
+            "JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.",
+            "info"
+          );
           fileInput.value = "";
         };
         reader.onerror = () => {
@@ -1091,11 +1100,14 @@
         try {
           const parsed = JSON.parse(text);
           const root = parsed.data ? parsed.data : parsed;
-          const ads = Array.isArray(root.ads) ? root.ads : [];
-          const leaders = Array.isArray(root.leaders) ? root.leaders : [];
 
-          state.ads = ads;
-          state.leaders = leaders;
+          const adsRaw = Array.isArray(root.ads) ? root.ads : [];
+          const leadersRaw = Array.isArray(root.leaders) ? root.leaders : [];
+
+          // 여기서 옛날 / 새 JSON 모두를 정리해서 state로 만듦
+          state.ads = adsRaw.map((ad, idx) => normalizeAd(ad, idx));
+          state.leaders = leadersRaw.map((leader, idx) => normalizeLeader(leader, idx));
+
           state.editingAdIndex = null;
           state.editingLeaderIndex = null;
 
@@ -1149,7 +1161,14 @@
       });
     }
 
-    function initImageFilePicker({ fileInputId, triggerId, dropId, previewId, targetInputId, folderPrefix }) {
+    function initImageFilePicker({
+      fileInputId,
+      triggerId,
+      dropId,
+      previewId,
+      targetInputId,
+      folderPrefix
+    }) {
       const fileInput = document.getElementById(fileInputId);
       const trigger = document.getElementById(triggerId);
       const drop = document.getElementById(dropId);
@@ -1229,6 +1248,63 @@
         preview.src = "";
         preview.style.display = "none";
       }
+    }
+
+    // =============================
+    // JSON 정규화 (옛날 / 새 필드 이름 맞춰주기)
+    // =============================
+    function normalizeAd(ad, index) {
+      const out = { ...ad };
+
+      if (!out.id) out.id = ad.id || generateId("ad");
+      if (out.visible === undefined) out.visible = ad.visible !== false;
+
+      if (!out.imageUrl) {
+        out.imageUrl =
+          ad.imageUrl ||
+          ad.bannerImage ||
+          ad.banner_image ||
+          ad.bannerUrl ||
+          ad.banner_url ||
+          ad.image ||
+          "";
+      }
+
+      return out;
+    }
+
+    function normalizeLeader(leader, index) {
+      const out = { ...leader };
+
+      if (!out.id) out.id = leader.id || generateId("leader");
+      if (out.visible === undefined) out.visible = leader.visible !== false;
+
+      // 이미지 필드: 옛날 JSON에서 profileImage 같은 이름으로 저장됐을 수도 있음
+      if (!out.imageUrl) {
+        out.imageUrl =
+          leader.imageUrl ||
+          leader.profileImage ||
+          leader.profile_image ||
+          leader.profileImageUrl ||
+          leader.profile_image_url ||
+          leader.image ||
+          "";
+      }
+
+      // tags가 문자열로 들어온 경우 쉼표 기준으로 배열로 변환
+      if (!Array.isArray(out.tags) && typeof leader.tags === "string") {
+        out.tags = leader.tags
+          .split(",")
+          .map(t => t.trim())
+          .filter(Boolean);
+      }
+
+      // order가 없으면 "들어온 순서" 기준으로 부여해서 순서 유지
+      if (typeof out.order !== "number") {
+        out.order = index + 1;
+      }
+
+      return out;
     }
 
     // =============================
