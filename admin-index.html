@@ -301,6 +301,24 @@
       border-radius: 10px;
       border: 1px solid #e5e7eb;
     }
+    
+    /* 리스트 썸네일 (광고 / 리더 공통) */
+    .list-top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .list-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      background: #e5e7eb;
+    }
+  
   </style>
 </head>
 <body>
@@ -548,7 +566,7 @@
     </div>
   </div>
 
-  <script>
+    <script>
     // =============================
     // 전역 상태
     // =============================
@@ -564,6 +582,7 @@
       initLeaderForm();
       initJsonSection();
       initImagePickers();   // 이미지 파일 선택/드래그 초기화
+      initImageUrlPreview(); // URL 입력 시 미리보기
       renderAds();
       renderLeaders();
     });
@@ -628,15 +647,7 @@
       document.getElementById("ad-image-url").value = ad.imageUrl || "";
       document.getElementById("ad-position").value = ad.position || "bottom";
       document.getElementById("ad-visible").checked = ad.visible !== false;
-
-      // 미리보기도 갱신
-      const preview = document.getElementById("ad-image-preview");
-      if (ad.imageUrl) {
-        preview.src = ad.imageUrl;
-        preview.style.display = "block";
-      } else {
-        preview.style.display = "none";
-      }
+      updateAdPreviewFromUrl();
     }
 
     function clearAdForm() {
@@ -671,16 +682,29 @@
         const top = document.createElement("div");
         top.className = "list-top";
 
+        const left = document.createElement("div");
+        left.className = "list-top-left";
+
+        // 썸네일
+        if (ad.imageUrl) {
+          const thumb = document.createElement("img");
+          thumb.className = "list-thumb";
+          thumb.src = ad.imageUrl;
+          thumb.alt = ad.title || "광고 이미지";
+          left.appendChild(thumb);
+        }
+
         const title = document.createElement("div");
         title.className = "list-title";
         title.textContent = ad.title || "(제목 없음)";
+        left.appendChild(title);
 
         const badge = document.createElement("span");
         const isVisible = ad.visible !== false;
         badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
         badge.textContent = isVisible ? "노출 중" : "노출 끔";
 
-        top.appendChild(title);
+        top.appendChild(left);
         top.appendChild(badge);
 
         const sub = document.createElement("div");
@@ -828,13 +852,7 @@
       document.getElementById("leader-order").value = leader.order ?? "";
       document.getElementById("leader-visible").checked = leader.visible !== false;
 
-      const preview = document.getElementById("leader-image-preview");
-      if (leader.imageUrl) {
-        preview.src = leader.imageUrl;
-        preview.style.display = "block";
-      } else {
-        preview.style.display = "none";
-      }
+      updateLeaderPreviewFromUrl();
     }
 
     function clearLeaderForm() {
@@ -892,16 +910,28 @@
         const top = document.createElement("div");
         top.className = "list-top";
 
+        const left = document.createElement("div");
+        left.className = "list-top-left";
+
+        if (leader.imageUrl) {
+          const thumb = document.createElement("img");
+          thumb.className = "list-thumb";
+          thumb.src = leader.imageUrl;
+          thumb.alt = leader.name || "리더 이미지";
+          left.appendChild(thumb);
+        }
+
         const title = document.createElement("div");
         title.className = "list-title";
         title.textContent = leader.name || "(이름 없음)";
+        left.appendChild(title);
 
         const badge = document.createElement("span");
         const isVisible = leader.visible !== false;
         badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
         badge.textContent = isVisible ? "노출" : "숨김";
 
-        top.appendChild(title);
+        top.appendChild(left);
         top.appendChild(badge);
 
         const sub = document.createElement("div");
@@ -1131,6 +1161,46 @@
     }
 
     // =============================
+    // URL 입력 → 미리보기 갱신
+    // =============================
+    function initImageUrlPreview() {
+      const adUrlInput = document.getElementById("ad-image-url");
+      const leaderUrlInput = document.getElementById("leader-image-url");
+      if (adUrlInput) {
+        adUrlInput.addEventListener("input", updateAdPreviewFromUrl);
+      }
+      if (leaderUrlInput) {
+        leaderUrlInput.addEventListener("input", updateLeaderPreviewFromUrl);
+      }
+    }
+
+    function updateAdPreviewFromUrl() {
+      const url = document.getElementById("ad-image-url").value.trim();
+      const preview = document.getElementById("ad-image-preview");
+      if (!preview) return;
+      if (url) {
+        preview.src = url;
+        preview.style.display = "block";
+      } else {
+        preview.src = "";
+        preview.style.display = "none";
+      }
+    }
+
+    function updateLeaderPreviewFromUrl() {
+      const url = document.getElementById("leader-image-url").value.trim();
+      const preview = document.getElementById("leader-image-preview");
+      if (!preview) return;
+      if (url) {
+        preview.src = url;
+        preview.style.display = "block";
+      } else {
+        preview.src = "";
+        preview.style.display = "none";
+      }
+    }
+
+    // =============================
     // 유틸
     // =============================
     function generateId(prefix) {
@@ -1139,5 +1209,6 @@
       return prefix + "-" + now + "-" + rand;
     }
   </script>
+
 </body>
 </html>
