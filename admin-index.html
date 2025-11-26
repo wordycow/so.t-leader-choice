@@ -253,18 +253,53 @@
     .help-text li {
       margin: 2px 0;
     }
+
     .status {
       font-size: 11px;
       margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .status.info {
       color: #2563eb;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
     }
     .status.success {
       color: #15803d;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
     }
     .status.error {
       color: #b91c1c;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+    }
+
+    /* 이미지 드롭존 & 미리보기 */
+    .dropzone {
+      margin-top: 4px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed #d1d5db;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+      background: #f9fafb;
+      cursor: pointer;
+    }
+    .dropzone.dragover {
+      border-color: #111827;
+      background: #e5e7eb;
+    }
+    .image-preview {
+      margin-top: 6px;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
     }
   </style>
 </head>
@@ -299,10 +334,24 @@
               <label class="label-sm" for="ad-url">광고 링크 URL (예: YouTube, 사이트 등)</label>
               <input id="ad-url" class="input" type="text" placeholder="https://..." />
             </div>
+
+            <!-- 배너 이미지: URL + 파일 선택/드래그 -->
             <div class="form-row">
-              <label class="label-sm" for="ad-image-url">배너 이미지 URL (가로형 이미지)</label>
-              <input id="ad-image-url" class="input" type="text" placeholder="https://.../banner.jpg" />
+              <label class="label-sm" for="ad-image-url">배너 이미지 (URL 또는 파일)</label>
+              <input id="ad-image-url" class="input" type="text" placeholder="images/banner.jpg 또는 https://.../banner.jpg" />
+              <div class="button-row" style="margin-top:4px;">
+                <button id="ad-image-file-trigger" class="btn" type="button">이미지 파일 선택 / 드래그</button>
+              </div>
+              <input id="ad-image-file" type="file" accept="image/*" style="display:none;" />
+              <div id="ad-image-drop" class="dropzone">
+                이 영역을 클릭하거나, 배너 이미지를 끌어다 놓으면 선택됩니다.
+              </div>
+              <img id="ad-image-preview" class="image-preview" alt="" style="display:none;" />
+              <div class="help-text">
+                ※ 선택한 파일 이름 기준으로 <code>images/파일이름</code> 형식으로 URL이 자동 입력됩니다. (이미지는 GitHub 레포의 images 폴더에 따로 업로드해야 실제 페이지에서 보입니다.)
+              </div>
             </div>
+
             <div class="form-row">
               <label class="label-sm" for="ad-position">노출 위치</label>
               <select id="ad-position" class="input">
@@ -390,10 +439,24 @@
               <label class="label-sm" for="leader-blog">Blog URL</label>
               <input id="leader-blog" class="input" type="text" placeholder="https://blog.naver.com/..." />
             </div>
+
+            <!-- 리더 이미지: URL + 파일 선택/드래그 -->
             <div class="form-row">
-              <label class="label-sm" for="leader-image-url">프로필 이미지 URL (카드에 들어갈 이미지)</label>
-              <input id="leader-image-url" class="input" type="text" placeholder="https://.../profile.jpg" />
+              <label class="label-sm" for="leader-image-url">프로필 이미지 (URL 또는 파일)</label>
+              <input id="leader-image-url" class="input" type="text" placeholder="images/leader.jpg 또는 https://.../leader.jpg" />
+              <div class="button-row" style="margin-top:4px;">
+                <button id="leader-image-file-trigger" class="btn" type="button">이미지 파일 선택 / 드래그</button>
+              </div>
+              <input id="leader-image-file" type="file" accept="image/*" style="display:none;" />
+              <div id="leader-image-drop" class="dropzone">
+                이 영역을 클릭하거나, 리더 프로필 이미지를 끌어다 놓으면 선택됩니다.
+              </div>
+              <img id="leader-image-preview" class="image-preview" alt="" style="display:none;" />
+              <div class="help-text">
+                ※ 선택한 파일 이름 기준으로 <code>images/파일이름</code> 형식으로 URL이 자동 입력됩니다. (이미지는 GitHub 레포의 images 폴더에 따로 업로드해야 실제 페이지에서 보입니다.)
+              </div>
             </div>
+
             <div class="form-row">
               <label class="label-sm" for="leader-order">노출 순서 (숫자, 작을수록 먼저)</label>
               <input id="leader-order" class="input" type="number" min="1" step="1" placeholder="예) 1" />
@@ -455,7 +518,7 @@
             <button id="json-copy-btn" class="btn" type="button">JSON 복사하기</button>
           </div>
           <div class="button-row" style="margin-top:6px;">
-            <!-- 여기서부터 유송이 요청한 2가지 기능 -->
+            <!-- JSON 파일 불러오기 / 관리자에 덮어쓰기 -->
             <button id="json-file-btn" class="btn" type="button">JSON 파일 불러오기</button>
             <button id="json-apply-btn" class="btn btn-outline" type="button">JSON → 관리자에 덮어쓰기</button>
           </div>
@@ -500,6 +563,7 @@
       initAdForm();
       initLeaderForm();
       initJsonSection();
+      initImagePickers();   // 이미지 파일 선택/드래그 초기화
       renderAds();
       renderLeaders();
     });
@@ -542,8 +606,12 @@
       const position = document.getElementById("ad-position").value;
       const visible = document.getElementById("ad-visible").checked;
 
+      const id = state.editingAdIndex !== null && state.ads[state.editingAdIndex]
+        ? state.ads[state.editingAdIndex].id
+        : generateId("ad");
+
       return {
-        id: generateId("ad"),
+        id,
         title,
         text,
         url,
@@ -560,6 +628,15 @@
       document.getElementById("ad-image-url").value = ad.imageUrl || "";
       document.getElementById("ad-position").value = ad.position || "bottom";
       document.getElementById("ad-visible").checked = ad.visible !== false;
+
+      // 미리보기도 갱신
+      const preview = document.getElementById("ad-image-preview");
+      if (ad.imageUrl) {
+        preview.src = ad.imageUrl;
+        preview.style.display = "block";
+      } else {
+        preview.style.display = "none";
+      }
     }
 
     function clearAdForm() {
@@ -569,6 +646,10 @@
       document.getElementById("ad-image-url").value = "";
       document.getElementById("ad-position").value = "bottom";
       document.getElementById("ad-visible").checked = true;
+
+      const preview = document.getElementById("ad-image-preview");
+      preview.style.display = "none";
+      preview.src = "";
     }
 
     function renderAds() {
@@ -595,8 +676,9 @@
         title.textContent = ad.title || "(제목 없음)";
 
         const badge = document.createElement("span");
-        badge.className = "badge " + (ad.visible !== false ? "badge-on" : "badge-off");
-        badge.textContent = ad.visible !== false ? "노출 중" : "노출 끔";
+        const isVisible = ad.visible !== false;
+        badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
+        badge.textContent = isVisible ? "노출 중" : "노출 끔";
 
         top.appendChild(title);
         top.appendChild(badge);
@@ -614,9 +696,10 @@
 
         const toggleBtn = document.createElement("button");
         toggleBtn.className = "btn";
-        toggleBtn.textContent = ad.visible !== false ? "노출 끄기" : "노출 켜기";
+        toggleBtn.textContent = isVisible ? "노출 끄기" : "노출 켜기";
         toggleBtn.addEventListener("click", () => {
-          state.ads[index].visible = !ad.visible;
+          const current = state.ads[index].visible !== false;
+          state.ads[index].visible = !current;
           renderAds();
         });
 
@@ -706,8 +789,12 @@
         ? tagsStr.split(",").map(t => t.trim()).filter(Boolean)
         : [];
 
+      const id = state.editingLeaderIndex !== null && state.leaders[state.editingLeaderIndex]
+        ? state.leaders[state.editingLeaderIndex].id
+        : generateId("leader");
+
       return {
-        id: generateId("leader"),
+        id,
         name,
         role,
         headline,
@@ -740,6 +827,14 @@
       document.getElementById("leader-image-url").value = leader.imageUrl || "";
       document.getElementById("leader-order").value = leader.order ?? "";
       document.getElementById("leader-visible").checked = leader.visible !== false;
+
+      const preview = document.getElementById("leader-image-preview");
+      if (leader.imageUrl) {
+        preview.src = leader.imageUrl;
+        preview.style.display = "block";
+      } else {
+        preview.style.display = "none";
+      }
     }
 
     function clearLeaderForm() {
@@ -760,6 +855,10 @@
       document.getElementById("leader-image-url").value = "";
       document.getElementById("leader-order").value = "";
       document.getElementById("leader-visible").checked = true;
+
+      const preview = document.getElementById("leader-image-preview");
+      preview.style.display = "none";
+      preview.src = "";
     }
 
     function renderLeaders() {
@@ -798,8 +897,9 @@
         title.textContent = leader.name || "(이름 없음)";
 
         const badge = document.createElement("span");
-        badge.className = "badge " + (leader.visible !== false ? "badge-on" : "badge-off");
-        badge.textContent = leader.visible !== false ? "노출" : "숨김";
+        const isVisible = leader.visible !== false;
+        badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
+        badge.textContent = isVisible ? "노출" : "숨김";
 
         top.appendChild(title);
         top.appendChild(badge);
@@ -820,9 +920,11 @@
 
         const toggleBtn = document.createElement("button");
         toggleBtn.className = "btn";
-        toggleBtn.textContent = leader.visible !== false ? "노출 끄기" : "노출 켜기";
+        toggleBtn.textContent = isVisible ? "노출 끄기" : "노출 켜기";
         toggleBtn.addEventListener("click", () => {
-          leader.visible = !leader.visible;
+          const target = state.leaders[originalIndex];
+          const curr = target.visible !== false;
+          target.visible = !curr;
           renderLeaders();
         });
 
@@ -898,7 +1000,7 @@
         }
       });
 
-      // 유송 요청 1: JSON 파일 불러오기
+      // JSON 파일 불러오기
       fileBtn.addEventListener("click", () => {
         fileInput.click();
       });
@@ -919,7 +1021,7 @@
         reader.readAsText(file, "utf-8");
       });
 
-      // 유송 요청 2: JSON → 관리자에 덮어쓰기
+      // JSON → 관리자에 덮어쓰기
       applyBtn.addEventListener("click", () => {
         const text = jsonTextarea.value.trim();
         if (!text) {
@@ -961,6 +1063,71 @@
       temp.select();
       document.execCommand("copy");
       document.body.removeChild(temp);
+    }
+
+    // =============================
+    // 이미지 파일 선택 / 드래그 공통 함수
+    // =============================
+    function initImagePickers() {
+      initImageFilePicker({
+        fileInputId: "ad-image-file",
+        triggerId: "ad-image-file-trigger",
+        dropId: "ad-image-drop",
+        previewId: "ad-image-preview",
+        targetInputId: "ad-image-url",
+        folderPrefix: "images/"
+      });
+
+      initImageFilePicker({
+        fileInputId: "leader-image-file",
+        triggerId: "leader-image-file-trigger",
+        dropId: "leader-image-drop",
+        previewId: "leader-image-preview",
+        targetInputId: "leader-image-url",
+        folderPrefix: "images/"
+      });
+    }
+
+    function initImageFilePicker({ fileInputId, triggerId, dropId, previewId, targetInputId, folderPrefix }) {
+      const fileInput = document.getElementById(fileInputId);
+      const trigger = document.getElementById(triggerId);
+      const drop = document.getElementById(dropId);
+      const preview = document.getElementById(previewId);
+      const targetInput = document.getElementById(targetInputId);
+      if (!fileInput || !trigger || !drop || !targetInput) return;
+
+      const handleFiles = files => {
+        if (!files || !files.length) return;
+        const file = files[0];
+        const fileName = file.name;
+        const url = (folderPrefix || "") + fileName;
+        targetInput.value = url;
+        if (preview) {
+          const objectUrl = URL.createObjectURL(file);
+          preview.src = objectUrl;
+          preview.style.display = "block";
+        }
+      };
+
+      trigger.addEventListener("click", () => fileInput.click());
+      drop.addEventListener("click", () => fileInput.click());
+
+      fileInput.addEventListener("change", e => handleFiles(e.target.files));
+
+      drop.addEventListener("dragover", e => {
+        e.preventDefault();
+        drop.classList.add("dragover");
+      });
+      drop.addEventListener("dragleave", e => {
+        e.preventDefault();
+        drop.classList.remove("dragover");
+      });
+      drop.addEventListener("drop", e => {
+        e.preventDefault();
+        drop.classList.remove("dragover");
+        const dt = e.dataTransfer;
+        if (dt && dt.files) handleFiles(dt.files);
+      });
     }
 
     // =============================
