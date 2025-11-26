@@ -1,1 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>함께 떠날 여행 리더를 선택하세요 (DEV)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --page-max-width: 1200px;
+      --bg-color: #90b4d8;
+      --bg-gradient: linear-gradient(180deg, #6da3d1 0%, #90b4d8 40%, #f5f5f5 100%);
+      --card-bg: #24527a;
+      --card-inner-bg: #f7fafc;
+      --accent-gold: #f6c453;
+      --accent-gold-soft: #fde68a;
+      --text-main: #111827;
+      --text-sub: #4b5563;
+      --btn-primary-bg: #f59e0b;
+      --btn-primary-bg-hover: #d97706;
+      --btn-primary-text: #1f2933;
+      --tag-bg: rgba(255, 255, 255, 0.15);
+      --tag-border: rgba(250, 250, 250, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      color: var(--text-main);
+      background: var(--bg-gradient), url("bg_wallpaper.jpg") center top / cover no-repeat fixed;
+    }
+
+    .page {
+      max-width: var(--page-max-width);
+      margin: 0 auto;
+      padding: 24px 12px 40px;
+    }
+
+    header.hero {
+      text-align: center;
+      padding: 24px 12px 12px;
+      color: #f9fafb;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin: 0 0 8px;
+    }
+
+    .hero-subtitle {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .hero-note {
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    main {
+      margin-top: 10px;
+    }
+
+    .leaders-section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 18px 10px 24px;
+      box-shadow: 0 18px 45px rgba(15,23,42,0.55);
+      backdrop-filter: blur(18px);
+    }
+
+    .leaders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .leader-card {
+      background: var(--card-bg);
+      border-radius: 26px;
+      padding: 7px;
+      box-shadow: 0 16px 30px rgba(15,23,42,0.45);
+      position: relative;
+    }
+
+    .leader-card-inner {
+      border-radius: 22px;
+      background: radial-gradient(circle at top, #ffffff 0%, #f3f4f6 40%, #e5e7eb 100%);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .leader-image-wrap {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 3px solid var(--accent-gold-soft);
+      margin-bottom: 10px;
+      background: #e5e7eb;
+      position: relative;
+    }
+
+    .leader-image {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .leader-role {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b21a8;
+      margin-bottom: 3px;
+    }
+
+    .leader-name {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      color: #111827;
+    }
+
+    .leader-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--tag-border);
+      background: var(--tag-bg);
+      color: #111827;
+      backdrop-filter: blur(4px);
+    }
+
+    .leader-headline {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin: 0 0 4px;
+      line-height: 1.5;
+    }
+
+    .leader-intro {
+      font-size: 11px;
+      color: #6b7280;
+      margin: 0 0 10px;
+      line-height: 1.5;
+    }
+
+    .leader-sns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .btn-sns {
+      font-size: 10px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-sns.youtube { background: #ff0000; }
+    .btn-sns.instagram { background: #c13584; }
+    .btn-sns.blog { background: #16a34a; }
+    .btn-sns.tiktok { background: #111827; }
+    .btn-sns.facebook { background: #1d4ed8; }
+
+    .card-footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(209, 213, 219, 0.8);
+    }
+
+    .visible-pill {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .btn-primary {
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--btn-primary-bg), #facc15);
+      color: var(--btn-primary-text);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 5px 14px rgba(180, 83, 9, 0.45);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--btn-primary-bg-hover), #f59e0b);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary span.icon {
+      font-size: 13px;
+    }
+
+    /* 광고 배너 */
+    .ads-section {
+      margin-top: 26px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15,23,42,0.65);
+    }
+
+    .ad-card {
+      position: relative;
+      height: 160px;
+      overflow: hidden;
+    }
+
+    .ad-bg {
+      position: absolute;
+      inset: 0;
+      background-position: center;
+      background-size: cover;
+      transform: scale(1.03);
+      filter: saturate(1.1);
+    }
+
+    .ad-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.1) 60%, rgba(15,23,42,0.85) 100%);
+    }
+
+    .ad-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #f9fafb;
+    }
+
+    .ad-text-main {
+      max-width: 60%;
+    }
+
+    .ad-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .ad-desc {
+      font-size: 12px;
+      opacity: 0.9;
+      margin: 0;
+    }
+
+    .ad-cta {
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 7px 14px;
+      border: 1px solid rgba(249,250,251,0.7);
+      background: rgba(15,23,42,0.5);
+      color: #f9fafb;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ad-cta span.icon {
+      font-size: 14px;
+    }
+
+    .ads-section.hidden {
+      display: none;
+    }
+
+    .status-bar {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #e5e7eb;
+      text-align: center;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.6);
+    }
+
+    /* 로딩 / 에러 */
+    .message {
+      text-align: center;
+      font-size: 13px;
+      color: #f9fafb;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+      margin-bottom: 12px;
+    }
+    .message.error {
+      color: #fee2e2;
+    }
+
+    footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 11px;
+      color: #e5e7eb;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 22px; }
+      .leaders-section { padding: 14px 8px 18px; }
+      .ad-card { height: 140px; }
+      .ad-text-main { max-width: 100%; }
+      .ad-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1 class="hero-title" id="hero-title">함께 떠날 여행 리더를 선택하세요</h1>
+      <p class="hero-subtitle" id="hero-subtitle">
+        리더의 여행 스타일과 컨셉을 가볍게 읽어본 뒤, 마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동해 보세요.
+      </p>
+      <p class="hero-note">
+        이 페이지는 <code>leaders.json</code> 파일 내용을 기반으로 자동으로 구성됩니다.
+      </p>
+    </header>
+
+    <main>
+      <div id="message" class="message">리더 정보를 불러오는 중입니다...</div>
+
+      <section class="leaders-section">
+        <div id="leaders-grid" class="leaders-grid">
+          <!-- JS가 카드 생성 -->
+        </div>
+      </section>
+
+      <section id="ads-section" class="ads-section hidden">
+        <!-- JS가 광고 배너 생성 -->
+      </section>
+
+      <div class="status-bar">
+        데이터 소스: <a href="https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json" target="_blank" style="color:#facc15;">leaders.json (GitHub)</a>
+      </div>
+    </main>
+
+    <footer>
+      so.t leader choice · dev preview 페이지입니다. 이 화면이 마음에 들면 index.html로 복사해서 라이브에 반영하면 됩니다.
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadData();
+    });
+
+    async function loadData() {
+      const messageEl = document.getElementById("message");
+      const leadersGrid = document.getElementById("leaders-grid");
+      const adsSection = document.getElementById("ads-section");
+
+      try {
+        // dev 확인할 때 캐시 문제 줄이려고 살짝 bust 쿼리 넣음
+        const res = await fetch("leaders.json?_=" + Date.now());
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status);
+        }
+        const json = await res.json();
+
+        // data 래퍼가 있을 수도 있고 없을 수도 있어서 둘 다 처리
+        const root = json.data ? json.data : json;
+        const leaders = Array.isArray(root.leaders) ? root.leaders : [];
+        const ads = Array.isArray(root.ads) ? root.ads : [];
+
+        renderLeaders(leadersGrid, leaders);
+        renderAds(adsSection, ads);
+
+        if (leaders.length === 0) {
+          messageEl.textContent = "leaders.json 안에 leaders 데이터가 없습니다. 관리자 페이지에서 리더 정보를 추가해 주세요.";
+        } else {
+          messageEl.textContent = "";
+        }
+
+        if (root.meta && root.meta.title) {
+          const heroTitle = document.getElementById("hero-title");
+          heroTitle.textContent = root.meta.title;
+        }
+        if (root.meta && root.meta.subtitle) {
+          const heroSubtitle = document.getElementById("hero-subtitle");
+          heroSubtitle.textContent = root.meta.subtitle;
+        }
+      } catch (error) {
+        console.error(error);
+        messageEl.classList.add("error");
+        messageEl.textContent = "leaders.json을 불러오는 중 오류가 발생했습니다: " + error.message;
+        leadersGrid.innerHTML = "";
+        adsSection.classList.add("hidden");
+      }
+    }
+
+    function renderLeaders(container, leadersRaw) {
+      container.innerHTML = "";
+
+      // visible이 false가 아닌 것만
+      const visibleLeaders = (leadersRaw || []).filter(l => l && l.visible !== false);
+
+      // order 기준으로 정렬, 없으면 이름 순
+      visibleLeaders.sort((a, b) => {
+        const ao = (typeof a.order === "number") ? a.order : 9999;
+        const bo = (typeof b.order === "number") ? b.order : 9999;
+        if (ao === bo) {
+          return (a.name || "").localeCompare(b.name || "", "ko");
+        }
+        return ao - bo;
+      });
+
+      if (!visibleLeaders.length) {
+        const empty = document.createElement("div");
+        empty.className = "message";
+        empty.textContent = "현재 노출 설정된 리더가 없습니다. 관리자 페이지에서 리더의 노출을 켜 주세요.";
+        container.appendChild(empty);
+        return;
+      }
+
+      visibleLeaders.forEach(leader => {
+        const card = document.createElement("article");
+        card.className = "leader-card";
+
+        const inner = document.createElement("div");
+        inner.className = "leader-card-inner";
+
+        // 이미지
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "leader-image-wrap";
+        const img = document.createElement("img");
+        img.className = "leader-image";
+        img.alt = leader.name || "리더 이미지";
+
+        // 이미지 URL이 없으면 배경색만
+        if (leader.imageUrl) {
+          img.src = leader.imageUrl;
+        } else {
+          // 투명 1x1 gif (빈 이미지)
+          img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+        }
+
+        imgWrap.appendChild(img);
+
+        // 텍스트 영역
+        const roleEl = document.createElement("div");
+        roleEl.className = "leader-role";
+        roleEl.textContent = leader.role || "";
+
+        const nameEl = document.createElement("h2");
+        nameEl.className = "leader-name";
+        nameEl.textContent = leader.name || "(이름 없음)";
+
+        const tagsEl = document.createElement("div");
+        tagsEl.className = "leader-tags";
+        const tags = Array.isArray(leader.tags) ? leader.tags : [];
+        tags.forEach(tag => {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        });
+
+        const headlineEl = document.createElement("p");
+        headlineEl.className = "leader-headline";
+        headlineEl.textContent = leader.headline || "";
+
+        const introEl = document.createElement("p");
+        introEl.className = "leader-intro";
+        introEl.textContent = leader.intro || "";
+
+        // SNS 버튼
+        const snsWrap = document.createElement("div");
+        snsWrap.className = "leader-sns";
+        const sns = leader.sns || {};
+        if (sns.youtube) {
+          snsWrap.appendChild(createSnsButton("YouTube", sns.youtube, "youtube"));
+        }
+        if (sns.instagram) {
+          snsWrap.appendChild(createSnsButton("Instagram", sns.instagram, "instagram"));
+        }
+        if (sns.blog) {
+          snsWrap.appendChild(createSnsButton("Blog", sns.blog, "blog"));
+        }
+        if (sns.tiktok) {
+          snsWrap.appendChild(createSnsButton("TikTok", sns.tiktok, "tiktok"));
+        }
+        if (sns.facebook) {
+          snsWrap.appendChild(createSnsButton("Facebook", sns.facebook, "facebook"));
+        }
+
+        // 푸터 (노출 표시 + 상담 버튼)
+        const footer = document.createElement("div");
+        footer.className = "card-footer";
+
+        const pill = document.createElement("span");
+        pill.className = "visible-pill";
+        pill.textContent = "노출 중";
+
+        footer.appendChild(pill);
+
+        if (leader.formUrl) {
+          const btn = document.createElement("a");
+          btn.href = leader.formUrl;
+          btn.target = "_blank";
+          btn.rel = "noopener noreferrer";
+          btn.className = "btn-primary";
+          btn.innerHTML = '<span class="icon">✈️</span><span>상담 / 신청하기</span>';
+          footer.appendChild(btn);
+        }
+
+        inner.appendChild(imgWrap);
+        inner.appendChild(roleEl);
+        inner.appendChild(nameEl);
+        if (tags.length) inner.appendChild(tagsEl);
+        if (leader.headline) inner.appendChild(headlineEl);
+        if (leader.intro) inner.appendChild(introEl);
+        if (snsWrap.children.length) inner.appendChild(snsWrap);
+        inner.appendChild(footer);
+
+        card.appendChild(inner);
+        container.appendChild(card);
+      });
+    }
+
+    function createSnsButton(label, url, type) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "btn-sns " + type;
+      a.textContent = label;
+      return a;
+    }
+
+    function renderAds(section, adsRaw) {
+      const visibleAds = (adsRaw || []).filter(a => a && a.visible !== false);
+      if (!visibleAds.length) {
+        section.classList.add("hidden");
+        section.innerHTML = "";
+        return;
+      }
+      const ad = visibleAds[0]; // 일단 가장 첫 번째 광고만 노출
+      section.classList.remove("hidden");
+      section.innerHTML = "";
+
+      const card = document.createElement("article");
+      card.className = "ad-card";
+
+      const bg = document.createElement("div");
+      bg.className = "ad-bg";
+      if (ad.imageUrl) {
+        bg.style.backgroundImage = "url('" + ad.imageUrl + "')";
+      }
+
+      const overlay = document.createElement("div");
+      overlay.className = "ad-overlay";
+
+      const content = document.createElement("div");
+      content.className = "ad-content";
+
+      const textMain = document.createElement("div");
+      textMain.className = "ad-text-main";
+
+      const titleEl = document.createElement("h2");
+      titleEl.className = "ad-title";
+      titleEl.textContent = ad.title || "어슬렁과 떠나는 여행";
+
+      const descEl = document.createElement("p");
+      descEl.className = "ad-desc";
+      descEl.textContent = ad.text || "나만의 속도로 어슬렁어슬렁, 여행을 즐겨보세요.";
+
+      textMain.appendChild(titleEl);
+      textMain.appendChild(descEl);
+
+      const cta = document.createElement("a");
+      cta.className = "ad-cta";
+      cta.href = ad.url || "#";
+      if (ad.url) {
+        cta.target = "_blank";
+        cta.rel = "noopener noreferrer";
+      }
+      cta.innerHTML = '<span class="icon">▶</span><span>영상 / 자세히 보기</span>';
+
+      content.appendChild(textMain);
+      content.appendChild(cta);
+
+      card.appendChild(bg);
+      card.appendChild(overlay);
+      card.appendChild(content);
+      section.appendChild(card);
+    }
+  </script>
+</body>
+</html>
 
