@@ -1064,6 +1064,9 @@
       const fileBtn = document.getElementById("json-file-btn");
       const applyBtn = document.getElementById("json-apply-btn");
       const fileInput = document.getElementById("json-file-input");
+      const bulkTextarea = document.getElementById("bulk-form-urls");
+      const bulkBtn      = document.getElementById("apply-bulk-form-urls");
+      const bulkStatus   = document.getElementById("bulk-form-urls-status");
 
       generateBtn.addEventListener("click", () => {
         const obj = {
@@ -1121,6 +1124,82 @@
       // JSON → 관리자에 덮어쓰기
       applyBtn.addEventListener("click", () => {
         const text = jsonTextarea.value.trim();
+              // 🔁 URL 일괄 매핑 버튼
+      if (bulkBtn) {
+        bulkBtn.addEventListener("click", () => {
+          const raw = (bulkTextarea.value || "").trim();
+          if (!raw) {
+            bulkStatus.textContent = "URL 목록이 비어 있습니다.";
+            return;
+          }
+
+          const lines = raw
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(Boolean);
+
+          if (!lines.length) {
+            bulkStatus.textContent = "유효한 URL이 없습니다.";
+            return;
+          }
+
+          // 이름 → 리더 인덱스 맵
+          const nameIndexMap = new Map();
+          state.leaders.forEach((leader, idx) => {
+            if (leader && leader.name) {
+              nameIndexMap.set(leader.name.trim(), idx);
+            }
+          });
+
+          let matchedByName  = 0;
+          let matchedByIndex = 0;
+          const unmatched    = [];
+
+          lines.forEach((line, idx) => {
+            let name = null;
+
+            // 1) URL 안에 entry.xxxxx=이름 값이 있으면 그걸로 매칭
+            try {
+              const u = new URL(line);
+              u.searchParams.forEach((val, key) => {
+                if (!name && key.startsWith("entry.")) {
+                  name = decodeURIComponent(val);
+                }
+              });
+            } catch (e) {
+              // URL로 파싱 안 되면 그냥 패스
+            }
+
+            let leaderIndex = -1;
+
+            if (name && nameIndexMap.has(name)) {
+              // 이름으로 정확히 매칭
+              leaderIndex = nameIndexMap.get(name);
+              matchedByName++;
+            } else if (state.leaders[idx]) {
+              // 이름 매칭이 안 되면, 줄 순서대로 매칭 (1번째 줄 → 1번째 리더)
+              leaderIndex = idx;
+              matchedByIndex++;
+            } else {
+              unmatched.push(line);
+            }
+
+            if (leaderIndex >= 0) {
+              const leader = state.leaders[leaderIndex];
+              leader.formUrl = line;   // 새 구조
+              leader.link    = line;   // 옛 구조 호환
+            }
+          });
+
+          renderLeaders();
+
+          let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
+          if (unmatched.length) {
+            msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
+          }
+          bulkStatus.textContent = msg;
+        });
+      }        
         if (!text) {
           setJsonStatus("덮어쓸 JSON 내용이 비어 있습니다.", "error");
           return;
