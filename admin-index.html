@@ -207,6 +207,12 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    .list-top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
     .list-title {
       font-size: 13px;
       font-weight: 600;
@@ -221,6 +227,15 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+    }
+    .list-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      background: #e5e7eb;
     }
 
     .json-textarea {
@@ -246,11 +261,21 @@
       color: #6b7280;
       margin-top: 4px;
     }
-    .help-text ol {
+
+    .help-box-yellow {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #fffbeb;
+      border: 1px solid #facc15;
+      color: #78350f;
+      font-size: 11px;
+    }
+    .help-box-yellow ol {
       padding-left: 18px;
       margin: 4px 0 0;
     }
-    .help-text li {
+    .help-box-yellow li {
       margin: 2px 0;
     }
 
@@ -301,31 +326,13 @@
       border-radius: 10px;
       border: 1px solid #e5e7eb;
     }
-    
-    /* 리스트 썸네일 (광고 / 리더 공통) */
-    .list-top-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-    .list-thumb {
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      object-fit: cover;
-      border: 1px solid #e5e7eb;
-      flex-shrink: 0;
-      background: #e5e7eb;
-    }
-  
   </style>
 </head>
 <body>
   <div class="page">
     <header>
       <h1>여행 리더 관리자 페이지 (광고 + JSON 생성기)</h1>
-      <p>이 페이지에서 광고 배너와 리더 카드 정보를 관리하고, leaders.json을 생성합니다.</p>
+      <p>이 페이지에서 광고 배너와 리더 정보를 관리하고, leaders.json을 생성하여 so.t-leader-choice 공개 페이지에 반영합니다.</p>
     </header>
 
     <div class="layout">
@@ -514,7 +521,10 @@
               <div class="card-title">리더 리스트</div>
               <div class="card-subtitle">저장된 여행 리더 목록입니다.</div>
             </div>
-            <div class="badge badge-on">현재 리더 수: <span id="leader-count">0</span>명</div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="badge badge-on">현재 리더 수: <span id="leader-count">0</span>명</div>
+              <button id="leader-new-btn" class="btn btn-outline" type="button">+ 새 리더 추가</button>
+            </div>
           </div>
           <div id="leader-list" class="list"></div>
           <div class="help-text">
@@ -536,7 +546,6 @@
             <button id="json-copy-btn" class="btn" type="button">JSON 복사하기</button>
           </div>
           <div class="button-row" style="margin-top:6px;">
-            <!-- JSON 파일 불러오기 / 관리자에 덮어쓰기 -->
             <button id="json-file-btn" class="btn" type="button">JSON 파일 불러오기</button>
             <button id="json-apply-btn" class="btn btn-outline" type="button">JSON → 관리자에 덮어쓰기</button>
           </div>
@@ -551,14 +560,17 @@
 
           <input id="json-file-input" type="file" accept=".json,application/json" style="display:none;" />
 
-          <div id="json-status" class="status info"></div>
+          <div id="json-status" class="status info">leaders.json 내용을 이곳에서 생성하거나 불러올 수 있습니다.</div>
 
-          <div class="help-text">
+          <div class="help-box-yellow">
+            <strong>[GitHub에 leaders.json 붙여 넣는 방법]</strong>
             <ol>
-              <li><b>JSON 생성하기</b>를 누르면 현재 광고/리더 목록 기준으로 leaders.json 내용이 위에 생성됩니다.</li>
-              <li><b>JSON 복사하기</b>를 누른 뒤 GitHub에서 leaders.json 파일을 열어 전체 붙여넣기 후 Commit 하면 됩니다.</li>
-              <li><b>JSON 파일 불러오기</b>는 PC에 있는 leaders.json 파일을 선택해 내용을 불러옵니다.</li>
-              <li><b>JSON → 관리자에 덮어쓰기</b>는 텍스트 영역에 있는 JSON 내용을 파싱해서 현재 관리자 데이터(광고 + 리더 리스트)를 싹 갈아엎습니다.</li>
+              <li><b>JSON 생성하기</b>를 눌러 현재 광고/리더 목록 기준으로 JSON을 만듭니다.</li>
+              <li><b>JSON 복사하기</b> 버튼을 눌러 leaders.json 내용을 클립보드에 복사합니다.</li>
+              <li><b>GitHub leaders.json 열기</b> 버튼을 눌러 GitHub의 leaders.json 편집 화면으로 이동합니다.</li>
+              <li>GitHub에서 내용 전체 선택(Ctrl+A) 후 삭제 → 복사한 JSON을 붙여 넣기(Ctrl+V) 합니다.</li>
+              <li>아래쪽 <b>Commit changes</b> 버튼을 눌러 저장합니다.</li>
+              <li>공개 페이지(<code>https://wordycow.github.io/so.t-leader-choice/</code>)를 새로고침하면 모든 사용자가 동일한 정보를 보게 됩니다.</li>
             </ol>
           </div>
         </section>
@@ -566,7 +578,7 @@
     </div>
   </div>
 
-    <script>
+  <script>
     // =============================
     // 전역 상태
     // =============================
@@ -581,8 +593,8 @@
       initAdForm();
       initLeaderForm();
       initJsonSection();
-      initImagePickers();   // 이미지 파일 선택/드래그 초기화
-      initImageUrlPreview(); // URL 입력 시 미리보기
+      initImagePickers();
+      initImageUrlPreview();
       renderAds();
       renderLeaders();
     });
@@ -685,7 +697,6 @@
         const left = document.createElement("div");
         left.className = "list-top-left";
 
-        // 썸네일
         if (ad.imageUrl) {
           const thumb = document.createElement("img");
           thumb.className = "list-thumb";
@@ -733,6 +744,7 @@
         editBtn.addEventListener("click", () => {
           state.editingAdIndex = index;
           setAdFormData(ad);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
         const deleteBtn = document.createElement("button");
@@ -766,6 +778,7 @@
     function initLeaderForm() {
       const saveBtn = document.getElementById("leader-save-btn");
       const resetBtn = document.getElementById("leader-reset-btn");
+      const newBtn = document.getElementById("leader-new-btn");
 
       saveBtn.addEventListener("click", () => {
         const leader = getLeaderFormData();
@@ -788,6 +801,18 @@
         state.editingLeaderIndex = null;
         clearLeaderForm();
       });
+
+      if (newBtn) {
+        newBtn.addEventListener("click", () => {
+          state.editingLeaderIndex = null;
+          clearLeaderForm();
+          const nameInput = document.getElementById("leader-name");
+          if (nameInput) {
+            nameInput.scrollIntoView({ behavior: "smooth", block: "start" });
+            nameInput.focus();
+          }
+        });
+      }
     }
 
     function getLeaderFormData() {
@@ -887,7 +912,7 @@
       const leadersSorted = [...state.leaders].sort((a, b) => {
         const ao = a.order ?? 9999;
         const bo = b.order ?? 9999;
-        if (ao === bo) return (a.name || "").localeCompare(b.name || "");
+        if (ao === bo) return (a.name || "").localeCompare(b.name || "", "ko");
         return ao - bo;
       });
 
@@ -964,6 +989,11 @@
         editBtn.addEventListener("click", () => {
           state.editingLeaderIndex = originalIndex;
           setLeaderFormData(leader);
+          const nameInput = document.getElementById("leader-name");
+          if (nameInput) {
+            nameInput.scrollIntoView({ behavior: "smooth", block: "start" });
+            nameInput.focus();
+          }
         });
 
         const deleteBtn = document.createElement("button");
@@ -1060,8 +1090,9 @@
         }
         try {
           const parsed = JSON.parse(text);
-          const ads = Array.isArray(parsed.ads) ? parsed.ads : [];
-          const leaders = Array.isArray(parsed.leaders) ? parsed.leaders : [];
+          const root = parsed.data ? parsed.data : parsed;
+          const ads = Array.isArray(root.ads) ? root.ads : [];
+          const leaders = Array.isArray(root.leaders) ? root.leaders : [];
 
           state.ads = ads;
           state.leaders = leaders;
@@ -1209,6 +1240,5 @@
       return prefix + "-" + now + "-" + rand;
     }
   </script>
-
 </body>
 </html>
