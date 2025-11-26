@@ -598,7 +598,7 @@
     </div>
   </div>
 
-    <script>
+      <script>
     // =============================
     // 전역 상태
     // =============================
@@ -739,35 +739,9 @@
         top.appendChild(left);
         top.appendChild(badge);
 
-            const sub = document.createElement("div");
-    sub.className = "list-sub";
-    const tagsText =
-      Array.isArray(leader.tags) && leader.tags.length
-        ? "태그: " + leader.tags.join(", ")
-        : "태그 없음";
-    sub.textContent = (leader.role ? leader.role + " · " : "") + tagsText;
-
-    // 상담 링크 / 시트 링크 짧은 텍스트로
-    const linkDiv = document.createElement("div");
-    linkDiv.className = "list-sub";
-
-    const formUrl  = leader.formUrl || leader.link || "";
-    const sheetUrl = leader.sheetUrl || "";
-
-    let linkHtml = "";
-
-    if (formUrl) {
-      linkHtml += `<a href="${formUrl}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;font-size:11px;">상담 / 신청 링크 열기</a>`;
-    }
-    if (sheetUrl) {
-      if (linkHtml) linkHtml += " · ";
-      linkHtml += `<a href="${sheetUrl}" target="_blank" rel="noopener noreferrer" style="color:#16a34a;text-decoration:underline;font-size:11px;">응답 시트 열기</a>`;
-    }
-    if (!linkHtml) {
-      linkHtml = `<span style="font-size:10px;color:#9ca3af;">상담 링크 없음</span>`;
-    }
-    linkDiv.innerHTML = linkHtml;
-
+        const sub = document.createElement("div");
+        sub.className = "list-sub";
+        sub.textContent = ad.text || "(설명 없음)";
 
         const url = document.createElement("div");
         url.className = "list-sub";
@@ -810,11 +784,10 @@
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
 
-            item.appendChild(top);
-    item.appendChild(sub);
-    item.appendChild(linkDiv);
-    item.appendChild(actions);
-
+        item.appendChild(top);
+        item.appendChild(sub);
+        if (ad.url) item.appendChild(url);
+        item.appendChild(actions);
 
         list.appendChild(item);
       });
@@ -911,7 +884,7 @@
       document.getElementById("leader-name").value = leader.name || "";
       document.getElementById("leader-role").value = leader.role || "";
       document.getElementById("leader-headline").value = leader.headline || "";
-      document.getElementById("leader-form-url").value = leader.formUrl || "";
+      document.getElementById("leader-form-url").value = leader.formUrl || leader.link || "";
       document.getElementById("leader-sheet-url").value = leader.sheetUrl || "";
       document.getElementById("leader-tags").value = Array.isArray(leader.tags)
         ? leader.tags.join(", ")
@@ -924,7 +897,7 @@
       document.getElementById("leader-facebook").value = leader.sns?.facebook || "";
       document.getElementById("leader-blog").value = leader.sns?.blog || "";
 
-      document.getElementById("leader-image-url").value = leader.imageUrl || "";
+      document.getElementById("leader-image-url").value = leader.imageUrl || leader.mediaUrl || "";
       document.getElementById("leader-order").value = leader.order ?? "";
       document.getElementById("leader-visible").checked = leader.visible !== false;
 
@@ -956,326 +929,228 @@
     }
 
     function renderLeaders() {
-  const list = document.getElementById("leader-list");
-  const countEl = document.getElementById("leader-count");
-  list.innerHTML = "";
+      const list = document.getElementById("leader-list");
+      const countEl = document.getElementById("leader-count");
+      list.innerHTML = "";
 
-  // JSON → 관리자에 덮어쓴 뒤의 state.leaders 를 기준으로 정렬
-  const leadersSorted = [...state.leaders].sort((a, b) => {
-    const ao = a.order ?? 9999;
-    const bo = b.order ?? 9999;
-    if (ao === bo) return (a.name || "").localeCompare(b.name || "", "ko");
-    return ao - bo;
-  });
+      const leadersSorted = [...state.leaders].sort((a, b) => {
+        const ao = a.order ?? 9999;
+        const bo = b.order ?? 9999;
+        if (ao === bo) return (a.name || "").localeCompare(b.name || "", "ko");
+        return ao - bo;
+      });
 
-  countEl.textContent = leadersSorted.length;
+      countEl.textContent = leadersSorted.length;
 
-  if (!leadersSorted.length) {
-    const empty = document.createElement("div");
-    empty.className = "help-text";
-    empty.textContent = "등록된 리더가 없습니다. 왼쪽 폼에서 리더를 추가해 주세요.";
-    list.appendChild(empty);
-    return;
-  }
+      if (!leadersSorted.length) {
+        const empty = document.createElement("div");
+        empty.className = "help-text";
+        empty.textContent = "등록된 리더가 없습니다. 왼쪽 폼에서 리더를 추가해 주세요.";
+        list.appendChild(empty);
+        return;
+      }
 
-  leadersSorted.forEach((leader) => {
-    const originalIndex = state.leaders.indexOf(leader);
+      leadersSorted.forEach((leader) => {
+        const originalIndex = state.leaders.indexOf(leader);
 
-    const item = document.createElement("div");
-    item.className = "list-item";
+        const item = document.createElement("div");
+        item.className = "list-item";
 
-    const top = document.createElement("div");
-    top.className = "list-top";
+        const top = document.createElement("div");
+        top.className = "list-top";
 
-    const left = document.createElement("div");
-    left.className = "list-top-left";
+        const left = document.createElement("div");
+        left.className = "list-top-left";
 
-    // 🔥 여기! 광고 리스트처럼 썸네일 소스만 뽑아서 씀
-    //  - 새 admin에서 쓰는 imageUrl
-    //  - 예전 admin에서 쓰던 mediaUrl 둘 다 지원
-    const thumbSrc = leader.imageUrl || leader.mediaUrl;
+        const thumbSrc = leader.imageUrl || leader.mediaUrl;
+        if (thumbSrc) {
+          const thumb = document.createElement("img");
+          thumb.className = "list-thumb";
+          thumb.src = thumbSrc;
+          thumb.alt = leader.name || "리더 이미지";
+          left.appendChild(thumb);
+        }
 
-    if (thumbSrc) {
-      const thumb = document.createElement("img");
-      thumb.className = "list-thumb";      // 광고 썸네일과 같은 스타일
-      thumb.src = thumbSrc;
-      thumb.alt = leader.name || "리더 이미지";
-      left.appendChild(thumb);
+        const title = document.createElement("div");
+        title.className = "list-title";
+        title.textContent = leader.name || "(이름 없음)";
+        left.appendChild(title);
+
+        const badge = document.createElement("span");
+        const isVisible = leader.visible !== false;
+        badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
+        badge.textContent = isVisible ? "노출" : "숨김";
+
+        top.appendChild(left);
+        top.appendChild(badge);
+
+        const sub = document.createElement("div");
+        sub.className = "list-sub";
+        const tagsText =
+          Array.isArray(leader.tags) && leader.tags.length
+            ? "태그: " + leader.tags.join(", ")
+            : "태그 없음";
+        sub.textContent = (leader.role ? leader.role + " · " : "") + tagsText;
+
+        // 상담 링크 / 응답 시트 링크 짧게 표시
+        const linkDiv = document.createElement("div");
+        linkDiv.className = "list-sub";
+
+        const formUrl  = leader.formUrl || leader.link || "";
+        const sheetUrl = leader.sheetUrl || "";
+        let linkHtml = "";
+
+        if (formUrl) {
+          linkHtml += `<a href="${formUrl}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;font-size:11px;">상담 / 신청 링크 열기</a>`;
+        }
+        if (sheetUrl) {
+          if (linkHtml) linkHtml += " · ";
+          linkHtml += `<a href="${sheetUrl}" target="_blank" rel="noopener noreferrer" style="color:#16a34a;text-decoration:underline;font-size:11px;">응답 시트 열기</a>`;
+        }
+        if (!linkHtml) {
+          linkHtml = `<span style="font-size:10px;color:#9ca3af;">상담 링크 없음</span>`;
+        }
+        linkDiv.innerHTML = linkHtml;
+
+        const actions = document.createElement("div");
+        actions.className = "list-actions";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "btn";
+        toggleBtn.textContent = isVisible ? "노출 끄기" : "노출 켜기";
+        toggleBtn.addEventListener("click", () => {
+          const target = state.leaders[originalIndex];
+          const curr = target.visible !== false;
+          target.visible = !curr;
+          renderLeaders();
+        });
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn";
+        editBtn.textContent = "수정";
+        editBtn.addEventListener("click", () => {
+          state.editingLeaderIndex = originalIndex;
+          setLeaderFormData(leader);
+          const nameInput = document.getElementById("leader-name");
+          if (nameInput) {
+            nameInput.scrollIntoView({ behavior: "smooth", block: "start" });
+            nameInput.focus();
+          }
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn btn-danger";
+        deleteBtn.textContent = "삭제";
+        deleteBtn.addEventListener("click", () => {
+          if (confirm("이 리더를 삭제할까요?")) {
+            state.leaders.splice(originalIndex, 1);
+            state.editingLeaderIndex = null;
+            clearLeaderForm();
+            renderLeaders();
+          }
+        });
+
+        actions.appendChild(toggleBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        item.appendChild(top);
+        item.appendChild(sub);
+        item.appendChild(linkDiv);
+        item.appendChild(actions);
+
+        list.appendChild(item);
+      });
     }
 
-    const title = document.createElement("div");
-    title.className = "list-title";
-    title.textContent = leader.name || "(이름 없음)";
-    left.appendChild(title);
-
-    const badge = document.createElement("span");
-    const isVisible = leader.visible !== false;
-    badge.className = "badge " + (isVisible ? "badge-on" : "badge-off");
-    badge.textContent = isVisible ? "노출" : "숨김";
-
-    top.appendChild(left);
-    top.appendChild(badge);
-
-    const sub = document.createElement("div");
-    sub.className = "list-sub";
-    const tagsText =
-      Array.isArray(leader.tags) && leader.tags.length
-        ? "태그: " + leader.tags.join(", ")
-        : "태그 없음";
-    sub.textContent = (leader.role ? leader.role + " · " : "") + tagsText;
-
-    const linkDiv = document.createElement("div");
-    linkDiv.className = "list-sub";
-    // 예전 JSON 은 link, 지금 건 formUrl 를 쓰고 있을 수 있어서 둘 다 체크
-    linkDiv.textContent = leader.formUrl || leader.link || "";
-
-    const actions = document.createElement("div");
-    actions.className = "list-actions";
-
-    const toggleBtn = document.createElement("button");
-    toggleBtn.className = "btn";
-    toggleBtn.textContent = isVisible ? "노출 끄기" : "노출 켜기";
-    toggleBtn.addEventListener("click", () => {
-      const target = state.leaders[originalIndex];
-      const curr = target.visible !== false;
-      target.visible = !curr;
-      renderLeaders();
-    });
-
-    const editBtn = document.createElement("button");
-    editBtn.className = "btn";
-    editBtn.textContent = "수정";
-    editBtn.addEventListener("click", () => {
-      state.editingLeaderIndex = originalIndex;
-      setLeaderFormData(leader);
-      const nameInput = document.getElementById("leader-name");
-      if (nameInput) {
-        nameInput.scrollIntoView({ behavior: "smooth", block: "start" });
-        nameInput.focus();
-      }
-    });
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "btn btn-danger";
-    deleteBtn.textContent = "삭제";
-    deleteBtn.addEventListener("click", () => {
-      if (confirm("이 리더를 삭제할까요?")) {
-        state.leaders.splice(originalIndex, 1);
-        state.editingLeaderIndex = null;
-        clearLeaderForm();
-        renderLeaders();
-      }
-    });
-
-    actions.appendChild(toggleBtn);
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
-
-    item.appendChild(top);
-    item.appendChild(sub);
-    if (leader.formUrl || leader.link) item.appendChild(linkDiv);
-    item.appendChild(actions);
-
-    list.appendChild(item);
-  });
-}
-
-
     // =============================
-    // JSON 섹션
+    // JSON 섹션 + URL 일괄 매핑
     // =============================
     function initJsonSection() {
-  const jsonTextarea = document.getElementById("json-textarea");
-  const generateBtn  = document.getElementById("json-generate-btn");
-  const copyBtn      = document.getElementById("json-copy-btn");
-  const fileBtn      = document.getElementById("json-file-btn");
-  const applyBtn     = document.getElementById("json-apply-btn");
-  const fileInput    = document.getElementById("json-file-input");
+      const jsonTextarea = document.getElementById("json-textarea");
+      const generateBtn  = document.getElementById("json-generate-btn");
+      const copyBtn      = document.getElementById("json-copy-btn");
+      const fileBtn      = document.getElementById("json-file-btn");
+      const applyBtn     = document.getElementById("json-apply-btn");
+      const fileInput    = document.getElementById("json-file-input");
 
-  // 🔁 엑셀 → URL 일괄 입력용
-  const bulkTextarea = document.getElementById("bulk-form-urls");
-  const bulkBtn      = document.getElementById("apply-bulk-form-urls");
-  const bulkStatus   = document.getElementById("bulk-form-urls-status");
+      const bulkTextarea = document.getElementById("bulk-form-urls");
+      const bulkBtn      = document.getElementById("apply-bulk-form-urls");
+      const bulkStatus   = document.getElementById("bulk-form-urls-status");
 
-  // JSON 생성
-  generateBtn.addEventListener("click", () => {
-    const obj = {
-      ads: state.ads,
-      leaders: state.leaders
-    };
-    jsonTextarea.value = JSON.stringify(obj, null, 2);
-    setJsonStatus("현재 관리자 데이터를 기반으로 JSON을 생성했습니다.", "success");
-  });
+      // JSON 생성
+      generateBtn.addEventListener("click", () => {
+        const obj = {
+          ads: state.ads,
+          leaders: state.leaders
+        };
+        jsonTextarea.value = JSON.stringify(obj, null, 2);
+        setJsonStatus("현재 관리자 데이터를 기반으로 JSON을 생성했습니다.", "success");
+      });
 
-  // JSON 복사
-  copyBtn.addEventListener("click", () => {
-    const text = jsonTextarea.value;
-    if (!text.trim()) {
-      setJsonStatus("복사할 JSON 내용이 없습니다.", "error");
-      return;
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => setJsonStatus("JSON을 클립보드에 복사했습니다.", "success"))
-        .catch(() => {
+      // JSON 복사
+      copyBtn.addEventListener("click", () => {
+        const text = jsonTextarea.value;
+        if (!text.trim()) {
+          setJsonStatus("복사할 JSON 내용이 없습니다.", "error");
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(text)
+            .then(() => setJsonStatus("JSON을 클립보드에 복사했습니다.", "success"))
+            .catch(() => {
+              fallbackCopy(text);
+              setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
+            });
+        } else {
           fallbackCopy(text);
           setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
-        });
-    } else {
-      fallbackCopy(text);
-      setJsonStatus("브라우저 제한으로 기본 복사 방식을 사용했습니다.", "info");
-    }
-  });
-
-  // JSON 파일 불러오기
-  fileBtn.addEventListener("click", () => {
-    fileInput.click();
-  });
-
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files && fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      jsonTextarea.value = reader.result;
-      setJsonStatus(
-        "JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.",
-        "info"
-      );
-      fileInput.value = "";
-    };
-    reader.onerror = () => {
-      setJsonStatus("JSON 파일을 읽는 중 오류가 발생했습니다.", "error");
-      fileInput.value = "";
-    };
-    reader.readAsText(file, "utf-8");
-  });
-
-  // JSON → 관리자에 덮어쓰기
-  applyBtn.addEventListener("click", () => {
-    const text = jsonTextarea.value.trim();
-    if (!text) {
-      setJsonStatus("덮어쓸 JSON 내용이 비어 있습니다.", "error");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(text);
-      const root = parsed.data ? parsed.data : parsed;
-
-      const adsRaw     = Array.isArray(root.ads) ? root.ads : [];
-      const leadersRaw = Array.isArray(root.leaders) ? root.leaders : [];
-
-      state.ads     = adsRaw.map((ad, idx) => normalizeAd(ad, idx));
-      state.leaders = leadersRaw.map((leader, idx) => normalizeLeader(leader, idx));
-
-      state.editingAdIndex     = null;
-      state.editingLeaderIndex = null;
-
-      clearAdForm();
-      clearLeaderForm();
-      renderAds();
-      renderLeaders();
-
-      setJsonStatus("JSON 내용을 관리자 데이터에 성공적으로 덮어썼습니다.", "success");
-    } catch (err) {
-      setJsonStatus("JSON 파싱 오류: " + err.message, "error");
-    }
-  });
-
-  // 🔁 URL → 리더 자동 매칭
-  if (bulkBtn) {
-    bulkBtn.addEventListener("click", () => {
-      const raw = (bulkTextarea.value || "").trim();
-      if (!raw) {
-        bulkStatus.textContent = "URL 목록이 비어 있습니다.";
-        return;
-      }
-
-      const lines = raw
-        .split(/\r?\n/)
-        .map(l => l.trim())
-        .filter(Boolean);
-
-      if (!lines.length) {
-        bulkStatus.textContent = "유효한 URL이 없습니다.";
-        return;
-      }
-
-      // 이름 → 리더 인덱스 맵
-      const nameIndexMap = new Map();
-      state.leaders.forEach((leader, idx) => {
-        if (leader && leader.name) {
-          nameIndexMap.set(leader.name.trim(), idx);
         }
       });
 
-      let matchedByName  = 0;
-      let matchedByIndex = 0;
-      const unmatched    = [];
-
-      lines.forEach((line, idx) => {
-        let name = null;
-
-        // URL 안의 entry.xxxxx=이름 추출
-        try {
-          const u = new URL(line);
-          u.searchParams.forEach((val, key) => {
-            if (!name && key.startsWith("entry.")) {
-              name = decodeURIComponent(val);
-            }
-          });
-        } catch (e) {
-          // URL 파싱 실패는 무시
-        }
-
-        let leaderIndex = -1;
-
-        if (name && nameIndexMap.has(name)) {
-          // 이름 매칭
-          leaderIndex = nameIndexMap.get(name);
-          matchedByName++;
-        } else if (state.leaders[idx]) {
-          // 이름이 안 맞으면 줄 순서대로
-          leaderIndex = idx;
-          matchedByIndex++;
-        } else {
-          unmatched.push(line);
-        }
-
-        if (leaderIndex >= 0) {
-          const leader = state.leaders[leaderIndex];
-          leader.formUrl = line;   // 새 구조
-          leader.link    = line;   // 호환용
-        }
+      // JSON 파일 불러오기
+      fileBtn.addEventListener("click", () => {
+        fileInput.click();
       });
 
-      renderLeaders();
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          jsonTextarea.value = reader.result;
+          setJsonStatus(
+            "JSON 파일을 불러왔습니다. 내용을 확인한 후 “JSON → 관리자에 덮어쓰기”를 눌러 적용하세요.",
+            "info"
+          );
+          fileInput.value = "";
+        };
+        reader.onerror = () => {
+          setJsonStatus("JSON 파일을 읽는 중 오류가 발생했습니다.", "error");
+          fileInput.value = "";
+        };
+        reader.readAsText(file, "utf-8");
+      });
 
-      let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
-      if (unmatched.length) {
-        msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
-      }
-      bulkStatus.textContent = msg;
-    });
-  }
-}
+      // JSON → 관리자에 덮어쓰기
+      applyBtn.addEventListener("click", () => {
+        const text = jsonTextarea.value.trim();
         if (!text) {
           setJsonStatus("덮어쓸 JSON 내용이 비어 있습니다.", "error");
           return;
         }
         try {
           const parsed = JSON.parse(text);
-          const root = parsed.data ? parsed.data : parsed;
+          const root   = parsed.data ? parsed.data : parsed;
 
-          const adsRaw = Array.isArray(root.ads) ? root.ads : [];
+          const adsRaw     = Array.isArray(root.ads) ? root.ads : [];
           const leadersRaw = Array.isArray(root.leaders) ? root.leaders : [];
 
-          // 여기서 옛날 / 새 JSON 모두를 정리해서 state로 만듦
-          state.ads = adsRaw.map((ad, idx) => normalizeAd(ad, idx));
+          state.ads     = adsRaw.map((ad, idx) => normalizeAd(ad, idx));
           state.leaders = leadersRaw.map((leader, idx) => normalizeLeader(leader, idx));
 
-          state.editingAdIndex = null;
+          state.editingAdIndex     = null;
           state.editingLeaderIndex = null;
 
           clearAdForm();
@@ -1288,6 +1163,80 @@
           setJsonStatus("JSON 파싱 오류: " + err.message, "error");
         }
       });
+
+      // URL → 리더 자동 매칭
+      if (bulkBtn) {
+        bulkBtn.addEventListener("click", () => {
+          const raw = (bulkTextarea.value || "").trim();
+          if (!raw) {
+            bulkStatus.textContent = "URL 목록이 비어 있습니다.";
+            return;
+          }
+
+          const lines = raw
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(Boolean);
+
+          if (!lines.length) {
+            bulkStatus.textContent = "유효한 URL이 없습니다.";
+            return;
+          }
+
+          const nameIndexMap = new Map();
+          state.leaders.forEach((leader, idx) => {
+            if (leader && leader.name) {
+              nameIndexMap.set(leader.name.trim(), idx);
+            }
+          });
+
+          let matchedByName  = 0;
+          let matchedByIndex = 0;
+          const unmatched    = [];
+
+          lines.forEach((line, idx) => {
+            let name = null;
+
+            // URL 안의 entry.xxx=이름 추출
+            try {
+              const u = new URL(line);
+              u.searchParams.forEach((val, key) => {
+                if (!name && key.startsWith("entry.")) {
+                  name = decodeURIComponent(val);
+                }
+              });
+            } catch (e) {
+              // URL 파싱 실패는 무시
+            }
+
+            let leaderIndex = -1;
+
+            if (name && nameIndexMap.has(name)) {
+              leaderIndex = nameIndexMap.get(name);
+              matchedByName++;
+            } else if (state.leaders[idx]) {
+              leaderIndex = idx;
+              matchedByIndex++;
+            } else {
+              unmatched.push(line);
+            }
+
+            if (leaderIndex >= 0) {
+              const leader = state.leaders[leaderIndex];
+              leader.formUrl = line;
+              leader.link    = line;
+            }
+          });
+
+          renderLeaders();
+
+          let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
+          if (unmatched.length) {
+            msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
+          }
+          bulkStatus.textContent = msg;
+        });
+      }
     }
 
     function setJsonStatus(message, type) {
@@ -1408,92 +1357,6 @@
       const url = document.getElementById("leader-image-url").value.trim();
       const preview = document.getElementById("leader-image-preview");
       if (!preview) return;
-      if (url) {
-        preview.src = url;
-        preview.style.display = "block";
-      } else {
-        preview.src = "";
-        preview.style.display = "none";
-      }
-    }
 
-    // =============================
-    // JSON 정규화 (옛날 / 새 필드 이름 맞춰주기)
-    // =============================
-    function normalizeAd(ad, index) {
-      const out = { ...ad };
-
-      if (!out.id) out.id = ad.id || generateId("ad");
-      if (out.visible === undefined) out.visible = ad.visible !== false;
-
-      if (!out.imageUrl) {
-        out.imageUrl =
-          ad.imageUrl ||
-          ad.bannerImage ||
-          ad.banner_image ||
-          ad.bannerUrl ||
-          ad.banner_url ||
-          ad.image ||
-          "";
-      }
-
-      return out;
-    }
-
-    function normalizeLeader(leader, index) {
-  const out = { ...leader };
-
-  // id 없으면 새로 부여
-  if (!out.id) out.id = leader.id || generateId("leader");
-
-  // visible 값 정리
-  if (out.visible === undefined) out.visible = leader.visible !== false;
-  // 옛날 JSON에서 enabled 라는 이름을 썼다면 그것도 반영
-  if (leader.enabled !== undefined && out.visible === undefined) {
-    out.visible = !!leader.enabled;
-  }
-
-  // 이미지 필드: 오래된 JSON은 mediaUrl 을 쓰고 있을 수 있음
-  out.imageUrl =
-    leader.imageUrl ||       // 새 관리자에서 쓰는 필드
-    leader.mediaUrl  ||       // 예전 관리자에서 쓰던 필드
-    leader.profileImage ||
-    leader.profile_image ||
-    leader.profileImageUrl ||
-    leader.profile_image_url ||
-    leader.image ||
-    "";
-
-  // tags 가 문자열이면 쉼표로 쪼개서 배열로
-  if (!Array.isArray(out.tags) && typeof leader.tags === "string") {
-    out.tags = leader.tags
-      .split(",")
-      .map(t => t.trim())
-      .filter(Boolean);
-  }
-
-  // sns 없으면 기본값
-  if (!out.sns) {
-    out.sns = leader.sns || { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
-  }
-
-  // order 가 없으면 "들어온 순서"로 부여 → JSON 순서 그대로 유지
-  if (typeof out.order !== "number") {
-    out.order = index + 1;
-  }
-
-  return out;
-}
-
-
-    // =============================
-    // 유틸
-    // =============================
-    function generateId(prefix) {
-      const now = Date.now().toString(36);
-      const rand = Math.random().toString(36).substring(2, 7);
-      return prefix + "-" + now + "-" + rand;
-    }
-  </script>
 </body>
 </html>
