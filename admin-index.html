@@ -739,9 +739,35 @@
         top.appendChild(left);
         top.appendChild(badge);
 
-        const sub = document.createElement("div");
-        sub.className = "list-sub";
-        sub.textContent = ad.text || "(설명 없음)";
+            const sub = document.createElement("div");
+    sub.className = "list-sub";
+    const tagsText =
+      Array.isArray(leader.tags) && leader.tags.length
+        ? "태그: " + leader.tags.join(", ")
+        : "태그 없음";
+    sub.textContent = (leader.role ? leader.role + " · " : "") + tagsText;
+
+    // 상담 링크 / 시트 링크 짧은 텍스트로
+    const linkDiv = document.createElement("div");
+    linkDiv.className = "list-sub";
+
+    const formUrl  = leader.formUrl || leader.link || "";
+    const sheetUrl = leader.sheetUrl || "";
+
+    let linkHtml = "";
+
+    if (formUrl) {
+      linkHtml += `<a href="${formUrl}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;font-size:11px;">상담 / 신청 링크 열기</a>`;
+    }
+    if (sheetUrl) {
+      if (linkHtml) linkHtml += " · ";
+      linkHtml += `<a href="${sheetUrl}" target="_blank" rel="noopener noreferrer" style="color:#16a34a;text-decoration:underline;font-size:11px;">응답 시트 열기</a>`;
+    }
+    if (!linkHtml) {
+      linkHtml = `<span style="font-size:10px;color:#9ca3af;">상담 링크 없음</span>`;
+    }
+    linkDiv.innerHTML = linkHtml;
+
 
         const url = document.createElement("div");
         url.className = "list-sub";
@@ -784,10 +810,11 @@
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
 
-        item.appendChild(top);
-        item.appendChild(sub);
-        if (ad.url) item.appendChild(url);
-        item.appendChild(actions);
+            item.appendChild(top);
+    item.appendChild(sub);
+    item.appendChild(linkDiv);
+    item.appendChild(actions);
+
 
         list.appendChild(item);
       });
