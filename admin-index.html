@@ -107,6 +107,7 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -200,11 +201,6 @@
       font-size: 10px;
       color: #9ca3af;
       margin-right: 6px;
-    }
-
-    .leader-thumb-drop {
-      display: flex;
-      align-items: center;
     }
 
     .leader-item-name { font-weight: 600; }
@@ -328,6 +324,16 @@
           </label>
         </div>
 
+        <!-- 🔁 광고 위치 (리더 위 / 아래) -->
+        <div class="form-group">
+          <label>광고 위치 (공개 페이지에서 표시 위치)</label>
+          <div class="inline">
+            <label><input type="radio" name="bannerPosition" value="top"> 리더 카드 위쪽</label>
+            <label><input type="radio" name="bannerPosition" value="bottom" checked> 리더 카드 아래쪽</label>
+          </div>
+          <small>※ 이 값은 JSON의 <code>bannerPosition</code> 필드에 저장됩니다. (기본값: 아래)</small>
+        </div>
+
         <div class="form-group">
           <label>배너 이미지 (가로형 이미지)</label>
           <input type="file" id="adImageFile" accept="image/*" />
@@ -443,14 +449,15 @@
         </div>
         <div class="leader-list" id="leaderList"></div>
         <hr style="margin:10px 0;" />
-        <div class="admin-title" style="margin-top:4px;">leaders.json 생성 / 복사</div>
-        <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <div class="admin-title" style="margin-top:4px;">leaders.json 생성 / 불러오기 / 복사</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
           <button class="btn btn-primary" id="generateJsonBtn">JSON 생성하기</button>
           <button class="btn btn-secondary" id="copyJsonBtn">JSON 복사하기</button>
-          <button class="btn btn-outline" id="loadJsonBtn">JSON 불러오기 → 관리자 반영</button>
+          <button class="btn btn-outline" id="loadJsonBtn">JSON 파일 불러오기 → 관리자 반영</button>
           <button class="btn btn-outline" id="openJsonBtn">GitHub leaders.json 열기</button>
         </div>
-        <textarea id="jsonOutput" class="json-area" placeholder="여기에 leaders.json 내용이 생성됩니다." readonly></textarea>
+        <textarea id="jsonOutput" class="json-area" placeholder="여기에 leaders.json 내용이 생성됩니다."></textarea>
+        <input type="file" id="jsonFileInput" accept="application/json,.json" style="display:none;" />
         <div class="help-box">
           <b>[GitHub에 붙여 넣는 방법]</b><br />
           1) 위에서 광고 + 리더들을 모두 원하는 대로 추가/수정/삭제한 뒤, <b>JSON 생성하기</b> 버튼을 누릅니다.<br />
@@ -458,7 +465,9 @@
           3) <b>GitHub leaders.json 열기</b> 버튼을 눌러 GitHub의 leaders.json 파일 편집 화면으로 이동합니다.<br />
           4) GitHub에서 내용 전체 선택(Ctrl+A) 후 삭제 → 복사한 JSON을 붙여 넣기(Ctrl+V).<br />
           5) 아래쪽 <b>Commit changes</b> 버튼을 눌러 저장.<br />
-          6) 공개 페이지(<code>https://wordycow.github.io/so.t-leader-choice/</code>)에서 새로고침하면 모든 사용자가 동일한 정보를 보게 됩니다.
+          6) 공개 페이지(<code>https://wordycow.github.io/so.t-leader-choice/</code>)에서 새로고침하면 모든 사용자가 동일한 정보를 보게 됩니다.<br/><br/>
+          ※ 이미 만들어진 leaders.json을 다시 편집하려면, GitHub에서 Raw → <b>Download</b>로 파일을 저장한 뒤<br/>
+          &nbsp;&nbsp;위의 <b>JSON 파일 불러오기 → 관리자 반영</b> 버튼을 눌러 불러오면 됩니다.
         </div>
       </div>
     </div>
@@ -466,24 +475,13 @@
 </div>
 
 <script>
-  const DRAFT_KEY = "so_t_leaders_ads_draft_final";
+  const DRAFT_KEY = "so_t_leaders_ads_draft_final_v2";
 
   function getDefaultData() {
     return {
+      bannerPosition: "bottom",
       ads: [],
-      leaders: [
-        {
-          name: "김현수",
-          role: "베트남 장기 체류 리더 · 10년 차 가이드",
-          mediaUrl: "https://via.placeholder.com/400x225.png?text=Leader+1",
-          link: "#",
-          sheetUrl: "",
-          tags: ["장기 체류", "로컬 생활", "루틴 여행"],
-          introShort: "여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다.",
-          sns: { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" },
-          enabled: true
-        }
-      ]
+      leaders: []
     };
   }
 
@@ -493,11 +491,13 @@
       if (!raw) return getDefaultData();
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== "object") return getDefaultData();
+
       if (!Array.isArray(parsed.ads)) parsed.ads = [];
       if (!Array.isArray(parsed.leaders)) parsed.leaders = [];
+      if (!parsed.bannerPosition) parsed.bannerPosition = "bottom";
+
       parsed.leaders.forEach(l => {
         if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
-        if (typeof l.sns.blog !== "string") l.sns.blog = l.sns.blog || "";
         if (typeof l.enabled !== "boolean") l.enabled = true;
       });
       return parsed;
@@ -507,12 +507,14 @@
   }
 
   function saveDraft() {
+    data.bannerPosition = bannerPosition;
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
   }
 
-  let data    = loadDraft();
-  let ads     = data.ads;
-  let leaders = data.leaders;
+  let data           = loadDraft();
+  let bannerPosition = data.bannerPosition || "bottom";
+  let ads            = data.ads;
+  let leaders        = data.leaders;
 
   /* ----- 광고 관련 ----- */
 
@@ -526,11 +528,25 @@
   const adPreviewImage     = document.getElementById("adPreviewImage");
   const adListEl           = document.getElementById("adList");
 
-  const jsonOutput         = document.getElementById("jsonOutput");
-  const generateJsonBtn    = document.getElementById("generateJsonBtn");
-  const copyJsonBtn        = document.getElementById("copyJsonBtn");
-  const openJsonBtn        = document.getElementById("openJsonBtn");
-  const loadJsonBtn        = document.getElementById("loadJsonBtn");
+  // 배너 위치 라디오 버튼 초기화
+  const bannerPosRadios = document.querySelectorAll('input[name="bannerPosition"]');
+  bannerPosRadios.forEach(r => {
+    r.checked = (r.value === bannerPosition);
+    r.addEventListener("change", () => {
+      bannerPosition = r.value;
+      saveDraft();
+    });
+  });
+
+  const jsonOutput      = document.getElementById("jsonOutput");
+  const generateJsonBtn = document.getElementById("generateJsonBtn");
+  const copyJsonBtn     = document.getElementById("copyJsonBtn");
+  const openJsonBtn     = document.getElementById("openJsonBtn");
+  const loadJsonBtn     = document.getElementById("loadJsonBtn");
+  const jsonFileInput   = document.getElementById("jsonFileInput");
+
+  const newLeaderBtn         = document.getElementById("newLeaderBtn");
+  const clearLeaderFormBtn   = document.getElementById("clearLeaderFormBtn");
 
   let tempAdImageDataUrl     = "";
   let tempLeaderMediaDataUrl = "";
@@ -724,7 +740,6 @@
   const leaderDropZone       = document.getElementById("leaderDropZone");
   const leaderPreviewWrap    = document.getElementById("leaderPreviewWrap");
   const leaderPreviewImage   = document.getElementById("leaderPreviewImage");
-  const newLeaderBtn         = document.getElementById("newLeaderBtn");
   const leaderEnabledInput   = document.getElementById("leaderEnabled");
 
   function renderLeaders() {
@@ -742,8 +757,8 @@
       if (sns.facebook)  snsParts.push("Facebook");
       if (sns.blog)      snsParts.push("Blog");
 
-      const thumbHtml = leader.mediaUrl
-        ? `<img src="${leader.mediaUrl}" class="thumb" alt="">`
+      const thumbHtml = leader.mediaUrl || leader.imageUrl
+        ? `<img src="${leader.mediaUrl || leader.imageUrl}" class="thumb" alt="">`
         : `<div class="leader-thumb-slot">이미지</div>`;
 
       const sheetLinkHtml = leader.sheetUrl
@@ -861,7 +876,7 @@
     clearLeaderPreview();
   }
 
-  document.getElementById("clearLeaderFormBtn").addEventListener("click", clearLeaderForm);
+  clearLeaderFormBtn.addEventListener("click", clearLeaderForm);
   newLeaderBtn.addEventListener("click", clearLeaderForm);
 
   document.getElementById("saveLeaderBtn").addEventListener("click", () => {
@@ -892,7 +907,7 @@
       leaders[idx] = {
         ...prev,
         ...base,
-        mediaUrl: tempLeaderMediaDataUrl || prev.mediaUrl || ""
+        mediaUrl: tempLeaderMediaDataUrl || prev.mediaUrl || prev.imageUrl || ""
       };
     } else {
       leaders.push({
@@ -924,7 +939,7 @@
     leaderFacebookInput.value  = sns.facebook  || "";
     leaderBlogInput.value      = sns.blog      || "";
     leaderEnabledInput.checked = l.enabled !== false;
-    tempLeaderMediaDataUrl     = l.mediaUrl || "";
+    tempLeaderMediaDataUrl     = l.mediaUrl || l.imageUrl || "";
     if (tempLeaderMediaDataUrl) showLeaderPreview(tempLeaderMediaDataUrl);
     else clearLeaderPreview();
     leaderMediaInput.value = "";
@@ -946,9 +961,9 @@
     renderLeaders();
   };
 
-    // JSON 생성하기
+  // JSON 생성하기 (배너 위치까지 포함)
   generateJsonBtn.addEventListener("click", () => {
-    const jsonObj = { ads, leaders };
+    const jsonObj = { bannerPosition, ads, leaders };
     const json = JSON.stringify(jsonObj, null, 2);
     jsonOutput.value = json;
     jsonOutput.scrollTop = 0;
@@ -979,51 +994,61 @@
     );
   });
 
-  // 🔁 JSON 불러오기 → 관리자 반영
+  // JSON 파일 불러오기 → 관리자 반영
   loadJsonBtn.addEventListener("click", () => {
-    const text = jsonOutput.value.trim();
-    if (!text) {
-      alert("leaders.json 내용을 아래 박스에 붙여넣은 뒤에 눌러 주세요.");
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(text);
-      if (!parsed || typeof parsed !== "object") {
-        throw new Error("JSON 형식이 아닙니다.");
-      }
-
-      const adsArr     = Array.isArray(parsed.ads) ? parsed.ads : [];
-      const leadersArr = Array.isArray(parsed.leaders) ? parsed.leaders : [];
-
-      // 기본값 보정 (sns, enabled)
-      leadersArr.forEach(l => {
-        if (!l.sns) {
-          l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
-        }
-        if (typeof l.enabled !== "boolean") {
-          l.enabled = l.enabled !== false;
-        }
-      });
-
-      // 전역 상태 업데이트
-      ads     = adsArr;
-      leaders = leadersArr;
-      data    = { ads, leaders };
-      saveDraft();
-
-      renderAds();
-      renderLeaders();
-      clearLeaderForm();
-      clearAdForm();
-
-      alert("leaders.json 내용을 관리자 데이터에 불러와 반영했습니다.");
-    } catch (e) {
-      alert("JSON 파싱 오류: " + e.message);
-    }
+    jsonFileInput.click();
   });
 
-  // 처음 진입 시 화면 렌더
+  jsonFileInput.addEventListener("change", () => {
+    const file = jsonFileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== "object") {
+          throw new Error("JSON 형식이 아닙니다.");
+        }
+
+        const adsArr     = Array.isArray(parsed.ads) ? parsed.ads : [];
+        const leadersArr = Array.isArray(parsed.leaders) ? parsed.leaders : [];
+        bannerPosition   = parsed.bannerPosition || "bottom";
+
+        // 라디오 버튼 반영
+        bannerPosRadios.forEach(r => {
+          r.checked = (r.value === bannerPosition);
+        });
+
+        leadersArr.forEach(l => {
+          if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
+          if (typeof l.enabled !== "boolean") l.enabled = l.enabled !== false;
+        });
+
+        ads     = adsArr;
+        leaders = leadersArr;
+        data    = { bannerPosition, ads, leaders };
+        saveDraft();
+
+        renderAds();
+        renderLeaders();
+        clearLeaderForm();
+        clearAdForm();
+        jsonOutput.value = JSON.stringify(parsed, null, 2);
+
+        alert("JSON 파일을 불러와 관리자에 반영했습니다.");
+      } catch (e) {
+        alert("JSON 파싱 오류: " + e.message);
+      } finally {
+        jsonFileInput.value = "";
+      }
+    };
+
+    reader.readAsText(file, "utf-8");
+  });
+
+  // 최초 렌더
   renderAds();
   renderLeaders();
 </script>
