@@ -2,480 +2,617 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>여행 리더 선택</title>
+  <title>함께 떠날 여행 리더를 선택하세요</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    :root {
+      --page-max-width: 1200px;
+      --bg-color: #90b4d8;
+      --bg-gradient: linear-gradient(180deg, #6da3d1 0%, #90b4d8 40%, #f5f5f5 100%);
+      --card-bg: #24527a;
+      --card-inner-bg: #f7fafc;
+      --accent-gold: #f6c453;
+      --accent-gold-soft: #fde68a;
+      --text-main: #111827;
+      --text-sub: #4b5563;
+      --btn-primary-bg: #f59e0b;
+      --btn-primary-bg-hover: #d97706;
+      --btn-primary-text: #1f2933;
+      --tag-bg: rgba(255, 255, 255, 0.15);
+      --tag-border: rgba(250, 250, 250, 0.4);
+    }
+
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #111827;
-      background-image: url("bg_wallpaper.jpg");
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-position: center top;
-      background-color: #e5dccf;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      color: var(--text-main);
+      background: var(--bg-gradient), url("bg_wallpaper.jpg") center top / cover no-repeat fixed;
     }
 
-    .page-wrap {
-      max-width: 1000px;
-      margin: 24px auto 32px;
-      padding: 0 12px 24px;
+    .page {
+      max-width: var(--page-max-width);
+      margin: 0 auto;
+      padding: 24px 12px 40px;
     }
 
-    .glass-panel {
-      background: rgba(255, 255, 255, 0.30);
-      border-radius: 24px;
-      border: 1px solid rgba(255,255,255,0.55);
-      box-shadow: 0 16px 30px rgba(0,0,0,0.35);
-      padding: 18px 20px 18px;
-      backdrop-filter: blur(10px);
-    }
-
-    .page-header {
+    header.hero {
       text-align: center;
-      margin-bottom: 16px;
-      color: #3f2a18;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      padding: 24px 12px 12px;
+      color: #f9fafb;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
-    .page-title {
+
+    .hero-title {
       font-size: 26px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin: 0 0 8px;
     }
-    .page-subtitle {
+
+    .hero-subtitle {
+      margin: 0;
       font-size: 13px;
-      color: #4b3420;
-      line-height: 1.6;
+      opacity: 0.9;
     }
 
-    .leader-board { margin-bottom: 24px; }
+    .hero-note {
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.8;
+    }
 
-    .leader-grid {
+    main { margin-top: 10px; }
+
+    .leaders-section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 18px 10px 24px;
+      box-shadow: 0 18px 45px rgba(15,23,42,0.55);
+      backdrop-filter: blur(18px);
+    }
+
+    .leaders-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 22px;
-      margin-top: 18px;
-      justify-content: center;
-    }
-    .leader-grid.single {
-      grid-template-columns: minmax(280px, 360px);
-      justify-content: center;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
     }
 
     .leader-card {
-      border-radius: 24px;
-      padding: 14px 14px 16px;
-      cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease,
-                  border-color 0.18s ease, background-color 0.18s ease;
-      text-decoration: none;
-      color: inherit;
+      background: var(--card-bg);
+      border-radius: 26px;
+      padding: 7px;
+      box-shadow: 0 16px 30px rgba(15,23,42,0.45);
+      position: relative;
+    }
+
+    .leader-card-inner {
+      border-radius: 22px;
+      background: radial-gradient(circle at top, #ffffff 0%, #f3f4f6 40%, #e5e7eb 100%);
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-
-      border: 1px solid rgba(250, 204, 21, 0.4);
-      background: linear-gradient(to bottom, rgba(17, 24, 39, 0.30), rgba(17, 24, 39, 0.05));
-      touch-action: manipulation;
-    }
-    .leader-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 14px 28px rgba(0,0,0,0.55);
-      border-color: rgba(245, 158, 11, 0.9);
-      background: linear-gradient(to bottom, rgba(17, 24, 39, 0.42), rgba(17, 24, 39, 0.10));
-    }
-
-    .leader-frame {
-      padding: 6px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #facc6b, #b45309);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.6) inset;
-      margin-bottom: 10px;
-      width: 220px;
-      height: 140px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .leader-media {
-      width: 100%;
       height: 100%;
+    }
+
+    .leader-image-wrap {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 3px solid var(--accent-gold-soft);
+      margin-bottom: 10px;
+      background: #e5e7eb;
+    }
+
+    .leader-image {
+      width: 100%;
+      height: 170px;
       object-fit: cover;
-      object-position: 50% 50%;
-      border-radius: 14px;
-      border: 4px solid #fef9c3;
-      background-color: #111827;
+      display: block;
+    }
+
+    .leader-role {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b21a8;
+      margin-bottom: 3px;
     }
 
     .leader-name {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 2px;
-      color: #fef3c7;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-    .leader-role {
-      font-size: 11px;
-      color: #f9fafb;
-      margin-bottom: 8px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      color: #111827;
     }
 
-    .tag-wrap {
+    .leader-tags {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: 4px;
       margin-bottom: 8px;
     }
+
     .tag {
       font-size: 10px;
       padding: 3px 7px;
       border-radius: 999px;
-      background-color: rgba(254, 243, 199, 0.85);
-      color: #92400e;
-      border: 1px solid #fed7aa;
-      white-space: nowrap;
+      border: 1px solid var(--tag-border);
+      background: var(--tag-bg);
+      color: #111827;
+      backdrop-filter: blur(4px);
+    }
+
+    .leader-headline {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin: 0 0 4px;
+      line-height: 1.5;
     }
 
     .leader-intro {
       font-size: 11px;
-      color: #f9fafb;
+      color: #6b7280;
+      margin: 0 0 10px;
       line-height: 1.5;
-      margin-bottom: 8px;
-      min-height: 40px;
-      text-align: center;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
     }
 
-    .sns-wrap {
+    .leader-sns {
       display: flex;
-      justify-content: center;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
       margin-bottom: 8px;
     }
-    .sns-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 70px;
-      padding: 4px 8px;
+
+    .btn-sns {
       font-size: 10px;
       border-radius: 999px;
+      padding: 2px 8px;
       border: none;
       cursor: pointer;
       text-decoration: none;
       color: #ffffff;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.18);
-    }
-    .sns-youtube   { background: #ff0000; }
-    .sns-tiktok    { background: #111827; }
-    .sns-instagram { background: linear-gradient(135deg,#f97316,#ec4899,#6366f1); }
-    .sns-facebook  { background: #1877f2; }
-    .sns-blog      { background: #059669; }
-    
-    .card-footer {
-      margin-top: auto;
-      font-size: 11px;
-      color: #fde68a;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding-top: 4px;
-      border-top: 1px solid rgba(253, 230, 138, 0.5);
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-    .card-footer span { font-size: 14px; line-height: 1; }
-
-    #emptyNotice {
-      font-size: 13px;
-      color: #6b7280;
-      text-align: center;
-      margin-top: 14px;
-      display: none;
     }
 
-    .ad-board {
-      margin-top: 28px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255,255,255,0.6);
-    }
+    .btn-sns.youtube  { background: #ff0000; }
+    .btn-sns.instagram{ background: #c13584; }
+    .btn-sns.blog     { background: #16a34a; }
+    .btn-sns.tiktok   { background: #111827; }
+    .btn-sns.facebook { background: #1d4ed8; }
+    .btn-sns.carrot   { background: #ff7e3f; }   /* 당근 */
+    .btn-sns.discord  { background: #5865f2; }   /* 디스코드 */
 
-    .banner-wrap {
-      margin-top: 8px;
+    .card-footer {
+      margin-top: auto;
       display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .banner-block {
-      position: relative;
-      overflow: hidden;
-      border-radius: 18px;
-      border: 1px solid rgba(250,204,21,0.6);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.4) inset, 0 8px 18px rgba(0,0,0,0.30);
-      background: rgba(15,23,42,0.20);
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-      cursor: pointer;
-    }
-    .banner-block:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.6) inset, 0 16px 30px rgba(0,0,0,0.45);
-    }
-    .banner-image {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      display: block;
-    }
-    .banner-marquee {
-      position: absolute;
-      bottom: 8px;
-      left: 0;
-      right: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .banner-text {
-      display: inline-block;
-      padding-left: 100%;
-      white-space: nowrap;
-      font-size: 16px;
-      font-weight: 700;
-      color: #fefce8;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-      animation: banner-marquee 15s linear infinite;
-    }
-    @keyframes banner-marquee {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(209, 213, 219, 0.8);
     }
 
-    .notice {
-      margin-top: 12px;
-      text-align: center;
+    .visible-pill {
       font-size: 10px;
-      color: #f9fafb;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
     }
 
-    @media (max-width: 600px) {
-      body {
-        background-attachment: scroll;
-        background-position: center top;
+    .btn-primary {
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--btn-primary-bg), #facc15);
+      color: var(--btn-primary-text);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 5px 14px rgba(180, 83, 9, 0.45);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--btn-primary-bg-hover), #f59e0b);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary span.icon { font-size: 13px; }
+
+    /* 광고 배너 */
+    .ads-section {
+      margin-top: 26px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15,23,42,0.65);
+    }
+
+    .ad-card {
+      position: relative;
+      height: 240px;  /* 높이 키움 */
+      overflow: hidden;
+    }
+
+    .ad-bg {
+      position: absolute;
+      inset: 0;
+      background-position: center;
+      background-size: cover;
+      transform: scale(1.03);
+      filter: saturate(1.15);
+    }
+
+    .ad-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.1) 60%, rgba(15,23,42,0.85) 100%);
+    }
+
+    .ad-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #f9fafb;
+    }
+
+    .ad-text-main { max-width: 60%; }
+
+    .ad-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .ad-desc {
+      font-size: 12px;
+      opacity: 0.9;
+      margin: 0;
+    }
+
+    .ad-cta {
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 7px 14px;
+      border: 1px solid rgba(249,250,251,0.7);
+      background: rgba(15,23,42,0.5);
+      color: #f9fafb;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ad-cta span.icon { font-size: 14px; }
+
+    .ads-section.hidden { display: none; }
+
+    .status-bar {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #e5e7eb;
+      text-align: center;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+    }
+
+    .message {
+      text-align: center;
+      font-size: 13px;
+      color: #f9fafb;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+      margin-bottom: 12px;
+    }
+    .message.error { color: #fee2e2; }
+
+    footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 11px;
+      color: #e5e7eb;
+      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 22px; }
+      .leaders-section { padding: 14px 8px 18px; }
+      .ad-card { height: 200px; } /* 모바일 높이 */
+      .ad-text-main { max-width: 100%; }
+      .ad-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
       }
-      .page-wrap {
-        max-width: 100%;
-        margin: 12px auto 20px;
-        padding: 0 8px 20px;
-      }
-      .glass-panel {
-        padding: 14px 10px 16px;
-        border-radius: 18px;
-      }
-      .page-title { font-size: 20px; }
-      .page-subtitle { font-size: 11px; }
-      .leader-grid {
-        grid-template-columns: 1fr;
-        gap: 14px;
-      }
-      .leader-card {
-        padding: 12px 10px 14px;
-        border-radius: 18px;
-      }
-      .leader-frame {
-        width: 200px;
-        height: 125px;
-        padding: 4px;
-      }
-      .leader-name { font-size: 14px; }
-      .leader-role { font-size: 10px; }
-      .leader-intro {
-        font-size: 10px;
-        min-height: 32px;
-      }
-      .tag {
-        font-size: 9px;
-        padding: 2px 6px;
-      }
-      .sns-btn {
-        font-size: 9px;
-        padding: 3px 7px;
-      }
-      .banner-image { height: 140px; }
-      .banner-text { font-size: 14px; }
     }
   </style>
 </head>
 <body>
-
-<div class="page-wrap">
-  <div class="glass-panel">
-
-    <div class="leader-board">
-      <header class="page-header">
-        <div class="page-title">함께 떠날 여행 리더를 선택하세요</div>
-        <p class="page-subtitle">
-          리더의 여행 스타일과 원칙을 간단히 읽어본 뒤,<br />
-          마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동하세요.
-        </p>
-      </header>
-
-      <section class="leader-grid" id="leaderGrid"></section>
-      <p id="emptyNotice">등록된 리더가 없습니다.</p>
-    </div>
-
-    <div class="ad-board">
-      <div class="banner-wrap" id="bannerWrap" style="display:none;"></div>
-      <p class="notice">
-        * 리더 소개 및 하단 배너 내용은 관리자 페이지에서 생성한 leaders.json 기준으로 동기화됩니다.
+  <div class="page">
+    <header class="hero">
+      <h1 class="hero-title" id="hero-title">함께 떠날 여행 리더를 선택하세요</h1>
+      <p class="hero-subtitle" id="hero-subtitle">
+        리더의 여행 스타일과 컨셉을 가볍게 읽어본 뒤, 마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동해 보세요.
       </p>
-    </div>
+      <p class="hero-note">
+        이 페이지는 <code>leaders.json</code> 파일 내용을 기반으로 자동으로 구성됩니다.
+      </p>
+    </header>
+
+    <main>
+      <div id="message" class="message">리더 정보를 불러오는 중입니다...</div>
+
+      <!-- 광고 섹션 (위/아래로 이동) -->
+      <section id="ads-section" class="ads-section hidden"></section>
+
+      <section class="leaders-section">
+        <div id="leaders-grid" class="leaders-grid"></div>
+      </section>
+
+      <div class="status-bar">
+        데이터 소스: <a href="https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json" target="_blank" style="color:#facc15;">leaders.json (GitHub)</a>
+      </div>
+    </main>
+
+    <footer>
+      so.t leader choice · dev 페이지
+    </footer>
   </div>
-</div>
 
-<script>
-  async function loadData() {
-    try {
-      const res = await fetch("leaders.json?_=" + Date.now());
-      if (!res.ok) throw new Error("leaders.json 불러오기 실패");
-      const data = await res.json();
-      return data && typeof data === "object" ? data : { ads: [], leaders: [] };
-    } catch (e) {
-      console.error(e);
-      return { ads: [], leaders: [] };
-    }
-  }
-
-  function renderLeaders(leaders) {
-    const grid = document.getElementById("leaderGrid");
-    const emptyNotice = document.getElementById("emptyNotice");
-    grid.innerHTML = "";
-
-    // enabled !== false 인 리더만 노출 (enabled가 없으면 기본 true)
-    const visibleLeaders = leaders.filter(l => l.enabled !== false);
-
-    if (!visibleLeaders.length) {
-      grid.style.display = "none";
-      if (emptyNotice) emptyNotice.style.display = "block";
-      return;
-    } else {
-      grid.style.display = "grid";
-      if (emptyNotice) emptyNotice.style.display = "none";
-    }
-
-    if (visibleLeaders.length === 1) {
-      grid.classList.add("single");
-    } else {
-      grid.classList.remove("single");
-    }
-
-    visibleLeaders.forEach((leader) => {
-      const card = document.createElement("a");
-      card.className = "leader-card";
-      card.href = leader.link || "#";
-      card.target = leader.link ? "_blank" : "_self";
-      card.rel = leader.link ? "noopener noreferrer" : "";
-
-      const src =
-        leader.mediaUrl ||
-        "https://via.placeholder.com/400x225.png?text=No+Image";
-
-      const mediaHtml = `<img class="leader-media" src="${src}" alt="${leader.name || ""}">`;
-
-      const sns = leader.sns || {};
-      const snsButtons = [];
-      if (sns.youtube) {
-        snsButtons.push(
-          `<a class="sns-btn sns-youtube" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
-        );
-      }
-      if (sns.tiktok) {
-        snsButtons.push(
-          `<a class="sns-btn sns-tiktok" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
-        );
-      }
-      if (sns.instagram) {
-        snsButtons.push(
-          `<a class="sns-btn sns-instagram" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
-        );
-      }
-      if (sns.facebook) {
-        snsButtons.push(
-          `<a class="sns-btn sns-facebook" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
-        );
-      }
-      // ✨ 새로 추가한 Blog
-      if (sns.blog) {
-        snsButtons.push(
-          `<a class="sns-btn sns-blog" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
-        );
-      }
-
-      const snsHtml =
-        snsButtons.length > 0
-          ? `<div class="sns-wrap">${snsButtons.join("")}</div>`
-          : "";
-
-      card.innerHTML = `
-        <div class="leader-frame">
-          ${mediaHtml}
-        </div>
-        <div class="leader-name">${leader.name || ""}</div>
-        <div class="leader-role">${leader.role || ""}</div>
-        <div class="tag-wrap">
-          ${(leader.tags || [])
-            .map((t) => `<span class="tag">${t}</span>`)
-            .join("")}
-        </div>
-        <div class="leader-intro">${leader.introShort || ""}</div>
-        ${snsHtml}
-        <div class="card-footer"><span>➜</span> 상담 / 신청하기</div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  function renderAds(ads = []) {
-    const wrap = document.getElementById("bannerWrap");
-    wrap.innerHTML = "";
-
-    const enabled = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
-    if (!enabled.length) {
-      wrap.style.display = "none";
-      return;
-    }
-
-    enabled.forEach((ad, idx) => {
-      const block = document.createElement("div");
-      block.className = "banner-block";
-      block.innerHTML = `
-        <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
-          <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${idx + 1}">
-        </a>
-        <div class="banner-marquee">
-          <span class="banner-text">${(ad.text || ad.linkUrl || "광고")}   ${(ad.text || ad.linkUrl || "광고")}   </span>
-        </div>
-      `;
-      wrap.appendChild(block);
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadData();
     });
 
-    wrap.style.display = "flex";
-  }
+    async function loadData() {
+      const messageEl   = document.getElementById("message");
+      const leadersGrid = document.getElementById("leaders-grid");
+      const adsSection  = document.getElementById("ads-section");
 
-  loadData().then((data) => {
-    const leaders = Array.isArray(data.leaders) ? data.leaders : [];
-    const ads     = Array.isArray(data.ads) ? data.ads : [];
-    renderLeaders(leaders);
-    renderAds(ads);
-  });
-</script>
+      try {
+        const res = await fetch("leaders.json?_=" + Date.now());
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
 
+        const root    = json.data ? json.data : json;
+        const leaders = Array.isArray(root.leaders) ? root.leaders : [];
+        const ads     = Array.isArray(root.ads) ? root.ads : [];
+
+        const bannerPosition = root.bannerPosition || "bottom";
+
+        renderLeaders(leadersGrid, leaders);
+        renderAds(adsSection, ads);
+        applyBannerPosition(bannerPosition);
+
+        if (leaders.length === 0) {
+          messageEl.textContent = "leaders.json 안에 leaders 데이터가 없습니다. 관리자 페이지에서 리더 정보를 추가해 주세요.";
+        } else {
+          messageEl.textContent = "";
+        }
+
+        if (root.meta && root.meta.title) {
+          document.getElementById("hero-title").textContent = root.meta.title;
+        }
+        if (root.meta && root.meta.subtitle) {
+          document.getElementById("hero-subtitle").textContent = root.meta.subtitle;
+        }
+      } catch (error) {
+        console.error(error);
+        messageEl.classList.add("error");
+        messageEl.textContent = "leaders.json을 불러오는 중 오류가 발생했습니다: " + error.message;
+        leadersGrid.innerHTML = "";
+        adsSection.classList.add("hidden");
+      }
+    }
+
+    function renderLeaders(container, leadersRaw) {
+      container.innerHTML = "";
+      const visibleLeaders = (leadersRaw || []).filter(l => l && l.enabled !== false && l.visible !== false);
+
+      visibleLeaders.sort((a, b) => {
+        const ao = (typeof a.order === "number") ? a.order : 9999;
+        const bo = (typeof b.order === "number") ? b.order : 9999;
+        if (ao === bo) return (a.name || "").localeCompare(b.name || "", "ko");
+        return ao - bo;
+      });
+
+      if (!visibleLeaders.length) {
+        const empty = document.createElement("div");
+        empty.className = "message";
+        empty.textContent = "현재 노출 설정된 리더가 없습니다. 관리자 페이지에서 리더의 노출을 켜 주세요.";
+        container.appendChild(empty);
+        return;
+      }
+
+      visibleLeaders.forEach(leader => {
+        const card = document.createElement("article");
+        card.className = "leader-card";
+
+        const inner = document.createElement("div");
+        inner.className = "leader-card-inner";
+
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "leader-image-wrap";
+        const img = document.createElement("img");
+        img.className = "leader-image";
+        img.alt = leader.name || "리더 이미지";
+        if (leader.imageUrl || leader.mediaUrl) {
+          img.src = leader.imageUrl || leader.mediaUrl;
+        } else {
+          img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+        }
+        imgWrap.appendChild(img);
+
+        const roleEl = document.createElement("div");
+        roleEl.className = "leader-role";
+        roleEl.textContent = leader.role || "";
+
+        const nameEl = document.createElement("h2");
+        nameEl.className = "leader-name";
+        nameEl.textContent = leader.name || "(이름 없음)";
+
+        const tagsEl = document.createElement("div");
+        tagsEl.className = "leader-tags";
+        const tags = Array.isArray(leader.tags) ? leader.tags : [];
+        tags.forEach(tag => {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        });
+
+        const headlineEl = document.createElement("p");
+        headlineEl.className = "leader-headline";
+        headlineEl.textContent = leader.headline || leader.introShort || "";
+
+        const introEl = document.createElement("p");
+        introEl.className = "leader-intro";
+        introEl.textContent = leader.intro || "";
+
+        const snsWrap = document.createElement("div");
+        snsWrap.className = "leader-sns";
+        const sns = leader.sns || {};
+
+        if (sns.youtube)   snsWrap.appendChild(createSnsButton("YouTube", sns.youtube, "youtube"));
+        if (sns.instagram) snsWrap.appendChild(createSnsButton("Instagram", sns.instagram, "instagram"));
+        if (sns.blog)      snsWrap.appendChild(createSnsButton("Blog", sns.blog, "blog"));
+        if (sns.tiktok)    snsWrap.appendChild(createSnsButton("TikTok", sns.tiktok, "tiktok"));
+        if (sns.facebook)  snsWrap.appendChild(createSnsButton("Facebook", sns.facebook, "facebook"));
+        if (sns.carrot)    snsWrap.appendChild(createSnsButton("당근", sns.carrot, "carrot"));
+        if (sns.discord)   snsWrap.appendChild(createSnsButton("Discord", sns.discord, "discord"));
+
+        const footer = document.createElement("div");
+        footer.className = "card-footer";
+
+        const pill = document.createElement("span");
+        pill.className = "visible-pill";
+        pill.textContent = "노출 중";
+        footer.appendChild(pill);
+
+        if (leader.formUrl || leader.link) {
+          const btn = document.createElement("a");
+          btn.href = leader.formUrl || leader.link;
+          btn.target = "_blank";
+          btn.rel = "noopener noreferrer";
+          btn.className = "btn-primary";
+          btn.innerHTML = '<span class="icon">✈️</span><span>상담 / 신청하기</span>';
+          footer.appendChild(btn);
+        }
+
+        inner.appendChild(imgWrap);
+        inner.appendChild(roleEl);
+        inner.appendChild(nameEl);
+        if (tags.length) inner.appendChild(tagsEl);
+        if (leader.headline || leader.introShort) inner.appendChild(headlineEl);
+        if (leader.intro) inner.appendChild(introEl);
+        if (snsWrap.children.length) inner.appendChild(snsWrap);
+        inner.appendChild(footer);
+
+        card.appendChild(inner);
+        container.appendChild(card);
+      });
+    }
+
+    function createSnsButton(label, url, type) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "btn-sns " + type;
+      a.textContent = label;
+      return a;
+    }
+
+    function renderAds(section, adsRaw) {
+      const visibleAds = (adsRaw || []).filter(a => a && a.enabled !== false);
+      if (!visibleAds.length) {
+        section.classList.add("hidden");
+        section.innerHTML = "";
+        return;
+      }
+      const ad = visibleAds[0];
+      section.classList.remove("hidden");
+      section.innerHTML = "";
+
+      const card = document.createElement("article");
+      card.className = "ad-card";
+
+      const bg = document.createElement("div");
+      bg.className = "ad-bg";
+      if (ad.imageUrl) {
+        bg.style.backgroundImage = "url('" + ad.imageUrl + "')";
+      }
+
+      const overlay = document.createElement("div");
+      overlay.className = "ad-overlay";
+
+      const content = document.createElement("div");
+      content.className = "ad-content";
+
+      const textMain = document.createElement("div");
+      textMain.className = "ad-text-main";
+
+      const titleEl = document.createElement("h2");
+      titleEl.className = "ad-title";
+      titleEl.textContent = ad.text || "여행 일정 안내";
+
+      const descEl = document.createElement("p");
+      descEl.className = "ad-desc";
+      descEl.textContent = ad.desc || "";
+
+      textMain.appendChild(titleEl);
+      textMain.appendChild(descEl);
+
+      const cta = document.createElement("a");
+      cta.className = "ad-cta";
+      cta.href = ad.linkUrl || "#";
+      if (ad.linkUrl) {
+        cta.target = "_blank";
+        cta.rel = "noopener noreferrer";
+      }
+      cta.innerHTML = '<span class="icon">▶</span><span>자세히 보기</span>';
+
+      content.appendChild(textMain);
+      content.appendChild(cta);
+
+      card.appendChild(bg);
+      card.appendChild(overlay);
+      card.appendChild(content);
+      section.appendChild(card);
+    }
+
+    // 광고 섹션을 리더 섹션 위/아래로 이동
+    function applyBannerPosition(position) {
+      const adsSection     = document.getElementById("ads-section");
+      const leadersSection = document.querySelector(".leaders-section");
+      if (!adsSection || !leadersSection) return;
+
+      const parent = adsSection.parentNode;
+      if (!parent) return;
+
+      if (position === "top") {
+        if (leadersSection.previousSibling !== adsSection) {
+          parent.insertBefore(adsSection, leadersSection);
+        }
+      } else {
+        if (leadersSection.nextSibling !== adsSection) {
+          if (leadersSection.nextSibling) {
+            parent.insertBefore(adsSection, leadersSection.nextSibling);
+          } else {
+            parent.appendChild(adsSection);
+          }
+        }
+      }
+    }
+  </script>
 </body>
 </html>
-
