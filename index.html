@@ -7,11 +7,7 @@
   <style>
     :root {
       --page-max-width: 1200px;
-      --bg-color: #90b4d8;
-      --bg-gradient: linear-gradient(180deg, #6da3d1 0%, #90b4d8 40%, #f5f5f5 100%);
       --card-bg: #24527a;
-      --card-inner-bg: #f7fafc;
-      --accent-gold: #f6c453;
       --accent-gold-soft: #fde68a;
       --text-main: #111827;
       --text-sub: #4b5563;
@@ -28,7 +24,10 @@
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       color: var(--text-main);
-      background: var(--bg-gradient), url("bg_wallpaper.jpg") center top / cover no-repeat fixed;
+      background-image: url("bg_wallpaper.jpg");
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
     }
 
     .page {
@@ -66,11 +65,11 @@
     main { margin-top: 10px; }
 
     .leaders-section {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
+      background: rgba(180, 206, 238, 0.9);
+      border-radius: 26px;
       padding: 18px 10px 24px;
       box-shadow: 0 18px 45px rgba(15,23,42,0.55);
-      backdrop-filter: blur(18px);
+      backdrop-filter: blur(12px);
     }
 
     .leaders-grid {
@@ -182,8 +181,8 @@
     .btn-sns.blog     { background: #16a34a; }
     .btn-sns.tiktok   { background: #111827; }
     .btn-sns.facebook { background: #1d4ed8; }
-    .btn-sns.carrot   { background: #ff7e3f; }   /* 당근 */
-    .btn-sns.discord  { background: #5865f2; }   /* 디스코드 */
+    .btn-sns.carrot   { background: #ff7e3f; }
+    .btn-sns.discord  { background: #5865f2; }
 
     .card-footer {
       margin-top: auto;
@@ -227,17 +226,20 @@
 
     .btn-primary span.icon { font-size: 13px; }
 
-    /* 광고 배너 */
+    /* 광고 배너 (공통) */
     .ads-section {
       margin-top: 26px;
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 18px 40px rgba(15,23,42,0.65);
+      background: #0f172a;
     }
+
+    .ads-section.hidden { display: none; }
 
     .ad-card {
       position: relative;
-      height: 240px;  /* 높이 키움 */
+      height: 280px;  /* 상단 배너 더 크게 */
       overflow: hidden;
     }
 
@@ -253,7 +255,7 @@
     .ad-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.1) 60%, rgba(15,23,42,0.85) 100%);
+      background: linear-gradient(90deg, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.1) 50%, rgba(15,23,42,0.8) 100%);
     }
 
     .ad-content {
@@ -263,11 +265,9 @@
       padding: 18px 20px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
       color: #f9fafb;
     }
-
-    .ad-text-main { max-width: 60%; }
 
     .ad-title {
       font-size: 18px;
@@ -275,28 +275,71 @@
       margin: 0 0 6px;
     }
 
-    .ad-desc {
-      font-size: 12px;
-      opacity: 0.9;
-      margin: 0;
+    .ad-marquee {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 10px;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 13px;
+      color: #fefce8;
     }
 
-    .ad-cta {
-      font-size: 12px;
-      border-radius: 999px;
-      padding: 7px 14px;
-      border: 1px solid rgba(249,250,251,0.7);
-      background: rgba(15,23,42,0.5);
+    .ad-marquee span {
+      display: inline-block;
+      padding-right: 100%;
+      animation: marquee 14s linear infinite;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0%); }
+      to   { transform: translateX(-100%); }
+    }
+
+    /* 하단 광고 카드 */
+    .ads-bottom-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ad-bottom-card {
+      position: relative;
+      height: 180px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #0f172a;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.6);
+    }
+
+    .ad-bottom-bg {
+      position: absolute;
+      inset: 0;
+      background-position: center;
+      background-size: cover;
+      transform: scale(1.03);
+      filter: saturate(1.1);
+    }
+
+    .ad-bottom-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.1) 70%);
+    }
+
+    .ad-bottom-text {
+      position: relative;
+      z-index: 1;
+      padding: 12px 18px;
       color: #f9fafb;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 12px;
     }
 
-    .ad-cta span.icon { font-size: 14px; }
-
-    .ads-section.hidden { display: none; }
+    .ad-bottom-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
 
     .status-bar {
       margin-top: 10px;
@@ -326,13 +369,8 @@
     @media (max-width: 768px) {
       .hero-title { font-size: 22px; }
       .leaders-section { padding: 14px 8px 18px; }
-      .ad-card { height: 200px; } /* 모바일 높이 */
-      .ad-text-main { max-width: 100%; }
-      .ad-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
+      .ad-card { height: 220px; }
+      .ad-bottom-card { height: 160px; }
     }
   </style>
 </head>
@@ -351,12 +389,15 @@
     <main>
       <div id="message" class="message">리더 정보를 불러오는 중입니다...</div>
 
-      <!-- 광고 섹션 (위/아래로 이동) -->
-      <section id="ads-section" class="ads-section hidden"></section>
+      <!-- 상단 여행 일정 배너 -->
+      <section id="ads-top" class="ads-section hidden"></section>
 
       <section class="leaders-section">
         <div id="leaders-grid" class="leaders-grid"></div>
       </section>
+
+      <!-- 리더보드 아래 하단 광고들 -->
+      <section id="ads-bottom" class="ads-section hidden"></section>
 
       <div class="status-bar">
         데이터 소스: <a href="https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json" target="_blank" style="color:#facc15;">leaders.json (GitHub)</a>
@@ -364,7 +405,7 @@
     </main>
 
     <footer>
-      so.t leader choice · dev 페이지
+      so.t leader choice
     </footer>
   </div>
 
@@ -376,7 +417,8 @@
     async function loadData() {
       const messageEl   = document.getElementById("message");
       const leadersGrid = document.getElementById("leaders-grid");
-      const adsSection  = document.getElementById("ads-section");
+      const adsTop      = document.getElementById("ads-top");
+      const adsBottom   = document.getElementById("ads-bottom");
 
       try {
         const res = await fetch("leaders.json?_=" + Date.now());
@@ -386,12 +428,10 @@
         const root    = json.data ? json.data : json;
         const leaders = Array.isArray(root.leaders) ? root.leaders : [];
         const ads     = Array.isArray(root.ads) ? root.ads : [];
-
         const bannerPosition = root.bannerPosition || "bottom";
 
         renderLeaders(leadersGrid, leaders);
-        renderAds(adsSection, ads);
-        applyBannerPosition(bannerPosition);
+        renderAdsTopBottom(adsTop, adsBottom, ads, bannerPosition);
 
         if (leaders.length === 0) {
           messageEl.textContent = "leaders.json 안에 leaders 데이터가 없습니다. 관리자 페이지에서 리더 정보를 추가해 주세요.";
@@ -410,10 +450,12 @@
         messageEl.classList.add("error");
         messageEl.textContent = "leaders.json을 불러오는 중 오류가 발생했습니다: " + error.message;
         leadersGrid.innerHTML = "";
-        adsSection.classList.add("hidden");
+        adsTop.classList.add("hidden");
+        adsBottom.classList.add("hidden");
       }
     }
 
+    /* 리더 카드 렌더링 */
     function renderLeaders(container, leadersRaw) {
       container.innerHTML = "";
       const visibleLeaders = (leadersRaw || []).filter(l => l && l.enabled !== false && l.visible !== false);
@@ -532,85 +574,130 @@
       return a;
     }
 
-    function renderAds(section, adsRaw) {
+    /* 광고: 상단 + 하단 분리 렌더링 */
+    function renderAdsTopBottom(topSection, bottomSection, adsRaw, bannerPosition) {
       const visibleAds = (adsRaw || []).filter(a => a && a.enabled !== false);
-      if (!visibleAds.length) {
-        section.classList.add("hidden");
-        section.innerHTML = "";
-        return;
-      }
-      const ad = visibleAds[0];
-      section.classList.remove("hidden");
-      section.innerHTML = "";
 
-      const card = document.createElement("article");
-      card.className = "ad-card";
+      // 초기화
+      topSection.classList.add("hidden");
+      topSection.innerHTML = "";
+      bottomSection.classList.add("hidden");
+      bottomSection.innerHTML = "";
 
-      const bg = document.createElement("div");
-      bg.className = "ad-bg";
-      if (ad.imageUrl) {
-        bg.style.backgroundImage = "url('" + ad.imageUrl + "')";
-      }
+      if (!visibleAds.length) return;
 
-      const overlay = document.createElement("div");
-      overlay.className = "ad-overlay";
+      // bannerPosition: top → 첫 번째는 상단, 나머지는 하단
+      // bannerPosition: bottom → 상단은 숨기고, 전부 하단에만 표시
+      let topAd  = null;
+      let restAd = [];
 
-      const content = document.createElement("div");
-      content.className = "ad-content";
-
-      const textMain = document.createElement("div");
-      textMain.className = "ad-text-main";
-
-      const titleEl = document.createElement("h2");
-      titleEl.className = "ad-title";
-      titleEl.textContent = ad.text || "여행 일정 안내";
-
-      const descEl = document.createElement("p");
-      descEl.className = "ad-desc";
-      descEl.textContent = ad.desc || "";
-
-      textMain.appendChild(titleEl);
-      textMain.appendChild(descEl);
-
-      const cta = document.createElement("a");
-      cta.className = "ad-cta";
-      cta.href = ad.linkUrl || "#";
-      if (ad.linkUrl) {
-        cta.target = "_blank";
-        cta.rel = "noopener noreferrer";
-      }
-      cta.innerHTML = '<span class="icon">▶</span><span>자세히 보기</span>';
-
-      content.appendChild(textMain);
-      content.appendChild(cta);
-
-      card.appendChild(bg);
-      card.appendChild(overlay);
-      card.appendChild(content);
-      section.appendChild(card);
-    }
-
-    // 광고 섹션을 리더 섹션 위/아래로 이동
-    function applyBannerPosition(position) {
-      const adsSection     = document.getElementById("ads-section");
-      const leadersSection = document.querySelector(".leaders-section");
-      if (!adsSection || !leadersSection) return;
-
-      const parent = adsSection.parentNode;
-      if (!parent) return;
-
-      if (position === "top") {
-        if (leadersSection.previousSibling !== adsSection) {
-          parent.insertBefore(adsSection, leadersSection);
-        }
+      if (bannerPosition === "top") {
+        topAd  = visibleAds[0];
+        restAd = visibleAds.slice(1);
       } else {
-        if (leadersSection.nextSibling !== adsSection) {
-          if (leadersSection.nextSibling) {
-            parent.insertBefore(adsSection, leadersSection.nextSibling);
-          } else {
-            parent.appendChild(adsSection);
-          }
+        restAd = visibleAds;
+      }
+
+      // 상단 여행 일정 배너
+      if (topAd) {
+        topSection.classList.remove("hidden");
+
+        const link = topAd.linkUrl || "#";
+        const a = document.createElement("a");
+        a.href = link;
+        if (topAd.linkUrl) {
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
         }
+        a.style.display = "block";
+        a.style.textDecoration = "none";
+
+        const card = document.createElement("div");
+        card.className = "ad-card";
+
+        const bg = document.createElement("div");
+        bg.className = "ad-bg";
+        if (topAd.imageUrl) {
+          bg.style.backgroundImage = "url('" + topAd.imageUrl + "')";
+        }
+
+        const overlay = document.createElement("div");
+        overlay.className = "ad-overlay";
+
+        const content = document.createElement("div");
+        content.className = "ad-content";
+
+        const titleEl = document.createElement("h2");
+        titleEl.className = "ad-title";
+        titleEl.textContent = topAd.text || "여행 일정 안내";
+
+        content.appendChild(titleEl);
+
+        const marquee = document.createElement("div");
+        marquee.className = "ad-marquee";
+        const span = document.createElement("span");
+        span.textContent = topAd.desc || topAd.text || "";
+        marquee.appendChild(span);
+
+        card.appendChild(bg);
+        card.appendChild(overlay);
+        card.appendChild(content);
+        card.appendChild(marquee);
+
+        a.appendChild(card);
+        topSection.appendChild(a);
+      }
+
+      // 하단 광고들
+      if (restAd.length) {
+        bottomSection.classList.remove("hidden");
+        const list = document.createElement("div");
+        list.className = "ads-bottom-list";
+
+        restAd.forEach(ad => {
+          const link = ad.linkUrl || "#";
+          const a = document.createElement("a");
+          a.href = link;
+          if (ad.linkUrl) {
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+          }
+          a.style.display = "block";
+          a.style.textDecoration = "none";
+
+          const card = document.createElement("div");
+          card.className = "ad-bottom-card";
+
+          const bg = document.createElement("div");
+          bg.className = "ad-bottom-bg";
+          if (ad.imageUrl) {
+            bg.style.backgroundImage = "url('" + ad.imageUrl + "')";
+          }
+
+          const overlay = document.createElement("div");
+          overlay.className = "ad-bottom-overlay";
+
+          const textBox = document.createElement("div");
+          textBox.className = "ad-bottom-text";
+          const titleEl = document.createElement("div");
+          titleEl.className = "ad-bottom-title";
+          titleEl.textContent = ad.text || "여행 안내";
+
+          const descEl = document.createElement("div");
+          descEl.textContent = ad.desc || "";
+
+          textBox.appendChild(titleEl);
+          textBox.appendChild(descEl);
+
+          card.appendChild(bg);
+          card.appendChild(overlay);
+          card.appendChild(textBox);
+
+          a.appendChild(card);
+          list.appendChild(a);
+        });
+
+        bottomSection.appendChild(list);
       }
     }
   </script>
