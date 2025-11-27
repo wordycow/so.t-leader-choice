@@ -583,9 +583,15 @@
   }
 
   function saveDraft() {
-    const snapshot = { tripAds, ads, leaders };
+  const snapshot = { tripAds, ads, leaders };
+  try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
+  } catch (e) {
+    // 용량 넘치면 임시 저장만 포기하고, 나머지 기능은 계속 돌게
+    console.warn("localStorage quota exceeded. 임시 저장을 생략합니다.", e);
   }
+}
+
 
   let data     = loadDraft();
   let tripAds  = data.tripAds;
