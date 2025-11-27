@@ -2,646 +2,1311 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>함께 떠날 여행 리더를 선택하세요</title>
+  <title>여행 리더 관리자 페이지 (광고 + JSON 생성기)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    :root {
-      --page-max-width: 1200px;
-      --bg-color: #90b4d8;
-      --bg-gradient: linear-gradient(180deg, #6da3d1 0%, #90b4d8 40%, #f5f5f5 100%);
-      --card-bg: #24527a;
-      --card-inner-bg: #f7fafc;
-      --accent-gold: #f6c453;
-      --accent-gold-soft: #fde68a;
-      --text-main: #111827;
-      --text-sub: #4b5563;
-      --btn-primary-bg: #f59e0b;
-      --btn-primary-bg-hover: #d97706;
-      --btn-primary-text: #1f2933;
-      --tag-bg: rgba(255, 255, 255, 0.15);
-      --tag-border: rgba(250, 250, 250, 0.4);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-      color: var(--text-main);
-      background: var(--bg-gradient), url("bg_wallpaper.jpg") center top / cover no-repeat fixed;
-    }
-
-    .page {
-      max-width: var(--page-max-width);
-      margin: 0 auto;
-      padding: 24px 12px 40px;
-    }
-
-    header.hero {
-      text-align: center;
-      padding: 24px 12px 12px;
-      color: #f9fafb;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.35);
-    }
-
-    .hero-title {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      margin: 0 0 8px;
-    }
-
-    .hero-subtitle {
-      margin: 0;
-      font-size: 13px;
-      opacity: 0.9;
-    }
-
-    .hero-note {
-      margin-top: 6px;
-      font-size: 11px;
-      opacity: 0.8;
-    }
-
-    main {
-      margin-top: 10px;
-    }
-
-    .leaders-section {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 18px 10px 24px;
-      box-shadow: 0 18px 45px rgba(15,23,42,0.55);
-      backdrop-filter: blur(18px);
-    }
-
-    .leaders-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 18px;
-    }
-
-    .leader-card {
-      background: var(--card-bg);
-      border-radius: 26px;
-      padding: 7px;
-      box-shadow: 0 16px 30px rgba(15,23,42,0.45);
-      position: relative;
-    }
-
-    .leader-card-inner {
-      border-radius: 22px;
-      background: radial-gradient(circle at top, #ffffff 0%, #f3f4f6 40%, #e5e7eb 100%);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .leader-image-wrap {
-      border-radius: 18px;
-      overflow: hidden;
-      border: 3px solid var(--accent-gold-soft);
-      margin-bottom: 10px;
-      background: #e5e7eb;
-      position: relative;
-    }
-
-    .leader-image {
-      width: 100%;
-      height: 170px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .leader-role {
-      font-size: 11px;
-      font-weight: 600;
-      color: #6b21a8;
-      margin-bottom: 3px;
-    }
-
-    .leader-name {
-      margin: 0 0 6px;
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 0.03em;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #111827;
-    }
-
-    .leader-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-
-    .tag {
-      font-size: 10px;
-      padding: 3px 7px;
-      border-radius: 999px;
-      border: 1px solid var(--tag-border);
-      background: var(--tag-bg);
-      color: #111827;
-      backdrop-filter: blur(4px);
-    }
-
-    .leader-headline {
-      font-size: 12px;
-      color: var(--text-sub);
-      margin: 0 0 4px;
-      line-height: 1.5;
-    }
-
-    .leader-intro {
-      font-size: 11px;
-      color: #6b7280;
-      margin: 0 0 10px;
-      line-height: 1.5;
-    }
-
-    .leader-sns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-
-    .btn-sns {
-      font-size: 10px;
-      border-radius: 999px;
-      padding: 2px 8px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      color: #ffffff;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .btn-sns.youtube  { background: #ff0000; }
-    .btn-sns.instagram{ background: #c13584; }
-    .btn-sns.blog     { background: #16a34a; }
-    .btn-sns.tiktok   { background: #111827; }
-    .btn-sns.facebook { background: #1d4ed8; }
-    .btn-sns.carrot   { background: #ff7e3f; }  /* 당근 색 */
-    .btn-sns.discord  { background: #5865f2; }  /* 디스코드 색 */
-
-    .card-footer {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
-      padding-top: 6px;
-      border-top: 1px solid rgba(209, 213, 219, 0.8);
-    }
-
-    .visible-pill {
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #ecfdf5;
-      color: #15803d;
-      border: 1px solid #bbf7d0;
-    }
-
-    .btn-primary {
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 999px;
-      padding: 6px 12px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      background: linear-gradient(135deg, var(--btn-primary-bg), #facc15);
-      color: var(--btn-primary-text);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      box-shadow: 0 5px 14px rgba(180, 83, 9, 0.45);
-    }
-
-    .btn-primary:hover {
-      background: linear-gradient(135deg, var(--btn-primary-bg-hover), #f59e0b);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary span.icon {
-      font-size: 13px;
-    }
-
-    /* 광고 배너 */
-    .ads-section {
-      margin-top: 26px;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(15,23,42,0.65);
-    }
-
-    .ad-card {
-      position: relative;
-      height: 240px;  /* 높이 확장 */
-      overflow: hidden;
-    }
-
-    .ad-bg {
-      position: absolute;
-      inset: 0;
-      background-position: center;
+      background-image: url("bg_wallpaper.jpg");
       background-size: cover;
-      transform: scale(1.03);
-      filter: saturate(1.15);
+      background-position: center top;
+      background-attachment: fixed;
     }
 
-    .ad-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.1) 60%, rgba(15,23,42,0.85) 100%);
+    .page-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 12px 32px;
     }
 
-    .ad-content {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      padding: 18px 20px;
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      border: 1px solid rgba(209,213,219,1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+      padding: 20px 18px 22px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 18px;
+      margin-top: 8px;
+    }
+
+    .admin-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+      font-size: 13px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .admin-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .admin-title-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #f9fafb;
+      margin-bottom: 8px;
     }
 
-    .ad-text-main {
-      max-width: 60%;
-    }
-
-    .ad-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 0 0 6px;
-    }
-
-    .ad-desc {
+    .section-label {
       font-size: 12px;
-      opacity: 0.9;
-      margin: 0;
+      font-weight: 600;
+      margin: 4px 0 6px;
     }
 
-    .ad-cta {
+    .form-group { margin-bottom: 8px; }
+    label {
+      display: block;
       font-size: 12px;
-      border-radius: 999px;
-      padding: 7px 14px;
-      border: 1px solid rgba(249,250,251,0.7);
-      background: rgba(15,23,42,0.5);
-      color: #f9fafb;
-      text-decoration: none;
-      display: inline-flex;
+      margin-bottom: 3px;
+      color: #374151;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 12px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    input[type="file"] { font-size: 11px; }
+    small { font-size: 11px; color: #6b7280; }
+
+    .inline {
+      display: flex;
+      gap: 8px;
       align-items: center;
-      gap: 6px;
+      flex-wrap: wrap;
     }
 
-    .ad-cta span.icon {
-      font-size: 14px;
+    .btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background-color: #2563eb;
+      color: #fff;
+      margin-right: 4px;
+    }
+    .btn-secondary {
+      background-color: #6b7280;
+      color: #fff;
+      margin-right: 4px;
+    }
+    .btn-danger {
+      background-color: #ef4444;
+      color: #fff;
+    }
+    .btn-outline {
+      background-color: #ffffff;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+    }
+    .btn-xs {
+      padding: 4px 8px;
+      font-size: 11px;
     }
 
-    .ads-section.hidden {
+    .btn-new-leader {
+      background-color: #2563eb;
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 4px 10px rgba(37,99,235,0.35);
+      cursor: pointer;
+    }
+    .btn-new-leader:hover { background-color: #1d4ed8; }
+
+    .ad-list, .leader-list {
+      max-height: none;
+      overflow-y: visible;
+    }
+    .ad-item, .leader-item {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 7px 0;
+      font-size: 12px;
+    }
+    .ad-item:last-child,
+    .leader-item:last-child { border-bottom: none; }
+
+    .ad-item-header,
+    .leader-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .ad-thumb,
+    .thumb {
+      width: 48px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    .thumb {
+      width: 32px;
+      height: 40px;
+      border-radius: 5px;
+    }
+
+    .leader-thumb-slot {
+      width: 32px;
+      height: 40px;
+      border-radius: 5px;
+      border: 1px dashed #d1d5db;
+      background: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #9ca3af;
+      margin-right: 6px;
+    }
+
+    .leader-item-name { font-weight: 600; }
+    .ad-item-title { font-weight: 600; font-size: 12px; }
+
+    .link-small {
+      font-size: 10px;
+      color: #2563eb;
+      text-decoration: underline;
+      display: inline-block;
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .enable-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      margin-left: 6px;
+      color: #fff;
+    }
+    .enable-yes { background: #16a34a; }
+    .enable-no  { background: #9ca3af; }
+
+    .drop-zone {
+      margin-top: 6px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px dashed #cbd5f5;
+      background: #f9fafb;
+      font-size: 11px;
+      color: #4b5563;
+      text-align: center;
+    }
+    .drop-zone.dragover {
+      border-color: #2563eb;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .preview-wrap {
+      margin-top: 8px;
       display: none;
     }
+    .preview-wrap img {
+      width: 120px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
 
-    .status-bar {
-      margin-top: 10px;
+    .json-area {
+      width: 100%;
+      min-height: 180px;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
       font-size: 11px;
-      color: #e5e7eb;
-      text-align: center;
-      text-shadow: 0 1px 4px rgba(15,23,42,0.6);
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background-color: #f9fafb;
+      resize: vertical;
+      white-space: pre;
     }
 
-    .message {
-      text-align: center;
-      font-size: 13px;
-      color: #f9fafb;
-      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
-      margin-bottom: 12px;
-    }
-    .message.error {
-      color: #fee2e2;
-    }
-
-    footer {
-      margin-top: 16px;
-      text-align: center;
+    .help-box {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      background-color: #fefce8;
+      border: 1px solid #facc15;
       font-size: 11px;
-      color: #e5e7eb;
-      text-shadow: 0 1px 4px rgba(15,23,42,0.7);
+      color: #4b5563;
+      line-height: 1.5;
     }
 
-    @media (max-width: 768px) {
-      .hero-title { font-size: 22px; }
-      .leaders-section { padding: 14px 8px 18px; }
-      .ad-card { height: 200px; }  /* 모바일에서도 조금 더 크게 */
-      .ad-text-main { max-width: 100%; }
-      .ad-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
+    @media (max-width: 900px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-title-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .btn-new-leader { width: 100%; text-align: center; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="hero">
-      <h1 class="hero-title" id="hero-title">함께 떠날 여행 리더를 선택하세요</h1>
-      <p class="hero-subtitle" id="hero-subtitle">
-        리더의 여행 스타일과 컨셉을 가볍게 읽어본 뒤, 마음에 드는 리더 카드를 눌러 상담·신청(구글폼)으로 이동해 보세요.
-      </p>
-      <p class="hero-note">
-        이 페이지는 <code>leaders.json</code> 파일 내용을 기반으로 자동으로 구성됩니다.
+
+<div class="page-wrap">
+  <div class="glass-panel">
+    <header class="page-header">
+      <div class="page-title">여행 리더 관리자 페이지 (광고 + JSON 생성기)</div>
+      <p class="page-subtitle">
+        이 페이지에서 <b>광고 배너</b>와 <b>리더 정보를 모두 관리</b>하고,<br>
+        아래 JSON을 복사하여 <b>so.t-leader-choice</b> 레포의 <code>leaders.json</code>에 붙여 넣으면<br>
+        PC / 모바일 / 모든 사용자의 공개 페이지가 동일하게 업데이트됩니다.
       </p>
     </header>
 
-    <main>
-      <div id="message" class="message">리더 정보를 불러오는 중입니다...</div>
+    <div class="admin-layout">
+      <!-- 좌측: 광고 + 리더 입력 -->
+      <div class="admin-card">
+        <!-- 광고 배너 설정 -->
+        <div class="admin-title">광고 배너 관리</div>
 
-      <!-- 광고 섹션 (위/아래 위치 변경 대상) -->
-      <section id="ads-section" class="ads-section hidden"></section>
+        <input type="hidden" id="editingAdIndex" value="-1" />
 
-      <section class="leaders-section">
-        <div id="leaders-grid" class="leaders-grid">
-          <!-- JS가 카드 생성 -->
+        <div class="form-group">
+          <label for="adLinkUrl">광고 링크 URL</label>
+          <input type="text" id="adLinkUrl" placeholder="예) https://youtube.com/@yourchannel 또는 광고주 사이트" />
         </div>
-      </section>
 
-      <div class="status-bar">
-        데이터 소스: <a href="https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json" target="_blank" style="color:#facc15;">leaders.json (GitHub)</a>
+        <div class="form-group">
+          <label for="adText">광고 문구 (배너에서 흘러갈 텍스트)</label>
+          <input type="text" id="adText" placeholder="예) so.t 채널에서 다음 여행 준비하기" />
+        </div>
+
+        <div class="form-group inline">
+          <label>
+            <input type="checkbox" id="adEnabled" checked /> 이 광고 노출
+          </label>
+        </div>
+
+        <!-- 🔁 광고 전체 위치 (리더 위 / 아래) -->
+        <div class="form-group">
+          <label>광고 위치 (공개 페이지에서 표시 위치)</label>
+          <div class="inline">
+            <label><input type="radio" name="bannerPosition" value="top"> 리더 카드 위쪽</label>
+            <label><input type="radio" name="bannerPosition" value="bottom" checked> 리더 카드 아래쪽</label>
+          </div>
+          <small>※ 이 값은 JSON의 <code>bannerPosition</code> 필드에 저장됩니다. (기본값: 아래)</small>
+        </div>
+
+        <div class="form-group">
+          <label>배너 이미지 (가로형 이미지)</label>
+          <input type="file" id="adImageFile" accept="image/*" />
+          <small>파일 선택 또는 아래 영역에 드래그 앤 드롭. (이미지 전용)</small>
+          <div id="adDropZone" class="drop-zone">
+            여기로 광고 이미지를 끌어다 놓으세요.
+          </div>
+          <div id="adPreviewWrap" class="preview-wrap">
+            <img id="adPreviewImage" src="" alt="광고 미리보기" />
+          </div>
+        </div>
+
+        <div class="form-group inline" style="margin-top:4px;">
+          <button class="btn btn-primary" id="saveAdBtn">광고 저장</button>
+          <button class="btn btn-secondary" id="clearAdFormBtn">광고 폼 초기화</button>
+          <button class="btn btn-outline btn-xs" id="newAdBtn">+ 새 광고 추가</button>
+        </div>
+
+        <hr style="margin:14px 0;" />
+
+        <div class="section-label">광고 리스트</div>
+        <div class="ad-list" id="adList"></div>
+
+        <hr style="margin:14px 0;" />
+
+        <!-- 리더 입력 -->
+        <div class="section-label" style="margin-top:2px;">리더 정보 입력 / 수정</div>
+
+        <input type="hidden" id="editingLeaderIndex" value="-1" />
+
+        <div class="form-group">
+          <label for="leaderName">이름</label>
+          <input type="text" id="leaderName" placeholder="예) 김철수" />
+        </div>
+
+        <div class="form-group">
+          <label for="leaderRole">역할 / 직함</label>
+          <input type="text" id="leaderRole" placeholder="예) 베트남 장기 체류 리더 · 10년 차 가이드" />
+        </div>
+
+        <div class="form-group">
+          <label for="leaderLink">상담 / 신청 링크 (구글폼 URL)</label>
+          <input type="text" id="leaderLink" placeholder="예) https://docs.google.com/forms/..." />
+        </div>
+
+        <div class="form-group">
+          <label for="leaderSheetUrl">응답 시트 링크 (구글 시트 URL)</label>
+          <input type="text" id="leaderSheetUrl" placeholder="예) https://docs.google.com/spreadsheets/..." />
+        </div>
+
+        <div class="form-group">
+          <label for="leaderTags">키워드 태그 (쉼표로 구분)</label>
+          <input type="text" id="leaderTags" placeholder="예) 장기 체류, 로컬 생활, 루틴 여행" />
+        </div>
+
+        <div class="form-group">
+          <label for="leaderIntro">한 줄 소개 / 짧은 설명</label>
+          <textarea id="leaderIntro" placeholder="예) 여행이 아니라 ‘살아보는 시간’을 설계합니다. 최소 1개월 이상 머무는 루트를 함께 짭니다."></textarea>
+        </div>
+
+        <div class="section-label">리더별 SNS 채널</div>
+        <div class="form-group">
+          <label for="leaderYoutube">YouTube URL</label>
+          <input type="text" id="leaderYoutube" placeholder="https://www.youtube.com/@leaderchannel" />
+        </div>
+        <div class="form-group">
+          <label for="leaderTiktok">TikTok URL</label>
+          <input type="text" id="leaderTiktok" placeholder="https://www.tiktok.com/@leaderid" />
+        </div>
+        <div class="form-group">
+          <label for="leaderInstagram">Instagram URL</label>
+          <input type="text" id="leaderInstagram" placeholder="https://www.instagram.com/leaderid" />
+        </div>
+        <div class="form-group">
+          <label for="leaderFacebook">Facebook URL</label>
+          <input type="text" id="leaderFacebook" placeholder="https://www.facebook.com/leaderpage" />
+        </div>
+        <div class="form-group">
+          <label for="leaderBlog">Blog URL</label>
+          <input type="text" id="leaderBlog" placeholder="https://blog.naver.com/leader" />
+        </div>
+        <div class="form-group">
+          <label for="leaderCarrot">당근 URL</label>
+          <input type="text" id="leaderCarrot" placeholder="https://www.daangn.com/..." />
+        </div>
+        <div class="form-group">
+          <label for="leaderDiscord">Discord URL</label>
+          <input type="text" id="leaderDiscord" placeholder="https://discord.gg/..." />
+        </div>
+
+        <div class="form-group">
+          <label>프로필 이미지 (이미지 파일)</label>
+          <input type="file" id="leaderMediaFile" accept="image/*" />
+          <small>파일 선택 또는 아래 영역에 드래그 앤 드롭 (이미지 전용).</small>
+          <div id="leaderDropZone" class="drop-zone">
+            여기로 프로필 이미지를 끌어다 놓으세요.
+          </div>
+          <div id="leaderPreviewWrap" class="preview-wrap">
+            <img id="leaderPreviewImage" src="" alt="리더 미리보기" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="leaderEnabled" checked /> 이 리더 노출
+          </label>
+          <small>체크 해제하면 공개 페이지에서 이 리더 카드가 숨겨집니다.</small>
+        </div>
+
+        <div class="form-group inline" style="margin-top:4px;">
+          <button class="btn btn-primary" id="saveLeaderBtn">리더 저장</button>
+          <button class="btn btn-secondary" id="clearLeaderFormBtn">리더 폼 초기화</button>
+        </div>
       </div>
-    </main>
 
-    <footer>
-      so.t leader choice · dev preview 페이지입니다. 이 화면이 마음에 들면 index.html로 복사해서 라이브에 반영하면 됩니다.
-    </footer>
+      <!-- 우측: 리더 리스트 + JSON -->
+      <div class="admin-card">
+        <div class="admin-title-row">
+          <div class="admin-title" style="margin-bottom:0;">리더 리스트</div>
+          <button class="btn-new-leader" id="newLeaderBtn">+ 새 리더 추가</button>
+        </div>
+        <div class="leader-list" id="leaderList"></div>
+        <hr style="margin:10px 0;" />
+        <div class="admin-title" style="margin-top:4px;">leaders.json 생성 / 불러오기 / 복사</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="generateJsonBtn">JSON 생성하기</button>
+          <button class="btn btn-secondary" id="copyJsonBtn">JSON 복사하기</button>
+          <button class="btn btn-outline" id="downloadJsonBtn">임시 JSON 저장(파일)</button>
+          <button class="btn btn-outline" id="loadJsonBtn">JSON 파일 불러오기 → 관리자 반영</button>
+          <button class="btn btn-outline" id="openJsonBtn">GitHub leaders.json 열기</button>
+        </div>
+
+        <!-- 🔁 구글폼 URL 일괄 입력 영역 -->
+        <div class="form-group">
+          <label class="section-label" for="bulk-form-urls">
+            상담 / 신청 구글폼 URL 일괄 입력 (각 줄마다 1개 URL)
+          </label>
+          <textarea
+            id="bulk-form-urls"
+            class="json-area"
+            style="min-height: 80px;"
+            placeholder="https://docs.google.com/forms/...=한기림&#10;https://docs.google.com/forms/...=임정애&#10;https://docs.google.com/forms/...=윤지민&#10;..."
+          ></textarea>
+          <div class="inline" style="margin-top:6px;">
+            <button id="apply-bulk-form-urls" class="btn btn-outline btn-xs" type="button">
+              URL → 리더에 자동 매칭
+            </button>
+            <small id="bulk-form-urls-status"></small>
+          </div>
+        </div>
+
+        <textarea id="jsonOutput" class="json-area" placeholder="여기에 leaders.json 내용이 생성됩니다."></textarea>
+        <input type="file" id="jsonFileInput" accept="application/json,.json" style="display:none;" />
+        <div class="help-box">
+          <b>[GitHub에 붙여 넣는 방법]</b><br />
+          1) 위에서 광고 + 리더들을 모두 원하는 대로 추가/수정/삭제한 뒤, <b>JSON 생성하기</b> 버튼을 누릅니다.<br />
+          2) <b>JSON 복사하기</b> 버튼을 눌러 leaders.json 내용을 클립보드에 복사합니다.<br />
+          3) <b>GitHub leaders.json 열기</b> 버튼을 눌러 GitHub의 leaders.json 파일 편집 화면으로 이동합니다.<br />
+          4) GitHub에서 내용 전체 선택(Ctrl+A) 후 삭제 → 복사한 JSON을 붙여 넣기(Ctrl+V).<br />
+          5) 아래쪽 <b>Commit changes</b> 버튼을 눌러 저장.<br />
+          6) 공개 페이지(<code>https://wordycow.github.io/so.t-leader-choice/</code>)에서 새로고침하면 모든 사용자가 동일하게 업데이트됩니다.<br/><br/>
+          ※ 이미 만들어진 leaders.json을 다시 편집하려면, GitHub에서 Raw → <b>Download</b>로 파일을 저장한 뒤<br/>
+          &nbsp;&nbsp;위의 <b>JSON 파일 불러오기 → 관리자 반영</b> 버튼을 눌러 불러오면 됩니다.
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      loadData();
-    });
+<script>
+  const DRAFT_KEY = "so_t_leaders_ads_draft_final_v3";
 
-    // leaders.json 불러오기
-    async function loadData() {
-      const messageEl   = document.getElementById("message");
-      const leadersGrid = document.getElementById("leaders-grid");
-      const adsSection  = document.getElementById("ads-section");
+  function getDefaultData() {
+    return {
+      bannerPosition: "bottom",
+      ads: [],
+      leaders: []
+    };
+  }
 
-      try {
-        const res = await fetch("leaders.json?_=" + Date.now());
-        if (!res.ok) {
-          throw new Error("HTTP " + res.status);
-        }
-        const json = await res.json();
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return getDefaultData();
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return getDefaultData();
 
-        const root    = json.data ? json.data : json;
-        const leaders = Array.isArray(root.leaders) ? root.leaders : [];
-        const ads     = Array.isArray(root.ads) ? root.ads : [];
+      if (!Array.isArray(parsed.ads)) parsed.ads = [];
+      if (!Array.isArray(parsed.leaders)) parsed.leaders = [];
+      if (!parsed.bannerPosition) parsed.bannerPosition = "bottom";
 
-        // admin-index에서 저장한 위치값 (top/bottom)
-        const bannerPosition = root.bannerPosition || "bottom";
-
-        renderLeaders(leadersGrid, leaders);
-        renderAds(adsSection, ads);
-        applyBannerPosition(bannerPosition);
-
-        if (leaders.length === 0) {
-          messageEl.textContent = "leaders.json 안에 leaders 데이터가 없습니다. 관리자 페이지에서 리더 정보를 추가해 주세요.";
-        } else {
-          messageEl.textContent = "";
-        }
-
-        if (root.meta && root.meta.title) {
-          const heroTitle = document.getElementById("hero-title");
-          heroTitle.textContent = root.meta.title;
-        }
-        if (root.meta && root.meta.subtitle) {
-          const heroSubtitle = document.getElementById("hero-subtitle");
-          heroSubtitle.textContent = root.meta.subtitle;
-        }
-      } catch (error) {
-        console.error(error);
-        messageEl.classList.add("error");
-        messageEl.textContent = "leaders.json을 불러오는 중 오류가 발생했습니다: " + error.message;
-        leadersGrid.innerHTML = "";
-        adsSection.classList.add("hidden");
-      }
-    }
-
-    // 리더 카드 렌더링
-    function renderLeaders(container, leadersRaw) {
-      container.innerHTML = "";
-
-      const visibleLeaders = (leadersRaw || []).filter(l => l && l.enabled !== false && l.visible !== false);
-
-      visibleLeaders.sort((a, b) => {
-        const ao = (typeof a.order === "number") ? a.order : 9999;
-        const bo = (typeof b.order === "number") ? b.order : 9999;
-        if (ao === bo) {
-          return (a.name || "").localeCompare(b.name || "", "ko");
-        }
-        return ao - bo;
+      parsed.leaders.forEach(l => {
+        if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
+        if (typeof l.enabled !== "boolean") l.enabled = true;
       });
+      parsed.ads.forEach(a => {
+        if (typeof a.enabled !== "boolean") a.enabled = true;
+      });
+      return parsed;
+    } catch {
+      return getDefaultData();
+    }
+  }
 
-      if (!visibleLeaders.length) {
-        const empty = document.createElement("div");
-        empty.className = "message";
-        empty.textContent = "현재 노출 설정된 리더가 없습니다. 관리자 페이지에서 리더의 노출을 켜 주세요.";
-        container.appendChild(empty);
+  function saveDraft() {
+    data.bannerPosition = bannerPosition;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+  }
+
+  let data           = loadDraft();
+  let bannerPosition = data.bannerPosition || "bottom";
+  let ads            = data.ads;
+  let leaders        = data.leaders;
+
+  // 광고 요소
+  const editingAdIndexEl   = document.getElementById("editingAdIndex");
+  const adLinkInput        = document.getElementById("adLinkUrl");
+  const adTextInput        = document.getElementById("adText");
+  const adEnabledInput     = document.getElementById("adEnabled");
+  const adImageInput       = document.getElementById("adImageFile");
+  const adDropZone         = document.getElementById("adDropZone");
+  const adPreviewWrap      = document.getElementById("adPreviewWrap");
+  const adPreviewImage     = document.getElementById("adPreviewImage");
+  const adListEl           = document.getElementById("adList");
+
+  // 배너 위치 라디오 버튼
+  const bannerPosRadios = document.querySelectorAll('input[name="bannerPosition"]');
+  bannerPosRadios.forEach(r => {
+    r.checked = (r.value === bannerPosition);
+    r.addEventListener("change", () => {
+      bannerPosition = r.value;
+      saveDraft();
+    });
+  });
+
+  // JSON 관련
+  const jsonOutput      = document.getElementById("jsonOutput");
+  const generateJsonBtn = document.getElementById("generateJsonBtn");
+  const copyJsonBtn     = document.getElementById("copyJsonBtn");
+  const downloadJsonBtn = document.getElementById("downloadJsonBtn");
+  const openJsonBtn     = document.getElementById("openJsonBtn");
+  const loadJsonBtn     = document.getElementById("loadJsonBtn");
+  const jsonFileInput   = document.getElementById("jsonFileInput");
+
+  // URL 일괄 입력 관련
+  const bulkTextarea = document.getElementById("bulk-form-urls");
+  const bulkBtn      = document.getElementById("apply-bulk-form-urls");
+  const bulkStatus   = document.getElementById("bulk-form-urls-status");
+
+  // 리더 관련
+  const editingLeaderIndexEl = document.getElementById("editingLeaderIndex");
+  const leaderListEl         = document.getElementById("leaderList");
+  const leaderNameInput      = document.getElementById("leaderName");
+  const leaderRoleInput      = document.getElementById("leaderRole");
+  const leaderLinkInput      = document.getElementById("leaderLink");
+  const leaderSheetInput     = document.getElementById("leaderSheetUrl");
+  const leaderTagsInput      = document.getElementById("leaderTags");
+  const leaderIntroInput     = document.getElementById("leaderIntro");
+  const leaderYoutubeInput   = document.getElementById("leaderYoutube");
+  const leaderTiktokInput    = document.getElementById("leaderTiktok");
+  const leaderInstagramInput = document.getElementById("leaderInstagram");
+  const leaderFacebookInput  = document.getElementById("leaderFacebook");
+  const leaderBlogInput      = document.getElementById("leaderBlog");
+  const leaderCarrotInput    = document.getElementById("leaderCarrot");
+  const leaderDiscordInput   = document.getElementById("leaderDiscord");
+  const leaderMediaInput     = document.getElementById("leaderMediaFile");
+  const leaderDropZone       = document.getElementById("leaderDropZone");
+  const leaderPreviewWrap    = document.getElementById("leaderPreviewWrap");
+  const leaderPreviewImage   = document.getElementById("leaderPreviewImage");
+  const leaderEnabledInput   = document.getElementById("leaderEnabled");
+  const newLeaderBtn         = document.getElementById("newLeaderBtn");
+  const clearLeaderFormBtn   = document.getElementById("clearLeaderFormBtn");
+
+  let tempAdImageDataUrl     = "";
+  let tempLeaderMediaDataUrl = "";
+
+  // ---- 광고 관련 함수 ----
+  function clearAdPreview() {
+    adPreviewWrap.style.display = "none";
+    adPreviewImage.src = "";
+    tempAdImageDataUrl = "";
+  }
+
+  function clearAdForm() {
+    editingAdIndexEl.value = -1;
+    adLinkInput.value      = "";
+    adTextInput.value      = "";
+    adEnabledInput.checked = true;
+    adImageInput.value     = "";
+    clearAdPreview();
+  }
+
+  function showAdPreview(dataUrl) {
+    tempAdImageDataUrl = dataUrl;
+    adPreviewImage.src = dataUrl;
+    adPreviewWrap.style.display = "block";
+  }
+
+  function handleAdFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("광고 이미지는 이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => showAdPreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  adImageInput.addEventListener("change", function () {
+    const file = this.files[0];
+    handleAdFile(file);
+  });
+
+  ["dragenter","dragover"].forEach((evt) => {
+    adDropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      adDropZone.classList.add("dragover");
+    });
+  });
+  ["dragleave","drop"].forEach((evt) => {
+    adDropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      adDropZone.classList.remove("dragover");
+    });
+  });
+  adDropZone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    handleAdFile(file);
+  });
+
+  document.getElementById("clearAdFormBtn").addEventListener("click", clearAdForm);
+  document.getElementById("newAdBtn").addEventListener("click", clearAdForm);
+
+  document.getElementById("saveAdBtn").addEventListener("click", () => {
+    const linkUrl  = adLinkInput.value.trim();
+    const text     = adTextInput.value.trim();
+    const enabled  = adEnabledInput.checked;
+    const idx      = parseInt(editingAdIndexEl.value, 10);
+    const base     = { linkUrl, text, enabled };
+
+    if (idx >= 0) {
+      const prev = ads[idx];
+      ads[idx] = {
+        ...prev,
+        ...base,
+        imageUrl: tempAdImageDataUrl || prev.imageUrl || ""
+      };
+    } else {
+      if (!tempAdImageDataUrl) {
+        alert("광고 이미지를 선택해 주세요.");
         return;
       }
+      ads.push({ ...base, imageUrl: tempAdImageDataUrl });
+    }
 
-      visibleLeaders.forEach(leader => {
-        const card = document.createElement("article");
-        card.className = "leader-card";
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+    alert("광고가 임시 저장되었습니다. JSON 생성하기 → leaders.json 업데이트를 진행해주세요.");
+  });
 
-        const inner = document.createElement("div");
-        inner.className = "leader-card-inner";
+  function renderAds() {
+    adListEl.innerHTML = "";
+    if (!ads.length) {
+      adListEl.innerHTML = "<p style='font-size:12px;color:#6b7280;'>등록된 광고가 없습니다.</p>";
+      return;
+    }
 
-        const imgWrap = document.createElement("div");
-        imgWrap.className = "leader-image-wrap";
-        const img = document.createElement("img");
-        img.className = "leader-image";
-        img.alt = leader.name || "리더 이미지";
+    ads.forEach((ad, index) => {
+      const item = document.createElement("div");
+      item.className = "ad-item";
 
-        if (leader.imageUrl || leader.mediaUrl) {
-          img.src = leader.imageUrl || leader.mediaUrl;
-        } else {
-          img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+      const enableBadge = ad.enabled
+        ? `<span class="enable-badge enable-yes">노출</span>`
+        : `<span class="enable-badge enable-no">비노출</span>`;
+
+      const toggleBtnClass = ad.enabled
+        ? "btn btn-primary btn-xs"
+        : "btn btn-outline btn-xs";
+
+      const toggleBtnLabel = ad.enabled ? "노출 끄기" : "노출 켜기";
+
+      const orderNo = index + 1;
+      const thumbHtml = ad.imageUrl
+        ? `<img src="${ad.imageUrl}" class="ad-thumb" alt="">`
+        : "";
+
+      item.innerHTML = `
+        <div class="ad-item-header">
+          <div style="display:flex;align-items:center;">
+            ${thumbHtml}
+            <div>
+              <div class="ad-item-title">
+                [${orderNo}] ${ad.text || "(제목 없음)"} ${enableBadge}
+              </div>
+              <div style="font-size:11px;color:#6b7280;">
+                ${ad.text ? "문구: " + ad.text : "<span style='color:#9ca3af;'>문구 없음</span>"}
+              </div>
+              ${
+                ad.linkUrl
+                  ? `<a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer" class="link-small">${ad.linkUrl}</a>`
+                  : "<span class='link-small' style='color:#9ca3af;text-decoration:none;'>링크 없음</span>"
+              }
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div>
+              <button class="${toggleBtnClass}" onclick="toggleAdEnable(${index})">
+                ${toggleBtnLabel}
+              </button>
+              <button class="btn btn-secondary btn-xs" onclick="editAd(${index})">수정</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteAd(${index})">삭제</button>
+            </div>
+            <div>
+              <button class="btn btn-outline btn-xs" onclick="moveAdUp(${index})" ${index===0 ? "disabled" : ""}>▲ 위로</button>
+              <button class="btn btn-outline btn-xs" onclick="moveAdDown(${index})" ${index===ads.length-1 ? "disabled" : ""}>▼ 아래로</button>
+            </div>
+          </div>
+        </div>
+      `;
+      adListEl.appendChild(item);
+    });
+  }
+
+  window.editAd = function (index) {
+    const ad = ads[index];
+    editingAdIndexEl.value = index;
+    adLinkInput.value      = ad.linkUrl || "";
+    adTextInput.value      = ad.text || "";
+    adEnabledInput.checked = !!ad.enabled;
+    tempAdImageDataUrl     = ad.imageUrl || "";
+    if (tempAdImageDataUrl) showAdPreview(tempAdImageDataUrl);
+    else clearAdPreview();
+  };
+
+  window.deleteAd = function (index) {
+    if (!confirm("이 광고를 삭제할까요?")) return;
+    ads.splice(index, 1);
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
+  window.toggleAdEnable = function (index) {
+    ads[index].enabled = !ads[index].enabled;
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
+  window.moveAdUp = function(index) {
+    if (index <= 0) return;
+    const tmp = ads[index-1];
+    ads[index-1] = ads[index];
+    ads[index] = tmp;
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
+  window.moveAdDown = function(index) {
+    if (index >= ads.length-1) return;
+    const tmp = ads[index+1];
+    ads[index+1] = ads[index];
+    ads[index] = tmp;
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
+  // ---- 리더 관련 ----
+  function clearLeaderPreview() {
+    leaderPreviewWrap.style.display = "none";
+    leaderPreviewImage.src = "";
+    tempLeaderMediaDataUrl = "";
+  }
+
+  function clearLeaderForm() {
+    editingLeaderIndexEl.value = -1;
+    leaderNameInput.value      = "";
+    leaderRoleInput.value      = "";
+    leaderLinkInput.value      = "";
+    leaderSheetInput.value     = "";
+    leaderTagsInput.value      = "";
+    leaderIntroInput.value     = "";
+    leaderYoutubeInput.value   = "";
+    leaderTiktokInput.value    = "";
+    leaderInstagramInput.value = "";
+    leaderFacebookInput.value  = "";
+    leaderBlogInput.value      = "";
+    leaderCarrotInput.value    = "";
+    leaderDiscordInput.value   = "";
+    leaderMediaInput.value     = "";
+    leaderEnabledInput.checked = true;
+    clearLeaderPreview();
+  }
+
+  clearLeaderFormBtn.addEventListener("click", clearLeaderForm);
+  newLeaderBtn.addEventListener("click", clearLeaderForm);
+
+  leaderMediaInput.addEventListener("change", function () {
+    const file = this.files[0];
+    handleLeaderFile(file);
+  });
+
+  ["dragenter","dragover"].forEach((evt) => {
+    leaderDropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      leaderDropZone.classList.add("dragover");
+    });
+  });
+  ["dragleave","drop"].forEach((evt) => {
+    leaderDropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      leaderDropZone.classList.remove("dragover");
+    });
+  });
+  leaderDropZone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    handleLeaderFile(file);
+  });
+
+  function handleLeaderFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("프로필 이미지는 이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => showLeaderPreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function showLeaderPreview(dataUrl) {
+    tempLeaderMediaDataUrl = dataUrl;
+    leaderPreviewImage.src = dataUrl;
+    leaderPreviewWrap.style.display = "block";
+  }
+
+  document.getElementById("saveLeaderBtn").addEventListener("click", () => {
+    const name = leaderNameInput.value.trim();
+    if (!name) {
+      alert("리더 이름은 필수입니다.");
+      return;
+    }
+
+    const role      = leaderRoleInput.value.trim();
+    const link      = leaderLinkInput.value.trim();
+    const sheetUrl  = leaderSheetInput.value.trim();
+    const tags      = leaderTagsInput.value.split(",").map((t) => t.trim()).filter(Boolean);
+    const introShort= leaderIntroInput.value.trim();
+    const sns = {
+      youtube:   leaderYoutubeInput.value.trim(),
+      tiktok:    leaderTiktokInput.value.trim(),
+      instagram: leaderInstagramInput.value.trim(),
+      facebook:  leaderFacebookInput.value.trim(),
+      blog:      leaderBlogInput.value.trim(),
+      carrot:    leaderCarrotInput.value.trim(),
+      discord:   leaderDiscordInput.value.trim()
+    };
+    const enabled   = leaderEnabledInput.checked;
+    const idx       = parseInt(editingLeaderIndexEl.value, 10);
+    const base      = { name, role, link, sheetUrl, tags, introShort, sns, enabled };
+
+    if (idx >= 0) {
+      const prev = leaders[idx];
+      leaders[idx] = {
+        ...prev,
+        ...base,
+        mediaUrl: tempLeaderMediaDataUrl || prev.mediaUrl || prev.imageUrl || ""
+      };
+    } else {
+      leaders.push({
+        ...base,
+        mediaUrl: tempLeaderMediaDataUrl || ""
+      });
+    }
+
+    data.leaders = leaders;
+    saveDraft();
+    renderLeaders();
+    alert("리더가 임시 저장되었습니다. JSON 생성하기 → leaders.json 업데이트를 진행해주세요.");
+    clearLeaderForm();
+  });
+
+  window.editLeader = function (index) {
+    const l = leaders[index];
+    editingLeaderIndexEl.value = index;
+    leaderNameInput.value      = l.name || "";
+    leaderRoleInput.value      = l.role || "";
+    leaderLinkInput.value      = l.link || "";
+    leaderSheetInput.value     = l.sheetUrl || "";
+    leaderTagsInput.value      = (l.tags || []).join(", ");
+    leaderIntroInput.value     = l.introShort || "";
+    const sns = l.sns || {};
+    leaderYoutubeInput.value   = sns.youtube   || "";
+    leaderTiktokInput.value    = sns.tiktok    || "";
+    leaderInstagramInput.value = sns.instagram || "";
+    leaderFacebookInput.value  = sns.facebook  || "";
+    leaderBlogInput.value      = sns.blog      || "";
+    leaderCarrotInput.value    = sns.carrot    || "";
+    leaderDiscordInput.value   = sns.discord   || "";
+    leaderEnabledInput.checked = l.enabled !== false;
+    tempLeaderMediaDataUrl     = l.mediaUrl || l.imageUrl || "";
+    if (tempLeaderMediaDataUrl) showLeaderPreview(tempLeaderMediaDataUrl);
+    else clearLeaderPreview();
+    leaderMediaInput.value = "";
+  };
+
+  window.deleteLeader = function (index) {
+    if (!confirm("이 리더를 삭제할까요?")) return;
+    leaders.splice(index, 1);
+    data.leaders = leaders;
+    saveDraft();
+    renderLeaders();
+    clearLeaderForm();
+  };
+
+  window.toggleLeaderEnable = function (index) {
+    leaders[index].enabled = !leaders[index].enabled;
+    data.leaders = leaders;
+    saveDraft();
+    renderLeaders();
+  };
+
+  // 리더 리스트 렌더 + 순서 조정 (위/아래 버튼)
+  function renderLeaders() {
+    leaderListEl.innerHTML = "";
+    if (!leaders.length) {
+      leaderListEl.innerHTML = "<p style='font-size:12px;color:#6b7280;'>등록된 리더가 없습니다.</p>";
+      return;
+    }
+
+    leaders.forEach((leader, index) => {
+      const sns = leader.sns || {};
+      const snsParts = [];
+      if (sns.youtube)   snsParts.push("YouTube");
+      if (sns.tiktok)    snsParts.push("TikTok");
+      if (sns.instagram) snsParts.push("Instagram");
+      if (sns.facebook)  snsParts.push("Facebook");
+      if (sns.blog)      snsParts.push("Blog");
+      if (sns.carrot)    snsParts.push("당근");
+      if (sns.discord)   snsParts.push("Discord");
+
+      const thumbHtml = leader.mediaUrl || leader.imageUrl
+        ? `<img src="${leader.mediaUrl || leader.imageUrl}" class="thumb" alt="">`
+        : `<div class="leader-thumb-slot">이미지</div>`;
+
+      const sheetLinkHtml = leader.sheetUrl
+        ? `<a href="${leader.sheetUrl}" target="_blank" rel="noopener noreferrer" class="link-small">응답 시트 열기</a>`
+        : "<span style='font-size:10px;color:#9ca3af;'>응답 시트 링크 없음</span>";
+
+      const enabled = leader.enabled !== false;
+      const enableBadge = enabled
+        ? `<span class="enable-badge enable-yes">노출</span>`
+        : `<span class="enable-badge enable-no">비노출</span>`;
+      const toggleBtnClass = enabled ? "btn btn-primary btn-xs" : "btn btn-outline btn-xs";
+      const toggleBtnLabel = enabled ? "노출 끄기" : "노출 켜기";
+
+      const orderNo = index + 1;
+
+      const item = document.createElement("div");
+      item.className = "leader-item";
+      item.innerHTML = `
+        <div class="leader-item-header">
+          <div style="display:flex;align-items:center;">
+            ${thumbHtml}
+            <div>
+              <div class="leader-item-name">
+                [${orderNo}] ${leader.name || "(이름 없음)"} ${enableBadge}
+              </div>
+              <div style="font-size:11px;color:#6b7280;">${leader.role || ""}</div>
+              ${
+                leader.link
+                  ? `<a href="${leader.link}" target="_blank" rel="noopener noreferrer" class="link-small">${leader.link}</a>`
+                  : "<span class='link-small' style='color:#9ca3af;text-decoration:none;'>상담 링크 없음</span>"
+              }
+              <br />
+              ${sheetLinkHtml}
+              ${
+                snsParts.length
+                  ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">SNS: ${snsParts.join(", ")}</div>`
+                  : ""
+              }
+              <div style="font-size:10px;color:#9ca3af;margin-top:2px;">
+                태그: ${(leader.tags || []).join(", ") || "-"}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div>
+              <button class="${toggleBtnClass}" onclick="toggleLeaderEnable(${index})">
+                ${toggleBtnLabel}
+              </button>
+              <button class="btn btn-secondary btn-xs" onclick="editLeader(${index})">수정</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteLeader(${index})">삭제</button>
+            </div>
+            <div>
+              <button class="btn btn-outline btn-xs" onclick="moveLeaderUp(${index})" ${index===0 ? "disabled" : ""}>▲ 위로</button>
+              <button class="btn btn-outline btn-xs" onclick="moveLeaderDown(${index})" ${index===leaders.length-1 ? "disabled" : ""}>▼ 아래로</button>
+            </div>
+          </div>
+        </div>
+      `;
+      leaderListEl.appendChild(item);
+    });
+  }
+
+  // 리더 순서 조정
+  window.moveLeaderUp = function(index) {
+    if (index <= 0) return;
+    const tmp = leaders[index-1];
+    leaders[index-1] = leaders[index];
+    leaders[index] = tmp;
+    data.leaders = leaders;
+    saveDraft();
+    renderLeaders();
+  };
+
+  window.moveLeaderDown = function(index) {
+    if (index >= leaders.length-1) return;
+    const tmp = leaders[index+1];
+    leaders[index+1] = leaders[index];
+    leaders[index] = tmp;
+    data.leaders = leaders;
+    saveDraft();
+    renderLeaders();
+  };
+
+  // ---- JSON 생성/불러오기/복사/다운로드 ----
+
+  // JSON 생성하기 (배너 위치 + 리더 order + 광고 order 포함)
+  generateJsonBtn.addEventListener("click", () => {
+    const exportAds = ads.map((ad, idx) => ({
+      linkUrl: ad.linkUrl || "",
+      text:    ad.text    || "",
+      enabled: ad.enabled !== false,
+      imageUrl: ad.imageUrl || "",
+      order:   idx + 1
+    }));
+
+    const exportLeaders = leaders.map((l, idx) => ({
+      name:      l.name      || "",
+      role:      l.role      || "",
+      link:      l.link      || "",
+      sheetUrl:  l.sheetUrl  || "",
+      tags:      Array.isArray(l.tags) ? l.tags : [],
+      introShort:l.introShort || "",
+      sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" },
+      enabled:   l.enabled !== false,
+      mediaUrl:  l.mediaUrl || l.imageUrl || "",
+      order:     idx + 1
+    }));
+
+    const jsonObj = {
+      bannerPosition,
+      ads: exportAds,
+      leaders: exportLeaders
+    };
+
+    const json = JSON.stringify(jsonObj, null, 2);
+    jsonOutput.value = json;
+    jsonOutput.scrollTop = 0;
+    alert("leaders.json 내용이 생성되었습니다. 아래 영역을 복사하거나 파일로 저장할 수 있습니다.");
+  });
+
+  // JSON 복사하기
+  copyJsonBtn.addEventListener("click", async () => {
+    if (!jsonOutput.value.trim()) {
+      alert("먼저 'JSON 생성하기' 버튼을 눌러 leaders.json 내용을 생성해주세요.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(jsonOutput.value);
+      alert("JSON이 클립보드에 복사되었습니다.");
+    } catch {
+      jsonOutput.select();
+      document.execCommand("copy");
+      alert("JSON이 클립보드에 복사되었습니다.");
+    }
+  });
+
+  // 임시 JSON 저장(파일 다운로드)
+  downloadJsonBtn.addEventListener("click", () => {
+    let text = jsonOutput.value.trim();
+    if (!text) {
+      // 아직 생성 안 했으면 자동으로 한 번 생성
+      const exportAds = ads.map((ad, idx) => ({
+        linkUrl: ad.linkUrl || "",
+        text:    ad.text    || "",
+        enabled: ad.enabled !== false,
+        imageUrl: ad.imageUrl || "",
+        order:   idx + 1
+      }));
+      const exportLeaders = leaders.map((l, idx) => ({
+        name:      l.name      || "",
+        role:      l.role      || "",
+        link:      l.link      || "",
+        sheetUrl:  l.sheetUrl  || "",
+        tags:      Array.isArray(l.tags) ? l.tags : [],
+        introShort:l.introShort || "",
+        sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" },
+        enabled:   l.enabled !== false,
+        mediaUrl:  l.mediaUrl || l.imageUrl || "",
+        order:     idx + 1
+      }));
+      const jsonObj = { bannerPosition, ads: exportAds, leaders: exportLeaders };
+      text = JSON.stringify(jsonObj, null, 2);
+      jsonOutput.value = text;
+    }
+
+    const blob = new Blob([text], {type: "application/json"});
+    const url  = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
+    a.href = url;
+    a.download = `leaders-backup-${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // GitHub leaders.json 열기
+  openJsonBtn.addEventListener("click", () => {
+    window.open(
+      "https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json",
+      "_blank"
+    );
+  });
+
+  // JSON 파일 불러오기 → 관리자 반영
+  loadJsonBtn.addEventListener("click", () => {
+    jsonFileInput.click();
+  });
+
+  jsonFileInput.addEventListener("change", () => {
+    const file = jsonFileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== "object") {
+          throw new Error("JSON 형식이 아닙니다.");
         }
-        imgWrap.appendChild(img);
 
-        const roleEl = document.createElement("div");
-        roleEl.className = "leader-role";
-        roleEl.textContent = leader.role || "";
+        bannerPosition = parsed.bannerPosition || "bottom";
+        ads            = Array.isArray(parsed.ads) ? parsed.ads : [];
+        leaders        = Array.isArray(parsed.leaders) ? parsed.leaders : [];
 
-        const nameEl = document.createElement("h2");
-        nameEl.className = "leader-name";
-        nameEl.textContent = leader.name || "(이름 없음)";
-
-        const tagsEl = document.createElement("div");
-        tagsEl.className = "leader-tags";
-        const tags = Array.isArray(leader.tags) ? leader.tags : [];
-        tags.forEach(tag => {
-          const span = document.createElement("span");
-          span.className = "tag";
-          span.textContent = tag;
-          tagsEl.appendChild(span);
+        // 라디오 버튼 상태 반영
+        bannerPosRadios.forEach(r => {
+          r.checked = (r.value === bannerPosition);
         });
 
-        const headlineEl = document.createElement("p");
-        headlineEl.className = "leader-headline";
-        headlineEl.textContent = leader.headline || leader.introShort || "";
+        // 광고 enabled/order 정리
+        ads.forEach(a => {
+          if (typeof a.enabled !== "boolean") a.enabled = a.enabled !== false;
+        });
+        ads.sort((a,b) => (a.order || 9999) - (b.order || 9999));
 
-        const introEl = document.createElement("p");
-        introEl.className = "leader-intro";
-        introEl.textContent = leader.intro || "";
+        // 리더 기본값 보정 + order 기준으로 정렬
+        leaders.forEach(l => {
+          if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
+          if (typeof l.enabled !== "boolean") l.enabled = l.enabled !== false;
+        });
+        leaders.sort((a,b) => (a.order || 9999) - (b.order || 9999));
 
-        const snsWrap = document.createElement("div");
-        snsWrap.className = "leader-sns";
-        const sns = leader.sns || {};
+        data = { bannerPosition, ads, leaders };
+        saveDraft();
 
-        if (sns.youtube)   snsWrap.appendChild(createSnsButton("YouTube",   sns.youtube,   "youtube"));
-        if (sns.instagram) snsWrap.appendChild(createSnsButton("Instagram", sns.instagram, "instagram"));
-        if (sns.blog)      snsWrap.appendChild(createSnsButton("Blog",      sns.blog,      "blog"));
-        if (sns.tiktok)    snsWrap.appendChild(createSnsButton("TikTok",    sns.tiktok,    "tiktok"));
-        if (sns.facebook)  snsWrap.appendChild(createSnsButton("Facebook",  sns.facebook,  "facebook"));
-        if (sns.carrot)    snsWrap.appendChild(createSnsButton("당근",      sns.carrot,    "carrot"));
-        if (sns.discord)   snsWrap.appendChild(createSnsButton("Discord",   sns.discord,   "discord"));
+        renderAds();
+        renderLeaders();
+        clearLeaderForm();
+        clearAdForm();
+        jsonOutput.value = JSON.stringify(parsed, null, 2);
 
-        const footer = document.createElement("div");
-        footer.className = "card-footer";
+        alert("JSON 파일을 불러와 관리자에 반영했습니다.");
+      } catch (e) {
+        alert("JSON 파싱 오류: " + e.message);
+      } finally {
+        jsonFileInput.value = "";
+      }
+    };
 
-        const pill = document.createElement("span");
-        pill.className = "visible-pill";
-        pill.textContent = "노출 중";
-        footer.appendChild(pill);
+    reader.readAsText(file, "utf-8");
+  });
 
-        if (leader.formUrl || leader.link) {
-          const btn = document.createElement("a");
-          btn.href = leader.formUrl || leader.link;
-          btn.target = "_blank";
-          btn.rel = "noopener noreferrer";
-          btn.className = "btn-primary";
-          btn.innerHTML = '<span class="icon">✈️</span><span>상담 / 신청하기</span>';
-          footer.appendChild(btn);
-        }
-
-        inner.appendChild(imgWrap);
-        inner.appendChild(roleEl);
-        inner.appendChild(nameEl);
-        if (tags.length) inner.appendChild(tagsEl);
-        if (leader.headline || leader.introShort) inner.appendChild(headlineEl);
-        if (leader.intro) inner.appendChild(introEl);
-        if (snsWrap.children.length) inner.appendChild(snsWrap);
-        inner.appendChild(footer);
-
-        card.appendChild(inner);
-        container.appendChild(card);
-      });
-    }
-
-    function createSnsButton(label, url, type) {
-      const a = document.createElement("a");
-      a.href = url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.className = "btn-sns " + type;
-      a.textContent = label;
-      return a;
-    }
-
-    // 광고 섹션 렌더링
-    function renderAds(section, adsRaw) {
-      const visibleAds = (adsRaw || []).filter(a => a && a.enabled !== false && a.visible !== false);
-      if (!visibleAds.length) {
-        section.classList.add("hidden");
-        section.innerHTML = "";
+  // 🔁 URL → 리더 자동 매칭
+  if (bulkBtn) {
+    bulkBtn.addEventListener("click", () => {
+      const raw = (bulkTextarea.value || "").trim();
+      if (!raw) {
+        bulkStatus.textContent = "URL 목록이 비어 있습니다.";
         return;
       }
-      const ad = visibleAds[0]; // 첫 번째 광고만 사용
-      section.classList.remove("hidden");
-      section.innerHTML = "";
 
-      const card = document.createElement("article");
-      card.className = "ad-card";
+      const lines = raw
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
 
-      const bg = document.createElement("div");
-      bg.className = "ad-bg";
-      if (ad.imageUrl) {
-        bg.style.backgroundImage = "url('" + ad.imageUrl + "')";
+      if (!lines.length) {
+        bulkStatus.textContent = "유효한 URL이 없습니다.";
+        return;
       }
 
-      const overlay = document.createElement("div");
-      overlay.className = "ad-overlay";
-
-      const content = document.createElement("div");
-      content.className = "ad-content";
-
-      const textMain = document.createElement("div");
-      textMain.className = "ad-text-main";
-
-      const titleEl = document.createElement("h2");
-      titleEl.className = "ad-title";
-      titleEl.textContent = ad.text || "여행 일정 안내";
-
-      const descEl = document.createElement("p");
-      descEl.className = "ad-desc";
-      descEl.textContent = ad.desc || "";
-
-      textMain.appendChild(titleEl);
-      textMain.appendChild(descEl);
-
-      const cta = document.createElement("a");
-      cta.className = "ad-cta";
-      cta.href = ad.linkUrl || "#";
-      if (ad.linkUrl) {
-        cta.target = "_blank";
-        cta.rel = "noopener noreferrer";
-      }
-      cta.innerHTML = '<span class="icon">▶</span><span>자세히 보기</span>';
-
-      content.appendChild(textMain);
-      content.appendChild(cta);
-
-      card.appendChild(bg);
-      card.appendChild(overlay);
-      card.appendChild(content);
-      section.appendChild(card);
-    }
-
-    // bannerPosition 값에 따라 광고 섹션을 리더 섹션 위/아래로 이동
-    function applyBannerPosition(position) {
-      const adsSection     = document.getElementById("ads-section");
-      const leadersSection = document.querySelector(".leaders-section");
-      if (!adsSection || !leadersSection) return;
-
-      const parent = adsSection.parentNode;
-      if (!parent) return;
-
-      if (position === "top") {
-        if (leadersSection.previousSibling !== adsSection) {
-          parent.insertBefore(adsSection, leadersSection);
+      // 이름 → 리더 인덱스 맵
+      const nameIndexMap = new Map();
+      leaders.forEach((leader, idx) => {
+        if (leader && leader.name) {
+          nameIndexMap.set(leader.name.trim(), idx);
         }
-      } else {
-        if (leadersSection.nextSibling !== adsSection) {
-          if (leadersSection.nextSibling) {
-            parent.insertBefore(adsSection, leadersSection.nextSibling);
-          } else {
-            parent.appendChild(adsSection);
-          }
+      });
+
+      let matchedByName  = 0;
+      let matchedByIndex = 0;
+      const unmatched    = [];
+
+      lines.forEach((line, idx) => {
+        let name = null;
+
+        // URL 안의 entry.xxxxx=이름 추출
+        try {
+          const u = new URL(line);
+          u.searchParams.forEach((val, key) => {
+            if (!name && key.startsWith("entry.")) {
+              name = decodeURIComponent(val);
+            }
+          });
+        } catch (e) {
+          // URL 파싱 실패는 무시
         }
+
+        let leaderIndex = -1;
+
+        if (name && nameIndexMap.has(name)) {
+          leaderIndex = nameIndexMap.get(name);
+          matchedByName++;
+        } else if (leaders[idx]) {
+          leaderIndex = idx;
+          matchedByIndex++;
+        } else {
+          unmatched.push(line);
+        }
+
+        if (leaderIndex >= 0) {
+          leaders[leaderIndex].link = line;
+        }
+      });
+
+      data.leaders = leaders;
+      saveDraft();
+      renderLeaders();
+
+      let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
+      if (unmatched.length) {
+        msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
       }
-    }
-  </script>
+      bulkStatus.textContent = msg;
+    });
+  }
+
+  // 초기 렌더
+  renderAds();
+  renderLeaders();
+</script>
+
 </body>
 </html>
