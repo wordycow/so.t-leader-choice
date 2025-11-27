@@ -324,7 +324,7 @@
           </label>
         </div>
 
-        <!-- 🔁 광고 위치 (리더 위 / 아래) -->
+        <!-- 🔁 광고 전체 위치 (리더 위 / 아래) -->
         <div class="form-group">
           <label>광고 위치 (공개 페이지에서 표시 위치)</label>
           <div class="inline">
@@ -415,6 +415,14 @@
           <label for="leaderBlog">Blog URL</label>
           <input type="text" id="leaderBlog" placeholder="https://blog.naver.com/leader" />
         </div>
+        <div class="form-group">
+          <label for="leaderCarrot">당근 URL</label>
+          <input type="text" id="leaderCarrot" placeholder="https://www.daangn.com/..." />
+        </div>
+        <div class="form-group">
+          <label for="leaderDiscord">Discord URL</label>
+          <input type="text" id="leaderDiscord" placeholder="https://discord.gg/..." />
+        </div>
 
         <div class="form-group">
           <label>프로필 이미지 (이미지 파일)</label>
@@ -498,8 +506,11 @@
       if (!parsed.bannerPosition) parsed.bannerPosition = "bottom";
 
       parsed.leaders.forEach(l => {
-        if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
+        if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
         if (typeof l.enabled !== "boolean") l.enabled = true;
+      });
+      parsed.ads.forEach(a => {
+        if (typeof a.enabled !== "boolean") a.enabled = true;
       });
       return parsed;
     } catch {
@@ -561,6 +572,8 @@
   const leaderInstagramInput = document.getElementById("leaderInstagram");
   const leaderFacebookInput  = document.getElementById("leaderFacebook");
   const leaderBlogInput      = document.getElementById("leaderBlog");
+  const leaderCarrotInput    = document.getElementById("leaderCarrot");
+  const leaderDiscordInput   = document.getElementById("leaderDiscord");
   const leaderMediaInput     = document.getElementById("leaderMediaFile");
   const leaderDropZone       = document.getElementById("leaderDropZone");
   const leaderPreviewWrap    = document.getElementById("leaderPreviewWrap");
@@ -628,7 +641,6 @@
   });
 
   document.getElementById("clearAdFormBtn").addEventListener("click", clearAdForm);
-
   document.getElementById("newAdBtn").addEventListener("click", clearAdForm);
 
   document.getElementById("saveAdBtn").addEventListener("click", () => {
@@ -680,14 +692,18 @@
 
       const toggleBtnLabel = ad.enabled ? "노출 끄기" : "노출 켜기";
 
+      const orderNo = index + 1;
+      const thumbHtml = ad.imageUrl
+        ? `<img src="${ad.imageUrl}" class="ad-thumb" alt="">`
+        : "";
+
       item.innerHTML = `
         <div class="ad-item-header">
           <div style="display:flex;align-items:center;">
-            ${ad.imageUrl ? `<img src="${ad.imageUrl}" class="ad-thumb" alt="">` : ""}
+            ${thumbHtml}
             <div>
               <div class="ad-item-title">
-                광고 ${index + 1}
-                ${enableBadge}
+                [${orderNo}] ${ad.text || "(제목 없음)"} ${enableBadge}
               </div>
               <div style="font-size:11px;color:#6b7280;">
                 ${ad.text ? "문구: " + ad.text : "<span style='color:#9ca3af;'>문구 없음</span>"}
@@ -699,12 +715,18 @@
               }
             </div>
           </div>
-          <div>
-            <button class="${toggleBtnClass}" onclick="toggleAdEnable(${index})">
-              ${toggleBtnLabel}
-            </button>
-            <button class="btn btn-secondary btn-xs" onclick="editAd(${index})">수정</button>
-            <button class="btn btn-danger btn-xs" onclick="deleteAd(${index})">삭제</button>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div>
+              <button class="${toggleBtnClass}" onclick="toggleAdEnable(${index})">
+                ${toggleBtnLabel}
+              </button>
+              <button class="btn btn-secondary btn-xs" onclick="editAd(${index})">수정</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteAd(${index})">삭제</button>
+            </div>
+            <div>
+              <button class="btn btn-outline btn-xs" onclick="moveAdUp(${index})" ${index===0 ? "disabled" : ""}>▲ 위로</button>
+              <button class="btn btn-outline btn-xs" onclick="moveAdDown(${index})" ${index===ads.length-1 ? "disabled" : ""}>▼ 아래로</button>
+            </div>
           </div>
         </div>
       `;
@@ -738,6 +760,26 @@
     renderAds();
   };
 
+  window.moveAdUp = function(index) {
+    if (index <= 0) return;
+    const tmp = ads[index-1];
+    ads[index-1] = ads[index];
+    ads[index] = tmp;
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
+  window.moveAdDown = function(index) {
+    if (index >= ads.length-1) return;
+    const tmp = ads[index+1];
+    ads[index+1] = ads[index];
+    ads[index] = tmp;
+    data.ads = ads;
+    saveDraft();
+    renderAds();
+  };
+
   // ---- 리더 관련 ----
   function clearLeaderPreview() {
     leaderPreviewWrap.style.display = "none";
@@ -758,6 +800,8 @@
     leaderInstagramInput.value = "";
     leaderFacebookInput.value  = "";
     leaderBlogInput.value      = "";
+    leaderCarrotInput.value    = "";
+    leaderDiscordInput.value   = "";
     leaderMediaInput.value     = "";
     leaderEnabledInput.checked = true;
     clearLeaderPreview();
@@ -822,7 +866,9 @@
       tiktok:    leaderTiktokInput.value.trim(),
       instagram: leaderInstagramInput.value.trim(),
       facebook:  leaderFacebookInput.value.trim(),
-      blog:      leaderBlogInput.value.trim()
+      blog:      leaderBlogInput.value.trim(),
+      carrot:    leaderCarrotInput.value.trim(),
+      discord:   leaderDiscordInput.value.trim()
     };
     const enabled   = leaderEnabledInput.checked;
     const idx       = parseInt(editingLeaderIndexEl.value, 10);
@@ -864,6 +910,8 @@
     leaderInstagramInput.value = sns.instagram || "";
     leaderFacebookInput.value  = sns.facebook  || "";
     leaderBlogInput.value      = sns.blog      || "";
+    leaderCarrotInput.value    = sns.carrot    || "";
+    leaderDiscordInput.value   = sns.discord   || "";
     leaderEnabledInput.checked = l.enabled !== false;
     tempLeaderMediaDataUrl     = l.mediaUrl || l.imageUrl || "";
     if (tempLeaderMediaDataUrl) showLeaderPreview(tempLeaderMediaDataUrl);
@@ -903,6 +951,8 @@
       if (sns.instagram) snsParts.push("Instagram");
       if (sns.facebook)  snsParts.push("Facebook");
       if (sns.blog)      snsParts.push("Blog");
+      if (sns.carrot)    snsParts.push("당근");
+      if (sns.discord)   snsParts.push("Discord");
 
       const thumbHtml = leader.mediaUrl || leader.imageUrl
         ? `<img src="${leader.mediaUrl || leader.imageUrl}" class="thumb" alt="">`
@@ -991,13 +1041,14 @@
 
   // ---- JSON 생성/불러오기/복사/다운로드 ----
 
-  // JSON 생성하기 (배너 위치 + 리더 order 포함)
+  // JSON 생성하기 (배너 위치 + 리더 order + 광고 order 포함)
   generateJsonBtn.addEventListener("click", () => {
-    const exportAds = ads.map(ad => ({
+    const exportAds = ads.map((ad, idx) => ({
       linkUrl: ad.linkUrl || "",
       text:    ad.text    || "",
       enabled: ad.enabled !== false,
-      imageUrl: ad.imageUrl || ""
+      imageUrl: ad.imageUrl || "",
+      order:   idx + 1
     }));
 
     const exportLeaders = leaders.map((l, idx) => ({
@@ -1007,7 +1058,7 @@
       sheetUrl:  l.sheetUrl  || "",
       tags:      Array.isArray(l.tags) ? l.tags : [],
       introShort:l.introShort || "",
-      sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"" },
+      sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" },
       enabled:   l.enabled !== false,
       mediaUrl:  l.mediaUrl || l.imageUrl || "",
       order:     idx + 1
@@ -1046,11 +1097,12 @@
     let text = jsonOutput.value.trim();
     if (!text) {
       // 아직 생성 안 했으면 자동으로 한 번 생성
-      const exportAds = ads.map(ad => ({
+      const exportAds = ads.map((ad, idx) => ({
         linkUrl: ad.linkUrl || "",
         text:    ad.text    || "",
         enabled: ad.enabled !== false,
-        imageUrl: ad.imageUrl || ""
+        imageUrl: ad.imageUrl || "",
+        order:   idx + 1
       }));
       const exportLeaders = leaders.map((l, idx) => ({
         name:      l.name      || "",
@@ -1059,7 +1111,7 @@
         sheetUrl:  l.sheetUrl  || "",
         tags:      Array.isArray(l.tags) ? l.tags : [],
         introShort:l.introShort || "",
-        sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"" },
+        sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" },
         enabled:   l.enabled !== false,
         mediaUrl:  l.mediaUrl || l.imageUrl || "",
         order:     idx + 1
@@ -1118,9 +1170,15 @@
           r.checked = (r.value === bannerPosition);
         });
 
+        // 광고 enabled/order 정리
+        ads.forEach(a => {
+          if (typeof a.enabled !== "boolean") a.enabled = a.enabled !== false;
+        });
+        ads.sort((a,b) => (a.order || 9999) - (b.order || 9999));
+
         // 리더 기본값 보정 + order 기준으로 정렬
         leaders.forEach(l => {
-          if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
+          if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
           if (typeof l.enabled !== "boolean") l.enabled = l.enabled !== false;
         });
         leaders.sort((a,b) => (a.order || 9999) - (b.order || 9999));
