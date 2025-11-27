@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>여행 리더 관리자 페이지 (광고 + JSON 생성기)</title>
+  <title>여행 리더 관리자 페이지 (여행 스케줄 + 광고 + JSON 생성기)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; }
@@ -154,18 +154,20 @@
     }
     .btn-new-leader:hover { background-color: #1d4ed8; }
 
-    .ad-list, .leader-list {
+    .trip-list, .ad-list, .leader-list {
       max-height: none;
       overflow-y: visible;
     }
-    .ad-item, .leader-item {
+    .trip-item, .ad-item, .leader-item {
       border-bottom: 1px solid #e5e7eb;
       padding: 7px 0;
       font-size: 12px;
     }
+    .trip-item:last-child,
     .ad-item:last-child,
     .leader-item:last-child { border-bottom: none; }
 
+    .trip-item-header,
     .ad-item-header,
     .leader-item-header {
       display: flex;
@@ -174,6 +176,7 @@
       margin-bottom: 2px;
     }
 
+    .trip-thumb,
     .ad-thumb,
     .thumb {
       width: 48px;
@@ -204,6 +207,7 @@
     }
 
     .leader-item-name { font-weight: 600; }
+    .trip-item-title,
     .ad-item-title { font-weight: 600; font-size: 12px; }
 
     .link-small {
@@ -292,19 +296,65 @@
 <div class="page-wrap">
   <div class="glass-panel">
     <header class="page-header">
-      <div class="page-title">여행 리더 관리자 페이지 (광고 + JSON 생성기)</div>
+      <div class="page-title">여행 리더 관리자 페이지 (여행 스케줄 + 광고 + JSON 생성기)</div>
       <p class="page-subtitle">
-        이 페이지에서 <b>광고 배너</b>와 <b>리더 정보를 모두 관리</b>하고,<br>
+        이 페이지에서 <b>여행 스케줄(상단 배너)</b>와 <b>광고 배너(하단 배너)</b> 그리고 <b>리더 정보를 모두 관리</b>하고,<br>
         아래 JSON을 복사하여 <b>so.t-leader-choice</b> 레포의 <code>leaders.json</code>에 붙여 넣으면<br>
         PC / 모바일 / 모든 사용자의 공개 페이지가 동일하게 업데이트됩니다.
       </p>
     </header>
 
     <div class="admin-layout">
-      <!-- 좌측: 광고 + 리더 입력 -->
+      <!-- 좌측: 여행 스케줄 + 광고 + 리더 입력 -->
       <div class="admin-card">
+        <!-- 여행 스케줄 관리 -->
+        <div class="admin-title">여행 스케줄 관리 (리더보드 위 상단 배너)</div>
+
+        <input type="hidden" id="editingTripIndex" value="-1" />
+
+        <div class="form-group">
+          <label for="tripLinkUrl">여행 스케줄 링크 URL</label>
+          <input type="text" id="tripLinkUrl" placeholder="예) https://youtube.com/@yourchannel 또는 여행 상세 페이지" />
+        </div>
+
+        <div class="form-group">
+          <label for="tripText">여행 일정 문구 (배너에서 흘러갈 텍스트)</label>
+          <input type="text" id="tripText" placeholder="예) 2026년 3월 12일 출발 크루즈 여행 모집" />
+        </div>
+
+        <div class="form-group inline">
+          <label>
+            <input type="checkbox" id="tripEnabled" checked /> 이 여행 스케줄 노출
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>여행 스케줄 이미지 (가로형 이미지)</label>
+          <input type="file" id="tripImageFile" accept="image/*" />
+          <small>파일 선택 또는 아래 영역에 드래그 앤 드롭. (이미지 전용)</small>
+          <div id="tripDropZone" class="drop-zone">
+            여기로 여행 스케줄 이미지를 끌어다 놓으세요.
+          </div>
+          <div id="tripPreviewWrap" class="preview-wrap">
+            <img id="tripPreviewImage" src="" alt="여행 스케줄 미리보기" />
+          </div>
+        </div>
+
+        <div class="form-group inline" style="margin-top:4px;">
+          <button class="btn btn-primary" id="saveTripBtn">여행 스케줄 저장</button>
+          <button class="btn btn-secondary" id="clearTripFormBtn">여행 스케줄 폼 초기화</button>
+          <button class="btn btn-outline btn-xs" id="newTripBtn">+ 새 스케줄 추가</button>
+        </div>
+
+        <hr style="margin:14px 0;" />
+
+        <div class="section-label">여행 스케줄 리스트 (상단 배너 순서)</div>
+        <div class="trip-list" id="tripList"></div>
+
+        <hr style="margin:18px 0;" />
+
         <!-- 광고 배너 설정 -->
-        <div class="admin-title">광고 배너 관리</div>
+        <div class="admin-title">광고 배너 관리 (리더보드 아래 배너)</div>
 
         <input type="hidden" id="editingAdIndex" value="-1" />
 
@@ -315,7 +365,7 @@
 
         <div class="form-group">
           <label for="adText">광고 문구 (배너에서 흘러갈 텍스트)</label>
-          <input type="text" id="adText" placeholder="예) so.t 채널에서 다음 여행 준비하기" />
+          <input type="text" id="adText" placeholder="예) ai 이미지로 만든 스토리 마을 쓰티" />
         </div>
 
         <div class="form-group inline">
@@ -324,18 +374,8 @@
           </label>
         </div>
 
-        <!-- 🔁 광고 전체 위치 (리더 위 / 아래) -->
         <div class="form-group">
-          <label>광고 위치 (공개 페이지에서 표시 위치)</label>
-          <div class="inline">
-            <label><input type="radio" name="bannerPosition" value="top"> 리더 카드 위쪽</label>
-            <label><input type="radio" name="bannerPosition" value="bottom" checked> 리더 카드 아래쪽</label>
-          </div>
-          <small>※ 이 값은 JSON의 <code>bannerPosition</code> 필드에 저장됩니다. (기본값: 아래)</small>
-        </div>
-
-        <div class="form-group">
-          <label>배너 이미지 (가로형 이미지)</label>
+          <label>광고 배너 이미지 (가로형 이미지)</label>
           <input type="file" id="adImageFile" accept="image/*" />
           <small>파일 선택 또는 아래 영역에 드래그 앤 드롭. (이미지 전용)</small>
           <div id="adDropZone" class="drop-zone">
@@ -354,10 +394,10 @@
 
         <hr style="margin:14px 0;" />
 
-        <div class="section-label">광고 리스트</div>
+        <div class="section-label">광고 리스트 (리더보드 아래 배너 순서)</div>
         <div class="ad-list" id="adList"></div>
 
-        <hr style="margin:14px 0;" />
+        <hr style="margin:18px 0;" />
 
         <!-- 리더 입력 -->
         <div class="section-label" style="margin-top:2px;">리더 정보 입력 / 수정</div>
@@ -489,7 +529,7 @@
         <input type="file" id="jsonFileInput" accept="application/json,.json" style="display:none;" />
         <div class="help-box">
           <b>[GitHub에 붙여 넣는 방법]</b><br />
-          1) 위에서 광고 + 리더들을 모두 원하는 대로 추가/수정/삭제한 뒤, <b>JSON 생성하기</b> 버튼을 누릅니다.<br />
+          1) 위에서 여행 스케줄 + 광고 + 리더들을 모두 원하는 대로 추가/수정/삭제한 뒤, <b>JSON 생성하기</b> 버튼을 누릅니다.<br />
           2) <b>JSON 복사하기</b> 버튼을 눌러 leaders.json 내용을 클립보드에 복사합니다.<br />
           3) <b>GitHub leaders.json 열기</b> 버튼을 눌러 GitHub의 leaders.json 파일 편집 화면으로 이동합니다.<br />
           4) GitHub에서 내용 전체 선택(Ctrl+A) 후 삭제 → 복사한 JSON을 붙여 넣기(Ctrl+V).<br />
@@ -504,11 +544,11 @@
 </div>
 
 <script>
-  const DRAFT_KEY = "so_t_leaders_ads_draft_final_v3";
+  const DRAFT_KEY = "so_t_leaders_trip_ads_draft_v1";
 
   function getDefaultData() {
     return {
-      bannerPosition: "bottom",
+      tripAds: [],
       ads: [],
       leaders: []
     };
@@ -521,17 +561,21 @@
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== "object") return getDefaultData();
 
-      if (!Array.isArray(parsed.ads)) parsed.ads = [];
+      if (!Array.isArray(parsed.tripAds)) parsed.tripAds = [];
+      if (!Array.isArray(parsed.ads))     parsed.ads     = [];
       if (!Array.isArray(parsed.leaders)) parsed.leaders = [];
-      if (!parsed.bannerPosition) parsed.bannerPosition = "bottom";
 
-      parsed.leaders.forEach(l => {
-        if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
-        if (typeof l.enabled !== "boolean") l.enabled = true;
+      parsed.tripAds.forEach(a => {
+        if (typeof a.enabled !== "boolean") a.enabled = true;
       });
       parsed.ads.forEach(a => {
         if (typeof a.enabled !== "boolean") a.enabled = true;
       });
+      parsed.leaders.forEach(l => {
+        if (!l.sns) l.sns = { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" };
+        if (typeof l.enabled !== "boolean") l.enabled = true;
+      });
+
       return parsed;
     } catch {
       return getDefaultData();
@@ -539,16 +583,32 @@
   }
 
   function saveDraft() {
-    data.bannerPosition = bannerPosition;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    const snapshot = { tripAds, ads, leaders };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
   }
 
-  let data           = loadDraft();
-  let bannerPosition = data.bannerPosition || "bottom";
-  let ads            = data.ads;
-  let leaders        = data.leaders;
+  let data     = loadDraft();
+  let tripAds  = data.tripAds;
+  let ads      = data.ads;
+  let leaders  = data.leaders;
 
-  // 광고 요소
+  // === DOM 요소 ===
+
+  // 여행 스케줄
+  const editingTripIndexEl = document.getElementById("editingTripIndex");
+  const tripLinkInput      = document.getElementById("tripLinkUrl");
+  const tripTextInput      = document.getElementById("tripText");
+  const tripEnabledInput   = document.getElementById("tripEnabled");
+  const tripImageInput     = document.getElementById("tripImageFile");
+  const tripDropZone       = document.getElementById("tripDropZone");
+  const tripPreviewWrap    = document.getElementById("tripPreviewWrap");
+  const tripPreviewImage   = document.getElementById("tripPreviewImage");
+  const tripListEl         = document.getElementById("tripList");
+  const saveTripBtn        = document.getElementById("saveTripBtn");
+  const clearTripFormBtn   = document.getElementById("clearTripFormBtn");
+  const newTripBtn         = document.getElementById("newTripBtn");
+
+  // 광고
   const editingAdIndexEl   = document.getElementById("editingAdIndex");
   const adLinkInput        = document.getElementById("adLinkUrl");
   const adTextInput        = document.getElementById("adText");
@@ -558,16 +618,9 @@
   const adPreviewWrap      = document.getElementById("adPreviewWrap");
   const adPreviewImage     = document.getElementById("adPreviewImage");
   const adListEl           = document.getElementById("adList");
-
-  // 배너 위치 라디오 버튼
-  const bannerPosRadios = document.querySelectorAll('input[name="bannerPosition"]');
-  bannerPosRadios.forEach(r => {
-    r.checked = (r.value === bannerPosition);
-    r.addEventListener("change", () => {
-      bannerPosition = r.value;
-      saveDraft();
-    });
-  });
+  const saveAdBtn          = document.getElementById("saveAdBtn");
+  const clearAdFormBtn     = document.getElementById("clearAdFormBtn");
+  const newAdBtn           = document.getElementById("newAdBtn");
 
   // JSON 관련
   const jsonOutput      = document.getElementById("jsonOutput");
@@ -578,12 +631,12 @@
   const loadJsonBtn     = document.getElementById("loadJsonBtn");
   const jsonFileInput   = document.getElementById("jsonFileInput");
 
-  // URL 일괄 입력 관련
+  // URL 일괄 입력
   const bulkTextarea = document.getElementById("bulk-form-urls");
   const bulkBtn      = document.getElementById("apply-bulk-form-urls");
   const bulkStatus   = document.getElementById("bulk-form-urls-status");
 
-  // 리더 관련
+  // 리더
   const editingLeaderIndexEl = document.getElementById("editingLeaderIndex");
   const leaderListEl         = document.getElementById("leaderList");
   const leaderNameInput      = document.getElementById("leaderName");
@@ -607,10 +660,203 @@
   const newLeaderBtn         = document.getElementById("newLeaderBtn");
   const clearLeaderFormBtn   = document.getElementById("clearLeaderFormBtn");
 
-  let tempAdImageDataUrl     = "";
-  let tempLeaderMediaDataUrl = "";
+  let tempTripImageDataUrl  = "";
+  let tempAdImageDataUrl    = "";
+  let tempLeaderMediaDataUrl= "";
 
-  // ---- 광고 관련 함수 ----
+  // ==== 여행 스케줄 함수 ====
+
+  function clearTripPreview() {
+    tripPreviewWrap.style.display = "none";
+    tripPreviewImage.src = "";
+    tempTripImageDataUrl = "";
+  }
+
+  function clearTripForm() {
+    editingTripIndexEl.value = -1;
+    tripLinkInput.value      = "";
+    tripTextInput.value      = "";
+    tripEnabledInput.checked = true;
+    tripImageInput.value     = "";
+    clearTripPreview();
+  }
+
+  function showTripPreview(dataUrl) {
+    tempTripImageDataUrl = dataUrl;
+    tripPreviewImage.src = dataUrl;
+    tripPreviewWrap.style.display = "block";
+  }
+
+  function handleTripFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("여행 스케줄 이미지는 이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => showTripPreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  tripImageInput.addEventListener("change", function() {
+    const file = this.files[0];
+    handleTripFile(file);
+  });
+
+  ["dragenter","dragover"].forEach(evt => {
+    tripDropZone.addEventListener(evt, e => {
+      e.preventDefault(); e.stopPropagation();
+      tripDropZone.classList.add("dragover");
+    });
+  });
+  ["dragleave","drop"].forEach(evt => {
+    tripDropZone.addEventListener(evt, e => {
+      e.preventDefault(); e.stopPropagation();
+      tripDropZone.classList.remove("dragover");
+    });
+  });
+  tripDropZone.addEventListener("drop", e => {
+    const file = e.dataTransfer.files[0];
+    handleTripFile(file);
+  });
+
+  clearTripFormBtn.addEventListener("click", clearTripForm);
+  newTripBtn.addEventListener("click", clearTripForm);
+
+  saveTripBtn.addEventListener("click", () => {
+    const linkUrl = tripLinkInput.value.trim();
+    const text    = tripTextInput.value.trim();
+    const enabled = tripEnabledInput.checked;
+    const idx     = parseInt(editingTripIndexEl.value, 10);
+    const base    = { linkUrl, text, enabled };
+
+    if (idx >= 0) {
+      const prev = tripAds[idx];
+      tripAds[idx] = {
+        ...prev,
+        ...base,
+        imageUrl: tempTripImageDataUrl || prev.imageUrl || ""
+      };
+    } else {
+      if (!tempTripImageDataUrl) {
+        alert("여행 스케줄 이미지를 선택해 주세요.");
+        return;
+      }
+      tripAds.push({ ...base, imageUrl: tempTripImageDataUrl });
+    }
+
+    data.tripAds = tripAds;
+    saveDraft();
+    renderTripAds();
+    alert("여행 스케줄이 임시 저장되었습니다. JSON 생성하기 → leaders.json 업데이트를 진행해주세요.");
+  });
+
+  function renderTripAds() {
+    tripListEl.innerHTML = "";
+    if (!tripAds.length) {
+      tripListEl.innerHTML = "<p style='font-size:12px;color:#6b7280;'>등록된 여행 스케줄이 없습니다.</p>";
+      return;
+    }
+
+    tripAds.forEach((ad, index) => {
+      const item = document.createElement("div");
+      item.className = "trip-item";
+
+      const enableBadge = ad.enabled
+        ? `<span class="enable-badge enable-yes">노출</span>`
+        : `<span class="enable-badge enable-no">비노출</span>`;
+      const toggleBtnClass = ad.enabled ? "btn btn-primary btn-xs" : "btn btn-outline btn-xs";
+      const toggleBtnLabel = ad.enabled ? "노출 끄기" : "노출 켜기";
+
+      const orderNo  = index + 1;
+      const thumbHtml = ad.imageUrl
+        ? `<img src="${ad.imageUrl}" class="trip-thumb" alt="">`
+        : "";
+
+      item.innerHTML = `
+        <div class="trip-item-header">
+          <div style="display:flex;align-items:center;">
+            ${thumbHtml}
+            <div>
+              <div class="trip-item-title">
+                [${orderNo}] ${ad.text || "(제목 없음)"} ${enableBadge}
+              </div>
+              <div style="font-size:11px;color:#6b7280;">
+                ${ad.text ? "문구: " + ad.text : "<span style='color:#9ca3af;'>문구 없음</span>"}
+              </div>
+              ${
+                ad.linkUrl
+                  ? `<a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer" class="link-small">${ad.linkUrl}</a>`
+                  : "<span class='link-small' style='color:#9ca3af;text-decoration:none;'>링크 없음</span>"
+              }
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div>
+              <button class="${toggleBtnClass}" onclick="toggleTripEnable(${index})">${toggleBtnLabel}</button>
+              <button class="btn btn-secondary btn-xs" onclick="editTrip(${index})">수정</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteTrip(${index})">삭제</button>
+            </div>
+            <div>
+              <button class="btn btn-outline btn-xs" onclick="moveTripUp(${index})" ${index===0 ? "disabled" : ""}>▲ 위로</button>
+              <button class="btn btn-outline btn-xs" onclick="moveTripDown(${index})" ${index===tripAds.length-1 ? "disabled" : ""}>▼ 아래로</button>
+            </div>
+          </div>
+        </div>
+      `;
+      tripListEl.appendChild(item);
+    });
+  }
+
+  window.editTrip = function(index) {
+    const ad = tripAds[index];
+    editingTripIndexEl.value = index;
+    tripLinkInput.value      = ad.linkUrl || "";
+    tripTextInput.value      = ad.text || "";
+    tripEnabledInput.checked = !!ad.enabled;
+    tempTripImageDataUrl     = ad.imageUrl || "";
+    if (tempTripImageDataUrl) showTripPreview(tempTripImageDataUrl);
+    else clearTripPreview();
+  };
+
+  window.deleteTrip = function(index) {
+    if (!confirm("이 여행 스케줄을 삭제할까요?")) return;
+    tripAds.splice(index, 1);
+    data.tripAds = tripAds;
+    saveDraft();
+    renderTripAds();
+    clearTripForm();
+  };
+
+  window.toggleTripEnable = function(index) {
+    tripAds[index].enabled = !tripAds[index].enabled;
+    data.tripAds = tripAds;
+    saveDraft();
+    renderTripAds();
+  };
+
+  window.moveTripUp = function(index) {
+    if (index <= 0) return;
+    const tmp = tripAds[index-1];
+    tripAds[index-1] = tripAds[index];
+    tripAds[index]   = tmp;
+    data.tripAds = tripAds;
+    saveDraft();
+    renderTripAds();
+  };
+
+  window.moveTripDown = function(index) {
+    if (index >= tripAds.length-1) return;
+    const tmp = tripAds[index+1];
+    tripAds[index+1] = tripAds[index];
+    tripAds[index]   = tmp;
+    data.tripAds = tripAds;
+    saveDraft();
+    renderTripAds();
+  };
+
+  // ==== 광고 함수 (기존 로직) ====
+
   function clearAdPreview() {
     adPreviewWrap.style.display = "none";
     adPreviewImage.src = "";
@@ -665,10 +911,10 @@
     handleAdFile(file);
   });
 
-  document.getElementById("clearAdFormBtn").addEventListener("click", clearAdForm);
-  document.getElementById("newAdBtn").addEventListener("click", clearAdForm);
+  clearAdFormBtn.addEventListener("click", clearAdForm);
+  newAdBtn.addEventListener("click", clearAdForm);
 
-  document.getElementById("saveAdBtn").addEventListener("click", () => {
+  saveAdBtn.addEventListener("click", () => {
     const linkUrl  = adLinkInput.value.trim();
     const text     = adTextInput.value.trim();
     const enabled  = adEnabledInput.checked;
@@ -717,7 +963,7 @@
 
       const toggleBtnLabel = ad.enabled ? "노출 끄기" : "노출 켜기";
 
-      const orderNo = index + 1;
+      const orderNo  = index + 1;
       const thumbHtml = ad.imageUrl
         ? `<img src="${ad.imageUrl}" class="ad-thumb" alt="">`
         : "";
@@ -776,6 +1022,7 @@
     data.ads = ads;
     saveDraft();
     renderAds();
+    clearAdForm();
   };
 
   window.toggleAdEnable = function (index) {
@@ -789,7 +1036,7 @@
     if (index <= 0) return;
     const tmp = ads[index-1];
     ads[index-1] = ads[index];
-    ads[index] = tmp;
+    ads[index]   = tmp;
     data.ads = ads;
     saveDraft();
     renderAds();
@@ -799,13 +1046,14 @@
     if (index >= ads.length-1) return;
     const tmp = ads[index+1];
     ads[index+1] = ads[index];
-    ads[index] = tmp;
+    ads[index]   = tmp;
     data.ads = ads;
     saveDraft();
     renderAds();
   };
 
-  // ---- 리더 관련 ----
+  // ==== 리더 관련 ====
+
   function clearLeaderPreview() {
     leaderPreviewWrap.style.display = "none";
     leaderPreviewImage.src = "";
@@ -960,7 +1208,7 @@
     renderLeaders();
   };
 
-  // 리더 리스트 렌더 + 순서 조정 (위/아래 버튼)
+  // 리더 리스트 + 순서
   function renderLeaders() {
     leaderListEl.innerHTML = "";
     if (!leaders.length) {
@@ -1026,9 +1274,7 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
             <div>
-              <button class="${toggleBtnClass}" onclick="toggleLeaderEnable(${index})">
-                ${toggleBtnLabel}
-              </button>
+              <button class="${toggleBtnClass}" onclick="toggleLeaderEnable(${index})">${toggleBtnLabel}</button>
               <button class="btn btn-secondary btn-xs" onclick="editLeader(${index})">수정</button>
               <button class="btn btn-danger btn-xs" onclick="deleteLeader(${index})">삭제</button>
             </div>
@@ -1043,7 +1289,6 @@
     });
   }
 
-  // 리더 순서 조정
   window.moveLeaderUp = function(index) {
     if (index <= 0) return;
     const tmp = leaders[index-1];
@@ -1064,10 +1309,17 @@
     renderLeaders();
   };
 
-  // ---- JSON 생성/불러오기/복사/다운로드 ----
+  // ==== JSON 생성/복사/불러오기 ====
 
-  // JSON 생성하기 (배너 위치 + 리더 order + 광고 order 포함)
   generateJsonBtn.addEventListener("click", () => {
+    const exportTripAds = tripAds.map((ad, idx) => ({
+      linkUrl: ad.linkUrl || "",
+      text:    ad.text    || "",
+      enabled: ad.enabled !== false,
+      imageUrl: ad.imageUrl || "",
+      order:   idx + 1
+    }));
+
     const exportAds = ads.map((ad, idx) => ({
       linkUrl: ad.linkUrl || "",
       text:    ad.text    || "",
@@ -1090,8 +1342,8 @@
     }));
 
     const jsonObj = {
-      bannerPosition,
-      ads: exportAds,
+      tripAds: exportTripAds,
+      ads:     exportAds,
       leaders: exportLeaders
     };
 
@@ -1101,7 +1353,6 @@
     alert("leaders.json 내용이 생성되었습니다. 아래 영역을 복사하거나 파일로 저장할 수 있습니다.");
   });
 
-  // JSON 복사하기
   copyJsonBtn.addEventListener("click", async () => {
     if (!jsonOutput.value.trim()) {
       alert("먼저 'JSON 생성하기' 버튼을 눌러 leaders.json 내용을 생성해주세요.");
@@ -1117,41 +1368,17 @@
     }
   });
 
-  // 임시 JSON 저장(파일 다운로드)
   downloadJsonBtn.addEventListener("click", () => {
     let text = jsonOutput.value.trim();
     if (!text) {
-      // 아직 생성 안 했으면 자동으로 한 번 생성
-      const exportAds = ads.map((ad, idx) => ({
-        linkUrl: ad.linkUrl || "",
-        text:    ad.text    || "",
-        enabled: ad.enabled !== false,
-        imageUrl: ad.imageUrl || "",
-        order:   idx + 1
-      }));
-      const exportLeaders = leaders.map((l, idx) => ({
-        name:      l.name      || "",
-        role:      l.role      || "",
-        link:      l.link      || "",
-        sheetUrl:  l.sheetUrl  || "",
-        tags:      Array.isArray(l.tags) ? l.tags : [],
-        introShort:l.introShort || "",
-        sns:       l.sns || { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" },
-        enabled:   l.enabled !== false,
-        mediaUrl:  l.mediaUrl || l.imageUrl || "",
-        order:     idx + 1
-      }));
-      const jsonObj = { bannerPosition, ads: exportAds, leaders: exportLeaders };
-      text = JSON.stringify(jsonObj, null, 2);
-      jsonOutput.value = text;
+      generateJsonBtn.click();
+      text = jsonOutput.value.trim();
     }
-
     const blob = new Blob([text], {type: "application/json"});
     const url  = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    const now = new Date();
-    const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
+    const a    = document.createElement("a");
+    const now  = new Date();
+    const ts   = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
     a.href = url;
     a.download = `leaders-backup-${ts}.json`;
     document.body.appendChild(a);
@@ -1160,7 +1387,6 @@
     URL.revokeObjectURL(url);
   });
 
-  // GitHub leaders.json 열기
   openJsonBtn.addEventListener("click", () => {
     window.open(
       "https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json",
@@ -1168,7 +1394,6 @@
     );
   });
 
-  // JSON 파일 불러오기 → 관리자 반영
   loadJsonBtn.addEventListener("click", () => {
     jsonFileInput.click();
   });
@@ -1186,35 +1411,36 @@
           throw new Error("JSON 형식이 아닙니다.");
         }
 
-        bannerPosition = parsed.bannerPosition || "bottom";
-        ads            = Array.isArray(parsed.ads) ? parsed.ads : [];
-        leaders        = Array.isArray(parsed.leaders) ? parsed.leaders : [];
+        tripAds = Array.isArray(parsed.tripAds) ? parsed.tripAds : [];
+        ads     = Array.isArray(parsed.ads)     ? parsed.ads     : [];
+        leaders = Array.isArray(parsed.leaders) ? parsed.leaders : [];
 
-        // 라디오 버튼 상태 반영
-        bannerPosRadios.forEach(r => {
-          r.checked = (r.value === bannerPosition);
+        tripAds.forEach(a => {
+          if (typeof a.enabled !== "boolean") a.enabled = a.enabled !== false;
         });
+        tripAds.sort((a,b) => (a.order || 9999) - (b.order || 9999));
 
-        // 광고 enabled/order 정리
         ads.forEach(a => {
           if (typeof a.enabled !== "boolean") a.enabled = a.enabled !== false;
         });
         ads.sort((a,b) => (a.order || 9999) - (b.order || 9999));
 
-        // 리더 기본값 보정 + order 기준으로 정렬
         leaders.forEach(l => {
-          if (!l.sns) l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "", carrot:"", discord:"" };
+          if (!l.sns) l.sns = { youtube:"", tiktok:"", instagram:"", facebook:"", blog:"", carrot:"", discord:"" };
           if (typeof l.enabled !== "boolean") l.enabled = l.enabled !== false;
         });
         leaders.sort((a,b) => (a.order || 9999) - (b.order || 9999));
 
-        data = { bannerPosition, ads, leaders };
+        data = { tripAds, ads, leaders };
         saveDraft();
 
+        renderTripAds();
         renderAds();
         renderLeaders();
-        clearLeaderForm();
+        clearTripForm();
         clearAdForm();
+        clearLeaderForm();
+
         jsonOutput.value = JSON.stringify(parsed, null, 2);
 
         alert("JSON 파일을 불러와 관리자에 반영했습니다.");
@@ -1228,7 +1454,7 @@
     reader.readAsText(file, "utf-8");
   });
 
-  // 🔁 URL → 리더 자동 매칭
+  // URL → 리더 자동 매칭
   if (bulkBtn) {
     bulkBtn.addEventListener("click", () => {
       const raw = (bulkTextarea.value || "").trim();
@@ -1247,7 +1473,6 @@
         return;
       }
 
-      // 이름 → 리더 인덱스 맵
       const nameIndexMap = new Map();
       leaders.forEach((leader, idx) => {
         if (leader && leader.name) {
@@ -1261,8 +1486,6 @@
 
       lines.forEach((line, idx) => {
         let name = null;
-
-        // URL 안의 entry.xxxxx=이름 추출
         try {
           const u = new URL(line);
           u.searchParams.forEach((val, key) => {
@@ -1270,12 +1493,8 @@
               name = decodeURIComponent(val);
             }
           });
-        } catch (e) {
-          // URL 파싱 실패는 무시
-        }
-
+        } catch (e) {}
         let leaderIndex = -1;
-
         if (name && nameIndexMap.has(name)) {
           leaderIndex = nameIndexMap.get(name);
           matchedByName++;
@@ -1285,7 +1504,6 @@
         } else {
           unmatched.push(line);
         }
-
         if (leaderIndex >= 0) {
           leaders[leaderIndex].link = line;
         }
@@ -1304,6 +1522,7 @@
   }
 
   // 초기 렌더
+  renderTripAds();
   renderAds();
   renderLeaders();
 </script>
