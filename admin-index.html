@@ -465,6 +465,26 @@
           <button class="btn btn-outline" id="loadJsonBtn">JSON 파일 불러오기 → 관리자 반영</button>
           <button class="btn btn-outline" id="openJsonBtn">GitHub leaders.json 열기</button>
         </div>
+
+        <!-- 🔁 구글폼 URL 일괄 입력 영역 -->
+        <div class="form-group">
+          <label class="section-label" for="bulk-form-urls">
+            상담 / 신청 구글폼 URL 일괄 입력 (각 줄마다 1개 URL)
+          </label>
+          <textarea
+            id="bulk-form-urls"
+            class="json-area"
+            style="min-height: 80px;"
+            placeholder="https://docs.google.com/forms/...=한기림&#10;https://docs.google.com/forms/...=임정애&#10;https://docs.google.com/forms/...=윤지민&#10;..."
+          ></textarea>
+          <div class="inline" style="margin-top:6px;">
+            <button id="apply-bulk-form-urls" class="btn btn-outline btn-xs" type="button">
+              URL → 리더에 자동 매칭
+            </button>
+            <small id="bulk-form-urls-status"></small>
+          </div>
+        </div>
+
         <textarea id="jsonOutput" class="json-area" placeholder="여기에 leaders.json 내용이 생성됩니다."></textarea>
         <input type="file" id="jsonFileInput" accept="application/json,.json" style="display:none;" />
         <div class="help-box">
@@ -557,6 +577,11 @@
   const openJsonBtn     = document.getElementById("openJsonBtn");
   const loadJsonBtn     = document.getElementById("loadJsonBtn");
   const jsonFileInput   = document.getElementById("jsonFileInput");
+
+  // URL 일괄 입력 관련
+  const bulkTextarea = document.getElementById("bulk-form-urls");
+  const bulkBtn      = document.getElementById("apply-bulk-form-urls");
+  const bulkStatus   = document.getElementById("bulk-form-urls-status");
 
   // 리더 관련
   const editingLeaderIndexEl = document.getElementById("editingLeaderIndex");
@@ -1202,6 +1227,81 @@
 
     reader.readAsText(file, "utf-8");
   });
+
+  // 🔁 URL → 리더 자동 매칭
+  if (bulkBtn) {
+    bulkBtn.addEventListener("click", () => {
+      const raw = (bulkTextarea.value || "").trim();
+      if (!raw) {
+        bulkStatus.textContent = "URL 목록이 비어 있습니다.";
+        return;
+      }
+
+      const lines = raw
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      if (!lines.length) {
+        bulkStatus.textContent = "유효한 URL이 없습니다.";
+        return;
+      }
+
+      // 이름 → 리더 인덱스 맵
+      const nameIndexMap = new Map();
+      leaders.forEach((leader, idx) => {
+        if (leader && leader.name) {
+          nameIndexMap.set(leader.name.trim(), idx);
+        }
+      });
+
+      let matchedByName  = 0;
+      let matchedByIndex = 0;
+      const unmatched    = [];
+
+      lines.forEach((line, idx) => {
+        let name = null;
+
+        // URL 안의 entry.xxxxx=이름 추출
+        try {
+          const u = new URL(line);
+          u.searchParams.forEach((val, key) => {
+            if (!name && key.startsWith("entry.")) {
+              name = decodeURIComponent(val);
+            }
+          });
+        } catch (e) {
+          // URL 파싱 실패는 무시
+        }
+
+        let leaderIndex = -1;
+
+        if (name && nameIndexMap.has(name)) {
+          leaderIndex = nameIndexMap.get(name);
+          matchedByName++;
+        } else if (leaders[idx]) {
+          leaderIndex = idx;
+          matchedByIndex++;
+        } else {
+          unmatched.push(line);
+        }
+
+        if (leaderIndex >= 0) {
+          leaders[leaderIndex].link = line;
+        }
+      });
+
+      data.leaders = leaders;
+      saveDraft();
+      renderLeaders();
+
+      let msg = `이름으로 ${matchedByName}개, 순서로 ${matchedByIndex}개 적용했습니다.`;
+      if (unmatched.length) {
+        msg += ` (매칭 실패 ${unmatched.length}개는 무시됨)`;
+      }
+      bulkStatus.textContent = msg;
+    });
+  }
 
   // 초기 렌더
   renderAds();
