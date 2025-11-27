@@ -946,6 +946,7 @@
     renderLeaders();
   };
 
+    // JSON 생성하기
   generateJsonBtn.addEventListener("click", () => {
     const jsonObj = { ads, leaders };
     const json = JSON.stringify(jsonObj, null, 2);
@@ -954,6 +955,7 @@
     alert("leaders.json 내용이 생성되었습니다. 아래 영역을 복사해서 GitHub에 붙여 넣으세요.");
   });
 
+  // JSON 복사하기
   copyJsonBtn.addEventListener("click", async () => {
     if (!jsonOutput.value.trim()) {
       alert("먼저 'JSON 생성하기' 버튼을 눌러 leaders.json 내용을 생성해주세요.");
@@ -969,6 +971,7 @@
     }
   });
 
+  // GitHub leaders.json 열기
   openJsonBtn.addEventListener("click", () => {
     window.open(
       "https://github.com/wordycow/so.t-leader-choice/blob/main/leaders.json",
@@ -976,6 +979,51 @@
     );
   });
 
+  // 🔁 JSON 불러오기 → 관리자 반영
+  loadJsonBtn.addEventListener("click", () => {
+    const text = jsonOutput.value.trim();
+    if (!text) {
+      alert("leaders.json 내용을 아래 박스에 붙여넣은 뒤에 눌러 주세요.");
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("JSON 형식이 아닙니다.");
+      }
+
+      const adsArr     = Array.isArray(parsed.ads) ? parsed.ads : [];
+      const leadersArr = Array.isArray(parsed.leaders) ? parsed.leaders : [];
+
+      // 기본값 보정 (sns, enabled)
+      leadersArr.forEach(l => {
+        if (!l.sns) {
+          l.sns = { youtube: "", tiktok: "", instagram: "", facebook: "", blog: "" };
+        }
+        if (typeof l.enabled !== "boolean") {
+          l.enabled = l.enabled !== false;
+        }
+      });
+
+      // 전역 상태 업데이트
+      ads     = adsArr;
+      leaders = leadersArr;
+      data    = { ads, leaders };
+      saveDraft();
+
+      renderAds();
+      renderLeaders();
+      clearLeaderForm();
+      clearAdForm();
+
+      alert("leaders.json 내용을 관리자 데이터에 불러와 반영했습니다.");
+    } catch (e) {
+      alert("JSON 파싱 오류: " + e.message);
+    }
+  });
+
+  // 처음 진입 시 화면 렌더
   renderAds();
   renderLeaders();
 </script>
