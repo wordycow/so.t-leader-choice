@@ -51,7 +51,7 @@
       line-height: 1.6;
     }
 
-    /* 상단 배너 영역 (리더 위) */
+    /* 상단 여행 스케줄 배너 */
     .ad-top-board {
       margin-bottom: 16px;
     }
@@ -236,7 +236,7 @@
     }
     .banner-image {
       width: 100%;
-      height: 160px;
+      height: 180px;  /* 기존 160 → 좀 더 크게 */
       object-fit: cover;
       display: block;
     }
@@ -314,7 +314,7 @@
         font-size: 9px;
         padding: 3px 7px;
       }
-      .banner-image { height: 140px; }
+      .banner-image { height: 150px; }
       .banner-text { font-size: 14px; }
     }
   </style>
@@ -324,7 +324,7 @@
 <div class="page-wrap">
   <div class="glass-panel">
 
-    <!-- 상단 여행 일정 광고 (필요할 때만 노출) -->
+    <!-- 상단 여행 스케줄 배너 (ads[0]) -->
     <div class="ad-top-board" id="adTopBoard" style="display:none;">
       <div class="banner-wrap" id="topBannerWrap"></div>
     </div>
@@ -356,16 +356,11 @@
     try {
       const res = await fetch("leaders.json?_=" + Date.now());
       if (!res.ok) throw new Error("leaders.json 불러오기 실패");
-      const raw = await res.json();
-      const data = raw && typeof raw === "object" ? raw : {};
-      return {
-        ads: Array.isArray(data.ads) ? data.ads : [],
-        leaders: Array.isArray(data.leaders) ? data.leaders : [],
-        bannerPosition: data.bannerPosition || "bottom"
-      };
+      const data = await res.json();
+      return data && typeof data === "object" ? data : { ads: [], leaders: [] };
     } catch (e) {
       console.error(e);
-      return { ads: [], leaders: [], bannerPosition: "bottom" };
+      return { ads: [], leaders: [] };
     }
   }
 
@@ -374,6 +369,7 @@
     const emptyNotice = document.getElementById("emptyNotice");
     grid.innerHTML = "";
 
+    // enabled !== false 인 리더만 노출
     const visibleLeaders = leaders.filter(l => l.enabled !== false);
 
     if (!visibleLeaders.length) {
@@ -431,6 +427,7 @@
           `<a class="sns-btn sns-blog" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
         );
       }
+      // 🔸 새로 추가: 당근 / Discord
       if (sns.carrot) {
         snsButtons.push(
           `<a class="sns-btn sns-carrot" href="${sns.carrot}" target="_blank" rel="noopener noreferrer">당근</a>`
@@ -466,70 +463,73 @@
     });
   }
 
-  function renderAdsTopBottom(ads = [], bannerPosition = "bottom") {
-    const topBoard   = document.getElementById("adTopBoard");
-    const topWrap    = document.getElementById("topBannerWrap");
-    const bottomWrap = document.getElementById("bannerWrap");
-
-    topWrap.innerHTML = "";
-    bottomWrap.innerHTML = "";
-    topBoard.style.display = "none";
-    bottomWrap.style.display = "none";
+  // 상단 여행 스케줄 배너 (ads[0])
+  function renderTopAd(ads = []) {
+    const board = document.getElementById("adTopBoard");
+    const wrap  = document.getElementById("topBannerWrap");
+    board.style.display = "none";
+    wrap.innerHTML = "";
 
     const enabled = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
     if (!enabled.length) return;
 
-    let topAds   = [];
-    let bottomAds= [];
+    const topAd = enabled[0];
 
-    if (bannerPosition === "top" && enabled.length > 0) {
-      topAds    = [enabled[0]];
-      bottomAds = enabled.slice(1);
-    } else {
-      bottomAds = enabled;
-    }
+    const block = document.createElement("div");
+    block.className = "banner-block";
+    block.innerHTML = `
+      <a href="${topAd.linkUrl}" target="_blank" rel="noopener noreferrer">
+        <img src="${topAd.imageUrl}" class="banner-image" alt="상단 여행 스케줄">
+      </a>
+      <div class="banner-marquee">
+        <span class="banner-text">${(topAd.text || topAd.linkUrl || "여행 스케줄")}   ${(topAd.text || topAd.linkUrl || "여행 스케줄")}   </span>
+      </div>
+    `;
+    wrap.appendChild(block);
 
-    // 상단 배너 (여행 일정)
-    if (topAds.length) {
-      topBoard.style.display = "block";
-      topWrap.style.display  = "flex";
-      topAds.forEach((ad, idx) => {
-        const block = document.createElement("div");
-        block.className = "banner-block";
-        block.innerHTML = `
-          <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
-            <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${idx + 1}">
-          </a>
-          <div class="banner-marquee">
-            <span class="banner-text">${(ad.text || ad.linkUrl || "광고")}   ${(ad.text || ad.linkUrl || "광고")}   </span>
-          </div>
-        `;
-        topWrap.appendChild(block);
-      });
-    }
-
-    // 하단 배너들
-    if (bottomAds.length) {
-      bottomWrap.style.display = "flex";
-      bottomAds.forEach((ad, idx) => {
-        const block = document.createElement("div");
-        block.className = "banner-block";
-        block.innerHTML = `
-          <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
-            <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${topAds.length + idx + 1}">
-          </a>
-          <div class="banner-marquee">
-            <span class="banner-text">${(ad.text || ad.linkUrl || "광고")}   ${(ad.text || ad.linkUrl || "광고")}   </span>
-          </div>
-        `;
-        bottomWrap.appendChild(block);
-      });
-    }
+    board.style.display = "block";
+    wrap.style.display  = "flex";
   }
 
-  loadData().then(({leaders, ads, bannerPosition}) => {
-    renderLeaders(leaders || []);
-    renderAdsTopBottom(ads || [], bannerPosition);
+  // 리더보드 아래 하단 광고들 (ads[1..])
+  function renderAds(ads = []) {
+    const wrap = document.getElementById("bannerWrap");
+    wrap.innerHTML = "";
+
+    const enabled = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
+    if (!enabled.length) {
+      wrap.style.display = "none";
+      return;
+    }
+
+    enabled.forEach((ad, idx) => {
+      const block = document.createElement("div");
+      block.className = "banner-block";
+      block.innerHTML = `
+        <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
+          <img src="${ad.imageUrl}" class="banner-image" alt="광고 ${idx + 1}">
+        </a>
+        <div class="banner-marquee">
+          <span class="banner-text">${(ad.text || ad.linkUrl || "광고")}   ${(ad.text || ad.linkUrl || "광고")}   </span>
+        </div>
+      `;
+      wrap.appendChild(block);
+    });
+
+    wrap.style.display = "flex";
+  }
+
+  loadData().then((data) => {
+    const leaders = Array.isArray(data.leaders) ? data.leaders : [];
+    const ads     = Array.isArray(data.ads) ? data.ads : [];
+
+    renderLeaders(leaders);
+
+    // ads[0] → 상단 여행 스케줄, 나머지 ads[1..] → 하단 광고
+    if (ads.length) {
+      renderTopAd(ads);
+      renderAds(ads.slice(1));
+    }
   });
 </script>
 
