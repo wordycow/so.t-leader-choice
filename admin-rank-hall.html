@@ -42,7 +42,7 @@
 
     @media (min-width: 1040px) {
       .layout {
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
       }
     }
 
@@ -95,8 +95,7 @@
     }
 
     .primary-btn,
-    .secondary-btn,
-    .danger-btn {
+    .secondary-btn {
       padding: 6px 12px;
       border-radius: 999px;
       border: none;
@@ -120,11 +119,6 @@
       color: #111827;
     }
 
-    .danger-btn {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
     .tools-row {
       margin: 6px 0 8px;
       display: flex;
@@ -132,8 +126,7 @@
       gap: 8px;
     }
 
-    .rank-table,
-    .rank-image-table {
+    .rank-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
@@ -141,22 +134,18 @@
     }
 
     .rank-table th,
-    .rank-table td,
-    .rank-image-table th,
-    .rank-image-table td {
+    .rank-table td {
       padding: 6px 8px;
       border-bottom: 1px solid rgba(148,163,184,0.35);
     }
 
-    .rank-table th,
-    .rank-image-table th {
+    .rank-table th {
       text-align: left;
       background: rgba(15,23,42,0.06);
       font-weight: 600;
     }
 
-    .rank-table tr:last-child td,
-    .rank-image-table tr:last-child td {
+    .rank-table tr:last-child td {
       border-bottom: none;
     }
 
@@ -181,16 +170,15 @@
       border-radius: 4px;
     }
 
-    .btn-row {
-      display: flex;
-      gap: 4px;
-      flex-wrap: nowrap;
+    ul {
+      padding-left: 18px;
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #4b5563;
     }
 
-    .btn-row .secondary-btn,
-    .btn-row .danger-btn {
-      padding: 4px 8px;
-      font-size: 11px;
+    ul li {
+      margin-top: 2px;
     }
   </style>
 </head>
@@ -198,8 +186,8 @@
   <div class="page-wrap">
     <h1>so.t 직급 관리자</h1>
     <p class="sub">
-      이 페이지에서 직급자 목록(<code>rank-hall.json</code>)과 직급별 카드 이미지 설정(<code>rank-config.json</code>)을 관리해.
-      JSON 복사 → GitHub 파일에 붙여넣는 방식으로 반영하면 돼. (기존 관리자랑은 완전 별도!)
+      이 페이지에서 직급자 목록(<code>rank-hall.json</code>)만 관리해.  
+      이미지는 파일 이름 규칙으로 <code>rank-hall.html</code>에서 자동 매칭할 거라 별도 등록이 필요 없어.
     </p>
 
     <div class="layout">
@@ -303,39 +291,25 @@
         </div>
       </section>
 
-      <!-- 오른쪽: 직급별 이미지 설정 -->
+      <!-- 오른쪽: 이미지 자동 매칭 규칙 안내 -->
       <section class="glass-panel">
-        <h2>직급별 카드 이미지 설정 (rank-config.json)</h2>
-        <p style="font-size:13px; color:#4b5563;">
-          직급마다 카드 크기와 이미지 파일 경로를 정해. 이미지는 GitHub의 <code>img</code> 폴더에 올려두고<br />
-          예: <code>img/star1.png</code> 이런 식으로 경로만 적어 두면 돼.
-        </p>
-
-        <table class="rank-image-table">
-          <thead>
-            <tr>
-              <th>직급</th>
-              <th>카드 크기</th>
-              <th>이미지 경로</th>
-              <th>저장 / 삭제</th>
-            </tr>
-          </thead>
-          <tbody id="rank-image-tbody">
-          </tbody>
-        </table>
-
-        <div class="tools-row">
-          <button id="rank-image-add-row" class="secondary-btn">
-            + 직급 수동 추가
-          </button>
-          <button id="copy-rank-config-json" class="secondary-btn">
-            rank-config.json용 JSON 복사
-          </button>
-        </div>
-
+        <h2>이미지 자동 매칭 규칙 (읽기 전용)</h2>
         <p class="hint">
-          ⚙️ 왼쪽 직급자 테이블에 존재하는 직급은 여기 목록에도 자동으로 생겨.  
-          먼저 직급자들을 어느 정도 넣고, 그 다음에 이미지 설정을 맞추면 관리가 편해.
+          이미지는 GitHub <code>img</code> 폴더에 파일명만 맞춰 올려두면 돼.  
+          <strong>별도의 등록 없이</strong> <code>rank-hall.html</code>에서 규칙대로 자동 연결할 거야.
+        </p>
+        <h3 style="font-size:14px; margin-top:10px;">파일 이름 규칙</h3>
+        <ul>
+          <li><code>Star1</code> 직급 → <code>img/star1.png</code></li>
+          <li><code>Star2</code> 직급 → <code>img/star2.png</code></li>
+          <li><code>Star3</code> 직급 → <code>img/star3.png</code></li>
+          <li><code>Pro1</code> 직급 → <code>img/pro1.png</code></li>
+          <li>...</li>
+          <li><code>Pro10</code> 직급 → <code>img/pro10.png</code></li>
+        </ul>
+        <p class="hint" style="margin-top:10px;">
+          그러니까, <strong>직급 이름만 잘 맞추면</strong> 이미지는 자동으로 붙는 구조야.<br />
+          이 관리자 페이지에서는 사람/직급/가입일/카드 텍스트만 관리하면 된다.
         </p>
       </section>
     </div>
@@ -414,9 +388,6 @@
         `;
         tbody.appendChild(tr);
       }
-
-      // 직급자 목록이 바뀌면 이미지 설정 테이블도 갱신
-      renderRankImageTable();
     }
 
     document.getElementById("rank-form").addEventListener("submit", (e) => {
@@ -535,210 +506,8 @@
       );
     });
 
-    // ===== 3. 직급별 이미지 설정 (rank-config.json) =====
-    // { "Star1": { size: "small", image: "img/star1.png" }, ... }
-    let rankImageConfig = {};
-
-    function getAllRanksForImageConfig() {
-      const set = new Set();
-
-      rankData.forEach((item) => {
-        if (item.rank) set.add(item.rank);
-      });
-
-      Object.keys(rankImageConfig).forEach((rank) => set.add(rank));
-
-      return Array.from(set).sort((a, b) => getRankIndex(a) - getRankIndex(b));
-    }
-
-    function renderRankImageTable() {
-      const tbody = document.getElementById("rank-image-tbody");
-      tbody.innerHTML = "";
-
-      const allRanks = getAllRanksForImageConfig();
-
-      allRanks.forEach((rank) => {
-        const cfg = rankImageConfig[rank] || {};
-        const size = cfg.size || "small";
-        const image = cfg.image || "";
-
-        const tr = document.createElement("tr");
-
-        const rankTd = document.createElement("td");
-        const rankInput = document.createElement("input");
-        rankInput.value = rank;
-        rankInput.disabled = true;
-        rankTd.appendChild(rankInput);
-
-        const sizeTd = document.createElement("td");
-        const sizeSelect = document.createElement("select");
-        ["big", "medium", "small"].forEach((opt) => {
-          const option = document.createElement("option");
-          option.value = opt;
-          option.textContent =
-            opt === "big" ? "크게" : opt === "medium" ? "중간" : "작게";
-          if (opt === size) option.selected = true;
-          sizeSelect.appendChild(option);
-        });
-        sizeTd.appendChild(sizeSelect);
-
-        const imageTd = document.createElement("td");
-        const imageInput = document.createElement("input");
-        imageInput.placeholder = "예: img/star1.png";
-        imageInput.value = image;
-        imageTd.appendChild(imageInput);
-
-        const actionTd = document.createElement("td");
-        const btnRow = document.createElement("div");
-        btnRow.className = "btn-row";
-
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.textContent = "적용";
-        saveBtn.className = "secondary-btn";
-
-        saveBtn.addEventListener("click", () => {
-          const r = rankInput.value.trim();
-          const s = sizeSelect.value;
-          const imgPath = imageInput.value.trim();
-
-          if (!r || !imgPath) {
-            alert("직급과 이미지 경로를 모두 입력해 줘.");
-            return;
-          }
-
-          rankImageConfig[r] = {
-            size: s,
-            image: imgPath
-          };
-
-          alert(`직급 "${r}"의 이미지 설정이 저장됐어.`);
-        });
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.textContent = "삭제";
-        deleteBtn.className = "danger-btn";
-
-        deleteBtn.addEventListener("click", () => {
-          const r = rankInput.value.trim();
-          if (!r) return;
-          if (!confirm(`"${r}" 직급의 이미지 설정을 삭제할까요?`)) return;
-          delete rankImageConfig[r];
-          renderRankImageTable();
-        });
-
-        btnRow.appendChild(saveBtn);
-        btnRow.appendChild(deleteBtn);
-        actionTd.appendChild(btnRow);
-
-        tr.appendChild(rankTd);
-        tr.appendChild(sizeTd);
-        tr.appendChild(imageTd);
-        tr.appendChild(actionTd);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    // 수동으로 직급 추가 행 만들기
-    document.getElementById("rank-image-add-row").addEventListener("click", () => {
-      const tbody = document.getElementById("rank-image-tbody");
-
-      const tr = document.createElement("tr");
-
-      const rankTd = document.createElement("td");
-      const rankInput = document.createElement("input");
-      rankInput.placeholder = "예: Pro10";
-      rankTd.appendChild(rankInput);
-
-      const sizeTd = document.createElement("td");
-      const sizeSelect = document.createElement("select");
-      ["big", "medium", "small"].forEach((opt) => {
-        const option = document.createElement("option");
-        option.value = opt;
-        option.textContent =
-          opt === "big" ? "크게" : opt === "medium" ? "중간" : "작게";
-        if (opt === "small") option.selected = true;
-        sizeSelect.appendChild(option);
-      });
-      sizeTd.appendChild(sizeSelect);
-
-      const imageTd = document.createElement("td");
-      const imageInput = document.createElement("input");
-      imageInput.placeholder = "예: img/pro10.png";
-      imageTd.appendChild(imageInput);
-
-      const actionTd = document.createElement("td");
-      const btnRow = document.createElement("div");
-      btnRow.className = "btn-row";
-
-      const saveBtn = document.createElement("button");
-      saveBtn.type = "button";
-      saveBtn.textContent = "적용";
-      saveBtn.className = "secondary-btn";
-
-      saveBtn.addEventListener("click", () => {
-        const r = rankInput.value.trim();
-        const s = sizeSelect.value;
-        const imgPath = imageInput.value.trim();
-
-        if (!r || !imgPath) {
-          alert("직급과 이미지 경로를 모두 입력해 줘.");
-          return;
-        }
-
-        rankImageConfig[r] = {
-          size: s,
-          image: imgPath
-        };
-
-        alert(`직급 "${r}"의 이미지 설정이 저장됐어.`);
-        renderRankImageTable();
-      });
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.textContent = "삭제";
-      deleteBtn.className = "danger-btn";
-
-      deleteBtn.addEventListener("click", () => {
-        tbody.removeChild(tr);
-      });
-
-      btnRow.appendChild(saveBtn);
-      btnRow.appendChild(deleteBtn);
-      actionTd.appendChild(btnRow);
-
-      tr.appendChild(rankTd);
-      tr.appendChild(sizeTd);
-      tr.appendChild(imageTd);
-      tr.appendChild(actionTd);
-
-      tbody.appendChild(tr);
-    });
-
-    // 이미지 설정 JSON 복사 (rank-config.json)
-    document
-      .getElementById("copy-rank-config-json")
-      .addEventListener("click", () => {
-        const json = JSON.stringify(rankImageConfig, null, 2);
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(json)
-            .then(() => alert("rank-config.json용 JSON이 복사됐어.\nGitHub의 rank-config.json에 붙여 넣으면 돼."))
-            .catch(() => {
-              alert("클립보드 복사 실패. 콘솔에 JSON을 찍어둘게.");
-              console.log(json);
-            });
-        } else {
-          alert("클립보드 API를 쓸 수 없어서 콘솔에 JSON을 찍었어.");
-          console.log(json);
-        }
-      });
-
     // 시작할 때 빈 테이블 렌더링
     renderRankTable();
   </script>
 </body>
 </html>
-
