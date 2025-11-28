@@ -1,1 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>The Unique – 입장</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .gate-wrap {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+      padding: 20px 22px 22px;
+      backdrop-filter: blur(18px);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .logo span {
+      color: #38bdf8;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 18px;
+    }
+
+    .gate-title {
+      font-size: 16px;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+
+    .gate-desc {
+      font-size: 12px;
+      color: #9ca3af;
+      margin: 0 0 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #e5e7eb;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f9fafb;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    button,
+    .btn-link {
+      flex: 1;
+      border: none;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 0.06s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    button.primary {
+      background: linear-gradient(to right, #38bdf8, #6366f1);
+      color: #0f172a;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.6);
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 40px rgba(37, 99, 235, 0.9);
+    }
+
+    .btn-link {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
+    }
+
+    .btn-link:hover {
+      background: rgba(31, 41, 55, 0.9);
+    }
+
+    .meta {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .meta strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="gate-wrap">
+    <div class="logo"><span>The</span> Unique</div>
+    <div class="subtitle">Invitation-only access for action takers</div>
+
+    <h1 class="gate-title">접속 코드 입력</h1>
+    <p class="gate-desc">
+      The Unique 멤버 전용 공간입니다.<br />
+      초대받은 분들만 입장 코드를 알고 있습니다.
+    </p>
+
+    <form id="gate-form">
+      <!-- 필요하면 아이디 필드 하나 더 만들 수도 있음 -->
+      <!--
+      <div class="field">
+        <label for="uid">아이디</label>
+        <input id="uid" type="text" placeholder="초대받은 아이디를 입력하세요" />
+      </div>
+      -->
+      <div class="field">
+        <label for="code">입장 코드</label>
+        <input id="code" type="password" placeholder="초대 코드" autocomplete="off" />
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="primary">입장하기</button>
+        <a class="btn-link" id="signup-link" href="#" target="_blank" rel="noopener noreferrer">
+          처음 오셨나요? 회원가입
+        </a>
+      </div>
+    </form>
+
+    <p class="meta">
+      ※ 이 페이지의 코드는 <strong>보안용이 아니라 분위기용</strong>입니다.<br />
+      실제 개인정보(전화번호, 지역 등)는 구글 폼에서 안전하게 수집하세요.
+    </p>
+  </div>
+
+  <script>
+    // ✅ 여기서 입장 코드를 설정 (나중에 유송이가 바꿔 쓰면 됨)
+    const ACCESS_CODE = "unique-2025"; // 예시
+
+    // ✅ 회원가입(구글폼) 링크 넣기
+    const SIGNUP_FORM_URL = "https://docs.google.com/forms/d/여기에_TheUnique_회원가입_폼_ID/viewform";
+
+    document.getElementById("signup-link").href = SIGNUP_FORM_URL;
+
+    const form = document.getElementById("gate-form");
+    const codeInput = document.getElementById("code");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const inputCode = codeInput.value.trim();
+
+      if (!inputCode) {
+        alert("입장 코드를 입력해주세요.");
+        codeInput.focus();
+        return;
+      }
+
+      if (inputCode === ACCESS_CODE) {
+        // TODO: 입장 성공시 이동할 페이지 (허브 or 디스코드 등)
+        window.location.href = "hub.html"; // 또는 디스코드 초대링크 등
+      } else {
+        alert("코드가 다릅니다. 다시 확인해주세요.");
+        codeInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>
 
