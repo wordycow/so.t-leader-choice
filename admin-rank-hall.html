@@ -201,6 +201,32 @@
     ul li {
       margin-top: 2px;
     }
+
+    /* 카드 텍스트 셀 */
+    .tagline-cell {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tagline-text {
+      flex: 1;
+      min-height: 1em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 12px;
+    }
+
+    .small-btn {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: none;
+      background: #e5e7eb;
+      color: #111827;
+      font-size: 11px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -298,7 +324,8 @@
         <p style="font-size:13px; color:#e5e7eb;">
           아래처럼 생긴 리스트를 그대로 붙여 넣으면, <strong>스타I·스타II·스타III·Pro1~Pro10</strong>까지 자동으로 반영돼.<br />
           예) <code>[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III</code><br />
-          예) <code>[R]KR-12345678 / 아무개 / 2025-12-01 / Pro 6</code>
+          예) <code>[R]KR-12345678 / 아무개 / 2025-12-01 / Pro 6</code><br />
+          예) <code>[R]KR-10921084 / 린 / 2025-11-21 / 프로X</code>
         </p>
 
         <textarea
@@ -321,12 +348,12 @@
         </p>
         <h3 style="font-size:14px; margin-top:10px;">파일 이름 규칙</h3>
         <ul>
-          <li><code>Star1</code> 직급 → <code>img/star1.png</code></li>
-          <li><code>Star2</code> 직급 → <code>img/star2.png</code></li>
-          <li><code>Star3</code> 직급 → <code>img/star3.png</code></li>
-          <li><code>Pro1</code> 직급 → <code>img/pro1.png</code></li>
+          <li><code>Star1</code> → <code>img/star1.png</code></li>
+          <li><code>Star2</code> → <code>img/star2.png</code></li>
+          <li><code>Star3</code> → <code>img/star3.png</code></li>
+          <li><code>Pro1</code> → <code>img/pro1.png</code></li>
           <li>…</li>
-          <li><code>Pro10</code> 직급 → <code>img/pro10.png</code></li>
+          <li><code>Pro10</code> → <code>img/pro10.png</code></li>
         </ul>
         <p class="hint" style="margin-top:10px;">
           그러니까, <strong>직급 이름만 잘 맞추면</strong> 이미지는 자동으로 붙는 구조야.<br />
@@ -389,9 +416,11 @@
         return a.joinDate.localeCompare(b.joinDate);
       });
 
-      for (const item of sorted) {
+      sorted.forEach((item) => {
         const days = calcDaysFromJoin(item.joinDate);
         const daysText = days === "" ? "" : `${days}일`;
+
+        const originalIndex = rankData.indexOf(item);
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -399,10 +428,43 @@
           <td>${item.name}</td>
           <td>${item.joinDate || ""}</td>
           <td>${daysText}</td>
-          <td>${item.tagline || ""}</td>
+          <td>
+            <div class="tagline-cell">
+              <span class="tagline-text">${item.tagline || ""}</span>
+              <button type="button"
+                      class="small-btn edit-tagline-btn"
+                      data-idx="${originalIndex}">
+                편집
+              </button>
+            </div>
+          </td>
         `;
         tbody.appendChild(tr);
-      }
+      });
+
+      attachTaglineEditors();
+    }
+
+    function attachTaglineEditors() {
+      document.querySelectorAll(".edit-tagline-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          if (isNaN(idx) || idx < 0 || idx >= rankData.length) return;
+
+          const current = rankData[idx];
+          const currentText = current.tagline || "";
+
+          const next = window.prompt(
+            `"${current.name}" 카드 텍스트(한 줄)를 입력하세요.\n비우면 카드 텍스트가 삭제됩니다.`,
+            currentText
+          );
+
+          if (next === null) return;   // 취소
+
+          current.tagline = next.trim();
+          renderRankTable();
+        });
+      });
     }
 
     document.getElementById("rank-form").addEventListener("submit", (e) => {
@@ -454,68 +516,65 @@
       }
     });
 
-    // ===== 일괄 직급 업데이트 (Star + Pro) =====
+    // ===== 일괄 직급 업데이트 (Star + Pro 숫자 + Pro 로마 숫자) =====
     function normalizeRankLabel(raw) {
-  if (!raw) return "";
-  let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
+      if (!raw) return "";
+      let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
 
-  // --- STAR (한글 / 영문) ---
-  if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
-  if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
-  if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
+      // STAR (한글 / 영문)
+      if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
+      if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
+      if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
 
-  // --- PRO (숫자 버전) ---
-  // PRO6, PRO10, 프로6, 프로10 ...
-  let m = t.match(/PRO(\d{1,2})/);
-  if (m) {
-    let num = parseInt(m[1], 10);
-    if (!isNaN(num) && num >= 1) {
-      if (num > 10) num = 10;
-      return `Pro${num}`;
+      // PRO 숫자 (PRO6, 프로10 등)
+      let m = t.match(/PRO(\d{1,2})/);
+      if (m) {
+        let num = parseInt(m[1], 10);
+        if (!isNaN(num) && num >= 1) {
+          if (num > 10) num = 10;
+          return `Pro${num}`;
+        }
+      }
+
+      m = t.match(/프로(\d{1,2})/);
+      if (m) {
+        let num = parseInt(m[1], 10);
+        if (!isNaN(num) && num >= 1) {
+          if (num > 10) num = 10;
+          return `Pro${num}`;
+        }
+      }
+
+      // PRO 로마 숫자 (PROI ~ PROX, 프로I ~ 프로X)
+      const romanMap = {
+        "I": 1,
+        "II": 2,
+        "III": 3,
+        "IV": 4,
+        "V": 5,
+        "VI": 6,
+        "VII": 7,
+        "VIII": 8,
+        "IX": 9,
+        "X": 10
+      };
+
+      m = t.match(/PRO([IVX]+)/);
+      if (m) {
+        const rn = m[1];
+        const num = romanMap[rn];
+        if (num) return `Pro${num}`;
+      }
+
+      m = t.match(/프로([IVX]+)/);
+      if (m) {
+        const rn = m[1];
+        const num = romanMap[rn];
+        if (num) return `Pro${num}`;
+      }
+
+      return "";
     }
-  }
-
-  m = t.match(/프로(\d{1,2})/);
-  if (m) {
-    let num = parseInt(m[1], 10);
-    if (!isNaN(num) && num >= 1) {
-      if (num > 10) num = 10;
-      return `Pro${num}`;
-    }
-  }
-
-  // --- PRO (로마 숫자 버전: I ~ X) ---
-  const romanMap = {
-    "I": 1,
-    "II": 2,
-    "III": 3,
-    "IV": 4,
-    "V": 5,
-    "VI": 6,
-    "VII": 7,
-    "VIII": 8,
-    "IX": 9,
-    "X": 10
-  };
-
-  // PROI, PROVI, PROX ...
-  m = t.match(/PRO([IVX]+)/);
-  if (m) {
-    const rn = m[1];
-    const num = romanMap[rn];
-    if (num) return `Pro${num}`;
-  }
-
-  // 프로I, 프로VI, 프로X ...
-  m = t.match(/프로([IVX]+)/);
-  if (m) {
-    const rn = m[1];
-    const num = romanMap[rn];
-    if (num) return `Pro${num}`;
-  }
-
-  return "";
-}
 
     function upsertRankByName(name, rank, joinDate) {
       const existing = rankData.find((item) => item.name === name);
@@ -547,7 +606,7 @@
         const line = rawLine.trim();
         if (!line) continue;
 
-        // [L]KR-15323995 / 이름 / 2025-11-21 / 스타III 또는 Pro 6
+        // [L]KR-15323995 / 이름 / 2025-11-21 / 스타III 또는 Pro 6 또는 프로X
         const parts = line.split(" / ");
         if (parts.length < 4) continue;
 
