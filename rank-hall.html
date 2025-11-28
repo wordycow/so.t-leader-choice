@@ -54,104 +54,105 @@
       font-size: 12px;
     }
 
-    .cards-grid {
+    main {
+      margin-top: 10px;
+    }
+
+    .rank-section {
+      margin-bottom: 24px;
+    }
+
+    .rank-title {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .rank-title h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .rank-title span.label {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(191,219,254,0.9);
+      background: rgba(15,23,42,0.7);
+      color: #e5e7eb;
+    }
+
+    .rank-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 16px;
     }
 
     .card {
-      position: relative;
-      border-radius: 18px;
+      background: rgba(15,23,42,0.9);
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-      transform: translateY(10px) scale(0.98);
+      width: 190px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(6px);
       opacity: 0;
-      animation: fadeUp 0.6s forwards;
-    }
-
-    .card.big {
-      width: min(260px, 48%);
-      height: 260px;
-    }
-
-    .card.medium {
-      width: min(210px, 45%);
-      height: 210px;
-    }
-
-    .card.small {
-      width: min(160px, 45%);
-      height: 160px;
-    }
-
-    @media (max-width: 640px) {
-      .card.big,
-      .card.medium,
-      .card.small {
-        width: 100%;
-        max-width: 100%;
-      }
+      animation: fadeUp 0.4s forwards;
     }
 
     .card img {
       width: 100%;
-      height: 100%;
+      height: 120px;
       object-fit: cover;
       display: block;
-      filter: saturate(1.1);
-      transform: scale(1.02);
     }
 
-    .card-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(15,23,42,0.2), transparent);
+    .card-body {
+      padding: 8px 10px 10px;
+      background: rgba(15,23,42,0.95);
+    }
+
+    .card-name-row {
       display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 10px 12px;
-    }
-
-    .rank-badge {
-      display: inline-flex;
+      justify-content: space-between;
       align-items: center;
       gap: 4px;
-      font-size: 11px;
-      border-radius: 999px;
-      padding: 2px 8px;
-      background: rgba(15,23,42,0.85);
-      border: 1px solid rgba(129,140,248,0.8);
-      margin-bottom: 4px;
-    }
-
-    .rank-badge span.dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #38bdf8;
     }
 
     .card-name {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.01em;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-rank-badge {
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(129,140,248,0.9);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      white-space: nowrap;
     }
 
     .card-tagline {
-      font-size: 12px;
-      margin-top: 2px;
+      font-size: 11px;
+      margin-top: 4px;
       color: #e5e7eb;
+      min-height: 14px;
     }
 
     .card-meta {
       margin-top: 4px;
       font-size: 11px;
-      color: #cbd5f5;
+      color: #9ca3af;
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
     }
 
     .card-meta span {
@@ -159,15 +160,27 @@
     }
 
     .card:hover {
-      transform: translateY(0) scale(1);
-      box-shadow: 0 22px 50px rgba(15,23,42,0.9);
+      transform: translateY(0);
+      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
       transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
     }
 
     @keyframes fadeUp {
       to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        width: calc(50% - 8px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        width: 100%;
       }
     }
 
@@ -189,14 +202,14 @@
         <span>필터:</span>
         <select id="rank-filter">
           <option value="all">전체 직급</option>
-          <option value="Pro">Pro 계열만</option>
           <option value="Star">Star 계열만</option>
+          <option value="Pro">Pro 계열만</option>
+          <option value="Staff">Staff만</option>
         </select>
       </div>
     </header>
 
-    <main>
-      <div id="cards" class="cards-grid"></div>
+    <main id="rank-main">
       <p id="empty" class="empty-text" style="display:none;">
         아직 표시할 직급자가 없습니다. 관리자 페이지에서 rank-hall.json을 먼저 채워 주세요.
       </p>
@@ -240,95 +253,141 @@
       return rank;
     }
 
-    function shouldShowByFilter(rank, filterValue) {
+    function sectionTitle(rank) {
+      if (rank.startsWith("Star")) return `STAR ${rank.replace("Star","")}`;
+      if (rank.startsWith("Pro"))  return `PRO ${rank.replace("Pro","")}`;
+      if (rank === "Staff") return "STAFF";
+      return rank;
+    }
+
+    function getImageForRank(rank) {
+      if (!rank) return "img/star1.png";
+      if (rank.startsWith("Star")) {
+        const n = rank.replace("Star", "");
+        return `img/star${n}.png`;
+      }
+      if (rank.startsWith("Pro")) {
+        const n = rank.replace("Pro", "");
+        return `img/pro${n}.png`;
+      }
+      if (rank === "Staff") return "img/pro1.png";
+      return "img/star1.png";
+    }
+
+    function passesFilter(rank, filterValue) {
       if (filterValue === "all") return true;
-      if (filterValue === "Pro") return rank.startsWith("Pro");
       if (filterValue === "Star") return rank.startsWith("Star");
+      if (filterValue === "Pro")  return rank.startsWith("Pro");
+      if (filterValue === "Staff") return rank === "Staff";
       return true;
     }
 
     async function loadData() {
       try {
-        const [hallRes, configRes] = await Promise.all([
-          fetch("rank-hall.json"),
-          fetch("rank-config.json")
-        ]);
-
-        const hall = hallRes.ok ? await hallRes.json() : [];
-        const cfg = configRes.ok ? await configRes.json() : {};
-
+        const res = await fetch("rank-hall.json");
+        const hall = res.ok ? await res.json() : [];
         const rankData = Array.isArray(hall) ? hall : [];
-        const rankConfig = cfg || {};
+        renderAllSections(rankData, document.getElementById("rank-filter").value);
 
-        renderCards(rankData, rankConfig);
         document.getElementById("rank-filter").addEventListener("change", (e) => {
-          renderCards(rankData, rankConfig, e.target.value);
+          renderAllSections(rankData, e.target.value);
         });
       } catch (err) {
         console.error(err);
-        document.getElementById("empty").style.display = "block";
+        const empty = document.getElementById("empty");
+        empty.style.display = "block";
+        empty.textContent = "데이터를 불러오는 중 오류가 발생했습니다.";
       }
     }
 
-    function renderCards(rankData, rankConfig, filterValue = "all") {
-      const container = document.getElementById("cards");
+    function renderAllSections(rankData, filterValue) {
+      const main = document.getElementById("rank-main");
       const empty = document.getElementById("empty");
-      container.innerHTML = "";
+      main.innerHTML = "";
+      main.appendChild(empty); // empty를 유지
 
-      const valid = rankData.filter((item) => item.rank);
+      const valid = rankData.filter(item => item.rank);
       if (!valid.length) {
         empty.style.display = "block";
+        empty.textContent = "아직 표시할 직급자가 없습니다. 관리자 페이지에서 rank-hall.json을 먼저 채워 주세요.";
+        return;
+      }
+
+      // 필터를 미리 적용
+      const filtered = valid.filter(item => passesFilter(item.rank, filterValue));
+      if (!filtered.length) {
+        empty.style.display = "block";
+        empty.textContent = "선택한 필터에 해당하는 직급자가 없습니다.";
         return;
       }
       empty.style.display = "none";
 
-      const sorted = [...valid].sort((a, b) => {
+      // 정렬
+      const sorted = [...filtered].sort((a, b) => {
         const dRank = getRankIndex(a.rank) - getRankIndex(b.rank);
         if (dRank !== 0) return dRank;
-
         if (!a.joinDate && !b.joinDate) return 0;
         if (!a.joinDate) return 1;
         if (!b.joinDate) return -1;
         return a.joinDate.localeCompare(b.joinDate);
       });
 
-      sorted.forEach((item, idx) => {
-        if (!shouldShowByFilter(item.rank, filterValue)) return;
-
-        const cfg = rankConfig[item.rank] || {};
-        const sizeClass = cfg.size || "small";
-        const imgSrc = cfg.image || "img/star1.png"; // 설정 없을 때 임시 기본 이미지
-
-        const days = calcDaysFromJoin(item.joinDate);
-        const daysText = days === "" ? "" : `${days}일째`;
-
-        const card = document.createElement("article");
-        card.className = `card ${sizeClass}`;
-        card.style.animationDelay = `${idx * 0.03}s`;
-
-        card.innerHTML = `
-          <img src="${imgSrc}" alt="${item.rank}" loading="lazy" />
-          <div class="card-overlay">
-            <div class="rank-badge">
-              <span class="dot"></span>
-              <span>${rankLabel(item.rank)}</span>
-            </div>
-            <div class="card-name">${item.name}</div>
-            ${item.tagline ? `<div class="card-tagline">${item.tagline}</div>` : ""}
-            <div class="card-meta">
-              ${item.joinDate ? `<span>가입일 ${item.joinDate}</span>` : ""}
-              ${daysText ? `<span>${daysText}</span>` : ""}
-            </div>
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-
-      if (!container.children.length) {
-        empty.textContent = "선택한 필터에 해당하는 직급자가 없습니다.";
-        empty.style.display = "block";
+      // rank별로 묶기
+      const grouped = {};
+      for (const item of sorted) {
+        if (!grouped[item.rank]) grouped[item.rank] = [];
+        grouped[item.rank].push(item);
       }
+
+      // RANK_ORDER 순서대로 섹션 생성
+      RANK_ORDER.forEach(rank => {
+        const list = grouped[rank];
+        if (!list || !list.length) return;
+
+        const section = document.createElement("section");
+        section.className = "rank-section";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "rank-title";
+        titleRow.innerHTML = `
+          <h2>${sectionTitle(rank)}</h2>
+          <span class="label">${rankLabel(rank)} 직급 • ${list.length}명</span>
+        `;
+        section.appendChild(titleRow);
+
+        const grid = document.createElement("div");
+        grid.className = "rank-grid";
+
+        list.forEach((item, idx) => {
+          const days = calcDaysFromJoin(item.joinDate);
+          const daysText = days === "" ? "" : `${days}일째`;
+          const imgSrc = getImageForRank(item.rank);
+
+          const card = document.createElement("article");
+          card.className = "card";
+          card.style.animationDelay = `${idx * 0.03}s`;
+
+          card.innerHTML = `
+            <img src="${imgSrc}" alt="${item.rank}" loading="lazy" />
+            <div class="card-body">
+              <div class="card-name-row">
+                <div class="card-name">${item.name}</div>
+                <div class="card-rank-badge">${rankLabel(item.rank)}</div>
+              </div>
+              <div class="card-tagline">${item.tagline || ""}</div>
+              <div class="card-meta">
+                ${item.joinDate ? `<span>가입일 ${item.joinDate}</span>` : ""}
+                ${daysText ? `<span>${daysText}</span>` : ""}
+              </div>
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        main.appendChild(section);
+      });
     }
 
     loadData();
