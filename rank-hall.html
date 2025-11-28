@@ -15,11 +15,23 @@
       min-height: 100vh;
     }
 
+    /* 🔹 별 배경용 캔버스 */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      display: block;
+    }
+
     .page-wrap {
       max-width: 1100px;
       margin: 24px auto 40px;
       padding: 0 12px 32px;
       width: 100%;
+      position: relative;
+      z-index: 1; /* 별 배경 위에 놓기 */
     }
 
     header {
@@ -192,6 +204,9 @@
   </style>
 </head>
 <body>
+  <!-- 🔹 별 배경 캔버스 -->
+  <canvas id="starfield"></canvas>
+
   <div class="page-wrap">
     <header>
       <h1>so.t 직급의 전당</h1>
@@ -217,6 +232,66 @@
   </div>
 
   <script>
+    /* ===== 0. 별 배경 애니메이션 ===== */
+    function initStarfield() {
+      const canvas = document.getElementById("starfield");
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let stars = [];
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        createStars();
+      }
+
+      function createStars() {
+        const count = Math.floor((width * height) / 8000); // 화면 넓이에 비례해서 개수 조절
+        stars = [];
+        for (let i = 0; i < count; i++) {
+          stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 1.5 + 0.3,
+            speed: Math.random() * 0.4 + 0.1
+          });
+        }
+      }
+
+      function step() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(15,23,42,0.35)";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.fillStyle = "rgba(248,250,252,0.9)";
+        for (const s of stars) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          s.y += s.speed;
+          if (s.y > height) {
+            s.y = 0;
+            s.x = Math.random() * width;
+          }
+        }
+
+        requestAnimationFrame(step);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      requestAnimationFrame(step);
+    }
+
+    /* ===== 1. 직급 카드 렌더링 ===== */
+
     const RANK_ORDER = [
       "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
       "Star3","Star2","Star1",
@@ -260,6 +335,7 @@
       return rank;
     }
 
+    // 🔹 이미지 자동 매칭: 직급명 → img/***.png
     function getImageForRank(rank) {
       if (!rank) return "img/star1.png";
       if (rank.startsWith("Star")) {
@@ -304,7 +380,7 @@
       const main = document.getElementById("rank-main");
       const empty = document.getElementById("empty");
       main.innerHTML = "";
-      main.appendChild(empty); // empty를 유지
+      main.appendChild(empty); // empty 유지
 
       const valid = rankData.filter(item => item.rank);
       if (!valid.length) {
@@ -313,7 +389,7 @@
         return;
       }
 
-      // 필터를 미리 적용
+      // 필터 적용
       const filtered = valid.filter(item => passesFilter(item.rank, filterValue));
       if (!filtered.length) {
         empty.style.display = "block";
@@ -332,14 +408,12 @@
         return a.joinDate.localeCompare(b.joinDate);
       });
 
-      // rank별로 묶기
       const grouped = {};
       for (const item of sorted) {
         if (!grouped[item.rank]) grouped[item.rank] = [];
         grouped[item.rank].push(item);
       }
 
-      // RANK_ORDER 순서대로 섹션 생성
       RANK_ORDER.forEach(rank => {
         const list = grouped[rank];
         if (!list || !list.length) return;
@@ -390,6 +464,8 @@
       });
     }
 
+    // 🔹 별 배경 + 데이터 둘 다 시작
+    initStarfield();
     loadData();
   </script>
 </body>
