@@ -456,34 +456,66 @@
 
     // ===== 일괄 직급 업데이트 (Star + Pro) =====
     function normalizeRankLabel(raw) {
-      if (!raw) return "";
-      let t = raw.replace(/\s+/g, "").toUpperCase();
+  if (!raw) return "";
+  let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
 
-      // 스타 I/II/III
-      if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
-      if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
-      if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
+  // --- STAR (한글 / 영문) ---
+  if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
+  if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
+  if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
 
-      // PRO 계열 (영문 PRO6, PRO10 등)
-      let m = t.match(/PRO(\d{1,2})/);
-      if (m) {
-        let num = parseInt(m[1], 10);
-        if (isNaN(num) || num < 1) return "";
-        if (num > 10) num = 10;
-        return `Pro${num}`;
-      }
-
-      // PRO 계열 (한글 "프로6")
-      m = t.match(/프로(\d{1,2})/);
-      if (m) {
-        let num = parseInt(m[1], 10);
-        if (isNaN(num) || num < 1) return "";
-        if (num > 10) num = 10;
-        return `Pro${num}`;
-      }
-
-      return "";
+  // --- PRO (숫자 버전) ---
+  // PRO6, PRO10, 프로6, 프로10 ...
+  let m = t.match(/PRO(\d{1,2})/);
+  if (m) {
+    let num = parseInt(m[1], 10);
+    if (!isNaN(num) && num >= 1) {
+      if (num > 10) num = 10;
+      return `Pro${num}`;
     }
+  }
+
+  m = t.match(/프로(\d{1,2})/);
+  if (m) {
+    let num = parseInt(m[1], 10);
+    if (!isNaN(num) && num >= 1) {
+      if (num > 10) num = 10;
+      return `Pro${num}`;
+    }
+  }
+
+  // --- PRO (로마 숫자 버전: I ~ X) ---
+  const romanMap = {
+    "I": 1,
+    "II": 2,
+    "III": 3,
+    "IV": 4,
+    "V": 5,
+    "VI": 6,
+    "VII": 7,
+    "VIII": 8,
+    "IX": 9,
+    "X": 10
+  };
+
+  // PROI, PROVI, PROX ...
+  m = t.match(/PRO([IVX]+)/);
+  if (m) {
+    const rn = m[1];
+    const num = romanMap[rn];
+    if (num) return `Pro${num}`;
+  }
+
+  // 프로I, 프로VI, 프로X ...
+  m = t.match(/프로([IVX]+)/);
+  if (m) {
+    const rn = m[1];
+    const num = romanMap[rn];
+    if (num) return `Pro${num}`;
+  }
+
+  return "";
+}
 
     function upsertRankByName(name, rank, joinDate) {
       const existing = rankData.find((item) => item.name === name);
