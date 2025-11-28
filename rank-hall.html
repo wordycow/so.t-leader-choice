@@ -125,24 +125,43 @@
     .card.xl { width: 240px; }
 
     .card-image-wrap {
-      background: rgba(2, 6, 23, 0.6);
-      padding: 10px 10px 0;
-      display: flex;
-      justify-content: center;
-    }
+  position: relative;
+  padding: 10px 10px 0;
+  display: flex;
+  justify-content: center;
+  background: transparent;             /* 자체 배경은 투명 */
+}
 
-    .card-image-wrap img {
-      width: 100%;
-      height: auto;
-      object-fit: contain;
-      display: block;
-      border-radius: 14px 14px 8px 8px;
-    }
+/* 이미지 뒤에 둥근 그라디언트 한 겹 깔아서 네모 경계 숨기기 */
+.card-image-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 4px 6px 0 6px;
+  border-radius: 16px 16px 10px 10px;
+  background:
+    radial-gradient(circle at center,
+      rgba(15,23,42,0.0) 40%,
+      rgba(3,7,18,0.9) 100%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.card-image-wrap img {
+  position: relative;                 /* 그라디언트 위에 올라오게 */
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 14px 14px 8px 8px;
+  filter: saturate(1.05) brightness(0.95); /* 살짝만 톤 다운 */
+}
+
 
     .card-body {
       padding: 10px 12px 12px;
       text-align: center;
-      background: rgba(2, 6, 23, 0.65);
+      background: rgba(2, 6, 23, 0.75);
       backdrop-filter: blur(8px);
     }
 
