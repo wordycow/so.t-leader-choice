@@ -1,1 +1,744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>so.t 직급 관리자</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background-color: #e5e7eb;
+      color: #111827;
+      min-height: 100vh;
+    }
+
+    .page-wrap {
+      max-width: 1100px;
+      margin: 24px auto 32px;
+      padding: 0 12px 32px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 16px;
+    }
+
+    /* 기본은 1열, 화면 넓을 때만 2열 */
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    @media (min-width: 1040px) {
+      .layout {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      }
+    }
+
+    .glass-panel {
+      background: rgba(255,255,255,0.97);
+      border-radius: 18px;
+      padding: 14px 16px 16px;
+      box-shadow: 0 14px 40px rgba(15,23,42,0.18);
+      border: 1px solid rgba(255,255,255,0.6);
+    }
+
+    .glass-panel h2,
+    .glass-panel h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .glass-panel p {
+      margin: 0;
+    }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .field-row label {
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    input,
+    select,
+    textarea {
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.9);
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .primary-btn {
+      background: #1d4ed8;
+      color: #f9fafb;
+    }
+
+    .secondary-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .danger-btn {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .tools-row {
+      margin: 6px 0 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rank-table,
+    .rank-image-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .rank-table th,
+    .rank-table td,
+    .rank-image-table th,
+    .rank-image-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(148,163,184,0.35);
+    }
+
+    .rank-table th,
+    .rank-image-table th {
+      text-align: left;
+      background: rgba(15,23,42,0.06);
+      font-weight: 600;
+    }
+
+    .rank-table tr:last-child td,
+    .rank-image-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    #bulk-input {
+      width: 100%;
+      min-height: 120px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      margin-top: 6px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #e5e7eb;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .btn-row .secondary-btn,
+    .btn-row .danger-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <h1>so.t 직급 관리자</h1>
+    <p class="sub">
+      이 페이지에서 직급자 목록(<code>rank-hall.json</code>)과 직급별 카드 이미지 설정(<code>rank-config.json</code>)을 관리해.
+      JSON 복사 → GitHub 파일에 붙여넣는 방식으로 반영하면 돼. (기존 관리자랑은 완전 별도!)
+    </p>
+
+    <div class="layout">
+      <!-- 왼쪽: 직급자 관리 -->
+      <section class="glass-panel">
+        <h2>직급자 관리 (rank-hall.json)</h2>
+        <p style="font-size:13px; color:#4b5563;">
+          개별 직급자는 위 폼에서 “<strong>+ 직급자 추가</strong>” 버튼으로,  
+          많은 인원은 아래 “일괄 직급 업데이트”에서 한 번에 붙여넣어서 관리.
+        </p>
+
+        <!-- 개별 추가 폼 -->
+        <form id="rank-form">
+          <div class="field-row">
+            <label>
+              직급
+              <select id="rank-select">
+                <option value="">-- 직급 선택 --</option>
+                <option value="Star1">Star1</option>
+                <option value="Star2">Star2</option>
+                <option value="Star3">Star3</option>
+                <option value="Pro1">Pro1</option>
+                <option value="Pro2">Pro2</option>
+                <option value="Pro3">Pro3</option>
+                <option value="Pro4">Pro4</option>
+                <option value="Pro5">Pro5</option>
+                <option value="Pro6">Pro6</option>
+                <option value="Pro7">Pro7</option>
+                <option value="Pro8">Pro8</option>
+                <option value="Pro9">Pro9</option>
+                <option value="Pro10">Pro10</option>
+                <option value="Staff">Staff</option>
+                <option value="custom">+ 새 직급 직접 입력</option>
+              </select>
+            </label>
+
+            <label id="custom-rank-wrap" style="display:none;">
+              새 직급 이름
+              <input type="text" id="custom-rank" placeholder="예: Royal Director" />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              이름
+              <input type="text" id="member-name" placeholder="이름" />
+            </label>
+            <label>
+              가입일
+              <input type="date" id="join-date" />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label style="flex:1;">
+              카드 텍스트 (한 줄)
+              <input type="text" id="member-tagline" placeholder="예: so.t 첫 Pro10 달성" />
+            </label>
+          </div>
+
+          <button type="submit" class="primary-btn">+ 직급자 추가</button>
+        </form>
+
+        <div class="tools-row">
+          <button id="copy-rank-json" class="secondary-btn">
+            rank-hall.json용 JSON 복사
+          </button>
+        </div>
+
+        <table class="rank-table">
+          <thead>
+            <tr>
+              <th>직급</th>
+              <th>이름</th>
+              <th>가입일</th>
+              <th>가입 후 일수</th>
+              <th>카드 텍스트</th>
+            </tr>
+          </thead>
+          <tbody id="rank-table-body">
+          </tbody>
+        </table>
+
+        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(148,163,184,0.5);" />
+
+        <!-- 일괄 업데이트 -->
+        <h3>일괄 직급 업데이트</h3>
+        <p style="font-size:13px; color:#4b5563;">
+          아래처럼 생긴 리스트를 그대로 붙여 넣으면, <strong>스타I·스타II·스타III</strong>만 자동으로 반영돼.<br />
+          예) <code>[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III</code>
+        </p>
+
+        <textarea
+          id="bulk-input"
+          placeholder="[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III&#10;[R]KR-19863422 / 이은진 / 2025-11-21 / 스타I"
+        ></textarea>
+        <div class="tools-row">
+          <button id="bulk-apply" class="secondary-btn">
+            붙여넣기 내용으로 직급자 업데이트
+          </button>
+        </div>
+      </section>
+
+      <!-- 오른쪽: 직급별 이미지 설정 -->
+      <section class="glass-panel">
+        <h2>직급별 카드 이미지 설정 (rank-config.json)</h2>
+        <p style="font-size:13px; color:#4b5563;">
+          직급마다 카드 크기와 이미지 파일 경로를 정해. 이미지는 GitHub의 <code>img</code> 폴더에 올려두고<br />
+          예: <code>img/star1.png</code> 이런 식으로 경로만 적어 두면 돼.
+        </p>
+
+        <table class="rank-image-table">
+          <thead>
+            <tr>
+              <th>직급</th>
+              <th>카드 크기</th>
+              <th>이미지 경로</th>
+              <th>저장 / 삭제</th>
+            </tr>
+          </thead>
+          <tbody id="rank-image-tbody">
+          </tbody>
+        </table>
+
+        <div class="tools-row">
+          <button id="rank-image-add-row" class="secondary-btn">
+            + 직급 수동 추가
+          </button>
+          <button id="copy-rank-config-json" class="secondary-btn">
+            rank-config.json용 JSON 복사
+          </button>
+        </div>
+
+        <p class="hint">
+          ⚙️ 왼쪽 직급자 테이블에 존재하는 직급은 여기 목록에도 자동으로 생겨.  
+          먼저 직급자들을 어느 정도 넣고, 그 다음에 이미지 설정을 맞추면 관리가 편해.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ===== 공통: 직급 정렬 기준 =====
+    const RANK_ORDER = [
+      "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
+      "Star3","Star2","Star1",
+      "Staff"
+    ];
+
+    function getRankIndex(rank) {
+      const i = RANK_ORDER.indexOf(rank);
+      return i === -1 ? 999 : i;
+    }
+
+    // 가입 후 며칠 지났는지 계산 (오늘 기준)
+    function calcDaysFromJoin(joinDateStr) {
+      if (!joinDateStr) return "";
+      const join = new Date(joinDateStr);
+      if (isNaN(join.getTime())) return "";
+      const today = new Date();
+
+      const joinMs = new Date(join.getFullYear(), join.getMonth(), join.getDate()).getTime();
+      const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+      const diffDays = Math.floor((todayMs - joinMs) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return "";
+      return diffDays;
+    }
+
+    // ===== 1. 직급자 데이터 (rank-hall.json) =====
+    // { name, rank, joinDate, tagline }
+    let rankData = [];
+
+    const rankSelect = document.getElementById("rank-select");
+    const customRankWrap = document.getElementById("custom-rank-wrap");
+    const customRankInput = document.getElementById("custom-rank");
+
+    rankSelect.addEventListener("change", () => {
+      if (rankSelect.value === "custom") {
+        customRankWrap.style.display = "flex";
+      } else {
+        customRankWrap.style.display = "none";
+        customRankInput.value = "";
+      }
+    });
+
+    function renderRankTable() {
+      const tbody = document.getElementById("rank-table-body");
+      tbody.innerHTML = "";
+
+      const sorted = [...rankData].sort((a, b) => {
+        const rankDiff = getRankIndex(a.rank) - getRankIndex(b.rank);
+        if (rankDiff !== 0) return rankDiff;
+
+        if (!a.joinDate && !b.joinDate) return 0;
+        if (!a.joinDate) return 1;
+        if (!b.joinDate) return -1;
+        return a.joinDate.localeCompare(b.joinDate);
+      });
+
+      for (const item of sorted) {
+        const days = calcDaysFromJoin(item.joinDate);
+        const daysText = days === "" ? "" : `${days}일`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.rank}</td>
+          <td>${item.name}</td>
+          <td>${item.joinDate || ""}</td>
+          <td>${daysText}</td>
+          <td>${item.tagline || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      // 직급자 목록이 바뀌면 이미지 설정 테이블도 갱신
+      renderRankImageTable();
+    }
+
+    document.getElementById("rank-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      let rank = rankSelect.value;
+      if (rank === "custom") {
+        rank = customRankInput.value.trim();
+      }
+
+      const name = document.getElementById("member-name").value.trim();
+      const joinDate = document.getElementById("join-date").value;
+      const tagline = document.getElementById("member-tagline").value.trim();
+
+      if (!rank || !name) {
+        alert("직급과 이름은 필수야.");
+        return;
+      }
+
+      rankData.push({
+        name,
+        rank,
+        joinDate: joinDate || "",
+        tagline: tagline || ""
+      });
+
+      document.getElementById("member-name").value = "";
+      document.getElementById("join-date").value = "";
+      document.getElementById("member-tagline").value = "";
+      rankSelect.value = "";
+      customRankWrap.style.display = "none";
+      customRankInput.value = "";
+
+      renderRankTable();
+    });
+
+    // JSON 복사 (rank-hall.json)
+    document.getElementById("copy-rank-json").addEventListener("click", () => {
+      const json = JSON.stringify(rankData, null, 2);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(json)
+          .then(() => alert("rank-hall.json용 JSON이 클립보드에 복사됐어.\nGitHub의 rank-hall.json에 그대로 붙여넣으면 돼."))
+          .catch(() => {
+            alert("클립보드 복사 실패. 콘솔에 JSON을 찍어둘게.");
+            console.log(json);
+          });
+      } else {
+        alert("클립보드 API를 쓸 수 없어서 콘솔에 JSON을 찍었어.");
+        console.log(json);
+      }
+    });
+
+    // ===== 2. 일괄 직급 업데이트 =====
+    function normalizeKoreanRank(raw) {
+      if (!raw) return "";
+      const t = raw.replace(/\s+/g, "").toUpperCase();
+
+      if (t.includes("스타III") || t.includes("스타3")) return "Star3";
+      if (t.includes("스타II")  || t.includes("스타2")) return "Star2";
+      if (t.includes("스타I")   || t.includes("스타1")) return "Star1";
+
+      return "";
+    }
+
+    function upsertRankByName(name, rank, joinDate) {
+      const existing = rankData.find((item) => item.name === name);
+
+      if (existing) {
+        existing.rank = rank;
+        if (joinDate) existing.joinDate = joinDate;
+      } else {
+        rankData.push({
+          name,
+          rank,
+          joinDate: joinDate || "",
+          tagline: ""
+        });
+      }
+    }
+
+    document.getElementById("bulk-apply").addEventListener("click", () => {
+      const text = document.getElementById("bulk-input").value;
+      if (!text.trim()) {
+        alert("붙여 넣을 내용을 먼저 입력해 줘.");
+        return;
+      }
+
+      const lines = text.split(/\r?\n/);
+      let updatedCount = 0;
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+
+        // [L]KR-15323995 / 이름 / 2025-11-21 / 스타III
+        const parts = line.split(" / ");
+        if (parts.length < 4) continue;
+
+        const name = (parts[1] || "").trim();
+        const joinDate = (parts[2] || "").trim();
+        const rawRank = (parts[3] || "").trim();
+        const rank = normalizeKoreanRank(rawRank);
+
+        if (!name || !rank) continue;
+
+        upsertRankByName(name, rank, joinDate);
+        updatedCount++;
+      }
+
+      renderRankTable();
+
+      alert(
+        `일괄 업데이트 완료.\n` +
+        `반영된 인원: ${updatedCount}명\n\n` +
+        `마음에 들면 JSON 복사 버튼 눌러서 rank-hall.json에 붙여 넣으면 돼.`
+      );
+    });
+
+    // ===== 3. 직급별 이미지 설정 (rank-config.json) =====
+    // { "Star1": { size: "small", image: "img/star1.png" }, ... }
+    let rankImageConfig = {};
+
+    function getAllRanksForImageConfig() {
+      const set = new Set();
+
+      rankData.forEach((item) => {
+        if (item.rank) set.add(item.rank);
+      });
+
+      Object.keys(rankImageConfig).forEach((rank) => set.add(rank));
+
+      return Array.from(set).sort((a, b) => getRankIndex(a) - getRankIndex(b));
+    }
+
+    function renderRankImageTable() {
+      const tbody = document.getElementById("rank-image-tbody");
+      tbody.innerHTML = "";
+
+      const allRanks = getAllRanksForImageConfig();
+
+      allRanks.forEach((rank) => {
+        const cfg = rankImageConfig[rank] || {};
+        const size = cfg.size || "small";
+        const image = cfg.image || "";
+
+        const tr = document.createElement("tr");
+
+        const rankTd = document.createElement("td");
+        const rankInput = document.createElement("input");
+        rankInput.value = rank;
+        rankInput.disabled = true;
+        rankTd.appendChild(rankInput);
+
+        const sizeTd = document.createElement("td");
+        const sizeSelect = document.createElement("select");
+        ["big", "medium", "small"].forEach((opt) => {
+          const option = document.createElement("option");
+          option.value = opt;
+          option.textContent =
+            opt === "big" ? "크게" : opt === "medium" ? "중간" : "작게";
+          if (opt === size) option.selected = true;
+          sizeSelect.appendChild(option);
+        });
+        sizeTd.appendChild(sizeSelect);
+
+        const imageTd = document.createElement("td");
+        const imageInput = document.createElement("input");
+        imageInput.placeholder = "예: img/star1.png";
+        imageInput.value = image;
+        imageTd.appendChild(imageInput);
+
+        const actionTd = document.createElement("td");
+        const btnRow = document.createElement("div");
+        btnRow.className = "btn-row";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.textContent = "적용";
+        saveBtn.className = "secondary-btn";
+
+        saveBtn.addEventListener("click", () => {
+          const r = rankInput.value.trim();
+          const s = sizeSelect.value;
+          const imgPath = imageInput.value.trim();
+
+          if (!r || !imgPath) {
+            alert("직급과 이미지 경로를 모두 입력해 줘.");
+            return;
+          }
+
+          rankImageConfig[r] = {
+            size: s,
+            image: imgPath
+          };
+
+          alert(`직급 "${r}"의 이미지 설정이 저장됐어.`);
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "삭제";
+        deleteBtn.className = "danger-btn";
+
+        deleteBtn.addEventListener("click", () => {
+          const r = rankInput.value.trim();
+          if (!r) return;
+          if (!confirm(`"${r}" 직급의 이미지 설정을 삭제할까요?`)) return;
+          delete rankImageConfig[r];
+          renderRankImageTable();
+        });
+
+        btnRow.appendChild(saveBtn);
+        btnRow.appendChild(deleteBtn);
+        actionTd.appendChild(btnRow);
+
+        tr.appendChild(rankTd);
+        tr.appendChild(sizeTd);
+        tr.appendChild(imageTd);
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 수동으로 직급 추가 행 만들기
+    document.getElementById("rank-image-add-row").addEventListener("click", () => {
+      const tbody = document.getElementById("rank-image-tbody");
+
+      const tr = document.createElement("tr");
+
+      const rankTd = document.createElement("td");
+      const rankInput = document.createElement("input");
+      rankInput.placeholder = "예: Pro10";
+      rankTd.appendChild(rankInput);
+
+      const sizeTd = document.createElement("td");
+      const sizeSelect = document.createElement("select");
+      ["big", "medium", "small"].forEach((opt) => {
+        const option = document.createElement("option");
+        option.value = opt;
+        option.textContent =
+          opt === "big" ? "크게" : opt === "medium" ? "중간" : "작게";
+        if (opt === "small") option.selected = true;
+        sizeSelect.appendChild(option);
+      });
+      sizeTd.appendChild(sizeSelect);
+
+      const imageTd = document.createElement("td");
+      const imageInput = document.createElement("input");
+      imageInput.placeholder = "예: img/pro10.png";
+      imageTd.appendChild(imageInput);
+
+      const actionTd = document.createElement("td");
+      const btnRow = document.createElement("div");
+      btnRow.className = "btn-row";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.textContent = "적용";
+      saveBtn.className = "secondary-btn";
+
+      saveBtn.addEventListener("click", () => {
+        const r = rankInput.value.trim();
+        const s = sizeSelect.value;
+        const imgPath = imageInput.value.trim();
+
+        if (!r || !imgPath) {
+          alert("직급과 이미지 경로를 모두 입력해 줘.");
+          return;
+        }
+
+        rankImageConfig[r] = {
+          size: s,
+          image: imgPath
+        };
+
+        alert(`직급 "${r}"의 이미지 설정이 저장됐어.`);
+        renderRankImageTable();
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "삭제";
+      deleteBtn.className = "danger-btn";
+
+      deleteBtn.addEventListener("click", () => {
+        tbody.removeChild(tr);
+      });
+
+      btnRow.appendChild(saveBtn);
+      btnRow.appendChild(deleteBtn);
+      actionTd.appendChild(btnRow);
+
+      tr.appendChild(rankTd);
+      tr.appendChild(sizeTd);
+      tr.appendChild(imageTd);
+      tr.appendChild(actionTd);
+
+      tbody.appendChild(tr);
+    });
+
+    // 이미지 설정 JSON 복사 (rank-config.json)
+    document
+      .getElementById("copy-rank-config-json")
+      .addEventListener("click", () => {
+        const json = JSON.stringify(rankImageConfig, null, 2);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(json)
+            .then(() => alert("rank-config.json용 JSON이 복사됐어.\nGitHub의 rank-config.json에 붙여 넣으면 돼."))
+            .catch(() => {
+              alert("클립보드 복사 실패. 콘솔에 JSON을 찍어둘게.");
+              console.log(json);
+            });
+        } else {
+          alert("클립보드 API를 쓸 수 없어서 콘솔에 JSON을 찍었어.");
+          console.log(json);
+        }
+      });
+
+    // 시작할 때 빈 테이블 렌더링
+    renderRankTable();
+  </script>
+</body>
+</html>
 
