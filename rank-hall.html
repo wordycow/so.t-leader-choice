@@ -1,338 +1,146 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>so.t 직급의 전당</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: radial-gradient(circle at top, #1d4ed8 0, #0f172a 55%, #020617 100%);
-      color: #e5e7eb;
-      min-height: 100vh;
-    }
-
-    .page-wrap {
-      max-width: 1100px;
-      margin: 24px auto 40px;
-      padding: 0 12px 32px;
-      width: 100%;
-    }
-
-    header {
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: 26px;
-      margin: 0 0 6px;
-    }
-
-    .sub {
-      font-size: 13px;
-      color: #cbd5f5;
-      margin: 0 0 10px;
-    }
-
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      font-size: 12px;
-    }
-
-    .filter-row select {
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.8);
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-      font-size: 12px;
-    }
-
-    .cards-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .card {
-      position: relative;
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-      transform: translateY(10px) scale(0.98);
-      opacity: 0;
-      animation: fadeUp 0.6s forwards;
-    }
-
-    .card.big {
-      width: min(260px, 48%);
-      height: 260px;
-    }
-
-    .card.medium {
-      width: min(210px, 45%);
-      height: 210px;
-    }
-
-    .card.small {
-      width: min(160px, 45%);
-      height: 160px;
-    }
-
-    @media (max-width: 640px) {
-      .card.big,
-      .card.medium,
-      .card.small {
-        width: 100%;
-        max-width: 100%;
-      }
-    }
-
-    .card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      filter: saturate(1.1);
-      transform: scale(1.02);
-    }
-
-    .card-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(15,23,42,0.2), transparent);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 10px 12px;
-    }
-
-    .rank-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      border-radius: 999px;
-      padding: 2px 8px;
-      background: rgba(15,23,42,0.85);
-      border: 1px solid rgba(129,140,248,0.8);
-      margin-bottom: 4px;
-    }
-
-    .rank-badge span.dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #38bdf8;
-    }
-
-    .card-name {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    .card-tagline {
-      font-size: 12px;
-      margin-top: 2px;
-      color: #e5e7eb;
-    }
-
-    .card-meta {
-      margin-top: 4px;
-      font-size: 11px;
-      color: #cbd5f5;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .card-meta span {
-      opacity: 0.9;
-    }
-
-    .card:hover {
-      transform: translateY(0) scale(1);
-      box-shadow: 0 22px 50px rgba(15,23,42,0.9);
-      transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
-    }
-
-    @keyframes fadeUp {
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .empty-text {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-top: 24px;
-    }
-  </style>
-</head>
-<body>
-  <div class="page-wrap">
-    <header>
-      <h1>so.t 직급의 전당</h1>
-      <p class="sub">
-        so.t에서 직급을 달성한 리더들을 모았습니다. (가입일 기준으로, 높은 직급 순으로 정렬)
-      </p>
-      <div class="filter-row">
-        <span>필터:</span>
-        <select id="rank-filter">
-          <option value="all">전체 직급</option>
-          <option value="Pro">Pro 계열만</option>
-          <option value="Star">Star 계열만</option>
-        </select>
-      </div>
-    </header>
-
-    <main>
-      <div id="cards" class="cards-grid"></div>
-      <p id="empty" class="empty-text" style="display:none;">
-        아직 표시할 직급자가 없습니다. 관리자 페이지에서 rank-hall.json을 먼저 채워 주세요.
-      </p>
-    </main>
-  </div>
-
-  <script>
-    const RANK_ORDER = [
-      "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
-      "Star3","Star2","Star1",
-      "Staff"
-    ];
-
-    function getRankIndex(rank) {
-      const i = RANK_ORDER.indexOf(rank);
-      return i === -1 ? 999 : i;
-    }
-
-    function calcDaysFromJoin(joinDateStr) {
-      if (!joinDateStr) return "";
-      const join = new Date(joinDateStr);
-      if (isNaN(join.getTime())) return "";
-      const today = new Date();
-      const joinMs = new Date(join.getFullYear(), join.getMonth(), join.getDate()).getTime();
-      const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-      const diffDays = Math.floor((todayMs - joinMs) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) return "";
-      return diffDays;
-    }
-
-    function rankLabel(rank) {
-      if (!rank) return "";
-      if (rank.startsWith("Star")) {
-        const n = rank.replace("Star", "");
-        return `스타 ${n}`;
-      }
-      if (rank.startsWith("Pro")) {
-        const n = rank.replace("Pro", "");
-        return `Pro ${n}`;
-      }
-      return rank;
-    }
-
-    function shouldShowByFilter(rank, filterValue) {
-      if (filterValue === "all") return true;
-      if (filterValue === "Pro") return rank.startsWith("Pro");
-      if (filterValue === "Star") return rank.startsWith("Star");
-      return true;
-    }
-
-    async function loadData() {
-      try {
-        const [hallRes, configRes] = await Promise.all([
-          fetch("rank-hall.json"),
-          fetch("rank-config.json")
-        ]);
-
-        const hall = hallRes.ok ? await hallRes.json() : [];
-        const cfg = configRes.ok ? await configRes.json() : {};
-
-        const rankData = Array.isArray(hall) ? hall : [];
-        const rankConfig = cfg || {};
-
-        renderCards(rankData, rankConfig);
-        document.getElementById("rank-filter").addEventListener("change", (e) => {
-          renderCards(rankData, rankConfig, e.target.value);
-        });
-      } catch (err) {
-        console.error(err);
-        document.getElementById("empty").style.display = "block";
-      }
-    }
-
-    function renderCards(rankData, rankConfig, filterValue = "all") {
-      const container = document.getElementById("cards");
-      const empty = document.getElementById("empty");
-      container.innerHTML = "";
-
-      const valid = rankData.filter((item) => item.rank);
-      if (!valid.length) {
-        empty.style.display = "block";
-        return;
-      }
-      empty.style.display = "none";
-
-      const sorted = [...valid].sort((a, b) => {
-        const dRank = getRankIndex(a.rank) - getRankIndex(b.rank);
-        if (dRank !== 0) return dRank;
-
-        if (!a.joinDate && !b.joinDate) return 0;
-        if (!a.joinDate) return 1;
-        if (!b.joinDate) return -1;
-        return a.joinDate.localeCompare(b.joinDate);
-      });
-
-      sorted.forEach((item, idx) => {
-        if (!shouldShowByFilter(item.rank, filterValue)) return;
-
-        const cfg = rankConfig[item.rank] || {};
-        const sizeClass = cfg.size || "small";
-        const imgSrc = cfg.image || "img/star1.png"; // 설정 없을 때 임시 기본 이미지
-
-        const days = calcDaysFromJoin(item.joinDate);
-        const daysText = days === "" ? "" : `${days}일째`;
-
-        const card = document.createElement("article");
-        card.className = `card ${sizeClass}`;
-        card.style.animationDelay = `${idx * 0.03}s`;
-
-        card.innerHTML = `
-          <img src="${imgSrc}" alt="${item.rank}" loading="lazy" />
-          <div class="card-overlay">
-            <div class="rank-badge">
-              <span class="dot"></span>
-              <span>${rankLabel(item.rank)}</span>
-            </div>
-            <div class="card-name">${item.name}</div>
-            ${item.tagline ? `<div class="card-tagline">${item.tagline}</div>` : ""}
-            <div class="card-meta">
-              ${item.joinDate ? `<span>가입일 ${item.joinDate}</span>` : ""}
-              ${daysText ? `<span>${daysText}</span>` : ""}
-            </div>
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-
-      if (!container.children.length) {
-        empty.textContent = "선택한 필터에 해당하는 직급자가 없습니다.";
-        empty.style.display = "block";
-      }
-    }
-
-    loadData();
-  </script>
-</body>
-</html>
-
+[
+  {
+    "name": "이두연",
+    "rank": "Pro1",
+    "joinDate": "2025-11-21",
+    "tagline": "so.t 첫 pro1 달성 경축"
+  },
+  {
+    "name": "이유송",
+    "rank": "Star3",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "임정애",
+    "rank": "Star2",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "이동진",
+    "rank": "Star2",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "이윤경",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "심승철",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "성낙호",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "서일경",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "왕청혜",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "양소정",
+    "rank": "Star1",
+    "joinDate": "2025-11-22",
+    "tagline": ""
+  },
+  {
+    "name": "이민율",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "김미선",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "따룩아롤린",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "김현경",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "윤기남",
+    "rank": "Star3",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "한남희",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "이부경",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "박지인",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "이금희",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "김선영",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "한기림",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "김선옥",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "하금수",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  },
+  {
+    "name": "유제준",
+    "rank": "Star1",
+    "joinDate": "2025-11-21",
+    "tagline": ""
+  }
+]
