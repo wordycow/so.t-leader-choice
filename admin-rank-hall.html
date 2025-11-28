@@ -10,9 +10,23 @@
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background-color: #e5e7eb;
       color: #111827;
       min-height: 100vh;
+
+      /* rank-hall.html 과 동일한 우주 배경 */
+      background: #020617;
+      background-image:
+        url("img/bg-stars.jpg"),
+        radial-gradient(circle at top, rgba(15,23,42,0.25) 0, rgba(15,23,42,0.9) 65%, #020617 100%);
+      background-size: cover, cover;
+      background-position: center top, center top;
+      background-attachment: fixed, fixed;
+      animation: bg-pan 60s linear infinite alternate;
+    }
+
+    @keyframes bg-pan {
+      0% { background-position: center top, center top; }
+      100% { background-position: center 20%, center top; }
     }
 
     .page-wrap {
@@ -25,11 +39,12 @@
     h1 {
       font-size: 22px;
       margin-bottom: 6px;
+      color: #f9fafb;
     }
 
     .sub {
       font-size: 13px;
-      color: #4b5563;
+      color: #e5e7eb;
       margin-bottom: 16px;
     }
 
@@ -46,17 +61,20 @@
     }
 
     .glass-panel {
-      background: rgba(255,255,255,0.97);
+      background: rgba(15,23,42,0.88);
       border-radius: 18px;
       padding: 14px 16px 16px;
-      box-shadow: 0 14px 40px rgba(15,23,42,0.18);
-      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 14px 40px rgba(15,23,42,0.85);
+      border: 1px solid rgba(148,163,184,0.4);
+      color: #e5e7eb;
+      backdrop-filter: blur(8px);
     }
 
     .glass-panel h2,
     .glass-panel h3 {
       margin: 0 0 8px;
       font-size: 16px;
+      color: #f9fafb;
     }
 
     .glass-panel p {
@@ -87,10 +105,13 @@
       border: 1px solid rgba(148,163,184,0.9);
       font-size: 13px;
       font-family: inherit;
+      background: rgba(15,23,42,0.8);
+      color: #f9fafb;
     }
 
     textarea {
       resize: vertical;
+      background: rgba(15,23,42,0.9);
     }
 
     .primary-btn,
@@ -140,7 +161,7 @@
 
     .rank-table th {
       text-align: left;
-      background: rgba(15,23,42,0.06);
+      background: rgba(15,23,42,0.9);
       font-weight: 600;
     }
 
@@ -157,23 +178,24 @@
 
     .hint {
       font-size: 12px;
-      color: #6b7280;
+      color: #cbd5f5;
       margin-top: 2px;
     }
 
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 12px;
-      background: #e5e7eb;
+      background: rgba(15,23,42,0.9);
       padding: 1px 4px;
       border-radius: 4px;
+      color: #e5e7eb;
     }
 
     ul {
       padding-left: 18px;
       margin: 4px 0 0;
       font-size: 13px;
-      color: #4b5563;
+      color: #e5e7eb;
     }
 
     ul li {
@@ -193,7 +215,7 @@
       <!-- 왼쪽: 직급자 관리 -->
       <section class="glass-panel">
         <h2>직급자 관리 (rank-hall.json)</h2>
-        <p style="font-size:13px; color:#4b5563;">
+        <p style="font-size:13px; color:#e5e7eb;">
           개별 직급자는 위 폼에서 “<strong>+ 직급자 추가</strong>” 버튼으로,  
           많은 인원은 아래 “일괄 직급 업데이트”에서 한 번에 붙여넣어서 관리.
         </p>
@@ -273,7 +295,7 @@
 
         <!-- 일괄 업데이트 -->
         <h3>일괄 직급 업데이트</h3>
-        <p style="font-size:13px; color:#4b5563;">
+        <p style="font-size:13px; color:#e5e7eb;">
           아래처럼 생긴 리스트를 그대로 붙여 넣으면, <strong>스타I·스타II·스타III·Pro1~Pro10</strong>까지 자동으로 반영돼.<br />
           예) <code>[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III</code><br />
           예) <code>[R]KR-12345678 / 아무개 / 2025-12-01 / Pro 6</code>
@@ -315,7 +337,6 @@
   </div>
 
   <script>
-    // ===== 직급 정렬 기준 =====
     const RANK_ORDER = [
       "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
       "Star3","Star2","Star1"
@@ -326,23 +347,19 @@
       return i === -1 ? 999 : i;
     }
 
-    // 가입 후 며칠 지났는지 계산 (오늘 기준)
     function calcDaysFromJoin(joinDateStr) {
       if (!joinDateStr) return "";
       const join = new Date(joinDateStr);
       if (isNaN(join.getTime())) return "";
       const today = new Date();
-
       const joinMs = new Date(join.getFullYear(), join.getMonth(), join.getDate()).getTime();
       const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-
       const diffDays = Math.floor((todayMs - joinMs) / (1000 * 60 * 60 * 24));
       if (diffDays < 0) return "";
       return diffDays;
     }
 
-    // ===== 1. 직급자 데이터 =====
-    // { name, rank, joinDate, tagline }
+    // ===== 직급자 데이터 =====
     let rankData = [];
 
     const rankSelect = document.getElementById("rank-select");
@@ -422,7 +439,6 @@
       renderRankTable();
     });
 
-    // JSON 복사 (rank-hall.json)
     document.getElementById("copy-rank-json").addEventListener("click", () => {
       const json = JSON.stringify(rankData, null, 2);
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -438,18 +454,17 @@
       }
     });
 
-    // ===== 2. 일괄 직급 업데이트 =====
-    // 스타I/II/III + Pro1~Pro10 까지 인식
+    // ===== 일괄 직급 업데이트 (Star + Pro) =====
     function normalizeRankLabel(raw) {
       if (!raw) return "";
-      let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
+      let t = raw.replace(/\s+/g, "").toUpperCase();
 
-      // STAR (한글/영문) 1~3
+      // 스타 I/II/III
       if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
       if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
       if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
 
-      // PRO 계열 (영문)
+      // PRO 계열 (영문 PRO6, PRO10 등)
       let m = t.match(/PRO(\d{1,2})/);
       if (m) {
         let num = parseInt(m[1], 10);
@@ -458,7 +473,7 @@
         return `Pro${num}`;
       }
 
-      // PRO 계열 (한글 "프로6" 같이 들어온 경우)
+      // PRO 계열 (한글 "프로6")
       m = t.match(/프로(\d{1,2})/);
       if (m) {
         let num = parseInt(m[1], 10);
