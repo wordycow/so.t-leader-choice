@@ -10,19 +10,22 @@
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: radial-gradient(circle at top, #1d4ed8 0, #0f172a 55%, #020617 100%);
+      background: #020617;
       color: #e5e7eb;
       min-height: 100vh;
+      /* 우주 사진 + 아주 느린 패닝 */
+      background-image:
+        radial-gradient(circle at top, rgba(15,23,42,0.4) 0, rgba(15,23,42,0.95) 55%, #020617 100%),
+        url("img/bg-stars.jpg");
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+      animation: bg-pan 40s linear infinite alternate;
     }
 
-    /* 🔹 별 배경용 캔버스 */
-    #starfield {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      display: block;
+    @keyframes bg-pan {
+      0% { background-position: 0% 0%, center top; }
+      100% { background-position: 100% 20%, center top; }
     }
 
     .page-wrap {
@@ -30,8 +33,6 @@
       margin: 24px auto 40px;
       padding: 0 12px 32px;
       width: 100%;
-      position: relative;
-      z-index: 1; /* 별 배경 위에 놓기 */
     }
 
     header {
@@ -71,14 +72,14 @@
     }
 
     .rank-section {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .rank-title {
       display: flex;
       align-items: baseline;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .rank-title h2 {
@@ -91,7 +92,7 @@
       padding: 2px 8px;
       border-radius: 999px;
       border: 1px solid rgba(191,219,254,0.9);
-      background: rgba(15,23,42,0.7);
+      background: rgba(15,23,42,0.75);
       color: #e5e7eb;
     }
 
@@ -102,78 +103,71 @@
     }
 
     .card {
-      background: rgba(15,23,42,0.9);
-      border-radius: 14px;
+      background: linear-gradient(to bottom, #111827, #020617);
+      border-radius: 18px;
       overflow: hidden;
-      width: 190px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+      width: 210px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.7);
       display: flex;
       flex-direction: column;
-      transform: translateY(6px);
+      transform: translateY(8px);
       opacity: 0;
       animation: fadeUp 0.4s forwards;
     }
 
-    .card img {
+    .card-image-wrap {
+      background: #020617;
+      padding: 10px 10px 0;
+    }
+
+    .card-image-wrap img {
       width: 100%;
       height: 120px;
       object-fit: cover;
       display: block;
+      border-radius: 14px 14px 8px 8px;
     }
 
     .card-body {
-      padding: 8px 10px 10px;
-      background: rgba(15,23,42,0.95);
-    }
-
-    .card-name-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 4px;
+      padding: 10px 12px 12px;
+      text-align: center;
     }
 
     .card-name {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 17px;
+      font-weight: 700;
+      color: #facc15; /* 골드 느낌 */
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .card-rank-badge {
-      font-size: 11px;
-      padding: 1px 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(129,140,248,0.9);
-      background: rgba(15,23,42,0.9);
+    .card-name-sub {
+      font-size: 12px;
       color: #e5e7eb;
+      opacity: 0.85;
+      margin-bottom: 4px;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .card-tagline {
+    .card-bottom {
       font-size: 11px;
-      margin-top: 4px;
-      color: #e5e7eb;
-      min-height: 14px;
+      color: #fef3c7;
+      opacity: 0.95;
     }
 
-    .card-meta {
-      margin-top: 4px;
-      font-size: 11px;
-      color: #9ca3af;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .card-meta span {
-      opacity: 0.9;
+    .card-bottom span + span::before {
+      content: " / ";
+      opacity: 0.7;
     }
 
     .card:hover {
       transform: translateY(0);
-      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.9);
       transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
     }
 
@@ -204,9 +198,6 @@
   </style>
 </head>
 <body>
-  <!-- 🔹 별 배경 캔버스 -->
-  <canvas id="starfield"></canvas>
-
   <div class="page-wrap">
     <header>
       <h1>so.t 직급의 전당</h1>
@@ -232,66 +223,6 @@
   </div>
 
   <script>
-    /* ===== 0. 별 배경 애니메이션 ===== */
-    function initStarfield() {
-      const canvas = document.getElementById("starfield");
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-
-      let width = window.innerWidth;
-      let height = window.innerHeight;
-      let stars = [];
-
-      function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        createStars();
-      }
-
-      function createStars() {
-        const count = Math.floor((width * height) / 8000); // 화면 넓이에 비례해서 개수 조절
-        stars = [];
-        for (let i = 0; i < count; i++) {
-          stars.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            r: Math.random() * 1.5 + 0.3,
-            speed: Math.random() * 0.4 + 0.1
-          });
-        }
-      }
-
-      function step() {
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "rgba(15,23,42,0.35)";
-        ctx.fillRect(0, 0, width, height);
-
-        ctx.fillStyle = "rgba(248,250,252,0.9)";
-        for (const s of stars) {
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fill();
-
-          s.y += s.speed;
-          if (s.y > height) {
-            s.y = 0;
-            s.x = Math.random() * width;
-          }
-        }
-
-        requestAnimationFrame(step);
-      }
-
-      window.addEventListener("resize", resize);
-      resize();
-      requestAnimationFrame(step);
-    }
-
-    /* ===== 1. 직급 카드 렌더링 ===== */
-
     const RANK_ORDER = [
       "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
       "Star3","Star2","Star1",
@@ -335,7 +266,7 @@
       return rank;
     }
 
-    // 🔹 이미지 자동 매칭: 직급명 → img/***.png
+    // 직급 → 이미지 파일 자동 매칭
     function getImageForRank(rank) {
       if (!rank) return "img/star1.png";
       if (rank.startsWith("Star")) {
@@ -380,7 +311,7 @@
       const main = document.getElementById("rank-main");
       const empty = document.getElementById("empty");
       main.innerHTML = "";
-      main.appendChild(empty); // empty 유지
+      main.appendChild(empty);
 
       const valid = rankData.filter(item => item.rank);
       if (!valid.length) {
@@ -389,7 +320,6 @@
         return;
       }
 
-      // 필터 적용
       const filtered = valid.filter(item => passesFilter(item.rank, filterValue));
       if (!filtered.length) {
         empty.style.display = "block";
@@ -398,7 +328,6 @@
       }
       empty.style.display = "none";
 
-      // 정렬
       const sorted = [...filtered].sort((a, b) => {
         const dRank = getRankIndex(a.rank) - getRankIndex(b.rank);
         if (dRank !== 0) return dRank;
@@ -441,17 +370,19 @@
           card.className = "card";
           card.style.animationDelay = `${idx * 0.03}s`;
 
+          const name = item.name || "";
+          const tagline = item.tagline || "";
+
           card.innerHTML = `
-            <img src="${imgSrc}" alt="${item.rank}" loading="lazy" />
+            <div class="card-image-wrap">
+              <img src="${imgSrc}" alt="${item.rank}" loading="lazy" />
+            </div>
             <div class="card-body">
-              <div class="card-name-row">
-                <div class="card-name">${item.name}</div>
-                <div class="card-rank-badge">${rankLabel(item.rank)}</div>
-              </div>
-              <div class="card-tagline">${item.tagline || ""}</div>
-              <div class="card-meta">
-                ${item.joinDate ? `<span>가입일 ${item.joinDate}</span>` : ""}
-                ${daysText ? `<span>${daysText}</span>` : ""}
+              <div class="card-name">${name}</div>
+              <div class="card-name-sub">${tagline || name}</div>
+              <div class="card-bottom">
+                ${item.joinDate ? `<span>${item.joinDate}</span>` : ""}
+                <span>${rankLabel(item.rank)}</span>
               </div>
             </div>
           `;
@@ -464,8 +395,6 @@
       });
     }
 
-    // 🔹 별 배경 + 데이터 둘 다 시작
-    initStarfield();
     loadData();
   </script>
 </body>
