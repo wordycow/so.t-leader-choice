@@ -115,12 +115,13 @@
       padding-left: 2px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
     .rank-condition {
       font-size: 11px;
       color: #cbd5f5;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .rank-pay {
@@ -131,18 +132,26 @@
     }
 
     .rank-pay-label {
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 600;
       color: #fef3c7;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .rank-pay-amount {
-      font-size: 20px;
-      font-weight: 800;
-      color: #facc15;              /* 금색 */
-      letter-spacing: 0.04em;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+      font-size: 26px;               /* 💥 크게 */
+      font-weight: 900;
+      color: #ffd54a;                /* 진한 금색 */
+      letter-spacing: 0.05em;
+      text-shadow: 0 2px 6px rgba(0,0,0,1);
+    }
+
+    .rank-pay-tail {
+      font-size: 12px;
+      color: #fef9c3;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .rank-grid {
@@ -153,7 +162,7 @@
 
     /* 기본 카드 스타일 (배경 완전 투명) */
     .card {
-      background: transparent;              /* 네이비 네모 제거 */
+      background: transparent;
       border-radius: 18px;
       overflow: visible;
       width: 210px;
@@ -269,7 +278,7 @@
       }
 
       .rank-pay-amount {
-        font-size: 18px;
+        font-size: 22px;
       }
     }
 
@@ -286,7 +295,7 @@
       }
 
       .rank-pay-amount {
-        font-size: 17px;
+        font-size: 20px;
       }
     }
 
@@ -327,59 +336,72 @@
       "Star3","Star2","Star1"
     ];
 
-    // 🔸 직급 조건 + 수당(하루 금액) 정의
+    // 🔸 직급 조건 + 수당(하루 금액) 정의 (숫자/꼬리 분리)
     const RANK_INFO = {
       Star1: {
         condition: "직급 달성 조건: 좌·우 직접추천 2:1 또는 1:2 (최소 1:1 충족)",
-        pay: "$10 USDT / day x 60 day"
+        payAmount: "$10",
+        payTail: "USDT / day x 60 day"
       },
       Star2: {
         condition: "직급 달성 조건: 좌·우 팀 7:7",
-        pay: "$20 USDT / day x 60 day"
+        payAmount: "$20",
+        payTail: "USDT / day x 60 day"
       },
       Star3: {
         condition: "직급 달성 조건: 좌·우 팀 15:15",
-        pay: "$45 USDT / day x 60 day"
+        payAmount: "$45",
+        payTail: "USDT / day x 60 day"
       },
       Pro1: {
         condition: "직급 달성 조건: 좌·우 팀 40:40",
-        pay: "$120 USDT / day x 60 day"
+        payAmount: "$120",
+        payTail: "USDT / day x 60 day"
       },
       Pro2: {
         condition: "직급 달성 조건: 좌·우 팀 80:80",
-        pay: "$200 USDT / day x 60 day"
+        payAmount: "$200",
+        payTail: "USDT / day x 60 day"
       },
       Pro3: {
         condition: "직급 달성 조건: 좌·우 팀 150:150",
-        pay: "$300 USDT / day x 60 day"
+        payAmount: "$300",
+        payTail: "USDT / day x 60 day"
       },
       Pro4: {
         condition: "직급 달성 조건: 좌·우 팀 250:250",
-        pay: "$500 USDT / day x 60 day"
+        payAmount: "$500",
+        payTail: "USDT / day x 60 day"
       },
       Pro5: {
         condition: "직급 달성 조건: 좌·우 팀 400:400",
-        pay: "$800 USDT / day x 60 day"
+        payAmount: "$800",
+        payTail: "USDT / day x 60 day"
       },
       Pro6: {
         condition: "직급 달성 조건: 좌·우 팀 650:650",
-        pay: "$1,300 USDT / day x 60 day"
+        payAmount: "$1,300",
+        payTail: "USDT / day x 60 day"
       },
       Pro7: {
         condition: "직급 달성 조건: 좌·우 팀 1000:1000",
-        pay: "$2,000 USDT / day x 60 day"
+        payAmount: "$2,000",
+        payTail: "USDT / day x 60 day"
       },
       Pro8: {
         condition: "직급 달성 조건: 좌·우 팀 2000:2000",
-        pay: "$3,000 USDT / day x 60 day"
+        payAmount: "$3,000",
+        payTail: "USDT / day x 60 day"
       },
       Pro9: {
         condition: "직급 달성 조건: 좌·우 팀 3000:4000",
-        pay: "$4,000 USDT / day x 60 day"
+        payAmount: "$4,000",
+        payTail: "USDT / day x 60 day"
       },
       Pro10: {
         condition: "직급 달성 조건: 좌·우 팀 4000:4000",
-        pay: "$5,000 USDT / day x 60 day"
+        payAmount: "$5,000",
+        payTail: "USDT / day x 60 day"
       }
     };
 
@@ -540,7 +562,8 @@
             <div class="rank-condition">${info.condition}</div>
             <div class="rank-pay">
               <span class="rank-pay-label">지급 구독 수수료</span>
-              <span class="rank-pay-amount">${info.pay}</span>
+              <span class="rank-pay-amount">${info.payAmount}</span>
+              <span class="rank-pay-tail">${info.payTail}</span>
             </div>
           `;
           section.appendChild(meta);
