@@ -11,65 +11,84 @@
   <meta property="og:url" content="https://wordycow.github.io/so.t-leader-choice/index.html">
   <meta property="og:image" content="https://wordycow.github.io/so.t-leader-choice/img/og-index.jpg">
 
-  <!-- 선택: 트위터 카드 (디스코드도 참고함) -->
+  <!-- 트위터 카드 -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="so.t 리더 선택">
   <meta name="twitter:description" content="함께 떠날 so.t 여행 리더를 선택하는 메인 페이지입니다.">
   <meta name="twitter:image" content="https://wordycow.github.io/so.t-leader-choice/img/og-index.jpg">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 폰트: Noto Sans / Noto Serif / Playfair -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&family=Noto+Serif+KR:wght@500;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     * { box-sizing: border-box; }
 
+    :root {
+      --gold-main: #D4AF37;       /* 앤틱 골드 */
+      --gold-light: #F3E5AB;      /* 밝은 금색 */
+      --navy-deep: #0F172A;       /* 아주 깊은 네이비 */
+      --bg-overlay: rgba(10, 16, 30, 0.90); /* 카드 배경 (딥 네이비) */
+      --text-cream: #F5F5DC;      /* 크림색 텍스트 */
+      --text-muted: #E0E0E0;
+    }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #111827;
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text-cream);
 
-      /* 🔹 파란 패턴 타일 배경 */
+      /* 다마스크 패턴 벽지 유지 */
       background-image: url("img/bg_pattern_blue_tile.png");
-      background-repeat: repeat;        /* 사방으로 반복 */
-      background-size: auto;            /* 원본 크기 그대로 */
+      background-repeat: repeat;
+      background-size: auto;
       background-position: top left;
       background-attachment: fixed;
     }
 
     .page-wrap {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 24px auto 32px;
       padding: 0 12px 24px;
     }
 
+    /* 전체 카드 뒷판: 벽 위에 걸린 패널 느낌 */
     .glass-panel {
-      background: rgba(255, 255, 255, 0.30);
-      border-radius: 24px;
-      border: 1px solid rgba(255,255,255,0.55);
-      box-shadow: 0 16px 30px rgba(0,0,0,0.35);
-      padding: 18px 20px 18px;
-      backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.90); /* 딥 네이비 반투명 */
+      border-radius: 28px;
+      border: 1px solid rgba(148,163,184,0.7);
+      box-shadow:
+        0 0 0 2px rgba(15,23,42,0.9) inset,
+        0 24px 60px rgba(0,0,0,0.9);
+      padding: 20px 22px 22px;
+      backdrop-filter: blur(14px);
     }
 
     .page-header {
       text-align: center;
-      margin-bottom: 16px;
-      color: #3f2a18;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      margin-bottom: 20px;
+      color: var(--text-cream);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.7);
     }
     .page-title {
+      font-family: 'Noto Serif KR', 'Playfair Display', serif;
       font-size: 26px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.10em;
       margin-bottom: 6px;
     }
     .page-subtitle {
       font-size: 13px;
-      color: #4b3420;
+      color: #d1d5db;
       line-height: 1.6;
+      max-width: 640px;
+      margin: 0 auto;
     }
 
     /* 상단 여행 스케줄 배너 */
     .ad-top-board {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .leader-board { margin-bottom: 24px; }
@@ -77,8 +96,8 @@
     .leader-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 22px;
-      margin-top: 18px;
+      gap: 32px;
+      margin-top: 20px;
       justify-content: center;
     }
     .leader-grid.single {
@@ -86,160 +105,191 @@
       justify-content: center;
     }
 
+    /* 🎨 미술관 액자 느낌의 리더 카드 */
     .leader-card {
-      border-radius: 24px;
-      padding: 14px 14px 16px;
-      cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease,
-                  border-color 0.18s ease, background-color 0.18s ease;
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      position: relative;
+      background: var(--bg-overlay);
+      border-radius: 8px;
+      padding: 22px 20px 18px;
+      text-align: center;
 
-      border: 1px solid rgba(250, 204, 21, 0.4);
-      background: linear-gradient(to bottom, rgba(17, 24, 39, 0.30), rgba(17, 24, 39, 0.05));
-      touch-action: manipulation;
+      border: 1px solid var(--gold-main);       /* 1차 골드 */
+      outline: 4px solid #050816;               /* 어두운 띠 */
+      box-shadow:
+        0 0 0 5px rgba(212,175,55,0.35),        /* 2차 금빛 액자 */
+        0 22px 55px rgba(0,0,0,0.9);            /* 깊은 그림자 */
+
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
+
     .leader-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 14px 28px rgba(0,0,0,0.55);
-      border-color: rgba(245, 158, 11, 0.9);
-      background: linear-gradient(to bottom, rgba(17, 24, 39, 0.42), rgba(17, 24, 39, 0.10));
+      transform: translateY(-10px);
+      box-shadow:
+        0 0 0 5px rgba(243,229,171,0.55),
+        0 30px 70px rgba(0,0,0,1);
+      border-color: var(--gold-light);
     }
 
-    /* 액자 PNG를 쓰는 프레임 */
-   /* 액자 PNG를 쓰는 프레임 */
-.leader-frame {
-  position: relative;
-  margin-bottom: 10px;
+    /* 사진 영역 – 프레임 안 작품 */
+    .leader-frame {
+      position: relative;
+      margin-bottom: 16px;
 
-  width: 260px;
-  height: 160px;
+      width: 100%;
+      max-width: 280px;
+      height: 170px;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+      border-radius: 10px;
+      overflow: hidden;
 
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  overflow: visible;
+      border: 2px solid var(--gold-light);
+      box-shadow:
+        0 4px 15px rgba(0,0,0,0.8),
+        0 0 0 1px rgba(0,0,0,0.6) inset;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #020617;
+    }
 
-  background-image: url("img/leader-frame.png");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center center;
-}
+    .leader-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 50%;
+      transition: transform 0.35s ease;
+    }
 
-/* 프레임 안에 들어가는 실제 리더 사진 */
-.leader-media {
-  width: 82%;
-  height: 78%;
-  object-fit: cover;
-  object-position: 50% 50%;
-  border-radius: 14px;
-  border: 3px solid rgba(255,255,255,0.9);
-  background-color: #111827;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-}
+    /* PC에서만 hover 확대 (모바일에는 영향 없음) */
+    @media (hover: hover) and (pointer: fine) {
+      .leader-frame:hover .leader-media {
+        transform: scale(1.08);
+      }
+    }
 
     .leader-name {
-      font-size: 15px;
+      font-family: 'Noto Serif KR', serif;
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 2px;
-      color: #fef3c7;
+      color: var(--gold-main);
+      margin: 4px 0 4px;
+      letter-spacing: 0.08em;
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
     .leader-role {
       font-size: 11px;
-      color: #f9fafb;
-      margin-bottom: 8px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+      color: #cbd5f5;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(212,175,55,0.35);
+      display: inline-block;
+      padding-bottom: 4px;
     }
 
+    .leader-intro {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      min-height: 40px;
+      text-align: center;
+      font-family: 'Noto Sans KR', sans-serif;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
+
+    /* 태그 (뱃지) – 앤틱 골드 스타일 */
     .tag-wrap {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 4px;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
     .tag {
-      font-size: 10px;
-      padding: 3px 7px;
+      display: inline-block;
+      background: rgba(212, 175, 55, 0.08);
+      color: var(--gold-light);
+      border: 1px solid rgba(212,175,55,0.8);
+      padding: 3px 10px;
       border-radius: 999px;
-      background-color: rgba(254, 243, 199, 0.85);
-      color: #92400e;
-      border: 1px solid #fed7aa;
-      white-space: nowrap;
+      font-size: 10px;
+      margin: 2px;
+      font-family: 'Noto Sans KR', sans-serif;
     }
 
-    .leader-intro {
-      font-size: 11px;
-      color: #f9fafb;
-      line-height: 1.5;
-      margin-bottom: 8px;
-      min-height: 40px;
-      text-align: center;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.85);
-    }
-
+    /* 소셜 버튼 – 골드 라인 */
     .sns-wrap {
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
       gap: 6px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .sns-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 70px;
-      padding: 4px 8px;
+      display: inline-block;
+      background: transparent;
+      border: 1px solid var(--gold-main);
+      color: var(--gold-main);
+      padding: 6px 12px;
       font-size: 10px;
       border-radius: 999px;
-      border: none;
-      cursor: pointer;
       text-decoration: none;
-      color: #ffffff;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: all 0.25s ease;
+      font-family: 'Noto Sans KR', sans-serif;
+      min-width: 70px;
     }
-    .sns-youtube   { background: #ff0000; }
-    .sns-tiktok    { background: #111827; }
-    .sns-instagram { background: linear-gradient(135deg,#f97316,#ec4899,#6366f1); }
-    .sns-facebook  { background: #1877f2; }
-    .sns-blog      { background: #059669; }
-    .sns-carrot    { background: #ff7e3f; }   /* 당근 */
-    .sns-discord   { background: #5865f2; }   /* 디스코드 */
+    .sns-btn:hover {
+      background: var(--gold-main);
+      color: var(--navy-deep);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    }
 
+    /* 하단 상담/신청 버튼 – 골드 그라디언트 바 */
     .card-footer {
       margin-top: auto;
       font-size: 11px;
-      color: #fde68a;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding-top: 4px;
-      border-top: 1px solid rgba(253, 230, 138, 0.5);
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      color: #000;
+      display: block;
+      padding-top: 0;
+      border-top: none;
     }
-    .card-footer span { font-size: 14px; line-height: 1; }
+    .card-footer span {
+      font-size: 13px;
+      margin-right: 4px;
+    }
+
+    .card-footer {
+      width: 80%;
+      margin: 18px auto 0;
+      background: linear-gradient(to right, #996515, #D4AF37);
+      border-radius: 3px;
+      padding: 10px 0;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.9);
+      font-family: 'Noto Serif KR', serif;
+      cursor: pointer;
+      text-shadow: none;
+    }
 
     #emptyNotice {
       font-size: 13px;
-      color: #6b7280;
+      color: #9ca3af;
       text-align: center;
       margin-top: 14px;
       display: none;
     }
 
+    /* 상단/하단 배너는 기존 스타일 유지, 약간 톤다운 */
     .ad-board {
       margin-top: 28px;
       padding-top: 16px;
-      border-top: 1px solid rgba(255,255,255,0.6);
+      border-top: 1px solid rgba(148,163,184,0.5);
     }
 
     .banner-wrap {
@@ -253,14 +303,14 @@
       overflow: hidden;
       border-radius: 18px;
       border: 1px solid rgba(250,204,21,0.6);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.4) inset, 0 8px 18px rgba(0,0,0,0.30);
-      background: rgba(15,23,42,0.20);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.9) inset, 0 8px 18px rgba(0,0,0,0.40);
+      background: rgba(15,23,42,0.40);
       transition: transform 0.18s ease, box-shadow 0.18s ease;
       cursor: pointer;
     }
     .banner-block:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.6) inset, 0 16px 30px rgba(0,0,0,0.45);
+      transform: translateY(-6px);
+      box-shadow: 0 0 0 1px rgba(250,204,21,0.8) inset, 0 18px 32px rgba(0,0,0,0.7);
     }
     .banner-image {
       width: 100%;
@@ -295,7 +345,7 @@
       margin-top: 12px;
       text-align: center;
       font-size: 10px;
-      color: #f9fafb;
+      color: #e5e7eb;
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
@@ -310,20 +360,28 @@
         padding: 0 8px 20px;
       }
       .glass-panel {
-        padding: 14px 10px 16px;
-        border-radius: 18px;
+        padding: 16px 10px 18px;
+        border-radius: 20px;
       }
       .page-title { font-size: 20px; }
       .page-subtitle { font-size: 11px; }
       .leader-grid {
         grid-template-columns: 1fr;
-        gap: 14px;
+        gap: 20px;
       }
       .leader-card {
-        padding: 12px 10px 14px;
-        border-radius: 18px;
+        padding: 16px 12px 14px;
+        border-radius: 10px;
       }
-      .leader-name { font-size: 14px; }
+      .leader-frame {
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 13 / 8;
+      }
+      .leader-media {
+        border-radius: 8px;
+      }
+      .leader-name { font-size: 16px; }
       .leader-role { font-size: 10px; }
       .leader-intro {
         font-size: 10px;
@@ -335,10 +393,10 @@
       }
       .sns-btn {
         font-size: 9px;
-        padding: 3px 7px;
+        padding: 4px 8px;
       }
       .banner-image { height: 170px; }
-      .banner-text { font-size: 24px; }
+      .banner-text { font-size: 22px; }
     }
   </style>
 </head>
@@ -427,38 +485,38 @@
       const snsButtons = [];
       if (sns.youtube) {
         snsButtons.push(
-          `<a class="sns-btn sns-youtube" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
+          `<a class="sns-btn" href="${sns.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>`
         );
       }
       if (sns.tiktok) {
         snsButtons.push(
-          `<a class="sns-btn sns-tiktok" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
+          `<a class="sns-btn" href="${sns.tiktok}" target="_blank" rel="noopener noreferrer">TikTok</a>`
         );
       }
       if (sns.instagram) {
         snsButtons.push(
-          `<a class="sns-btn sns-instagram" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
+          `<a class="sns-btn" href="${sns.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`
         );
       }
       if (sns.facebook) {
         snsButtons.push(
-          `<a class="sns-btn sns-facebook" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
+          `<a class="sns-btn" href="${sns.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`
         );
       }
       if (sns.blog) {
         snsButtons.push(
-          `<a class="sns-btn sns-blog" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
+          `<a class="sns-btn" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
         );
       }
       // 새로 추가: 당근 / Discord
       if (sns.carrot) {
         snsButtons.push(
-          `<a class="sns-btn sns-carrot" href="${sns.carrot}" target="_blank" rel="noopener noreferrer">당근</a>`
+          `<a class="sns-btn" href="${sns.carrot}" target="_blank" rel="noopener noreferrer">당근</a>`
         );
       }
       if (sns.discord) {
         snsButtons.push(
-          `<a class="sns-btn sns-discord" href="${sns.discord}" target="_blank" rel="noopener noreferrer">Discord</a>`
+          `<a class="sns-btn" href="${sns.discord}" target="_blank" rel="noopener noreferrer">Discord</a>`
         );
       }
 
@@ -491,17 +549,14 @@
     const board = document.getElementById("adTopBoard");
     const wrap  = document.getElementById("topBannerWrap");
 
-    // 초기화
     board.style.display = "none";
     wrap.innerHTML = "";
 
-    // 사용할 수 있는 스케줄만 필터
     const enabled = (tripAds || []).filter(ad =>
       ad && ad.enabled && ad.imageUrl && ad.linkUrl
     );
     if (!enabled.length) return;
 
-    // enabled 전체를 위쪽에 모두 노출
     enabled.forEach((ad, idx) => {
       const block = document.createElement("div");
       block.className = "banner-block";
@@ -554,12 +609,10 @@
     const ads     = Array.isArray(data.ads) ? data.ads : [];
 
     renderLeaders(leaders);
-    renderTopAd(tripAds);   // 위쪽 여행 스케줄 배너 (여러 개)
-    renderAds(ads);         // 아래쪽 광고들
+    renderTopAd(tripAds);
+    renderAds(ads);
   });
 </script>
 
 </body>
 </html>
-
-
