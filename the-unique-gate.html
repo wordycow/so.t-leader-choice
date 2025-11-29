@@ -32,7 +32,7 @@
       color: #f9fafb;
       min-height: 100vh;
 
-      /* 👇 마녀/박쥐 제거된 배경 JPG 이름 맞춰서 사용 */
+      /* 👇 배경 JPG 이름만 네가 쓰는 걸로 맞춰서 변경 */
       background:
         radial-gradient(circle at top, rgba(0,0,0,0.15), rgba(0,0,0,0.85)),
         url("img/bg-unique-gate-clean.jpg");
@@ -51,12 +51,12 @@
       padding: 24px 12px;
     }
 
-    /* 🔹 카드: 살짝 어두운 유리판 느낌 */
+    /* 🔹 카드: 더 투명하게 → 배경 많이 보이게 */
     .gate-card {
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
-      background: rgba(0, 0, 0, 0.08); /* 숫자 줄이면 더 투명해짐 */
+      background: rgba(0, 0, 0, 0.04); /* 숫자 줄이면 더 투명 */
       border: 1px solid rgba(255,255,255,0.5);
       box-shadow:
         0 26px 70px rgba(0,0,0,0.85),
@@ -212,11 +212,19 @@
       color: #bbf7d0;
     }
 
+    /* 로그인 카드/내용은 항상 배경 요소보다 위에 오도록 */
+    .page-wrap,
+    .gate-card,
+    .gate-inner {
+      position: relative;
+      z-index: 10;
+    }
+
     /* 🔮 떠다니는 마녀 & 박쥐 – 배경 위, 로그인 카드 뒤 */
     .spirit {
       position: fixed;
       pointer-events: none;
-      z-index: 0; /* 카드보다 뒤에 */
+      z-index: 0; /* 카드보다 뒤 */
     }
 
     .spirit img {
@@ -225,45 +233,30 @@
       height: auto;
     }
 
-    /* 마녀: 달 앞자리에서 살짝만 흔들림 */
-      .spirit-witch {
-      position: fixed;
-      pointer-events: none;
-      z-index: 0;
-
-      top: 19vh;        /* 세로 위치 – 달 가운데 쯤 */
-      right: 21vw;      /* 오른쪽에서 21% (달 안쪽으로) */
-      width: 80px;     /* 마녀 크기 조금 키움 */
-
+    /* 마녀: 지금 자리 그대로, 살짝 흔들림 */
+    .spirit-witch {
+      top: 17vh;         /* 달 가운데 근처 */
+      right: 20vw;
+      width: 70px;
       animation: witchFloat 5s ease-in-out infinite alternate;
     }
 
     @keyframes witchFloat {
-      from { transform: translateY(30) translateX(0); }
+      from { transform: translateY(30px) translateX(0); }
       to   { transform: translateY(-20px) translateX(5px); }
     }
 
-    /* 박쥐: 성 왼쪽 위 하늘에서 위아래로 조금 더 크게 */
-     .spirit-bat {
-      position: fixed;
-      pointer-events: none;
-      z-index: 0;
-
-      top: -30vh;        /* 달 위쪽 */
-      right: -7vw;      /* 달 왼쪽 상단 근처 */
-      width: 1100px;     /* 박쥐 약간 키움 */
-
+    /* 박쥐: 조금 작게, 카드 뒤에서 위아래로 크게 */
+    .spirit-bat {
+      top: 10vh;         /* 하늘 쪽 */
+      right: 28vw;       /* 성 왼쪽 위 하늘 */
+      width: 90px;
       animation: batFloat 3.5s ease-in-out infinite alternate;
     }
 
     @keyframes batFloat {
-      from { transform: translateY(-42px); }
-      to   { transform: translateY(50px); }
-    }
-
-    @keyframes batFloat {
-      from { transform: translateY(-32px); }
-      to   { transform: translateY(60px); }
+      from { transform: translateY(-20px); }
+      to   { transform: translateY(40px); }
     }
 
     @media (max-width: 480px) {
