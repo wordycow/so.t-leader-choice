@@ -32,9 +32,10 @@
       color: #f9fafb;
       min-height: 100vh;
 
+      /* 👇 마녀/박쥐 제거된 배경 JPG 이름 맞춰서 사용 */
       background:
         radial-gradient(circle at top, rgba(0,0,0,0.15), rgba(0,0,0,0.85)),
-        url("img/bg-unique-gate.jpg");
+        url("img/bg-unique-gate-clean.jpg");
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -50,17 +51,12 @@
       padding: 24px 12px;
     }
 
-    /* 🔥 진짜 최소 유리판:
-       - 배경 한 줄 (투명도만 조절)
-       - 테두리 + 블러만 있음, 그라디언트 싹 제거 */
-        .gate-card {
+    /* 🔹 카드: 살짝 어두운 유리판 느낌 */
+    .gate-card {
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
-
-      /* 🔹 카드 배경 거의 없음 – 뒤 배경 보이게 */
-      background: rgba(0, 0, 0, 0.06);  /* 숫자 줄이면 더 투명해짐 */
-
+      background: rgba(0, 0, 0, 0.08); /* 숫자 줄이면 더 투명해짐 */
       border: 1px solid rgba(255,255,255,0.5);
       box-shadow:
         0 26px 70px rgba(0,0,0,0.85),
@@ -69,7 +65,6 @@
       -webkit-backdrop-filter: blur(18px);
       overflow: hidden;
     }
-
 
     .gate-inner {
       position: relative;
@@ -217,6 +212,53 @@
       color: #bbf7d0;
     }
 
+    /* 🔮 떠다니는 마녀 & 박쥐 – 배경 위, 로그인 카드 뒤 */
+    .spirit {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0; /* 카드보다 뒤에 */
+    }
+
+    .spirit img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* 마녀: 달 앞자리에서 살짝만 흔들림 */
+    .spirit-witch {
+      top: 18vh;      /* 필요하면 위치 약간씩 조정 */
+      right: 20vw;
+      width: 140px;
+      animation: witchFloat 7s ease-in-out infinite alternate;
+    }
+
+    @keyframes witchFloat {
+      from { transform: translateY(0) translateX(0); }
+      to   { transform: translateY(-10px) translateX(6px); }
+    }
+
+    /* 박쥐: 성 왼쪽 위 하늘에서 위아래로 조금 더 크게 */
+    .spirit-bat {
+      top: 8vh;
+      right: 30vw;
+      width: 100px;
+      animation: batFloat 4.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes batFloat {
+      from { transform: translateY(-20px); }
+      to   { transform: translateY(28px); }
+    }
+
+    /* 로그인 카드/내용은 항상 위에 오도록 */
+    .page-wrap,
+    .gate-card,
+    .gate-inner {
+      position: relative;
+      z-index: 1;
+    }
+
     @media (max-width: 480px) {
       .gate-card {
         padding: 24px 20px 18px;
@@ -278,8 +320,17 @@
     </main>
   </div>
 
+  <!-- 떠다니는 마녀 & 박쥐 (PNG는 img/witch-float.png, img/bat-float.png 로 준비) -->
+  <div class="spirit spirit-witch">
+    <img src="img/witch-float.png" alt="">
+  </div>
+  <div class="spirit spirit-bat">
+    <img src="img/bat-float.png" alt="">
+  </div>
+
   <script>
-    // 접속 코드 JSON 파일 위치 (같은 폴더에 unique-access-codes.json 만들기)
+    /* ====== 접속 코드 JSON 로딩 ====== */
+    // 접속 코드 JSON 파일 위치 (같은 폴더에 unique-access-codes.json)
     const CODES_URL = "unique-access-codes.json";
 
     let validCodes = null;   // 로딩된 코드 목록(소문자)
@@ -306,6 +357,7 @@
 
     document.addEventListener("DOMContentLoaded", loadCodes);
 
+    /* ====== 로그인 처리 ====== */
     const form = document.getElementById("gate-form");
     const memberInput = document.getElementById("member-id");
     const accessInput = document.getElementById("access-code");
