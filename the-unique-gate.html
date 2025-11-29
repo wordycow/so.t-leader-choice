@@ -18,7 +18,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- THE UNIQUE 타이틀용 폰트 (트라얀 느낌) -->
+  <!-- THE UNIQUE 타이틀용 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -32,7 +32,6 @@
       color: #f9fafb;
       min-height: 100vh;
 
-      /* 🔥 배경 이미지 – 필요하면 파일명만 바꿔 쓰면 됨 */
       background:
         radial-gradient(circle at top, rgba(0,0,0,0.15), rgba(0,0,0,0.85)),
         url("img/bg-unique-gate.jpg");
@@ -55,12 +54,12 @@
       position: relative;
       border-radius: 28px;
       padding: 28px 26px 22px;
-      background: rgba(5, 8, 20, 0.35);                /* 반투명 */
+      background: rgba(5, 8, 20, 0.35);                /* 반투명 카드 */
       border: 1px solid rgba(248,250,252,0.22);
       box-shadow:
         0 30px 80px rgba(0,0,0,0.95),
         0 0 0 1px rgba(15,23,42,0.7);
-      backdrop-filter: blur(22px);                      /* 글래스 효과 */
+      backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
       overflow: hidden;
     }
@@ -103,8 +102,9 @@
 
     .gate-title {
       font-family: "Cinzel", "Times New Roman", serif;
-      font-size: 30px;
-      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 36px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       margin-bottom: 6px;
 
@@ -113,7 +113,7 @@
       background-clip: text;
       color: transparent;
 
-      text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+      text-shadow: 0 3px 12px rgba(0,0,0,1);
     }
 
     .gate-subtitle-en {
@@ -124,15 +124,22 @@
       text-transform: uppercase;
     }
 
-    .gate-form-label {
-      display: block;
+    /* 폼 전체 폭: 카드보다 좁게 → 타이틀이 더 꽉 차 보이게 */
+    .form-body {
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .login-heading {
       font-size: 12px;
-      margin-bottom: 4px;
+      font-weight: 600;
+      margin-bottom: 8px;
       color: #e5e7eb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .gate-input-wrap {
-      margin-bottom: 18px;
+      margin-bottom: 10px;
     }
 
     .gate-input {
@@ -140,11 +147,13 @@
       padding: 11px 14px;
       border-radius: 999px;
       border: 1px solid rgba(55,65,81,0.95);
-      background: rgba(15,23,42,0.85);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.92), rgba(3,7,18,0.98));
       color: #f9fafb;
       font-size: 13px;
       outline: none;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.7) inset;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.7) inset,
+        0 0 0 1px rgba(0,0,0,0.6);
     }
 
     .gate-input::placeholder {
@@ -162,7 +171,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-top: 4px;
+      margin-top: 14px;
       margin-bottom: 6px;
     }
 
@@ -240,8 +249,11 @@
         border-radius: 20px;
       }
       .gate-title {
-        font-size: 26px;
-        letter-spacing: 0.18em;
+        font-size: 30px;
+        letter-spacing: 0.20em;
+      }
+      .form-body {
+        max-width: 100%;
       }
     }
   </style>
@@ -255,15 +267,27 @@
           <div class="gate-subtitle-en">Invitation-only access for action takers</div>
         </div>
 
-        <form id="gate-form">
+        <!-- 로그인 / 회원번호 / 접속 코드 순서 -->
+        <form id="gate-form" class="form-body">
+          <div class="login-heading">로그인</div>
+
           <div class="gate-input-wrap">
-            <label class="gate-form-label" for="access-code">접속 코드</label>
+            <input
+              id="member-id"
+              class="gate-input"
+              type="text"
+              autocomplete="off"
+              placeholder="회원번호"
+            />
+          </div>
+
+          <div class="gate-input-wrap">
             <input
               id="access-code"
               class="gate-input"
               type="password"
               autocomplete="off"
-              placeholder="초대받은 접속 코드를 입력하세요"
+              placeholder="접속 코드"
             />
           </div>
 
@@ -283,30 +307,43 @@
   </div>
 
   <script>
-    // 써나가 쓸 접속 코드 목록
+    // 초대 코드(접속 코드) 목록 – 써나가 바꿔서 사용
     const VALID_CODES = [
       "UNIQUE2025",
       "unique-test"
     ];
 
     const form = document.getElementById("gate-form");
-    const input = document.getElementById("access-code");
+    const memberInput = document.getElementById("member-id");
+    const accessInput = document.getElementById("access-code");
     const statusEl = document.getElementById("status");
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const raw = (input.value || "").trim();
+      const member = (memberInput.value || "").trim();
+      const rawCode = (accessInput.value || "").trim();
 
       statusEl.textContent = "";
       statusEl.className = "status";
 
-      if (!raw) {
-        statusEl.textContent = "접속 코드를 입력해 주세요.";
+      // 둘 다 비어 있으면 에러
+      if (!member && !rawCode) {
+        statusEl.textContent = "회원번호 또는 접속 코드 중 하나는 입력해 주세요.";
         statusEl.classList.add("status-error");
         return;
       }
 
-      const code = raw.toLowerCase();
+      // 회원번호가 있으면 → 가입자 로그인으로 통과 (코드 검사 안 함)
+      if (member) {
+        statusEl.textContent = "회원번호로 로그인 되었습니다.";
+        statusEl.classList.add("status-ok");
+        // TODO: 실제 멤버 전용 페이지가 생기면 여기서 이동
+        // location.href = "https://example.com/the-unique-home";
+        return;
+      }
+
+      // 회원번호는 없고, 접속 코드만 있는 경우 → 초대코드 검증
+      const code = rawCode.toLowerCase();
       const ok = VALID_CODES.some(c => c.toLowerCase() === code);
 
       if (!ok) {
@@ -315,10 +352,9 @@
         return;
       }
 
-      statusEl.textContent = "환영합니다. The Unique 멤버로 인증되었습니다.";
+      statusEl.textContent = "초대 코드로 입장합니다. 환영합니다.";
       statusEl.classList.add("status-ok");
-
-      // TODO: 실제 멤버 전용 페이지가 생기면 여기서 이동
+      // TODO: 여기서도 원하는 페이지로 이동 가능
       // location.href = "https://example.com/the-unique-home";
     });
   </script>
