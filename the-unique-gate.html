@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
 
-  <!-- 공유 썸네일 (원하면 이미지 만들어서 경로만 맞추면 됨) -->
+  <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
   <meta property="og:description" content="Invitation-only access for action takers.">
@@ -18,6 +18,11 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- THE UNIQUE 타이틀용 폰트 (트라얀 느낌) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     * { box-sizing: border-box; }
 
@@ -27,9 +32,9 @@
       color: #f9fafb;
       min-height: 100vh;
 
-      /* 🔥 배경 이미지 – 이 파일 이름만 바꿔서 쓰면 됨 */
+      /* 🔥 배경 이미지 – 필요하면 파일명만 바꿔 쓰면 됨 */
       background:
-        linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.9)),
+        radial-gradient(circle at top, rgba(0,0,0,0.15), rgba(0,0,0,0.85)),
         url("img/bg-unique-gate.jpg");
       background-size: cover;
       background-position: center;
@@ -42,40 +47,81 @@
 
     .page-wrap {
       width: 100%;
-      max-width: 420px;
+      max-width: 520px;
       padding: 24px 12px;
     }
 
     .gate-card {
       position: relative;
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 26px;
-      padding: 26px 24px 22px;
-      border: 1px solid rgba(248,250,252,0.16);
+      border-radius: 28px;
+      padding: 28px 26px 22px;
+      background: rgba(5, 8, 20, 0.35);                /* 반투명 */
+      border: 1px solid rgba(248,250,252,0.22);
       box-shadow:
-        0 30px 80px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(148,163,184,0.25);
-      backdrop-filter: blur(16px);
+        0 30px 80px rgba(0,0,0,0.95),
+        0 0 0 1px rgba(15,23,42,0.7);
+      backdrop-filter: blur(22px);                      /* 글래스 효과 */
+      -webkit-backdrop-filter: blur(22px);
+      overflow: hidden;
+    }
+
+    /* 카드 상/하단 붉은 글로우 */
+    .gate-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(ellipse at top, rgba(248,113,113,0.55), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(248,113,113,0.45), transparent 60%);
+      opacity: 0.65;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 안쪽 테두리 라인 */
+    .gate-card::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 26px;
+      border: 1px solid rgba(148,163,184,0.55);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .gate-inner {
+      position: relative;
+      z-index: 2;
     }
 
     .gate-title-wrap {
       text-align: center;
-      margin-bottom: 18px;
+      margin-bottom: 22px;
     }
 
     .gate-title {
-      font-family: "Georgia", "Times New Roman", serif;
-      font-size: 28px;
-      letter-spacing: 0.22em;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 30px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: #facc6b;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+
+      background: linear-gradient(180deg, #fdf4c6 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow: 0 2px 10px rgba(0,0,0,0.9);
     }
 
     .gate-subtitle-en {
       font-size: 11px;
       color: #e5e7eb;
-      opacity: 0.85;
+      opacity: 0.9;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     .gate-form-label {
@@ -85,16 +131,20 @@
       color: #e5e7eb;
     }
 
+    .gate-input-wrap {
+      margin-bottom: 18px;
+    }
+
     .gate-input {
       width: 100%;
-      padding: 10px 12px;
+      padding: 11px 14px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.9);
+      border: 1px solid rgba(55,65,81,0.95);
       background: rgba(15,23,42,0.85);
       color: #f9fafb;
       font-size: 13px;
       outline: none;
-      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.7) inset;
     }
 
     .gate-input::placeholder {
@@ -102,8 +152,10 @@
     }
 
     .gate-input:focus {
-      border-color: #f97316;
-      box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.7);
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.6),
+        0 6px 22px rgba(0,0,0,0.9) inset;
     }
 
     .btn-row {
@@ -111,12 +163,12 @@
       flex-direction: column;
       gap: 10px;
       margin-top: 4px;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     .btn {
       width: 100%;
-      padding: 9px 10px;
+      padding: 10px 10px;
       border-radius: 999px;
       border: 1px solid transparent;
       font-size: 13px;
@@ -128,35 +180,47 @@
       align-items: center;
       justify-content: center;
       text-decoration: none;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
     }
 
     .btn-primary {
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
-      border-color: rgba(248, 113, 113, 0.9);
+      border-color: rgba(248,181,84,0.95);
       color: #fef2f2;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.95);
+      box-shadow:
+        0 16px 38px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
     }
 
     .btn-ghost {
-      background: rgba(15,23,42,0.92);
-      border-color: rgba(148,163,184,0.8);
+      background: rgba(12,20,40,0.9);
+      border-color: rgba(55,65,81,1);
       color: #e5e7eb;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
 
     .btn-ghost:hover {
-      background: rgba(127,29,29,0.8);
-      border-color: rgba(248,113,113,0.9);
+      background: rgba(15,23,42,1);
+      border-color: rgba(148,163,184,0.9);
     }
 
     .status {
       min-height: 18px;
       font-size: 11px;
+      text-align: center;
+      margin-top: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .status-error {
@@ -167,25 +231,17 @@
       color: #bbf7d0;
     }
 
-    .footnote {
-      margin-top: 8px;
-      font-size: 10px;
-      color: #9ca3af;
-      line-height: 1.5;
-      text-align: center;
-    }
-
-    .footnote strong {
-      color: #e5e7eb;
-    }
-
     @media (max-width: 480px) {
       .gate-card {
-        padding: 22px 18px 18px;
+        padding: 24px 20px 18px;
         border-radius: 22px;
       }
+      .gate-card::after {
+        border-radius: 20px;
+      }
       .gate-title {
-        font-size: 24px;
+        font-size: 26px;
+        letter-spacing: 0.18em;
       }
     }
   </style>
@@ -193,45 +249,41 @@
 <body>
   <div class="page-wrap">
     <main class="gate-card">
-      <div class="gate-title-wrap">
-        <div class="gate-title">THE UNIQUE</div>
-        <div class="gate-subtitle-en">Invitation-only access for action takers</div>
-      </div>
-
-      <form id="gate-form">
-        <label class="gate-form-label" for="access-code">접속 코드</label>
-        <input
-          id="access-code"
-          class="gate-input"
-          type="password"
-          autocomplete="off"
-          placeholder="초대받은 접속 코드를 입력하세요"
-        />
-
-        <div class="btn-row">
-          <button type="submit" class="btn btn-primary">로그인</button>
-
-          <!-- 회원가입 페이지로 이동 (아래 2번에서 만들 파일) -->
-          <a
-            href="the-unique-signup.html"
-            class="btn btn-ghost"
-          >
-            회원가입
-          </a>
+      <div class="gate-inner">
+        <div class="gate-title-wrap">
+          <div class="gate-title">THE UNIQUE</div>
+          <div class="gate-subtitle-en">Invitation-only access for action takers</div>
         </div>
 
-        <div id="status" class="status"></div>
+        <form id="gate-form">
+          <div class="gate-input-wrap">
+            <label class="gate-form-label" for="access-code">접속 코드</label>
+            <input
+              id="access-code"
+              class="gate-input"
+              type="password"
+              autocomplete="off"
+              placeholder="초대받은 접속 코드를 입력하세요"
+            />
+          </div>
 
-        <p class="footnote">
-          이 화면은 <strong>분위기용 게이트 페이지</strong>입니다.<br />
-          실제 정보 수집은 회원가입 화면 또는 구글 폼에서 진행됩니다.
-        </p>
-      </form>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">로그인</button>
+
+            <!-- 회원가입 페이지로 이동 -->
+            <a href="the-unique-signup.html" class="btn btn-ghost">
+              회원가입
+            </a>
+          </div>
+
+          <div id="status" class="status"></div>
+        </form>
+      </div>
     </main>
   </div>
 
   <script>
-    // 분위기용 코드 – 써나가 원하는 코드로 바꿔 쓰면 됨
+    // 써나가 쓸 접속 코드 목록
     const VALID_CODES = [
       "UNIQUE2025",
       "unique-test"
@@ -266,7 +318,7 @@
       statusEl.textContent = "환영합니다. The Unique 멤버로 인증되었습니다.";
       statusEl.classList.add("status-ok");
 
-      // TODO: 실제 멤버 전용 페이지가 있으면 여기에서 location.href 로 이동 가능
+      // TODO: 실제 멤버 전용 페이지가 생기면 여기서 이동
       // location.href = "https://example.com/the-unique-home";
     });
   </script>
