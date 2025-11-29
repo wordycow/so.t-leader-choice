@@ -338,7 +338,7 @@
 <div class="page-wrap">
   <div class="glass-panel">
 
-    <!-- 상단 여행 스케줄 배너 (ads[0]) -->
+    <!-- 상단 여행 스케줄 배너 (tripAds) -->
     <div class="ad-top-board" id="adTopBoard" style="display:none;">
       <div class="banner-wrap" id="topBannerWrap"></div>
     </div>
@@ -477,35 +477,41 @@
     });
   }
 
-  // 상단 여행 스케줄 배너 (ads[0])
-  function renderTopAd(ads = []) {
+  // 상단 여행 스케줄 배너 (tripAds 여러 개 노출)
+  function renderTopAd(tripAds = []) {
     const board = document.getElementById("adTopBoard");
     const wrap  = document.getElementById("topBannerWrap");
+
+    // 초기화
     board.style.display = "none";
     wrap.innerHTML = "";
 
-    const enabled = ads.filter(ad => ad && ad.enabled && ad.imageUrl && ad.linkUrl);
+    // 사용할 수 있는 스케줄만 필터
+    const enabled = (tripAds || []).filter(ad =>
+      ad && ad.enabled && ad.imageUrl && ad.linkUrl
+    );
     if (!enabled.length) return;
 
-    const topAd = enabled[0];
-
-    const block = document.createElement("div");
-    block.className = "banner-block";
-    block.innerHTML = `
-      <a href="${topAd.linkUrl}" target="_blank" rel="noopener noreferrer">
-        <img src="${topAd.imageUrl}" class="banner-image" alt="상단 여행 스케줄">
-      </a>
-      <div class="banner-marquee">
-        <span class="banner-text">${(topAd.text || topAd.linkUrl || "여행 스케줄")} </span>
-      </div>
-    `;
-    wrap.appendChild(block);
+    // enabled 전체를 위쪽에 모두 노출
+    enabled.forEach((ad, idx) => {
+      const block = document.createElement("div");
+      block.className = "banner-block";
+      block.innerHTML = `
+        <a href="${ad.linkUrl}" target="_blank" rel="noopener noreferrer">
+          <img src="${ad.imageUrl}" class="banner-image" alt="상단 여행 스케줄 ${idx + 1}">
+        </a>
+        <div class="banner-marquee">
+          <span class="banner-text">${(ad.text || ad.linkUrl || "여행 스케줄")} </span>
+        </div>
+      `;
+      wrap.appendChild(block);
+    });
 
     board.style.display = "block";
     wrap.style.display  = "flex";
   }
 
-  // 리더보드 아래 하단 광고들 (ads[1..])
+  // 리더보드 아래 하단 광고들 (ads)
   function renderAds(ads = []) {
     const wrap = document.getElementById("bannerWrap");
     wrap.innerHTML = "";
@@ -534,23 +540,15 @@
   }
 
   loadData().then((data) => {
-  const leaders = Array.isArray(data.leaders) ? data.leaders : [];
-  const tripAds = Array.isArray(data.tripAds) ? data.tripAds : [];
-  const ads     = Array.isArray(data.ads) ? data.ads : [];
+    const leaders = Array.isArray(data.leaders) ? data.leaders : [];
+    const tripAds = Array.isArray(data.tripAds) ? data.tripAds : [];
+    const ads     = Array.isArray(data.ads) ? data.ads : [];
 
-  renderLeaders(leaders);
-
-  renderTopAd(tripAds);   // 위쪽 여행 스케줄 배너
-  renderAds(ads);         // 아래쪽 광고들
-});
+    renderLeaders(leaders);
+    renderTopAd(tripAds);   // 위쪽 여행 스케줄 배너 (여러 개)
+    renderAds(ads);         // 아래쪽 광고들
+  });
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
