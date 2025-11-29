@@ -50,48 +50,39 @@
       padding: 24px 12px;
     }
 
-    /* 🔥 진짜 유리 패널 스타일 */
+    /* 🔥 카드 색 완전 제거 – 테두리 + 블러만 남김 */
     .gate-card {
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
-      background: radial-gradient(circle at top, rgba(255,255,255,0.24), rgba(255,255,255,0.06));
-      border: 1px solid rgba(255,255,255,0.65);
+      background: transparent;                         /* ← 색 없음 */
+      border: 1px solid rgba(255,255,255,0.5);
       box-shadow:
-        0 26px 70px rgba(0,0,0,0.75),
-        0 0 0 1px rgba(148,163,184,0.4);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
+        0 26px 70px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(15,23,42,0.6);
+      backdrop-filter: blur(22px);                     /* 배경만 블러 */
+      -webkit-backdrop-filter: blur(22px);
       overflow: hidden;
     }
 
-    /* 상단 하이라이트 + 하단 은은한 빛 */
+    /* 오버레이도 제거 (완전 투명) */
     .gate-card::before {
       content: "";
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background:
-        linear-gradient(to bottom,
-          rgba(255,255,255,0.55) 0%,
-          rgba(255,255,255,0.20) 22%,
-          transparent 55%),
-        radial-gradient(ellipse at bottom,
-          rgba(248,113,113,0.35),
-          transparent 60%);
-      mix-blend-mode: screen;
-      opacity: 0.9;
+      background: transparent;
       pointer-events: none;
       z-index: 0;
     }
 
-    /* 안쪽 섬세한 라인 */
+    /* 안쪽 테두리만 살짝 남김 */
     .gate-card::after {
       content: "";
       position: absolute;
       inset: 1px;
       border-radius: 24px;
-      border: 1px solid rgba(148,163,184,0.4);
+      border: 1px solid rgba(148,163,184,0.35);
       pointer-events: none;
       z-index: 1;
     }
@@ -126,14 +117,15 @@
 
     .gate-subtitle-en {
       font-size: 11px;
-      color: #111827;
+      color: #f9fafb;
       opacity: 0.9;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 6px rgba(0,0,0,0.6);
     }
 
-    /* 폼 전체 폭: 카드보다 좁게 */
     .form-body {
       max-width: 360px;
       margin: 0 auto;
@@ -234,11 +226,11 @@
     }
 
     .status-error {
-      color: #b91c1c;
+      color: #fecaca;
     }
 
     .status-ok {
-      color: #047857;
+      color: #bbf7d0;
     }
 
     @media (max-width: 480px) {
@@ -306,11 +298,32 @@
   </div>
 
   <script>
-    // 초대 코드(접속 코드) 목록 – 써나가 바꿔서 사용
-    const VALID_CODES = [
-      "UNIQUE2025",
-      "unique-test"
-    ];
+    // 접속 코드 JSON 파일 위치 (같은 폴더에 unique-access-codes.json 만들기)
+    const CODES_URL = "unique-access-codes.json";
+
+    let validCodes = null;   // 로딩된 코드 목록(소문자)
+
+    async function loadCodes() {
+      try {
+        const res = await fetch(CODES_URL + "?_=" + Date.now());
+        if (!res.ok) throw new Error("codes fetch failed");
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          validCodes = [];
+          return;
+        }
+        validCodes = data
+          .filter(item => item && String(item.status || "active") !== "disabled")
+          .map(item => String(item.code || "").toLowerCase())
+          .filter(Boolean);
+        console.log("Loaded access codes:", validCodes.length);
+      } catch (err) {
+        console.error("접속 코드 목록 불러오기 실패:", err);
+        validCodes = [];
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadCodes);
 
     const form = document.getElementById("gate-form");
     const memberInput = document.getElementById("member-id");
@@ -341,9 +354,15 @@
         return;
       }
 
-      // 회원번호는 없고, 접속 코드만 있는 경우 → 초대코드 검증
+      // 접속 코드만 있는 경우 → JSON에서 불러온 목록으로 검증
+      if (!validCodes) {
+        statusEl.textContent = "접속 코드 목록을 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
       const code = rawCode.toLowerCase();
-      const ok = VALID_CODES.some(c => c.toLowerCase() === code);
+      const ok = validCodes.includes(code);
 
       if (!ok) {
         statusEl.textContent = "접속 코드가 올바르지 않습니다. 초대한 리더에게 다시 확인해 주세요.";
