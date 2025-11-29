@@ -29,7 +29,7 @@
       --gold-main: #D4AF37;       /* 앤틱 골드 */
       --gold-light: #F3E5AB;      /* 밝은 금색 */
       --navy-deep: #0F172A;       /* 아주 깊은 네이비 */
-      --bg-overlay: rgba(10, 16, 30, 0.90); /* 카드 배경 (딥 네이비) */
+      --bg-overlay: rgba(10, 16, 30, 0.92); /* 카드 배경 (딥 네이비) */
       --text-cream: #F5F5DC;      /* 크림색 텍스트 */
       --text-muted: #E0E0E0;
     }
@@ -55,13 +55,13 @@
 
     /* 전체 카드 뒷판: 벽 위에 걸린 패널 느낌 */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.90); /* 딥 네이비 반투명 */
-      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.92); /* 딥 네이비 반투명 */
+      border-radius: 30px;
       border: 1px solid rgba(148,163,184,0.7);
       box-shadow:
         0 0 0 2px rgba(15,23,42,0.9) inset,
         0 24px 60px rgba(0,0,0,0.9);
-      padding: 20px 22px 22px;
+      padding: 24px 22px 24px;
       backdrop-filter: blur(14px);
     }
 
@@ -109,8 +109,8 @@
     .leader-card {
       position: relative;
       background: var(--bg-overlay);
-      border-radius: 8px;
-      padding: 22px 20px 18px;
+      border-radius: 10px;
+      padding: 24px 20px 18px;
       text-align: center;
 
       border: 1px solid var(--gold-main);       /* 1차 골드 */
@@ -130,39 +130,47 @@
       border-color: var(--gold-light);
     }
 
-    /* 사진 영역 – 프레임 안 작품 */
+    /* 📸 진짜 프레임 PNG + 사진 겹치기 */
     .leader-frame {
       position: relative;
       margin-bottom: 16px;
 
       width: 100%;
       max-width: 280px;
-      height: 170px;
-
-      border-radius: 10px;
-      overflow: hidden;
-
-      border: 2px solid var(--gold-light);
-      box-shadow:
-        0 4px 15px rgba(0,0,0,0.8),
-        0 0 0 1px rgba(0,0,0,0.6) inset;
+      aspect-ratio: 16 / 9;   /* 가로형 사진 비율 */
       margin-left: auto;
       margin-right: auto;
-      background-color: #020617;
     }
 
+    /* 실제 사진 */
     .leader-media {
-      width: 100%;
-      height: 100%;
+      position: absolute;
+      /* 프레임 안쪽에 맞게 살짝 여백 두고 조정 */
+      top: 14%;
+      left: 9%;
+      width: 82%;
+      height: 70%;
       object-fit: cover;
       object-position: 50% 50%;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
       transition: transform 0.35s ease;
     }
 
-    /* PC에서만 hover 확대 (모바일에는 영향 없음) */
+    /* 프레임 PNG 오버레이 */
+    .frame-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    /* PC에서만 hover 시 사진만 살짝 확대 */
     @media (hover: hover) and (pointer: fine) {
       .leader-frame:hover .leader-media {
-        transform: scale(1.08);
+        transform: scale(1.05);
       }
     }
 
@@ -197,7 +205,7 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.7);
     }
 
-    /* 태그 (뱃지) – 앤틱 골드 스타일 */
+    /* 태그 (뱃지) */
     .tag-wrap {
       display: flex;
       flex-wrap: wrap;
@@ -250,27 +258,19 @@
     /* 하단 상담/신청 버튼 – 골드 그라디언트 바 */
     .card-footer {
       margin-top: auto;
-      font-size: 11px;
-      color: #000;
-      display: block;
-      padding-top: 0;
-      border-top: none;
-    }
-    .card-footer span {
-      font-size: 13px;
-      margin-right: 4px;
-    }
-
-    .card-footer {
       width: 80%;
-      margin: 18px auto 0;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 16px;
       background: linear-gradient(to right, #996515, #D4AF37);
       border-radius: 3px;
-      padding: 10px 0;
+      padding: 9px 0;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      text-decoration: none;
+      text-align: center;
+      color: #111827;
       box-shadow: 0 6px 18px rgba(0,0,0,0.9);
       font-family: 'Noto Serif KR', serif;
       cursor: pointer;
@@ -285,7 +285,7 @@
       display: none;
     }
 
-    /* 상단/하단 배너는 기존 스타일 유지, 약간 톤다운 */
+    /* 상단/하단 배너 – 톤다운 */
     .ad-board {
       margin-top: 28px;
       padding-top: 16px;
@@ -361,7 +361,7 @@
       }
       .glass-panel {
         padding: 16px 10px 18px;
-        border-radius: 20px;
+        border-radius: 22px;
       }
       .page-title { font-size: 20px; }
       .page-subtitle { font-size: 11px; }
@@ -375,11 +375,10 @@
       }
       .leader-frame {
         max-width: 100%;
-        height: auto;
         aspect-ratio: 13 / 8;
       }
       .leader-media {
-        border-radius: 8px;
+        border-radius: 6px;
       }
       .leader-name { font-size: 16px; }
       .leader-role { font-size: 10px; }
@@ -508,7 +507,6 @@
           `<a class="sns-btn" href="${sns.blog}" target="_blank" rel="noopener noreferrer">Blog</a>`
         );
       }
-      // 새로 추가: 당근 / Discord
       if (sns.carrot) {
         snsButtons.push(
           `<a class="sns-btn" href="${sns.carrot}" target="_blank" rel="noopener noreferrer">당근</a>`
@@ -528,6 +526,7 @@
       card.innerHTML = `
         <div class="leader-frame">
           ${mediaHtml}
+          <img class="frame-overlay" src="img/leader-frame.png" alt="">
         </div>
         <div class="leader-name">${leader.name || ""}</div>
         <div class="leader-role">${leader.role || ""}</div>
@@ -544,7 +543,6 @@
     });
   }
 
-  // 상단 여행 스케줄 배너 (tripAds 여러 개 노출)
   function renderTopAd(tripAds = []) {
     const board = document.getElementById("adTopBoard");
     const wrap  = document.getElementById("topBannerWrap");
@@ -575,7 +573,6 @@
     wrap.style.display  = "flex";
   }
 
-  // 리더보드 아래 하단 광고들 (ads)
   function renderAds(ads = []) {
     const wrap = document.getElementById("bannerWrap");
     wrap.innerHTML = "";
