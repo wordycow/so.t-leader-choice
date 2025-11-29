@@ -5,92 +5,136 @@
   <title>The Unique – 회원가입</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- THE UNIQUE 타이틀용 폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     * { box-sizing: border-box; }
 
-        body {
+    body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #f9fafb;
       min-height: 100vh;
 
-      /* 🔹 새로 만든 회원가입 전용 배경 JPG */
-      background-image: url("img/unique-signup-bg.jpg");
-      background-repeat: no-repeat;
-      background-size: cover;        /* 화면 꽉 채우기 */
-      background-position: center center;
-      background-attachment: fixed;  /* 스크롤해도 고정 (원하면 유지) */
+      /* 🔹 새로 준비한 회원가입 배경 JPG */
+      background:
+        radial-gradient(circle at top, rgba(0,0,0,0.15), rgba(0,0,0,0.85)),
+        url("img/bg-signup.jpg");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
 
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-
     .page-wrap {
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       padding: 24px 12px;
     }
 
+    /* ✅ 로그인 창과 같은 느낌: 거의 투명 + 금색 테두리 */
     .signup-card {
-      background: rgba(10, 10, 20, 0.78);
+      position: relative;
       border-radius: 26px;
-      padding: 24px 22px 20px;
-      border: 1px solid rgba(248,250,252,0.16);
+      padding: 26px 24px 20px;
+
+      background: transparent; /* 완전 투명 카드 */
+
+      border: 1px solid rgba(250, 204, 21, 0.95); /* 금색 테두리 */
       box-shadow:
-        0 30px 80px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(148,163,184,0.25);
-      backdrop-filter: blur(16px);
+        0 0 14px rgba(250, 204, 21, 0.45),       /* 금빛 글로우 */
+        0 26px 70px rgba(0,0,0,0.85);            /* 아래 그림자 */
+
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      overflow: visible;
+    }
+
+    .signup-inner {
+      position: relative;
+      z-index: 1;
     }
 
     .signup-title-wrap {
       text-align: center;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     .signup-title {
-      font-family: "Georgia", "Times New Roman", serif;
-      font-size: 22px;
-      letter-spacing: 0.18em;
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 30px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: #facc6b;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+
+      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow:
+        0 0 8px rgba(250, 204, 21, 0.9),
+        0 3px 14px rgba(0,0,0,1);
     }
 
     .signup-subtitle {
       font-size: 11px;
-      color: #e5e7eb;
+      color: #f9fafb;
       opacity: 0.9;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 4px rgba(0,0,0,0.5);
     }
 
     .intro-text {
       font-size: 12px;
       line-height: 1.6;
       color: #e5e7eb;
-      margin-bottom: 14px;
+      margin: 10px 0 14px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .intro-text strong {
       color: #fde68a;
     }
 
+    .form-body {
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
     .form-label {
       display: block;
       font-size: 12px;
       margin-bottom: 4px;
+      color: #e5e7eb;
     }
 
     .form-input {
       width: 100%;
       padding: 8px 11px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.9);
-      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
       color: #f9fafb;
       font-size: 13px;
       outline: none;
-      margin-bottom: 10px;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.75) inset,
+        0 0 0 1px rgba(0,0,0,0.55);
     }
 
     .form-input::placeholder {
@@ -98,68 +142,98 @@
     }
 
     .form-input:focus {
-      border-color: #f97316;
-      box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.7);
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.6),
+        0 6px 22px rgba(0,0,0,0.9) inset;
     }
 
     .btn-row {
       display: flex;
       gap: 8px;
-      margin-top: 6px;
+      margin-top: 14px;
       margin-bottom: 6px;
     }
 
     .btn {
       flex: 1;
-      padding: 9px 10px;
+      padding: 10px 10px;
       border-radius: 999px;
       border: 1px solid transparent;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-decoration: none;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
     }
 
     .btn-primary {
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
-      border-color: rgba(248, 113, 113, 0.9);
+      border-color: rgba(248,181,84,0.95);
       color: #fef2f2;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.95);
+      box-shadow:
+        0 16px 38px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
     }
 
     .btn-ghost {
-      background: rgba(15,23,42,0.92);
-      border-color: rgba(148,163,184,0.8);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      border-color: rgba(55,65,81,1);
       color: #e5e7eb;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
 
     .btn-ghost:hover {
-      background: rgba(31,41,55,0.9);
+      background: rgba(15,23,42,1);
+      border-color: rgba(148,163,184,0.9);
     }
 
     .status {
       min-height: 18px;
       font-size: 11px;
+      text-align: center;
+      margin-top: 4px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
-    .status-ok { color: #bbf7d0; }
-    .status-error { color: #fecaca; }
+    .status-error {
+      color: #fecaca;
+    }
+
+    .status-ok {
+      color: #bbf7d0;
+    }
 
     @media (max-width: 480px) {
       .signup-card {
         padding: 22px 18px 18px;
         border-radius: 22px;
+      }
+      .signup-title {
+        font-size: 26px;
+        letter-spacing: 0.20em;
+      }
+      .form-body {
+        max-width: 100%;
+      }
+      .btn-row {
+        flex-direction: column;
       }
     }
   </style>
@@ -167,43 +241,70 @@
 <body>
   <div class="page-wrap">
     <main class="signup-card">
-      <div class="signup-title-wrap">
-        <div class="signup-title">THE UNIQUE</div>
-        <div class="signup-subtitle">Membership Registration</div>
-      </div>
-
-      <section class="intro-text">
-        <strong>The Unique</strong>는 “평균”으로 살지 않기로 결정한 사람들의 작은 그룹입니다.<br />
-        우리는 스스로 생각하고, 직접 행동하며, 서로의 삶과 수입 구조를 설계해 갑니다.<br />
-        아래 정보는 <strong>초대·연락·프로젝트 매칭</strong>을 위해서만 사용됩니다.
-      </section>
-
-      <form id="signup-form">
-        <label class="form-label" for="uid">아이디</label>
-        <input id="uid" class="form-input" type="text" placeholder="디스코드 닉네임 등 기억하기 쉬운 이름" />
-
-        <label class="form-label" for="name">이름</label>
-        <input id="name" class="form-input" type="text" placeholder="실제 이름 또는 호칭" />
-
-        <label class="form-label" for="phone">전화번호</label>
-        <input id="phone" class="form-input" type="tel" placeholder="숫자만 입력 (예: 01012345678)" />
-
-        <div class="btn-row">
-          <button type="submit" class="btn btn-primary">가입 신청</button>
-          <a href="the-unique-gate.html" class="btn btn-ghost">뒤로가기</a>
+      <div class="signup-inner">
+        <div class="signup-title-wrap">
+          <div class="signup-title">THE UNIQUE</div>
+          <div class="signup-subtitle">Membership Registration</div>
         </div>
 
-        <div id="signup-status" class="status"></div>
-      </form>
+        <section class="intro-text">
+          <strong>The Unique</strong>는 “평균으로 살지 않겠다”를 선택한 사람들의 작은 그룹입니다.<br />
+          우리는 스스로 생각하고, 직접 행동하며, 서로의 삶과 수입 구조를 설계해 갑니다.<br />
+          아래 정보는 <strong>초대·연락·프로젝트 매칭</strong>을 위해서만 사용됩니다.
+        </section>
+
+        <form id="signup-form" class="form-body">
+          <div class="form-group">
+            <label class="form-label" for="uid">아이디</label>
+            <input
+              id="uid"
+              class="form-input"
+              type="text"
+              autocomplete="off"
+              placeholder="디스코드 닉네임 등 기억하기 쉬운 아이디"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="name">이름</label>
+            <input
+              id="name"
+              class="form-input"
+              type="text"
+              autocomplete="off"
+              placeholder="실제 이름 또는 부르고 싶은 이름"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="phone">전화번호</label>
+            <input
+              id="phone"
+              class="form-input"
+              type="tel"
+              autocomplete="off"
+              placeholder="숫자만 입력 (예: 01012345678)"
+            />
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">가입 신청</button>
+            <a href="the-unique-gate.html" class="btn btn-ghost">뒤로가기</a>
+          </div>
+
+          <div id="signup-status" class="status"></div>
+        </form>
+      </div>
     </main>
   </div>
 
   <script>
-    const form = document.getElementById("signup-form");
+    const signupForm = document.getElementById("signup-form");
     const statusEl = document.getElementById("signup-status");
 
-    form.addEventListener("submit", (e) => {
+    signupForm.addEventListener("submit", (e) => {
       e.preventDefault();
+
       const uid = document.getElementById("uid").value.trim();
       const name = document.getElementById("name").value.trim();
       const phone = document.getElementById("phone").value.trim();
@@ -212,18 +313,17 @@
       statusEl.className = "status";
 
       if (!uid || !name || !phone) {
-        statusEl.textContent = "아이디, 이름, 전화번호를 모두 입력해 주세요.";
+        statusEl.textContent = "아이디, 이름, 전화번호는 필수입니다.";
         statusEl.classList.add("status-error");
         return;
       }
 
-      // ⚠️ 여기는 아직 백엔드/구글폼 연결 안 된 상태.
-      // 나중에 실제 전송 로직을 붙이기 전까지는 그냥 확인 메시지만 보여줌.
-      statusEl.textContent = "가입 신청이 임시로 저장되었습니다. 운영진이 추후 안내드릴 예정입니다.";
+      // ⚠️ 지금은 실제 저장/전송 없이 화면에만 메시지 표시
+      statusEl.textContent = "가입 신청이 접수되었습니다. 운영진이 확인 후 연락드리겠습니다.";
       statusEl.classList.add("status-ok");
 
-      // 필요하면 여기서 form.reset();
-      // form.reset();
+      // 필요하면 자동 초기화
+      // signupForm.reset();
     });
   </script>
 </body>
