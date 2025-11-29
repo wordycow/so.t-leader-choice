@@ -92,7 +92,7 @@
       display: flex;
       align-items: baseline;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
     }
 
     .rank-title h2 {
@@ -109,6 +109,42 @@
       color: #e5e7eb;
     }
 
+    /* 🔸 직급 조건 + 수당 설명 영역 */
+    .rank-meta {
+      margin: 2px 0 10px;
+      padding-left: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .rank-condition {
+      font-size: 11px;
+      color: #cbd5f5;
+    }
+
+    .rank-pay {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .rank-pay-label {
+      font-size: 11px;
+      color: #fef3c7;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .rank-pay-amount {
+      font-size: 20px;
+      font-weight: 800;
+      color: #facc15;              /* 금색 */
+      letter-spacing: 0.04em;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    }
+
     .rank-grid {
       display: flex;
       flex-wrap: wrap;
@@ -116,20 +152,19 @@
     }
 
     /* 기본 카드 스타일 (배경 완전 투명) */
-.card {
-  background: transparent;              /* 🔥 네이비 네모 완전 제거 */
-  border-radius: 18px;
-  overflow: visible;                    /* 뱃지가 살짝 튀어나와도 OK */
-  width: 210px;                         /* 기본 값, xs~xxxl에서 덮어씀 */
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6); /* 살짝 그림자만 */
-  display: flex;
-  flex-direction: column;
-  transform: translateY(8px);
-  opacity: 0;
-  animation: fadeUp 0.4s forwards;
-  backdrop-filter: none;                /* 블러도 제거 */
-}
-
+    .card {
+      background: transparent;              /* 네이비 네모 제거 */
+      border-radius: 18px;
+      overflow: visible;
+      width: 210px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(8px);
+      opacity: 0;
+      animation: fadeUp 0.4s forwards;
+      backdrop-filter: none;
+    }
 
     /* 직급별 카드 폭 (Star1 가장 작고 Pro10 가장 크게) */
     .card.xs   { width: 145px; }  /* Star1 */
@@ -153,7 +188,7 @@
       z-index: 1;
       width: 100%;
       height: auto;
-      object-fit: contain;      /* 뱃지 안 잘리게 */
+      object-fit: contain;
       display: block;
       border-radius: 14px 14px 8px 8px;
     }
@@ -167,7 +202,7 @@
     }
 
     .card-name {
-      font-size: 18px;            /* 기본값 (Star3 기준) */
+      font-size: 18px;
       font-weight: 700;
       color: #facc15;
       letter-spacing: 0.02em;
@@ -177,8 +212,7 @@
       text-overflow: ellipsis;
     }
 
-    /* 직급별 이름 크기
-       Star1 < Star2 < Star3 < Pro1~3 < Pro4~6 < Pro7~9 < Pro10 */
+    /* 직급별 이름 크기 */
     .card.xs   .card-name { font-size: 14px; }  /* Star1 */
     .card.sm   .card-name { font-size: 16px; }  /* Star2 */
     .card.md   .card-name { font-size: 18px; }  /* Star3 */
@@ -203,7 +237,6 @@
       opacity: 0.95;
     }
 
-    /* 텍스트 가독성용 그림자 */
     .card-name,
     .card-name-sub,
     .card-bottom {
@@ -234,6 +267,10 @@
       .card.xxxl {
         width: calc(50% - 8px);
       }
+
+      .rank-pay-amount {
+        font-size: 18px;
+      }
     }
 
     @media (max-width: 480px) {
@@ -246,6 +283,10 @@
       .card.xxl,
       .card.xxxl {
         width: 100%;
+      }
+
+      .rank-pay-amount {
+        font-size: 17px;
       }
     }
 
@@ -285,6 +326,62 @@
       "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
       "Star3","Star2","Star1"
     ];
+
+    // 🔸 직급 조건 + 수당(하루 금액) 정의
+    const RANK_INFO = {
+      Star1: {
+        condition: "직급 달성 조건: 좌·우 직접추천 2:1 또는 1:2 (최소 1:1 충족)",
+        pay: "$10 USDT / day x 60 day"
+      },
+      Star2: {
+        condition: "직급 달성 조건: 좌·우 팀 7:7",
+        pay: "$20 USDT / day x 60 day"
+      },
+      Star3: {
+        condition: "직급 달성 조건: 좌·우 팀 15:15",
+        pay: "$45 USDT / day x 60 day"
+      },
+      Pro1: {
+        condition: "직급 달성 조건: 좌·우 팀 40:40",
+        pay: "$120 USDT / day x 60 day"
+      },
+      Pro2: {
+        condition: "직급 달성 조건: 좌·우 팀 80:80",
+        pay: "$200 USDT / day x 60 day"
+      },
+      Pro3: {
+        condition: "직급 달성 조건: 좌·우 팀 150:150",
+        pay: "$300 USDT / day x 60 day"
+      },
+      Pro4: {
+        condition: "직급 달성 조건: 좌·우 팀 250:250",
+        pay: "$500 USDT / day x 60 day"
+      },
+      Pro5: {
+        condition: "직급 달성 조건: 좌·우 팀 400:400",
+        pay: "$800 USDT / day x 60 day"
+      },
+      Pro6: {
+        condition: "직급 달성 조건: 좌·우 팀 650:650",
+        pay: "$1,300 USDT / day x 60 day"
+      },
+      Pro7: {
+        condition: "직급 달성 조건: 좌·우 팀 1000:1000",
+        pay: "$2,000 USDT / day x 60 day"
+      },
+      Pro8: {
+        condition: "직급 달성 조건: 좌·우 팀 2000:2000",
+        pay: "$3,000 USDT / day x 60 day"
+      },
+      Pro9: {
+        condition: "직급 달성 조건: 좌·우 팀 3000:4000",
+        pay: "$4,000 USDT / day x 60 day"
+      },
+      Pro10: {
+        condition: "직급 달성 조건: 좌·우 팀 4000:4000",
+        pay: "$5,000 USDT / day x 60 day"
+      }
+    };
 
     function getRankIndex(rank) {
       const i = RANK_ORDER.indexOf(rank);
@@ -336,23 +433,23 @@
       return "img/star1.png";
     }
 
-    // 직급 → 카드 크기 클래스 (Star1 가장 작고 Pro10 가장 큼)
+    // 직급 → 카드 크기 클래스
     function getCardSizeClass(rank) {
       if (!rank) return "md";
 
       if (rank.startsWith("Star")) {
         const n = parseInt(rank.replace("Star", ""), 10) || 1;
-        if (n === 1) return "xs";   // Star1
-        if (n === 2) return "sm";   // Star2
-        if (n === 3) return "md";   // Star3
+        if (n === 1) return "xs";
+        if (n === 2) return "sm";
+        if (n === 3) return "md";
       }
 
       if (rank.startsWith("Pro")) {
         const n = parseInt(rank.replace("Pro", ""), 10) || 1;
-        if (n <= 3) return "lg";    // Pro1~3
-        if (n <= 6) return "xl";    // Pro4~6
-        if (n <= 9) return "xxl";   // Pro7~9
-        return "xxxl";              // Pro10
+        if (n <= 3) return "lg";
+        if (n <= 6) return "xl";
+        if (n <= 9) return "xxl";
+        return "xxxl";
       }
 
       return "md";
@@ -434,6 +531,21 @@
         `;
         section.appendChild(titleRow);
 
+        // 🔸 직급 조건 + 수당 표시
+        const info = RANK_INFO[rank];
+        if (info) {
+          const meta = document.createElement("div");
+          meta.className = "rank-meta";
+          meta.innerHTML = `
+            <div class="rank-condition">${info.condition}</div>
+            <div class="rank-pay">
+              <span class="rank-pay-label">지급 구독 수수료</span>
+              <span class="rank-pay-amount">${info.pay}</span>
+            </div>
+          `;
+          section.appendChild(meta);
+        }
+
         const grid = document.createElement("div");
         grid.className = "rank-grid";
 
@@ -443,12 +555,10 @@
           const name = item.name || "";
           const rawTagline = (item.tagline || "").trim();
 
-          // tagline 있으면만 두 번째 줄 출력
           const taglineHtml = rawTagline
             ? `<div class="card-name-sub">${rawTagline}</div>`
             : "";
 
-          // 가입일만 한 줄 (직급은 여기 안 찍음)
           const bottomHtml = item.joinDate
             ? `<div class="card-bottom">${item.joinDate}</div>`
             : "";
