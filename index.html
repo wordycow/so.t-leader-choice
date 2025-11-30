@@ -100,12 +100,11 @@
       background: #000;
     }
 
-    /* 🔧 여기만 크게 변경: 배너 높이 고정 */
     .banner-img {
       width: 100%;
-      height: 250px;           /* 예전 so.t 버전처럼 고정 높이 */
+      height: 250px;
       display: block;
-      object-fit: cover;       /* 중앙 기준으로 잘라서 채우기 */
+      object-fit: cover;
       filter: brightness(0.9);
       transition: transform 0.5s, filter 0.5s;
     }
@@ -162,16 +161,18 @@
         0 0 30px rgba(212, 175, 55, 0.35);
     }
 
-    /* 프로필 사진 + PNG 액자 겹치기 */
+    /* ▼▼▼ [수정된 부분] 프로필 사진 + 액자 CSS ▼▼▼ */
     .profile-wrapper {
       position: relative;
       margin: 0 auto 15px;
-      width: 280px;
-      height: 180px;      /* 프레임 비율에 맞게 */
+      width: 280px;   /* 액자 너비 */
+      height: 155px;  /* 액자 높이 (가로형 액자에 맞게 수정됨) */
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;   /* 프레임 밖으로 나간 사진 잘라내기 */
+      overflow: hidden;
+      background-color: #000; /* 사진 뒤 검은색 배경 */
+      border-radius: 4px;
     }
 
     .profile-user-img {
@@ -179,17 +180,12 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 90%;         /* 액자 구멍 크기에 맞춰 조절 */
-      height: 90%;
+      width: 92%;     /* 액자 안쪽 구멍 크기 */
+      height: 92%;
       object-fit: cover;
       z-index: 1;
       filter: brightness(0.95);
       transition: transform 0.35s ease, filter 0.35s ease;
-    }
-
-    .leader-card:hover .profile-user-img {
-      transform: translate(-50%, -50%) scale(1.05);
-      filter: brightness(1.1);
     }
 
     .profile-frame-overlay {
@@ -200,8 +196,14 @@
       height: 100%;
       z-index: 2;
       pointer-events: none;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+      object-fit: fill; /* 액자를 꽉 채워서 늘림 */
+      mix-blend-mode: multiply; /* 액자 배경이 흰색일 경우 투명하게 만듦 (안전장치) */
+    }
+    /* ▲▲▲ [수정 끝] ▲▲▲ */
+
+    .leader-card:hover .profile-user-img {
+      transform: translate(-50%, -50%) scale(1.05);
+      filter: brightness(1.1);
     }
 
     /* 텍스트 스타일 */
@@ -322,7 +324,8 @@
       .main-title { font-size: 2.2rem; }
       .leader-grid { gap: 40px; }
       .container { padding: 32px 15px 40px; }
-      .profile-wrapper { width: 230px; height: 150px; }
+      /* 모바일에서도 비율 유지 */
+      .profile-wrapper { width: 230px; height: 128px; }
     }
   </style>
 </head>
@@ -338,14 +341,11 @@
     </p>
   </header>
 
-  <!-- 상단 배너 (tripAds) -->
   <section class="banner-section" id="topBannerSection"></section>
 
-  <!-- 리더 카드 -->
   <section class="leader-grid" id="leaderGrid"></section>
   <p id="emptyNotice">아직 표시할 리더가 없습니다. 관리자 페이지에서 leaders.json을 먼저 채워 주세요.</p>
 
-  <!-- 하단 배너 (ads) -->
   <section class="banner-section" id="bottomBannerSection"></section>
 </div>
 
