@@ -100,10 +100,12 @@
       background: #000;
     }
 
+    /* 🔧 여기만 크게 변경: 배너 높이 고정 */
     .banner-img {
       width: 100%;
-      height: auto;
+      height: 250px;           /* 예전 so.t 버전처럼 고정 높이 */
       display: block;
+      object-fit: cover;       /* 중앙 기준으로 잘라서 채우기 */
       filter: brightness(0.9);
       transition: transform 0.5s, filter 0.5s;
     }
@@ -129,18 +131,17 @@
     .leader-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 50px; /* 카드 간격을 조금 더 넓게 */
+      gap: 50px;
       margin-bottom: 40px;
     }
 
     /* 카드 디자인 */
     .leader-card {
       background: var(--card-bg);
-      /* 이중 테두리 느낌 */
       border: 1px solid var(--gold-main);
       outline: 4px solid var(--bg-dark);
       box-shadow:
-        0 0 0 5px var(--gold-main), /* 바깥 금색 테두리 */
+        0 0 0 5px var(--gold-main),
         0 20px 50px rgba(0,0,0,0.85);
       padding: 30px 20px 24px;
       text-align: center;
@@ -150,7 +151,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      text-decoration: none; /* a태그 밑줄 제거 */
+      text-decoration: none;
     }
 
     .leader-card:hover {
@@ -161,32 +162,36 @@
         0 0 30px rgba(212, 175, 55, 0.35);
     }
 
-    /* ★★★ [수정] 프로필 사진 + PNG 액자 겹치기 ★★★ */
+    /* 프로필 사진 + PNG 액자 겹치기 */
     .profile-wrapper {
       position: relative;
-      width: 240px;    /* 액자 크기에 맞춰 조절 가능 */
-      height: 190px;   /* 액자 비율에 맞춰 조절 (가로형/세로형에 따라) */
       margin: 0 auto 15px;
+      width: 280px;
+      height: 180px;      /* 프레임 비율에 맞게 */
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;   /* 프레임 밖으로 나간 사진 잘라내기 */
     }
 
-    /* 실제 리더 사진 (뒤에 배치) */
     .profile-user-img {
       position: absolute;
-      width: 78%;      /* 액자 안쪽 구멍 크기에 맞춰 조절 */
-      height: 80%;     /* 액자 안쪽 구멍 크기에 맞춰 조절 */
-      object-fit: cover;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      width: 90%;         /* 액자 구멍 크기에 맞춰 조절 */
+      height: 90%;
+      object-fit: cover;
       z-index: 1;
       filter: brightness(0.95);
-      transition: transform 0.35s ease;
+      transition: transform 0.35s ease, filter 0.35s ease;
     }
 
-    /* PNG 액자 이미지 (앞에 배치) */
+    .leader-card:hover .profile-user-img {
+      transform: translate(-50%, -50%) scale(1.05);
+      filter: brightness(1.1);
+    }
+
     .profile-frame-overlay {
       position: absolute;
       top: 0;
@@ -194,14 +199,9 @@
       width: 100%;
       height: 100%;
       z-index: 2;
-      pointer-events: none; /* 마우스 클릭이 뒤의 사진/링크에 닿도록 */
-      object-fit: contain;  /* 액자 비율 유지 */
+      pointer-events: none;
+      object-fit: contain;
       filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-    }
-
-    .leader-card:hover .profile-user-img {
-      transform: translate(-50%, -50%) scale(1.05); /* 사진만 살짝 확대 */
-      filter: brightness(1.1);
     }
 
     /* 텍스트 스타일 */
@@ -287,7 +287,7 @@
       box-shadow: 0 0 15px var(--gold-main);
     }
 
-    /* 하단 버튼 */
+    /* 하단 신청 버튼 */
     .action-btn {
       display: block;
       margin-top: auto;
@@ -322,6 +322,7 @@
       .main-title { font-size: 2.2rem; }
       .leader-grid { gap: 40px; }
       .container { padding: 32px 15px 40px; }
+      .profile-wrapper { width: 230px; height: 150px; }
     }
   </style>
 </head>
@@ -337,16 +338,18 @@
     </p>
   </header>
 
+  <!-- 상단 배너 (tripAds) -->
   <section class="banner-section" id="topBannerSection"></section>
 
+  <!-- 리더 카드 -->
   <section class="leader-grid" id="leaderGrid"></section>
   <p id="emptyNotice">아직 표시할 리더가 없습니다. 관리자 페이지에서 leaders.json을 먼저 채워 주세요.</p>
 
+  <!-- 하단 배너 (ads) -->
   <section class="banner-section" id="bottomBannerSection"></section>
 </div>
 
 <script>
-  // 데이터 로드 함수 (기존 로직 유지)
   async function loadData() {
     try {
       const res = await fetch("leaders.json?_=" + Date.now());
@@ -359,7 +362,6 @@
     }
   }
 
-  // 상단 배너 렌더링 (기존 로직 유지)
   function renderTopBanners(tripAds = []) {
     const section = document.getElementById("topBannerSection");
     section.innerHTML = "";
@@ -379,7 +381,6 @@
     });
   }
 
-  // 하단 배너 렌더링 (기존 로직 유지)
   function renderBottomBanners(ads = []) {
     const section = document.getElementById("bottomBannerSection");
     section.innerHTML = "";
@@ -399,7 +400,6 @@
     });
   }
 
-  // ★★★ [수정] 리더 카드 렌더링 (디자인 + 액자 적용) ★★★
   function renderLeaders(leaders = []) {
     const grid = document.getElementById("leaderGrid");
     const emptyNotice = document.getElementById("emptyNotice");
@@ -415,51 +415,45 @@
     }
 
     visible.forEach((leader) => {
-      // 카드 전체 링크
-      const card = document.createElement("a");
+      const card = document.createElement("article");
       card.className = "leader-card";
-      card.href = leader.link || "#";
-      card.target = leader.link ? "_blank" : "_self";
-      card.rel = leader.link ? "noopener noreferrer" : "";
 
-      // 이미지 경로 처리
       const src = leader.mediaUrl || "https://via.placeholder.com/400x400.png?text=Leader";
 
-      // 태그 HTML 생성
       const tagsHtml = (leader.tags || [])
         .map(t => `<span class="tag">#${t}</span>`)
         .join("");
 
-      // SNS 버튼 HTML 생성
       const sns = leader.sns || {};
       const snsButtons = [];
-      if (sns.youtube) snsButtons.push(`<a href="${sns.youtube}" class="social-btn" target="_blank"><i class="fab fa-youtube"></i></a>`);
-      if (sns.instagram) snsButtons.push(`<a href="${sns.instagram}" class="social-btn" target="_blank"><i class="fab fa-instagram"></i></a>`);
-      if (sns.blog) snsButtons.push(`<a href="${sns.blog}" class="social-btn" target="_blank"><i class="fas fa-pen-nib"></i></a>`);
-      if (sns.discord) snsButtons.push(`<a href="${sns.discord}" class="social-btn" target="_blank"><i class="fab fa-discord"></i></a>`);
-      if (sns.carrot) snsButtons.push(`<a href="${sns.carrot}" class="social-btn" target="_blank"><i class="fas fa-carrot"></i></a>`);
-      if (sns.tiktok) snsButtons.push(`<a href="${sns.tiktok}" class="social-btn" target="_blank"><i class="fab fa-tiktok"></i></a>`);
+      if (sns.youtube)  snsButtons.push(`<a href="${sns.youtube}"  class="social-btn" target="_blank"><i class="fab fa-youtube"></i></a>`);
+      if (sns.instagram)snsButtons.push(`<a href="${sns.instagram}"class="social-btn" target="_blank"><i class="fab fa-instagram"></i></a>`);
+      if (sns.blog)     snsButtons.push(`<a href="${sns.blog}"     class="social-btn" target="_blank"><i class="fas fa-pen-nib"></i></a>`);
+      if (sns.discord)  snsButtons.push(`<a href="${sns.discord}"  class="social-btn" target="_blank"><i class="fab fa-discord"></i></a>`);
+      if (sns.carrot)   snsButtons.push(`<a href="${sns.carrot}"   class="social-btn" target="_blank"><i class="fas fa-carrot"></i></a>`);
+      if (sns.tiktok)   snsButtons.push(`<a href="${sns.tiktok}"   class="social-btn" target="_blank"><i class="fab fa-tiktok"></i></a>`);
 
       const snsHtml = snsButtons.length
         ? `<div class="social-links">${snsButtons.join("")}</div>`
         : "";
 
-      // ★ HTML 구조 생성 (준비해주신 액자 이미지 img/leader-frame.png 사용) ★
+      const applyHref = leader.link || "#";
+
       card.innerHTML = `
         <div class="profile-wrapper">
           <img src="${src}" alt="${leader.name || ""}" class="profile-user-img">
           <img src="img/leader-frame.png" alt="frame" class="profile-frame-overlay">
         </div>
-        
+
         <h2 class="leader-name">${leader.name || ""}</h2>
         <span class="leader-role">${leader.role || ""}</span>
         <div class="tags">${tagsHtml}</div>
         <p class="desc">${leader.introShort || ""}</p>
-        
+
         ${snsHtml}
-        
-        <a class="action-btn" href="${leader.link || "#"}" target="_blank" rel="noopener noreferrer">
-            상담 / 신청하기
+
+        <a class="action-btn" href="${applyHref}" target="_blank" rel="noopener noreferrer">
+          상담 / 신청하기
         </a>
       `;
 
@@ -467,11 +461,10 @@
     });
   }
 
-  // 실행
   loadData().then((data) => {
     const leaders = Array.isArray(data.leaders) ? data.leaders : [];
     const tripAds = Array.isArray(data.tripAds) ? data.tripAds : [];
-    const ads       = Array.isArray(data.ads) ? data.ads : [];
+    const ads     = Array.isArray(data.ads) ? data.ads : [];
 
     renderTopBanners(tripAds);
     renderLeaders(leaders);
