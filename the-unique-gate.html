@@ -298,3 +298,134 @@
         top: 18%;
         right: 10%;
         width: 30%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <!-- 배경 이미지 (화면 꽉 채움) -->
+    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
+
+    <!-- 로그인 카드 -->
+    <div class="page-wrap">
+      <main class="gate-card">
+        <div class="gate-inner">
+          <div class="gate-title-wrap">
+            <div class="gate-title">THE UNIQUE</div>
+            <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+          </div>
+
+          <form id="gate-form" class="form-body">
+            <div class="gate-input-wrap">
+              <input
+                id="member-id"
+                class="gate-input"
+                type="text"
+                autocomplete="off"
+                placeholder="회원번호"
+              />
+            </div>
+
+            <div class="gate-input-wrap">
+              <input
+                id="access-code"
+                class="gate-input"
+                type="password"
+                autocomplete="off"
+                placeholder="접속 코드"
+              />
+            </div>
+
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary">로그인</button>
+              <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
+            </div>
+
+            <div id="status" class="status"></div>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <!-- 마녀 & 박쥐 PNG -->
+    <div class="spirit spirit-witch">
+      <img src="img/witch-float.png" alt="">
+    </div>
+    <div class="spirit spirit-bat">
+      <img src="img/bat-float.png" alt="">
+    </div>
+  </div>
+
+  <script>
+    const CODES_URL = "unique-access-codes.json";
+    let validCodes = null;
+
+    async function loadCodes() {
+      try {
+        const res = await fetch(CODES_URL + "?_=" + Date.now());
+        if (!res.ok) throw new Error("codes fetch failed");
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          validCodes = [];
+          return;
+        }
+        validCodes = data
+          .filter(item => item && String(item.status || "active") !== "disabled")
+          .map(item => String(item.code || "").toLowerCase())
+          .filter(Boolean);
+        console.log("Loaded access codes:", validCodes.length);
+      } catch (err) {
+        console.error("접속 코드 목록 불러오기 실패:", err);
+        validCodes = [];
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadCodes);
+
+    const form = document.getElementById("gate-form");
+    const memberInput = document.getElementById("member-id");
+    const accessInput = document.getElementById("access-code");
+    const statusEl = document.getElementById("status");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const member = (memberInput.value || "").trim();
+      const rawCode = (accessInput.value || "").trim();
+
+      statusEl.textContent = "";
+      statusEl.className = "status";
+
+      if (!member && !rawCode) {
+        statusEl.textContent = "회원번호 또는 접속 코드 중 하나는 입력해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      if (member) {
+        statusEl.textContent = "회원번호로 로그인 되었습니다.";
+        statusEl.classList.add("status-ok");
+        return;
+      }
+
+      if (!validCodes) {
+        statusEl.textContent = "접속 코드 목록을 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      const code = rawCode.toLowerCase();
+      const ok = validCodes.includes(code);
+
+      if (!ok) {
+        statusEl.textContent = "접속 코드가 올바르지 않습니다. 초대한 리더에게 다시 확인해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      statusEl.textContent = "초대 코드로 입장합니다. 환영합니다.";
+      statusEl.classList.add("status-ok");
+    });
+  </script>
+</body>
+</html>
