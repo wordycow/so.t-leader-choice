@@ -348,73 +348,30 @@
   </div>
 
   <script>
-    const CODES_URL = "unique-access-codes.json";
-    let validCodes = null;
-
-    async function loadCodes() {
-      try {
-        const res = await fetch(CODES_URL + "?_=" + Date.now());
-        if (!res.ok) throw new Error("codes fetch failed");
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          validCodes = [];
-          return;
-        }
-        validCodes = data
-          .filter(item => item && String(item.status || "active") !== "disabled")
-          .map(item => String(item.code || "").toLowerCase())
-          .filter(Boolean);
-        console.log("Loaded access codes:", validCodes.length);
-      } catch (err) {
-        console.error("접속 코드 목록 불러오기 실패:", err);
-        validCodes = [];
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadCodes);
-
     const form = document.getElementById("gate-form");
-    const memberInput = document.getElementById("member-id");
-    const accessInput = document.getElementById("access-code");
+    const idInput = document.getElementById("login-id");
     const statusEl = document.getElementById("status");
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const member = (memberInput.value || "").trim();
-      const rawCode = (accessInput.value || "").trim();
 
+      const id = (idInput.value || "").trim();
       statusEl.textContent = "";
       statusEl.className = "status";
 
-      if (!member && !rawCode) {
-        statusEl.textContent = "회원번호 또는 접속 코드 중 하나는 입력해 주세요.";
+      if (!id) {
+        statusEl.textContent = "아이디를 입력해 주세요.";
         statusEl.classList.add("status-error");
         return;
       }
 
-      if (member) {
-        statusEl.textContent = "회원번호로 로그인 되었습니다.";
-        statusEl.classList.add("status-ok");
-        return;
-      }
-
-      if (!validCodes) {
-        statusEl.textContent = "접속 코드 목록을 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      const code = rawCode.toLowerCase();
-      const ok = validCodes.includes(code);
-
-      if (!ok) {
-        statusEl.textContent = "접속 코드가 올바르지 않습니다. 초대한 리더에게 다시 확인해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      statusEl.textContent = "초대 코드로 입장합니다. 환영합니다.";
+      // ✅ 지금은 아이디 검증용 서버가 없으니,
+      // 아이디만 있으면 일단 통과시키는 임시 버전
+      statusEl.textContent = "로그인 되었습니다.";
       statusEl.classList.add("status-ok");
+
+      // TODO: 나중에 실제 멤버 전용 메인 페이지 생기면 여기로 이동
+      // location.href = "the-unique-home.html";
     });
   </script>
 </body>
