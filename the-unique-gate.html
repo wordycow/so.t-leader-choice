@@ -52,8 +52,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;       /* 화면 비율과 상관없이 꽉 채우기 */
-      /* 필요하면 달 기준으로 살짝 위치 조절
-         object-position: 75% 25%; 이런 식으로 */
     }
 
     /* 로그인 카드 중앙 정렬 */
@@ -73,16 +71,16 @@
       padding: 28px 26px 22px;
 
       /* ✨ 어두운 유리 패널 – 마지막 숫자(0.2)가 투명도 */
-        background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(250, 204, 21, 0.95);
-  box-shadow:
-    0 0 14px rgba(250, 204, 21, 0.45),
-    0 26px 70px rgba(0,0,0,0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(250, 204, 21, 0.95);
+      box-shadow:
+        0 0 14px rgba(250, 204, 21, 0.45),
+        0 26px 70px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
 
-  overflow: visible;
-}
+      overflow: visible;
+    }
 
     .gate-inner {
       position: relative;
@@ -226,55 +224,6 @@
       color: #fecaca;
     }
 
-    .status-ok {
-      color: #bbf7d0;
-    }
-
-    /* ─────────────  마녀 & 박쥐  ───────────── */
-
-    .spirit {
-      position: absolute;   /* .scene 기준 */
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    .spirit img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    /* ▼▼▼ 여기 숫자를 바꾸면 위치/크기/움직임이 바뀜 ▼▼▼ */
-
-    /* 마녀 – 달 앞을 나는 느낌 (달 중심 기준 대략값) */
-    .spirit-witch {
-  top: 30%;     /* 세로 위치 (0% 맨 위 ~ 100% 맨 아래) */
-  right: 22%;   /* 가로 위치 (0% 오른쪽 끝, 숫자 커질수록 왼쪽으로) */
-  width: 3%;    /* 전체 화면 대비 크기 */
-
-  animation: witchFloat 5s ease-in-out infinite alternate;
-}
-
-@keyframes witchFloat {
-  from { transform: translateY(5px) translateX(0); }
-  to   { transform: translateY(-20px) translateX(6px); }
-  /* translateY, translateX 수치 = 흔들리는 폭 */
-}
-
-/* 박쥐 무리 – 달 오른쪽 아래 쪽 */
-.spirit-bat {
-  top: -20%;
-  right: 0%;
-  width: 43%;
-
-  animation: batFloat 2s ease-in-out infinite alternate;
-}
-
-    @keyframes batFloat {
-      from { transform: translateY(8px); }
-      to   { transform: translateY(22px); }
-    }
-
     @media (max-width: 768px) {
       .gate-card {
         padding: 24px 20px 18px;
@@ -287,24 +236,12 @@
       .form-body {
         max-width: 100%;
       }
-
-      /* 모바일에서 위치·크기 별도 조정하고 싶으면 여기 숫자 만지면 됨 */
-      .spirit-witch {
-        top: 26%;
-        right: 20%;
-        width: 10%;
-      }
-      .spirit-bat {
-        top: 18%;
-        right: 10%;
-        width: 30%;
-      }
     }
   </style>
 </head>
 <body>
   <div class="scene">
-    <!-- 배경 이미지 (화면 꽉 채움) -->
+    <!-- 배경 이미지 -->
     <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
 
     <!-- 로그인 카드 -->
@@ -317,33 +254,25 @@
           </div>
 
           <form id="gate-form" class="form-body">
-  <div class="gate-input-wrap">
-    <input
-      id="login-id"
-      class="gate-input"
-      type="text"
-      autocomplete="off"
-      placeholder="아이디"
-    />
-  </div>
+            <div class="gate-input-wrap">
+              <input
+                id="login-id"
+                class="gate-input"
+                type="text"
+                autocomplete="off"
+                placeholder="아이디"
+              />
+            </div>
 
-  <div class="btn-row">
-    <button type="submit" class="btn btn-primary">로그인</button>
-    <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
-  </div>
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary">로그인</button>
+              <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
+            </div>
 
-  <div id="status" class="status"></div>
-  </form>
+            <div id="status" class="status"></div>
+          </form>
         </div>
       </main>
-    </div>
-
-    <!-- 마녀 & 박쥐 PNG -->
-    <div class="spirit spirit-witch">
-      <img src="img/witch-float.png" alt="">
-    </div>
-    <div class="spirit spirit-bat">
-      <img src="img/bat-float.png" alt="">
     </div>
   </div>
 
@@ -365,13 +294,11 @@
         return;
       }
 
-      // ✅ 지금은 아이디 검증용 서버가 없으니,
-      // 아이디만 있으면 일단 통과시키는 임시 버전
-      statusEl.textContent = "로그인 되었습니다.";
-      statusEl.classList.add("status-ok");
-
-      // TODO: 나중에 실제 멤버 전용 메인 페이지 생기면 여기로 이동
-      // location.href = "the-unique-home.html";
+      // ✅ 아이디가 비어있지만 않으면 메인 화면으로 이동
+      // repo 기준 같은 폴더라 상대 경로로 이동해도 됨
+      window.location.href = "the-unique-main.html";
+      // 또는 전체 URL로 쓰고 싶으면 아래로:
+      // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
     });
   </script>
 </body>
