@@ -26,48 +26,70 @@
   <style>
     * { box-sizing: border-box; }
 
-   body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  color: #f9fafb;
-  min-height: 100vh;
+    /* ─────────────────────────────────
+       전체 바깥 – 검은 배경 + scene 가운데 정렬
+       ───────────────────────────────── */
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
+      min-height: 100vh;
 
-  /* 🔸 어두운 그라디언트 제거, 이미지만 사용 */
-  background-image: url("img/bg-unique-gate-clean.jpg");
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-    .page-wrap {
-      width: 100%;
-      max-width: 520px;
-      padding: 24px 12px;
+      background: #000;   /* 화면 바깥은 그냥 검정 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* 🔹 카드: 더 투명하게 → 배경 많이 보이게 */
-        /* 로그인 카드 – 배경 완전 투명 */
-    
+    /* ─────────────────────────────────
+       16:9 비율 장면(scene) 박스
+       이 안 기준으로 마녀/박쥐/카드 위치 고정
+       ───────────────────────────────── */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;        /* PC에서 최대 가로 길이 */
+      aspect-ratio: 16 / 9;     /* 비율 고정(16:9) */
+      overflow: hidden;
+    }
+
+    /* 장면 안에 들어가는 배경 이미지 */
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 로그인 카드 감싸는 영역 – 중앙 정렬 */
+    .page-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 12px;
+      z-index: 10;
+    }
+
+    /* 로그인 카드 */
+    .gate-card {
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
 
-      /* 🔹 배경/블러 모두 제거 → 완전 투명 */
-     background: rgba(0, 0, 0, 0.2);      /* ← 마지막 0.45가 투명도 */
-  border: 1px solid rgba(250, 204, 21, 0.95);
-  box-shadow:
-    0 0 14px rgba(250, 204, 21, 0.45),
-    0 26px 70px rgba(0,0,0,0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+      /* ✨ 어두운 유리 패널 – 마지막 숫자(0.2)가 투명도 */
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(250, 204, 21, 0.95);
+      box-shadow:
+        0 0 14px rgba(250, 204, 21, 0.45),
+        0 26px 70px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
 
-  overflow: visible;
-}
+      overflow: visible;
+    }
 
     .gate-inner {
       position: relative;
@@ -215,19 +237,13 @@
       color: #bbf7d0;
     }
 
-    /* 로그인 카드/내용은 항상 배경 요소보다 위에 오도록 */
-    .page-wrap,
-    .gate-card,
-    .gate-inner {
-      position: relative;
-      z-index: 10;
-    }
-
-    /* 🔮 떠다니는 마녀 & 박쥐 – 배경 위, 로그인 카드 뒤 */
+    /* ─────────────────────────────────
+       마녀 / 박쥐 – scene 안에서 위치 고정
+       ───────────────────────────────── */
     .spirit {
-      position: fixed;
+      position: absolute;      /* 이제 뷰포트가 아니라 .scene 기준 */
       pointer-events: none;
-      z-index: 0; /* 카드보다 뒤 */
+      z-index: 5;
     }
 
     .spirit img {
@@ -236,33 +252,45 @@
       height: auto;
     }
 
-    /* 마녀: 지금 자리 그대로, 살짝 흔들림 */
+    /* ▼▼▼ 여기 숫자를 바꾸면 "위치 / 크기 / 움직임"이 바뀜 ▼▼▼ */
+
+    /* 마녀: 달 근처 */
     .spirit-witch {
-      top: 30vh;         /* 달 가운데 근처 */
-      right: 21vw;
-      width: 70px;
+      top: 32%;          /* 세로 위치 (0% = 맨 위, 100% = 맨 아래) */
+      right: 23%;        /* 가로 위치 (0% = 오른쪽 끝, 값 키우면 왼쪽으로) */
+      width: 7%;         /* 전체 장면 대비 크기(퍼센트) */
+
       animation: witchFloat 5s ease-in-out infinite alternate;
     }
 
     @keyframes witchFloat {
-      from { transform: translateY(5px) translateX(0); }
-      to   { transform: translateY(-20px) translateX(5px); }
+      from { transform: translateY(4px) translateX(0); }
+      to   { transform: translateY(-20px) translateX(6px); }
+      /* ↑ 여기 숫자(20px, 6px)를 바꾸면 위/옆으로 흔들리는 폭이 변함 */
     }
 
-    /* 박쥐: 조금 작게, 카드 뒤에서 위아래로 크게 */
+    /* 박쥐 무리 */
     .spirit-bat {
-      top: -18vh;         /* 하늘 쪽 */
-      right: 0vw;       /* 성 왼쪽 위 하늘 */
-      width: 790px;
-      animation: batFloat 1.5s ease-in-out infinite alternate;
+      top: 5%;           /* 세로 위치 */
+      right: 8%;         /* 가로 위치 */
+      width: 40%;        /* 크기 */
+
+      animation: batFloat 2s ease-in-out infinite alternate;
     }
 
     @keyframes batFloat {
       from { transform: translateY(10px); }
-      to   { transform: translateY(20px); }
+      to   { transform: translateY(22px); }
+      /* ↑ 여기 숫자(22px)를 바꾸면 위아래로 출렁이는 폭이 변함 */
     }
 
-    @media (max-width: 480px) {
+    /* ─────────────────────────────────
+       반응형 – 화면 좁을 때 살짝 조정
+       ───────────────────────────────── */
+    @media (max-width: 768px) {
+      .scene {
+        max-width: 100%;
+      }
       .gate-card {
         padding: 24px 20px 18px;
         border-radius: 22px;
@@ -274,68 +302,84 @@
       .form-body {
         max-width: 100%;
       }
+
+      /* 모바일에서 위치/크기 조금 더 키우고 내려주고 싶으면 여기 조정 */
+      .spirit-witch {
+        top: 30%;
+        right: 20%;
+        width: 11%;
+      }
+      .spirit-bat {
+        top: 8%;
+        right: 5%;
+        width: 50%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrap">
-    <main class="gate-card">
-      <div class="gate-inner">
-        <div class="gate-title-wrap">
-          <div class="gate-title">THE UNIQUE</div>
-          <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+  <div class="scene">
+    <!-- 장면 배경 이미지 -->
+    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
+
+    <!-- 로그인 카드 -->
+    <div class="page-wrap">
+      <main class="gate-card">
+        <div class="gate-inner">
+          <div class="gate-title-wrap">
+            <div class="gate-title">THE UNIQUE</div>
+            <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+          </div>
+
+          <!-- 로그인: 회원번호 / 접속 코드 -->
+          <form id="gate-form" class="form-body">
+            <div class="gate-input-wrap">
+              <input
+                id="member-id"
+                class="gate-input"
+                type="text"
+                autocomplete="off"
+                placeholder="회원번호"
+              />
+            </div>
+
+            <div class="gate-input-wrap">
+              <input
+                id="access-code"
+                class="gate-input"
+                type="password"
+                autocomplete="off"
+                placeholder="접속 코드"
+              />
+            </div>
+
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary">로그인</button>
+
+              <!-- 회원가입 페이지로 이동 -->
+              <a href="the-unique-signup.html" class="btn btn-ghost">
+                회원가입
+              </a>
+            </div>
+
+            <div id="status" class="status"></div>
+          </form>
         </div>
+      </main>
+    </div>
 
-        <!-- 로그인: 회원번호 / 접속 코드 -->
-        <form id="gate-form" class="form-body">
-          <div class="gate-input-wrap">
-            <input
-              id="member-id"
-              class="gate-input"
-              type="text"
-              autocomplete="off"
-              placeholder="회원번호"
-            />
-          </div>
-
-          <div class="gate-input-wrap">
-            <input
-              id="access-code"
-              class="gate-input"
-              type="password"
-              autocomplete="off"
-              placeholder="접속 코드"
-            />
-          </div>
-
-          <div class="btn-row">
-            <button type="submit" class="btn btn-primary">로그인</button>
-
-            <!-- 회원가입 페이지로 이동 -->
-            <a href="the-unique-signup.html" class="btn btn-ghost">
-              회원가입
-            </a>
-          </div>
-
-          <div id="status" class="status"></div>
-        </form>
-      </div>
-    </main>
-  </div>
-
-  <!-- 떠다니는 마녀 & 박쥐 (PNG는 img/witch-float.png, img/bat-float.png 로 준비) -->
-  <div class="spirit spirit-witch">
-    <img src="img/witch-float.png" alt="">
-  </div>
-  <div class="spirit spirit-bat">
-    <img src="img/bat-float.png" alt="">
+    <!-- 마녀 & 박쥐 -->
+    <div class="spirit spirit-witch">
+      <img src="img/witch-float.png" alt="">
+    </div>
+    <div class="spirit spirit-bat">
+      <img src="img/bat-float.png" alt="">
+    </div>
   </div>
 
   <script>
     /* ====== 접속 코드 JSON 로딩 ====== */
-    // 접속 코드 JSON 파일 위치 (같은 폴더에 unique-access-codes.json)
     const CODES_URL = "unique-access-codes.json";
-
     let validCodes = null;   // 로딩된 코드 목록(소문자)
 
     async function loadCodes() {
@@ -385,8 +429,6 @@
       if (member) {
         statusEl.textContent = "회원번호로 로그인 되었습니다.";
         statusEl.classList.add("status-ok");
-        // TODO: 실제 멤버 전용 페이지가 생기면 여기서 이동
-        // location.href = "https://example.com/the-unique-home";
         return;
       }
 
@@ -408,8 +450,6 @@
 
       statusEl.textContent = "초대 코드로 입장합니다. 환영합니다.";
       statusEl.classList.add("status-ok");
-      // TODO: 여기서도 원하는 페이지로 이동 가능
-      // location.href = "https://example.com/the-unique-home";
     });
   </script>
 </body>
