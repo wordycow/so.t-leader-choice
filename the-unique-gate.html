@@ -26,43 +26,37 @@
   <style>
     * { box-sizing: border-box; }
 
-    /* ─────────────────────────────────
-       전체 바깥 – 검은 배경 + scene 가운데 정렬
-       ───────────────────────────────── */
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    /* 화면 전체 꽉 채우는 컨테이너 */
+    body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #f9fafb;
-      min-height: 100vh;
-
-      background: #000;   /* 화면 바깥은 그냥 검정 */
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #000; /* 혹시라도 이미지 안 뜰 때 */
     }
 
-    /* ─────────────────────────────────
-       16:9 비율 장면(scene) 박스
-       이 안 기준으로 마녀/박쥐/카드 위치 고정
-       ───────────────────────────────── */
     .scene {
-      position: relative;
-      width: 100%;
-      max-width: 1280px;        /* PC에서 최대 가로 길이 */
-      aspect-ratio: 16 / 9;     /* 비율 고정(16:9) */
-      overflow: hidden;
+      position: fixed;
+      inset: 0;              /* top:0; right:0; bottom:0; left:0; */
+      overflow: hidden;      /* 밖으로 튀어나오는 거 잘라내기 */
     }
 
-    /* 장면 안에 들어가는 배경 이미지 */
+    /* 배경 이미지: 화면 꽉 채우기 (cover) */
     .scene-bg {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: cover;       /* 화면 비율과 상관없이 꽉 채우기 */
+      /* 필요하면 달 기준으로 살짝 위치 조절
+         object-position: 75% 25%; 이런 식으로 */
     }
 
-    /* 로그인 카드 감싸는 영역 – 중앙 정렬 */
+    /* 로그인 카드 중앙 정렬 */
     .page-wrap {
       position: absolute;
       inset: 0;
@@ -73,7 +67,6 @@
       z-index: 10;
     }
 
-    /* 로그인 카드 */
     .gate-card {
       position: relative;
       border-radius: 26px;
@@ -237,11 +230,10 @@
       color: #bbf7d0;
     }
 
-    /* ─────────────────────────────────
-       마녀 / 박쥐 – scene 안에서 위치 고정
-       ───────────────────────────────── */
+    /* ─────────────  마녀 & 박쥐  ───────────── */
+
     .spirit {
-      position: absolute;      /* 이제 뷰포트가 아니라 .scene 기준 */
+      position: absolute;   /* .scene 기준 */
       pointer-events: none;
       z-index: 5;
     }
@@ -252,45 +244,38 @@
       height: auto;
     }
 
-    /* ▼▼▼ 여기 숫자를 바꾸면 "위치 / 크기 / 움직임"이 바뀜 ▼▼▼ */
+    /* ▼▼▼ 여기 숫자를 바꾸면 위치/크기/움직임이 바뀜 ▼▼▼ */
 
-    /* 마녀: 달 근처 */
+    /* 마녀 – 달 앞을 나는 느낌 (달 중심 기준 대략값) */
     .spirit-witch {
-      top: 32%;          /* 세로 위치 (0% = 맨 위, 100% = 맨 아래) */
-      right: 23%;        /* 가로 위치 (0% = 오른쪽 끝, 값 키우면 왼쪽으로) */
-      width: 7%;         /* 전체 장면 대비 크기(퍼센트) */
+      top: 24%;     /* 세로 위치 (0% 맨 위 ~ 100% 맨 아래) */
+      right: 18%;   /* 가로 위치 (0% 오른쪽 끝, 숫자 커질수록 왼쪽으로) */
+      width: 6%;    /* 전체 화면 대비 크기 */
 
       animation: witchFloat 5s ease-in-out infinite alternate;
     }
 
     @keyframes witchFloat {
-      from { transform: translateY(4px) translateX(0); }
+      from { transform: translateY(5px) translateX(0); }
       to   { transform: translateY(-20px) translateX(6px); }
-      /* ↑ 여기 숫자(20px, 6px)를 바꾸면 위/옆으로 흔들리는 폭이 변함 */
+      /* translateY, translateX 수치 = 흔들리는 폭 */
     }
 
-    /* 박쥐 무리 */
+    /* 박쥐 무리 – 달 오른쪽 아래 쪽 */
     .spirit-bat {
-      top: 5%;           /* 세로 위치 */
-      right: 8%;         /* 가로 위치 */
-      width: 40%;        /* 크기 */
+      top: 18%;
+      right: 13%;
+      width: 20%;
 
       animation: batFloat 2s ease-in-out infinite alternate;
     }
 
     @keyframes batFloat {
-      from { transform: translateY(10px); }
+      from { transform: translateY(8px); }
       to   { transform: translateY(22px); }
-      /* ↑ 여기 숫자(22px)를 바꾸면 위아래로 출렁이는 폭이 변함 */
     }
 
-    /* ─────────────────────────────────
-       반응형 – 화면 좁을 때 살짝 조정
-       ───────────────────────────────── */
     @media (max-width: 768px) {
-      .scene {
-        max-width: 100%;
-      }
       .gate-card {
         padding: 24px 20px 18px;
         border-radius: 22px;
@@ -303,154 +288,13 @@
         max-width: 100%;
       }
 
-      /* 모바일에서 위치/크기 조금 더 키우고 내려주고 싶으면 여기 조정 */
+      /* 모바일에서 위치·크기 별도 조정하고 싶으면 여기 숫자 만지면 됨 */
       .spirit-witch {
-        top: 30%;
+        top: 26%;
         right: 20%;
-        width: 11%;
+        width: 10%;
       }
       .spirit-bat {
-        top: 8%;
-        right: 5%;
-        width: 50%;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="scene">
-    <!-- 장면 배경 이미지 -->
-    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
-
-    <!-- 로그인 카드 -->
-    <div class="page-wrap">
-      <main class="gate-card">
-        <div class="gate-inner">
-          <div class="gate-title-wrap">
-            <div class="gate-title">THE UNIQUE</div>
-            <div class="gate-subtitle-en">Invitation-only access for action takers</div>
-          </div>
-
-          <!-- 로그인: 회원번호 / 접속 코드 -->
-          <form id="gate-form" class="form-body">
-            <div class="gate-input-wrap">
-              <input
-                id="member-id"
-                class="gate-input"
-                type="text"
-                autocomplete="off"
-                placeholder="회원번호"
-              />
-            </div>
-
-            <div class="gate-input-wrap">
-              <input
-                id="access-code"
-                class="gate-input"
-                type="password"
-                autocomplete="off"
-                placeholder="접속 코드"
-              />
-            </div>
-
-            <div class="btn-row">
-              <button type="submit" class="btn btn-primary">로그인</button>
-
-              <!-- 회원가입 페이지로 이동 -->
-              <a href="the-unique-signup.html" class="btn btn-ghost">
-                회원가입
-              </a>
-            </div>
-
-            <div id="status" class="status"></div>
-          </form>
-        </div>
-      </main>
-    </div>
-
-    <!-- 마녀 & 박쥐 -->
-    <div class="spirit spirit-witch">
-      <img src="img/witch-float.png" alt="">
-    </div>
-    <div class="spirit spirit-bat">
-      <img src="img/bat-float.png" alt="">
-    </div>
-  </div>
-
-  <script>
-    /* ====== 접속 코드 JSON 로딩 ====== */
-    const CODES_URL = "unique-access-codes.json";
-    let validCodes = null;   // 로딩된 코드 목록(소문자)
-
-    async function loadCodes() {
-      try {
-        const res = await fetch(CODES_URL + "?_=" + Date.now());
-        if (!res.ok) throw new Error("codes fetch failed");
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          validCodes = [];
-          return;
-        }
-        validCodes = data
-          .filter(item => item && String(item.status || "active") !== "disabled")
-          .map(item => String(item.code || "").toLowerCase())
-          .filter(Boolean);
-        console.log("Loaded access codes:", validCodes.length);
-      } catch (err) {
-        console.error("접속 코드 목록 불러오기 실패:", err);
-        validCodes = [];
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadCodes);
-
-    /* ====== 로그인 처리 ====== */
-    const form = document.getElementById("gate-form");
-    const memberInput = document.getElementById("member-id");
-    const accessInput = document.getElementById("access-code");
-    const statusEl = document.getElementById("status");
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const member = (memberInput.value || "").trim();
-      const rawCode = (accessInput.value || "").trim();
-
-      statusEl.textContent = "";
-      statusEl.className = "status";
-
-      // 둘 다 비어 있으면 에러
-      if (!member && !rawCode) {
-        statusEl.textContent = "회원번호 또는 접속 코드 중 하나는 입력해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      // 회원번호가 있으면 → 가입자 로그인으로 통과 (코드 검사 안 함)
-      if (member) {
-        statusEl.textContent = "회원번호로 로그인 되었습니다.";
-        statusEl.classList.add("status-ok");
-        return;
-      }
-
-      // 접속 코드만 있는 경우 → JSON에서 불러온 목록으로 검증
-      if (!validCodes) {
-        statusEl.textContent = "접속 코드 목록을 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      const code = rawCode.toLowerCase();
-      const ok = validCodes.includes(code);
-
-      if (!ok) {
-        statusEl.textContent = "접속 코드가 올바르지 않습니다. 초대한 리더에게 다시 확인해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      statusEl.textContent = "초대 코드로 입장합니다. 환영합니다.";
-      statusEl.classList.add("status-ok");
-    });
-  </script>
-</body>
-</html>
+        top: 18%;
+        right: 10%;
+        width: 30%;
