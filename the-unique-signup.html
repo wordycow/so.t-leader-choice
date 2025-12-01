@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>THE UNIQUE 회원가입</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.70" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     * {
@@ -18,17 +18,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      /* 🔥 배경 복구: 예전에 쓰던 파일명으로 맞춰서 사용 */
-      background: url("img/bg-unique-signup.jpg") center center / cover no-repeat fixed;
+      background: url("bg_wallpaper.jpg") center center / cover no-repeat fixed;
     }
 
-    .signup-wrap {
+    .panel-wrap {
       width: 100%;
       max-width: 640px;
       padding: 32px 40px 40px;
-      border-radius: 28px;
-      background: radial-gradient(circle at top, rgba(255,140,0,0.35), transparent 55%)
-                  ,rgba(3, 7, 18, 0.88);
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at top, rgba(255,140,0,0.35), transparent 55%),
+        rgba(3, 7, 18, 0.9);
       box-shadow:
         0 0 40px rgba(0,0,0,0.8),
         0 0 80px rgba(255, 120, 40, 0.3);
@@ -74,7 +74,7 @@
       height: 44px;
       display: flex;
       align-items: center;
-      background: linear-gradient(135deg, #020617, #020617);
+      background: #020617;
       box-shadow:
         inset 0 0 0 1px rgba(148,163,184,0.65),
         0 0 16px rgba(15,23,42,0.8);
@@ -101,7 +101,7 @@
       cursor: pointer;
     }
 
-    /* 🔥 드롭다운 펼쳤을 때 옵션 배경/글자색 */
+    /* 드롭다운 펼쳤을 때도 어두운 배경 + 흰 글자 */
     .select-field option {
       background: #020617;
       color: #f9fafb;
@@ -161,7 +161,7 @@
     }
 
     @media (max-width: 640px) {
-      .signup-wrap {
+      .panel-wrap {
         margin: 16px;
         padding: 24px 18px 26px;
       }
@@ -173,18 +173,18 @@
   </style>
 </head>
 <body>
-  <div class="signup-wrap">
+  <div class="panel-wrap">
     <div class="title-en">THE UNIQUE</div>
     <div class="subtitle">MEMBERSHIP REGISTRATION</div>
 
-    <!-- 🔥 구글폼으로 전송 + 숨겨진 iframe으로 보내기 -->
+    <!-- 🔥 회원가입 폼: 디자인 그대로, 구글폼으로만 전송 -->
     <form
       id="uniqueSignupForm"
       action="https://docs.google.com/forms/d/1uGN3KP6ERWFpON1uNLiXxX1c0AVijEqDFfzoPohQ9_Y/formResponse"
       method="POST"
       target="hidden_iframe"
     >
-      <!-- 아이디 → entry.877086558 -->
+      <!-- 아이디 -->
       <div>
         <div class="field-label">아이디</div>
         <div class="input-shell">
@@ -198,7 +198,7 @@
         </div>
       </div>
 
-      <!-- 이름 → entry.1498135098 -->
+      <!-- 이름 -->
       <div>
         <div class="field-label">이름</div>
         <div class="input-shell">
@@ -212,7 +212,7 @@
         </div>
       </div>
 
-      <!-- 모바일 번호 → entry.1444913169 -->
+      <!-- 전화번호(모바일) -->
       <div>
         <div class="field-label">전화번호</div>
         <div class="input-shell">
@@ -226,10 +226,10 @@
         </div>
       </div>
 
-      <!-- 일반 전화번호(선택) → entry.1424661284 (안 쓰면 비워서 전송) -->
+      <!-- 구글폼에 있는 '전화번호' 질문은 안 쓰니까 빈값으로 hidden -->
       <input type="hidden" name="entry.1424661284" value="" />
 
-      <!-- 소속 선택 → entry.1114746043 -->
+      <!-- 소속 선택 -->
       <div>
         <div class="field-label">소속 선택</div>
         <div class="input-shell">
@@ -251,7 +251,7 @@
         </div>
       </div>
 
-      <!-- 구글폼에서 쓰는 hidden 값들 -->
+      <!-- 구글폼 내부 hidden 값 -->
       <input type="hidden" name="fvv" value="1" />
       <input type="hidden" name="partialResponse" value="[null,null,&quot;1256943034192069170&quot;]" />
       <input type="hidden" name="pageHistory" value="0" />
@@ -268,16 +268,15 @@
       </div>
     </form>
 
-    <!-- 🔥 구글폼 응답은 여기로만 들어가고, 화면에는 안 보임 -->
+    <!-- 구글폼 응답은 여기로만 날아가고, 화면에는 안 보임 -->
     <iframe name="hidden_iframe" style="display:none;"></iframe>
   </div>
 
   <script>
-    // 제출 후 로그인 페이지로 리다이렉트
+    // 제출 후 로그인 페이지로 이동
     document.getElementById("uniqueSignupForm").addEventListener("submit", function () {
-      // 구글폼에 전송할 약간의 시간 여유를 줌
       setTimeout(function () {
-        // 여기 주소를 실제 로그인 페이지 주소로 변경해도 됨
+        // ⬇ 로그인 화면 파일 이름/주소로 바꾸면 됨
         window.location.href = "the-unique-login.html";
       }, 500);
     });
