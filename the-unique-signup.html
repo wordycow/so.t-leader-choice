@@ -1,340 +1,373 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <title>The Unique – 회원가입</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <title>The Unique – 회원가입</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+  <style>
+    * { box-sizing: border-box; }
 
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-            color: #f9fafb;
-            min-height: 100vh;
-            /* 🔸 배경 이미지 – 파일명 필요하면 바꿔도 됨 */
-            background-image: url("img/bg-unique-signup.jpg");
-            /* 위 파일 없으면 아래 줄로 교체:
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
+      min-height: 100vh;
+
+      /* 🔸 배경 이미지 – 필요하면 파일명 변경 */
+      background-image: url("img/bg-unique-signup.jpg");
+      /* 없으면 아래 줄로 교체:
          background-image: url("img/bg-unique-gate-clean.jpg"); */
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
 
-        .page-wrap {
-            width: 100%;
-            max-width: 520px;
-            padding: 24px 12px;
-        }
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-        /* 카드(유리 패널) */
-        .gate-card {
-            position: relative;
-            border-radius: 26px;
-            padding: 28px 26px 22px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(250, 204, 21, 0.95);
-            box-shadow: 0 0 14px rgba(250, 204, 21, 0.45), 0 26px 70px rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            overflow: visible;
-        }
+    .page-wrap {
+      width: 100%;
+      max-width: 520px;
+      padding: 24px 12px;
+    }
 
-        .gate-inner {
-            position: relative;
-            z-index: 1;
-        }
+    /* 카드(유리 패널) */
+    .gate-card {
+      position: relative;
+      border-radius: 26px;
+      padding: 28px 26px 22px;
 
-        .gate-title-wrap {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(250, 204, 21, 0.95);
+      box-shadow:
+        0 0 14px rgba(250, 204, 21, 0.45),
+        0 26px 70px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
 
-        .gate-title {
-            font-family: "Cinzel", "Times New Roman", serif;
-            font-weight: 700;
-            font-size: 40px;
-            letter-spacing: 0.24em;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 10px rgba(250, 204, 21, 0.9), 0 4px 18px rgba(0,0,0,1);
-        }
+      overflow: visible;
+    }
 
-        .gate-subtitle-en {
-            font-size: 11px;
-            color: #f9fafb;
-            opacity: 0.9;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
-        }
+    .gate-inner { position: relative; z-index: 1; }
 
-        .form-body {
-            max-width: 360px;
-            margin: 0 auto;
-        }
+    .gate-title-wrap {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-        .form-group {
-            margin-bottom: 10px;
-        }
+    .gate-title {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 40px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
 
-        .form-input {
-            width: 100%;
-            padding: 8px 11px;
-            border-radius: 999px;
-            border: 1px solid rgba(55,65,81,0.9);
-            background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
-            color: #f9fafb;
-            font-size: 13px;
-            outline: none;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.75) inset, 0 0 0 1px rgba(0,0,0,0.55);
-            appearance: none; /* select도 input처럼 보이게 */
-        }
+      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
 
-            .form-input::placeholder {
-                color: #9ca3af; /* 아이디/이름/전화번호 placeholder 색 */
-            }
+      text-shadow:
+        0 0 10px rgba(250, 204, 21, 0.9),
+        0 4px 18px rgba(0,0,0,1);
+    }
 
-            .form-input:focus {
-                border-color: rgba(248,181,84,0.95);
-                box-shadow: 0 0 0 1px rgba(248,181,84,0.6), 0 6px 22px rgba(0,0,0,0.9) inset;
-            }
+    .gate-subtitle-en {
+      font-size: 11px;
+      color: #f9fafb;
+      opacity: 0.9;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 6px rgba(0,0,0,0.6);
+    }
 
-        /* 🔹 소속 선택 드롭다운 */
-        .form-select {
-            cursor: pointer;
-            color: #9ca3af; /* 기본: placeholder 색 */
-        }
+    .form-body {
+      max-width: 360px;
+      margin: 0 auto;
+    }
 
-            .form-select.has-value {
-                color: #f9fafb; /* 실제 값 선택 시 */
-            }
+    .form-group { margin-bottom: 10px; }
 
-            .form-select option {
-                background-color: #020617;
-                color: #f9fafb;
-            }
+    .form-input {
+      width: 100%;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
+      color: #f9fafb;
+      font-size: 13px;
+      outline: none;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.75) inset,
+        0 0 0 1px rgba(0,0,0,0.55);
+      appearance: none; /* select도 input처럼 보이게 */
+    }
 
-                .form-select option:first-child {
-                    color: #9ca3af;
-                }
+    .form-input::placeholder {
+      color: #9ca3af;  /* 아이디/이름/전화번호 placeholder 색 */
+    }
 
-            .form-select:hover,
-            .form-select:focus {
-                border-color: rgba(248,181,84,0.95);
-                box-shadow: 0 0 0 1px rgba(248,181,84,0.8), 0 6px 18px rgba(0,0,0,0.9);
-            }
+    .form-input:focus {
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.6),
+        0 6px 22px rgba(0,0,0,0.9) inset;
+    }
 
-        .btn-row {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 16px;
-            margin-bottom: 4px;
-        }
+    /* 🔹 소속 선택 드롭다운 */
+    .form-select {
+      cursor: pointer;
+      color: #9ca3af;           /* 기본: placeholder 색 */
+    }
+    .form-select.has-value {
+      color: #f9fafb;           /* 실제 값 선택 시 */
+    }
+    .form-select option {
+      background-color: #020617;
+      color: #f9fafb;
+    }
+    .form-select option:first-child {
+      color: #9ca3af;
+    }
+    .form-select:hover,
+    .form-select:focus {
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.8),
+        0 6px 18px rgba(0,0,0,0.9);
+    }
 
-        .btn {
-            width: 100%;
-            padding: 10px 10px;
-            border-radius: 999px;
-            border: 1px solid transparent;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.10em;
-            text-transform: uppercase;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
-        }
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+      margin-bottom: 4px;
+    }
 
-        .btn-primary {
-            background: radial-gradient(circle at top, #f97316, #7f1d1d);
-            border-color: rgba(248,181,84,0.95);
-            color: #fef2f2;
-            box-shadow: 0 10px 26px rgba(0,0,0,1), 0 0 0 1px rgba(0,0,0,0.5) inset;
-        }
+    .btn {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+    .btn-primary {
+      background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      border-color: rgba(248,181,84,0.95);
+      color: #fef2f2;
+      box-shadow:
+        0 10px 26px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 16px 38px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
+    }
+    .btn-ghost {
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      border-color: rgba(55,65,81,1);
+      color: #e5e7eb;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.9);
+    }
+    .btn-ghost:hover {
+      background: rgba(15,23,42,1);
+      border-color: rgba(148,163,184,0.9);
+    }
 
-            .btn-primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 16px 38px rgba(0,0,0,1), 0 0 0 1px rgba(0,0,0,0.5) inset;
-            }
+    .status {
+      min-height: 18px;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 4px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+    .status-error { color: #fecaca; }
+    .status-ok    { color: #bbf7d0; }
 
-        .btn-ghost {
-            background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
-            border-color: rgba(55,65,81,1);
-            color: #e5e7eb;
-            box-shadow: 0 8px 22px rgba(0,0,0,0.9);
-        }
-
-            .btn-ghost:hover {
-                background: rgba(15,23,42,1);
-                border-color: rgba(148,163,184,0.9);
-            }
-
-        .status {
-            min-height: 18px;
-            font-size: 11px;
-            text-align: center;
-            margin-top: 4px;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-        }
-
-        .status-error {
-            color: #fecaca;
-        }
-
-        .status-ok {
-            color: #bbf7d0;
-        }
-
-        @media (max-width: 480px) {
-            .gate-card {
-                padding: 22px 18px 18px;
-                border-radius: 22px;
-            }
-
-            .gate-title {
-                font-size: 32px;
-                letter-spacing: 0.22em;
-            }
-
-            .form-body {
-                max-width: 100%;
-            }
-
-            .btn-row {
-                gap: 8px;
-            }
-        }
-    </style>
+    @media (max-width: 480px) {
+      .gate-card {
+        padding: 22px 18px 18px;
+        border-radius: 22px;
+      }
+      .gate-title {
+        font-size: 32px;
+        letter-spacing: 0.22em;
+      }
+      .form-body { max-width: 100%; }
+      .btn-row   { gap: 8px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="page-wrap">
-        <main class="gate-card">
-            <div class="gate-inner">
-                <div class="gate-title-wrap">
-                    <div class="gate-title">THE UNIQUE</div>
-                    <div class="gate-subtitle-en">MEMBERSHIP REGISTRATION</div>
-                </div>
+  <div class="page-wrap">
+    <main class="gate-card">
+      <div class="gate-inner">
+        <div class="gate-title-wrap">
+          <div class="gate-title">THE UNIQUE</div>
+          <div class="gate-subtitle-en">MEMBERSHIP REGISTRATION</div>
+        </div>
 
-                <form id="signup-form" class="form-body">
-                    <div class="form-group">
-                        <input id="uid"
-                               class="form-input"
-                               type="text"
-                               autocomplete="off"
-                               placeholder="아이디" />
-                    </div>
+        <form id="signup-form" class="form-body">
+          <div class="form-group">
+            <input
+              id="uid"
+              class="form-input"
+              type="text"
+              autocomplete="off"
+              placeholder="아이디"
+            />
+          </div>
 
-                    <div class="form-group">
-                        <input id="name"
-                               class="form-input"
-                               type="text"
-                               autocomplete="off"
-                               placeholder="이름" />
-                    </div>
+          <div class="form-group">
+            <input
+              id="name"
+              class="form-input"
+              type="text"
+              autocomplete="off"
+              placeholder="이름"
+            />
+          </div>
 
-                    <div class="form-group">
-                        <input id="phone"
-                               class="form-input"
-                               type="tel"
-                               autocomplete="off"
-                               placeholder="전화번호" />
-                    </div>
+          <div class="form-group">
+            <input
+              id="phone"
+              class="form-input"
+              type="tel"
+              autocomplete="off"
+              placeholder="전화번호"
+            />
+          </div>
 
-                    <!-- 🔹 소속 선택 드롭다운 -->
-                    <div class="form-group">
-                        <select id="team" class="form-input form-select">
-                            <option value="">소속 선택</option>
-                            <option value="이두연">이두연</option>
-                            <option value="임정애">임정애</option>
-                            <option value="이동연">이동연</option>
-                            <option value="윤지민">윤지민</option>
-                            <option value="한기림">한기림</option>
-                            <option value="이윤경">이윤경</option>
-                            <option value="매니저">매니저</option>
-                            <option value="이유송">이유송</option>
-                        </select>
-                    </div>
+          <!-- 🔹 소속 선택 드롭다운 -->
+          <div class="form-group">
+            <select id="team" class="form-input form-select">
+              <option value="">소속 선택</option>
+              <option value="임정애">임정애</option>
+              <option value="이두연">이두연</option>
+              <option value="이동연">이동연</option>
+              <option value="오기린">오기린</option>
+              <option value="안기범">안기범</option>
+              <option value="이은정">이은정</option>
+              <option value="매니저">매니저</option>
+              <option value="이유송">이유송</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
 
-                    <div class="btn-row">
-                        <button type="submit" class="btn btn-primary">가입 신청</button>
-                        <a href="the-unique-gate.html" class="btn btn-ghost">뒤로가기</a>
-                    </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">가입 신청</button>
+            <a href="the-unique-gate.html" class="btn btn-ghost">뒤로가기</a>
+          </div>
 
-                    <div id="signup-status" class="status"></div>
-                </form>
-            </div>
-        </main>
-    </div>
+          <div id="signup-status" class="status"></div>
+        </form>
+      </div>
+    </main>
+  </div>
 
-    <script>
-        // 🔗 구글폼 주소
-        const GOOGLE_FORM_URL = "https://forms.gle/ELsQimK5YRKWWyW86";
+  <script>
+    // 🔗 구글폼 formResponse URL
+    //   원래 viewform 주소가
+    //   https://docs.google.com/forms/d/e/FORM_ID/viewform
+    //   이라면, 아래는
+    //   https://docs.google.com/forms/d/e/FORM_ID/formResponse
+    const GOOGLE_FORM_ACTION =
+      "https://docs.google.com/forms/d/e/1FAIpQLSefV35aSYRleV8Czd9ruGvdUSlNugwO4lKuYZJJPQJtpmwKPw/formResponse";
 
-        const signupForm = document.getElementById("signup-form");
-        const statusEl = document.getElementById("signup-status");
-        const teamSelect = document.getElementById("team");
+    // 🔹 여기 네 칸을 네 폼의 entry 번호로 바꿔 넣어야 함
+    //   (위에서 설명한 방법으로 확인)
+    const ENTRY_UID   = "entry.아이디용번호";      // 아이디 질문 entry.xxxxx
+    const ENTRY_NAME  = "entry.이름용번호";        // 이름 질문 entry.xxxxx
+    const ENTRY_PHONE = "entry.전화번호용번호";    // 전화번호 질문 entry.xxxxx
+    const ENTRY_TEAM  = "entry.소속용번호";        // 소속 질문 entry.xxxxx
 
-        // 소속 드롭다운 색상 업데이트 (선택 전 = 회색, 선택 후 = 흰색)
-        function updateTeamColor() {
-            if (!teamSelect) return;
-            if (teamSelect.value === "") {
-                teamSelect.classList.remove("has-value");
-            } else {
-                teamSelect.classList.add("has-value");
-            }
-        }
-        if (teamSelect) {
-            teamSelect.addEventListener("change", updateTeamColor);
-            updateTeamColor();
-        }
+    const signupForm = document.getElementById("signup-form");
+    const statusEl   = document.getElementById("signup-status");
+    const teamSelect = document.getElementById("team");
 
-        signupForm.addEventListener("submit", (e) => {
-            e.preventDefault();
+    // 소속 드롭다운 색상 업데이트 (선택 전 = 회색, 선택 후 = 흰색)
+    function updateTeamColor() {
+      if (!teamSelect) return;
+      if (teamSelect.value === "") {
+        teamSelect.classList.remove("has-value");
+      } else {
+        teamSelect.classList.add("has-value");
+      }
+    }
+    if (teamSelect) {
+      teamSelect.addEventListener("change", updateTeamColor);
+      updateTeamColor();
+    }
 
-            const uid = document.getElementById("uid").value.trim();
-            const name = document.getElementById("name").value.trim();
-            const phone = document.getElementById("phone").value.trim();
-            const team = document.getElementById("team").value.trim();
+    signupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
 
-            statusEl.textContent = "";
-            statusEl.className = "status";
+      const uid   = document.getElementById("uid").value.trim();
+      const name  = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const team  = document.getElementById("team").value.trim();
 
-            // 🔻 소속 포함 필수 체크 + 경고 문구
-            if (!uid || !name || !phone || !team) {
-                statusEl.textContent =
-                    "소속을 모르면 가입 불가 (아이디, 이름, 전화번호도 필수입니다.)";
-                statusEl.classList.add("status-error");
-                return;
-            }
+      statusEl.textContent = "";
+      statusEl.className   = "status";
 
-            // 안내 메시지
-            statusEl.textContent =
-                "가입 신청 양식이 새 창으로 열립니다. 제출 후 로그인 화면으로 이동합니다.";
-            statusEl.classList.add("status-ok");
+      // 🔻 소속 포함 필수 체크 + 경고 문구
+      if (!uid || !name || !phone || !team) {
+        statusEl.textContent =
+          "소속을 모르면 가입 불가 (아이디, 이름, 전화번호도 필수입니다.)";
+        statusEl.classList.add("status-error");
+        return;
+      }
 
-            // 구글폼 새 탭으로 열기
-            window.open(GOOGLE_FORM_URL, "_blank");
+      // 🔸 구글폼으로 전송할 데이터 만들기
+      const formData = new URLSearchParams();
+      formData.append(ENTRY_UID,   uid);
+      formData.append(ENTRY_NAME,  name);
+      formData.append(ENTRY_PHONE, phone);
+      formData.append(ENTRY_TEAM,  team);
 
-            // 현재 탭은 잠깐 후 로그인 화면으로 이동
-            setTimeout(() => {
-                location.href = "the-unique-gate.html";
-            }, 800);
-        });
-    </script>
+      // 🔸 구글폼으로 백그라운드 전송 (no-cors = 화면 이동 없음)
+      fetch(GOOGLE_FORM_ACTION, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: formData.toString()
+      }).catch((err) => {
+        console.error("Google Form submit error:", err);
+      });
+
+      // 안내 메시지
+      statusEl.textContent =
+        "가입 신청이 접수되었습니다. 잠시 후 로그인 화면으로 이동합니다.";
+      statusEl.classList.add("status-ok");
+
+      // 잠깐 뒤 로그인 화면으로 이동
+      setTimeout(() => {
+        location.href = "the-unique-gate.html";
+      }, 800);
+    });
+  </script>
 </body>
 </html>
