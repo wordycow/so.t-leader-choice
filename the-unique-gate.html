@@ -277,29 +277,75 @@
   </div>
 
   <script>
-    const form = document.getElementById("gate-form");
-    const idInput = document.getElementById("login-id");
-    const statusEl = document.getElementById("status");
+  const form = document.getElementById("gate-form");
+  const idInput = document.getElementById("login-id");
+  const statusEl = document.getElementById("status");
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+  // 🔥 구글 시트 JSON URL (아이디 목록 가져오기)
+  const SHEET_URL =
+    "https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-ltTxBnM/gviz/tq?tqx=out:json&sheet=Form_Responses";
 
-      const id = (idInput.value || "").trim();
-      statusEl.textContent = "";
-      statusEl.className = "status";
+  // 한 번만 받아와서 재사용
+  let allowedIdsPromise = null;
 
-      if (!id) {
-        statusEl.textContent = "아이디를 입력해 주세요.";
+  async function fetchAllowedIds() {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+
+    // gviz 포맷 앞뒤 이상한 글자 제거
+    const json = JSON.parse(text.substring(47, text.length - 2));
+    const rows = json.table.rows;
+
+    // B열(인덱스 1)이 "아이디" 컬럼이라고 가정
+    const ids = rows
+      .map((row) => row.c[1] && row.c[1].v)
+      .filter(Boolean)
+      .map((v) => String(v).trim().toLowerCase());
+
+    return new Set(ids);
+  }
+
+  function getAllowedIds() {
+    if (!allowedIdsPromise) {
+      allowedIdsPromise = fetchAllowedIds();
+    }
+    return allowedIdsPromise;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const id = (idInput.value || "").trim();
+    statusEl.textContent = "";
+    statusEl.className = "status";
+
+    if (!id) {
+      statusEl.textContent = "아이디를 입력해 주세요.";
+      statusEl.classList.add("status-error");
+      return;
+    }
+
+    statusEl.textContent = "회원 확인 중입니다...";
+    try {
+      const allowedIds = await getAllowedIds();
+      const normalized = id.toLowerCase();
+
+      if (allowedIds.has(normalized)) {
+        // ✅ 회원가입된 아이디 → 메인 페이지로 이동
+        window.location.href = "the-unique-main.html";
+        // 또는 전체 주소를 쓰고 싶으면:
+        // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
+      } else {
+        // ❌ 시트에 없는 아이디
+        statusEl.textContent = "등록되지 않은 아이디입니다.";
         statusEl.classList.add("status-error");
-        return;
       }
-
-      // ✅ 아이디가 비어있지만 않으면 메인 화면으로 이동
-      // repo 기준 같은 폴더라 상대 경로로 이동해도 됨
-      window.location.href = "the-unique-main.html";
-      // 또는 전체 URL로 쓰고 싶으면 아래로:
-      // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
-    });
-  </script>
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      statusEl.classList.add("status-error");
+    }
+  });
+</script>
 </body>
 </html>
