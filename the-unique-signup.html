@@ -18,7 +18,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: url("bg_castle.jpg") center center / cover no-repeat fixed;
+      /* 🔥 배경 복구: 예전에 쓰던 파일명으로 맞춰서 사용 */
+      background: url("bg_wallpaper.jpg") center center / cover no-repeat fixed;
     }
 
     .signup-wrap {
@@ -100,6 +101,12 @@
       cursor: pointer;
     }
 
+    /* 🔥 드롭다운 펼쳤을 때 옵션 배경/글자색 */
+    .select-field option {
+      background: #020617;
+      color: #f9fafb;
+    }
+
     .btn-row {
       margin-top: 12px;
       display: flex;
@@ -153,13 +160,6 @@
         0 0 18px rgba(30,64,175,0.8);
     }
 
-    .helper {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      text-align: center;
-    }
-
     @media (max-width: 640px) {
       .signup-wrap {
         margin: 16px;
@@ -177,11 +177,12 @@
     <div class="title-en">THE UNIQUE</div>
     <div class="subtitle">MEMBERSHIP REGISTRATION</div>
 
-    <!-- ✅ 여기서부터 구글폼으로 직접 전송되는 폼 -->
+    <!-- 🔥 구글폼으로 전송 + 숨겨진 iframe으로 보내기 -->
     <form
+      id="uniqueSignupForm"
       action="https://docs.google.com/forms/d/1uGN3KP6ERWFpON1uNLiXxX1c0AVijEqDFfzoPohQ9_Y/formResponse"
       method="POST"
-      target="_self"
+      target="hidden_iframe"
     >
       <!-- 아이디 → entry.877086558 -->
       <div>
@@ -211,7 +212,7 @@
         </div>
       </div>
 
-      <!-- 전화번호(모바일 번호) → entry.1444913169 -->
+      <!-- 모바일 번호 → entry.1444913169 -->
       <div>
         <div class="field-label">전화번호</div>
         <div class="input-shell">
@@ -225,7 +226,7 @@
         </div>
       </div>
 
-      <!-- 필요하면 일반 전화번호 칸(선택)도 함께 전송 -->
+      <!-- 일반 전화번호(선택) → entry.1424661284 (안 쓰면 비워서 전송) -->
       <input type="hidden" name="entry.1424661284" value="" />
 
       <!-- 소속 선택 → entry.1114746043 -->
@@ -250,7 +251,7 @@
         </div>
       </div>
 
-      <!-- 구글폼이 내부적으로 쓰는 hidden 값들 (그냥 그대로 두면 됨) -->
+      <!-- 구글폼에서 쓰는 hidden 값들 -->
       <input type="hidden" name="fvv" value="1" />
       <input type="hidden" name="partialResponse" value="[null,null,&quot;1256943034192069170&quot;]" />
       <input type="hidden" name="pageHistory" value="0" />
@@ -261,16 +262,25 @@
           가입 신청
         </button>
 
-        <!-- 필요 없으면 이 버튼은 지워도 됨 -->
         <button type="button" class="btn-secondary" onclick="history.back()">
           뒤로가기
         </button>
       </div>
-
-      <div class="helper">
-        작성하신 내용은 Google Forms &amp; Google Sheets를 통해 안전하게 저장됩니다.
-      </div>
     </form>
+
+    <!-- 🔥 구글폼 응답은 여기로만 들어가고, 화면에는 안 보임 -->
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
   </div>
+
+  <script>
+    // 제출 후 로그인 페이지로 리다이렉트
+    document.getElementById("uniqueSignupForm").addEventListener("submit", function () {
+      // 구글폼에 전송할 약간의 시간 여유를 줌
+      setTimeout(function () {
+        // 여기 주소를 실제 로그인 페이지 주소로 변경해도 됨
+        window.location.href = "the-unique-login.html";
+      }, 500);
+    });
+  </script>
 </body>
 </html>
