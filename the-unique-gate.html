@@ -66,6 +66,7 @@
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
+
       background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(250, 204, 21, 0.95);
       box-shadow:
@@ -73,6 +74,7 @@
         0 26px 70px rgba(0,0,0,0.5);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+
       overflow: visible;
     }
 
@@ -216,6 +218,43 @@
 
     .status-error { color: #fecaca; }
 
+    /* 마녀 & 박쥐 */
+    .spirit {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .spirit img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .spirit-witch {
+      top: 30%;
+      right: 22%;
+      width: 3%;
+      animation: witchFloat 5s ease-in-out infinite alternate;
+    }
+
+    @keyframes witchFloat {
+      from { transform: translateY(5px) translateX(0); }
+      to   { transform: translateY(-20px) translateX(6px); }
+    }
+
+    .spirit-bat {
+      top: -20%;
+      right: 0%;
+      width: 43%;
+      animation: batFloat 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes batFloat {
+      from { transform: translateY(8px); }
+      to   { transform: translateY(22px); }
+    }
+
     @media (max-width: 768px) {
       .gate-card {
         padding: 24px 20px 18px;
@@ -227,6 +266,17 @@
       }
       .form-body {
         max-width: 100%;
+      }
+
+      .spirit-witch {
+        top: 26%;
+        right: 20%;
+        width: 10%;
+      }
+      .spirit-bat {
+        top: 18%;
+        right: 10%;
+        width: 30%;
       }
     }
   </style>
@@ -266,24 +316,46 @@
         </div>
       </main>
     </div>
+
+    <!-- 마녀 & 박쥐 -->
+    <div class="spirit spirit-witch">
+      <img src="img/witch-float.png" alt="">
+    </div>
+    <div class="spirit spirit-bat">
+      <img src="img/bat-float.png" alt="">
+    </div>
   </div>
 
-  <!-- 1) 시트에서 아이디 목록을 받아오는 콜백 함수 -->
+  <!-- 1) 시트에서 아이디/이름 받아오는 콜백 -->
   <script>
-    // 시트에서 가져온 아이디 목록
-    let allowedIds = null;
+    // 시트에서 가져온 아이디/이름 목록
+    let allowedIds = null;        // Set<id>
+    let memberNameById = {};      // { id: name }
     let sheetError = false;
 
     function handleSheetResponse(resp) {
       try {
         const rows = resp.table.rows || [];
-        const ids = rows
-          .map((row) => row.c[1] && row.c[1].v)   // B열 = 아이디
-          .filter(Boolean)
-          .map((v) => String(v).trim().toLowerCase());
+        const ids = [];
+
+        rows.forEach((row) => {
+          const idCell = row.c[1];   // B열 = 아이디
+          const nameCell = row.c[2]; // C열 = 이름
+
+          if (!idCell) return;
+
+          const rawId = String(idCell.v).trim();
+          if (!rawId) return;
+
+          const idLower = rawId.toLowerCase();
+          ids.push(idLower);
+
+          const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
+          memberNameById[idLower] = name;
+        });
 
         allowedIds = new Set(ids);
-        // console.log("허용 아이디:", allowedIds);
+        // console.log("허용 아이디:", allowedIds, memberNameById);
       } catch (e) {
         console.error("시트 파싱 오류:", e);
         sheetError = true;
@@ -292,7 +364,7 @@
   </script>
 
   <!-- 2) 구글 시트를 JSONP 방식으로 불러오기 -->
-  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-ltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
+  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
   <!-- 3) 로그인 처리 -->
   <script>
@@ -320,7 +392,6 @@
       }
 
       if (!allowedIds) {
-        // 스크립트가 아직 로딩 중인 경우
         statusEl.textContent = "회원 정보 불러오는 중입니다. 잠시 후 다시 시도해 주세요.";
         return;
       }
@@ -328,12 +399,22 @@
       const normalized = id.toLowerCase();
 
       if (allowedIds.has(normalized)) {
-        // ✅ 시트에 존재하는 아이디 → 메인 페이지로
+        // ✅ 로그인한 사람 정보 저장
+        const name = memberNameById[normalized] || "";
+
+        localStorage.setItem(
+          "uniqueCurrentUser",
+          JSON.stringify({
+            id: normalized,
+            name: name,
+          })
+        );
+
+        // 메인 페이지로 이동
         window.location.href = "the-unique-main.html";
-        // 또는 절대경로:
+        // 또는 절대 경로:
         // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
       } else {
-        // ❌ 등록 안 된 아이디
         statusEl.textContent = "등록되지 않은 아이디입니다.";
         statusEl.classList.add("status-error");
       }
