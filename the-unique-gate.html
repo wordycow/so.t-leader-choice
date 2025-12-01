@@ -32,29 +32,26 @@
       height: 100%;
     }
 
-    /* 화면 전체 꽉 채우는 컨테이너 */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #f9fafb;
-      background: #000; /* 혹시라도 이미지 안 뜰 때 */
+      background: #000;
     }
 
     .scene {
       position: fixed;
-      inset: 0;              /* top:0; right:0; bottom:0; left:0; */
-      overflow: hidden;      /* 밖으로 튀어나오는 거 잘라내기 */
+      inset: 0;
+      overflow: hidden;
     }
 
-    /* 배경 이미지: 화면 꽉 채우기 (cover) */
     .scene-bg {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;       /* 화면 비율과 상관없이 꽉 채우기 */
+      object-fit: cover;
     }
 
-    /* 로그인 카드 중앙 정렬 */
     .page-wrap {
       position: absolute;
       inset: 0;
@@ -69,8 +66,6 @@
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
-
-      /* ✨ 어두운 유리 패널 – 마지막 숫자(0.2)가 투명도 */
       background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(250, 204, 21, 0.95);
       box-shadow:
@@ -78,7 +73,6 @@
         0 26px 70px rgba(0,0,0,0.5);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-
       overflow: visible;
     }
 
@@ -220,9 +214,7 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
-    .status-error {
-      color: #fecaca;
-    }
+    .status-error { color: #fecaca; }
 
     @media (max-width: 768px) {
       .gate-card {
@@ -276,76 +268,76 @@
     </div>
   </div>
 
+  <!-- 1) 시트에서 아이디 목록을 받아오는 콜백 함수 -->
   <script>
-  const form = document.getElementById("gate-form");
-  const idInput = document.getElementById("login-id");
-  const statusEl = document.getElementById("status");
+    // 시트에서 가져온 아이디 목록
+    let allowedIds = null;
+    let sheetError = false;
 
-  // 🔥 구글 시트 JSON URL (아이디 목록 가져오기)
-  const SHEET_URL =
-    "https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-ltTxBnM/gviz/tq?tqx=out:json&sheet=Form_Responses";
+    function handleSheetResponse(resp) {
+      try {
+        const rows = resp.table.rows || [];
+        const ids = rows
+          .map((row) => row.c[1] && row.c[1].v)   // B열 = 아이디
+          .filter(Boolean)
+          .map((v) => String(v).trim().toLowerCase());
 
-  // 한 번만 받아와서 재사용
-  let allowedIdsPromise = null;
-
-  async function fetchAllowedIds() {
-    const res = await fetch(SHEET_URL);
-    const text = await res.text();
-
-    // gviz 포맷 앞뒤 이상한 글자 제거
-    const json = JSON.parse(text.substring(47, text.length - 2));
-    const rows = json.table.rows;
-
-    // B열(인덱스 1)이 "아이디" 컬럼이라고 가정
-    const ids = rows
-      .map((row) => row.c[1] && row.c[1].v)
-      .filter(Boolean)
-      .map((v) => String(v).trim().toLowerCase());
-
-    return new Set(ids);
-  }
-
-  function getAllowedIds() {
-    if (!allowedIdsPromise) {
-      allowedIdsPromise = fetchAllowedIds();
+        allowedIds = new Set(ids);
+        // console.log("허용 아이디:", allowedIds);
+      } catch (e) {
+        console.error("시트 파싱 오류:", e);
+        sheetError = true;
+      }
     }
-    return allowedIdsPromise;
-  }
+  </script>
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  <!-- 2) 구글 시트를 JSONP 방식으로 불러오기 -->
+  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-ltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
-    const id = (idInput.value || "").trim();
-    statusEl.textContent = "";
-    statusEl.className = "status";
+  <!-- 3) 로그인 처리 -->
+  <script>
+    const form = document.getElementById("gate-form");
+    const idInput = document.getElementById("login-id");
+    const statusEl = document.getElementById("status");
 
-    if (!id) {
-      statusEl.textContent = "아이디를 입력해 주세요.";
-      statusEl.classList.add("status-error");
-      return;
-    }
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
 
-    statusEl.textContent = "회원 확인 중입니다...";
-    try {
-      const allowedIds = await getAllowedIds();
+      const id = (idInput.value || "").trim();
+      statusEl.textContent = "";
+      statusEl.className = "status";
+
+      if (!id) {
+        statusEl.textContent = "아이디를 입력해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      if (sheetError) {
+        statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      if (!allowedIds) {
+        // 스크립트가 아직 로딩 중인 경우
+        statusEl.textContent = "회원 정보 불러오는 중입니다. 잠시 후 다시 시도해 주세요.";
+        return;
+      }
+
       const normalized = id.toLowerCase();
 
       if (allowedIds.has(normalized)) {
-        // ✅ 회원가입된 아이디 → 메인 페이지로 이동
+        // ✅ 시트에 존재하는 아이디 → 메인 페이지로
         window.location.href = "the-unique-main.html";
-        // 또는 전체 주소를 쓰고 싶으면:
+        // 또는 절대경로:
         // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
       } else {
-        // ❌ 시트에 없는 아이디
+        // ❌ 등록 안 된 아이디
         statusEl.textContent = "등록되지 않은 아이디입니다.";
         statusEl.classList.add("status-error");
       }
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-      statusEl.classList.add("status-error");
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>
