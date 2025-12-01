@@ -2,52 +2,99 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>The Unique – Members Lounge</title>
+  <title>The Unique – Gate</title>
+
+  <!-- 공유 썸네일 -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Unique – 초대 전용 게이트">
+  <meta property="og:description" content="Invitation-only access for action takers.">
+  <meta property="og:url" content="https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html">
+  <meta property="og:image" content="https://wordycow.github.io/so.t-leader-choice/img/og-unique-gate.jpg">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Unique – 초대 전용 게이트">
+  <meta name="twitter:description" content="Invitation-only access for action takers.">
+  <meta name="twitter:image" content="https://wordycow.github.io/so.t-leader-choice/img/og-unique-gate.jpg">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 타이틀 폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #f9fafb;
-      min-height: 100vh;
-
-      background-image: url("img/bg-unique-gate-clean.jpg");
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #000;
     }
 
-    .page-wrap {
+    /* 화면 전체 장면 컨테이너 */
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* 배경 이미지 – 화면 꽉 채우기 */
+    .scene-bg {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      max-width: 900px;
-      padding: 24px 16px;
+      height: 100%;
+      object-fit: cover;
     }
 
-    .card {
+    /* 로그인 카드 중앙 정렬 */
+    .page-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 12px;
+      z-index: 10;
+    }
+
+    .gate-card {
+      position: relative;
       border-radius: 26px;
-      padding: 24px 26px 26px;
-      background: rgba(0, 0, 0, 0.35);
+      padding: 28px 26px 22px;
+
+      background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(250, 204, 21, 0.95);
       box-shadow:
         0 0 14px rgba(250, 204, 21, 0.45),
-        0 26px 70px rgba(0,0,0,0.7);
+        0 26px 70px rgba(0,0,0,0.5);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+
+      overflow: visible;
     }
 
-    .title {
+    .gate-inner { position: relative; z-index: 1; }
+
+    .gate-title-wrap {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .gate-title {
       font-family: "Cinzel", "Times New Roman", serif;
-      font-size: 32px;
-      letter-spacing: 0.20em;
+      font-weight: 700;
+      font-size: 40px;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      margin: 0 0 8px;
+      margin-bottom: 8px;
 
       background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
       -webkit-background-clip: text;
@@ -59,61 +106,71 @@
         0 4px 18px rgba(0,0,0,1);
     }
 
-    .subtitle {
-      font-size: 12px;
+    .gate-subtitle-en {
+      font-size: 11px;
+      color: #f9fafb;
       opacity: 0.9;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: 18px;
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 6px rgba(0,0,0,0.6);
     }
 
-    .welcome {
-      font-size: 14px;
-      line-height: 1.7;
-      margin-bottom: 18px;
+    .form-body {
+      max-width: 360px;
+      margin: 0 auto;
     }
 
-    .highlight {
-      color: #facc6b;
-      font-weight: 600;
-    }
+    .gate-input-wrap { margin-bottom: 10px; }
 
-    .section-title {
+    .gate-input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
+      color: #f9fafb;
       font-size: 13px;
-      font-weight: 600;
-      margin: 14px 0 6px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #fde68a;
+      outline: none;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.75) inset,
+        0 0 0 1px rgba(0,0,0,0.55);
     }
 
-    .list {
-      margin: 0;
-      padding-left: 18px;
-      font-size: 13px;
-      line-height: 1.6;
+    .gate-input::placeholder {
+      color: #6b7280;
+    }
+
+    .gate-input:focus {
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.6),
+        0 6px 22px rgba(0,0,0,0.9) inset;
     }
 
     .btn-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 10px;
-      margin-top: 18px;
+      margin-top: 14px;
+      margin-bottom: 6px;
     }
 
     .btn {
-      padding: 8px 14px;
+      width: 100%;
+      padding: 10px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(248,181,84,0.9);
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      text-decoration: none;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      text-decoration: none;
       transition:
         transform 0.12s ease,
         box-shadow 0.12s ease,
@@ -123,6 +180,7 @@
 
     .btn-primary {
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      border-color: rgba(248,181,84,0.95);
       color: #fef2f2;
       box-shadow:
         0 10px 26px rgba(0,0,0,1),
@@ -138,8 +196,8 @@
 
     .btn-ghost {
       background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
-      color: #e5e7eb;
       border-color: rgba(55,65,81,1);
+      color: #e5e7eb;
       box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
 
@@ -148,74 +206,140 @@
       border-color: rgba(148,163,184,0.9);
     }
 
-    .current-id {
-      font-size: 12px;
-      opacity: 0.8;
-      margin-top: 6px;
+    .status {
+      min-height: 18px;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
 
-    @media (max-width: 600px) {
-      .card {
-        padding: 22px 18px 20px;
+    .status-error { color: #fecaca; }
+    .status-ok    { color: #bbf7d0; }
+
+    /* 마녀 / 박쥐 */
+    .spirit {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .spirit img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .spirit-witch {
+      top: 24%;
+      right: 18%;
+      width: 6%;
+      animation: witchFloat 5s ease-in-out infinite alternate;
+    }
+
+    @keyframes witchFloat {
+      from { transform: translateY(5px) translateX(0); }
+      to   { transform: translateY(-20px) translateX(6px); }
+    }
+
+    .spirit-bat {
+      top: 18%;
+      right: 13%;
+      width: 20%;
+      animation: batFloat 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes batFloat {
+      from { transform: translateY(8px); }
+      to   { transform: translateY(22px); }
+    }
+
+    @media (max-width: 768px) {
+      .gate-card {
+        padding: 24px 20px 18px;
         border-radius: 22px;
       }
-      .title {
-        font-size: 26px;
-        letter-spacing: 0.18em;
+      .gate-title {
+        font-size: 32px;
+        letter-spacing: 0.22em;
       }
+      .form-body { max-width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrap">
-    <section class="card">
-      <h1 class="title">THE UNIQUE</h1>
-      <div class="subtitle">MEMBERS LOUNGE</div>
+  <div class="scene">
+    <!-- 배경 이미지 -->
+    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
 
-      <p class="welcome">
-        <span class="highlight" id="memberIdText">회원님</span>의
-        어둠속 놀이터, <span class="highlight">The Unique</span>에 오신 것을 환영합니다.<br />
-        이 공간에서는 앞으로 공지, 미션, 리워드 안내를 모두 한 곳에서 확인하게 됩니다.
-      </p>
+    <!-- 로그인 카드 -->
+    <div class="page-wrap">
+      <main class="gate-card">
+        <div class="gate-inner">
+          <div class="gate-title-wrap">
+            <div class="gate-title">THE UNIQUE</div>
+            <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+          </div>
 
-      <div class="section">
-        <div class="section-title">오늘 할 일</div>
-        <ul class="list">
-          <li>회원 전용 공지 채널을 읽고, 필요한 행동을 체크한다.</li>
-          <li>참여 중인 프로젝트(행동모임 / 영앤머슬 / 정리 컨설팅 등)를 확인한다.</li>
-          <li>하루에 한 번, 나는 왜 이곳에 들어왔는지 떠올린다.</li>
-        </ul>
-      </div>
+          <form id="gate-form" class="form-body">
+            <div class="gate-input-wrap">
+              <input
+                id="login-id"
+                class="gate-input"
+                type="text"
+                autocomplete="off"
+                placeholder="아이디"
+              />
+            </div>
 
-      <div class="section">
-        <div class="section-title">바로가기</div>
-        <div class="btn-row">
-          <a href="https://wordycow.github.io/so.t-leader-choice/index.html" class="btn btn-ghost" target="_blank">
-            so.t 리더 선택
-          </a>
-          <a href="the-unique-gate.html" class="btn btn-ghost">
-            로그아웃 / 다시 로그인
-          </a>
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary">로그인</button>
+              <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
+            </div>
+
+            <div id="status" class="status"></div>
+          </form>
         </div>
-      </div>
+      </main>
+    </div>
 
-      <div class="current-id" id="currentIdBox">
-        <!-- 로그인 시 전달된 아이디 표시용 -->
-      </div>
-    </section>
+    <!-- 마녀 & 박쥐 PNG (파일은 img/witch-float.png, img/bat-float.png 에 두기) -->
+    <div class="spirit spirit-witch">
+      <img src="img/witch-float.png" alt="">
+    </div>
+    <div class="spirit spirit-bat">
+      <img src="img/bat-float.png" alt="">
+    </div>
   </div>
 
   <script>
-    // URL 쿼리에서 uid 읽어서 화면에 표시
-    const params = new URLSearchParams(window.location.search);
-    const uid = params.get("uid");
-    const idBox = document.getElementById("currentIdBox");
-    const idText = document.getElementById("memberIdText");
+    const form     = document.getElementById("gate-form");
+    const idInput  = document.getElementById("login-id");
+    const statusEl = document.getElementById("status");
 
-    if (uid) {
-      idBox.textContent = "현재 로그인 아이디: " + uid;
-      idText.textContent = uid;
-    }
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const id = (idInput.value || "").trim();
+      statusEl.textContent = "";
+      statusEl.className   = "status";
+
+      if (!id) {
+        statusEl.textContent = "아이디를 입력해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      // 나중에 여기서 '실제로 가입한 아이디인지' 검증 로직 추가 가능 (구글시트 등)
+
+      statusEl.textContent = "로그인 되었습니다.";
+      statusEl.classList.add("status-ok");
+
+      // 로그인 성공 후 메인 페이지로 이동
+      setTimeout(() => {
+        location.href = "the-unique-main.html?uid=" + encodeURIComponent(id);
+      }, 500);
+    });
   </script>
 </body>
 </html>
