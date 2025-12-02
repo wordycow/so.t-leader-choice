@@ -804,40 +804,60 @@ nextImgEl.style.opacity = 1;
 
     /* ─────────────  3. 공지/프로모션 버튼 + 알림 배지  ───────────── */
 
-    (function setupNoticeAndPromoButtons() {
-      const noticeBtn   = document.getElementById("notice-btn");
-      const promoBtn    = document.getElementById("promo-btn");
-      const noticeBadge = document.getElementById("notice-badge");
-      const promoBadge  = document.getElementById("promo-badge");
+   /* ─────────────  3. 공지/프로모션/여행/So.T 버튼 + 알림 배지  ───────────── */
+(function setupNoticeAndPromoButtons() {
+  const noticeBtn   = document.getElementById("notice-btn");
+  const promoBtn    = document.getElementById("promo-btn");
+  const travelBtn   = document.getElementById("travel-btn");
+  const sotBtn      = document.getElementById("sot-btn");
+  const noticeBadge = document.getElementById("notice-badge");
+  const promoBadge  = document.getElementById("promo-badge");
 
-      if (!noticeBtn || !promoBtn) return;
+  if (!noticeBtn || !promoBtn) return;
 
-      // 관리용 버전 값 – 공지/프로모션 내용 업데이트할 때 여기 숫자만 변경
-      const NOTICE_VERSION = "2025-12-02-01";
-      const PROMO_VERSION  = "2025-12-02-01";
+  // 💡 공지/프로모션 내용 업데이트할 때마다 이 버전만 바꿔주면 됨
+  const NOTICE_VERSION = "2025-12-02-01";
+  const PROMO_VERSION  = "2025-12-02-01";
 
-      const seenNotice = localStorage.getItem("uniqueNoticeSeen");
-      const seenPromo  = localStorage.getItem("uniquePromoSeen");
+  const seenNotice = localStorage.getItem("uniqueNoticeSeen");
+  const seenPromo  = localStorage.getItem("uniquePromoSeen");
 
-      if (seenNotice !== NOTICE_VERSION) {
-        noticeBadge.classList.remove("hidden");
-      }
-      if (seenPromo !== PROMO_VERSION) {
-        promoBadge.classList.remove("hidden");
-      }
+  if (seenNotice !== NOTICE_VERSION) {
+    noticeBadge.classList.remove("hidden");
+  }
+  if (seenPromo !== PROMO_VERSION) {
+    promoBadge.classList.remove("hidden");
+  }
 
-      noticeBtn.addEventListener("click", () => {
-        window.open("the-unique-notice.html", "_blank");  // TODO: 공지 페이지 만들기
-        localStorage.setItem("uniqueNoticeSeen", NOTICE_VERSION);
-        noticeBadge.classList.add("hidden");
-      });
+  // 공지사항: 새창으로 our notice 페이지 열기
+  noticeBtn.addEventListener("click", () => {
+    window.open("the-unique-notice.html", "_blank");  // TODO: 공지 페이지 이름 맞게
+    localStorage.setItem("uniqueNoticeSeen", NOTICE_VERSION);
+    noticeBadge.classList.add("hidden");
+  });
 
-      promoBtn.addEventListener("click", () => {
-        window.open("the-unique-promo.html", "_blank");   // TODO: 프로모션 상세 페이지 만들기
-        localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
-        promoBadge.classList.add("hidden");
-      });
-    })();
+  // 프로모션: 새창으로 our promo 페이지 열기
+  promoBtn.addEventListener("click", () => {
+    window.open("the-unique-promo.html", "_blank");   // TODO: 프로모션 페이지 이름 맞게
+    localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
+    promoBadge.classList.add("hidden");
+  });
+
+  // 여행신청: index.html 새창
+  if (travelBtn) {
+    travelBtn.addEventListener("click", () => {
+      window.open("index.html", "_blank");
+    });
+  }
+
+  // So.T: ssoti 메인 새창
+  if (sotBtn) {
+    sotBtn.addEventListener("click", () => {
+      window.open("https://www.ssoti.com/", "_blank");
+    });
+  }
+})();
+
 
     /* ─────────────  4. 프로모션 이미지 (보기용)  ───────────── */
 
