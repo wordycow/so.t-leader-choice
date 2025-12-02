@@ -319,13 +319,13 @@
       box-shadow: 0 10px 24px rgba(0,0,0,0.9);
       display: flex;
       flex-direction: column;
-      max-width: 420px;   /* 이미지 폭 기준으로 맞추고 싶으면 여기 조절 */
+      max-width: 420px;
     }
 
     .promo-card img {
       width: 100%;
       height: auto;
-      object-fit: contain;  /* 비율 유지 */
+      object-fit: contain;
       display: block;
     }
 
@@ -342,26 +342,89 @@
       color: #9ca3af;
       text-align: right;
       opacity: 0.85;
+      max-width: 920px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    /* 로그아웃 버튼 */
+    /* 로그아웃 버튼 (큰 버튼 스타일) */
     .logout-row {
-      margin-top: 6px;
+      margin-top: 10px;
       text-align: right;
     }
 
     .logout-btn {
-      font-size: 11px;
-      color: #e5e7eb;
-      background: transparent;
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 999px;
       border: none;
-      text-decoration: underline;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       cursor: pointer;
-      opacity: 0.75;
+      background: radial-gradient(circle at top, #4b5563, #111827);
+      color: #e5e7eb;
+      box-shadow:
+        0 10px 24px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(0,0,0,0.6) inset;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
 
     .logout-btn:hover {
-      opacity: 1;
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow:
+        0 16px 32px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.8) inset;
+    }
+
+    /* ───── 공지/프로모션 버튼 바 ───── */
+    .notice-promo-bar {
+      margin: 16px auto 0;
+      max-width: 920px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .nav-btn {
+      position: relative;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+      color: #e5e7eb;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.75);
+    }
+
+    .nav-btn:hover {
+      border-color: rgba(248,181,84,0.9);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.9);
+    }
+
+    .nav-badge {
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #fef2f2;
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .nav-badge.hidden {
+      display: none;
     }
 
     @media (max-width: 768px) {
@@ -376,6 +439,9 @@
       .layout {
         grid-template-columns: minmax(0, 1fr);
         gap: 18px;
+      }
+      .notice-promo-bar {
+        justify-content: center;
       }
     }
   </style>
@@ -463,7 +529,19 @@
     </div>
   </div>
 
-  <!-- 프로모션 영역: 메인 카드 밖, 아래쪽 -->
+  <!-- 공지 / 프로모션 버튼 바 -->
+  <div class="notice-promo-bar">
+    <button id="notice-btn" class="nav-btn">
+      공지사항
+      <span id="notice-badge" class="nav-badge hidden">N</span>
+    </button>
+    <button id="promo-btn" class="nav-btn">
+      프로모션
+      <span id="promo-badge" class="nav-badge hidden">N</span>
+    </button>
+  </div>
+
+  <!-- 프로모션 이미지 영역 -->
   <div id="promo-section" class="promo-section">
     <div class="promo-title">프로모션</div>
     <div id="promo-grid" class="promo-grid"></div>
@@ -474,244 +552,279 @@
   </div>
 
   <script>
-  /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
+    /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
 
-  const raw = localStorage.getItem("uniqueCurrentUser");
-  if (!raw) {
-    window.location.href = "the-unique-gate.html";
-  }
-
-  let currentId = "";
-  let currentName = "";
-  let currentTeam = "";
-  let currentJoin = "";
-
-  try {
-    const user = JSON.parse(raw || "{}");
-    currentId   = (user.id || "").toLowerCase();
-    currentName = user.name || "";
-    currentTeam = user.team || "";
-    currentJoin = user.joinedAt || "";
-  } catch (e) {
-    console.error(e);
-    window.location.href = "the-unique-gate.html";
-  }
-
-  // 인사에는 이름 사용
-  document.getElementById("member-hello").textContent =
-    (currentName || currentId || "멤버") + "님, 오늘도 행동하러 오셨군요.";
-
-  // 큰 글씨는 아이디만
-  document.getElementById("member-name").textContent =
-    currentId || currentName || "Unknown";
-
-  // 아이디 줄
-  document.getElementById("member-id").textContent =
-    currentId || "";
-
-  // 소속: 이름과 소속이 같으면 HQ 처리
-  const teamText =
-    currentTeam
-      ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
-      : "소속: 미배정";
-  document.getElementById("member-team").textContent = teamText;
-
-  // 랭크 배지/텍스트 클릭 → rank-hall 새창
-  (function () {
-    const imgEl   = document.getElementById("member-rank-img");
-    const labelEl = document.getElementById("member-rank-label");
-    function openRankHall() {
-      window.open("rank-hall.html", "_blank");
-    }
-    imgEl.style.cursor = "pointer";
-    labelEl.style.cursor = "pointer";
-    imgEl.addEventListener("click", openRankHall);
-    labelEl.addEventListener("click", openRankHall);
-  })();
-
-  /* ─────────────  1. 직급 코드 → 배지 이미지 맵  ───────────── */
-
-  const RANK_ORDER = [
-    "Star1", "Star2", "Star3",
-    "Pro1", "Pro2", "Pro3",
-    "Pro4", "Pro5", "Pro6",
-    "Pro7", "Pro8", "Pro9", "Pro10"
-  ];
-
-  const RANK_BADGES = {
-    Star1: "img/star1.png",
-    Star2: "img/star2.png",
-    Star3: "img/star3.png",
-    Pro1:  "img/pro1.png",
-    Pro2:  "img/pro2png",   // 🔥 파일명이 'pro2png'라고 준 그대로 사용
-    Pro3:  "img/pro3.png",
-    Pro4:  "img/pro4.png",
-    Pro5:  "img/pro5.png",
-    Pro6:  "img/pro6.png",
-    Pro7:  "img/pro7.png",
-    Pro8:  "img/pro8.png",
-    Pro9:  "img/pro9.png",
-    Pro10: "img/pro10.png"
-  };
-
-  function getBadgeSrc(rankCode) {
-    return RANK_BADGES[rankCode] || "img/rank/default.png";
-  }
-
-  /* ─────────────  rank-hall.json 에서 현재/다음 직급 찾기  ───────────── */
-
-  function getName(rec) {
-    return String(rec.name || rec.userName || "").trim();
-  }
-  function getTeam(rec) {
-    return String(rec.team || rec.group || "").trim();
-  }
-  function getJoin(rec) {
-    return String(rec.joinedAt || rec.joinDate || "").trim();
-  }
-  function getRankCode(rec) {
-    return String(rec.rank || rec.rankCode || rec.level || "").trim();
-  }
-
-  function pickMyRankRecord(list, name, team, joinedAt) {
-    const sameNameTeam = list.filter(
-      (m) => getName(m) === name && getTeam(m) === team
-    );
-
-    if (sameNameTeam.length === 0) return null;
-    if (sameNameTeam.length === 1) return sameNameTeam[0];
-
-    if (joinedAt) {
-      const exact = sameNameTeam.find(
-        (m) => getJoin(m) === String(joinedAt).trim()
-      );
-      if (exact) return exact;
+    const raw = localStorage.getItem("uniqueCurrentUser");
+    if (!raw) {
+      window.location.href = "the-unique-gate.html";
     }
 
-    // 자동으로 못 고르면 일단 첫 번째 사용 (추후 so.t 가입일 확인 로직 추가 가능)
-    return sameNameTeam[0];
-  }
+    let currentId = "";
+    let currentName = "";
+    let currentTeam = "";
+    let currentJoin = "";
 
-  fetch("rank-hall.json")
-    .then((res) => res.json())
-    .then((data) => {
-      const list = Array.isArray(data) ? data : (data.members || []);
+    try {
+      const user = JSON.parse(raw || "{}");
+      currentId   = (user.id || "").toLowerCase();
+      currentName = user.name || "";
+      currentTeam = user.team || "";
+      currentJoin = user.joinedAt || "";
+    } catch (e) {
+      console.error(e);
+      window.location.href = "the-unique-gate.html";
+    }
 
-      const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
+    // 인사에는 이름 사용
+    document.getElementById("member-hello").textContent =
+      (currentName || currentId || "멤버") + "님, 오늘도 행동하러 오셨군요.";
 
-      const currentImgEl   = document.getElementById("member-rank-img");
-      const nextImgEl      = document.getElementById("next-rank-img");
-      const currentLabelEl = document.getElementById("member-rank-label");
-      const nextLabelEl    = document.getElementById("next-rank-label");
-      const goalNextLabel  = document.getElementById("goal-next-rank-label");
+    // 큰 글씨는 아이디
+    document.getElementById("member-name").textContent =
+      currentId || currentName || "Unknown";
 
-      if (!myRec) {
-        currentLabelEl.textContent = "현재 직급: 정보 없음";
-        nextLabelEl.textContent    = "다음 직급: 준비중";
-        goalNextLabel.textContent  = "설정된 목표 직급이 없습니다.";
-        return;
-      }
+    // 아이디 줄
+    document.getElementById("member-id").textContent =
+      currentId || "";
 
-      const myCode = getRankCode(myRec);
-      if (myCode) {
-        currentLabelEl.textContent = "현재 직급: " + myCode;
-      } else {
-        currentLabelEl.textContent = "현재 직급: 정보 없음";
-      }
+    // 소속: 이름과 소속이 같으면 HQ
+    const teamText =
+      currentTeam
+        ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
+        : "소속: 미배정";
+    document.getElementById("member-team").textContent = teamText;
 
-      // 🔥 현재 직급 배지 이미지
-      currentImgEl.src = getBadgeSrc(myCode);
+    /* ─────────────  1. 직급 코드 → 배지 이미지 맵  ───────────── */
 
-      // 다음 직급 계산
-      const idx = RANK_ORDER.indexOf(myCode);
-      let nextCode = null;
-      if (idx >= 0 && idx < RANK_ORDER.length - 1) {
-        nextCode = RANK_ORDER[idx + 1];
-      }
-
-      if (!nextCode) {
-        nextLabelEl.textContent   = "다음 직급: 최상위 직급입니다.";
-        goalNextLabel.textContent = "설정된 목표 직급이 없습니다.";
-        nextImgEl.style.opacity   = 0.2;
-        return;
-      }
-
-      nextLabelEl.textContent   = "다음 직급: " + nextCode;
-      goalNextLabel.textContent = "다음 목표 직급: " + nextCode;
-
-      // 🔥 다음 직급 배지 이미지
-      nextImgEl.src = getBadgeSrc(nextCode);
-      nextImgEl.style.opacity = 1;
-    })
-    .catch((err) => {
-      console.error("rank-hall.json 로드 오류:", err);
-    });
-
-  /* ─────────────  2. eBook (전원 공용)  ───────────── */
-
-  (function setupEbook() {
-    const ebookCard  = document.getElementById("ebook-card");
-    const ebookTitle = document.getElementById("ebook-title");
-    const ebookDesc  = document.getElementById("ebook-desc");
-    const ebookImage = document.getElementById("ebook-image");
-
-    ebookTitle.textContent = "The Unique 행동 매뉴얼 eBook";
-    ebookDesc.textContent  = "누구나 언제든지 다시 볼 수 있는 so.t 기본 매뉴얼입니다.";
-    ebookImage.src         = "img/ebook/unique-ebook-cover.jpg";
-    ebookCard.href         = "the-unique-ebook.html";
-  })();
-
-  /* ─────────────  3. 프로모션 이미지 (보기용)  ───────────── */
-
-  (function setupPromotions() {
-    const promoSection = document.getElementById("promo-section");
-    const promoGrid    = document.getElementById("promo-grid");
-    if (!promoSection || !promoGrid) return;
-
-    const promos = [
-      {
-        id: "sot-star1-pro1",
-        title: "so.t 직급 로드맵 – Star1 ~ Pro1",
-        image: "img/promo/sot-promo-star1-pro1.jpg"
-      },
-      {
-        id: "sot-pro2-pro6",
-        title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
-        image: "img/promo/sot-promo-pro2-pro6.jpg"
-      }
+    const RANK_ORDER = [
+      "Star1", "Star2", "Star3",
+      "Pro1", "Pro2", "Pro3",
+      "Pro4", "Pro5", "Pro6",
+      "Pro7", "Pro8", "Pro9", "Pro10"
     ];
 
-    if (!Array.isArray(promos) || promos.length === 0) {
-      promoSection.style.display = "none";
-      return;
+    const RANK_BADGES = {
+      Star1: "img/star1.png",
+      Star2: "img/star2.png",
+      Star3: "img/star3.png",
+      Pro1:  "img/pro1.png",
+      Pro2:  "img/pro2png",    // 파일명 그대로
+      Pro3:  "img/pro3.png",
+      Pro4:  "img/pro4.png",
+      Pro5:  "img/pro5.png",
+      Pro6:  "img/pro6.png",
+      Pro7:  "img/pro7.png",
+      Pro8:  "img/pro8.png",
+      Pro9:  "img/pro9.png",
+      Pro10: "img/pro10.png"
+    };
+
+    function getBadgeSrc(rankCode) {
+      return RANK_BADGES[rankCode] || "img/rank/default.png";
     }
 
-    promoGrid.innerHTML = "";
-    promos.forEach((p) => {
-      const card = document.createElement("div");
-      card.className = "promo-card";
+    /* ─────────────  rank-hall.json 에서 현재/다음 직급 찾기  ───────────── */
 
-      const img = document.createElement("img");
-      img.src   = p.image;
-      img.alt   = p.title || "";
+    function getName(rec) {
+      return String(rec.name || rec.userName || "").trim();
+    }
+    function getTeam(rec) {
+      return String(rec.team || rec.group || "").trim();
+    }
+    function getJoin(rec) {
+      return String(rec.joinedAt || rec.joinDate || "").trim();
+    }
+    function getRankCode(rec) {
+      return String(rec.rank || rec.rankCode || rec.level || "").trim();
+    }
 
-      const cap = document.createElement("div");
-      cap.className = "promo-caption";
-      cap.textContent = p.title || "";
+    function pickMyRankRecord(list, name, team, joinedAt) {
+      const sameNameTeam = list.filter(
+        (m) => getName(m) === name && getTeam(m) === team
+      );
 
-      card.appendChild(img);
-      card.appendChild(cap);
-      promoGrid.appendChild(card);
+      if (sameNameTeam.length === 0) return null;
+      if (sameNameTeam.length === 1) return sameNameTeam[0];
+
+      if (joinedAt) {
+        const exact = sameNameTeam.find(
+          (m) => getJoin(m) === String(joinedAt).trim()
+        );
+        if (exact) return exact;
+      }
+
+      // 자동으로 못 고르면 일단 첫 번째 사용 (추후 so.t 가입일 확인 로직 추가 가능)
+      return sameNameTeam[0];
+    }
+
+    fetch("rank-hall.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.members || []);
+
+        const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
+
+        const currentImgEl   = document.getElementById("member-rank-img");
+        const nextImgEl      = document.getElementById("next-rank-img");
+        const currentLabelEl = document.getElementById("member-rank-label");
+        const nextLabelEl    = document.getElementById("next-rank-label");
+        const goalNextLabel  = document.getElementById("goal-next-rank-label");
+
+        if (!myRec) {
+          currentLabelEl.textContent = "현재 직급: 정보 없음";
+          nextLabelEl.textContent    = "다음 직급: 준비중";
+          goalNextLabel.textContent  = "설정된 목표 직급이 없습니다.";
+          return;
+        }
+
+        const myCode = getRankCode(myRec);
+        if (myCode) {
+          currentLabelEl.textContent = "현재 직급: " + myCode;
+        } else {
+          currentLabelEl.textContent = "현재 직급: 정보 없음";
+        }
+
+        // 현재 직급 배지
+        currentImgEl.src = getBadgeSrc(myCode);
+
+        // 다음 직급 계산
+        const idx = RANK_ORDER.indexOf(myCode);
+        let nextCode = null;
+        if (idx >= 0 && idx < RANK_ORDER.length - 1) {
+          nextCode = RANK_ORDER[idx + 1];
+        }
+
+        if (!nextCode) {
+          nextLabelEl.textContent   = "다음 직급: 최상위 직급입니다.";
+          goalNextLabel.textContent = "설정된 목표 직급이 없습니다.";
+          nextImgEl.style.opacity   = 0.2;
+          return;
+        }
+
+        nextLabelEl.textContent   = "다음 직급: " + nextCode;
+        goalNextLabel.textContent = "다음 목표 직급: " + nextCode;
+
+        nextImgEl.src = getBadgeSrc(nextCode);
+        nextImgEl.style.opacity = 1;
+
+        // 🔥 다음 직급 이미지/텍스트 클릭 시에만 rank-hall 새창
+        (function () {
+          const imgEl   = document.getElementById("next-rank-img");
+          const labelEl = document.getElementById("next-rank-label");
+          function openRankHall() {
+            window.open("rank-hall.html", "_blank");
+          }
+          imgEl.style.cursor = "pointer";
+          labelEl.style.cursor = "pointer";
+          imgEl.addEventListener("click", openRankHall);
+          labelEl.addEventListener("click", openRankHall);
+        })();
+      })
+      .catch((err) => {
+        console.error("rank-hall.json 로드 오류:", err);
+      });
+
+    /* ─────────────  2. eBook (전원 공용)  ───────────── */
+
+    (function setupEbook() {
+      const ebookCard  = document.getElementById("ebook-card");
+      const ebookTitle = document.getElementById("ebook-title");
+      const ebookDesc  = document.getElementById("ebook-desc");
+      const ebookImage = document.getElementById("ebook-image");
+
+      ebookTitle.textContent = "The Unique 행동 매뉴얼 eBook";
+      ebookDesc.textContent  = "누구나 언제든지 다시 볼 수 있는 so.t 기본 매뉴얼입니다.";
+      ebookImage.src         = "img/ebook/unique-ebook-cover.jpg";
+      ebookCard.href         = "the-unique-ebook.html";
+    })();
+
+    /* ─────────────  3. 공지/프로모션 버튼 + 알림 배지  ───────────── */
+
+    (function setupNoticeAndPromoButtons() {
+      const noticeBtn   = document.getElementById("notice-btn");
+      const promoBtn    = document.getElementById("promo-btn");
+      const noticeBadge = document.getElementById("notice-badge");
+      const promoBadge  = document.getElementById("promo-badge");
+
+      if (!noticeBtn || !promoBtn) return;
+
+      // 관리용 버전 값 – 공지/프로모션 내용 업데이트할 때 여기 숫자만 바꾸면 됨
+      const NOTICE_VERSION = "2025-12-02-01";
+      const PROMO_VERSION  = "2025-12-02-01";
+
+      const seenNotice = localStorage.getItem("uniqueNoticeSeen");
+      const seenPromo  = localStorage.getItem("uniquePromoSeen");
+
+      if (seenNotice !== NOTICE_VERSION) {
+        noticeBadge.classList.remove("hidden");
+      }
+      if (seenPromo !== PROMO_VERSION) {
+        promoBadge.classList.remove("hidden");
+      }
+
+      noticeBtn.addEventListener("click", () => {
+        window.open("the-unique-notice.html", "_blank");  // TODO: 공지 페이지 만들면 파일명 맞추기
+        localStorage.setItem("uniqueNoticeSeen", NOTICE_VERSION);
+        noticeBadge.classList.add("hidden");
+      });
+
+      promoBtn.addEventListener("click", () => {
+        window.open("the-unique-promo.html", "_blank");   // TODO: 프로모션 상세 페이지 만들면 파일명 맞추기
+        localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
+        promoBadge.classList.add("hidden");
+      });
+    })();
+
+    /* ─────────────  4. 프로모션 이미지 (보기용)  ───────────── */
+
+    (function setupPromotions() {
+      const promoSection = document.getElementById("promo-section");
+      const promoGrid    = document.getElementById("promo-grid");
+      if (!promoSection || !promoGrid) return;
+
+      const promos = [
+        {
+          id: "sot-star1-pro1",
+          title: "so.t 직급 로드맵 – Star1 ~ Pro1",
+          image: "img/promo/sot-promo-star1-pro1.jpg"
+        },
+        {
+          id: "sot-pro2-pro6",
+          title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
+          image: "img/promo/sot-promo-pro2-pro6.jpg"
+        }
+      ];
+
+      if (!Array.isArray(promos) || promos.length === 0) {
+        promoSection.style.display = "none";
+        return;
+      }
+
+      promoGrid.innerHTML = "";
+      promos.forEach((p) => {
+        const card = document.createElement("div");
+        card.className = "promo-card";
+
+        const img = document.createElement("img");
+        img.src   = p.image;
+        img.alt   = p.title || "";
+
+        const cap = document.createElement("div");
+        cap.className = "promo-caption";
+        cap.textContent = p.title || "";
+
+        card.appendChild(img);
+        card.appendChild(cap);
+        promoGrid.appendChild(card);
+      });
+    })();
+
+    /* ─────────────  5. 로그아웃  ───────────── */
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem("uniqueCurrentUser");
+      window.location.href = "the-unique-gate.html";
     });
-  })();
-
-  /* ─────────────  4. 로그아웃  ───────────── */
-
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("uniqueCurrentUser");
-    window.location.href = "the-unique-gate.html";
-  });
-</script>
+  </script>
 </body>
 </html>
-
