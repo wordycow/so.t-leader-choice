@@ -456,8 +456,11 @@
                   </div>
                 </a>
               </div>
-
-              <div id="promo-section" class="promo-section">
+            </div>
+          </section>
+        </div>
+      </main>
+      <div id="promo-section" class="promo-section">
                 <div class="promo-title">프로모션 / 공지사항</div>
                 <div id="promo-grid" class="promo-grid"></div>
               </div>
@@ -465,10 +468,6 @@
               <div class="footer-note">
                 The Unique &copy; 2025 · internal use only
               </div>
-            </div>
-          </section>
-        </div>
-      </main>
     </div>
   </div>
 
@@ -499,7 +498,7 @@
   document.getElementById("member-name").textContent =
     currentName || currentId || "Unknown";
   document.getElementById("member-id").textContent =
-    currentId ? "@" + currentId : "";
+    currentId || "";
   document.getElementById("member-team").textContent =
     currentTeam ? "소속: " + currentTeam : "소속: 미배정";
   document.getElementById("member-hello").textContent =
@@ -638,52 +637,48 @@
 
   /* ─────────────  3. 프로모션 / 공지 이미지  ───────────── */
 
-  (function setupPromotions() {
-    const promoSection = document.getElementById("promo-section");
-    const promoGrid    = document.getElementById("promo-grid");
-    if (!promoSection || !promoGrid) return;
+ (function setupPromotions() {
+  const promoSection = document.getElementById("promo-section");
+  const promoGrid    = document.getElementById("promo-grid");
+  if (!promoSection || !promoGrid) return;
 
-    const promos = [
-      {
-        id: "sot-star1-pro1",
-        title: "so.t 직급 로드맵 – Star1 ~ Pro1",
-        image: "img/promo/sot-promo-star1-pro1.jpg",
-        link: "rank-hall.html"
-      },
-      {
-        id: "sot-pro2-pro6",
-        title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
-        image: "img/promo/sot-promo-pro2-pro6.jpg",
-        link: "rank-hall.html"
-      }
-    ];
-
-    if (!Array.isArray(promos) || promos.length === 0) {
-      promoSection.style.display = "none";
-      return;
+  const promos = [
+    {
+      id: "sot-star1-pro1",
+      title: "so.t 직급 로드맵 – Star1 ~ Pro1",
+      image: "img/promo/sot-promo-star1-pro1.jpg"
+    },
+    {
+      id: "sot-pro2-pro6",
+      title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
+      image: "img/promo/sot-promo-pro2-pro6.jpg"
     }
+  ];
 
-    promoGrid.innerHTML = "";
-    promos.forEach((p) => {
-      const a = document.createElement("a");
-      a.className = "promo-card";
-      a.href = p.link || "#";
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
+  // 프로모션이 하나도 없으면 섹션 숨김
+  if (!Array.isArray(promos) || promos.length === 0) {
+    promoSection.style.display = "none";
+    return;
+  }
 
-      const img = document.createElement("img");
-      img.src = p.image;
-      img.alt = p.title || "";
+  promoGrid.innerHTML = "";
+  promos.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "promo-card";
 
-      const cap = document.createElement("div");
-      cap.className = "promo-caption";
-      cap.textContent = p.title || "";
+    const img = document.createElement("img");
+    img.src = p.image;
+    img.alt = p.title || "";
 
-      a.appendChild(img);
-      a.appendChild(cap);
-      promoGrid.appendChild(a);
-    });
-  })();
+    const cap = document.createElement("div");
+    cap.className = "promo-caption";
+    cap.textContent = p.title || "";
+
+    card.appendChild(img);
+    card.appendChild(cap);
+    promoGrid.appendChild(card);
+  });
+})();
 
   /* ─────────────  4. 로그아웃  ───────────── */
 
