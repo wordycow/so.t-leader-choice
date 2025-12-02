@@ -147,63 +147,58 @@
     }
 
     .rank-badge-box {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: radial-gradient(circle at top, rgba(30,64,175,0.9), rgba(15,23,42,0.95));
-  box-shadow:
-    inset 0 0 0 1px rgba(191,219,254,0.5),
-    0 10px 26px rgba(15,23,42,0.9);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: radial-gradient(circle at top, rgba(30,64,175,0.9), rgba(15,23,42,0.95));
+      box-shadow:
+        inset 0 0 0 1px rgba(191,219,254,0.5),
+        0 10px 26px rgba(15,23,42,0.9);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-.rank-road {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+    .rank-road {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-.rank-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  object-fit: contain;
-  background: rgba(15,23,42,0.9);
-  box-shadow: 0 0 0 2px rgba(249,250,251,0.12);
-}
+    .rank-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      object-fit: contain;
+      background: rgba(15,23,42,0.9);
+      box-shadow: 0 0 0 2px rgba(249,250,251,0.12);
+    }
 
-.rank-icon-current {
-  /* 필요하면 현재 직급 전용 스타일 따로 쓸 때 */
-}
+    .rank-icon-next {
+      opacity: 0.8;
+    }
 
-.rank-icon-next {
-  opacity: 0.8;
-}
+    .rank-arrow {
+      font-size: 18px;
+      color: #fde68a;
+    }
 
-.rank-arrow {
-  font-size: 18px;
-  color: #fde68a;
-}
+    .rank-text-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-.rank-text-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+    .rank-label-main {
+      font-size: 13px;
+      font-weight: 600;
+    }
 
-.rank-label-main {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.rank-label-sub {
-  font-size: 11px;
-  color: #e5e7eb;
-  opacity: 0.85;
-}
-
+    .rank-label-sub {
+      font-size: 11px;
+      color: #e5e7eb;
+      opacity: 0.85;
+    }
 
     /* ───── 목표 직급 + eBook ───── */
     .goal-panel {
@@ -294,9 +289,13 @@
       color: #fde68a;
     }
 
-    /* ───── 프로모션 / 공지 ───── */
+    /* ───── 프로모션 (이미지 전용) ───── */
     .promo-section {
       margin-top: 18px;
+      width: 100%;
+      max-width: 920px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .promo-title {
@@ -306,9 +305,10 @@
     }
 
     .promo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
     }
 
     .promo-card {
@@ -317,22 +317,23 @@
       background: rgba(15,23,42,0.95);
       border: 1px solid rgba(55,65,81,1);
       box-shadow: 0 10px 24px rgba(0,0,0,0.9);
-      text-decoration: none;
-      color: inherit;
       display: flex;
       flex-direction: column;
+      max-width: 420px;   /* 이미지 폭 기준으로 맞추고 싶으면 여기 조절 */
     }
 
     .promo-card img {
       width: 100%;
-      height: 110px;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;  /* 비율 유지 */
+      display: block;
     }
 
     .promo-caption {
       padding: 6px 8px 8px;
       font-size: 11px;
       color: #e5e7eb;
+      text-align: center;
     }
 
     .footer-note {
@@ -381,7 +382,7 @@
 </head>
 <body>
   <div class="scene">
-    <!-- 🔥 메인 배경 이미지 (없으면 gate 배경 복사해서 이름만 바꿔도 됨) -->
+    <!-- 🔥 메인 배경 이미지 -->
     <img src="img/bg-unique-main.jpg" class="scene-bg" alt="The Unique main background" />
 
     <div class="page-wrap">
@@ -394,49 +395,48 @@
 
           <section class="layout">
             <!-- 왼쪽: 회원 인사 + 직급 -->
-           <div class="member-panel">
-  <div class="member-hello" id="member-hello">오늘도 액션하러 오셨군요.</div>
-  <div id="member-name" class="member-name">회원 이름</div>
-  <div id="member-id" class="member-id">@userid</div>
-  <div id="member-team" class="member-meta">소속: -</div>
+            <div class="member-panel">
+              <div class="member-hello" id="member-hello">오늘도 액션하러 오셨군요.</div>
+              <div id="member-name" class="member-name">회원 이름</div>
+              <div id="member-id" class="member-id">userid</div>
+              <div id="member-team" class="member-meta">소속: -</div>
 
-  <div class="rank-badge-box">
-    <div class="rank-road">
-      <img
-        id="member-rank-img"
-        class="rank-icon"
-        src="img/rank/default.png"
-        alt="Rank badge"
-      />
-      <span class="rank-arrow">➜</span>
-      <img
-        id="next-rank-img"
-        class="rank-icon rank-icon-next"
-        src="img/rank/default-next.png"
-        alt="Next rank badge"
-      />
-    </div>
+              <div class="rank-badge-box">
+                <div class="rank-road">
+                  <img
+                    id="member-rank-img"
+                    class="rank-icon"
+                    src="img/rank/default.png"
+                    alt="Rank badge"
+                  />
+                  <span class="rank-arrow">➜</span>
+                  <img
+                    id="next-rank-img"
+                    class="rank-icon rank-icon-next"
+                    src="img/rank/default-next.png"
+                    alt="Next rank badge"
+                  />
+                </div>
 
-    <div class="rank-text-block">
-      <div id="member-rank-label" class="rank-label-main">현재 직급: 준비중</div>
-      <div id="next-rank-label" class="rank-label-sub">
-        다음 직급: 설정 중
-      </div>
-    </div>
-  </div>
+                <div class="rank-text-block">
+                  <div id="member-rank-label" class="rank-label-main">현재 직급: 준비중</div>
+                  <div id="next-rank-label" class="rank-label-sub">
+                    다음 직급: 설정 중
+                  </div>
+                </div>
+              </div>
 
-  <div class="logout-row">
-    <button type="button" id="logout-btn" class="logout-btn">
-      로그아웃
-    </button>
-  </div>
-</div>
+              <div class="logout-row">
+                <button type="button" id="logout-btn" class="logout-btn">
+                  로그아웃
+                </button>
+              </div>
+            </div>
 
-
-            <!-- 오른쪽: 다음 목표 + eBook + 프로모션 -->
+            <!-- 오른쪽: 목표 직급 + eBook -->
             <div class="goal-panel">
               <div class="section-title">다음 목표 직급</div>
-              <div id="next-rank-label" class="next-rank-label">설정된 목표 직급이 없습니다.</div>
+              <div id="goal-next-rank-label" class="next-rank-label">설정된 목표 직급이 없습니다.</div>
               <ul id="next-rank-conditions" class="next-rank-conditions"></ul>
 
               <div id="ebook-section">
@@ -460,232 +460,245 @@
           </section>
         </div>
       </main>
-      <div id="promo-section" class="promo-section">
-                <div class="promo-title">프로모션 / 공지사항</div>
-                <div id="promo-grid" class="promo-grid"></div>
-              </div>
-
-              <div class="footer-note">
-                The Unique &copy; 2025 · internal use only
-              </div>
     </div>
   </div>
 
- <script>
-  /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
+  <!-- 프로모션 영역: 메인 카드 밖, 아래쪽 -->
+  <div id="promo-section" class="promo-section">
+    <div class="promo-title">프로모션</div>
+    <div id="promo-grid" class="promo-grid"></div>
+  </div>
 
-  const raw = localStorage.getItem("uniqueCurrentUser");
-  if (!raw) {
-    window.location.href = "the-unique-gate.html";
-  }
+  <div class="footer-note">
+    The Unique &copy; 2025 · internal use only
+  </div>
 
-  let currentId = "";
-  let currentName = "";
-  let currentTeam = "";
-  let currentJoin = "";
+  <script>
+    /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
 
-  try {
-    const user = JSON.parse(raw || "{}");
-    currentId   = (user.id || "").toLowerCase();
-    currentName = user.name || "";
-    currentTeam = user.team || "";
-    currentJoin = user.joinedAt || "";
-  } catch (e) {
-    console.error(e);
-    window.location.href = "the-unique-gate.html";
-  }
-
-  document.getElementById("member-name").textContent =
-    currentName || currentId || "Unknown";
-  document.getElementById("member-id").textContent =
-    currentId || "";
-  document.getElementById("member-team").textContent =
-    currentTeam ? "소속: " + currentTeam : "소속: 미배정";
-  document.getElementById("member-hello").textContent =
-    (currentName || currentId || "멤버") + "님, 오늘도 행동하러 오셨군요.";
-
-  // 랭크 이미지 클릭 → rank-hall 새창
-  (function () {
-    const imgEl   = document.getElementById("member-rank-img");
-    const labelEl = document.getElementById("member-rank-label");
-    function openRankHall() {
-      window.open("rank-hall.html", "_blank");
+    const raw = localStorage.getItem("uniqueCurrentUser");
+    if (!raw) {
+      window.location.href = "the-unique-gate.html";
     }
-    imgEl.style.cursor = "pointer";
-    labelEl.style.cursor = "pointer";
-    imgEl.addEventListener("click", openRankHall);
-    labelEl.addEventListener("click", openRankHall);
-  })();
 
-  /* ─────────────  1. rank-hall.json 연결 (현재 직급 + 다음 직급)  ───────────── */
+    let currentId = "";
+    let currentName = "";
+    let currentTeam = "";
+    let currentJoin = "";
 
-  const RANK_ORDER = [
-    "Star1", "Star2", "Star3",
-    "Pro1", "Pro2", "Pro3",
-    "Pro4", "Pro5", "Pro6",
-    "Pro7", "Pro8", "Pro9", "Pro10"
-  ];
+    try {
+      const user = JSON.parse(raw || "{}");
+      currentId   = (user.id || "").toLowerCase();
+      currentName = user.name || "";
+      currentTeam = user.team || "";
+      currentJoin = user.joinedAt || "";
+    } catch (e) {
+      console.error(e);
+      window.location.href = "the-unique-gate.html";
+    }
 
-  // JSON 구조에 맞게 필드명 추출하는 헬퍼들
-  function getName(rec) {
-    return String(rec.name || rec.userName || "").trim();
-  }
-  function getTeam(rec) {
-    return String(rec.team || rec.group || "").trim();
-  }
-  function getJoin(rec) {
-    return String(rec.joinedAt || rec.joinDate || "").trim();
-  }
-  function getRankCode(rec) {
-    return String(rec.rank || rec.rankCode || rec.level || "").trim();
-  }
-  function getRankImage(rec) {
-    return rec.image || rec.rankImage || rec.badge || "";
-  }
+    // 인사에는 이름 사용
+    document.getElementById("member-hello").textContent =
+      (currentName || currentId || "멤버") + "님, 오늘도 행동하러 오셨군요.";
 
-  function pickMyRankRecord(list, name, team, joinedAt) {
-    const sameNameTeam = list.filter(
-      (m) => getName(m) === name && getTeam(m) === team
-    );
+    // 큰 글씨는 아이디만
+    document.getElementById("member-name").textContent =
+      currentId || currentName || "Unknown";
 
-    if (sameNameTeam.length === 0) return null;
-    if (sameNameTeam.length === 1) return sameNameTeam[0];
+    // 아래 작은 라인에는 아이디 다시 한 번 (원하면 지워도 됨)
+    document.getElementById("member-id").textContent =
+      currentId || "";
 
-    if (joinedAt) {
-      const exact = sameNameTeam.find(
-        (m) => getJoin(m) === String(joinedAt).trim()
+    // 소속: 이름과 소속이 같으면 HQ
+    const teamText =
+      currentTeam
+        ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
+        : "소속: 미배정";
+    document.getElementById("member-team").textContent = teamText;
+
+    // 랭크 이미지 클릭 → rank-hall 새창
+    (function () {
+      const imgEl   = document.getElementById("member-rank-img");
+      const labelEl = document.getElementById("member-rank-label");
+      function openRankHall() {
+        window.open("rank-hall.html", "_blank");
+      }
+      imgEl.style.cursor = "pointer";
+      labelEl.style.cursor = "pointer";
+      imgEl.addEventListener("click", openRankHall);
+      labelEl.addEventListener("click", openRankHall);
+    })();
+
+    /* ─────────────  1. rank-hall.json 연결 (현재 직급 + 다음 직급)  ───────────── */
+
+    const RANK_ORDER = [
+      "Star1", "Star2", "Star3",
+      "Pro1", "Pro2", "Pro3",
+      "Pro4", "Pro5", "Pro6",
+      "Pro7", "Pro8", "Pro9", "Pro10"
+    ];
+
+    function getName(rec) {
+      return String(rec.name || rec.userName || "").trim();
+    }
+    function getTeam(rec) {
+      return String(rec.team || rec.group || "").trim();
+    }
+    function getJoin(rec) {
+      return String(rec.joinedAt || rec.joinDate || "").trim();
+    }
+    function getRankCode(rec) {
+      return String(rec.rank || rec.rankCode || rec.level || "").trim();
+    }
+    function getRankImage(rec) {
+      return rec.image || rec.rankImage || rec.badge || "";
+    }
+
+    function pickMyRankRecord(list, name, team, joinedAt) {
+      const sameNameTeam = list.filter(
+        (m) => getName(m) === name && getTeam(m) === team
       );
-      if (exact) return exact;
+
+      if (sameNameTeam.length === 0) return null;
+      if (sameNameTeam.length === 1) return sameNameTeam[0];
+
+      if (joinedAt) {
+        const exact = sameNameTeam.find(
+          (m) => getJoin(m) === String(joinedAt).trim()
+        );
+        if (exact) return exact;
+      }
+
+      // 자동으로 못 고르면 일단 첫 번째 사용 (추후 so.t 가입일 확인 로직 추가 가능)
+      return sameNameTeam[0];
     }
 
-    // 자동으로 못 고르면 일단 첫 번째 사용 (향후 so.t 가입일 확인 로직 추가 가능)
-    return sameNameTeam[0];
-  }
+    fetch("rank-hall.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.members || []);
 
-  fetch("rank-hall.json")
-    .then((res) => res.json())
-    .then((data) => {
-      const list = Array.isArray(data) ? data : (data.members || []);
+        const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
 
-      const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
+        const currentImgEl   = document.getElementById("member-rank-img");
+        const nextImgEl      = document.getElementById("next-rank-img");
+        const currentLabelEl = document.getElementById("member-rank-label");
+        const nextLabelEl    = document.getElementById("next-rank-label");
+        const goalNextLabel  = document.getElementById("goal-next-rank-label");
 
-      const currentImgEl = document.getElementById("member-rank-img");
-      const nextImgEl    = document.getElementById("next-rank-img");
-      const currentLabelEl = document.getElementById("member-rank-label");
-      const nextLabelEl    = document.getElementById("next-rank-label");
+        if (!myRec) {
+          currentLabelEl.textContent = "현재 직급: 정보 없음";
+          nextLabelEl.textContent    = "다음 직급: 준비중";
+          goalNextLabel.textContent  = "설정된 목표 직급이 없습니다.";
+          return;
+        }
 
-      if (!myRec) {
-        currentLabelEl.textContent = "현재 직급: 정보 없음";
-        nextLabelEl.textContent = "다음 직급: 준비중";
+        const myCode = getRankCode(myRec);
+        if (myCode) {
+          currentLabelEl.textContent = "현재 직급: " + myCode;
+        } else {
+          currentLabelEl.textContent = "현재 직급: 정보 없음";
+        }
+
+        const myImg = getRankImage(myRec);
+        if (myImg) currentImgEl.src = myImg;
+
+        // 다음 직급 계산
+        const idx = RANK_ORDER.indexOf(myCode);
+        let nextCode = null;
+        if (idx >= 0 && idx < RANK_ORDER.length - 1) {
+          nextCode = RANK_ORDER[idx + 1];
+        }
+
+        if (!nextCode) {
+          nextLabelEl.textContent   = "다음 직급: 최상위 직급입니다.";
+          goalNextLabel.textContent = "설정된 목표 직급이 없습니다.";
+          nextImgEl.style.opacity   = 0.2;
+          return;
+        }
+
+        nextLabelEl.textContent   = "다음 직급: " + nextCode;
+        goalNextLabel.textContent = "다음 목표 직급: " + nextCode;
+
+        // 다음 직급 이미지: rank-hall.json에서 해당 랭크 가진 아무나 한 명 찾아서 그 이미지 사용
+        const nextHolder = list.find((m) => getRankCode(m) === nextCode);
+        const nextImg = nextHolder ? getRankImage(nextHolder) : "";
+
+        if (nextImg) {
+          nextImgEl.src = nextImg;
+          nextImgEl.style.opacity = 1;
+        } else {
+          nextImgEl.style.opacity = 0.3;
+        }
+      })
+      .catch((err) => {
+        console.error("rank-hall.json 로드 오류:", err);
+      });
+
+    /* ─────────────  2. eBook (전원 공용)  ───────────── */
+
+    (function setupEbook() {
+      const ebookCard  = document.getElementById("ebook-card");
+      const ebookTitle = document.getElementById("ebook-title");
+      const ebookDesc  = document.getElementById("ebook-desc");
+      const ebookImage = document.getElementById("ebook-image");
+
+      ebookTitle.textContent = "The Unique 행동 매뉴얼 eBook";
+      ebookDesc.textContent  = "누구나 언제든지 다시 볼 수 있는 so.t 기본 매뉴얼입니다.";
+      ebookImage.src         = "img/ebook/unique-ebook-cover.jpg";
+      ebookCard.href         = "the-unique-ebook.html";
+    })();
+
+    /* ─────────────  3. 프로모션 이미지 (보기용)  ───────────── */
+
+    (function setupPromotions() {
+      const promoSection = document.getElementById("promo-section");
+      const promoGrid    = document.getElementById("promo-grid");
+      if (!promoSection || !promoGrid) return;
+
+      const promos = [
+        {
+          id: "sot-star1-pro1",
+          title: "so.t 직급 로드맵 – Star1 ~ Pro1",
+          image: "img/promo/sot-promo-star1-pro1.jpg"
+        },
+        {
+          id: "sot-pro2-pro6",
+          title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
+          image: "img/promo/sot-promo-pro2-pro6.jpg"
+        }
+      ];
+
+      if (!Array.isArray(promos) || promos.length === 0) {
+        promoSection.style.display = "none";
         return;
       }
 
-      const myCode = getRankCode(myRec);
-      if (myCode) {
-        currentLabelEl.textContent = "현재 직급: " + myCode;
-      } else {
-        currentLabelEl.textContent = "현재 직급: 정보 없음";
-      }
+      promoGrid.innerHTML = "";
+      promos.forEach((p) => {
+        const card = document.createElement("div");
+        card.className = "promo-card";
 
-      const myImg = getRankImage(myRec);
-      if (myImg) currentImgEl.src = myImg;
+        const img = document.createElement("img");
+        img.src   = p.image;
+        img.alt   = p.title || "";
 
-      // 다음 직급 계산
-      const idx = RANK_ORDER.indexOf(myCode);
-      let nextCode = null;
-      if (idx >= 0 && idx < RANK_ORDER.length - 1) {
-        nextCode = RANK_ORDER[idx + 1];
-      }
+        const cap = document.createElement("div");
+        cap.className = "promo-caption";
+        cap.textContent = p.title || "";
 
-      if (!nextCode) {
-        nextLabelEl.textContent = "다음 직급: 최상위 직급입니다.";
-        nextImgEl.style.opacity = 0.2;
-        return;
-      }
+        card.appendChild(img);
+        card.appendChild(cap);
+        promoGrid.appendChild(card);
+      });
+    })();
 
-      nextLabelEl.textContent = "다음 직급: " + nextCode;
+    /* ─────────────  4. 로그아웃  ───────────── */
 
-      // 다음 직급 이미지: rank-hall.json에서 해당 랭크 가진 아무나 한 명 찾아서 그 이미지 사용
-      const nextHolder = list.find((m) => getRankCode(m) === nextCode);
-      const nextImg = nextHolder ? getRankImage(nextHolder) : "";
-
-      if (nextImg) {
-        nextImgEl.src = nextImg;
-        nextImgEl.style.opacity = 1;
-      } else {
-        // 이미지 없으면 살짝 흐리게만 표시
-        nextImgEl.style.opacity = 0.3;
-      }
-    })
-    .catch((err) => {
-      console.error("rank-hall.json 로드 오류:", err);
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem("uniqueCurrentUser");
+      window.location.href = "the-unique-gate.html";
     });
-
-  /* ─────────────  2. eBook (전원 공용)  ───────────── */
-
-  (function setupEbook() {
-    const ebookCard  = document.getElementById("ebook-card");
-    const ebookTitle = document.getElementById("ebook-title");
-    const ebookDesc  = document.getElementById("ebook-desc");
-    const ebookImage = document.getElementById("ebook-image");
-
-    ebookTitle.textContent = "The Unique 행동 매뉴얼 eBook";
-    ebookDesc.textContent  = "누구나 언제든지 다시 볼 수 있는 so.t 기본 매뉴얼입니다.";
-    ebookImage.src = "img/ebook/unique-ebook-cover.jpg";   // 실제 이미지 이름에 맞게
-    ebookCard.href = "the-unique-ebook.html";               // eBook 페이지
-  })();
-
-  /* ─────────────  3. 프로모션 / 공지 이미지  ───────────── */
-
- (function setupPromotions() {
-  const promoSection = document.getElementById("promo-section");
-  const promoGrid    = document.getElementById("promo-grid");
-  if (!promoSection || !promoGrid) return;
-
-  const promos = [
-    {
-      id: "sot-star1-pro1",
-      title: "so.t 직급 로드맵 – Star1 ~ Pro1",
-      image: "img/promo/sot-promo-star1-pro1.jpg"
-    },
-    {
-      id: "sot-pro2-pro6",
-      title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
-      image: "img/promo/sot-promo-pro2-pro6.jpg"
-    }
-  ];
-
-  // 프로모션이 하나도 없으면 섹션 숨김
-  if (!Array.isArray(promos) || promos.length === 0) {
-    promoSection.style.display = "none";
-    return;
-  }
-
-  promoGrid.innerHTML = "";
-  promos.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "promo-card";
-
-    const img = document.createElement("img");
-    img.src = p.image;
-    img.alt = p.title || "";
-
-    const cap = document.createElement("div");
-    cap.className = "promo-caption";
-    cap.textContent = p.title || "";
-
-    card.appendChild(img);
-    card.appendChild(cap);
-    promoGrid.appendChild(card);
-  });
-})();
-
-  /* ─────────────  4. 로그아웃  ───────────── */
-
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("uniqueCurrentUser");
-    window.location.href = "the-unique-gate.html";
-  });
-</script>
+  </script>
 </body>
 </html>
