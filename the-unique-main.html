@@ -107,7 +107,7 @@
       display: grid;
       grid-template-columns: minmax(0, 2.4fr) minmax(0, 3fr);
       gap: 24px;
-      align-items: flex-start;
+      align-items: stretch; /* 좌/우 카드 높이 동일하게 */
     }
 
     /* ───── 회원 정보 + 직급 ───── */
@@ -118,6 +118,8 @@
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.85),
         0 12px 28px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
     }
 
     .member-hello {
@@ -207,142 +209,133 @@
     }
 
     /* ───── 목표 + 마녀 ───── */
-   /* ───── 목표 + 마녀 ───── */
-.goal-panel {
-  border-radius: 22px;
-  padding: 16px 18px;
-  background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
-  box-shadow:
-    0 0 0 1px rgba(30,64,118,0.75),
-    0 12px 28px rgba(0,0,0,0.9);
-}
+    .goal-panel {
+      border-radius: 22px;
+      padding: 16px 18px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.75),
+        0 12px 28px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+    }
 
-.goal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 4px;
-}
+    .goal-header {
+      margin-bottom: 6px;
+    }
 
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #E5E7EB;
-}
+    .goal-header-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #E5E7EB;
+    }
 
-.next-rank-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #FACC15;
-}
+    .goal-header-text span {
+      color: #FACC15; /* 다음 목표 코드 금색 */
+      font-weight: 800;
+      margin-left: 4px;
+    }
 
-.next-rank-label {
-  display: none; /* 예전 “다음 직급: Pro1” 라인 숨김 */
-}
+    /* 마녀 목표 카드 – 오른쪽 영역 전체를 채우도록 flex:1 */
+    .next-goal-card {
+      flex: 1 1 auto;
+      border-radius: 18px;
+      padding: 14px 18px 16px;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.8)),
+        url("img/next-goal-bg.jpg") center center / cover no-repeat;
+      border: 1px solid #F59E0B;
+      box-shadow:
+        0 0 0 1px rgba(15,23,42,1),
+        0 10px 24px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%; /* goal-panel 높이에 맞춰 확장 */
+    }
 
-/* 🔥 여기부터 마녀 카드 */
-.next-goal-card {
-  margin-top: 6px;
-  margin-bottom: 4px;
-  border-radius: 18px;
-  padding: 14px 18px 16px;
-  background:
-    linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.8)),
-    url("img/next-goal-bg.jpg") center center / cover no-repeat;
-  border: 1px solid #F59E0B;
-  box-shadow:
-    0 0 0 1px rgba(15,23,42,1),
-    0 10px 24px rgba(0,0,0,0.9);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 230px;
-}
+    .next-goal-top {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+      margin-bottom: 32px;
+    }
 
-.next-goal-top {
-  display: flex;
-  justify-content: center;
-  margin-top: 4px;
-  margin-bottom: 32px; /* 달 근처에 위치시키기 위해 아래 여백 크게 */
-}
+    .goal-me-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
 
-.goal-me-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
+    /* 마녀 PNG 원본 크기 근처 (너무 안 키움) */
+    .goal-witch {
+      max-height: 64px;
+      height: auto;
+      width: auto;
+      display: block;
+      animation: witchFloat 4s ease-in-out infinite alternate;
+      filter:
+        drop-shadow(0 0 10px rgba(245,158,11,0.9))
+        drop-shadow(0 6px 14px rgba(0,0,0,0.8));
+    }
 
-/* 마녀 원본 PNG만 사용 + 위아래로 둥둥 */
-.goal-witch {
-  width: 80px;           /* 다시 40px 정도로 축소 */
-  height: auto;
-  display: block;
-  animation: witchFloat 4s ease-in-out infinite alternate;
-  filter:
-    drop-shadow(0 0 10px rgba(245,158,11,0.9))
-    drop-shadow(0 6px 14px rgba(0,0,0,0.8));
-}
+    .goal-me-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #F9FAFB;
+    }
 
+    .next-goal-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
 
-.goal-me-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #F9FAFB;
-}
+    .goal-side {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
 
-/* 좌우 숫자 영역은 기존 그대로 사용 */
-.next-goal-bottom {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 4px;
-}
+    .goal-arrow {
+      font-size: 18px;
+      color: #FACC15;
+      text-shadow: 0 0 10px rgba(245,158,11,0.7);
+      margin-bottom: 2px;
+    }
 
-.goal-side {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
+    .goal-count {
+      font-size: 18px;
+      font-weight: 700;
+      color: #F9FAFB;
+      text-shadow: 0 0 10px rgba(15,23,42,0.9);
+    }
 
-.goal-arrow {
-  font-size: 18px;
-  color: #FACC15;
-  text-shadow: 0 0 10px rgba(245,158,11,0.7);
-  margin-bottom: 2px;
-}
+    .goal-label {
+      font-size: 11px;
+      color: #E5E7EB;
+    }
 
-.goal-count {
-  font-size: 18px;
-  font-weight: 700;
-  color: #F9FAFB;
-  text-shadow: 0 0 10px rgba(15,23,42,0.9);
-}
+    .goal-left {
+      align-items: flex-start;
+    }
+    .goal-right {
+      align-items: flex-end;
+    }
 
-.goal-label {
-  font-size: 11px;
-  color: #E5E7EB;
-}
+    .goal-left .goal-count,
+    .goal-left .goal-label {
+      text-align: left;
+    }
+    .goal-right .goal-count,
+    .goal-right .goal-label {
+      text-align: right;
+    }
 
-.goal-left {
-  align-items: flex-start;
-}
-.goal-right {
-  align-items: flex-end;
-}
-
-.goal-left .goal-count,
-.goal-left .goal-label {
-  text-align: left;
-}
-.goal-right .goal-count,
-.goal-right .goal-label {
-  text-align: right;
-}
-
-.goal-left .goal-arrow { transform: translateX(4px); }
-.goal-right .goal-arrow { transform: translateX(-4px); }
-
+    .goal-left .goal-arrow { transform: translateX(4px); }
+    .goal-right .goal-arrow { transform: translateX(-4px); }
 
     /* eBook 전용 패널 – 메인 카드 안, 맨 아래 */
     .ebook-panel {
@@ -357,6 +350,9 @@
 
     .ebook-panel .section-title {
       margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #E5E7EB;
     }
 
     .ebook-card {
@@ -371,7 +367,7 @@
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.9),
         0 14px 26px rgba(0,0,0,0.9);
-      min-height: 120px; /* 왼쪽 직급 박스와 비슷한 존재감 */
+      min-height: 120px;
     }
 
     .ebook-card:hover {
@@ -530,11 +526,12 @@
       margin-right: auto;
       opacity: 0.85;
     }
-    /* 마녀 둥둥 뜨는 애니메이션 */
-@keyframes witchFloat {
-  0%   { transform: translateY(4px); }
-  100% { transform: translateY(-10px); }
-}
+
+    /* 마녀 위아래 애니메이션 */
+    @keyframes witchFloat {
+      0%   { transform: translateY(4px); }
+      100% { transform: translateY(-10px); }
+    }
 
     @media (max-width: 768px) {
       .page-wrap {
@@ -630,20 +627,21 @@
             </div>
           </div>
 
-          <!-- 오른쪽: 다음 목표 + 마녀 카드 -->
+          <!-- 오른쪽: 다음 목표 + 마녀 -->
           <div class="goal-panel">
             <div class="goal-header">
-              <div class="section-title">다음 목표</div>
-              <div id="goal-next-rank-title" class="next-rank-title">-</div>
+              <div id="goal-next-rank-title" class="goal-header-text">
+                다음 목표: <span>-</span>
+              </div>
             </div>
 
             <div class="next-goal-card">
               <div class="next-goal-top">
-  <div class="goal-me-wrap">
-    <img src="img/witch-float.png" alt="나" class="goal-witch" />
-    <div class="goal-me-label">나</div>
-  </div>
-</div>
+                <div class="goal-me-wrap">
+                  <img src="img/witch-float.png" alt="나" class="goal-witch" />
+                  <div class="goal-me-label">나</div>
+                </div>
+              </div>
 
               <div class="next-goal-bottom">
                 <div class="goal-side goal-left">
@@ -658,12 +656,10 @@
                 </div>
               </div>
             </div>
-
-            <ul id="next-rank-conditions" class="next-rank-conditions"></ul>
           </div>
         </section>
 
-        <!-- eBook 전용 패널: 오른쪽 패널에서 분리해서 아래에 배치 -->
+        <!-- eBook 전용 패널: 아래 독립 박스 -->
         <section class="ebook-panel">
           <div class="section-title">
             다음 목표를 위해 학습하시겠습니까?
@@ -822,20 +818,20 @@
         const nextImgEl      = document.getElementById("next-rank-img");
         const currentMiniEl  = document.getElementById("member-rank-mini");
         const nextMiniEl     = document.getElementById("next-rank-mini");
-        const goalNextTitleEl= document.getElementById("goal-next-rank-title");
+        const goalHeaderEl   = document.getElementById("goal-next-rank-title");
 
         if (!myRec) {
           currentMiniEl.textContent = "현재 직급: -";
           nextMiniEl.textContent    = "다음 직급: -";
-          goalNextTitleEl.textContent = "-";
+          goalHeaderEl.innerHTML    = '다음 목표: <span>-</span>';
           return;
         }
 
         const myCode = getRankCode(myRec);
         if (myCode) {
-          currentMiniEl.textContent  = "현재 직급: " + myCode;
+          currentMiniEl.textContent = "현재 직급: " + myCode;
         } else {
-          currentMiniEl.textContent  = "현재 직급: -";
+          currentMiniEl.textContent = "현재 직급: -";
         }
 
         currentImgEl.src = getBadgeSrc(myCode);
@@ -848,14 +844,14 @@
         }
 
         if (!nextCode) {
-          nextMiniEl.textContent      = "다음 직급: -";
-          goalNextTitleEl.textContent = "-";
-          nextImgEl.style.opacity     = 0.2;
+          nextMiniEl.textContent     = "다음 직급: -";
+          goalHeaderEl.innerHTML     = '다음 목표: <span>-</span>';
+          nextImgEl.style.opacity    = 0.2;
           return;
         }
 
-        goalNextTitleEl.textContent = nextCode;
-        nextMiniEl.textContent      = "다음 직급: " + nextCode;
+        goalHeaderEl.innerHTML = '다음 목표: <span>' + nextCode + '</span>';
+        nextMiniEl.textContent = "다음 직급: " + nextCode;
 
         nextImgEl.src = getBadgeSrc(nextCode);
         applyRankScale(nextImgEl, nextCode, 1.35);
