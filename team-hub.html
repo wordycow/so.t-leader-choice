@@ -303,4 +303,493 @@
       min-height: 160px;
       resize: vertical;
       font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-siz
+      font-size: 11px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.85);
+      background: #020617;
+      color: #e5e7eb;
+    }
+
+    .gen-output-small {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.85);
+      background: #020617;
+      color: #e5e7eb;
+      margin-top: 6px;
+    }
+
+    .gen-note {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    @media (max-width: 900px) {
+      .gen-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .links-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .search-input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <header>
+      <h1>so.t Team Hub</h1>
+      <p class="sub">
+        so.t 리더 보드 · 직급의 전당 · The Unique 관련 페이지와 GitHub 소스를 한 곳에서 관리합니다.
+      </p>
+    </header>
+
+    <!-- 링크 허브 (관리자 전용) -->
+    <section class="glass-panel">
+      <div class="links-header">
+        <h2>링크 허브 (관리자 전용)</h2>
+        <input id="link-search" class="search-input" placeholder="링크 이름·설명 검색…" />
+      </div>
+
+      <div id="links-container"></div>
+    </section>
+
+    <!-- 공지/프로모션 HTML 생성기 -->
+    <section class="glass-panel gen-panel">
+      <h2>공지 / 프로모션 HTML 생성기</h2>
+      <p class="sub">
+        ssoti 공지 화면에서 제목과 내용을 복사해와서 붙여 넣으면,
+        the-unique-notice-*.html / the-unique-promo-*.html 파일에 쓸 HTML 틀과
+        목록용 코드까지 자동으로 만들어줍니다.
+      </p>
+
+      <div class="gen-grid">
+        <!-- 왼쪽: 입력 -->
+        <div>
+          <div class="gen-field">
+            <div class="gen-label">타입 선택</div>
+            <select id="gen-type" class="gen-select">
+              <option value="notice">공지사항 (the-unique-notice-*.html)</option>
+              <option value="promo">프로모션 (the-unique-promo-*.html)</option>
+            </select>
+          </div>
+
+          <div class="gen-field">
+            <div class="gen-label">공지 / 프로모션 제목</div>
+            <input id="gen-title" class="gen-input" placeholder="예: 구글 OTP 인증 오류 안내." />
+          </div>
+
+          <div class="gen-row-2">
+            <div class="gen-field">
+              <div class="gen-label">등록일 (예: 2025.12.01)</div>
+              <input id="gen-date" class="gen-input" placeholder="YYYY.MM.DD" />
+            </div>
+            <div class="gen-field">
+              <div class="gen-label">작성자</div>
+              <input id="gen-author" class="gen-input" value="관리자" />
+            </div>
+          </div>
+
+          <div class="gen-field">
+            <div class="gen-label">본문 내용 (줄바꿈 기준으로 문단 자동 분리)</div>
+            <textarea id="gen-body" class="gen-textarea" placeholder="여기에 ssoti 공지 텍스트를 그대로 붙여넣으세요.&#10;한 줄이 하나의 문단이 됩니다."></textarea>
+          </div>
+
+          <div class="gen-btn-row">
+            <button id="gen-make" class="gen-btn">HTML 생성</button>
+            <button id="gen-preview" class="gen-btn">새 창에서 미리보기</button>
+          </div>
+
+          <div class="gen-note">
+            ※ 생성된 HTML은 GitHub에서 <code>the-unique-notice-YYYYMMDD-N.html</code> 또는
+            <code>the-unique-promo-YYYYMMDD-N.html</code> 형태의 새 파일에 붙여 넣으면 됩니다.<br/>
+            ※ 목록용 코드는 공지 목록/프로모션 목록 JS에서 추가/삭제할 때 사용하면 됩니다.
+          </div>
+        </div>
+
+        <!-- 오른쪽: 출력 -->
+        <div>
+          <div class="gen-label">생성된 HTML 코드 (복사해서 GitHub에 붙여넣기)</div>
+          <textarea id="gen-output" class="gen-output" readonly></textarea>
+
+          <div class="gen-label" style="margin-top:8px;">목록용 코드 (예: NOTICES 배열에 추가)</div>
+          <textarea id="gen-index-output" class="gen-output-small" readonly></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* ========== 1. 링크 데이터 ========== */
+    const LINK_SECTIONS = [
+      {
+        title: "관리자 전용 화면",
+        badge: "Admin",
+        theme: "admin",
+        links: [
+          {
+            type: "admin",
+            label: "리더 보드 관리자 페이지",
+            note: "admin-index.html · 리더/폼/결과 관리",
+            liveHref: "admin-index.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/admin-index.html",
+            image: "img/admin-index-preview.png"
+          },
+          {
+            type: "admin",
+            label: "직급의 전당 관리자 페이지",
+            note: "admin-rank-hall.html · 직급/배지 관리",
+            liveHref: "admin-rank-hall.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/admin-rank-hall.html",
+            image: "img/admin-rank-hall-preview.png"
+          }
+        ]
+      },
+      {
+        title: "공통 노출 화면 (참가자용)",
+        badge: "Public",
+        theme: "public",
+        links: [
+          {
+            type: "public",
+            label: "리더 보드",
+            note: "index.html · 참가자 최초 진입 화면",
+            liveHref: "index.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/index.html",
+            image: "img/index-preview.png"
+          },
+          {
+            type: "public",
+            label: "직급의 전당",
+            note: "rank-hall.html · 공개용 직급 페이지",
+            liveHref: "rank-hall.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/rank-hall.html",
+            image: "img/rank-hall-preview.png"
+          },
+          {
+            type: "public",
+            label: "The Unique 대문",
+            note: "the-unique-gate.html · The Unique 입구",
+            liveHref: "the-unique-gate.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html",
+            image: "img/the-unique-gate-preview.png"
+          },
+          {
+            type: "public",
+            label: "The Unique 메인",
+            note: "the-unique-main.html · 직급/프로모션 허브 화면",
+            liveHref: "the-unique-main.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html",
+            image: "img/the-unique-gate-preview.png"
+          },
+          {
+            type: "public",
+            label: "The Unique 공지 예시",
+            note: "the-unique-notice.html · 단일 공지 상세 예시",
+            liveHref: "the-unique-notice.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-notice.html",
+            image: "img/bg-unique-notice.jpg"
+          },
+          {
+            type: "public",
+            label: "The Unique 프로모션 보기",
+            note: "the-unique-promo.html · 프로모션 배너 전체 보기",
+            liveHref: "the-unique-promo.html",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html",
+            image: "img/bg-unique-promo.jpg"
+          }
+        ]
+      },
+      {
+        title: "GitHub / 소스 관리",
+        badge: "GitHub",
+        theme: "github",
+        links: [
+          {
+            type: "github",
+            label: "GitHub so.t-leader-choice",
+            note: "레포지토리 메인 · 코드와 이슈 모두 여기서 관리",
+            githubHref: "https://github.com/wordycow/so.t-leader-choice",
+            image: "img/github-main.png"
+          }
+        ]
+      }
+    ];
+
+    /* ========== 2. 링크 렌더링 ========== */
+
+    const linksContainer = document.getElementById("links-container");
+    const searchInput = document.getElementById("link-search");
+
+    function renderLinks(filter = "") {
+      const q = filter.trim().toLowerCase();
+      linksContainer.innerHTML = "";
+
+      LINK_SECTIONS.forEach(section => {
+        const sectionDiv = document.createElement("div");
+        sectionDiv.className = "links-section";
+
+        const h3 = document.createElement("h3");
+        const badgeClass =
+          section.theme === "admin" ? "badge-admin" :
+          section.theme === "public" ? "badge-public" :
+          "badge-github";
+        h3.innerHTML = `${section.title} <span class="badge ${badgeClass}">${section.badge}</span>`;
+        sectionDiv.appendChild(h3);
+
+        const grid = document.createElement("div");
+        grid.className = "links-grid";
+
+        let visibleCount = 0;
+
+        section.links.forEach(link => {
+          const fullText = `${link.label} ${link.note || ""}`.toLowerCase();
+          if (q && !fullText.includes(q)) return;
+
+          const card = document.createElement("article");
+          card.className = `link-card link-card-${link.type}`;
+
+          const mainHref = link.liveHref || link.githubHref || "#";
+
+          if (link.image) {
+            const thumb = document.createElement("a");
+            thumb.className = "link-thumb";
+            thumb.href = mainHref;
+            thumb.target = "_blank";
+            thumb.rel = "noopener noreferrer";
+
+            const img = document.createElement("img");
+            img.src = link.image;
+            img.alt = link.label + " 미리보기";
+            thumb.appendChild(img);
+
+            card.appendChild(thumb);
+          }
+
+          const body = document.createElement("div");
+          body.className = "link-card-body";
+
+          const title = document.createElement("div");
+          title.className = "link-card-title";
+          title.textContent = link.label;
+          body.appendChild(title);
+
+          if (link.note) {
+            const note = document.createElement("div");
+            note.className = "link-card-note";
+            note.textContent = link.note;
+            body.appendChild(note);
+          }
+
+          const btnRow = document.createElement("div");
+          btnRow.className = "link-card-buttons";
+
+          if (link.liveHref) {
+            const aLive = document.createElement("a");
+            aLive.className =
+              "link-chip " + (link.type === "public" ? "chip-public" : "chip-admin");
+            aLive.href = link.liveHref;
+            aLive.target = "_blank";
+            aLive.rel = "noopener noreferrer";
+            aLive.textContent = (link.type === "public") ? "페이지 열기" : "관리자 화면 열기";
+            btnRow.appendChild(aLive);
+          }
+
+          if (link.githubHref) {
+            const aGithub = document.createElement("a");
+            aGithub.className = "link-chip chip-github";
+            aGithub.href = link.githubHref;
+            aGithub.target = "_blank";
+            aGithub.rel = "noopener noreferrer";
+            aGithub.textContent = "GitHub 이동";
+            btnRow.appendChild(aGithub);
+          }
+
+          body.appendChild(btnRow);
+          card.appendChild(body);
+          grid.appendChild(card);
+          visibleCount++;
+        });
+
+        if (visibleCount > 0) {
+          sectionDiv.appendChild(grid);
+          linksContainer.appendChild(sectionDiv);
+        }
+      });
+
+      if (!linksContainer.innerHTML) {
+        const p = document.createElement("p");
+        p.style.fontSize = "12px";
+        p.style.color = "#9ca3af";
+        p.textContent = "검색어에 해당하는 링크가 없습니다.";
+        linksContainer.appendChild(p);
+      }
+    }
+
+    searchInput.addEventListener("input", () => {
+      renderLinks(searchInput.value);
+    });
+
+    renderLinks();
+
+    /* ========== 3. 공지/프로모션 HTML 생성기 ========== */
+
+    const genType   = document.getElementById("gen-type");
+    const genTitle  = document.getElementById("gen-title");
+    const genDate   = document.getElementById("gen-date");
+    const genAuthor = document.getElementById("gen-author");
+    const genBody   = document.getElementById("gen-body");
+    const genMake   = document.getElementById("gen-make");
+    const genPrev   = document.getElementById("gen-preview");
+    const genOutput = document.getElementById("gen-output");
+    const genIndexOutput = document.getElementById("gen-index-output");
+
+    function buildHtmlAndIndex() {
+      const type   = genType.value;   // "notice" or "promo"
+      const title  = (genTitle.value || "").trim();
+      const date   = (genDate.value || "").trim();
+      const author = (genAuthor.value || "").trim() || "관리자";
+      const body   = (genBody.value || "").trim();
+
+      if (!title || !body) {
+        alert("제목과 본문을 모두 입력해 주세요.");
+        return { html: "", idx: "" };
+      }
+
+      const lines = body.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+
+      const bodyHtml = lines
+        .map(l => `      <p>${l}</p>`)
+        .join("\n");
+
+      const niceTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      const bgName = (type === "notice") ? "notice" : "promo";
+
+      const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>${niceTitle}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:
+        #000
+        url("img/bg-unique-${bgName}.jpg")
+        center center / cover
+        no-repeat fixed;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px 40px;
+    }
+    .wrap {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 12px;
+      padding: 20px 22px 26px;
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(209,213,219,0.7);
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+    .body p {
+      font-size: 13px;
+      line-height: 1.7;
+      margin: 6px 0;
+    }
+    .close-btn {
+      margin-top: 16px;
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      cursor: pointer;
+    }
+    .close-btn:hover {
+      background: #f3f4f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>${niceTitle}</h1>
+    <div class="meta">작성자: ${author} · 등록일: ${date || "(등록일 입력)"}</div>
+
+    <div class="body">
+${bodyHtml}
+    </div>
+
+    <button class="close-btn" onclick="window.close()">창 닫기 ✕</button>
+  </div>
+</body>
+</html>`;
+
+      // 목록용 코드 (예: NOTICES 배열에 넣을 한 항목)
+      const idxSnippet = `{
+  type: "${type}",
+  title: "${title}",
+  author: "${author}",
+  date: "${date}",
+  file: "the-unique-${type === "notice" ? "notice" : "promo"}-YYYYMMDD-N.html",
+  views: 0
+},`;
+
+      return { html, idx: idxSnippet };
+    }
+
+    genMake.addEventListener("click", () => {
+      const { html, idx } = buildHtmlAndIndex();
+      if (html) {
+        genOutput.value = html;
+        genIndexOutput.value = idx;
+      }
+    });
+
+    genPrev.addEventListener("click", () => {
+      const { html, idx } = buildHtmlAndIndex();
+      if (!html) return;
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+      }
+    });
+  </script>
+</body>
+</html>
