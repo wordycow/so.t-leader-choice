@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>The Unique – 프로모션</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     * { box-sizing: border-box; }
 
@@ -14,21 +13,21 @@
       height: 100%;
     }
 
-    /* 전체 배경 */
-   body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  color: #f9fafb;
-  background: #000;
-  display: flex;
-  align-items: flex-start;  /* ⬅ center → flex-start */
-  justify-content: center;
-}
+    /* 메인 배경 */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
+      background: #000;
+      display: flex;
+      align-items: flex-start; /* ⬅ 위에서부터 열리도록 */
+      justify-content: center;
+    }
 
     .scene {
       position: fixed;
       inset: 0;
       overflow: hidden;
-      z-index: 0;
+      z-index: -1;
     }
 
     .scene-bg {
@@ -40,70 +39,69 @@
     }
 
     .page-wrap {
-  position: relative;
-  z-index: 10;
-  max-width: 1100px;
-  width: 100%;
-  /* max-height: 100vh;  ← 이 줄은 지우고 */
-  margin-top: 40px;          /* ⬅ 위에서 40px 정도 내려서 시작 */
-  padding: 24px 16px 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
+      position: relative;
+      z-index: 10;
+      max-width: 1100px;
+      width: 100%;
+      /* max-height: 100vh;  ⬅ 내부 스크롤 원인이었으니 제거 */
+      margin: 40px auto 40px;       /* 위에서 조금 내려오게 */
+      padding: 24px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
 
     .card {
-      background: rgba(0,0,0,0.65);
+      background: rgba(15,23,42,0.96);
       border-radius: 24px;
-      border: 1px solid rgba(250,204,21,0.9);
+      border: 1px solid rgba(245,158,11,0.95);
       box-shadow:
-        0 0 18px rgba(250,204,21,0.35),
-        0 26px 80px rgba(0,0,0,0.9);
-      padding: 22px 22px 24px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+        0 0 24px rgba(245,158,11,0.55),
+        0 30px 80px rgba(0,0,0,0.9);
+      padding: 18px 20px 20px;
     }
-    /* PC 화면에서 프로모션 카드 전체 스케일 줄이기 */
-@media (min-width: 1024px) {
-  .card {
-    transform: scale(0.7);         /* 0.7 = 70% 크기, 너무 작으면 0.8~0.9로 조절 가능 */
-    transform-origin: top center;  /* 위쪽 가운데를 기준으로 줄이기 */
-  }
-}
-    
+
+    /* PC에서 카드 크기 축소 (세로 길이는 그대로 두고 전체를 줄임) */
+    @media (min-width: 1024px) {
+      .card {
+        transform: scale(0.7);
+        transform-origin: top center;
+      }
+    }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
     }
 
     .subtitle {
       font-size: 12px;
-      color: #e5e7eb;
+      color: #E5E7EB;
       opacity: 0.85;
       margin-top: 4px;
     }
 
     .btn-close {
-      padding: 7px 12px;
+      padding: 6px 10px;
       border-radius: 999px;
-      border: none;
-      background: radial-gradient(circle at top, #4b5563, #111827);
+      border: 1px solid rgba(148,163,184,0.8);
+      background: rgba(15,23,42,0.95);
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
-      color: #e5e7eb;
+      color: #E5E7EB;
       box-shadow:
-        0 10px 20px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(0,0,0,0.6) inset;
+        0 8px 18px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(15,23,42,0.9) inset;
     }
 
     .btn-close:hover {
@@ -114,23 +112,24 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-height: calc(100vh - 120px);
-      overflow-y: auto;
-      padding-right: 4px;
+      /* max-height / overflow 제거 → 내부 스크롤 없음 */
+      /* max-height: calc(100vh - 120px); */
+      /* overflow-y: auto; */
+      padding-right: 0;
     }
 
     .promo-item {
-      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(3,7,18,0.98));
+      background: rgba(15,23,42,0.98);
       border-radius: 16px;
-      padding: 10px 10px 12px;
-      border: 1px solid rgba(55,65,81,1);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.9);
+      padding: 12px 12px 14px;
+      border: 1px solid rgba(148,163,184,0.85);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.9);
     }
 
     .promo-caption {
       font-size: 12px;
-      color: #e5e7eb;
-      margin-bottom: 6px;
+      color: #E5E7EB;
+      margin-bottom: 8px;
     }
 
     .promo-img-wrap {
@@ -148,27 +147,27 @@
     }
 
     .meta {
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: 11px;
-      color: #9ca3af;
+      color: #9CA3AF;
       text-align: right;
     }
 
     @media (max-width: 768px) {
-      .card {
-        padding: 18px 14px 20px;
+      .page-wrap {
+        margin: 16px auto 24px;
       }
-      .promo-grid {
-        max-height: calc(100vh - 110px);
+      .card {
+        padding: 16px 14px 18px;
+        transform: none; /* 모바일에서는 축소 X */
       }
     }
   </style>
 </head>
 <body>
-  <!-- 배경 이미지: 프로모션 전용 -->
-  <!-- ⚠️ img/bg-unique-promo.jpg 파일 준비해 두었을 때 -->
+  <!-- 배경 이미지 -->
   <div class="scene">
-    <img src="img/bg-unique-promo.jpg" class="scene-bg" alt="Promotion background" />
+    <img src="img/bg-unique-main.jpg" class="scene-bg" alt="Promotion background" />
   </div>
 
   <div class="page-wrap">
@@ -193,7 +192,7 @@
 
   <script>
     // 💡 여기 배열에 img/promo 폴더의 이미지들을 등록하면
-    //    개수에 맞게 한 번에 전부 화면에 나열된다.
+    //    개수에 맞게 한 번에 아래로 쭉 보인다.
     const PROMOS = [
       {
         id: "sot-star1-pro1",
@@ -205,7 +204,6 @@
         title: "so.t 직급 로드맵 – Pro2 ~ Pro6",
         image: "img/promo/sot-promo-pro2-pro6.jpg"
       }
-      // 나중에 또 추가하면 그대로 위 형식으로 한 줄씩 더 추가
     ];
 
     const grid = document.getElementById("promo-grid");
@@ -215,7 +213,7 @@
       const empty = document.createElement("div");
       empty.textContent = "등록된 프로모션이 없습니다.";
       empty.style.fontSize = "13px";
-      empty.style.color = "#e5e7eb";
+      empty.style.color = "#E5E7EB";
       grid.appendChild(empty);
     } else {
       PROMOS.forEach((p) => {
