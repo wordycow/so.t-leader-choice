@@ -166,13 +166,15 @@
     }
 
     .rank-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      object-fit: contain;
-      background: rgba(15,23,42,0.9);
-      box-shadow: 0 0 0 2px rgba(249,250,251,0.12);
-    }
+  max-height: 60px;      /* 최대 높이만 제한, 나머지는 각 이미지 크기에 맡김 */
+  height: auto;
+  width: auto;
+  border-radius: 8px;    /* 살짝 둥근 카드 느낌 */
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+}
+
 
     .rank-icon-next {
       opacity: 0.8;
@@ -199,6 +201,20 @@
       color: #e5e7eb;
       opacity: 0.85;
     }
+
+    .rank-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rank-mini-label {
+  font-size: 10px;
+  color: #e5e7eb;
+  opacity: 0.85;
+}
+
 
     /* ───── 목표 직급 + eBook ───── */
     .goal-panel {
@@ -468,29 +484,38 @@
               <div id="member-team" class="member-meta">소속: -</div>
 
               <div class="rank-badge-box">
-                <div class="rank-road">
-                  <img
-                    id="member-rank-img"
-                    class="rank-icon"
-                    src="img/rank/default.png"
-                    alt="Rank badge"
-                  />
-                  <span class="rank-arrow">➜</span>
-                  <img
-                    id="next-rank-img"
-                    class="rank-icon rank-icon-next"
-                    src="img/rank/default-next.png"
-                    alt="Next rank badge"
-                  />
-                </div>
+  <div class="rank-road">
+    <div class="rank-slot">
+      <img
+        id="member-rank-img"
+        class="rank-icon"
+        src="img/rank/default.png"
+        alt="현재 직급 배지"
+      />
+      <div id="member-rank-mini" class="rank-mini-label">현재: -</div>
+    </div>
 
-                <div class="rank-text-block">
-                  <div id="member-rank-label" class="rank-label-main">현재 직급: 준비중</div>
-                  <div id="next-rank-label" class="rank-label-sub">
-                    다음 직급: 설정 중
-                  </div>
-                </div>
-              </div>
+    <span class="rank-arrow">➜</span>
+
+    <div class="rank-slot">
+      <img
+        id="next-rank-img"
+        class="rank-icon rank-icon-next"
+        src="img/rank/default-next.png"
+        alt="다음 직급 배지"
+      />
+      <div id="next-rank-mini" class="rank-mini-label">다음: -</div>
+    </div>
+  </div>
+
+  <div class="rank-text-block">
+    <div id="member-rank-label" class="rank-label-main">현재 직급: 준비중</div>
+    <div id="next-rank-label" class="rank-label-sub">
+      다음 직급: 설정 중
+    </div>
+  </div>
+</div>
+
 
               <div class="logout-row">
                 <button type="button" id="logout-btn" class="logout-btn">
@@ -591,8 +616,8 @@
     const teamText =
       currentTeam
         ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
-        : "소속: 미배정";
-    document.getElementById("member-team").textContent = teamText;
+        : "소속: HQ";   // 소속을 안 정하고 이 화면에 올 수 없으니 기본 HQ로
+document.getElementById("member-team").textContent = teamText;
 
     /* ─────────────  1. 직급 코드 → 배지 이미지 맵  ───────────── */
 
@@ -669,6 +694,9 @@
         const currentLabelEl = document.getElementById("member-rank-label");
         const nextLabelEl    = document.getElementById("next-rank-label");
         const goalNextLabel  = document.getElementById("goal-next-rank-label");
+        const currentMiniEl  = document.getElementById("member-rank-mini");
+        const nextMiniEl     = document.getElementById("next-rank-mini");
+
 
         if (!myRec) {
           currentLabelEl.textContent = "현재 직급: 정보 없음";
@@ -694,18 +722,21 @@
           nextCode = RANK_ORDER[idx + 1];
         }
 
-        if (!nextCode) {
-          nextLabelEl.textContent   = "다음 직급: 최상위 직급입니다.";
-          goalNextLabel.textContent = "설정된 목표 직급이 없습니다.";
-          nextImgEl.style.opacity   = 0.2;
-          return;
-        }
+       if (!nextCode) {
+  nextLabelEl.textContent   = "다음 직급: 최상위 직급입니다.";
+  goalNextLabel.textContent = "설정된 목표 직급이 없습니다.";
+  nextImgEl.style.opacity   = 0.2;
+  if (nextMiniEl) nextMiniEl.textContent = "다음: -";
+  return;
+}
 
-        nextLabelEl.textContent   = "다음 직급: " + nextCode;
-        goalNextLabel.textContent = "다음 목표 직급: " + nextCode;
+nextLabelEl.textContent   = "다음 직급: " + nextCode;
+goalNextLabel.textContent = "다음 목표 직급: " + nextCode;
+if (nextMiniEl) nextMiniEl.textContent = "다음: " + nextCode;
 
-        nextImgEl.src = getBadgeSrc(nextCode);
-        nextImgEl.style.opacity = 1;
+nextImgEl.src = getBadgeSrc(nextCode);
+nextImgEl.style.opacity = 1;
+
 
         // 🔥 다음 직급 이미지/텍스트 클릭 시에만 rank-hall 새창
         (function () {
