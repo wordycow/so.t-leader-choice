@@ -1091,57 +1091,58 @@
       window.location.href = "the-unique-gate.html";
     });
   </script>
-    <!-- ===== 여기부터 추가: HQ 전용 시스템 핸드북 버튼 ===== -->
+  <!-- ===== HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) ===== -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       try {
-        // 페이지 안의 모든 요소 중에서 "소속"이라는 글자가 들어있는 요소를 찾는다.
-        var allEls = Array.from(document.querySelectorAll('body *'));
-        var affEl = allEls.find(function (el) {
-          return el.textContent && el.textContent.includes('소속');
+        // HQ가 아니면 그냥 종료
+        if (!document.body.textContent.includes('소속') ||
+            !document.body.textContent.includes('HQ')) {
+          return;
+        }
+
+        // "소속: HQ" 라인을 표시하는 가장 작은 요소 찾기
+        var candidates = Array.from(document.querySelectorAll('body *'));
+        var target = candidates.find(function (el) {
+          if (el === document.body || el === document.documentElement) return false;
+          var text = (el.textContent || '').trim();
+          if (!text) return false;
+          // "소속"과 "HQ"가 둘 다 들어가고, 너무 긴 문장이 아닌 것만
+          if (!text.includes('소속') || !text.includes('HQ')) return false;
+          if (text.length > 30) return false;
+          return true;
         });
 
-        // 전체 텍스트에 "소속: HQ"가 없으면 버튼을 만들지 않는다.
-        var isHQ = document.body.textContent.includes('소속') &&
-                   document.body.textContent.includes('HQ');
-
-        if (!isHQ || !affEl) {
-          return; // HQ가 아니면 아무것도 안 함
-        }
+        if (!target) return; // 못 찾으면 아무것도 안 함
 
         // 버튼 만들기
         var btn = document.createElement('button');
         btn.textContent = '시스템 핸드북';
         btn.style.marginLeft = '8px';
-        btn.style.padding = '6px 12px';
+        btn.style.padding = '4px 10px';
         btn.style.borderRadius = '999px';
-        btn.style.border = '1px solid rgba(255,255,255,0.3)';
+        btn.style.border = '1px solid rgba(255,255,255,0.4)';
         btn.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
         btn.style.color = '#111827';
-        btn.style.fontSize = '12px';
+        btn.style.fontSize = '11px';
         btn.style.fontWeight = '700';
         btn.style.cursor = 'pointer';
-        btn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.3)';
+        btn.style.verticalAlign = 'middle';
 
-        btn.addEventListener('mouseenter', function () {
-          btn.style.transform = 'translateY(-1px)';
-        });
-        btn.addEventListener('mouseleave', function () {
-          btn.style.transform = 'translateY(0)';
-        });
-
-        // 클릭 시 unique-map.html로 이동
         btn.addEventListener('click', function () {
           window.location.href = 'unique-map.html';
         });
 
-        // 찾은 "소속" 영역 뒤에 버튼 붙이기
-        affEl.appendChild(btn);
+        // "소속: HQ"를 표시하는 요소 안에 바로 붙이기
+        target.appendChild(btn);
       } catch (e) {
         console.error('HQ 버튼 생성 중 에러:', e);
       }
     });
   </script>
   <!-- ===== 추가 끝 ===== -->
+</body>
+</html>
+
 </body>
 </html>
