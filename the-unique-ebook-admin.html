@@ -23,10 +23,49 @@
       color: #9ca3af;
       margin-bottom: 16px;
     }
-    .book-list {
-      max-width: 1100px;
-      margin: 0 auto 24px;
+
+    /* 상단 메인으로 돌아가기 버튼 */
+    .top-bar {
+      max-width: 1300px;
+      margin: 0 auto 12px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
+    .back-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: linear-gradient(135deg, #1f2937, #020617);
+      color: #e5e7eb;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .back-btn:hover {
+      border-color: rgba(248,250,252,0.9);
+      background: linear-gradient(135deg, #111827, #020617);
+    }
+
+    /* 전체 레이아웃: 왼쪽 편집 / 오른쪽 미리보기 */
+    .admin-layout {
+      max-width: 1300px;
+      margin: 0 auto 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.6fr);
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .edit-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .book-list {
+      margin: 0;
+    }
+
     .book-row {
       display: flex;
       gap: 16px;
@@ -53,6 +92,13 @@
       object-fit: cover;
       display: block;
     }
+    .thumb-upload {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
     .fields {
       flex: 1;
       display: grid;
@@ -90,6 +136,7 @@
       color: #9ca3af;
       margin-top: 2px;
     }
+
     .row-actions {
       display: flex;
       flex-direction: column;
@@ -111,8 +158,94 @@
       background: rgba(239,68,68,0.2);
     }
 
+    /* 오른쪽 미리보기 패널 */
+    .preview-panel {
+      background: rgba(15,23,42,0.96);
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,0.5);
+      padding: 14px 16px 16px;
+    }
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .preview-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .preview-rank-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .preview-rank-select select {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    .preview-desc {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    .preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .preview-empty {
+      font-size: 12px;
+      color: #9ca3af;
+      padding: 8px 2px;
+    }
+    .preview-card {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #111827, #020617);
+      border: 1px solid rgba(30,64,118,0.9);
+    }
+    .preview-thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #020617;
+      flex-shrink: 0;
+    }
+    .preview-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .preview-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .preview-body-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .preview-body-sub {
+      font-size: 11px;
+      color: #cbd5f5;
+      margin-bottom: 4px;
+    }
+    .preview-meta {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
     .export-box {
-      max-width: 1100px;
+      max-width: 1300px;
       margin: 0 auto;
     }
     .export-btn, .add-btn {
@@ -151,6 +284,12 @@
       color: #9ca3af;
       margin-bottom: 4px;
     }
+
+    @media (max-width: 900px) {
+      .admin-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
     @media (max-width: 700px) {
       .book-row {
         flex-direction: column;
@@ -163,13 +302,53 @@
   </style>
 </head>
 <body>
+  <div class="top-bar">
+    <button class="back-btn" onclick="window.location.href='the-unique-main.html'">
+      Member Hall로 돌아가기
+    </button>
+  </div>
+
   <h1>The Unique eBook 관리자</h1>
   <div class="tip">
     ▸ 각 책의 <b>제목 / 부제 / 커버 / mp4 / mp3 / 노출 / 직급 범위 / 순서 / 이미지 위치</b>를 조정한 뒤,<br>
     ▸ <b>JSON 내보내기</b> 버튼을 눌러 나온 내용을 <code>ebook-config.json</code>에 복사해서 저장하면 됩니다.
   </div>
 
-  <div id="bookList" class="book-list"></div>
+  <div class="admin-layout">
+    <div class="edit-wrap">
+      <div id="bookList" class="book-list"></div>
+    </div>
+
+    <aside class="preview-panel">
+      <div class="preview-header">
+        <div class="preview-title">Member Hall eBook 카드 미리보기</div>
+        <div class="preview-rank-select">
+          <span>직급 시뮬레이션:</span>
+          <select id="previewRank">
+            <option value="">모든 직급</option>
+            <option value="Star1">Star1</option>
+            <option value="Star2">Star2</option>
+            <option value="Star3">Star3</option>
+            <option value="Pro1">Pro1</option>
+            <option value="Pro2">Pro2</option>
+            <option value="Pro3">Pro3</option>
+            <option value="Pro4">Pro4</option>
+            <option value="Pro5">Pro5</option>
+            <option value="Pro6">Pro6</option>
+            <option value="Pro7">Pro7</option>
+            <option value="Pro8">Pro8</option>
+            <option value="Pro9">Pro9</option>
+            <option value="Pro10">Pro10</option>
+          </select>
+        </div>
+      </div>
+      <div class="preview-desc">
+        • 실제 Member Hall 화면에서 보이는 카드 레이아웃을 미리 확인할 수 있습니다.<br>
+        • 직급을 선택하면 <code>최소/최대 직급</code> 설정에 따라 노출되는 항목만 표시됩니다.
+      </div>
+      <div id="previewList" class="preview-list"></div>
+    </aside>
+  </div>
 
   <div class="export-box">
     <button id="addBtn" class="add-btn">+ 책 추가</button>
@@ -233,11 +412,13 @@
         }
         normalizeItems();
         renderList();
+        updatePreview();
       })
       .catch(function(err) {
         console.warn("ebook-config.json 불러오기 실패, 기본값 사용:", err);
         normalizeItems();
         renderList();
+        updatePreview();
       });
 
     function normalizeItems() {
@@ -269,6 +450,16 @@
         frame.appendChild(img);
         thumb.appendChild(frame);
 
+        // 파일 첨부 (로컬 미리보기 + 경로 자동 입력)
+        const uploadLabel = document.createElement("label");
+        uploadLabel.className = "thumb-upload";
+        uploadLabel.textContent = "커버 이미지 파일: ";
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        uploadLabel.appendChild(fileInput);
+        thumb.appendChild(uploadLabel);
+
         // 필드들
         const fields = document.createElement("div");
         fields.className = "fields";
@@ -276,24 +467,55 @@
         // ID
         fields.appendChild(makeTextField("ID (영문 키)", item.id || "", function(v) {
           item.id = v.trim();
+          updatePreview();
         }));
 
         // 제목
         fields.appendChild(makeTextField("제목", item.title || "", function(v) {
           item.title = v;
+          updatePreview();
         }));
 
         // 부제
         fields.appendChild(makeTextField("부제", item.subtitle || "", function(v) {
           item.subtitle = v;
+          updatePreview();
         }));
 
-        // 커버 이미지 경로
-        const coverField = makeTextField("커버 이미지 경로", item.cover || "", function(v) {
-          item.cover = v;
-          img.src = v;
+        // 커버 이미지 경로 (텍스트 입력)
+        const coverField = document.createElement("div");
+        coverField.className = "field";
+        const coverLabel = document.createElement("label");
+        coverLabel.textContent = "커버 이미지 경로";
+        const coverInput = document.createElement("input");
+        coverInput.type = "text";
+        coverInput.value = item.cover || "";
+        coverInput.addEventListener("input", function() {
+          item.cover = this.value;
+          img.src = this.value;
+          updatePreview();
         });
+        coverField.appendChild(coverLabel);
+        coverField.appendChild(coverInput);
         fields.appendChild(coverField);
+
+        // 파일 선택 시: 썸네일 미리보기 + 경로 자동 입력
+        fileInput.addEventListener("change", function() {
+          const file = this.files && this.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+
+          const safeName = file.name.replace(/\s+/g, "-");
+          const suggestedPath = "img/" + safeName;
+          item.cover = suggestedPath;
+          coverInput.value = suggestedPath;
+          updatePreview();
+        });
 
         // 영상(mp4) 경로
         fields.appendChild(makeTextField("영상 파일(mp4) 경로", item.video || "", function(v) {
@@ -320,6 +542,7 @@
         vInput.checked = item.visible !== false;
         vInput.addEventListener("change", function() {
           item.visible = this.checked;
+          updatePreview();
         });
         visibleField.appendChild(vLabel);
         visibleField.appendChild(vInput);
@@ -328,11 +551,13 @@
         // 최소 직급
         fields.appendChild(makeRankField("최소 직급(rankMin)", item.rankMin, function(v) {
           item.rankMin = v || null;
+          updatePreview();
         }));
 
         // 최대 직급
         fields.appendChild(makeRankField("최대 직급(rankMax)", item.rankMax, function(v) {
           item.rankMax = v || null;
+          updatePreview();
         }));
 
         // 순서(order)
@@ -345,6 +570,7 @@
         oInput.value = item.order || (index + 1);
         oInput.addEventListener("input", function() {
           item.order = parseInt(this.value || "0", 10);
+          updatePreview();
         });
         orderField.appendChild(oLabel);
         orderField.appendChild(oInput);
@@ -368,6 +594,7 @@
           item.posY = v;
           pVal.textContent = v + "%";
           img.style.objectPosition = "50% " + v + "%";
+          updatePreview();
         });
         posField.appendChild(pLabel);
         posField.appendChild(pRange);
@@ -384,6 +611,7 @@
           if (confirm("이 eBook을 삭제할까요?")) {
             items.splice(index, 1);
             renderList();
+            updatePreview();
           }
         });
         rowActions.appendChild(delBtn);
@@ -393,6 +621,90 @@
         row.appendChild(rowActions);
 
         listEl.appendChild(row);
+      });
+    }
+
+    function updatePreview() {
+      const previewList = document.getElementById("previewList");
+      if (!previewList) return;
+
+      previewList.innerHTML = "";
+
+      // 직급 시뮬레이션 값
+      const rankSel = document.getElementById("previewRank");
+      const myRank = rankSel ? (rankSel.value || "") : "";
+      const myIdx = myRank ? RANKS.indexOf(myRank) : -1;
+
+      // 정렬 + 노출 필터
+      let books = items.slice().filter(function(item) {
+        return item.visible !== false;
+      });
+
+      if (myIdx >= 0) {
+        books = books.filter(function(item) {
+          let ok = true;
+          if (item.rankMin) {
+            const minIdx = RANKS.indexOf(item.rankMin);
+            if (minIdx >= 0 && myIdx < minIdx) ok = false;
+          }
+          if (item.rankMax) {
+            const maxIdx = RANKS.indexOf(item.rankMax);
+            if (maxIdx >= 0 && myIdx > maxIdx) ok = false;
+          }
+          return ok;
+        });
+      }
+
+      books.sort(function(a, b) {
+        return (a.order || 0) - (b.order || 0);
+      });
+
+      if (!books.length) {
+        const empty = document.createElement("div");
+        empty.className = "preview-empty";
+        empty.textContent = "노출되는 eBook이 없습니다. (노출 OFF거나 직급 범위 밖)";
+        previewList.appendChild(empty);
+        return;
+      }
+
+      books.forEach(function(book) {
+        const card = document.createElement("div");
+        card.className = "preview-card";
+
+        const thumb = document.createElement("div");
+        thumb.className = "preview-thumb";
+        const img = document.createElement("img");
+        img.src = book.cover || "";
+        img.alt = book.title || "";
+        const posY = (typeof book.posY === "number") ? book.posY : 50;
+        img.style.objectPosition = "50% " + posY + "%";
+        thumb.appendChild(img);
+
+        const body = document.createElement("div");
+        body.className = "preview-body";
+        const t = document.createElement("div");
+        t.className = "preview-body-title";
+        t.textContent = book.title || "";
+        const s = document.createElement("div");
+        s.className = "preview-body-sub";
+        s.textContent = book.subtitle || "";
+        const meta = document.createElement("div");
+        meta.className = "preview-meta";
+
+        const min = book.rankMin || "제한 없음";
+        const max = book.rankMax || "제한 없음";
+        meta.textContent =
+          "노출 범위: " + min + " ~ " + max +
+          " · 순서: " + (book.order || 0);
+
+        body.appendChild(t);
+        body.appendChild(s);
+        body.appendChild(meta);
+
+        card.appendChild(thumb);
+        card.appendChild(body);
+
+        previewList.appendChild(card);
       });
     }
 
@@ -452,6 +764,7 @@
         posY: 50
       });
       renderList();
+      updatePreview();
     });
 
     // JSON 내보내기
@@ -460,6 +773,12 @@
       document.getElementById("jsonOutput").value =
         JSON.stringify(output, null, 2);
     });
+
+    // 미리보기 직급 변경
+    const previewRankSel = document.getElementById("previewRank");
+    if (previewRankSel) {
+      previewRankSel.addEventListener("change", updatePreview);
+    }
   </script>
 </body>
 </html>
