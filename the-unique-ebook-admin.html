@@ -24,7 +24,6 @@
       margin-bottom: 16px;
     }
 
-    /* 상단 Member Hall로 돌아가기 */
     .top-bar {
       max-width: 1300px;
       margin: 0 auto 12px;
@@ -47,7 +46,6 @@
       background: linear-gradient(135deg, #111827, #020617);
     }
 
-    /* 왼쪽 편집 / 오른쪽 미리보기 */
     .admin-layout {
       max-width: 1300px;
       margin: 0 auto 24px;
@@ -126,9 +124,7 @@
     .field input[type="checkbox"] {
       transform: scale(1.1);
     }
-    .field input[type="range"] {
-      width: 100%;
-    }
+    .field input[type="range"] { width: 100%; }
     .field span.value {
       font-size: 11px;
       color: #9ca3af;
@@ -156,7 +152,6 @@
       background: rgba(239,68,68,0.2);
     }
 
-    /* 오른쪽 미리보기 패널 - sticky */
     .preview-panel {
       background: rgba(15,23,42,0.96);
       border-radius: 14px;
@@ -173,10 +168,7 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    .preview-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
+    .preview-title { font-size: 14px; font-weight: 600; }
     .preview-rank-select {
       display: flex;
       align-items: center;
@@ -227,24 +219,10 @@
       height: 100%;
       object-fit: cover;
     }
-    .preview-body {
-      flex: 1;
-      min-width: 0;
-    }
-    .preview-body-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .preview-body-sub {
-      font-size: 11px;
-      color: #cbd5f5;
-      margin-bottom: 4px;
-    }
-    .preview-meta {
-      font-size: 10px;
-      color: #9ca3af;
-    }
+    .preview-body { flex: 1; min-width: 0; }
+    .preview-body-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .preview-body-sub { font-size: 11px; color: #cbd5f5; margin-bottom: 4px; }
+    .preview-meta { font-size: 10px; color: #9ca3af; }
 
     .export-box {
       max-width: 1300px;
@@ -324,9 +302,7 @@
       }
     }
     @media (max-width: 700px) {
-      .book-row {
-        flex-direction: column;
-      }
+      .book-row { flex-direction: column; }
       .row-actions {
         flex-direction: row;
         justify-content: flex-end;
@@ -397,20 +373,20 @@
     <button id="htmlBtn" class="secondary-btn">선택 eBook HTML 생성</button>
 
     <div class="export-help">
-      • 아래 영역에는 <b>JSON</b> 또는 <b>선택한 eBook용 HTML 템플릿</b>이 출력됩니다. 상황에 맞게 복사해서 사용하세요.<br>
-      • HTML 템플릿은 <code>ebook-무슨무슨.html</code> 이름의 새 파일에 붙여 넣으면 됩니다. (토글 JS는 기존 ebook.html에서 복붙)
+      • 아래 영역에는 <b>JSON</b> 또는 <b>선택한 eBook용 HTML 템플릿</b>이 출력됩니다.<br>
+      • HTML 템플릿은 <code>ebook-무슨무슨.html</code> 이름의 새 파일에 붙여 넣으면 됩니다.
     </div>
     <textarea id="jsonOutput" readonly placeholder="여기에 JSON 또는 HTML이 생성됩니다."></textarea>
   </div>
 
   <script>
+  window.addEventListener("DOMContentLoaded", () => {
     const RANKS = [
       "", "Star1", "Star2", "Star3",
       "Pro1", "Pro2", "Pro3", "Pro4",
       "Pro5", "Pro6", "Pro7", "Pro8", "Pro9", "Pro10"
     ];
 
-    // 기본 샘플
     let items = [
       {
         id: "unique-basic",
@@ -444,6 +420,12 @@
       }
     ];
 
+    const bookListEl = document.getElementById("bookList");
+    const previewListEl = document.getElementById("previewList");
+    const previewRankSel = document.getElementById("previewRank");
+    const htmlBookSelect = document.getElementById("htmlBookSelect");
+    const jsonOutput = document.getElementById("jsonOutput");
+
     function normalizeItems() {
       items.forEach((item, idx) => {
         if (typeof item.order !== "number") item.order = idx + 1;
@@ -452,26 +434,57 @@
       });
     }
 
-    function refreshHtmlSelect() {
-      const sel = document.getElementById("htmlBookSelect");
-      if (!sel) return;
-      const current = sel.value;
+    function makeTextField(labelText, value, onChange) {
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.textContent = labelText;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = value;
+      input.addEventListener("input", function() {
+        onChange(this.value);
+      });
+      field.appendChild(label);
+      field.appendChild(input);
+      return field;
+    }
 
-      sel.innerHTML = '<option value="">HTML 만들 eBook 선택…</option>';
+    function makeRankField(labelText, value, onChange) {
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.textContent = labelText;
+      const select = document.createElement("select");
+      RANKS.forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r === "" ? "제한 없음" : r;
+        if (r === (value || "")) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", function() {
+        onChange(this.value);
+      });
+      field.appendChild(label);
+      field.appendChild(select);
+      return field;
+    }
+
+    function refreshHtmlSelect() {
+      const current = htmlBookSelect.value;
+      htmlBookSelect.innerHTML = '<option value="">HTML 만들 eBook 선택…</option>';
       items.forEach(item => {
         const opt = document.createElement("option");
         opt.value = item.id || "";
         opt.textContent = (item.id || "") + " / " + (item.title || "");
-        sel.appendChild(opt);
+        htmlBookSelect.appendChild(opt);
       });
-
-      if (current) sel.value = current;
+      if (current) htmlBookSelect.value = current;
     }
 
     function renderList() {
-      const listEl = document.getElementById("bookList");
-      listEl.innerHTML = "";
-
+      bookListEl.innerHTML = "";
       items.forEach((item, index) => {
         const row = document.createElement("div");
         row.className = "book-row";
@@ -521,7 +534,7 @@
         const coverInput = document.createElement("input");
         coverInput.type = "text";
         coverInput.value = item.cover || "";
-        coverInput.addEventListener("input", function () {
+        coverInput.addEventListener("input", function() {
           item.cover = this.value;
           img.src = this.value;
           updatePreview();
@@ -530,7 +543,7 @@
         coverField.appendChild(coverInput);
         fields.appendChild(coverField);
 
-        fileInput.addEventListener("change", function () {
+        fileInput.addEventListener("change", function() {
           const file = this.files && this.files[0];
           if (!file) return;
           const reader = new FileReader();
@@ -560,7 +573,7 @@
         const vInput = document.createElement("input");
         vInput.type = "checkbox";
         vInput.checked = item.visible !== false;
-        vInput.addEventListener("change", function () {
+        vInput.addEventListener("change", function() {
           item.visible = this.checked;
           updatePreview();
         });
@@ -584,7 +597,7 @@
         const oInput = document.createElement("input");
         oInput.type = "number";
         oInput.value = item.order || (index + 1);
-        oInput.addEventListener("input", function () {
+        oInput.addEventListener("input", function() {
           item.order = parseInt(this.value || "0", 10);
           updatePreview();
         });
@@ -604,7 +617,7 @@
         const pVal = document.createElement("span");
         pVal.className = "value";
         pVal.textContent = posY + "%";
-        pRange.addEventListener("input", function () {
+        pRange.addEventListener("input", function() {
           const v = parseInt(this.value, 10);
           item.posY = v;
           pVal.textContent = v + "%";
@@ -621,7 +634,7 @@
         const delBtn = document.createElement("button");
         delBtn.className = "btn-small";
         delBtn.textContent = "삭제";
-        delBtn.addEventListener("click", function () {
+        delBtn.addEventListener("click", () => {
           if (confirm("이 eBook을 삭제할까요?")) {
             items.splice(index, 1);
             renderList();
@@ -635,21 +648,17 @@
         row.appendChild(fields);
         row.appendChild(rowActions);
 
-        listEl.appendChild(row);
+        bookListEl.appendChild(row);
       });
 
       refreshHtmlSelect();
     }
 
     function updatePreview() {
-      const previewList = document.getElementById("previewList");
-      previewList.innerHTML = "";
-
-      const rankSel = document.getElementById("previewRank");
-      const myRank = rankSel.value || "";
+      previewListEl.innerHTML = "";
+      const myRank = previewRankSel.value || "";
       const myIdx = myRank ? RANKS.indexOf(myRank) : -1;
-
-      let books = items.filter(item => item.visible !== false);
+      let books = items.filter(i => i.visible !== false);
 
       if (myIdx >= 0) {
         books = books.filter(item => {
@@ -672,7 +681,7 @@
         const empty = document.createElement("div");
         empty.className = "preview-empty";
         empty.textContent = "노출되는 eBook이 없습니다. (노출 OFF거나 직급 범위 밖)";
-        previewList.appendChild(empty);
+        previewListEl.appendChild(empty);
         return;
       }
 
@@ -709,56 +718,40 @@
 
         card.appendChild(thumb);
         card.appendChild(body);
-        previewList.appendChild(card);
+        previewListEl.appendChild(card);
       });
     }
 
-    function makeTextField(labelText, value, onChange) {
-      const field = document.createElement("div");
-      field.className = "field";
-      const label = document.createElement("label");
-      label.textContent = labelText;
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = value;
-      input.addEventListener("input", function () {
-        onChange(this.value);
+    // 버튼들 이벤트
+    document.getElementById("addBtn").addEventListener("click", () => {
+      const n = items.length + 1;
+      items.push({
+        id: "ebook-" + n,
+        title: "새 eBook " + n,
+        subtitle: "",
+        description: "",
+        cover: "",
+        video: "",
+        audio: "",
+        link: "",
+        visible: true,
+        rankMin: "",
+        rankMax: "",
+        order: n,
+        posY: 50
       });
-      field.appendChild(label);
-      field.appendChild(input);
-      return field;
-    }
-
-    function makeRankField(labelText, value, onChange) {
-      const field = document.createElement("div");
-      field.className = "field";
-      const label = document.createElement("label");
-      label.textContent = labelText;
-      const select = document.createElement("select");
-      RANKS.forEach(r => {
-        const opt = document.createElement("option");
-        opt.value = r;
-        opt.textContent = r === "" ? "제한 없음" : r;
-        if (r === (value || "")) opt.selected = true;
-        select.appendChild(opt);
-      });
-      select.addEventListener("change", function () {
-        onChange(this.value);
-      });
-      field.appendChild(label);
-      field.appendChild(select);
-      return field;
-    }
-
-    // JSON 내보내기
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      const output = { items };
-      document.getElementById("jsonOutput").value = JSON.stringify(output, null, 2);
+      normalizeItems();
+      renderList();
+      updatePreview();
     });
 
-    // JSON 불러오기 (textarea → items)
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const output = { items };
+      jsonOutput.value = JSON.stringify(output, null, 2);
+    });
+
     document.getElementById("importBtn").addEventListener("click", () => {
-      const txt = document.getElementById("jsonOutput").value.trim();
+      const txt = jsonOutput.value.trim();
       if (!txt) {
         alert("불러올 JSON이 텍스트 상자에 없습니다.");
         return;
@@ -780,22 +773,21 @@
       }
     });
 
-    // JSON 복사
     document.getElementById("copyBtn").addEventListener("click", () => {
-      const textarea = document.getElementById("jsonOutput");
-      if (!textarea.value.trim()) {
+      if (!jsonOutput.value.trim()) {
         const output = { items };
-        textarea.value = JSON.stringify(output, null, 2);
+        jsonOutput.value = JSON.stringify(output, null, 2);
       }
-      textarea.select();
+      jsonOutput.select();
       document.execCommand("copy");
       alert("JSON을 클립보드에 복사했습니다.");
     });
 
-    // GitHub 열기
     document.getElementById("openGithubBtn").addEventListener("click", () => {
       window.open("https://github.com/wordycow/so.t-leader-choice/blob/main/ebook-config.json", "_blank");
     });
+
+    previewRankSel.addEventListener("change", updatePreview);
 
     // HTML 템플릿 생성 (JS 없는 기본틀)
     function generateHtmlForBook(book) {
@@ -825,7 +817,7 @@
       lines.push('  <div class="page-wrap">');
       lines.push('    <div class="book-frame">');
       lines.push('      <a href="the-unique-main.html" class="back-link">← Member Hall로 돌아가기</a>');
-      lines.push("      <header class=\"book-header\">");
+      lines.push('      <header class="book-header">');
       lines.push('        <div class="book-cover">');
       lines.push('          <img src="' + cover + '" alt="' + title.replace(/\"/g, "&quot;") + ' 표지" />');
       lines.push("        </div>");
@@ -836,7 +828,6 @@
       lines.push("        </div>");
       lines.push("      </header>");
       lines.push("");
-      lines.push("      <!-- 여기서부터 챕터 내용을 채워 넣으세요 -->");
       lines.push('      <section class="chapter" id="ch-1">');
       lines.push('        <h2>1. 첫 번째 챕터 제목</h2>');
       lines.push("        <p>여기에 첫 번째 챕터 내용을 작성하세요.</p>");
@@ -868,8 +859,7 @@
     }
 
     document.getElementById("htmlBtn").addEventListener("click", () => {
-      const sel = document.getElementById("htmlBookSelect");
-      const id = sel.value;
+      const id = htmlBookSelect.value;
       if (!id) {
         alert("HTML을 만들 eBook을 선택하세요.");
         return;
@@ -880,35 +870,30 @@
         return;
       }
       const html = generateHtmlForBook(book);
-      const textarea = document.getElementById("jsonOutput");
-      textarea.value = html;
-      textarea.readOnly = false;   // 수정 가능
-      textarea.scrollIntoView({ behavior: "smooth", block: "start" });
-      textarea.focus();
+      jsonOutput.value = html;
+      jsonOutput.readOnly = false;
+      jsonOutput.scrollIntoView({ behavior: "smooth", block: "start" });
+      jsonOutput.focus();
     });
 
-    // 직급 변경시 미리보기
-    document.getElementById("previewRank").addEventListener("change", updatePreview);
-
-    // 초기 로드: JSON 파일로부터 덮어쓰기 시도
-    window.addEventListener("DOMContentLoaded", () => {
-      fetch("ebook-config.json")
-        .then(res => res.ok ? res.json() : Promise.reject(res.status))
-        .then(data => {
-          if (data && Array.isArray(data.items)) {
-            items = data.items;
-          }
-          normalizeItems();
-          renderList();
-          updatePreview();
-        })
-        .catch(err => {
-          console.warn("ebook-config.json 로드 실패, 기본값 사용:", err);
-          normalizeItems();
-          renderList();
-          updatePreview();
-        });
-    });
+    // 처음에 ebook-config.json에서 덮어쓰기 시도
+    fetch("ebook-config.json")
+      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+      .then(data => {
+        if (data && Array.isArray(data.items)) {
+          items = data.items;
+        }
+        normalizeItems();
+        renderList();
+        updatePreview();
+      })
+      .catch(err => {
+        console.warn("ebook-config.json 로드 실패, 기본값 사용:", err);
+        normalizeItems();
+        renderList();
+        updatePreview();
+      });
+  });
   </script>
 </body>
 </html>
