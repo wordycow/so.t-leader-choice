@@ -15,7 +15,7 @@
       color: #e5e7eb;
     }
     h1 {
-      margin: 0 0 16px;
+      margin: 0 0 12px;
       font-size: 22px;
     }
     .tip {
@@ -24,7 +24,7 @@
       margin-bottom: 16px;
     }
     .book-list {
-      max-width: 960px;
+      max-width: 1100px;
       margin: 0 auto 24px;
     }
     .book-row {
@@ -32,9 +32,9 @@
       gap: 16px;
       padding: 16px;
       margin-bottom: 12px;
-      border-radius: 12px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.45);
+      border-radius: 14px;
+      background: rgba(15,23,42,0.96);
+      border: 1px solid rgba(148,163,184,0.5);
     }
     .thumb {
       flex: 0 0 140px;
@@ -56,7 +56,7 @@
     .fields {
       flex: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 10px 16px;
       align-content: flex-start;
     }
@@ -70,7 +70,8 @@
       color: #9ca3af;
     }
     .field input[type="text"],
-    .field input[type="number"] {
+    .field input[type="number"],
+    .field select {
       font-size: 13px;
       padding: 6px 8px;
       border-radius: 8px;
@@ -85,16 +86,36 @@
       width: 100%;
     }
     .field span.value {
-      font-size: 12px;
+      font-size: 11px;
       color: #9ca3af;
       margin-top: 2px;
     }
+    .row-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 8px;
+      flex: 0 0 80px;
+    }
+    .btn-small {
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(239,68,68,0.7);
+      background: transparent;
+      color: #fecaca;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .btn-small:hover {
+      background: rgba(239,68,68,0.2);
+    }
 
     .export-box {
-      max-width: 960px;
+      max-width: 1100px;
       margin: 0 auto;
     }
-    .export-btn {
+    .export-btn, .add-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -107,13 +128,15 @@
       font-size: 14px;
       cursor: pointer;
       margin-bottom: 8px;
+      margin-right: 8px;
     }
-    .export-btn:active {
-      transform: translateY(1px);
+    .add-btn {
+      background: #22c55e;
+      color: #022c22;
     }
     textarea {
       width: 100%;
-      min-height: 220px;
+      min-height: 260px;
       border-radius: 12px;
       padding: 10px;
       font-size: 12px;
@@ -126,14 +149,15 @@
     .export-help {
       font-size: 11px;
       color: #9ca3af;
-      margin-top: 4px;
+      margin-bottom: 4px;
     }
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
       .book-row {
         flex-direction: column;
       }
-      .thumb {
-        flex: 0 0 auto;
+      .row-actions {
+        flex-direction: row;
+        justify-content: flex-end;
       }
     }
   </style>
@@ -141,155 +165,301 @@
 <body>
   <h1>The Unique eBook 관리자</h1>
   <div class="tip">
-    👉 아래에서 <b>노출 여부 / 순서 / 이미지 세로 위치</b>를 조정한 다음, 맨 아래
-    <b>JSON 내보내기</b> 버튼을 눌러 나온 내용을 <code>ebook-config.json</code>에 복붙해서 저장하면 돼.
+    ▸ 각 책의 <b>제목 / 부제 / 커버 / mp4 / mp3 / 노출 / 직급 범위 / 순서 / 이미지 위치</b>를 조정한 뒤,<br>
+    ▸ <b>JSON 내보내기</b> 버튼을 눌러 나온 내용을 <code>ebook-config.json</code>에 복사해서 저장하면 됩니다.
   </div>
 
-  <div class="book-list" id="bookList">
-    <!-- JS가 채움 -->
-  </div>
+  <div id="bookList" class="book-list"></div>
 
   <div class="export-box">
+    <button id="addBtn" class="add-btn">+ 책 추가</button>
     <button id="exportBtn" class="export-btn">JSON 내보내기</button>
     <div class="export-help">
-      • 버튼을 누르면 아래 텍스트 박스에 최신 설정 JSON이 생성됩니다.<br>
-      • 전체 선택(Ctrl+A) → 복사(Ctrl+C) 해서 GitHub의 <code>ebook-config.json</code>에 붙여 넣고 저장하세요.
+      • 내보낸 JSON 전체를 복사(Ctrl+A → Ctrl+C) 후, GitHub의 <code>ebook-config.json</code>에 붙여넣고 저장하세요.
     </div>
     <textarea id="jsonOutput" readonly placeholder="여기에 JSON이 생성됩니다."></textarea>
   </div>
 
   <script>
-    var items = [];
+    const RANKS = [
+      "", "Star1", "Star2", "Star3",
+      "Pro1", "Pro2", "Pro3", "Pro4",
+      "Pro5", "Pro6", "Pro7", "Pro8", "Pro9", "Pro10"
+    ];
+
+    // 기본 샘플 (ebook-config.json이 아직 없을 때 사용)
+    let items = [
+      {
+        id: "unique-basic",
+        title: "협력을 배우고 협력을 만들어낸다.",
+        subtitle: "THE UNIQUE 기본 매뉴얼",
+        description: "누구나 언제라도 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
+        cover: "img/ebook-the-unique-system-book.jpg",
+        video: "img/the-unique-system.mp4",
+        audio: "audio/the-unique-system.mp3",
+        link: "ebook.html",
+        visible: true,
+        rankMin: "Star1",
+        rankMax: "Pro10",
+        order: 1,
+        posY: 50
+      },
+      {
+        id: "unique-sot",
+        title: "현대 사회에 맞는 여행도구 so.t",
+        subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
+        description: "",
+        cover: "img/ebook-network-marketing-cover.jpg",
+        video: "img/the-unique-sot.mp4",
+        audio: "audio/the-unique-sot.mp3",
+        link: "ebook1.html",
+        visible: true,
+        rankMin: "Pro1",
+        rankMax: "Pro10",
+        order: 2,
+        posY: 50
+      }
+    ];
+
+    // ebook-config.json 이 있으면 그걸로 덮어쓰기
+    fetch("ebook-config.json")
+      .then(function(res) {
+        if (!res.ok) throw new Error("status " + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          items = data.items;
+        }
+        normalizeItems();
+        renderList();
+      })
+      .catch(function(err) {
+        console.warn("ebook-config.json 불러오기 실패, 기본값 사용:", err);
+        normalizeItems();
+        renderList();
+      });
+
+    function normalizeItems() {
+      items.forEach(function(item, index) {
+        if (typeof item.order !== "number") item.order = index + 1;
+        if (typeof item.posY !== "number") item.posY = 50;
+        if (typeof item.visible !== "boolean") item.visible = true;
+      });
+    }
 
     function renderList() {
-      var listEl = document.getElementById('bookList');
-      listEl.innerHTML = '';
+      const listEl = document.getElementById("bookList");
+      listEl.innerHTML = "";
 
-      items.forEach(function (item, index) {
-        var row = document.createElement('div');
-        row.className = 'book-row';
+      items.forEach(function(item, index) {
+        const row = document.createElement("div");
+        row.className = "book-row";
 
-        var thumb = document.createElement('div');
-        thumb.className = 'thumb';
-        var frame = document.createElement('div');
-        frame.className = 'thumb-frame';
-        var img = document.createElement('img');
-        img.src = item.cover;
-        img.alt = item.title;
-        img.style.objectPosition = '50% ' + (typeof item.posY === 'number' ? item.posY : 50) + '%';
+        // 썸네일
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+        const frame = document.createElement("div");
+        frame.className = "thumb-frame";
+        const img = document.createElement("img");
+        img.src = item.cover || "";
+        img.alt = item.title || "";
+        const posY = (typeof item.posY === "number") ? item.posY : 50;
+        img.style.objectPosition = "50% " + posY + "%";
         frame.appendChild(img);
         thumb.appendChild(frame);
 
-        var fields = document.createElement('div');
-        fields.className = 'fields';
+        // 필드들
+        const fields = document.createElement("div");
+        fields.className = "fields";
+
+        // ID
+        fields.appendChild(makeTextField("ID (영문 키)", item.id || "", function(v) {
+          item.id = v.trim();
+        }));
 
         // 제목
-        var fTitle = document.createElement('div');
-        fTitle.className = 'field';
-        fTitle.innerHTML = '<label>제목</label>';
-        var titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.value = item.title || '';
-        titleInput.addEventListener('input', function () {
-          item.title = this.value;
-        });
-        fTitle.appendChild(titleInput);
-        fields.appendChild(fTitle);
+        fields.appendChild(makeTextField("제목", item.title || "", function(v) {
+          item.title = v;
+        }));
 
         // 부제
-        var fSub = document.createElement('div');
-        fSub.className = 'field';
-        fSub.innerHTML = '<label>부제(선택)</label>';
-        var subInput = document.createElement('input');
-        subInput.type = 'text';
-        subInput.value = item.subtitle || '';
-        subInput.addEventListener('input', function () {
-          item.subtitle = this.value;
-        });
-        fSub.appendChild(subInput);
-        fields.appendChild(fSub);
+        fields.appendChild(makeTextField("부제", item.subtitle || "", function(v) {
+          item.subtitle = v;
+        }));
 
-        // 노출
-        var fVisible = document.createElement('div');
-        fVisible.className = 'field';
-        var visibleLabel = document.createElement('label');
-        visibleLabel.textContent = '노출 여부';
-        fVisible.appendChild(visibleLabel);
-        var visibleInput = document.createElement('input');
-        visibleInput.type = 'checkbox';
-        visibleInput.checked = item.visible !== false;
-        visibleInput.addEventListener('change', function () {
+        // 커버 이미지 경로
+        const coverField = makeTextField("커버 이미지 경로", item.cover || "", function(v) {
+          item.cover = v;
+          img.src = v;
+        });
+        fields.appendChild(coverField);
+
+        // 영상(mp4) 경로
+        fields.appendChild(makeTextField("영상 파일(mp4) 경로", item.video || "", function(v) {
+          item.video = v;
+        }));
+
+        // 음성(mp3) 경로
+        fields.appendChild(makeTextField("음성 파일(mp3) 경로", item.audio || "", function(v) {
+          item.audio = v;
+        }));
+
+        // 링크
+        fields.appendChild(makeTextField("클릭 시 이동할 링크", item.link || "", function(v) {
+          item.link = v;
+        }));
+
+        // 노출 여부
+        const visibleField = document.createElement("div");
+        visibleField.className = "field";
+        const vLabel = document.createElement("label");
+        vLabel.textContent = "노출";
+        const vInput = document.createElement("input");
+        vInput.type = "checkbox";
+        vInput.checked = item.visible !== false;
+        vInput.addEventListener("change", function() {
           item.visible = this.checked;
         });
-        fVisible.appendChild(visibleInput);
-        fields.appendChild(fVisible);
+        visibleField.appendChild(vLabel);
+        visibleField.appendChild(vInput);
+        fields.appendChild(visibleField);
 
-        // 순서
-        var fOrder = document.createElement('div');
-        fOrder.className = 'field';
-        fOrder.innerHTML = '<label>순서(order)</label>';
-        var orderInput = document.createElement('input');
-        orderInput.type = 'number';
-        orderInput.value = item.order || (index + 1);
-        orderInput.addEventListener('input', function () {
-          item.order = parseInt(this.value || '0', 10);
+        // 최소 직급
+        fields.appendChild(makeRankField("최소 직급(rankMin)", item.rankMin, function(v) {
+          item.rankMin = v || null;
+        }));
+
+        // 최대 직급
+        fields.appendChild(makeRankField("최대 직급(rankMax)", item.rankMax, function(v) {
+          item.rankMax = v || null;
+        }));
+
+        // 순서(order)
+        const orderField = document.createElement("div");
+        orderField.className = "field";
+        const oLabel = document.createElement("label");
+        oLabel.textContent = "순서(order)";
+        const oInput = document.createElement("input");
+        oInput.type = "number";
+        oInput.value = item.order || (index + 1);
+        oInput.addEventListener("input", function() {
+          item.order = parseInt(this.value || "0", 10);
         });
-        fOrder.appendChild(orderInput);
-        fields.appendChild(fOrder);
+        orderField.appendChild(oLabel);
+        orderField.appendChild(oInput);
+        fields.appendChild(orderField);
 
-        // 이미지 세로 위치
-        var fPos = document.createElement('div');
-        fPos.className = 'field';
-        fPos.innerHTML = '<label>이미지 세로 위치(posY)</label>';
-        var range = document.createElement('input');
-        range.type = 'range';
-        range.min = '0';
-        range.max = '100';
-        range.value = (typeof item.posY === 'number' ? item.posY : 50);
-        var valSpan = document.createElement('span');
-        valSpan.className = 'value';
-        valSpan.textContent = range.value + '%';
-        range.addEventListener('input', function () {
-          var v = parseInt(this.value, 10);
+        // 이미지 세로 위치(posY)
+        const posField = document.createElement("div");
+        posField.className = "field";
+        const pLabel = document.createElement("label");
+        pLabel.textContent = "이미지 세로 위치(posY)";
+        const pRange = document.createElement("input");
+        pRange.type = "range";
+        pRange.min = "0";
+        pRange.max = "100";
+        pRange.value = posY;
+        const pVal = document.createElement("span");
+        pVal.className = "value";
+        pVal.textContent = posY + "%";
+        pRange.addEventListener("input", function() {
+          const v = parseInt(this.value, 10);
           item.posY = v;
-          valSpan.textContent = v + '%';
-          img.style.objectPosition = '50% ' + v + '%';
+          pVal.textContent = v + "%";
+          img.style.objectPosition = "50% " + v + "%";
         });
-        fPos.appendChild(range);
-        fPos.appendChild(valSpan);
-        fields.appendChild(fPos);
+        posField.appendChild(pLabel);
+        posField.appendChild(pRange);
+        posField.appendChild(pVal);
+        fields.appendChild(posField);
+
+        // 오른쪽 삭제 버튼
+        const rowActions = document.createElement("div");
+        rowActions.className = "row-actions";
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-small";
+        delBtn.textContent = "삭제";
+        delBtn.addEventListener("click", function() {
+          if (confirm("이 eBook을 삭제할까요?")) {
+            items.splice(index, 1);
+            renderList();
+          }
+        });
+        rowActions.appendChild(delBtn);
 
         row.appendChild(thumb);
         row.appendChild(fields);
+        row.appendChild(rowActions);
+
         listEl.appendChild(row);
       });
     }
 
-    // JSON 내보내기
-    document.getElementById('exportBtn').addEventListener('click', function () {
-      var output = {
-        items: items
-      };
-      document.getElementById('jsonOutput')..value =
-        JSON.stringify(output, null, 2);
+    function makeTextField(labelText, value, onChange) {
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.textContent = labelText;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = value;
+      input.addEventListener("input", function() {
+        onChange(this.value);
+      });
+      field.appendChild(label);
+      field.appendChild(input);
+      return field;
+    }
+
+    function makeRankField(labelText, value, onChange) {
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.textContent = labelText;
+      const select = document.createElement("select");
+      RANKS.forEach(function(r) {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r === "" ? "제한 없음" : r;
+        if (r === (value || "")) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", function() {
+        onChange(this.value);
+      });
+      field.appendChild(label);
+      field.appendChild(select);
+      return field;
+    }
+
+    // 책 추가 버튼
+    document.getElementById("addBtn").addEventListener("click", function() {
+      const n = items.length + 1;
+      items.push({
+        id: "ebook-" + n,
+        title: "새 eBook " + n,
+        subtitle: "",
+        description: "",
+        cover: "",
+        video: "",
+        audio: "",
+        link: "",
+        visible: true,
+        rankMin: "",
+        rankMax: "",
+        order: n,
+        posY: 50
+      });
+      renderList();
     });
 
-    // 설정 불러오기
-    fetch('ebook-config.json')
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        items = data.items || [];
-        // posY/visible/order 기본값 처리
-        items.forEach(function (item, idx) {
-          if (typeof item.posY !== 'number') item.posY = 50;
-          if (typeof item.order !== 'number') item.order = idx + 1;
-          if (typeof item.visible !== 'boolean') item.visible = true;
-        });
-        renderList();
-      })
-      .catch(function (err) {
-        console.error('ebook-config.json을 불러오지 못했습니다.', err);
-      });
+    // JSON 내보내기
+    document.getElementById("exportBtn").addEventListener("click", function() {
+      const output = { items: items };
+      document.getElementById("jsonOutput").value =
+        JSON.stringify(output, null, 2);
+    });
   </script>
 </body>
 </html>
