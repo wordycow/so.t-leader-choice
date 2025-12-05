@@ -397,6 +397,23 @@
       color: #FACC15;
     }
 
+        .ebook-admin-link-wrap {
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    .ebook-admin-link {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-decoration: none;
+      opacity: 0.75;
+    }
+
+    .ebook-admin-link:hover {
+      opacity: 1;
+      color: #FACC15;
+    }
+
     /* ───── 프로모션/여행/So.T 버튼 ───── */
     .member-actions {
       margin-top: 12px;
@@ -630,17 +647,24 @@
                   <div id="goal-right-count" class="goal-count">0</div>
                 </div>
               </div>
-
             </div>
           </div>
         </section>
 
         <!-- eBook 패널 -->
+               <!-- eBook 패널 -->
         <section class="ebook-panel">
           <div class="section-title">
             다음 목표를 위해 학습하시겠습니까?
           </div>
           <div id="ebook-list" class="ebook-list"></div>
+
+          <!-- eBook 관리자 페이지로 가는 링크 -->
+          <div class="ebook-admin-link-wrap">
+            <a href="the-unique-ebook-admin.html" class="ebook-admin-link">
+              eBook 관리자 열기
+            </a>
+          </div>
         </section>
       </div>
     </main>
@@ -883,65 +907,119 @@
 
     /* ─────────────  2. eBook 리스트 ───────────── */
 
+        /* ─────────────  2. eBook 리스트 (ebook-config.json 사용) ───────────── */
+
     (function setupEbooks() {
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
 
-      const EBOOKS = [
-        {
-          id: "base",
-          title: "협력을 배우고 협력을 만들어낸다.",
-          subtitle: "누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
-          cover: "img/ebook-the-unique-system-book.jpg",
-          link: "ebook.html"
-        },
-        {
-          id: "so.t",
-          title: "현대 사회에 맞는 여행도구 so.t",
-          subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
-          cover: "img/ebook-network-marketing-cover.jpg",
-          link: "ebook1.html"
-        }
-      ];
+      // 공통 렌더 함수
+      function renderFromItems(books) {
+        listEl.innerHTML = "";
 
-      listEl.innerHTML = "";
+        books.forEach(function (book) {
+          const card = document.createElement("a");
+          card.className = "ebook-card";
 
-      EBOOKS.forEach(book => {
-        const card = document.createElement("a");
-        card.className = "ebook-card";
-        card.href = book.link || "#";
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
+          var href = book.link || "#";
+          card.href = href;
+          if (href && href !== "#") {
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+          }
 
-        const thumb = document.createElement("div");
-        thumb.className = "ebook-thumb";
-        const img = document.createElement("img");
-        img.src = book.cover;
-        img.alt = book.title;
-        thumb.appendChild(img);
+          // 썸네일
+          const thumb = document.createElement("div");
+          thumb.className = "ebook-thumb";
+          const img = document.createElement("img");
+          img.src = book.cover;
+          img.alt = book.title || "";
 
-        const body = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "ebook-meta-title";
-        title.textContent = book.title;
+          // 이미지 세로 위치 (0~100) – admin에서 posY로 조정
+          var posY = (typeof book.posY === "number") ? book.posY : 50;
+          img.style.objectPosition = "50% " + posY + "%";
 
-        const desc = document.createElement("div");
-        desc.className = "ebook-meta-desc";
-        desc.textContent = book.subtitle || "";
+          thumb.appendChild(img);
 
-        const cta = document.createElement("div");
-        cta.className = "ebook-meta-cta";
-        cta.textContent = "클릭하여 eBook 페이지로 이동";
+          // 텍스트 영역
+          const body = document.createElement("div");
+          const title = document.createElement("div");
+          title.className = "ebook-meta-title";
+          title.textContent = book.title || "";
 
-        body.appendChild(title);
-        body.appendChild(desc);
-        body.appendChild(cta);
+          const desc = document.createElement("div");
+          desc.className = "ebook-meta-desc";
+          var descText = book.description || book.subtitle || "";
+          desc.textContent = descText;
 
-        card.appendChild(thumb);
-        card.appendChild(body);
+          const cta = document.createElement("div");
+          cta.className = "ebook-meta-cta";
+          cta.textContent = "클릭하여 eBook 페이지로 이동";
 
-        listEl.appendChild(card);
-      });
+          body.appendChild(title);
+          body.appendChild(desc);
+          body.appendChild(cta);
+
+          card.appendChild(thumb);
+          card.appendChild(body);
+
+          listEl.appendChild(card);
+        });
+      }
+
+      // ebook-config.json이 없거나 오류 날 때 사용할 기본값
+      function renderDefault() {
+        const EBOOKS = [
+          {
+            id: "base",
+            title: "협력을 배우고 협력을 만들어낸다.",
+            subtitle: "누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
+            cover: "img/ebook-the-unique-system-book.jpg",
+            link: "ebook.html"
+          },
+          {
+            id: "so.t",
+            title: "현대 사회에 맞는 여행도구 so.t",
+            subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
+            cover: "img/ebook-network-marketing-cover.jpg",
+            link: "ebook1.html"
+          }
+        ];
+        renderFromItems(EBOOKS);
+      }
+
+      // JSON에서 불러오기
+      fetch("ebook-config.json")
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error("status " + res.status);
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          var items = (data && data.items) ? data.items : [];
+
+          // visible === false 인 건 숨김
+          items = items.filter(function (item) {
+            return item.visible !== false;
+          });
+
+          if (!items.length) {
+            renderDefault();
+            return;
+          }
+
+          // order 순으로 정렬
+          items.sort(function (a, b) {
+            return (a.order || 0) - (b.order || 0);
+          });
+
+          renderFromItems(items);
+        })
+        .catch(function (err) {
+          console.error("ebook-config.json 로드 오류:", err);
+          renderDefault();
+        });
     })();
 
     /* ─────────────  3. 프로모션/여행/So.T 버튼 ───────────── */
