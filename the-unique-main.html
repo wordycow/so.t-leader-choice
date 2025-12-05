@@ -858,6 +858,7 @@
         }
 
         const myCode = getRankCode(myRec);
+        currentRankCode = myCode || null;
         if (myCode) {
           currentMiniEl.textContent = "현재 직급: " + myCode;
         } else {
@@ -909,11 +910,12 @@
 
         /* ─────────────  2. eBook 리스트 (ebook-config.json 사용) ───────────── */
 
+        /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
+
     (function setupEbooks() {
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
 
-      // 공통 렌더 함수
       function renderFromItems(books) {
         listEl.innerHTML = "";
 
@@ -921,7 +923,7 @@
           const card = document.createElement("a");
           card.className = "ebook-card";
 
-          var href = book.link || "#";
+          const href = book.link || "#";
           card.href = href;
           if (href && href !== "#") {
             card.target = "_blank";
@@ -935,8 +937,7 @@
           img.src = book.cover;
           img.alt = book.title || "";
 
-          // 이미지 세로 위치 (0~100) – admin에서 posY로 조정
-          var posY = (typeof book.posY === "number") ? book.posY : 50;
+          const posY = (typeof book.posY === "number") ? book.posY : 50;
           img.style.objectPosition = "50% " + posY + "%";
 
           thumb.appendChild(img);
@@ -949,7 +950,7 @@
 
           const desc = document.createElement("div");
           desc.className = "ebook-meta-desc";
-          var descText = book.description || book.subtitle || "";
+          const descText = book.description || book.subtitle || "";
           desc.textContent = descText;
 
           const cta = document.createElement("div");
@@ -967,49 +968,72 @@
         });
       }
 
-      // ebook-config.json이 없거나 오류 날 때 사용할 기본값
+      // JSON 못 읽었을 때 쓸 기본값 (지금 화면에 보이던 내용)
       function renderDefault() {
         const EBOOKS = [
           {
-            id: "base",
+            id: "unique-basic",
             title: "협력을 배우고 협력을 만들어낸다.",
             subtitle: "누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
             cover: "img/ebook-the-unique-system-book.jpg",
-            link: "ebook.html"
+            link: "ebook.html",
+            visible: true,
+            order: 1,
+            posY: 50
           },
           {
-            id: "so.t",
+            id: "unique-sot",
             title: "현대 사회에 맞는 여행도구 so.t",
             subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
             cover: "img/ebook-network-marketing-cover.jpg",
-            link: "ebook1.html"
+            link: "ebook1.html",
+            visible: true,
+            order: 2,
+            posY: 50
           }
         ];
         renderFromItems(EBOOKS);
       }
 
-      // JSON에서 불러오기
+      // JSON에서 읽어서 직급별 필터 적용
       fetch("ebook-config.json")
         .then(function (res) {
-          if (!res.ok) {
-            throw new Error("status " + res.status);
-          }
+          if (!res.ok) throw new Error("status " + res.status);
           return res.json();
         })
         .then(function (data) {
-          var items = (data && data.items) ? data.items : [];
-
-          // visible === false 인 건 숨김
-          items = items.filter(function (item) {
-            return item.visible !== false;
-          });
-
+          let items = (data && data.items) ? data.items.slice() : [];
           if (!items.length) {
             renderDefault();
             return;
           }
 
-          // order 순으로 정렬
+          // 1) 노출 ON 인 것만
+          items = items.filter(function (item) {
+            return item.visible !== false;
+          });
+
+          // 2) 직급별 노출 필터
+          const myRank = currentRankCode;
+          const myIdx = myRank ? RANK_ORDER.indexOf(myRank) : -1;
+
+          if (myIdx >= 0) {
+            items = items.filter(function (item) {
+              let ok = true;
+
+              if (item.rankMin) {
+                const minIdx = RANK_ORDER.indexOf(item.rankMin);
+                if (minIdx >= 0 && myIdx < minIdx) ok = false;
+              }
+              if (item.rankMax) {
+                const maxIdx = RANK_ORDER.indexOf(item.rankMax);
+                if (maxIdx >= 0 && myIdx > maxIdx) ok = false;
+              }
+              return ok;
+            });
+          }
+
+          // 3) 순서대로 정렬
           items.sort(function (a, b) {
             return (a.order || 0) - (b.order || 0);
           });
