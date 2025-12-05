@@ -865,17 +865,15 @@
 
     /* ======= 선택 eBook용 HTML 템플릿 생성 ======= */
 
+       /* ======= 선택 eBook용 HTML 템플릿 생성 ======= */
+
     function generateHtmlForBook(book) {
       const title = book.title || "새 eBook";
       const subtitle = book.subtitle || "";
       const cover = book.cover || "";
       const video = book.video || "";
       const audio = book.audio || "";
-      const backLink = book.link && book.link.endsWith(".html")
-        ? "the-unique-main.html"
-        : "the-unique-main.html";
-
-      const safeFileName = (book.id || "ebook").replace(/[^a-zA-Z0-9_-]/g, "");
+      const backLink = "the-unique-main.html";
 
       const videoSection = video ? `
       <!-- eBook 영상 섹션 -->
@@ -897,7 +895,8 @@
         </audio>
       </section>` : "";
 
-      return `<!DOCTYPE html>
+      // 상단~본문까지
+      const htmlHeadAndBody = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -1106,9 +1105,6 @@
   </style>
 </head>
 <body>
-  <!-- 필요하면 배경 이미지 넣기 -->
-  <!-- <img src="img/bg-unique-main.jpg" class="scene-bg" alt="" /> -->
-
   <div class="page-wrap">
     <div class="book-frame">
       <a href="${backLink}" class="back-link">
@@ -1138,10 +1134,12 @@
         <ol>
           <li onclick="scrollToChapter('ch-1')">1. 첫 번째 챕터 제목을 여기에 적으세요</li>
           <li onclick="scrollToChapter('ch-2')">2. 두 번째 챕터 제목을 여기에 적으세요</li>
-          <li onclick="scrollToChapter('ch-3')">3. 세 번째 챕터 제목을 여기에 적으세요</li>${video ? `
-          <li onclick="scrollToChapter('video-section')">eBook 영상</li>` : ""}${audio ? `
-          <li onclick="scrollToChapter('audio-section')">오디오북</li>` : ""}
-        </ol>
+          <li onclick="scrollToChapter('ch-3')">3. 세 번째 챕터 제목을 여기에 적으세요</li>` +
+          (video ? `
+          <li onclick="scrollToChapter('video-section')">eBook 영상</li>` : ``) +
+          (audio ? `
+          <li onclick="scrollToChapter('audio-section')">오디오북</li>` : ``) +
+        `</ol>
       </section>
 
       <!-- 본문: 실제 내용은 나중에 교체 -->
@@ -1163,7 +1161,10 @@
       ${audioSection}
     </div>
   </div>
+`;
 
+      // 하단 스크립트 부분은 </script>를 쪼개서 만들어야 함
+      const scriptPart = `
   <script>
     function scrollToChapter(id) {
       const el = document.getElementById(id);
@@ -1172,7 +1173,6 @@
       window.scrollTo({ top, behavior: "smooth" });
     }
 
-    // eBook 영상 토글
     function toggleVideo() {
       const video = document.getElementById("ebook-video-player");
       const audio = document.getElementById("audio-player");
@@ -1196,7 +1196,6 @@
       }
     }
 
-    // 오디오북 토글
     function toggleAudio() {
       const video = document.getElementById("ebook-video-player");
       const audio = document.getElementById("audio-player");
@@ -1219,20 +1218,22 @@
         btnAudio.textContent = "재생 멈춤";
       }
     }
-  </script>
+  </scr` + `ipt>
 </body>
 </html>`;
+
+      return htmlHeadAndBody + scriptPart;
     }
 
     // HTML 생성 버튼
-    document.getElementById("htmlBtn").addEventListener("click", function() {
+    document.getElementById("htmlBtn").addEventListener("click", function () {
       const sel = document.getElementById("htmlBookSelect");
       const id = sel.value;
       if (!id) {
         alert("HTML을 만들 eBook을 선택하세요.");
         return;
       }
-      const book = items.find(function(b) { return (b.id || "") === id; });
+      const book = items.find(function (b) { return (b.id || "") === id; });
       if (!book) {
         alert("선택한 eBook을 찾을 수 없습니다.");
         return;
