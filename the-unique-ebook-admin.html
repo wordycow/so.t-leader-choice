@@ -345,7 +345,7 @@
   <div class="tip">
     ▸ 각 책의 <b>제목 / 부제 / 커버 / mp4 / mp3 / 노출 / 직급 범위 / 순서 / 이미지 위치</b>를 조정한 뒤,<br>
     ▸ <b>JSON 내보내기</b> 버튼을 눌러 나온 내용을 <code>ebook-config.json</code>에 복사해서 저장하면 됩니다.<br>
-    ▸ <b>선택 eBook HTML 생성</b> 버튼으로 기본 eBook 틀에 맞춘 <b>새 HTML 파일 뼈대</b>도 자동 생성할 수 있습니다. (영상/오디오 포함, JS 토글 스크립트는 제외)
+    ▸ <b>선택 eBook HTML 생성</b> 버튼으로 기본 eBook 틀에 맞춘 <b>새 HTML 파일 뼈대</b>도 자동 생성할 수 있습니다.
   </div>
 
   <div class="admin-layout">
@@ -391,7 +391,6 @@
     <button id="copyBtn" class="secondary-btn">JSON 복사</button>
     <button id="openGithubBtn" class="secondary-btn">ebook-config.json 열기</button>
 
-    <!-- 새 HTML 생성용: eBook 선택 + 버튼 -->
     <select id="htmlBookSelect" class="secondary-select">
       <option value="">HTML 만들 eBook 선택…</option>
     </select>
@@ -399,7 +398,7 @@
 
     <div class="export-help">
       • 아래 영역에는 <b>JSON</b> 또는 <b>선택한 eBook용 HTML 템플릿</b>이 출력됩니다. 상황에 맞게 복사해서 사용하세요.<br>
-      • HTML 템플릿은 <code>ebook-무슨무슨.html</code> 같은 이름으로 새 파일에 붙여 넣으면 됩니다. (토글 JS는 기존 ebook.html에서 복붙)
+      • HTML 템플릿은 <code>ebook-무슨무슨.html</code> 이름의 새 파일에 붙여 넣으면 됩니다. (토글 JS는 기존 ebook.html에서 복붙)
     </div>
     <textarea id="jsonOutput" readonly placeholder="여기에 JSON 또는 HTML이 생성됩니다."></textarea>
   </div>
@@ -411,7 +410,7 @@
       "Pro5", "Pro6", "Pro7", "Pro8", "Pro9", "Pro10"
     ];
 
-    // 기본 샘플 (ebook-config.json이 아직 없을 때 사용)
+    // 기본 샘플
     let items = [
       {
         id: "unique-basic",
@@ -445,46 +444,38 @@
       }
     ];
 
-    // ebook-config.json 이 있으면 그걸로 덮어쓰기
-    fetch("ebook-config.json")
-      .then(function(res) {
-        if (!res.ok) throw new Error("status " + res.status);
-        return res.json();
-      })
-      .then(function(data) {
-        if (data && Array.isArray(data.items) && data.items.length > 0) {
-          items = data.items;
-        }
-        normalizeItems();
-        renderList();
-        updatePreview();
-        refreshHtmlSelect();
-      })
-      .catch(function(err) {
-        console.warn("ebook-config.json 불러오기 실패, 기본값 사용:", err);
-        normalizeItems();
-        renderList();
-        updatePreview();
-        refreshHtmlSelect();
-      });
-
     function normalizeItems() {
-      items.forEach(function(item, index) {
-        if (typeof item.order !== "number") item.order = index + 1;
+      items.forEach((item, idx) => {
+        if (typeof item.order !== "number") item.order = idx + 1;
         if (typeof item.posY !== "number") item.posY = 50;
         if (typeof item.visible !== "boolean") item.visible = true;
       });
+    }
+
+    function refreshHtmlSelect() {
+      const sel = document.getElementById("htmlBookSelect");
+      if (!sel) return;
+      const current = sel.value;
+
+      sel.innerHTML = '<option value="">HTML 만들 eBook 선택…</option>';
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id || "";
+        opt.textContent = (item.id || "") + " / " + (item.title || "");
+        sel.appendChild(opt);
+      });
+
+      if (current) sel.value = current;
     }
 
     function renderList() {
       const listEl = document.getElementById("bookList");
       listEl.innerHTML = "";
 
-      items.forEach(function(item, index) {
+      items.forEach((item, index) => {
         const row = document.createElement("div");
         row.className = "book-row";
 
-        // 썸네일
         const thumb = document.createElement("div");
         thumb.className = "thumb";
         const frame = document.createElement("div");
@@ -497,7 +488,6 @@
         frame.appendChild(img);
         thumb.appendChild(frame);
 
-        // 파일 첨부 (로컬 미리보기 + 경로 자동 입력)
         const uploadLabel = document.createElement("label");
         uploadLabel.className = "thumb-upload";
         uploadLabel.textContent = "커버 이미지 파일: ";
@@ -507,30 +497,23 @@
         uploadLabel.appendChild(fileInput);
         thumb.appendChild(uploadLabel);
 
-        // 필드들
         const fields = document.createElement("div");
         fields.className = "fields";
 
-        // ID
-        fields.appendChild(makeTextField("ID (영문 키)", item.id || "", function(v) {
+        fields.appendChild(makeTextField("ID (영문 키)", item.id || "", v => {
           item.id = v.trim();
           refreshHtmlSelect();
           updatePreview();
         }));
-
-        // 제목
-        fields.appendChild(makeTextField("제목", item.title || "", function(v) {
+        fields.appendChild(makeTextField("제목", item.title || "", v => {
           item.title = v;
           updatePreview();
         }));
-
-        // 부제
-        fields.appendChild(makeTextField("부제", item.subtitle || "", function(v) {
+        fields.appendChild(makeTextField("부제", item.subtitle || "", v => {
           item.subtitle = v;
           updatePreview();
         }));
 
-        // 커버 이미지 경로 (텍스트 입력)
         const coverField = document.createElement("div");
         coverField.className = "field";
         const coverLabel = document.createElement("label");
@@ -538,7 +521,7 @@
         const coverInput = document.createElement("input");
         coverInput.type = "text";
         coverInput.value = item.cover || "";
-        coverInput.addEventListener("input", function() {
+        coverInput.addEventListener("input", function () {
           item.cover = this.value;
           img.src = this.value;
           updatePreview();
@@ -547,17 +530,12 @@
         coverField.appendChild(coverInput);
         fields.appendChild(coverField);
 
-        // 파일 선택 시: 썸네일 미리보기 + 경로 자동 입력
-        fileInput.addEventListener("change", function() {
+        fileInput.addEventListener("change", function () {
           const file = this.files && this.files[0];
           if (!file) return;
-
           const reader = new FileReader();
-          reader.onload = function(ev) {
-            img.src = ev.target.result;
-          };
+          reader.onload = ev => { img.src = ev.target.result; };
           reader.readAsDataURL(file);
-
           const safeName = file.name.replace(/\s+/g, "-");
           const suggestedPath = "img/" + safeName;
           item.cover = suggestedPath;
@@ -565,22 +543,16 @@
           updatePreview();
         });
 
-        // 영상(mp4) 경로
-        fields.appendChild(makeTextField("영상 파일(mp4) 경로", item.video || "", function(v) {
+        fields.appendChild(makeTextField("영상 파일(mp4) 경로", item.video || "", v => {
           item.video = v;
         }));
-
-        // 음성(mp3) 경로
-        fields.appendChild(makeTextField("음성 파일(mp3) 경로", item.audio || "", function(v) {
+        fields.appendChild(makeTextField("음성 파일(mp3) 경로", item.audio || "", v => {
           item.audio = v;
         }));
-
-        // 링크
-        fields.appendChild(makeTextField("클릭 시 이동할 링크", item.link || "", function(v) {
+        fields.appendChild(makeTextField("클릭 시 이동할 링크", item.link || "", v => {
           item.link = v;
         }));
 
-        // 노출 여부
         const visibleField = document.createElement("div");
         visibleField.className = "field";
         const vLabel = document.createElement("label");
@@ -588,7 +560,7 @@
         const vInput = document.createElement("input");
         vInput.type = "checkbox";
         vInput.checked = item.visible !== false;
-        vInput.addEventListener("change", function() {
+        vInput.addEventListener("change", function () {
           item.visible = this.checked;
           updatePreview();
         });
@@ -596,19 +568,15 @@
         visibleField.appendChild(vInput);
         fields.appendChild(visibleField);
 
-        // 최소 직급
-        fields.appendChild(makeRankField("최소 직급(rankMin)", item.rankMin, function(v) {
+        fields.appendChild(makeRankField("최소 직급(rankMin)", item.rankMin, v => {
           item.rankMin = v || null;
           updatePreview();
         }));
-
-        // 최대 직급
-        fields.appendChild(makeRankField("최대 직급(rankMax)", item.rankMax, function(v) {
+        fields.appendChild(makeRankField("최대 직급(rankMax)", item.rankMax, v => {
           item.rankMax = v || null;
           updatePreview();
         }));
 
-        // 순서(order)
         const orderField = document.createElement("div");
         orderField.className = "field";
         const oLabel = document.createElement("label");
@@ -616,7 +584,7 @@
         const oInput = document.createElement("input");
         oInput.type = "number";
         oInput.value = item.order || (index + 1);
-        oInput.addEventListener("input", function() {
+        oInput.addEventListener("input", function () {
           item.order = parseInt(this.value || "0", 10);
           updatePreview();
         });
@@ -624,7 +592,6 @@
         orderField.appendChild(oInput);
         fields.appendChild(orderField);
 
-        // 이미지 세로 위치(posY)
         const posField = document.createElement("div");
         posField.className = "field";
         const pLabel = document.createElement("label");
@@ -637,7 +604,7 @@
         const pVal = document.createElement("span");
         pVal.className = "value";
         pVal.textContent = posY + "%";
-        pRange.addEventListener("input", function() {
+        pRange.addEventListener("input", function () {
           const v = parseInt(this.value, 10);
           item.posY = v;
           pVal.textContent = v + "%";
@@ -649,13 +616,12 @@
         posField.appendChild(pVal);
         fields.appendChild(posField);
 
-        // 오른쪽 삭제 버튼
         const rowActions = document.createElement("div");
         rowActions.className = "row-actions";
         const delBtn = document.createElement("button");
         delBtn.className = "btn-small";
         delBtn.textContent = "삭제";
-        delBtn.addEventListener("click", function() {
+        delBtn.addEventListener("click", function () {
           if (confirm("이 eBook을 삭제할까요?")) {
             items.splice(index, 1);
             renderList();
@@ -677,20 +643,16 @@
 
     function updatePreview() {
       const previewList = document.getElementById("previewList");
-      if (!previewList) return;
-
       previewList.innerHTML = "";
 
       const rankSel = document.getElementById("previewRank");
-      const myRank = rankSel ? (rankSel.value || "") : "";
+      const myRank = rankSel.value || "";
       const myIdx = myRank ? RANKS.indexOf(myRank) : -1;
 
-      let books = items.slice().filter(function(item) {
-        return item.visible !== false;
-      });
+      let books = items.filter(item => item.visible !== false);
 
       if (myIdx >= 0) {
-        books = books.filter(function(item) {
+        books = books.filter(item => {
           let ok = true;
           if (item.rankMin) {
             const minIdx = RANKS.indexOf(item.rankMin);
@@ -704,9 +666,7 @@
         });
       }
 
-      books.sort(function(a, b) {
-        return (a.order || 0) - (b.order || 0);
-      });
+      books.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       if (!books.length) {
         const empty = document.createElement("div");
@@ -716,7 +676,7 @@
         return;
       }
 
-      books.forEach(function(book) {
+      books.forEach(book => {
         const card = document.createElement("div");
         card.className = "preview-card";
 
@@ -739,12 +699,9 @@
         s.textContent = book.subtitle || "";
         const meta = document.createElement("div");
         meta.className = "preview-meta";
-
         const min = book.rankMin || "제한 없음";
         const max = book.rankMax || "제한 없음";
-        meta.textContent =
-          "노출 범위: " + min + " ~ " + max +
-          " · 순서: " + (book.order || 0);
+        meta.textContent = "노출 범위: " + min + " ~ " + max + " · 순서: " + (book.order || 0);
 
         body.appendChild(t);
         body.appendChild(s);
@@ -752,7 +709,6 @@
 
         card.appendChild(thumb);
         card.appendChild(body);
-
         previewList.appendChild(card);
       });
     }
@@ -765,7 +721,7 @@
       const input = document.createElement("input");
       input.type = "text";
       input.value = value;
-      input.addEventListener("input", function() {
+      input.addEventListener("input", function () {
         onChange(this.value);
       });
       field.appendChild(label);
@@ -779,14 +735,14 @@
       const label = document.createElement("label");
       label.textContent = labelText;
       const select = document.createElement("select");
-      RANKS.forEach(function(r) {
+      RANKS.forEach(r => {
         const opt = document.createElement("option");
         opt.value = r;
         opt.textContent = r === "" ? "제한 없음" : r;
         if (r === (value || "")) opt.selected = true;
         select.appendChild(opt);
       });
-      select.addEventListener("change", function() {
+      select.addEventListener("change", function () {
         onChange(this.value);
       });
       field.appendChild(label);
@@ -794,57 +750,15 @@
       return field;
     }
 
-    function refreshHtmlSelect() {
-      const sel = document.getElementById("htmlBookSelect");
-      if (!sel) return;
-      const current = sel.value;
-
-      sel.innerHTML = '<option value="">HTML 만들 eBook 선택…</option>';
-      items.forEach(function(item) {
-        const opt = document.createElement("option");
-        opt.value = item.id || "";
-        opt.textContent = (item.id || "") + " / " + (item.title || "");
-        sel.appendChild(opt);
-      });
-
-      if (current) {
-        sel.value = current;
-      }
-    }
-
-    // 책 추가 버튼
-    document.getElementById("addBtn").addEventListener("click", function() {
-      const n = items.length + 1;
-      items.push({
-        id: "ebook-" + n,
-        title: "새 eBook " + n,
-        subtitle: "",
-        description: "",
-        cover: "",
-        video: "",
-        audio: "",
-        link: "",
-        visible: true,
-        rankMin: "",
-        rankMax: "",
-        order: n,
-        posY: 50
-      });
-      renderList();
-      updatePreview();
-    });
-
     // JSON 내보내기
-    document.getElementById("exportBtn").addEventListener("click", function() {
-      const output = { items: items };
-      document.getElementById("jsonOutput").value =
-        JSON.stringify(output, null, 2);
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const output = { items };
+      document.getElementById("jsonOutput").value = JSON.stringify(output, null, 2);
     });
 
-    // JSON 불러오기 (텍스트 박스 → items 반영)
-    document.getElementById("importBtn").addEventListener("click", function() {
-      const textarea = document.getElementById("jsonOutput");
-      const txt = textarea.value.trim();
+    // JSON 불러오기 (textarea → items)
+    document.getElementById("importBtn").addEventListener("click", () => {
+      const txt = document.getElementById("jsonOutput").value.trim();
       if (!txt) {
         alert("불러올 JSON이 텍스트 상자에 없습니다.");
         return;
@@ -867,10 +781,10 @@
     });
 
     // JSON 복사
-    document.getElementById("copyBtn").addEventListener("click", function() {
+    document.getElementById("copyBtn").addEventListener("click", () => {
       const textarea = document.getElementById("jsonOutput");
       if (!textarea.value.trim()) {
-        const output = { items: items };
+        const output = { items };
         textarea.value = JSON.stringify(output, null, 2);
       }
       textarea.select();
@@ -878,18 +792,12 @@
       alert("JSON을 클립보드에 복사했습니다.");
     });
 
-    // GitHub에서 ebook-config.json 열기
-    document.getElementById("openGithubBtn").addEventListener("click", function() {
+    // GitHub 열기
+    document.getElementById("openGithubBtn").addEventListener("click", () => {
       window.open("https://github.com/wordycow/so.t-leader-choice/blob/main/ebook-config.json", "_blank");
     });
 
-    // 미리보기 직급 변경
-    const previewRankSel = document.getElementById("previewRank");
-    if (previewRankSel) {
-      previewRankSel.addEventListener("change", updatePreview);
-    }
-
-    /* ======= 선택 eBook용 HTML 템플릿 생성 (JS 토글 없는 버전) ======= */
+    // HTML 템플릿 생성 (JS 없는 기본틀)
     function generateHtmlForBook(book) {
       const title = book.title || "새 eBook";
       const subtitle = book.subtitle || "";
@@ -897,80 +805,109 @@
       const video = book.video || "";
       const audio = book.audio || "";
 
-      let html = "";
-      html += "<!DOCTYPE html>\\n";
-      html += "<html lang=\\"ko\\">\\n";
-      html += "<head>\\n";
-      html += "  <meta charset=\\"UTF-8\\" />\\n";
-      html += "  <title>The Unique – " + title.replace(/"/g, '&quot;') + "</title>\\n";
-      html += "  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\" />\\n\\n";
-      html += "  <link rel=\\"preconnect\\" href=\\"https://fonts.googleapis.com\\">\\n";
-      html += "  <link rel=\\"preconnect\\" href=\\"https://fonts.gstatic.com\\" crossorigin>\\n";
-      html += "  <link href=\\"https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap\\" rel=\\"stylesheet\\">\\n\\n";
-      html += "  <style>/* ebook.html 기본 스타일 복붙해서 필요하면 수정 */</style>\\n";
-      html += "</head>\\n";
-      html += "<body>\\n";
-      html += "  <div class=\\"page-wrap\\">\\n";
-      html += "    <div class=\\"book-frame\\">\\n";
-      html += "      <a href=\\"the-unique-main.html\\" class=\\"back-link\\">← Member Hall로 돌아가기</a>\\n";
-      html += "      <header class=\\"book-header\\">\\n";
-      html += "        <div class=\\"book-cover\\">\\n";
-      html += "          <img src=\\"" + cover + "\\" alt=\\"" + title.replace(/"/g, '&quot;') + " 표지\\" />\\n";
-      html += "        </div>\\n";
-      html += "        <div class=\\"book-title-group\\">\\n";
-      html += "          <div class=\\"book-title-en\\">THE UNIQUE</div>\\n";
-      html += "          <div class=\\"book-title-ko\\">" + title + "</div>\\n";
-      html += "          <div class=\\"book-sub\\">" + subtitle + "</div>\\n";
-      html += "        </div>\\n";
-      html += "      </header>\\n\\n";
-      html += "      <!-- 여기부터 챕터 내용 채워넣기 -->\\n";
-      html += "      <section class=\\"chapter\\" id=\\"ch-1\\">\\n";
-      html += "        <h2>1. 첫 번째 챕터 제목</h2>\\n";
-      html += "        <p>여기에 첫 번째 챕터 내용을 작성하세요.</p>\\n";
-      html += "      </section>\\n\\n";
+      const lines = [];
+      lines.push("<!DOCTYPE html>");
+      lines.push('<html lang="ko">');
+      lines.push("<head>");
+      lines.push('  <meta charset="UTF-8" />');
+      lines.push("  <title>The Unique – " + title.replace(/\"/g, "&quot;") + "</title>");
+      lines.push('  <meta name="viewport" content="width=device-width, initial-scale=1.0" />');
+      lines.push("");
+      lines.push('  <link rel="preconnect" href="https://fonts.googleapis.com">');
+      lines.push('  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>');
+      lines.push('  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">');
+      lines.push("");
+      lines.push("  <!-- ebook.html의 스타일을 복사해서 여기에 붙여 넣으세요 -->");
+      lines.push("  <style>");
+      lines.push("  </style>");
+      lines.push("</head>");
+      lines.push("<body>");
+      lines.push('  <div class="page-wrap">');
+      lines.push('    <div class="book-frame">');
+      lines.push('      <a href="the-unique-main.html" class="back-link">← Member Hall로 돌아가기</a>');
+      lines.push("      <header class=\"book-header\">");
+      lines.push('        <div class="book-cover">');
+      lines.push('          <img src="' + cover + '" alt="' + title.replace(/\"/g, "&quot;") + ' 표지" />');
+      lines.push("        </div>");
+      lines.push('        <div class="book-title-group">');
+      lines.push('          <div class="book-title-en">THE UNIQUE</div>');
+      lines.push('          <div class="book-title-ko">' + title + "</div>");
+      lines.push('          <div class="book-sub">' + subtitle + "</div>");
+      lines.push("        </div>");
+      lines.push("      </header>");
+      lines.push("");
+      lines.push("      <!-- 여기서부터 챕터 내용을 채워 넣으세요 -->");
+      lines.push('      <section class="chapter" id="ch-1">');
+      lines.push('        <h2>1. 첫 번째 챕터 제목</h2>');
+      lines.push("        <p>여기에 첫 번째 챕터 내용을 작성하세요.</p>");
+      lines.push("      </section>");
+      lines.push("");
       if (video) {
-        html += "      <section class=\\"chapter media-section\\" id=\\"video-section\\">\\n";
-        html += "        <h2>eBook 영상</h2>\\n";
-        html += "        <video controls poster=\\"" + cover + "\\">\\n";
-        html += "          <source src=\\"" + video + "\\" type=\\"video/mp4\\" />\\n";
-        html += "        </video>\\n";
-        html += "      </section>\\n\\n";
+        lines.push('      <section class="chapter media-section" id="video-section">');
+        lines.push("        <h2>eBook 영상</h2>");
+        lines.push('        <video controls poster="' + cover + '">');
+        lines.push('          <source src="' + video + '" type="video/mp4" />');
+        lines.push("        </video>");
+        lines.push("      </section>");
+        lines.push("");
       }
       if (audio) {
-        html += "      <section class=\\"chapter media-section\\" id=\\"audio-section\\">\\n";
-        html += "        <h2>오디오북</h2>\\n";
-        html += "        <audio controls>\\n";
-        html += "          <source src=\\"" + audio + "\\" type=\\"audio/mpeg\\" />\\n";
-        html += "        </audio>\\n";
-        html += "      </section>\\n";
+        lines.push('      <section class="chapter media-section" id="audio-section">');
+        lines.push("        <h2>오디오북</h2>");
+        lines.push("        <audio controls>");
+        lines.push('          <source src="' + audio + '" type="audio/mpeg" />');
+        lines.push("        </audio>");
+        lines.push("      </section>");
+        lines.push("");
       }
-      html += "    </div>\\n";
-      html += "  </div>\\n";
-      html += "</body>\\n";
-      html += "</html>\\n";
-
-      return html;
+      lines.push("    </div>");
+      lines.push("  </div>");
+      lines.push("</body>");
+      lines.push("</html>");
+      return lines.join("\n");
     }
 
-    // HTML 생성 버튼
-    document.getElementById("htmlBtn").addEventListener("click", function() {
+    document.getElementById("htmlBtn").addEventListener("click", () => {
       const sel = document.getElementById("htmlBookSelect");
       const id = sel.value;
       if (!id) {
         alert("HTML을 만들 eBook을 선택하세요.");
         return;
       }
-      const book = items.find(function(b) { return (b.id || "") === id; });
+      const book = items.find(b => (b.id || "") === id);
       if (!book) {
         alert("선택한 eBook을 찾을 수 없습니다.");
         return;
       }
-
       const html = generateHtmlForBook(book);
       const textarea = document.getElementById("jsonOutput");
       textarea.value = html;
+      textarea.readOnly = false;   // 수정 가능
       textarea.scrollIntoView({ behavior: "smooth", block: "start" });
       textarea.focus();
+    });
+
+    // 직급 변경시 미리보기
+    document.getElementById("previewRank").addEventListener("change", updatePreview);
+
+    // 초기 로드: JSON 파일로부터 덮어쓰기 시도
+    window.addEventListener("DOMContentLoaded", () => {
+      fetch("ebook-config.json")
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => {
+          if (data && Array.isArray(data.items)) {
+            items = data.items;
+          }
+          normalizeItems();
+          renderList();
+          updatePreview();
+        })
+        .catch(err => {
+          console.warn("ebook-config.json 로드 실패, 기본값 사용:", err);
+          normalizeItems();
+          renderList();
+          updatePreview();
+        });
     });
   </script>
 </body>
