@@ -62,9 +62,7 @@
       gap: 16px;
     }
 
-    .book-list {
-      margin: 0;
-    }
+    .book-list { margin: 0; }
 
     .book-row {
       display: flex;
@@ -158,12 +156,16 @@
       background: rgba(239,68,68,0.2);
     }
 
-    /* 오른쪽 미리보기 패널 */
+    /* 오른쪽 미리보기 패널 - sticky */
     .preview-panel {
       background: rgba(15,23,42,0.96);
       border-radius: 14px;
       border: 1px solid rgba(148,163,184,0.5);
       padding: 14px 16px 16px;
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
     }
     .preview-header {
       display: flex;
@@ -248,15 +250,15 @@
       max-width: 1300px;
       margin: 0 auto;
     }
-    .export-btn, .add-btn {
+    .export-btn,
+    .add-btn,
+    .secondary-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 8px 16px;
       border-radius: 999px;
       border: none;
-      background: #f97316;
-      color: #111827;
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
@@ -267,6 +269,22 @@
       background: #22c55e;
       color: #022c22;
     }
+    .export-btn {
+      background: #f97316;
+      color: #111827;
+    }
+    .secondary-btn {
+      background: transparent;
+      color: #e5e7eb;
+      border: 1px solid rgba(148,163,184,0.7);
+      font-size: 13px;
+      padding-inline: 12px;
+    }
+    .secondary-btn:hover {
+      border-color: rgba(248,250,252,0.9);
+      background: rgba(15,23,42,0.8);
+    }
+
     textarea {
       width: 100%;
       min-height: 260px;
@@ -288,6 +306,10 @@
     @media (max-width: 900px) {
       .admin-layout {
         grid-template-columns: minmax(0, 1fr);
+      }
+      .preview-panel {
+        position: static;
+        max-height: none;
       }
     }
     @media (max-width: 700px) {
@@ -321,9 +343,9 @@
 
     <aside class="preview-panel">
       <div class="preview-header">
-        <div class="preview-title">Member Hall eBook 카드 미리보기</div>
+        <div class="preview-title">Member Hall eBook 미리보기</div>
         <div class="preview-rank-select">
-          <span>직급 시뮬레이션:</span>
+          <span>직급:</span>
           <select id="previewRank">
             <option value="">모든 직급</option>
             <option value="Star1">Star1</option>
@@ -343,8 +365,8 @@
         </div>
       </div>
       <div class="preview-desc">
-        • 실제 Member Hall 화면에서 보이는 카드 레이아웃을 미리 확인할 수 있습니다.<br>
-        • 직급을 선택하면 <code>최소/최대 직급</code> 설정에 따라 노출되는 항목만 표시됩니다.
+        • 실제 Member Hall의 eBook 카드 레이아웃을 미리 확인할 수 있습니다.<br>
+        • 직급을 바꾸면 <code>최소/최대 직급</code> 설정에 맞는 항목만 보입니다.
       </div>
       <div id="previewList" class="preview-list"></div>
     </aside>
@@ -353,6 +375,9 @@
   <div class="export-box">
     <button id="addBtn" class="add-btn">+ 책 추가</button>
     <button id="exportBtn" class="export-btn">JSON 내보내기</button>
+    <button id="copyBtn" class="secondary-btn">JSON 복사</button>
+    <button id="openGithubBtn" class="secondary-btn">ebook-config.json 열기</button>
+
     <div class="export-help">
       • 내보낸 JSON 전체를 복사(Ctrl+A → Ctrl+C) 후, GitHub의 <code>ebook-config.json</code>에 붙여넣고 저장하세요.
     </div>
@@ -630,12 +655,10 @@
 
       previewList.innerHTML = "";
 
-      // 직급 시뮬레이션 값
       const rankSel = document.getElementById("previewRank");
       const myRank = rankSel ? (rankSel.value || "") : "";
       const myIdx = myRank ? RANKS.indexOf(myRank) : -1;
 
-      // 정렬 + 노출 필터
       let books = items.slice().filter(function(item) {
         return item.visible !== false;
       });
@@ -772,6 +795,24 @@
       const output = { items: items };
       document.getElementById("jsonOutput").value =
         JSON.stringify(output, null, 2);
+    });
+
+    // JSON 복사
+    document.getElementById("copyBtn").addEventListener("click", function() {
+      const textarea = document.getElementById("jsonOutput");
+      if (!textarea.value.trim()) {
+        const output = { items: items };
+        textarea.value = JSON.stringify(output, null, 2);
+      }
+      textarea.select();
+      document.execCommand("copy");
+      alert("JSON을 클립보드에 복사했습니다.");
+    });
+
+    // GitHub에서 ebook-config.json 열기
+    document.getElementById("openGithubBtn").addEventListener("click", function() {
+      // 필요하면 브랜치 이름(main) 바꾸면 됨
+      window.open("https://github.com/wordycow/so.t-leader-choice/blob/main/ebook-config.json", "_blank");
     });
 
     // 미리보기 직급 변경
