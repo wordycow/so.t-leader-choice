@@ -2,793 +2,523 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>so.t Team Hub</title>
+  <title>The Unique – Team Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #f9fafb;
-      min-height: 100vh;
-
-      background: #020617;
-      background-image:
-        url("img/bg-team-hub.jpg"),
-        radial-gradient(circle at top, rgba(15,23,42,0.25) 0, rgba(15,23,42,0.9) 65%, #020617 100%);
-      background-size: cover, cover;
-      background-position: center top, center top;
-      background-attachment: fixed, fixed;
-      animation: bg-pan 60s linear infinite alternate;
+      padding: 0;
+      height: 100%;
     }
 
-    @keyframes bg-pan {
-      0% { background-position: center top, center top; }
-      100% { background-position: center 20%, center top; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background-color: #020617;
+      color: #E5E7EB;
+      background-image: radial-gradient(circle at top, rgba(148,163,184,0.22), transparent 55%);
+    }
+
+    .scene-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.35;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .page-wrap {
+      position: relative;
+      z-index: 5;
       max-width: 1200px;
-      margin: 24px auto 32px;
-      padding: 0 12px 32px;
-      width: 100%;
+      margin: 40px auto 48px;
+      padding: 0 16px 40px;
     }
 
-    header {
-      margin-bottom: 18px;
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
     }
-
-    h1 {
-      font-size: 24px;
-      margin: 0 0 4px;
-    }
-
-    .sub {
+    .page-sub {
       font-size: 13px;
-      color: #cbd5f5;
-      margin: 0 0 10px;
+      color: #9CA3AF;
+      margin-bottom: 20px;
     }
 
-    .glass-panel {
-      background: rgba(15,23,42,0.9);
-      border-radius: 18px;
-      padding: 14px 16px 18px;
-      box-shadow: 0 18px 45px rgba(0,0,0,0.7);
-      border: 1px solid rgba(148,163,184,0.55);
-      backdrop-filter: blur(10px);
-    }
-
-    .glass-panel h2 {
-      margin: 0 0 6px;
-      font-size: 18px;
-    }
-
-    /* 링크 패널 */
-    .links-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .search-input {
-      flex: 1;
-      padding: 6px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.9);
+    /* 카드 그리드 (참가자용 링크) */
+    .card-grid-title {
       font-size: 13px;
-      background: rgba(15,23,42,0.95);
-      color: #f9fafb;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #9CA3AF;
     }
 
-    .links-section {
-      margin-bottom: 18px;
-    }
-
-    .links-section h3 {
-      font-size: 14px;
-      margin: 0 0 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #e5e7eb;
-    }
-
-    .links-section h3 span.badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(129,140,248,0.9);
-      background: rgba(15,23,42,0.9);
-      color: #c7d2fe;
-    }
-
-    .badge-admin {
-      border-color: rgba(248,113,113,0.9);
-      color: #fecaca;
-    }
-
-    .badge-public {
-      border-color: rgba(59,130,246,0.95);
-      color: #bfdbfe;
-    }
-
-    .badge-github {
-      border-color: rgba(52,211,153,0.95);
-      color: #a7f3d0;
-    }
-
-    .links-grid {
+    .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
     }
 
-    .link-card {
-      background: rgba(15,23,42,0.95);
-      border-radius: 14px;
-      border: 1px solid rgba(148,163,184,0.8);
+    .hub-card {
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
+      border: 1px solid rgba(148,163,184,0.7);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(15,23,42,1) inset;
       display: flex;
       flex-direction: column;
     }
 
-    .link-card-admin {
-      border-color: rgba(248,113,113,0.9);
-    }
-
-    .link-card-public {
-      border-color: rgba(59,130,246,0.9);
-    }
-
-    .link-card-github {
-      border-color: rgba(52,211,153,0.9);
-    }
-
-    .link-thumb {
-      display: block;
+    .hub-card-thumb {
+      position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
-      background: radial-gradient(circle at top, rgba(30,64,175,0.6), rgba(15,23,42,1));
+      padding-top: 52%;
       overflow: hidden;
     }
-
-    .link-thumb img {
+    .hub-card-thumb img {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
     }
 
-    .link-card-body {
-      padding: 8px 10px 10px;
+    .hub-card-body {
+      padding: 12px 14px 12px;
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
 
-    .link-card-title {
-      font-size: 13px;
-      font-weight: 600;
+    .hub-card-title {
+      font-size: 14px;
+      font-weight: 700;
     }
-
-    .link-card-note {
+    .hub-card-sub {
       font-size: 11px;
-      color: #9ca3af;
+      color: #9CA3AF;
+      margin-bottom: 4px;
     }
 
-    .link-card-buttons {
-      margin-top: 6px;
+    .hub-card-links {
       display: flex;
-      flex-wrap: wrap;
       gap: 6px;
+      margin-top: 6px;
     }
-
-    .link-chip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 5px 9px;
+    .hub-btn {
+      flex: 1;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.8);
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
+      border: none;
       font-size: 11px;
-      text-decoration: none;
+      padding: 6px 0;
       cursor: pointer;
-      white-space: nowrap;
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .hub-btn-page {
+      background: #0EA5E9;
+      color: #0B1120;
+    }
+    .hub-btn-page:hover { filter: brightness(1.05); }
+    .hub-btn-github {
+      background: #111827;
+      color: #E5E7EB;
+      border: 1px solid rgba(148,163,184,0.9);
+    }
+    .hub-btn-github:hover {
+      border-color: #FACC15;
     }
 
-    .link-chip:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.6);
+    /* 프로모션 관리 (관리자용) */
+    .promo-admin {
+      margin-top: 32px;
+      border-radius: 18px;
+      padding: 18px 16px 20px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
+      border: 1px solid rgba(234,179,8,0.85);
+      box-shadow:
+        0 0 24px rgba(234,179,8,0.6),
+        0 26px 60px rgba(0,0,0,0.95);
+    }
+    .promo-admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .promo-admin-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .promo-admin-badge {
+      font-size: 11px;
+      color: #F97316;
+    }
+    .promo-admin-desc {
+      font-size: 11px;
+      color: #9CA3AF;
+      margin-bottom: 12px;
     }
 
-    .chip-admin {
-      background: rgba(248,113,113,0.95);
-      border-color: rgba(248,113,113,1);
-      color: #fef2f2;
-    }
-
-    .chip-public {
-      background: rgba(59,130,246,0.95);
-      border-color: rgba(59,130,246,1);
-      color: #eff6ff;
-    }
-
-    .chip-github {
-      background: rgba(16,185,129,0.95);
-      border-color: rgba(45,212,191,1);
-      color: #ecfdf5;
-    }
-
-    /* ========== 공지/프로모션 HTML 생성기 ========== */
-    .gen-panel {
-      margin-top: 20px;
-    }
-
-    .gen-grid {
+    .promo-admin-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
       gap: 14px;
     }
 
-    .gen-field {
-      margin-bottom: 8px;
+    .promo-left {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-
-    .gen-label {
+    .promo-field {
       font-size: 12px;
-      margin-bottom: 4px;
-      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-
-    .gen-input, .gen-textarea, .gen-select {
-      width: 100%;
+    .promo-field label {
+      color: #9CA3AF;
+    }
+    .promo-field input[type="text"],
+    .promo-field textarea {
+      font-size: 12px;
       padding: 6px 8px;
       border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.9);
-      background: rgba(15,23,42,0.95);
-      color: #f9fafb;
+      border: 1px solid #4B5563;
+      background: #020617;
+      color: #E5E7EB;
+      resize: vertical;
+    }
+    .promo-field input[type="file"] {
       font-size: 12px;
     }
 
-    .gen-textarea {
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.5;
+    .promo-preview-frame {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: #020617;
+      min-height: 140px;
+    }
+    .promo-preview-inner {
+      position: relative;
+      width: 100%;
+      padding-top: 56%;
+    }
+    .promo-preview-inner img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .promo-preview-caption {
+      position: absolute;
+      inset: auto 0 0 0;
+      padding: 10px;
+      background: linear-gradient(to top, rgba(15,23,42,0.95), transparent);
+      font-size: 12px;
+    }
+    .promo-preview-caption strong {
+      display: block;
+      margin-bottom: 2px;
     }
 
-    .gen-select {
-      height: 30px;
-    }
-
-    .gen-row-2 {
+    .promo-actions {
+      margin-top: 10px;
       display: flex;
-      gap: 8px;
-    }
-
-    .gen-row-2 .gen-field {
-      flex: 1;
-      margin-bottom: 0;
-    }
-
-    .gen-btn-row {
-      margin-top: 8px;
-      display: flex;
-      gap: 8px;
       flex-wrap: wrap;
+      gap: 8px;
     }
-
-    .gen-btn {
-      padding: 6px 10px;
+    .promo-btn {
+      padding: 6px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.9);
-      background: rgba(15,23,42,0.95);
-      color: #f9fafb;
-      font-size: 11px;
+      border: 1px solid rgba(148,163,184,0.8);
+      background: #020617;
+      color: #E5E7EB;
+      font-size: 12px;
       cursor: pointer;
     }
-
-    .gen-btn:hover {
-      background: rgba(30,64,175,0.95);
+    .promo-btn-primary {
+      background: #10B981;
+      color: #022c22;
+      border: none;
+      font-weight: 600;
     }
+    .promo-btn:hover { filter: brightness(1.05); }
 
-    .gen-output {
-      width: 100%;
-      min-height: 160px;
-      resize: vertical;
-      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    .promo-code {
+      margin-top: 10px;
       font-size: 11px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.85);
-      background: #020617;
-      color: #e5e7eb;
+      color: #9CA3AF;
     }
-
-    .gen-output-small {
+    .promo-code textarea {
       width: 100%;
-      min-height: 80px;
-      resize: vertical;
-      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 11px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.85);
-      background: #020617;
-      color: #e5e7eb;
-      margin-top: 6px;
-    }
-
-    .gen-note {
+      min-height: 140px;
       margin-top: 4px;
       font-size: 11px;
-      color: #9ca3af;
+      border-radius: 10px;
+      border: 1px solid #4B5563;
+      background: #020617;
+      color: #E5E7EB;
+      padding: 6px 8px;
+      resize: vertical;
     }
 
     @media (max-width: 900px) {
-      .gen-grid {
+      .admin-layout {
         grid-template-columns: minmax(0, 1fr);
       }
-    }
-
-    @media (max-width: 640px) {
-      .links-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .search-input {
-        width: 100%;
+      .promo-admin-layout {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   </style>
 </head>
 <body>
+  <!-- 필요하면 배경 이미지 사용 -->
+  <!-- <img src="img/bg-unique-main.jpg" class="scene-bg" alt="" /> -->
+
   <div class="page-wrap">
-    <header>
-      <h1>so.t Team Hub</h1>
-      <p class="sub">
-        so.t 리더 보드 · 직급의 전당 · The Unique 관련 페이지와 GitHub 소스를 한 곳에서 관리합니다.
-      </p>
-    </header>
+    <div class="page-title">공통 노출 화면 (참가자용)</div>
+    <div class="page-sub">
+      The Unique 참가자들이 자주 들어오는 링크를 한 곳에서 모아둔 허브입니다.<br />
+      리더보드 / 직급의 전당 / 공지 카드는 제거하고, 대문·메인·프로모션 위주로 정리했습니다.
+    </div>
 
-    <!-- 링크 허브 (관리자 전용) -->
-    <section class="glass-panel">
-      <div class="links-header">
-        <h2>링크 허브 (관리자 전용)</h2>
-        <input id="link-search" class="search-input" placeholder="링크 이름·설명 검색…" />
-      </div>
+    <!-- 참가자용 카드 링크 -->
+    <div class="card-grid-title">참가자가 보는 화면</div>
+    <section class="card-grid">
+      <!-- The Unique 대문 -->
+      <article class="hub-card">
+        <div class="hub-card-thumb">
+          <img src="img/the-unique-gate-preview.jpg" alt="The Unique 대문" />
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-title">The Unique 대문</div>
+          <div class="hub-card-sub">the-unique-gate.html · 입구 화면</div>
+          <div class="hub-card-links">
+            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-gate.html','_blank')">
+              페이지 열기
+            </button>
+            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html','_blank')">
+              GitHub 이동
+            </button>
+          </div>
+        </div>
+      </article>
 
-      <div id="links-container"></div>
+      <!-- The Unique 메인 -->
+      <article class="hub-card">
+        <div class="hub-card-thumb">
+          <img src="img/the-unique-main-preview.jpg" alt="The Unique 메인" />
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-title">The Unique 메인</div>
+          <div class="hub-card-sub">the-unique-main.html · 직급/프로모션 허브 화면</div>
+          <div class="hub-card-links">
+            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-main.html','_blank')">
+              페이지 열기
+            </button>
+            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html','_blank')">
+              GitHub 이동
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 프로모션 보기 -->
+      <article class="hub-card">
+        <div class="hub-card-thumb">
+          <img src="img/bg_unique_promo.jpg" alt="The Unique 프로모션" />
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-title">The Unique 프로모션 보기</div>
+          <div class="hub-card-sub">the-unique-promo.html · 현재 진행 중인 프로모션</div>
+          <div class="hub-card-links">
+            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-promo.html','_blank')">
+              페이지 열기
+            </button>
+            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html','_blank')">
+              GitHub 이동
+            </button>
+          </div>
+        </div>
+      </article>
     </section>
 
-    <!-- 공지/프로모션 HTML 생성기 -->
-    <section class="glass-panel gen-panel">
-      <h2>공지 / 프로모션 HTML 생성기</h2>
-      <p class="sub">
-        ssoti 공지 화면에서 제목과 내용을 복사해와서 붙여 넣으면,
-        the-unique-notice-*.html / the-unique-promo-*.html 파일에 쓸 HTML 틀과
-        목록용 코드까지 자동으로 만들어줍니다.
-      </p>
+    <!-- 프로모션 관리 (관리자용 도구) -->
+    <section class="promo-admin">
+      <div class="promo-admin-header">
+        <div class="promo-admin-title">프로모션 관리 (관리자용)</div>
+        <div class="promo-admin-badge">* 이 영역은 써나/운영진이 GitHub 수정용으로 사용하는 구역입니다.</div>
+      </div>
+      <div class="promo-admin-desc">
+        • 아래에서 <b>프로모션 이미지 / 제목 / 공지 텍스트</b>를 입력하면,<br />
+        • <b>the-unique-promo.html</b>에 붙여넣을 수 있는 HTML 코드가 생성됩니다. (실제 반영은 GitHub에 복사 후 저장 필요)
+      </div>
 
-      <div class="gen-grid">
-        <!-- 왼쪽: 입력 -->
-        <div>
-          <div class="gen-field">
-            <div class="gen-label">타입 선택</div>
-            <select id="gen-type" class="gen-select">
-              <option value="notice">공지사항 (the-unique-notice-*.html)</option>
-              <option value="promo">프로모션 (the-unique-promo-*.html)</option>
-            </select>
-          </div>
-
-          <div class="gen-field">
-            <div class="gen-label">공지 / 프로모션 제목</div>
-            <input id="gen-title" class="gen-input" placeholder="예: 구글 OTP 인증 오류 안내." />
-          </div>
-
-          <div class="gen-row-2">
-            <div class="gen-field">
-              <div class="gen-label">등록일 (예: 2025.12.01)</div>
-              <input id="gen-date" class="gen-input" placeholder="YYYY.MM.DD" />
-            </div>
-            <div class="gen-field">
-              <div class="gen-label">작성자</div>
-              <input id="gen-author" class="gen-input" value="관리자" />
+      <div class="promo-admin-layout">
+        <!-- 왼쪽: 입력 + 파일 선택 -->
+        <div class="promo-left">
+          <div class="promo-field">
+            <label for="promo-image">프로모션 이미지 파일</label>
+            <input type="file" id="promo-image" accept="image/*" />
+            <div style="font-size:11px;color:#9CA3AF;">
+              • 최종 파일은 <code>img/파일이름.jpg</code> 형태로 GitHub의 <code>img</code> 폴더에 올려야 합니다.
             </div>
           </div>
 
-          <div class="gen-field">
-            <div class="gen-label">본문 내용 (줄바꿈 기준으로 문단 자동 분리)</div>
-            <textarea id="gen-body" class="gen-textarea" placeholder="여기에 ssoti 공지 텍스트를 그대로 붙여넣으세요.&#10;한 줄이 하나의 문단이 됩니다."></textarea>
+          <div class="promo-field">
+            <label for="promo-image-path">이미지 경로 (GitHub 기준)</label>
+            <input type="text" id="promo-image-path" placeholder="예: img/the-unique-promo-main.jpg" />
           </div>
 
-          <div class="gen-btn-row">
-            <button id="gen-make" class="gen-btn">HTML 생성</button>
-            <button id="gen-preview" class="gen-btn">새 창에서 미리보기</button>
+          <div class="promo-field">
+            <label for="promo-title-input">프로모션 제목</label>
+            <input type="text" id="promo-title-input" placeholder="예: 2025년 1분기 THE UNIQUE 프로모션" />
           </div>
 
-          <div class="gen-note">
-            ※ 생성된 HTML은 GitHub에서 <code>the-unique-notice-YYYYMMDD-N.html</code> 또는
-            <code>the-unique-promo-YYYYMMDD-N.html</code> 형태의 새 파일에 붙여 넣으면 됩니다.<br/>
-            ※ 목록용 코드는 공지 목록/프로모션 목록 JS에서 추가/삭제할 때 사용하면 됩니다.
+          <div class="promo-field">
+            <label for="promo-text-input">공지 텍스트 (팝업/설명용)</label>
+            <textarea id="promo-text-input" rows="5" placeholder="참가자에게 보여줄 프로모션 설명을 입력하세요."></textarea>
           </div>
         </div>
 
-        <!-- 오른쪽: 출력 -->
+        <!-- 오른쪽: 미리보기 -->
         <div>
-          <div class="gen-label">생성된 HTML 코드 (복사해서 GitHub에 붙여넣기)</div>
-          <textarea id="gen-output" class="gen-output" readonly></textarea>
+          <div class="promo-field">
+            <label>미리보기</label>
+            <div class="promo-preview-frame">
+              <div class="promo-preview-inner">
+                <img id="promo-preview-img" src="" alt="프로모션 미리보기" />
+                <div class="promo-preview-caption" id="promo-preview-caption" style="display:none;">
+                  <strong id="promo-preview-title"></strong>
+                  <span id="promo-preview-text"></span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <div class="gen-label" style="margin-top:8px;">목록용 코드 (예: NOTICES 배열에 추가)</div>
-          <textarea id="gen-index-output" class="gen-output-small" readonly></textarea>
+          <div class="promo-actions">
+            <button type="button" class="promo-btn promo-btn-primary" id="promo-generate">
+              프로모션 HTML 코드 생성
+            </button>
+            <button type="button" class="promo-btn" id="promo-copy">
+              코드 복사
+            </button>
+          </div>
+
+          <div class="promo-code">
+            생성된 HTML 코드 (the-unique-promo.html 안에 붙여넣기)
+            <textarea id="promo-code-output" readonly></textarea>
+          </div>
         </div>
       </div>
     </section>
   </div>
 
   <script>
-    /* ========== 1. 링크 데이터 ========== */
-    const LINK_SECTIONS = [
-      {
-        title: "관리자 전용 화면",
-        badge: "Admin",
-        theme: "admin",
-        links: [
-          {
-            type: "admin",
-            label: "리더 보드 관리자 페이지",
-            note: "admin-index.html · 리더/폼/결과 관리",
-            liveHref: "admin-index.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/admin-index.html",
-            image: "img/admin-index-preview.png"
-          },
-          {
-            type: "admin",
-            label: "직급의 전당 관리자 페이지",
-            note: "admin-rank-hall.html · 직급/배지 관리",
-            liveHref: "admin-rank-hall.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/admin-rank-hall.html",
-            image: "img/admin-rank-hall-preview.png"
-          }
-        ]
-      },
-      {
-        title: "공통 노출 화면 (참가자용)",
-        badge: "Public",
-        theme: "public",
-        links: [
-          {
-            type: "public",
-            label: "리더 보드",
-            note: "index.html · 참가자 최초 진입 화면",
-            liveHref: "index.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/index.html",
-            image: "img/index-preview.png"
-          },
-          {
-            type: "public",
-            label: "직급의 전당",
-            note: "rank-hall.html · 공개용 직급 페이지",
-            liveHref: "rank-hall.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/rank-hall.html",
-            image: "img/rank-hall-preview.png"
-          },
-          {
-            type: "public",
-            label: "The Unique 대문",
-            note: "the-unique-gate.html · The Unique 입구",
-            liveHref: "the-unique-gate.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html",
-            image: "img/the-unique-gate-preview.png"
-          },
-          {
-            type: "public",
-            label: "The Unique 메인",
-            note: "the-unique-main.html · 직급/프로모션 허브 화면",
-            liveHref: "the-unique-main.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html",
-            image: "img/the-unique-gate-preview.png"
-          },
-          {
-            type: "public",
-            label: "The Unique 공지 예시",
-            note: "the-unique-notice.html · 단일 공지 상세 예시",
-            liveHref: "the-unique-notice.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-notice.html",
-            image: "img/bg-unique-notice.jpg"
-          },
-          {
-            type: "public",
-            label: "The Unique 프로모션 보기",
-            note: "the-unique-promo.html · 프로모션 배너 전체 보기",
-            liveHref: "the-unique-promo.html",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html",
-            image: "img/bg-unique-promo.jpg"
-          }
-        ]
-      },
-      {
-        title: "GitHub / 소스 관리",
-        badge: "GitHub",
-        theme: "github",
-        links: [
-          {
-            type: "github",
-            label: "GitHub so.t-leader-choice",
-            note: "레포지토리 메인 · 코드와 이슈 모두 여기서 관리",
-            githubHref: "https://github.com/wordycow/so.t-leader-choice",
-            image: "img/github-main.png"
-          }
-        ]
-      }
-    ];
+    // ===== 프로모션 관리용 JS =====
+    const fileInput = document.getElementById("promo-image");
+    const imagePathInput = document.getElementById("promo-image-path");
+    const titleInput = document.getElementById("promo-title-input");
+    const textInput = document.getElementById("promo-text-input");
 
-    /* ========== 2. 링크 렌더링 ========== */
+    const previewImg = document.getElementById("promo-preview-img");
+    const previewCaption = document.getElementById("promo-preview-caption");
+    const previewTitle = document.getElementById("promo-preview-title");
+    const previewText = document.getElementById("promo-preview-text");
 
-    const linksContainer = document.getElementById("links-container");
-    const searchInput = document.getElementById("link-search");
+    const generateBtn = document.getElementById("promo-generate");
+    const copyBtn = document.getElementById("promo-copy");
+    const codeOutput = document.getElementById("promo-code-output");
 
-    function renderLinks(filter = "") {
-      const q = filter.trim().toLowerCase();
-      linksContainer.innerHTML = "";
+    // 파일 선택 시: 미리보기 + 경로 힌트 설정
+    fileInput.addEventListener("change", function () {
+      const file = this.files && this.files[0];
+      if (!file) return;
 
-      LINK_SECTIONS.forEach(section => {
-        const sectionDiv = document.createElement("div");
-        sectionDiv.className = "links-section";
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        previewImg.src = ev.target.result;
+        previewCaption.style.display = "block";
+        previewTitle.textContent = titleInput.value || "프로모션 제목";
+        previewText.textContent = textInput.value || "프로모션 설명 텍스트";
+      };
+      reader.readAsDataURL(file);
 
-        const h3 = document.createElement("h3");
-        const badgeClass =
-          section.theme === "admin" ? "badge-admin" :
-          section.theme === "public" ? "badge-public" :
-          "badge-github";
-        h3.innerHTML = `${section.title} <span class="badge ${badgeClass}">${section.badge}</span>`;
-        sectionDiv.appendChild(h3);
-
-        const grid = document.createElement("div");
-        grid.className = "links-grid";
-
-        let visibleCount = 0;
-
-        section.links.forEach(link => {
-          const fullText = `${link.label} ${link.note || ""}`.toLowerCase();
-          if (q && !fullText.includes(q)) return;
-
-          const card = document.createElement("article");
-          card.className = `link-card link-card-${link.type}`;
-
-          const mainHref = link.liveHref || link.githubHref || "#";
-
-          if (link.image) {
-            const thumb = document.createElement("a");
-            thumb.className = "link-thumb";
-            thumb.href = mainHref;
-            thumb.target = "_blank";
-            thumb.rel = "noopener noreferrer";
-
-            const img = document.createElement("img");
-            img.src = link.image;
-            img.alt = link.label + " 미리보기";
-            thumb.appendChild(img);
-
-            card.appendChild(thumb);
-          }
-
-          const body = document.createElement("div");
-          body.className = "link-card-body";
-
-          const title = document.createElement("div");
-          title.className = "link-card-title";
-          title.textContent = link.label;
-          body.appendChild(title);
-
-          if (link.note) {
-            const note = document.createElement("div");
-            note.className = "link-card-note";
-            note.textContent = link.note;
-            body.appendChild(note);
-          }
-
-          const btnRow = document.createElement("div");
-          btnRow.className = "link-card-buttons";
-
-          if (link.liveHref) {
-            const aLive = document.createElement("a");
-            aLive.className =
-              "link-chip " + (link.type === "public" ? "chip-public" : "chip-admin");
-            aLive.href = link.liveHref;
-            aLive.target = "_blank";
-            aLive.rel = "noopener noreferrer";
-            aLive.textContent = (link.type === "public") ? "페이지 열기" : "관리자 화면 열기";
-            btnRow.appendChild(aLive);
-          }
-
-          if (link.githubHref) {
-            const aGithub = document.createElement("a");
-            aGithub.className = "link-chip chip-github";
-            aGithub.href = link.githubHref;
-            aGithub.target = "_blank";
-            aGithub.rel = "noopener noreferrer";
-            aGithub.textContent = "GitHub 이동";
-            btnRow.appendChild(aGithub);
-          }
-
-          body.appendChild(btnRow);
-          card.appendChild(body);
-          grid.appendChild(card);
-          visibleCount++;
-        });
-
-        if (visibleCount > 0) {
-          sectionDiv.appendChild(grid);
-          linksContainer.appendChild(sectionDiv);
-        }
-      });
-
-      if (!linksContainer.innerHTML) {
-        const p = document.createElement("p");
-        p.style.fontSize = "12px";
-        p.style.color = "#9ca3af";
-        p.textContent = "검색어에 해당하는 링크가 없습니다.";
-        linksContainer.appendChild(p);
-      }
-    }
-
-    searchInput.addEventListener("input", () => {
-      renderLinks(searchInput.value);
-    });
-
-    renderLinks();
-
-    /* ========== 3. 공지/프로모션 HTML 생성기 ========== */
-
-    const genType   = document.getElementById("gen-type");
-    const genTitle  = document.getElementById("gen-title");
-    const genDate   = document.getElementById("gen-date");
-    const genAuthor = document.getElementById("gen-author");
-    const genBody   = document.getElementById("gen-body");
-    const genMake   = document.getElementById("gen-make");
-    const genPrev   = document.getElementById("gen-preview");
-    const genOutput = document.getElementById("gen-output");
-    const genIndexOutput = document.getElementById("gen-index-output");
-
-    function buildHtmlAndIndex() {
-      const type   = genType.value;   // "notice" or "promo"
-      const title  = (genTitle.value || "").trim();
-      const date   = (genDate.value || "").trim();
-      const author = (genAuthor.value || "").trim() || "관리자";
-      const body   = (genBody.value || "").trim();
-
-      if (!title || !body) {
-        alert("제목과 본문을 모두 입력해 주세요.");
-        return { html: "", idx: "" };
-      }
-
-      const lines = body.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-
-      const bodyHtml = lines
-        .map(l => `      <p>${l}</p>`)
-        .join("\n");
-
-      const niceTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-      const bgName = (type === "notice") ? "notice" : "promo";
-
-      const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>${niceTitle}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background:
-        #000
-        url("img/bg-unique-${bgName}.jpg")
-        center center / cover
-        no-repeat fixed;
-      color: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px 40px;
-    }
-    .wrap {
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
-      background: rgba(255, 255, 255, 0.92);
-      border-radius: 12px;
-      padding: 20px 22px 26px;
-      box-shadow:
-        0 10px 30px rgba(0,0,0,0.35),
-        0 0 0 1px rgba(209,213,219,0.7);
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    .meta {
-      font-size: 12px;
-      color: #6b7280;
-      margin-bottom: 16px;
-    }
-    .body p {
-      font-size: 13px;
-      line-height: 1.7;
-      margin: 6px 0;
-    }
-    .close-btn {
-      margin-top: 16px;
-      font-size: 11px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: #fff;
-      cursor: pointer;
-    }
-    .close-btn:hover {
-      background: #f3f4f6;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>${niceTitle}</h1>
-    <div class="meta">작성자: ${author} · 등록일: ${date || "(등록일 입력)"}</div>
-
-    <div class="body">
-${bodyHtml}
-    </div>
-
-    <button class="close-btn" onclick="window.close()">창 닫기 ✕</button>
-  </div>
-</body>
-</html>`;
-
-      // 목록용 코드 (예: NOTICES 배열에 넣을 한 항목)
-      const idxSnippet = `{
-  type: "${type}",
-  title: "${title}",
-  author: "${author}",
-  date: "${date}",
-  file: "the-unique-${type === "notice" ? "notice" : "promo"}-YYYYMMDD-N.html",
-  views: 0
-},`;
-
-      return { html, idx: idxSnippet };
-    }
-
-    genMake.addEventListener("click", () => {
-      const { html, idx } = buildHtmlAndIndex();
-      if (html) {
-        genOutput.value = html;
-        genIndexOutput.value = idx;
+      // GitHub용 경로 자동 제안
+      const safeName = file.name.replace(/\s+/g, "-");
+      if (!imagePathInput.value) {
+        imagePathInput.value = "img/" + safeName;
       }
     });
 
-    genPrev.addEventListener("click", () => {
-      const { html, idx } = buildHtmlAndIndex();
-      if (!html) return;
-      const win = window.open("", "_blank");
-      if (win) {
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+    // 제목/내용 입력하면 미리보기 텍스트 갱신
+    function updatePreviewText() {
+      if (!previewImg.src) return;
+      previewCaption.style.display = "block";
+      previewTitle.textContent = titleInput.value || "프로모션 제목";
+      previewText.textContent = textInput.value || "프로모션 설명 텍스트";
+    }
+    titleInput.addEventListener("input", updatePreviewText);
+    textInput.addEventListener("input", updatePreviewText);
+
+    // HTML 코드 생성
+    generateBtn.addEventListener("click", function () {
+      const imgPath = imagePathInput.value.trim() || "img/the-unique-promo-main.jpg";
+      const title = titleInput.value.trim() || "프로모션 제목";
+      const text = textInput.value.trim() || "프로모션 설명 텍스트";
+
+      const lines = [];
+      lines.push('<!-- 프로모션 메인 영역 -->');
+      lines.push('<section class="promo-hero">');
+      lines.push('  <div class="promo-hero-inner">');
+      lines.push('    <div class="promo-hero-image">');
+      lines.push('      <img src="' + imgPath + '" alt="' + title.replace(/"/g, "&quot;") + '" />');
+      lines.push('    </div>');
+      lines.push('    <div class="promo-hero-copy">');
+      lines.push('      <h1>' + title + '</h1>');
+      lines.push('      <p>' + text + '</p>');
+      lines.push('      <button class="promo-open-notice" onclick="document.getElementById(\'promo-notice\').showModal()">자세히 보기</button>');
+      lines.push('    </div>');
+      lines.push('  </div>');
+      lines.push('</section>');
+      lines.push('');
+      lines.push('<!-- 공지 팝업 (dialog 기반, CSS/JS는 the-unique-promo.html에서 정의) -->');
+      lines.push('<dialog id="promo-notice" class="promo-notice-dialog">');
+      lines.push('  <div class="promo-notice-body">');
+      lines.push('    <h2>' + title + '</h2>');
+      lines.push('    <p>' + text + '</p>');
+      lines.push('    <button onclick="document.getElementById(\'promo-notice\').close()">닫기</button>');
+      lines.push('  </div>');
+      lines.push('</dialog>');
+      lines.push('');
+      lines.push('<!-- 필요한 스타일과 dialog 지원 JS는 the-unique-promo.html 상단에 추가 -->');
+
+      codeOutput.value = lines.join("\n");
+    });
+
+    // 코드 복사
+    copyBtn.addEventListener("click", function () {
+      if (!codeOutput.value.trim()) {
+        alert("먼저 [프로모션 HTML 코드 생성]을 눌러주세요.");
+        return;
       }
+      codeOutput.select();
+      document.execCommand("copy");
+      alert("코드를 클립보드에 복사했습니다. the-unique-promo.html에 붙여넣으세요.");
     });
   </script>
 </body>
