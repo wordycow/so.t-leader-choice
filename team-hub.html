@@ -343,7 +343,6 @@
       opacity: 0.8;
     }
 
-    /* 스케줄 admin 전용 그리드 */
     .schedule-admin-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0,1fr));
@@ -597,7 +596,7 @@
             <div class="field-hint">
               하나씩 강의를 추가하면 주간 스케줄 HTML 코드가 만들어집니다.<br />
               완성된 코드를 <strong>the-unique-main.html</strong> 안의
-              <code>&lt;section class="schedule-panel"&gt; ...</code> 블록 전체와 교체해서 사용하세요.
+              <code>&lt;section class="top-schedule-panel"&gt; ...</code> 블록 전체와 교체해서 사용하세요.
             </div>
           </div>
 
@@ -643,7 +642,7 @@
               생성된 주간 스케줄 HTML 코드<br/>
               <span class="field-hint">
                 → 아래 코드를 전체 복사해서 <strong>the-unique-main.html</strong> 안의
-                <code>&lt;section class="schedule-panel"&gt; ...</code> 부분을 통째로 교체하세요.
+                <code>&lt;section class="top-schedule-panel"&gt; ...</code> 부분을 통째로 교체하세요.
               </span>
             </div>
             <textarea id="sch-code-output" spellcheck="false"></textarea>
@@ -721,31 +720,28 @@
 
           let visualBlock = "";
           if (img) {
-            visualBlock = [
-              '    <div class="unique-promo-visual">',
-              '      <img src="' + img + '" alt="The Unique 프로모션 이미지">',
-              "    </div>"
-            ].join("\\n");
+            visualBlock = `
+    <div class="unique-promo-visual">
+      <img src="${img}" alt="The Unique 프로모션 이미지">
+    </div>`;
           }
 
-          const html = [
-            "<!-- THE UNIQUE 프로모션 블록 시작 -->",
-            '<section class="unique-promo-hero">',
-            '  <div class="unique-promo-inner">',
-            visualBlock,
-            '    <div class="unique-promo-copy">',
-            "      <h1>" + safeTitle + "</h1>",
-            "      <p>",
-            "        " + safeBody.replace(/\\n/g, "<br>"),
-            "      </p>",
-            "    </div>",
-            "  </div>",
-            "</section>",
-            "<!-- THE UNIQUE 프로모션 블록 끝 -->",
-            ""
-          ].join("\\n");
+          const html = `<!-- THE UNIQUE 프로모션 블록 시작 -->
+<section class="unique-promo-hero">
+  <div class="unique-promo-inner">
+${visualBlock}
+    <div class="unique-promo-copy">
+      <h1>${safeTitle}</h1>
+      <p>
+        ${safeBody.replace(/\n/g, "<br>")}
+      </p>
+    </div>
+  </div>
+</section>
+<!-- THE UNIQUE 프로모션 블록 끝 -->
+`;
 
-          out.value = html;
+          out.value = html.trim() + "\n";
         });
       }
 
@@ -771,31 +767,35 @@
           const title = (popupTitleInput.value || "").trim();
           const body  = (popupBodyInput.value || "").trim();
 
-          const js =
-            "<!-- 공지 팝업 스크립트 시작 -->\\n" +
-            "<script>\\n" +
-            "(function(){\\n" +
-            "  var popupTitle = " + JSON.stringify(title) + ";\\n" +
-            "  var popupBody  = " + JSON.stringify(body)  + ";\\n" +
-            "  if (!popupTitle || !popupBody) return;\\n" +
-            "  document.addEventListener(\\\"DOMContentLoaded\\\", function () {\\n" +
-            "    if (document.querySelector(\\\".unique-notice-popup-backdrop\\\")) return;\\n" +
-            "    var wrap = document.createElement(\\\"div\\\");\\n" +
-            "    wrap.className = \\\"unique-notice-popup-backdrop\\\";\\n" +
-            "    var bodyHtml = popupBody.replace(/\\\\n/g, \\\"<br>\\\");\\n" +
-            "    wrap.innerHTML = " +
-            "\"<div class=\\\\\\\"unique-notice-popup\\\\\\\"><div class=\\\\\\\"unique-notice-popup-inner\\\\\\\">\" +" +
-            "\"<h2>\" + popupTitle + \"</h2>\" +" +
-            "\"<p>\" + bodyHtml + \"</p>\" +" +
-            "\"<button type=\\\\\\\"button\\\\\\\" class=\\\\\\\"unique-notice-popup-close\\\\\\\">닫기</button>\" +" +
-            "\"</div></div>\";\\n" +
-            "    document.body.appendChild(wrap);\\n" +
-            "    var btn = wrap.querySelector(\\\".unique-notice-popup-close\\\");\\n" +
-            "    if (btn) btn.addEventListener(\\\"click\\\", function(){ wrap.remove(); });\\n" +
-            "  });\\n" +
-            "})();\\n" +
-            "</script>\\n" +
-            "<!-- 공지 팝업 스크립트 끝 -->\\n";
+          const js = `<!-- 공지 팝업 스크립트 시작 -->
+<script>
+(function(){
+  var popupTitle = ${JSON.stringify(title)};
+  var popupBody  = ${JSON.stringify(body)};
+  if (!popupTitle || !popupBody) return;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (document.querySelector(".unique-notice-popup-backdrop")) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "unique-notice-popup-backdrop";
+    var bodyHtml = popupBody.replace(/\\n/g, "<br>");
+    wrap.innerHTML =
+      "<div class=\\"unique-notice-popup\\"><div class=\\"unique-notice-popup-inner\\">" +
+      "<h2>" + popupTitle + "</h2>" +
+      "<p>" + bodyHtml + "</p>" +
+      "<button type=\\"button\\" class=\\"unique-notice-popup-close\\">닫기</button>" +
+      "</div></div>";
+
+    document.body.appendChild(wrap);
+
+    var btn = wrap.querySelector(".unique-notice-popup-close");
+    if (btn) btn.addEventListener("click", function(){ wrap.remove(); });
+  });
+})();
+</script>
+<!-- 공지 팝업 스크립트 끝 -->
+`;
 
           popupOut.value = js;
         });
@@ -841,44 +841,49 @@
       function updateScheduleHtml() {
         if (!schOut) return;
 
-        const days = DAY_ORDER.filter(function (d) {
-          return scheduleData[d] && scheduleData[d].length;
-        });
-
-        const lines = [];
-        lines.push('<section class="schedule-panel">');
-        lines.push('  <div class="schedule-header">이번 주 강의 스케줄</div>');
+        const days = DAY_ORDER.filter(d => scheduleData[d] && scheduleData[d].length);
 
         if (!days.length) {
-          lines.push('  <div class="schedule-empty">등록된 강의 스케줄이 없습니다.</div>');
-          lines.push('</section>');
-          schOut.value = lines.join("\\n");
+          schOut.value = "";
           return;
         }
 
-        lines.push('  <div class="schedule-grid">');
-        days.forEach(function (day) {
+        let html = `<!-- 주간 강의 스케줄 -->
+<section class="top-schedule-panel">
+  <div class="top-schedule-header">이번 주 강의 스케줄</div>
+  <div class="top-schedule-grid">
+`;
+
+        days.forEach(day => {
           const label = DAY_LABEL[day] || day;
-          lines.push('    <div class="schedule-day">');
-          lines.push('      <div class="schedule-day-name">' + label + '</div>');
-          scheduleData[day].forEach(function (item) {
-            lines.push('      <div class="schedule-item">');
-            lines.push('        <div class="schedule-time">' + escapeHtml(item.time) + '</div>');
-            lines.push('        <div class="schedule-title">' + escapeHtml(item.title) + '</div>');
+          html += `    <div class="top-schedule-day">
+      <div class="top-schedule-day-name">${label}</div>
+`;
+          scheduleData[day].forEach(item => {
+            html += `      <div class="top-schedule-item">
+        <div class="top-schedule-time">${escapeHtml(item.time)}</div>
+        <div class="top-schedule-title">${escapeHtml(item.title)}</div>
+`;
             if (item.teacher) {
-              lines.push('        <div class="schedule-teacher">강사: ' + escapeHtml(item.teacher) + '</div>');
+              html += `        <div class="top-schedule-teacher">강사: ${escapeHtml(item.teacher)}</div>
+`;
             }
             if (item.type) {
-              lines.push('        <div class="schedule-type">' + escapeHtml(item.type) + '</div>');
+              html += `        <div class="top-schedule-type">${escapeHtml(item.type)}</div>
+`;
             }
-            lines.push('      </div>');
+            html += `      </div>
+`;
           });
-          lines.push('    </div>');
+          html += `    </div>
+`;
         });
-        lines.push('  </div>');
-        lines.push('</section>');
 
-        schOut.value = lines.join("\\n");
+        html += `  </div>
+</section>
+`;
+
+        schOut.value = html;
       }
 
       if (schAddBtn && schOut) {
@@ -896,10 +901,7 @@
 
           if (!scheduleData[day]) scheduleData[day] = [];
           scheduleData[day].push({
-            time: time,
-            title: title,
-            teacher: teacher,
-            type: type
+            time, title, teacher, type
           });
 
           schTime.value   = "";
@@ -914,7 +916,7 @@
       if (schResetBtn && schOut) {
         schResetBtn.addEventListener("click", function () {
           if (!confirm("스케줄을 모두 비우시겠습니까?")) return;
-          Object.keys(scheduleData).forEach(function (k) { delete scheduleData[k]; });
+          Object.keys(scheduleData).forEach(k => delete scheduleData[k]);
           schOut.value = "";
         });
       }
@@ -928,7 +930,7 @@
           schOut.select();
           try {
             document.execCommand("copy");
-            alert("주간 스케줄 HTML 코드가 복사되었습니다. the-unique-main.html의 schedule-panel 부분을 교체하세요.");
+            alert("주간 스케줄 HTML 코드가 복사되었습니다. the-unique-main.html의 top-schedule-panel 부분을 교체하세요.");
           } catch (e) {
             alert("복사에 실패했습니다. 수동으로 선택하여 복사해 주세요.");
           }
