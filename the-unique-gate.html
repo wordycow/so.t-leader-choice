@@ -3,12 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
-  
-  <div class="gate-image">
-  <img src="img/the-unique-gate-preview.png" alt="THE UNIQUE Gate">
-</div>
 
-  
   <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
@@ -120,6 +115,20 @@
       text-shadow:
         0 1px 3px rgba(0,0,0,0.9),
         0 0 6px rgba(0,0,0,0.6);
+    }
+
+    /* 🔥 게이트 이미지 스타일 (공통) */
+    .gate-image {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0 24px;
+    }
+
+    .gate-image img {
+      max-width: 260px;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
     }
 
     .form-body {
@@ -283,18 +292,6 @@
         right: 10%;
         width: 30%;
       }
-      .gate-image {
-    display: flex;
-    justify-content: center;
-    margin: 16px 0 24px;
-     }
-
-  .gate-image img {
-    max-width: 260px;
-    width: 100%;
-    height: auto;
-    border-radius: 12px;
-     }
     }
   </style>
 </head>
@@ -310,6 +307,11 @@
           <div class="gate-title-wrap">
             <div class="gate-title">THE UNIQUE</div>
             <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+
+            <!-- 🔥 여기: 게이트 이미지 -->
+            <div class="gate-image">
+              <img src="img/the-unique-gate-preview.png" alt="THE UNIQUE Gate">
+            </div>
           </div>
 
           <form id="gate-form" class="form-body">
@@ -343,8 +345,7 @@
     </div>
   </div>
 
-  <!-- 1) 시트에서 아이디/이름 받아오는 콜백 -->
-    <!-- 1) 시트에서 아이디/이름/소속/가입일 받아오는 콜백 -->
+  <!-- 1) 시트에서 아이디/이름/소속/가입일 받아오는 콜백 -->
   <script>
     // 시트에서 가져온 정보
     let allowedIds = null;          // Set<id>
@@ -357,12 +358,9 @@
         const ids = [];
 
         rows.forEach((row) => {
-          // 🔢 열 인덱스는 시트 구조에 맞게 (현재 구조 기준 예시)
-          const tsCell    = row.c[0]; // A열: 타임스탬프(so.t 가입일로 쓸 후보)
+          const tsCell    = row.c[0]; // A열: 타임스탬프(so.t 가입일 후보)
           const idCell    = row.c[1]; // B열: 아이디
           const nameCell  = row.c[2]; // C열: 이름
-          // const phoneCell = row.c[3]; // D열: 전화번호 (사용 안 하면 무시)
-          // const mobileCell= row.c[4]; // E열: 모바일번호 (사용 안 하면 무시)
           const teamCell  = row.c[5]; // F열: 소속
 
           if (!idCell) return;
@@ -386,7 +384,6 @@
         });
 
         allowedIds = new Set(ids);
-        // console.log("허용 아이디:", allowedIds, memberInfoById);
       } catch (e) {
         console.error("시트 파싱 오류:", e);
         sheetError = true;
@@ -395,7 +392,6 @@
   </script>
 
   <!-- 2) 구글 시트를 JSONP 방식으로 불러오기 -->
-  <!--  💡 시트 ID는 써나가 준 값 그대로 사용 -->
   <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
   <!-- 3) 로그인 처리 -->
@@ -431,7 +427,6 @@
       const normalized = id.toLowerCase();
 
       if (allowedIds.has(normalized)) {
-        // ✅ 로그인한 사람 정보 저장
         const info = memberInfoById[normalized] || {};
 
         localStorage.setItem(
@@ -444,18 +439,12 @@
           })
         );
 
-        // 메인 페이지로 이동
         window.location.href = "the-unique-main.html";
-        // 또는 절대 경로:
-        // window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-main.html";
       } else {
         statusEl.textContent = "등록되지 않은 아이디입니다.";
         statusEl.classList.add("status-error");
       }
     });
   </script>
-</body>
-</html>
-
 </body>
 </html>
