@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
 
-  <!-- 공유 썸네일 (텔레그램/카톡 썸네일용) -->
+  <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
   <meta property="og:description" content="Invitation-only access for action takers.">
@@ -294,7 +294,6 @@
         <div class="gate-title-wrap">
           <div class="gate-title">THE UNIQUE</div>
           <div class="gate-subtitle-en">Invitation-only access for action takers</div>
-          <!-- 🔥 여기 있던 gate-image 블록은 삭제함 -->
         </div>
 
         <form id="gate-form" class="form-body">
@@ -327,67 +326,32 @@
     </div>
   </div>
 
-  <!-- 1) 시트에서 아이디/이름/소속/가입일 받아오는 콜백 -->
+  <!-- 1) 시트에서 아이디/이름/소속/가입일 받아오는 콜백 (열 인덱스 고정 버전) -->
   <script>
-    // 시트에서 가져온 정보
     let allowedIds = null;          // Set<id>
     let memberInfoById = {};        // { idLower: { id, name, team, joinedAt } }
     let sheetError = false;
 
-        // 시트에서 아이디/이름/소속/가입일 받아오는 콜백 (헤더 기반)
     function handleSheetResponse(resp) {
       try {
         const rows = resp.table.rows || [];
-        if (!rows.length) {
-          sheetError = true;
-          return;
-        }
-
-        // 1행(헤더)에서 컬럼 인덱스 찾기
-        const header = rows[0].c || [];
-        const colIndex = { ts: null, id: null, name: null, team: null };
-
-        header.forEach((cell, idx) => {
-          const v = cell && cell.v ? String(cell.v).trim() : "";
-          if (!v) return;
-
-          // 아이디
-          if (v.replace(/\s/g,"").includes("아이디") || v.toLowerCase().includes("id")) {
-            colIndex.id = idx;
-          }
-          // 이름
-          else if (v.includes("이름") || v.includes("성함")) {
-            colIndex.name = idx;
-          }
-          // 소속
-          else if (v.includes("소속") || v.includes("팀")) {
-            colIndex.team = idx;
-          }
-          // 타임스탬프 / 날짜
-          else if (v.includes("타임스탬프") || v.toLowerCase().includes("time") || v.includes("날짜")) {
-            colIndex.ts = idx;
-          }
-        });
-
         const ids = [];
 
-        // 실제 데이터는 2행부터
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
+        rows.forEach((row, idx) => {
           const cells = row.c || [];
 
-          const idCell = (colIndex.id != null) ? cells[colIndex.id] : null;
-          if (!idCell || idCell.v == null) continue;
+          const tsCell   = cells[5] || cells[0];  // F열 so.t가입 날짜, 없으면 A열 타임스탬프
+          const idCell   = cells[1];              // B열: 아이디
+          const nameCell = cells[2];              // C열: 이름
+          const teamCell = cells[4];              // E열: 소속
+
+          if (!idCell || idCell.v == null) return;
 
           const rawId = String(idCell.v).trim();
-          if (!rawId) continue;
+          if (!rawId || rawId === "아이디") return;   // 헤더 행 건너뛰기
 
           const idLower = rawId.toLowerCase();
           ids.push(idLower);
-
-          const nameCell = (colIndex.name != null) ? cells[colIndex.name] : null;
-          const teamCell = (colIndex.team != null) ? cells[colIndex.team] : null;
-          const tsCell   = (colIndex.ts   != null) ? cells[colIndex.ts]   : null;
 
           const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
           const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
@@ -399,7 +363,7 @@
             team,
             joinedAt
           };
-        }
+        });
 
         allowedIds = new Set(ids);
       } catch (e) {
