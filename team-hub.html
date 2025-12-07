@@ -5,521 +5,609 @@
   <title>The Unique – Team Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    * { box-sizing: border-box; }
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-    html, body {
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: 100%;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background-color: #020617;
-      color: #E5E7EB;
-      background-image: radial-gradient(circle at top, rgba(148,163,184,0.22), transparent 55%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Pretendard", sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #020617 55%);
+      color: #e5e7eb;
     }
 
-    .scene-bg {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.35;
-      z-index: 0;
-      pointer-events: none;
+    a {
+      color: inherit;
     }
 
     .page-wrap {
-      position: relative;
-      z-index: 5;
       max-width: 1200px;
-      margin: 40px auto 48px;
-      padding: 0 16px 40px;
+      margin: 40px auto 32px;
+      padding: 0 16px 24px;
     }
 
-    .page-title {
-      font-size: 22px;
+    /* 헤더 */
+
+    .hub-header {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .hub-title {
+      font-size: 26px;
       font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .page-sub {
-      font-size: 13px;
-      color: #9CA3AF;
-      margin-bottom: 20px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #facc15;
+      text-shadow: 0 0 12px rgba(250, 204, 21, 0.75);
     }
 
-    /* 카드 그리드 (참가자용 링크) */
-    .card-grid-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #9CA3AF;
+    .hub-subtitle {
+      font-size: 12px;
+      margin-top: 4px;
+      color: #9ca3af;
+    }
+
+    /* 공용 카드 섹션 */
+
+    .section {
+      border-radius: 24px;
+      padding: 18px 18px 20px;
+      background: radial-gradient(
+          circle at top,
+          rgba(15, 23, 42, 0.9),
+          rgba(15, 23, 42, 0.98)
+        );
+      box-shadow: 0 0 0 1px rgba(30, 64, 118, 0.7),
+        0 18px 45px rgba(0, 0, 0, 0.9);
+      margin-bottom: 22px;
+    }
+
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #9ca3af;
     }
 
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
-      margin-bottom: 28px;
     }
 
-    .hub-card {
-      border-radius: 16px;
-      overflow: hidden;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
-      border: 1px solid rgba(148,163,184,0.7);
-      box-shadow:
-        0 18px 40px rgba(0,0,0,0.85),
-        0 0 0 1px rgba(15,23,42,1) inset;
+    .link-card {
+      border-radius: 18px;
+      padding: 14px 14px 12px;
+      background: linear-gradient(145deg, #020617, #020617, #020617);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.9);
       display: flex;
       flex-direction: column;
+      gap: 8px;
     }
 
-    .hub-card-thumb {
-      position: relative;
-      width: 100%;
-      padding-top: 52%;
-      overflow: hidden;
-    }
-    .hub-card-thumb img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .link-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f9fafb;
     }
 
-    .hub-card-body {
-      padding: 12px 14px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .hub-card-title {
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .hub-card-sub {
+    .link-card-desc {
       font-size: 11px;
-      color: #9CA3AF;
-      margin-bottom: 4px;
+      color: #9ca3af;
     }
 
-    .hub-card-links {
+    .link-card-meta {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .link-card-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       margin-top: 6px;
     }
-    .hub-btn {
-      flex: 1;
+
+    .link-btn {
+      flex: 1 1 0;
       border-radius: 999px;
-      border: none;
+      padding: 7px 8px;
       font-size: 11px;
-      padding: 6px 0;
-      cursor: pointer;
       font-weight: 600;
-      letter-spacing: 0.03em;
-    }
-    .hub-btn-page {
-      background: #0EA5E9;
-      color: #0B1120;
-    }
-    .hub-btn-page:hover { filter: brightness(1.05); }
-    .hub-btn-github {
-      background: #111827;
-      color: #E5E7EB;
-      border: 1px solid rgba(148,163,184,0.9);
-    }
-    .hub-btn-github:hover {
-      border-color: #FACC15;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      color: #e5e7eb;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease,
+        transform 0.1s ease;
     }
 
-    /* 프로모션 관리 (관리자용) */
-    .promo-admin {
-      margin-top: 32px;
-      border-radius: 18px;
-      padding: 18px 16px 20px;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
-      border: 1px solid rgba(234,179,8,0.85);
-      box-shadow:
-        0 0 24px rgba(234,179,8,0.6),
-        0 26px 60px rgba(0,0,0,0.95);
-    }
-    .promo-admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 10px;
-    }
-    .promo-admin-title {
-      font-size: 15px;
-      font-weight: 700;
-    }
-    .promo-admin-badge {
-      font-size: 11px;
-      color: #F97316;
-    }
-    .promo-admin-desc {
-      font-size: 11px;
-      color: #9CA3AF;
-      margin-bottom: 12px;
+    .link-btn:first-child {
+      border-color: rgba(248, 181, 84, 0.9);
+      background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      color: #fef2f2;
     }
 
-    .promo-admin-layout {
+    .link-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(248, 250, 252, 0.7);
+      background: rgba(30, 64, 175, 0.85);
+    }
+
+    /* 관리자 섹션 */
+
+    .section-admin {
+      border-radius: 24px;
+      padding: 18px 18px 20px;
+      background: radial-gradient(
+          circle at top,
+          rgba(15, 23, 42, 0.98),
+          rgba(15, 23, 42, 0.99)
+        );
+      box-shadow: 0 0 0 1px rgba(248, 181, 84, 0.9),
+        0 20px 55px rgba(0, 0, 0, 1);
+    }
+
+    .admin-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
-      gap: 14px;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 2.4fr);
+      gap: 16px;
+      margin-top: 8px;
     }
 
-    .promo-left {
+    .admin-note {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .admin-left {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-    .promo-field {
-      font-size: 12px;
+
+    .field-group {
       display: flex;
       flex-direction: column;
       gap: 4px;
-    }
-    .promo-field label {
-      color: #9CA3AF;
-    }
-    .promo-field input[type="text"],
-    .promo-field textarea {
-      font-size: 12px;
-      padding: 6px 8px;
-      border-radius: 8px;
-      border: 1px solid #4B5563;
-      background: #020617;
-      color: #E5E7EB;
-      resize: vertical;
-    }
-    .promo-field input[type="file"] {
-      font-size: 12px;
+      margin-bottom: 6px;
     }
 
-    .promo-preview-frame {
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid rgba(148,163,184,0.7);
-      background: #020617;
-      min-height: 140px;
+    .field-label {
+      font-size: 11px;
+      color: #e5e7eb;
     }
-    .promo-preview-inner {
-      position: relative;
+
+    .field-input,
+    .field-textarea {
       width: 100%;
-      padding-top: 56%;
+      border-radius: 10px;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: rgba(15, 23, 42, 0.96);
+      color: #e5e7eb;
+      font-size: 12px;
+      padding: 7px 9px;
+      outline: none;
     }
-    .promo-preview-inner img {
-      position: absolute;
-      inset: 0;
+
+    .field-input:focus,
+    .field-textarea:focus {
+      border-color: rgba(248, 181, 84, 0.9);
+      box-shadow: 0 0 0 1px rgba(248, 181, 84, 0.6);
+    }
+
+    .field-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .code-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .small-btn {
+      flex: 1 1 0;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.98);
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease,
+        border-color 0.15s ease;
+    }
+
+    .small-btn.primary {
+      border-color: rgba(248, 181, 84, 0.9);
+      background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      color: #fef2f2;
+    }
+
+    .small-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(191, 219, 254, 0.9);
+    }
+
+    .code-output {
+      margin-top: 6px;
+    }
+
+    .code-output textarea {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 10px;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 11px;
+      padding: 7px 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      resize: vertical;
+    }
+
+    .admin-right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .preview-block {
+      flex: 1 1 0;
+      border-radius: 18px;
+      padding: 10px 10px 8px;
+      border: 1px solid rgba(248, 181, 84, 0.9);
+      background: radial-gradient(
+          circle at top,
+          rgba(15, 23, 42, 0.96),
+          rgba(15, 23, 42, 0.99)
+        );
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .preview-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #facc15;
+    }
+
+    .preview-frame {
+      flex: 1 1 0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #020617;
+      border: 1px solid rgba(30, 41, 59, 1);
+    }
+
+    .preview-frame iframe {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-    }
-    .promo-preview-caption {
-      position: absolute;
-      inset: auto 0 0 0;
-      padding: 10px;
-      background: linear-gradient(to top, rgba(15,23,42,0.95), transparent);
-      font-size: 12px;
-    }
-    .promo-preview-caption strong {
-      display: block;
-      margin-bottom: 2px;
+      border: 0;
     }
 
-    .promo-actions {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .promo-btn {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.8);
-      background: #020617;
-      color: #E5E7EB;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .promo-btn-primary {
-      background: #10B981;
-      color: #022c22;
-      border: none;
-      font-weight: 600;
-    }
-    .promo-btn:hover { filter: brightness(1.05); }
-
-    .promo-code {
+    .footer-note {
       margin-top: 10px;
       font-size: 11px;
-      color: #9CA3AF;
-    }
-    .promo-code textarea {
-      width: 100%;
-      min-height: 140px;
-      margin-top: 4px;
-      font-size: 11px;
-      border-radius: 10px;
-      border: 1px solid #4B5563;
-      background: #020617;
-      color: #E5E7EB;
-      padding: 6px 8px;
-      resize: vertical;
+      color: #9ca3af;
+      text-align: right;
+      opacity: 0.8;
     }
 
-    @media (max-width: 900px) {
-      .admin-layout {
+    @media (max-width: 960px) {
+      .card-grid {
         grid-template-columns: minmax(0, 1fr);
       }
-      .promo-admin-layout {
+      .admin-grid {
         grid-template-columns: minmax(0, 1fr);
+      }
+      .preview-block {
+        min-height: 220px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- 필요하면 배경 이미지 사용 -->
-  <!-- <img src="img/bg-unique-main.jpg" class="scene-bg" alt="" /> -->
-
   <div class="page-wrap">
-    <div class="page-title">공통 노출 화면 (참가자용)</div>
-    <div class="page-sub">
-      The Unique 참가자들이 자주 들어오는 링크를 한 곳에서 모아둔 허브입니다.<br />
-      리더보드 / 직급의 전당 / 공지 카드는 제거하고, 대문·메인·프로모션 위주로 정리했습니다.
-    </div>
+    <header class="hub-header">
+      <div class="hub-title">THE UNIQUE – TEAM HUB</div>
+      <div class="hub-subtitle">
+        참가자에게 노출되는 공용 페이지와, 관리자가 편집하는 프로모션·공지 영역을
+        한 곳에서 관리합니다.
+      </div>
+    </header>
 
-    <!-- 참가자용 카드 링크 -->
-    <div class="card-grid-title">참가자가 보는 화면</div>
-    <section class="card-grid">
-      <!-- The Unique 대문 -->
-      <article class="hub-card">
-        <div class="hub-card-thumb">
-          <img src="img/the-unique-gate-preview.jpg" alt="The Unique 대문" />
+    <!-- ───────────────── 공용 노출 화면(참가자용) ───────────────── -->
+    <section class="section">
+      <div class="section-title-row">
+        <div class="section-title">공동 노출 화면 (참가자용)</div>
+        <div class="section-desc">
+          The Unique 참가자들에게 실제로 보여지는 주요 페이지들입니다.
         </div>
-        <div class="hub-card-body">
-          <div class="hub-card-title">The Unique 대문</div>
-          <div class="hub-card-sub">the-unique-gate.html · 입구 화면</div>
-          <div class="hub-card-links">
-            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-gate.html','_blank')">
-              페이지 열기
-            </button>
-            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html','_blank')">
-              GitHub 이동
-            </button>
-          </div>
-        </div>
-      </article>
+      </div>
 
-      <!-- The Unique 메인 -->
-      <article class="hub-card">
-        <div class="hub-card-thumb">
-          <img src="img/the-unique-main-preview.jpg" alt="The Unique 메인" />
-        </div>
-        <div class="hub-card-body">
-          <div class="hub-card-title">The Unique 메인</div>
-          <div class="hub-card-sub">the-unique-main.html · 직급/프로모션 허브 화면</div>
-          <div class="hub-card-links">
-            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-main.html','_blank')">
-              페이지 열기
-            </button>
-            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html','_blank')">
-              GitHub 이동
-            </button>
+      <div class="card-grid">
+        <!-- 게이트 -->
+        <article class="link-card">
+          <div class="link-card-title">The Unique 대문</div>
+          <div class="link-card-desc">
+            로그인 게이트 화면입니다. 초대 링크로 처음 방문하는 사람들이 보는
+            페이지입니다.
           </div>
-        </div>
-      </article>
+          <div class="link-card-meta">파일: the-unique-gate.html</div>
+          <div class="link-card-actions">
+            <a
+              class="link-btn"
+              href="the-unique-gate.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >페이지 열기</a
+            >
+            <a
+              class="link-btn"
+              href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >GitHub 이동</a
+            >
+          </div>
+        </article>
 
-      <!-- 프로모션 보기 -->
-      <article class="hub-card">
-        <div class="hub-card-thumb">
-          <img src="img/bg_unique_promo.jpg" alt="The Unique 프로모션" />
-        </div>
-        <div class="hub-card-body">
-          <div class="hub-card-title">The Unique 프로모션 보기</div>
-          <div class="hub-card-sub">the-unique-promo.html · 현재 진행 중인 프로모션</div>
-          <div class="hub-card-links">
-            <button class="hub-btn hub-btn-page" onclick="window.open('the-unique-promo.html','_blank')">
-              페이지 열기
-            </button>
-            <button class="hub-btn hub-btn-github" onclick="window.open('https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html','_blank')">
-              GitHub 이동
-            </button>
+        <!-- 메인 -->
+        <article class="link-card">
+          <div class="link-card-title">The Unique 메인</div>
+          <div class="link-card-desc">
+            로그인 후 멤버들이 보는 메인 대시보드입니다. 직급·목표·eBook 등이
+            노출됩니다.
           </div>
-        </div>
-      </article>
+          <div class="link-card-meta">파일: the-unique-main.html</div>
+          <div class="link-card-actions">
+            <a
+              class="link-btn"
+              href="the-unique-main.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >페이지 열기</a
+            >
+            <a
+              class="link-btn"
+              href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >GitHub 이동</a
+            >
+          </div>
+        </article>
+
+        <!-- 프로모션 -->
+        <article class="link-card">
+          <div class="link-card-title">The Unique 프로모션 보기</div>
+          <div class="link-card-desc">
+            현재 사용 중인 프로모션 HTML이 적용된 페이지입니다. 아래 관리자
+            영역에서 내용을 확인·수정할 수 있습니다.
+          </div>
+          <div class="link-card-meta">파일: the-unique-promo.html</div>
+          <div class="link-card-actions">
+            <a
+              class="link-btn"
+              href="the-unique-promo.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >페이지 열기</a
+            >
+            <a
+              class="link-btn"
+              href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >GitHub 이동</a
+            >
+          </div>
+        </article>
+      </div>
     </section>
 
-    <!-- 프로모션 관리 (관리자용 도구) -->
-    <section class="promo-admin">
-      <div class="promo-admin-header">
-        <div class="promo-admin-title">프로모션 관리 (관리자용)</div>
-        <div class="promo-admin-badge">* 이 영역은 써나/운영진이 GitHub 수정용으로 사용하는 구역입니다.</div>
-      </div>
-      <div class="promo-admin-desc">
-        • 아래에서 <b>프로모션 이미지 / 제목 / 공지 텍스트</b>를 입력하면,<br />
-        • <b>the-unique-promo.html</b>에 붙여넣을 수 있는 HTML 코드가 생성됩니다. (실제 반영은 GitHub에 복사 후 저장 필요)
-      </div>
-
-      <div class="promo-admin-layout">
-        <!-- 왼쪽: 입력 + 파일 선택 -->
-        <div class="promo-left">
-          <div class="promo-field">
-            <label for="promo-image">프로모션 이미지 파일</label>
-            <input type="file" id="promo-image" accept="image/*" />
-            <div style="font-size:11px;color:#9CA3AF;">
-              • 최종 파일은 <code>img/파일이름.jpg</code> 형태로 GitHub의 <code>img</code> 폴더에 올려야 합니다.
-            </div>
-          </div>
-
-          <div class="promo-field">
-            <label for="promo-image-path">이미지 경로 (GitHub 기준)</label>
-            <input type="text" id="promo-image-path" placeholder="예: img/the-unique-promo-main.jpg" />
-          </div>
-
-          <div class="promo-field">
-            <label for="promo-title-input">프로모션 제목</label>
-            <input type="text" id="promo-title-input" placeholder="예: 2025년 1분기 THE UNIQUE 프로모션" />
-          </div>
-
-          <div class="promo-field">
-            <label for="promo-text-input">공지 텍스트 (팝업/설명용)</label>
-            <textarea id="promo-text-input" rows="5" placeholder="참가자에게 보여줄 프로모션 설명을 입력하세요."></textarea>
-          </div>
+    <!-- ───────────────── 관리자용: 프로모션 & 공지 ───────────────── -->
+    <section class="section-admin">
+      <div class="section-title-row">
+        <div class="section-title">프로모션 & 공지 관리 (관리자용)</div>
+        <div class="section-desc">
+          아래에서 프로모션에 들어갈 이미지 / 제목 / 문구를 정리하고, 코드
+          생성 버튼으로 HTML 블록을 만들어 GitHub에 붙여 넣을 수 있습니다.
         </div>
+      </div>
+      <div class="admin-note">
+        * 이 화면은 관리자 전용입니다. 생성된 HTML 코드는
+        <strong>the-unique-promo.html</strong> 안에 붙여서 사용하세요.
+      </div>
 
-        <!-- 오른쪽: 미리보기 -->
-        <div>
-          <div class="promo-field">
-            <label>미리보기</label>
-            <div class="promo-preview-frame">
-              <div class="promo-preview-inner">
-                <img id="promo-preview-img" src="" alt="프로모션 미리보기" />
-                <div class="promo-preview-caption" id="promo-preview-caption" style="display:none;">
-                  <strong id="promo-preview-title"></strong>
-                  <span id="promo-preview-text"></span>
-                </div>
-              </div>
-            </div>
+      <div class="admin-grid">
+        <!-- 왼쪽: 폼 + 코드 생성 -->
+        <div class="admin-left">
+          <div class="field-group">
+            <div class="field-label">프로모션 이미지 경로 (상대 경로)</div>
+            <input
+              id="promo-image"
+              class="field-input"
+              type="text"
+              placeholder="예: img/the-unique-main.jpg"
+              value="img/the-unique-main.jpg"
+            />
           </div>
 
-          <div class="promo-actions">
-            <button type="button" class="promo-btn promo-btn-primary" id="promo-generate">
+          <div class="field-group">
+            <div class="field-label">프로모션 제목</div>
+            <input
+              id="promo-title"
+              class="field-input"
+              type="text"
+              placeholder="예: 2025년 1분기 THE UNIQUE 프로모션"
+            />
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">프로모션 본문 (설명/공지 텍스트)</div>
+            <textarea
+              id="promo-body"
+              class="field-textarea"
+              placeholder="참가자에게 보여줄 프로모션 안내 문구를 입력하세요."
+            ></textarea>
+          </div>
+
+          <div class="code-actions">
+            <button id="generate-btn" class="small-btn primary" type="button">
               프로모션 HTML 코드 생성
             </button>
-            <button type="button" class="promo-btn" id="promo-copy">
+            <button id="copy-btn" class="small-btn" type="button">
               코드 복사
             </button>
           </div>
 
-          <div class="promo-code">
-            생성된 HTML 코드 (the-unique-promo.html 안에 붙여넣기)
-            <textarea id="promo-code-output" readonly></textarea>
+          <div class="code-output">
+            <div class="field-label">생성된 HTML 코드 (복사해서 사용)</div>
+            <textarea
+              id="promo-code-output"
+              spellcheck="false"
+              placeholder="&lt;!-- 여기 생성된 코드를 the-unique-promo.html 안에 붙여 넣으세요 --&gt;"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 미리보기 2개 -->
+        <div class="admin-right">
+          <div class="preview-block">
+            <div class="preview-title">프로모션 미리보기 (the-unique-promo.html)</div>
+            <div class="preview-frame">
+              <iframe
+                src="the-unique-promo.html"
+                title="The Unique 프로모션 미리보기"
+                loading="lazy"
+              ></iframe>
+            </div>
+          </div>
+
+          <div class="preview-block">
+            <div class="preview-title">공지 / 메인 화면 미리보기 (the-unique-main.html)</div>
+            <div class="preview-frame">
+              <iframe
+                src="the-unique-main.html"
+                title="The Unique 메인 미리보기"
+                loading="lazy"
+              ></iframe>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <div class="footer-note">
+      The Unique Team Hub · so.t-leader-choice · internal tool
+    </div>
   </div>
 
   <script>
-    // ===== 프로모션 관리용 JS =====
-    const fileInput = document.getElementById("promo-image");
-    const imagePathInput = document.getElementById("promo-image-path");
-    const titleInput = document.getElementById("promo-title-input");
-    const textInput = document.getElementById("promo-text-input");
+    // 간단한 프로모션 코드 생성 로직
+    (function () {
+      const imgInput = document.getElementById("promo-image");
+      const titleInput = document.getElementById("promo-title");
+      const bodyInput = document.getElementById("promo-body");
+      const out = document.getElementById("promo-code-output");
+      const genBtn = document.getElementById("generate-btn");
+      const copyBtn = document.getElementById("copy-btn");
 
-    const previewImg = document.getElementById("promo-preview-img");
-    const previewCaption = document.getElementById("promo-preview-caption");
-    const previewTitle = document.getElementById("promo-preview-title");
-    const previewText = document.getElementById("promo-preview-text");
+      if (!genBtn || !copyBtn) return;
 
-    const generateBtn = document.getElementById("promo-generate");
-    const copyBtn = document.getElementById("promo-copy");
-    const codeOutput = document.getElementById("promo-code-output");
+      genBtn.addEventListener("click", function () {
+        const img = (imgInput.value || "").trim();
+        const title = (titleInput.value || "").trim();
+        const body = (bodyInput.value || "").trim();
 
-    // 파일 선택 시: 미리보기 + 경로 힌트 설정
-    fileInput.addEventListener("change", function () {
-      const file = this.files && this.files[0];
-      if (!file) return;
+        const safeImg = img || "img/the-unique-main.jpg";
+        const safeTitle = title || "THE UNIQUE 프로모션";
+        const safeBody =
+          body ||
+          "여기에 참가자에게 노출할 프로모션 안내 문구를 입력해 주세요.";
 
-      const reader = new FileReader();
-      reader.onload = function (ev) {
-        previewImg.src = ev.target.result;
-        previewCaption.style.display = "block";
-        previewTitle.textContent = titleInput.value || "프로모션 제목";
-        previewText.textContent = textInput.value || "프로모션 설명 텍스트";
-      };
-      reader.readAsDataURL(file);
+        const html = [
+          "<!-- THE UNIQUE 프로모션 블록 시작 -->",
+          '<section class="unique-promo-hero">',
+          '  <div class="unique-promo-inner">',
+          '    <div class="unique-promo-visual">',
+          '      <img src="' +
+            safeImg +
+            '" alt="The Unique 프로모션 이미지">',
+          "    </div>",
+          '    <div class="unique-promo-copy">',
+          "      <h1>" + safeTitle + "</h1>",
+          "      <p>",
+          "        " + safeBody.replace(/\n/g, "<br>"),
+          "      </p>",
+          "    </div>",
+          "  </div>",
+          "</section>",
+          "<!-- THE UNIQUE 프로모션 블록 끝 -->",
+          ""
+        ].join("\n");
 
-      // GitHub용 경로 자동 제안
-      const safeName = file.name.replace(/\s+/g, "-");
-      if (!imagePathInput.value) {
-        imagePathInput.value = "img/" + safeName;
-      }
-    });
+        out.value = html;
+      });
 
-    // 제목/내용 입력하면 미리보기 텍스트 갱신
-    function updatePreviewText() {
-      if (!previewImg.src) return;
-      previewCaption.style.display = "block";
-      previewTitle.textContent = titleInput.value || "프로모션 제목";
-      previewText.textContent = textInput.value || "프로모션 설명 텍스트";
-    }
-    titleInput.addEventListener("input", updatePreviewText);
-    textInput.addEventListener("input", updatePreviewText);
-
-    // HTML 코드 생성
-    generateBtn.addEventListener("click", function () {
-      const imgPath = imagePathInput.value.trim() || "img/the-unique-promo-main.jpg";
-      const title = titleInput.value.trim() || "프로모션 제목";
-      const text = textInput.value.trim() || "프로모션 설명 텍스트";
-
-      const lines = [];
-      lines.push('<!-- 프로모션 메인 영역 -->');
-      lines.push('<section class="promo-hero">');
-      lines.push('  <div class="promo-hero-inner">');
-      lines.push('    <div class="promo-hero-image">');
-      lines.push('      <img src="' + imgPath + '" alt="' + title.replace(/"/g, "&quot;") + '" />');
-      lines.push('    </div>');
-      lines.push('    <div class="promo-hero-copy">');
-      lines.push('      <h1>' + title + '</h1>');
-      lines.push('      <p>' + text + '</p>');
-      lines.push('      <button class="promo-open-notice" onclick="document.getElementById(\'promo-notice\').showModal()">자세히 보기</button>');
-      lines.push('    </div>');
-      lines.push('  </div>');
-      lines.push('</section>');
-      lines.push('');
-      lines.push('<!-- 공지 팝업 (dialog 기반, CSS/JS는 the-unique-promo.html에서 정의) -->');
-      lines.push('<dialog id="promo-notice" class="promo-notice-dialog">');
-      lines.push('  <div class="promo-notice-body">');
-      lines.push('    <h2>' + title + '</h2>');
-      lines.push('    <p>' + text + '</p>');
-      lines.push('    <button onclick="document.getElementById(\'promo-notice\').close()">닫기</button>');
-      lines.push('  </div>');
-      lines.push('</dialog>');
-      lines.push('');
-      lines.push('<!-- 필요한 스타일과 dialog 지원 JS는 the-unique-promo.html 상단에 추가 -->');
-
-      codeOutput.value = lines.join("\n");
-    });
-
-    // 코드 복사
-    copyBtn.addEventListener("click", function () {
-      if (!codeOutput.value.trim()) {
-        alert("먼저 [프로모션 HTML 코드 생성]을 눌러주세요.");
-        return;
-      }
-      codeOutput.select();
-      document.execCommand("copy");
-      alert("코드를 클립보드에 복사했습니다. the-unique-promo.html에 붙여넣으세요.");
-    });
+      copyBtn.addEventListener("click", function () {
+        if (!out.value.trim()) {
+          alert("먼저 [프로모션 HTML 코드 생성] 버튼을 눌러 코드를 만들어 주세요.");
+          return;
+        }
+        out.select();
+        try {
+          document.execCommand("copy");
+          alert("코드가 클립보드에 복사되었습니다. the-unique-promo.html에 붙여 넣으세요.");
+        } catch (e) {
+          alert("복사에 실패했습니다. 수동으로 선택하여 복사해 주세요.");
+        }
+      });
+    })();
   </script>
 </body>
 </html>
