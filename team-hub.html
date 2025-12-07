@@ -681,7 +681,7 @@
     </div>
   </div>
 
-  <script>
+   <script>
     (function () {
       const imgInput   = document.getElementById("promo-image");
       const titleInput = document.getElementById("promo-title");
@@ -706,27 +706,26 @@
       const schCopyBtn  = document.getElementById("sch-copy-btn");
       const schOut      = document.getElementById("sch-code-output");
 
-      // ---------- 프로모션 코드 ----------
+      /* ───────────── 프로모션 코드 생성기 ───────────── */
       if (genBtn && out) {
         genBtn.addEventListener("click", function () {
-          const img   = (imgInput.value || "").trim();
+          const img   = (imgInput.value   || "").trim();
           const title = (titleInput.value || "").trim();
-          const body  = (bodyInput.value || "").trim();
+          const body  = (bodyInput.value  || "").trim();
 
           const safeTitle = title || "THE UNIQUE 프로모션";
-          const safeBody  =
-            body ||
-            "여기에 참가자에게 노출할 프로모션 안내 문구를 입력해 주세요.";
+          const safeBody  = body  || "여기에 참가자에게 노출할 프로모션 안내 문구를 입력해 주세요.";
 
           let visualBlock = "";
           if (img) {
-            visualBlock = `
-    <div class="unique-promo-visual">
+            visualBlock =
+`    <div class="unique-promo-visual">
       <img src="${img}" alt="The Unique 프로모션 이미지">
     </div>`;
           }
 
-          const html = `<!-- THE UNIQUE 프로모션 블록 시작 -->
+          const html =
+`<!-- THE UNIQUE 프로모션 블록 시작 -->
 <section class="unique-promo-hero">
   <div class="unique-promo-inner">
 ${visualBlock}
@@ -761,41 +760,37 @@ ${visualBlock}
         });
       }
 
-      // ---------- 공지 팝업 스크립트 ----------
+      /* ───────────── 공지 팝업 스크립트 생성기 ───────────── */
       if (popupGenBtn && popupOut) {
         popupGenBtn.addEventListener("click", function () {
           const title = (popupTitleInput.value || "").trim();
-          const body  = (popupBodyInput.value || "").trim();
+          const body  = (popupBodyInput.value  || "").trim();
 
-          const js = `<!-- 공지 팝업 스크립트 시작 -->
-<script>
-(function(){
-  var popupTitle = ${JSON.stringify(title)};
-  var popupBody  = ${JSON.stringify(body)};
-  if (!popupTitle || !popupBody) return;
-
-  document.addEventListener("DOMContentLoaded", function () {
-    if (document.querySelector(".unique-notice-popup-backdrop")) return;
-
-    var wrap = document.createElement("div");
-    wrap.className = "unique-notice-popup-backdrop";
-    var bodyHtml = popupBody.replace(/\\n/g, "<br>");
-    wrap.innerHTML =
-      "<div class=\\"unique-notice-popup\\"><div class=\\"unique-notice-popup-inner\\">" +
-      "<h2>" + popupTitle + "</h2>" +
-      "<p>" + bodyHtml + "</p>" +
-      "<button type=\\"button\\" class=\\"unique-notice-popup-close\\">닫기</button>" +
-      "</div></div>";
-
-    document.body.appendChild(wrap);
-
-    var btn = wrap.querySelector(".unique-notice-popup-close");
-    if (btn) btn.addEventListener("click", function(){ wrap.remove(); });
-  });
-})();
-</script>
-<!-- 공지 팝업 스크립트 끝 -->
-`;
+          let js = "";
+          js += "<!-- 공지 팝업 스크립트 시작 -->\\n";
+          js += "<scr" + "ipt>\\n";
+          js += "(function(){\\n";
+          js += "  var popupTitle = " + JSON.stringify(title) + ";\\n";
+          js += "  var popupBody  = " + JSON.stringify(body)  + ";\\n";
+          js += "  if (!popupTitle || !popupBody) return;\\n";
+          js += "  document.addEventListener(\\\"DOMContentLoaded\\\", function () {\\n";
+          js += "    if (document.querySelector(\\\".unique-notice-popup-backdrop\\\")) return;\\n";
+          js += "    var wrap = document.createElement(\\\"div\\\");\\n";
+          js += "    wrap.className = \\\"unique-notice-popup-backdrop\\\";\\n";
+          js += "    var bodyHtml = popupBody.replace(/\\\\n/g, \\\"<br>\\\");\\n";
+          js += "    wrap.innerHTML = "
+            + "\"<div class=\\\\\\\"unique-notice-popup\\\\\\\"><div class=\\\\\\\"unique-notice-popup-inner\\\\\\\">\" +"
+            + "\"<h2>\" + popupTitle + \"</h2>\" +"
+            + "\"<p>\" + bodyHtml + \"</p>\" +"
+            + "\"<button type=\\\\\\\"button\\\\\\\" class=\\\\\\\"unique-notice-popup-close\\\\\\\">닫기</button>\" +"
+            + "\"</div></div>\";\\n";
+          js += "    document.body.appendChild(wrap);\\n";
+          js += "    var btn = wrap.querySelector(\\\".unique-notice-popup-close\\\");\\n";
+          js += "    if (btn) btn.addEventListener(\\\"click\\\", function(){ wrap.remove(); });\\n";
+          js += "  });\\n";
+          js += "})();\\n";
+          js += "</scr" + "ipt>\\n";
+          js += "<!-- 공지 팝업 스크립트 끝 -->\\n";
 
           popupOut.value = js;
         });
@@ -817,7 +812,7 @@ ${visualBlock}
         });
       }
 
-      // ---------- 주간 스케줄 HTML 빌더 ----------
+      /* ───────────── 주간 스케줄 HTML 빌더 ───────────── */
       const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
       const DAY_LABEL = {
         "월": "월요일",
@@ -848,7 +843,8 @@ ${visualBlock}
           return;
         }
 
-        let html = `<!-- 주간 강의 스케줄 -->
+        let html =
+`<!-- 주간 강의 스케줄 -->
 <section class="top-schedule-panel">
   <div class="top-schedule-header">이번 주 강의 스케줄</div>
   <div class="top-schedule-grid">
@@ -888,11 +884,11 @@ ${visualBlock}
 
       if (schAddBtn && schOut) {
         schAddBtn.addEventListener("click", function () {
-          const day   = schDay.value;
-          const time  = (schTime.value || "").trim();
-          const title = (schTitle.value || "").trim();
+          const day     = schDay.value;
+          const time    = (schTime.value    || "").trim();
+          const title   = (schTitle.value   || "").trim();
           const teacher = (schTeacher.value || "").trim();
-          const type    = (schType.value || "").trim();
+          const type    = (schType.value    || "").trim();
 
           if (!day || !time || !title) {
             alert("요일, 시간, 세미나 제목은 필수입니다.");
@@ -900,14 +896,12 @@ ${visualBlock}
           }
 
           if (!scheduleData[day]) scheduleData[day] = [];
-          scheduleData[day].push({
-            time, title, teacher, type
-          });
+          scheduleData[day].push({ time, title, teacher, type });
 
-          schTime.value   = "";
-          schTitle.value  = "";
+          schTime.value    = "";
+          schTitle.value   = "";
           schTeacher.value = "";
-          schType.value   = "";
+          schType.value    = "";
 
           updateScheduleHtml();
         });
@@ -940,3 +934,4 @@ ${visualBlock}
   </script>
 </body>
 </html>
+
