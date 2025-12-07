@@ -5,7 +5,7 @@
   <title>eBook Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- 폰트 예시 (원하면 나중에 Pretendard로 바꿔도 됨) -->
+  <!-- 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -105,9 +105,10 @@
     /* 본문 영역 */
     .reader {
       flex: 1;
-      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), transparent 55%),
-                  radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.18), transparent 50%),
-                  #020617;
+      background:
+        radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.18), transparent 50%),
+        #020617;
       border-radius: 24px;
       border: 1px solid rgba(148, 163, 184, 0.5);
       box-shadow: 0 24px 65px rgba(15, 23, 42, 0.9);
@@ -165,8 +166,53 @@
       transform: translateY(-1px);
     }
 
-    .tool-btn span.icon {
-      font-size: 14px;
+    /* 직급 패널 */
+    .rank-panel {
+      display: flex;
+      gap: 12px;
+      margin: 6px 0 12px;
+      align-items: stretch;
+    }
+
+    .rank-card {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.9);
+    }
+
+    .rank-badge-wrap img {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      object-fit: contain;
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .rank-text-main {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .rank-text-sub {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 3px;
+    }
+
+    .rank-arrow {
+      font-size: 18px;
+      color: #facc15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 4px;
     }
 
     .reader-body {
@@ -265,6 +311,14 @@
         order: 1;
         max-height: none;
       }
+
+      .rank-panel {
+        flex-direction: column;
+      }
+
+      .rank-arrow {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -312,6 +366,37 @@
         </div>
       </header>
 
+      <!-- 직급 패널: 무직급 기본값 = 정회원 → 1스타 -->
+      <div class="rank-panel">
+        <div class="rank-card">
+          <div class="rank-badge-wrap">
+            <!-- 현재 직급 배지: 기본 member.png -->
+            <img src="img/member.png" alt="현재 직급 배지" id="current-rank-badge">
+          </div>
+          <div>
+            <div class="rank-text-main">현재 직급 배지</div>
+            <div class="rank-text-sub">
+              현재 직급: <span id="current-rank-name">정회원</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rank-arrow">➜</div>
+
+        <div class="rank-card">
+          <div class="rank-badge-wrap">
+            <!-- 다음 직급 배지: 기본 star1.png -->
+            <img src="img/star1.png" alt="다음 직급 배지" id="next-rank-badge">
+          </div>
+          <div>
+            <div class="rank-text-main">다음 직급 배지</div>
+            <div class="rank-text-sub">
+              다음 직급: <span id="next-rank-name">1스타</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <section class="reader-body" id="chapter-content">
         <p class="paragraph">
           “<strong>당신이 사는 방이, 당신 자신이다.</strong>”  
@@ -353,8 +438,8 @@
     </main>
   </div>
 
-  <!-- 나중에 챕터 전환이나 글자 크기 조절은 JS로 붙이면 됨 -->
   <script>
+    // 챕터 클릭 시 active 변경
     const chapterItems = document.querySelectorAll(".chapter-item");
 
     chapterItems.forEach(item => {
@@ -364,6 +449,38 @@
         // 여기서 data-chapter 값에 따라 내용 교체하는 JS를 나중에 추가하면 됨.
       });
     });
+
+    // (옵션) 나중에 rank 정보를 저장해서 쓰고 싶으면,
+    // localStorage.setItem("uniqueRankInfo", JSON.stringify({
+    //   currentName: "정회원",
+    //   nextName: "1스타",
+    //   currentBadge: "img/member.png",
+    //   nextBadge: "img/star1.png"
+    // }));
+    //
+    // 이런 식으로 저장해 두고 아래 코드를 풀어서 덮어쓰면 됨.
+
+    /*
+    (function() {
+      try {
+        const stored = localStorage.getItem("uniqueRankInfo");
+        if (!stored) return;
+
+        const info = JSON.parse(stored);
+        const curNameEl = document.getElementById("current-rank-name");
+        const nextNameEl = document.getElementById("next-rank-name");
+        const curBadgeEl = document.getElementById("current-rank-badge");
+        const nextBadgeEl = document.getElementById("next-rank-badge");
+
+        if (info.currentName && curNameEl) curNameEl.textContent = info.currentName;
+        if (info.nextName && nextNameEl) nextNameEl.textContent = info.nextName;
+        if (info.currentBadge && curBadgeEl) curBadgeEl.src = info.currentBadge;
+        if (info.nextBadge && nextBadgeEl) nextBadgeEl.src = info.nextBadge;
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    */
   </script>
 </body>
 </html>
