@@ -334,24 +334,60 @@
     let memberInfoById = {};        // { idLower: { id, name, team, joinedAt } }
     let sheetError = false;
 
+        // 시트에서 아이디/이름/소속/가입일 받아오는 콜백 (헤더 기반)
     function handleSheetResponse(resp) {
       try {
         const rows = resp.table.rows || [];
+        if (!rows.length) {
+          sheetError = true;
+          return;
+        }
+
+        // 1행(헤더)에서 컬럼 인덱스 찾기
+        const header = rows[0].c || [];
+        const colIndex = { ts: null, id: null, name: null, team: null };
+
+        header.forEach((cell, idx) => {
+          const v = cell && cell.v ? String(cell.v).trim() : "";
+          if (!v) return;
+
+          // 아이디
+          if (v.includes("아이디") || v.toLowerCase().includes("id")) {
+            colIndex.id = idx;
+          }
+          // 이름
+          else if (v.includes("이름") || v.includes("성함")) {
+            colIndex.name = idx;
+          }
+          // 소속
+          else if (v.includes("소속") || v.includes("팀")) {
+            colIndex.team = idx;
+          }
+          // 타임스탬프 / 날짜
+          else if (v.includes("타임스탬프") || v.toLowerCase().includes("time") || v.includes("날짜")) {
+            colIndex.ts = idx;
+          }
+        });
+
         const ids = [];
 
-        rows.forEach((row) => {
-          const tsCell    = row.c[0]; // A열: 타임스탬프
-          const idCell    = row.c[1]; // B열: 아이디
-          const nameCell  = row.c[2]; // C열: 이름
-          const teamCell  = row.c[5]; // F열: 소속
+        // 실제 데이터는 2행부터
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const cells = row.c || [];
 
-          if (!idCell) return;
+          const idCell = (colIndex.id != null) ? cells[colIndex.id] : null;
+          if (!idCell || idCell.v == null) continue;
 
           const rawId = String(idCell.v).trim();
-          if (!rawId) return;
+          if (!rawId) continue;
 
           const idLower = rawId.toLowerCase();
           ids.push(idLower);
+
+          const nameCell = (colIndex.name != null) ? cells[colIndex.name] : null;
+          const teamCell = (colIndex.team != null) ? cells[colIndex.team] : null;
+          const tsCell   = (colIndex.ts   != null) ? cells[colIndex.ts]   : null;
 
           const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
           const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
@@ -363,7 +399,7 @@
             team,
             joinedAt
           };
-        });
+        }
 
         allowedIds = new Set(ids);
       } catch (e) {
