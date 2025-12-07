@@ -764,11 +764,114 @@
     <div id="promo-grid" class="promo-grid"></div>
   </div>
 
-  <div class="footer-note">
+   <div class="footer-note">
     The Unique &copy; 2025 · internal use only
   </div>
 
-   <script>
+  <!-- 주간 스케줄: 구글 시트에서 읽어오기 -->
+  <script>
+    function handleScheduleSheet(resp) {
+      try {
+        const rows = resp.table.rows || [];
+        const byDay = {};             // { "월요일": [ {time,title}, ... ] }
+        const dayLabelByCol = {};     // 열 인덱스 -> 요일 이름 (월요일, 화요일 ...)
+        let currentPeriod = "";       // "오전" / "오후"
+
+        rows.forEach((row) => {
+          const cells = row.c || [];
+          const values = cells.map(c =>
+            (c && c.v != null) ? String(c.v).trim() : ""
+          );
+
+          // B열 이후에 '요일'이 들어간 셀 → 요일 헤더로 사용
+          for (let j = 1; j < values.length; j++) {
+            const v = values[j];
+            if (v && v.includes("요일")) {
+              dayLabelByCol[j] = v; // 예: "월요일"
+            }
+          }
+
+          const v0 = values[0]; // A열
+
+          if (!v0) return;
+
+          // "오전"/"오후" 줄
+          if (v0.includes("오전") || v0.includes("오후")) {
+            currentPeriod = v0; // 예: "오후"
+            return;
+          }
+
+          // "…시" 로 끝나는 시간 줄만 사용
+          if (!v0.endsWith("시")) return;
+
+          // 표시할 시간 텍스트: "오후 5시" 같은 형태
+          const timeLabel = currentPeriod ? (currentPeriod + " " + v0) : v0;
+
+          // 각 요일 칸에 내용이 있으면 강의로 추가
+          for (let j = 1; j < values.length; j++) {
+            const title = values[j];
+            const dayLabel = dayLabelByCol[j]; // "월요일" 등
+
+            if (!dayLabel || !title) continue; // 요일 정보 없거나 칸이 비어있으면 무시
+
+            if (!byDay[dayLabel]) byDay[dayLabel] = [];
+            byDay[dayLabel].push({ time: timeLabel, title: title });
+          }
+        });
+
+        const gridEl  = document.getElementById("top-schedule-grid");
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (!gridEl || !emptyEl) return;
+
+        gridEl.innerHTML = "";
+
+        const dayOrder = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"];
+        const days = dayOrder.filter(d => byDay[d] && byDay[d].length);
+
+        if (!days.length) {
+          emptyEl.textContent = "등록된 강의 스케줄이 없습니다.";
+          emptyEl.style.display = "block";
+          return;
+        }
+
+        emptyEl.style.display = "none";
+
+        days.forEach(dayLabel => {
+          const dayDiv = document.createElement("div");
+          dayDiv.className = "top-schedule-day";
+
+          const nameDiv = document.createElement("div");
+          nameDiv.className = "top-schedule-day-name";
+          nameDiv.textContent = dayLabel;
+          dayDiv.appendChild(nameDiv);
+
+          byDay[dayLabel].forEach(item => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "top-schedule-item";
+            itemDiv.innerHTML =
+              '<div class="top-schedule-time">'  + item.time  + '</div>' +
+              '<div class="top-schedule-title">' + item.title + '</div>';
+            dayDiv.appendChild(itemDiv);
+          });
+
+          gridEl.appendChild(dayDiv);
+        });
+
+      } catch (e) {
+        console.error("schedule sheet parse error:", e);
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (emptyEl) {
+          emptyEl.textContent = "스케줄 정보를 불러오는 중 오류가 발생했습니다.";
+          emptyEl.style.display = "block";
+        }
+      }
+    }
+  </script>
+
+  <!-- 구글 시트에서 주간 스케줄 불러오기 (unique 주간 스케쥴표) -->
+  <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
+
+  <script>
     /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
 
     const raw = localStorage.getItem("uniqueCurrentUser");
@@ -860,7 +963,6 @@
     };
 
     function getBadgeSrc(rankCode) {
-      // 랭크 코드가 없으면 기본 정회원 배지 유지
       return RANK_BADGES[rankCode] || "img/member.png";
     }
 
@@ -874,12 +976,10 @@
       const rightEl = document.getElementById("goal-right-count");
       if (!leftEl || !rightEl) return;
 
-      // 기본값(무직급용)은 HTML에 이미 2 / 1 로 들어가 있음
       let left  = Number(leftEl.textContent)  || 0;
       let right = Number(rightEl.textContent) || 0;
 
       if (!currentRankCode || currentRankCode === "-" || currentRankCode === "NONE") {
-        // 무직급 + 다음 Star1이면 2 / 1
         if (nextRankCode === "Star1") {
           left = 2;
           right = 1;
@@ -942,7 +1042,6 @@
         const nextMiniEl     = document.getElementById("next-rank-mini");
         const goalHeaderEl   = document.getElementById("goal-next-rank-title");
 
-        // 🔹 rank-hall.json 에 내 기록이 없을 때 = 무직급 기본값 유지
         if (!myRec) {
           currentMiniEl.textContent = "현재 직급: 정회원";
           nextMiniEl.textContent    = "다음 직급: 1스타";
@@ -993,15 +1092,13 @@
         console.error("rank-hall.json 로드 오류:", err);
       });
 
-    // 🔥 직급이 있든 없든, 항상 다음 직급 배지/텍스트를 누르면 rank 페이지로 이동
+    // 다음 직급 배지 / 텍스트 클릭 시 rank-hall.html 새 창
     (function () {
       const imgEl   = document.getElementById("next-rank-img");
       const labelEl = document.getElementById("next-rank-mini");
 
       function openRankPage() {
-        // 이미 다른 직급에서도 쓰고 있는 rank 페이지 이름으로 맞춰줘
         window.open("rank-hall.html", "_blank");
-
       }
 
       if (imgEl) {
