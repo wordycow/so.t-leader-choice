@@ -167,6 +167,44 @@
       background: rgba(30, 64, 175, 0.85);
     }
 
+    /* Google 시트/문서 버튼 */
+
+    .sheet-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sheet-btn {
+      flex: 1 1 220px;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: radial-gradient(circle at top,
+        rgba(15,23,42,0.96),
+        rgba(15,23,42,0.99)
+      );
+      color: #e5e7eb;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+      cursor: pointer;
+      transition:
+        background 0.15s ease,
+        transform 0.1s ease,
+        border-color 0.15s ease;
+    }
+
+    .sheet-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(248, 250, 252, 0.8);
+    }
+
     /* 관리자 섹션 */
 
     .section-admin {
@@ -343,12 +381,6 @@
       opacity: 0.8;
     }
 
-    .schedule-admin-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 8px;
-    }
-
     @media (max-width: 960px) {
       .card-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -359,8 +391,8 @@
       .preview-block {
         min-height: 220px;
       }
-      .schedule-admin-grid {
-        grid-template-columns: minmax(0,1fr);
+      .sheet-links {
+        flex-direction: column;
       }
     }
   </style>
@@ -414,7 +446,7 @@
         <article class="link-card">
           <div class="link-card-title">The Unique 프로모션 보기</div>
           <div class="link-card-desc">
-            현재 사용 중인 프로모션 페이지입니다. 아래 관리자 영역에서 내용과 이미지를 조정할 수 있습니다.
+            현재 사용 중인 프로모션 페이지입니다.
           </div>
           <div class="link-card-meta">파일: the-unique-promo.html</div>
           <div class="link-card-actions">
@@ -476,12 +508,49 @@
       </div>
     </section>
 
-    <!-- 3. 프로모션 & 공지 & 주간 스케줄 관리 -->
+    <!-- 2-b. 구글 시트 / 문서 바로가기 -->
+    <section class="section">
+      <div class="section-title-row">
+        <div class="section-title">관리자용 Google 시트·문서</div>
+        <div class="section-desc">
+          주간 스케줄, 회원가입 정보, 공지 문서를 바로 열 수 있습니다.
+        </div>
+      </div>
+
+      <div class="sheet-links">
+        <a
+          class="sheet-btn"
+          href="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/edit?gid=0#gid=0"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          🗓 스케줄 시트 열기
+        </a>
+        <a
+          class="sheet-btn"
+          href="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/edit?resourcekey#gid=160409301"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          👥 회원가입 시트 열기
+        </a>
+        <a
+          class="sheet-btn"
+          href="https://docs.google.com/document/d/1EYu8HQm-pUKmK3UF-O0oVC8oEKRcbwQ9ZZfH1BBngUo/edit?tab=t.0"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          📢 공지 문서(PPT 스타일) 열기
+        </a>
+      </div>
+    </section>
+
+    <!-- 3. 프로모션 & 공지 관리 -->
     <section class="section-admin">
       <div class="section-title-row">
-        <div class="section-title">프로모션 & 공지 & 주간 스케줄 관리 (관리자용)</div>
+        <div class="section-title">프로모션 & 공지 관리 (관리자용)</div>
         <div class="section-desc">
-          프로모션 이미지/문구, 공지 팝업, 일주일 강의 스케줄을 한 곳에서 코드로 생성해 사용할 수 있습니다.
+          프로모션 이미지/문구와 공지 팝업 스크립트를 생성하고, 현재 페이지들을 미리볼 수 있습니다.
         </div>
       </div>
       <div class="admin-note">
@@ -587,69 +656,9 @@
               placeholder="여기에 생성된 스크립트를 the-unique-main.html 또는 원하는 페이지의 &lt;body&gt; 하단에 붙여 넣으세요."
             ></textarea>
           </div>
-
-          <hr style="margin:10px 0; border:none; border-top:1px dashed rgba(75,85,99,0.7);" />
-
-          <!-- 주간 스케줄 코드 생성 -->
-          <div class="field-group">
-            <div class="field-label">일주일 강의 스케줄 관리</div>
-            <div class="field-hint">
-              하나씩 강의를 추가하면 주간 스케줄 HTML 코드가 만들어집니다.<br />
-              완성된 코드를 <strong>the-unique-main.html</strong> 안의
-              <code>&lt;section class="top-schedule-panel"&gt; ...</code> 블록 전체와 교체해서 사용하세요.
-            </div>
-          </div>
-
-          <div class="schedule-admin-grid">
-            <div class="field-group">
-              <div class="field-label">요일</div>
-              <select id="sch-day" class="field-input">
-                <option value="월">월요일</option>
-                <option value="화">화요일</option>
-                <option value="수">수요일</option>
-                <option value="목">목요일</option>
-                <option value="금">금요일</option>
-                <option value="토">토요일</option>
-                <option value="일">일요일</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <div class="field-label">시간</div>
-              <input id="sch-time" class="field-input" type="text" placeholder="예: 06:00–07:00" />
-            </div>
-            <div class="field-group">
-              <div class="field-label">세미나 제목</div>
-              <input id="sch-title" class="field-input" type="text" placeholder="예: 아침 개구리 러닝" />
-            </div>
-            <div class="field-group">
-              <div class="field-label">강사</div>
-              <input id="sch-teacher" class="field-input" type="text" placeholder="예: 최선아" />
-            </div>
-            <div class="field-group">
-              <div class="field-label">유형/메모</div>
-              <input id="sch-type" class="field-input" type="text" placeholder="예: 줌 세미나 / 오프라인" />
-            </div>
-          </div>
-
-          <div class="code-actions">
-            <button id="sch-add-btn" class="small-btn primary" type="button">스케줄 추가</button>
-            <button id="sch-reset-btn" class="small-btn" type="button">전체 초기화</button>
-            <button id="sch-copy-btn" class="small-btn" type="button">코드 복사</button>
-          </div>
-
-          <div class="code-output">
-            <div class="field-label">
-              생성된 주간 스케줄 HTML 코드<br/>
-              <span class="field-hint">
-                → 아래 코드를 전체 복사해서 <strong>the-unique-main.html</strong> 안의
-                <code>&lt;section class="top-schedule-panel"&gt; ...</code> 부분을 통째로 교체하세요.
-              </span>
-            </div>
-            <textarea id="sch-code-output" spellcheck="false"></textarea>
-          </div>
         </div>
 
-        <!-- 오른쪽: 미리보기 2개 -->
+        <!-- 오른쪽: 미리보기 3개 -->
         <div class="admin-right">
           <div class="preview-block">
             <div class="preview-title">프로모션 미리보기 (the-unique-promo.html)</div>
@@ -672,6 +681,17 @@
               ></iframe>
             </div>
           </div>
+
+          <div class="preview-block" id="notice-preview-block">
+            <div class="preview-title">공지 문서 미리보기 (Google Docs)</div>
+            <div class="preview-frame">
+              <iframe
+                src="https://docs.google.com/document/d/1EYu8HQm-pUKmK3UF-O0oVC8oEKRcbwQ9ZZfH1BBngUo/preview"
+                title="공지 문서 미리보기"
+                loading="lazy"
+              ></iframe>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -681,7 +701,7 @@
     </div>
   </div>
 
-   <script>
+  <script>
     (function () {
       const imgInput   = document.getElementById("promo-image");
       const titleInput = document.getElementById("promo-title");
@@ -696,15 +716,7 @@
       const popupGenBtn     = document.getElementById("generate-popup-btn");
       const popupCopyBtn    = document.getElementById("copy-popup-btn");
 
-      const schDay      = document.getElementById("sch-day");
-      const schTime     = document.getElementById("sch-time");
-      const schTitle    = document.getElementById("sch-title");
-      const schTeacher  = document.getElementById("sch-teacher");
-      const schType     = document.getElementById("sch-type");
-      const schAddBtn   = document.getElementById("sch-add-btn");
-      const schResetBtn = document.getElementById("sch-reset-btn");
-      const schCopyBtn  = document.getElementById("sch-copy-btn");
-      const schOut      = document.getElementById("sch-code-output");
+      const noticePreviewBlock = document.getElementById("notice-preview-block");
 
       /* ───────────── 프로모션 코드 생성기 ───────────── */
       if (genBtn && out) {
@@ -812,126 +824,11 @@ ${visualBlock}
         });
       }
 
-      /* ───────────── 주간 스케줄 HTML 빌더 ───────────── */
-      const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
-      const DAY_LABEL = {
-        "월": "월요일",
-        "화": "화요일",
-        "수": "수요일",
-        "목": "목요일",
-        "금": "금요일",
-        "토": "토요일",
-        "일": "일요일"
-      };
-      const scheduleData = {}; // day -> items[]
-
-      function escapeHtml(str) {
-        return String(str)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
-
-      function updateScheduleHtml() {
-        if (!schOut) return;
-
-        const days = DAY_ORDER.filter(d => scheduleData[d] && scheduleData[d].length);
-
-        if (!days.length) {
-          schOut.value = "";
-          return;
-        }
-
-        let html =
-`<!-- 주간 강의 스케줄 -->
-<section class="top-schedule-panel">
-  <div class="top-schedule-header">이번 주 강의 스케줄</div>
-  <div class="top-schedule-grid">
-`;
-
-        days.forEach(day => {
-          const label = DAY_LABEL[day] || day;
-          html += `    <div class="top-schedule-day">
-      <div class="top-schedule-day-name">${label}</div>
-`;
-          scheduleData[day].forEach(item => {
-            html += `      <div class="top-schedule-item">
-        <div class="top-schedule-time">${escapeHtml(item.time)}</div>
-        <div class="top-schedule-title">${escapeHtml(item.title)}</div>
-`;
-            if (item.teacher) {
-              html += `        <div class="top-schedule-teacher">강사: ${escapeHtml(item.teacher)}</div>
-`;
-            }
-            if (item.type) {
-              html += `        <div class="top-schedule-type">${escapeHtml(item.type)}</div>
-`;
-            }
-            html += `      </div>
-`;
-          });
-          html += `    </div>
-`;
-        });
-
-        html += `  </div>
-</section>
-`;
-
-        schOut.value = html;
-      }
-
-      if (schAddBtn && schOut) {
-        schAddBtn.addEventListener("click", function () {
-          const day     = schDay.value;
-          const time    = (schTime.value    || "").trim();
-          const title   = (schTitle.value   || "").trim();
-          const teacher = (schTeacher.value || "").trim();
-          const type    = (schType.value    || "").trim();
-
-          if (!day || !time || !title) {
-            alert("요일, 시간, 세미나 제목은 필수입니다.");
-            return;
-          }
-
-          if (!scheduleData[day]) scheduleData[day] = [];
-          scheduleData[day].push({ time, title, teacher, type });
-
-          schTime.value    = "";
-          schTitle.value   = "";
-          schTeacher.value = "";
-          schType.value    = "";
-
-          updateScheduleHtml();
-        });
-      }
-
-      if (schResetBtn && schOut) {
-        schResetBtn.addEventListener("click", function () {
-          if (!confirm("스케줄을 모두 비우시겠습니까?")) return;
-          Object.keys(scheduleData).forEach(k => delete scheduleData[k]);
-          schOut.value = "";
-        });
-      }
-
-      if (schCopyBtn && schOut) {
-        schCopyBtn.addEventListener("click", function () {
-          if (!schOut.value.trim()) {
-            alert("먼저 스케줄을 추가해 코드를 만든 뒤 복사해 주세요.");
-            return;
-          }
-          schOut.select();
-          try {
-            document.execCommand("copy");
-            alert("주간 스케줄 HTML 코드가 복사되었습니다. the-unique-main.html의 top-schedule-panel 부분을 교체하세요.");
-          } catch (e) {
-            alert("복사에 실패했습니다. 수동으로 선택하여 복사해 주세요.");
-          }
-        });
+      // 공지 문서 미리보기는 항상 노출 (나중에 원하면 로컬 토글도 달 수 있음)
+      if (noticePreviewBlock) {
+        noticePreviewBlock.style.display = "block";
       }
     })();
   </script>
 </body>
 </html>
-
