@@ -749,9 +749,9 @@
 
           <!-- eBook 관리자 페이지로 가는 링크 -->
           <div class="ebook-admin-link-wrap">
-            <a href="the-unique-ebook-admin.html" class="ebook-admin-link">
-              eBook 관리자 열기
-            </a>
+            <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">
+  eBook 관리자 열기
+</a>
           </div>
         </section>
       </div>
@@ -879,10 +879,11 @@
       window.location.href = "the-unique-gate.html";
     }
 
-    let currentId = "";
+       let currentId = "";
     let currentName = "";
     let currentTeam = "";
     let currentJoin = "";
+    let isHQ = false; // ★ HQ 여부 플래그
 
     try {
       const user = JSON.parse(raw || "{}");
@@ -895,16 +896,36 @@
       window.location.href = "the-unique-gate.html";
     }
 
+    // HQ 판별: "이름"과 "소속"이 완전히 같은 경우만 HQ
+    if (currentName && currentTeam && currentName === currentTeam) {
+      isHQ = true;
+    } else {
+      isHQ = false;
+    }
+
+    // 전역으로도 저장 (다른 스크립트에서 사용)
+    window.uniqueIsHQ = isHQ;
+
     document.getElementById("member-hello").textContent =
       (currentName || currentId || "멤버") + "님, 오늘도 성장하러 오셨군요.";
     document.getElementById("member-name").textContent =
       currentId || currentName || "Unknown";
 
-    const teamText =
-      currentTeam
-        ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
-        : "소속: HQ";
+    const teamText = isHQ
+      ? "소속: HQ"
+      : (currentTeam ? "소속: " + currentTeam : "소속: -");
     document.getElementById("member-team").textContent = teamText;
+
+    // ★ HQ가 아니면 eBook 관리자 링크 숨기기
+    (function hideEbookAdminForNonHQ() {
+      if (!isHQ) {
+        const linkEl = document.getElementById("ebook-admin-link");
+        if (linkEl) {
+          linkEl.style.display = "none";
+        }
+      }
+    })();
+
 
     /* ─────────────  1. 직급 코드 → 배지 이미지 + 스케일 ───────────── */
 
@@ -1284,21 +1305,22 @@
     });
   </script>
 
-  <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
+    <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       try {
-        if (!document.body.textContent.includes('소속') ||
-            !document.body.textContent.includes('HQ')) {
-          return;
+        // ★ 전역 플래그로 HQ 여부 체크
+        if (!window.uniqueIsHQ) {
+          return; // HQ가 아니면 버튼 자체를 만들지 않음
         }
 
+        // "소속: HQ" 표시가 들어간 엘리먼트 찾기
         var candidates = Array.from(document.querySelectorAll('body *'));
         var target = candidates.find(function (el) {
           if (el === document.body || el === document.documentElement) return false;
           var text = (el.textContent || '').trim();
           if (!text) return false;
-          if (!text.includes('소속') || !text.includes('HQ')) return false;
+          if (!text.includes('소속: HQ')) return false;
           if (text.length > 30) return false;
           return true;
         });
