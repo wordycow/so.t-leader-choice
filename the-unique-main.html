@@ -2,15 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>The Unique – Team Hub</title>
+  <title>The Unique – Member Hall</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <!-- THE UNIQUE 타이틀용 폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; }
@@ -21,814 +20,1313 @@
       height: 100%;
     }
 
+    /* 메인 배경: Midnight Blue */
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        "Pretendard", sans-serif;
-      background: radial-gradient(circle at top, #1f2937, #020617 55%);
-      color: #e5e7eb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
+      background-color: #0B1120;
+      background-image: radial-gradient(circle at top, rgba(148,163,184,0.18), transparent 55%);
+      background-attachment: fixed;
     }
 
-    a { color: inherit; }
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.55;
+      mix-blend-mode: screen;
+    }
 
     .page-wrap {
+      position: relative;
+      z-index: 10;
       max-width: 1200px;
-      margin: 40px auto 32px;
-      padding: 0 16px 24px;
+      margin: 72px auto 40px;
+      padding: 0 16px;
+      width: 100%;
     }
 
-    /* 헤더 */
+    .main-card {
+      position: relative;
+      width: 100%;
+      max-width: 920px;
+      margin: 0 auto;
+      border-radius: 26px;
+      padding: 28px 32px 26px;
 
-    .hub-header {
-      text-align: left;
-      margin-bottom: 18px;
-    }
-
-    .hub-title {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #facc15;
-      text-shadow: 0 0 12px rgba(250, 204, 21, 0.75);
-    }
-
-    .hub-subtitle {
-      font-size: 12px;
-      margin-top: 4px;
-      color: #9ca3af;
-    }
-
-    /* 공용 섹션 공통 스타일 */
-
-    .section {
-      border-radius: 24px;
-      padding: 18px 18px 20px;
-      background: radial-gradient(circle at top,
-        rgba(15, 23, 42, 0.9),
-        rgba(15, 23, 42, 0.98)
-      );
+      background: radial-gradient(circle at top, rgba(30,64,175,0.25), rgba(15,23,42,0.98));
+      border: 1px solid rgba(245,158,11,0.95); /* 전체 테두리 금색 */
       box-shadow:
-        0 0 0 1px rgba(30, 64, 118, 0.7),
-        0 18px 45px rgba(0, 0, 0, 0.9);
+        0 0 24px rgba(245,158,11,0.65),
+        0 35px 90px rgba(0,0,0,0.95);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .main-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .title-wrap {
+      text-align: center;
       margin-bottom: 22px;
     }
 
-    .section-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: 14px;
+    .title-en {
+      font-family: "Cinzel", "Times New Roman", serif;
       font-weight: 700;
-      color: #f9fafb;
+      font-size: 32px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+
+      color: #FACC15; /* 금색 글자 */
+      text-shadow:
+        0 0 16px rgba(245,158,11,0.9),
+        0 4px 18px rgba(0,0,0,0.95);
     }
 
-    .section-desc {
-      font-size: 12px;
-      color: #9ca3af;
+    .subtitle-en {
+      font-size: 11px;
+      color: #94A3B8;
+      letter-spacing: 0.12em;
+      text-transform: none;
     }
 
-    .card-grid {
+    .layout {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
+      grid-template-columns: minmax(0, 2.4fr) minmax(0, 3fr);
+      gap: 24px;
+      align-items: stretch; /* 좌/우 카드 높이 동일하게 */
     }
 
-    .link-card {
-      border-radius: 18px;
-      padding: 14px 14px 12px;
-      background: linear-gradient(145deg, #020617, #020617, #020617);
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.9);
+    /* ───── 회원 정보 + 직급 ───── */
+    .member-panel {
+      border-radius: 22px;
+      padding: 16px 18px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.85),
+        0 12px 28px rgba(0,0,0,0.9);
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
 
-    .link-card.admin {
-      border-color: rgba(248, 181, 84, 0.9);
+    .member-hello {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 6px;
     }
 
-    .link-card-title {
+    .member-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #FFFFFF;
+    }
+
+    .member-id { display: none; }
+
+    .member-meta {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    /* 직급 박스 (키운 버전) */
+    .rank-badge-box {
+      margin-top: 16px;
+      padding: 18px 16px;
+      border-radius: 22px;
+      background: radial-gradient(circle at top, #1D2953, #0B1120);
+      border: 1px solid rgba(148,163,184,0.9);
+      box-shadow:
+        0 0 0 1px rgba(15,23,42,1),
+        0 16px 32px rgba(15,23,42,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rank-road {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .rank-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rank-slot-next {
+      margin-top: 12px;
+    }
+
+    .rank-icon {
+      max-height: 130px;
+      height: auto;
+      width: auto;
+      border-radius: 12px;
+      object-fit: contain;
+      background: transparent;
+      box-shadow: 0 0 20px rgba(15,23,42,0.85);
+
+      --rank-scale: 1;
+      transform: scale(var(--rank-scale));
+      transform-origin: center bottom;
+    }
+
+    .rank-icon-next { opacity: 0.97; }
+
+    .rank-arrow {
+      font-size: 22px;
+      color: #F59E0B;
+      text-shadow: 0 0 10px rgba(245,158,11,0.7);
+    }
+
+    .rank-mini-label {
+      font-size: 11px;
+      color: #E5E7EB;
+      opacity: 0.95;
+    }
+
+    .rank-text-block { display: none; }
+
+    /* ───── 목표 + 마녀 ───── */
+    .goal-panel {
+      border-radius: 22px;
+      padding: 16px 18px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.75),
+        0 12px 28px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .goal-header { margin-bottom: 6px; }
+    .goal-header-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #E5E7EB;
+    }
+    .goal-header-text span {
+      color: #FACC15; /* Pro1 금색 강조 */
+      font-weight: 800;
+      margin-left: 4px;
+    }
+
+    .next-goal-card {
+      flex: 1 1 auto;
+      border-radius: 18px;
+      padding: 18px 24px 18px;
+      background: url("img/next-goal-bg.jpg") center center / cover no-repeat;
+      border: 1px solid #F59E0B;
+      box-shadow:
+        0 0 0 1px rgba(15,23,42,1),
+        0 10px 24px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .next-goal-top {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+      margin-bottom: 32px;
+    }
+
+    .goal-me-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .goal-witch {
+      max-height: 200px;
+      height: auto;
+      width: auto;
+      display: block;
+      animation: witchFloat 4s ease-in-out infinite alternate;
+      filter:
+        drop-shadow(0 0 10px rgba(245,158,11,0.9))
+        drop-shadow(0 6px 14px rgba(0,0,0,0.8));
+    }
+
+    .goal-me-label { display: none; }
+
+    .next-goal-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .goal-side {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .goal-arrow { display: none; }
+
+    .goal-label {
+      font-size: 14px;
+      color: #FACC15;
+      text-shadow:
+        0 0 8px rgba(245,158,11,0.8),
+        0 2px 10px rgba(0,0,0,0.9);
+    }
+
+    .goal-count {
+      font-size: 72px;
+      font-weight: 800;
+      color: #FACC15;
+      text-shadow:
+        0 0 12px rgba(245,158,11,0.9),
+        0 0 22px rgba(0,0,0,0.9);
+      line-height: 1;
+    }
+
+    .goal-left { align-items: flex-start; }
+    .goal-right { align-items: flex-end; }
+
+    .goal-left .goal-count,
+    .goal-left .goal-label { text-align: left; }
+
+    .goal-right .goal-count,
+    .goal-right .goal-label { text-align: right; }
+
+    /* eBook 패널 */
+    .ebook-panel {
+      margin-top: 18px;
+      border-radius: 18px;
+      padding: 12px 16px 16px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.85),
+        0 10px 24px rgba(0,0,0,0.9);
+    }
+
+    .ebook-panel .section-title {
+      margin-bottom: 8px;
       font-size: 13px;
       font-weight: 600;
-      color: #f9fafb;
+      color: #E5E7EB;
     }
 
-    .link-card-desc {
-      font-size: 11px;
-      color: #9ca3af;
-    }
-
-    .link-card-meta {
-      font-size: 11px;
-      color: #6b7280;
-    }
-
-    .link-card-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 6px;
-    }
-
-    .link-btn {
-      flex: 1 1 0;
-      border-radius: 999px;
-      padding: 7px 8px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.95);
-      color: #e5e7eb;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.1s ease;
-    }
-
-    .link-btn:first-child {
-      border-color: rgba(248, 181, 84, 0.9);
-      background: radial-gradient(circle at top, #f97316, #7f1d1d);
-      color: #fef2f2;
-    }
-
-    .link-btn:hover {
-      transform: translateY(-1px);
-      border-color: rgba(248, 250, 252, 0.7);
-      background: rgba(30, 64, 175, 0.85);
-    }
-
-    /* Google 시트/문서 버튼 */
-
-    .sheet-links {
+    .ebook-list {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .sheet-btn {
-      flex: 1 1 220px;
-      border-radius: 999px;
-      padding: 9px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      border: 1px solid rgba(148, 163, 184, 0.9);
-      background: radial-gradient(circle at top,
-        rgba(15,23,42,0.96),
-        rgba(15,23,42,0.99)
-      );
-      color: #e5e7eb;
+    .ebook-card {
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(135deg, #111827, #020617);
+      display: flex;
+      gap: 14px;
+      align-items: stretch;
       text-decoration: none;
-      text-align: center;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-      cursor: pointer;
-      transition:
-        background 0.15s ease,
-        transform 0.1s ease,
-        border-color 0.15s ease;
-    }
-
-    .sheet-btn:hover {
-      transform: translateY(-1px);
-      background: rgba(30, 64, 175, 0.9);
-      border-color: rgba(248, 250, 252, 0.8);
-    }
-
-    /* 관리자 섹션 */
-
-    .section-admin {
-      border-radius: 24px;
-      padding: 18px 18px 20px;
-      background: radial-gradient(circle at top,
-        rgba(15, 23, 42, 0.98),
-        rgba(15, 23, 42, 0.99)
-      );
+      color: #E5E7EB;
       box-shadow:
-        0 0 0 1px rgba(248, 181, 84, 0.9),
-        0 20px 55px rgba(0, 0, 0, 1);
+        0 0 0 1px rgba(30,64,118,0.9),
+        0 14px 26px rgba(0,0,0,0.9);
+      min-height: 120px;
+
+      flex: 1 1 calc(50% - 10px);
+      min-width: 0;
     }
 
-    .admin-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 2.1fr) minmax(0, 2.4fr);
-      gap: 16px;
-      margin-top: 8px;
+    .ebook-card:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,0.95),
+        0 0 0 1px rgba(248,250,252,0.6);
+      background: linear-gradient(135deg, #1E293B, #020617);
     }
 
-    .admin-note {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
+    .ebook-thumb {
+      width: 96px;
+      height: 96px;
+      border-radius: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #020617;
     }
 
-    .admin-left {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 6px;
-    }
-
-    .field-label {
-      font-size: 11px;
-      color: #e5e7eb;
-    }
-
-    .field-hint {
-      font-size: 10px;
-      color: #9ca3af;
-    }
-
-    .field-input,
-    .field-textarea {
+    .ebook-thumb img {
       width: 100%;
-      border-radius: 10px;
-      border: 1px solid rgba(51, 65, 85, 0.9);
-      background: rgba(15, 23, 42, 0.96);
-      color: #e5e7eb;
-      font-size: 12px;
-      padding: 7px 9px;
-      outline: none;
+      height: 100%;
+      object-fit: cover;
     }
 
-    .field-input:focus,
-    .field-textarea:focus {
-      border-color: rgba(248, 181, 84, 0.9);
-      box-shadow: 0 0 0 1px rgba(248, 181, 84, 0.6);
+    .ebook-meta-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 4px;
     }
 
-    .field-textarea {
-      min-height: 80px;
-      resize: vertical;
+    .ebook-meta-desc {
+      font-size: 11px;
+      color: #CBD5F5;
+      opacity: 0.9;
     }
 
-    .code-actions {
-      display: flex;
-      gap: 8px;
+    .ebook-meta-cta {
       margin-top: 4px;
+      font-size: 11px;
+      color: #FACC15;
     }
 
-    .small-btn {
-      flex: 1 1 0;
+    .ebook-admin-link-wrap {
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    .ebook-admin-link {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-decoration: none;
+      opacity: 0.75;
+    }
+
+    .ebook-admin-link:hover {
+      opacity: 1;
+      color: #FACC15;
+    }
+
+    /* ───── 프로모션/여행/So.T 버튼 ───── */
+    .member-actions {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 9px 10px;
       border-radius: 999px;
-      padding: 7px 10px;
+      border: 1px solid #F59E0B;
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      border: 1px solid rgba(148, 163, 184, 0.8);
-      background: rgba(15, 23, 42, 0.98);
-      color: #e5e7eb;
       cursor: pointer;
-      transition:
-        background 0.15s ease,
-        transform 0.1s ease,
-        border-color 0.15s ease;
-    }
-
-    .small-btn.primary {
-      border-color: rgba(248, 181, 84, 0.9);
-      background: radial-gradient(circle at top, #f97316, #7f1d1d);
-      color: #fef2f2;
-    }
-
-    .small-btn:hover {
-      transform: translateY(-1px);
-      background: rgba(30, 64, 175, 0.9);
-      border-color: rgba(191, 219, 254, 0.9);
-    }
-
-    .code-output {
-      margin-top: 6px;
-    }
-
-    .code-output textarea {
-      width: 100%;
-      min-height: 90px;
-      border-radius: 10px;
-      border: 1px solid rgba(51, 65, 85, 0.9);
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 11px;
-      padding: 7px 9px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
-      resize: vertical;
-    }
-
-    .admin-right {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .preview-block {
-      flex: 1 1 0;
-      border-radius: 18px;
-      padding: 10px 10px 8px;
-      border: 1px solid rgba(248, 181, 84, 0.9);
-      background: radial-gradient(circle at top,
-        rgba(15, 23, 42, 0.96),
-        rgba(15, 23, 42, 0.99)
-      );
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.9);
-      display: flex;
-      flex-direction: column;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       gap: 6px;
+
+      background: radial-gradient(circle at top, #1D2953, #0B1120);
+      color: #FFFFFF;
+      box-shadow:
+        0 8px 18px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(15,23,42,0.9) inset;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
 
-    .preview-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #facc15;
+    .action-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      box-shadow:
+        0 14px 26px rgba(0,0,0,1),
+        0 0 0 1px rgba(245,158,11,0.85) inset;
     }
 
-    .preview-frame {
-      flex: 1 1 0;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #020617;
-      border: 1px solid rgba(30, 41, 59, 1);
+    .action-badge {
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #EF4444;
+      color: #FEF2F2;
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
     }
 
-    .preview-frame iframe {
+    .action-badge.hidden { display: none; }
+
+    .action-btn-sot { padding: 9px 10px; }
+
+    .sot-logo-text {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-size: 16px;
+      letter-spacing: 0.15em;
+      color: #FACC15;
+    }
+
+    /* 로그아웃 버튼 */
+    .logout-row {
+      margin-top: 10px;
+      text-align: right;
+    }
+
+    .logout-btn {
       width: 100%;
-      height: 100%;
-      border: 0;
+      padding: 10px 10px;
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: linear-gradient(180deg, #B91C1C, #7F1D1D);
+      color: #FEF2F2;
+      box-shadow:
+        0 10px 24px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(127,29,29,0.9) inset;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
+
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow:
+        0 16px 32px rgba(0,0,0,1),
+        0 0 0 1px rgba(248,250,252,0.8) inset;
+    }
+
+    .promo-section { display: none; }
 
     .footer-note {
-      margin-top: 10px;
+      margin-top: 12px;
       font-size: 11px;
-      color: #9ca3af;
+      color: #9CA3AF;
       text-align: right;
-      opacity: 0.8;
+      max-width: 920px;
+      margin-left: auto;
+      margin-right: auto;
+      opacity: 0.85;
     }
 
-    @media (max-width: 960px) {
-      .card-grid {
+        /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
+    .top-schedule-panel {
+      margin: 10px 0 18px;
+      border-radius: 18px;
+      padding: 10px 14px 12px;
+      background: radial-gradient(circle at top,
+        rgba(15,23,42,0.96),
+        rgba(15,23,42,0.99)
+      );
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.85),
+        0 12px 26px rgba(0,0,0,0.9);
+    }
+
+    .top-schedule-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 6px;
+    }
+
+    .top-schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0,1fr));
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .top-schedule-day {
+      background: rgba(15,23,42,0.98);
+      border-radius: 12px;
+      border: 1px solid rgba(51,65,85,0.9);
+      padding: 6px 7px;
+    }
+
+    .top-schedule-day-name {
+      font-weight: 600;
+      color: #facc15;
+      margin-bottom: 4px;
+    }
+
+    .top-schedule-item {
+      margin-bottom: 5px;
+    }
+
+    .top-schedule-time {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .top-schedule-title {
+      color: #c4b5fd;
+    }
+
+    .top-schedule-teacher,
+    .top-schedule-type {
+      color: #9ca3af;
+    }
+
+    .top-schedule-empty {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    @media (max-width: 900px) {
+      .top-schedule-grid {
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+    }
+
+    @keyframes witchFloat {
+      0%   { transform: translateY(-10px); }
+      50%  { transform: translateY(10px); }
+      100% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 768px) {
+      .page-wrap { margin-top: 40px; }
+      .main-card {
+        padding: 24px 18px 20px;
+        border-radius: 22px;
+      }
+      .title-en {
+        font-size: 28px;
+        letter-spacing: 0.22em;
+      }
+      .layout {
         grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
       }
-      .admin-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .preview-block {
-        min-height: 220px;
-      }
-      .sheet-links {
+      .ebook-list {
         flex-direction: column;
+      }
+      .ebook-card {
+        flex: 1 1 100%;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrap">
-    <header class="hub-header">
-      <div class="hub-title">THE UNIQUE – TEAM HUB</div>
-      <div class="hub-subtitle">
-        참가자가 보는 공용 페이지와, 관리자가 조정하는 프로모션·공지·강의 스케줄을 한 곳에서 관리합니다.
-      </div>
-    </header>
-
-    <!-- 1. 공동 노출 화면 -->
-    <section class="section">
-      <div class="section-title-row">
-        <div class="section-title">공동 노출 화면 (참가자용)</div>
-        <div class="section-desc">
-          The Unique 참가자들에게 실제로 보여지는 주요 화면입니다.
-        </div>
-      </div>
-
-      <div class="card-grid">
-        <!-- 게이트 -->
-        <article class="link-card">
-          <div class="link-card-title">The Unique 대문</div>
-          <div class="link-card-desc">
-            초대 링크로 처음 접속할 때 보이는 로그인 게이트 화면입니다.
-          </div>
-          <div class="link-card-meta">파일: the-unique-gate.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="the-unique-gate.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-gate.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-
-        <!-- 메인 -->
-        <article class="link-card">
-          <div class="link-card-title">The Unique 메인</div>
-          <div class="link-card-desc">
-            로그인 후 멤버들이 보는 메인 대시보드입니다. 직급·목표·eBook과 주간 스케줄이 노출됩니다.
-          </div>
-          <div class="link-card-meta">파일: the-unique-main.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="the-unique-main.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-main.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-
-        <!-- 프로모션 -->
-        <article class="link-card">
-          <div class="link-card-title">The Unique 프로모션 보기</div>
-          <div class="link-card-desc">
-            현재 사용 중인 프로모션 페이지입니다.
-          </div>
-          <div class="link-card-meta">파일: the-unique-promo.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="the-unique-promo.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-promo.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- 2. 관리자 전용 도구 -->
-    <section class="section">
-      <div class="section-title-row">
-        <div class="section-title">관리자 전용 도구</div>
-        <div class="section-desc">
-          eBook 설정, 직급 전당, 전체 허브 설정을 관리하는 페이지입니다.
-        </div>
-      </div>
-
-      <div class="card-grid">
-        <!-- eBook 관리자 -->
-        <article class="link-card admin">
-          <div class="link-card-title">The Unique eBook 관리자</div>
-          <div class="link-card-desc">
-            the-unique-ebook.html에 노출되는 eBook 목록과 순서를 관리합니다.
-          </div>
-          <div class="link-card-meta">파일: the-unique-ebook-admin.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="the-unique-ebook-admin.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/the-unique-ebook-admin.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-
-        <!-- 직급 전당 관리자 -->
-        <article class="link-card admin">
-          <div class="link-card-title">직급 전당 관리자</div>
-          <div class="link-card-desc">
-            rank-hall.html / rank-hall.json 에 들어가는 직급 정보를 관리합니다.
-          </div>
-          <div class="link-card-meta">파일: admin-rank-hall.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="admin-rank-hall.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/admin-rank-hall.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-
-        <!-- 전체 허브 관리자 -->
-        <article class="link-card admin">
-          <div class="link-card-title">Team Hub 관리자 대시보드</div>
-          <div class="link-card-desc">
-            통합 허브 설정 및 다른 관리 도구로 이동하는 인덱스 페이지입니다.
-          </div>
-          <div class="link-card-meta">파일: admin-index.html</div>
-          <div class="link-card-actions">
-            <a class="link-btn" href="admin-index.html" target="_blank" rel="noopener noreferrer">페이지 열기</a>
-            <a class="link-btn" href="https://github.com/wordycow/so.t-leader-choice/blob/main/admin-index.html" target="_blank" rel="noopener noreferrer">GITHUB 이동</a>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- 2-b. 구글 시트 / 문서 바로가기 -->
-    <section class="section">
-      <div class="section-title-row">
-        <div class="section-title">관리자용 Google 시트·문서</div>
-        <div class="section-desc">
-          주간 스케줄, 회원가입 정보, 공지 문서를 바로 열 수 있습니다.
-        </div>
-      </div>
-
-      <div class="sheet-links">
-        <a
-          class="sheet-btn"
-          href="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/edit?gid=0#gid=0"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          🗓 스케줄 시트 열기
-        </a>
-        <a
-          class="sheet-btn"
-          href="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/edit?resourcekey#gid=160409301"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          👥 회원가입 시트 열기
-        </a>
-        <a
-          class="sheet-btn"
-          href="https://docs.google.com/document/d/1EYu8HQm-pUKmK3UF-O0oVC8oEKRcbwQ9ZZfH1BBngUo/edit?tab=t.0"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          📢 공지 문서(PPT 스타일) 열기
-        </a>
-      </div>
-    </section>
-
-    <!-- 3. 프로모션 & 공지 관리 -->
-    <section class="section-admin">
-      <div class="section-title-row">
-        <div class="section-title">프로모션 & 공지 관리 (관리자용)</div>
-        <div class="section-desc">
-          프로모션 이미지/문구와 공지 팝업 스크립트를 생성하고, 현재 페이지들을 미리볼 수 있습니다.
-        </div>
-      </div>
-      <div class="admin-note">
-        * 생성된 코드는 <strong>the-unique-promo.html / the-unique-main.html</strong> 등에 직접 붙여 넣어 사용합니다.
-      </div>
-
-      <div class="admin-grid">
-        <!-- 왼쪽: 폼 + 코드 생성 -->
-        <div class="admin-left">
-          <!-- 프로모션 코드 생성 -->
-          <div class="field-group">
-            <div class="field-label">프로모션 이미지 경로 (상대 경로)</div>
-            <input
-              id="promo-image"
-              class="field-input"
-              type="text"
-              placeholder="예: img/the-unique-main.jpg"
-            />
-            <div class="field-hint">
-              ▸ 이미지 파일을 <code>img</code> 폴더에 올리고 경로를 입력하세요.<br />
-              ▸ <strong>이미지를 빼고 싶으면 이 칸을 비운 상태로 코드 생성</strong>하면 이미지 없이 텍스트만 나오는 프로모션 코드가 만들어집니다.
-            </div>
-          </div>
-
-          <div class="field-group">
-            <div class="field-label">프로모션 제목</div>
-            <input
-              id="promo-title"
-              class="field-input"
-              type="text"
-              placeholder="예: 2025년 1분기 THE UNIQUE 프로모션"
-            />
-          </div>
-
-          <div class="field-group">
-            <div class="field-label">프로모션 본문 (설명/공지 텍스트)</div>
-            <textarea
-              id="promo-body"
-              class="field-textarea"
-              placeholder="참가자에게 보여줄 프로모션 안내 문구를 입력하세요."
-            ></textarea>
-          </div>
-
-          <div class="code-actions">
-            <button id="generate-btn" class="small-btn primary" type="button">
-              프로모션 HTML 코드 생성
-            </button>
-            <button id="copy-btn" class="small-btn" type="button">
-              코드 복사
-            </button>
-          </div>
-
-          <div class="code-output">
-            <div class="field-label">생성된 프로모션 HTML 코드</div>
-            <textarea
-              id="promo-code-output"
-              spellcheck="false"
-              placeholder="여기에 생성된 코드를 the-unique-promo.html 안에 붙여 넣으세요."
-            ></textarea>
-          </div>
-
-          <hr style="margin:10px 0; border:none; border-top:1px dashed rgba(75,85,99,0.7);" />
-
-          <!-- 공지 팝업 코드 생성 -->
-          <div class="field-group">
-            <div class="field-label">공지 팝업 제목</div>
-            <input
-              id="popup-title"
-              class="field-input"
-              type="text"
-              placeholder="예: 중요 공지 안내"
-            />
-          </div>
-
-          <div class="field-group">
-            <div class="field-label">공지 팝업 내용</div>
-            <textarea
-              id="popup-body"
-              class="field-textarea"
-              placeholder="팝업으로 띄울 공지 내용을 입력하세요. 줄바꿈은 자동으로 &lt;br&gt; 처리됩니다."
-            ></textarea>
-            <div class="field-hint">
-              ▸ <strong>제목 또는 내용이 비어 있으면</strong> 생성된 스크립트의
-              <code>if (!popupTitle || !popupBody) return;</code> 조건 때문에 팝업이 뜨지 않습니다.<br />
-              ▸ 필요 없을 때는 제목/내용을 비우고 코드를 다시 생성하면 됩니다.
-            </div>
-          </div>
-
-          <div class="code-actions">
-            <button id="generate-popup-btn" class="small-btn primary" type="button">
-              공지 팝업 스크립트 생성
-            </button>
-            <button id="copy-popup-btn" class="small-btn" type="button">
-              팝업 코드 복사
-            </button>
-          </div>
-
-          <div class="code-output">
-            <div class="field-label">생성된 공지 팝업 스크립트</div>
-            <textarea
-              id="popup-code-output"
-              spellcheck="false"
-              placeholder="여기에 생성된 스크립트를 the-unique-main.html 또는 원하는 페이지의 &lt;body&gt; 하단에 붙여 넣으세요."
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- 오른쪽: 미리보기 3개 -->
-        <div class="admin-right">
-          <div class="preview-block">
-            <div class="preview-title">프로모션 미리보기 (the-unique-promo.html)</div>
-            <div class="preview-frame">
-              <iframe
-                src="the-unique-promo.html"
-                title="The Unique 프로모션 미리보기"
-                loading="lazy"
-              ></iframe>
-            </div>
-          </div>
-
-          <div class="preview-block">
-            <div class="preview-title">공지 / 메인 화면 미리보기 (the-unique-main.html)</div>
-            <div class="preview-frame">
-              <iframe
-                src="the-unique-main.html"
-                title="The Unique 메인 미리보기"
-                loading="lazy"
-              ></iframe>
-            </div>
-          </div>
-
-          <div class="preview-block" id="notice-preview-block">
-            <div class="preview-title">공지 문서 미리보기 (Google Docs)</div>
-            <div class="preview-frame">
-              <iframe
-                src="https://docs.google.com/document/d/1EYu8HQm-pUKmK3UF-O0oVC8oEKRcbwQ9ZZfH1BBngUo/preview"
-                title="공지 문서 미리보기"
-                loading="lazy"
-              ></iframe>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="footer-note">
-      The Unique Team Hub · so.t-leader-choice · internal tool
-    </div>
+  <div class="scene">
+    <img src="img/bg-unique-main.jpg" class="scene-bg" alt="The Unique main background" />
   </div>
+
+  <div class="page-wrap">
+    <main class="main-card">
+      <div class="main-inner">
+               <div class="title-wrap">
+          <div class="title-en">THE UNIQUE</div>
+          <div class="subtitle-en">운동과 공부는 버릴게 없다!</div>
+        </div>
+
+        <!-- 주간 강의 스케줄: THE UNIQUE 타이틀 바로 아래 전체 폭 -->
+        <section class="top-schedule-panel">
+          <div class="top-schedule-header">이번 주 강의 스케줄</div>
+
+          <!-- JS가 데이터를 불러오기 전까지는 이 문구가 보임 -->
+          <div id="top-schedule-empty" class="top-schedule-empty">
+            주간 스케줄을 불러오는 중입니다...
+          </div>
+
+          <!-- 실제 시간표가 채워질 그리드 -->
+          <div id="top-schedule-grid" class="top-schedule-grid"></div>
+        </section>
+
+
+        <section class="layout">
+          <!-- 왼쪽: 회원 인사 + 직급 -->
+          <div class="member-panel">
+            <div class="member-hello" id="member-hello">오늘도 성장하러 오셨군요.</div>
+            <div id="member-name" class="member-name">회원 이름</div>
+            <div id="member-id" class="member-id">userid</div>
+            <div id="member-team" class="member-meta">소속: -</div>
+
+            <div class="rank-badge-box">
+              <div class="rank-road">
+                <div class="rank-slot">
+                  <!-- 기본: 무직급 = 정회원 -->
+                  <img
+                    id="member-rank-img"
+                    class="rank-icon"
+                    src="img/member.png"
+                    alt="현재 직급 배지"
+                  />
+                  <div id="member-rank-mini" class="rank-mini-label">현재 직급: 정회원</div>
+                </div>
+
+                <span class="rank-arrow">➜</span>
+
+                <div class="rank-slot rank-slot-next">
+                  <!-- 기본: 다음 직급 = 1스타 -->
+                  <img
+                    id="next-rank-img"
+                    class="rank-icon rank-icon-next"
+                    src="img/star1.png"
+                    alt="다음 직급 배지"
+                  />
+                  <div id="next-rank-mini" class="rank-mini-label">다음 직급: 1스타</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 공지사항 버튼 제거, 나머지만 유지 -->
+            <div class="member-actions">
+              <button id="promo-btn" class="action-btn">
+                프로모션
+                <span id="promo-badge" class="action-badge hidden">N</span>
+              </button>
+
+              <button id="travel-btn" class="action-btn">
+                여행신청
+              </button>
+
+              <button id="sot-btn" class="action-btn action-btn-sot">
+                <span class="sot-logo-text">So.T</span>
+              </button>
+            </div>
+
+            <div class="logout-row">
+              <button type="button" id="logout-btn" class="logout-btn">
+                로그아웃
+              </button>
+            </div>
+          </div>
+
+          <!-- 오른쪽: 다음 목표 + 마녀 -->
+          <div class="goal-panel">
+            <div class="goal-header">
+              <div id="goal-next-rank-title" class="goal-header-text">
+                <!-- 기본: 무직급 다음 목표 = 1스타 -->
+                다음 목표: <span>1스타</span>
+              </div>
+            </div>
+
+            <div class="next-goal-card">
+              <div class="next-goal-top">
+                <div class="goal-me-wrap">
+                  <img src="img/witch-float.png" alt="나" class="goal-witch" />
+                  <div class="goal-me-label"></div>
+                </div>
+              </div>
+
+              <div class="next-goal-bottom">
+                <div class="goal-side goal-left">
+                  <div class="goal-label">좌측 필요</div>
+                  <!-- 기본: 2명 -->
+                  <div id="goal-left-count" class="goal-count">2</div>
+                </div>
+                <div class="goal-side goal-right">
+                  <div class="goal-label">우측 필요</div>
+                  <!-- 기본: 1명 -->
+                  <div id="goal-right-count" class="goal-count">1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- eBook 패널 -->
+        <section class="ebook-panel">
+          <div class="section-title">
+            다음 목표를 위해 학습하시겠습니까?
+          </div>
+          <div id="ebook-list" class="ebook-list"></div>
+
+          <!-- eBook 관리자 페이지로 가는 링크 -->
+          <div class="ebook-admin-link-wrap">
+            <a href="the-unique-ebook-admin.html" class="ebook-admin-link">
+              eBook 관리자 열기
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- 프로모션 섹션은 숨김 -->
+  <div id="promo-section" class="promo-section">
+    <div class="promo-title">프로모션</div>
+    <div id="promo-grid" class="promo-grid"></div>
+  </div>
+
+   <div class="footer-note">
+    The Unique &copy; 2025 · internal use only
+  </div>
+
+  <!-- 주간 스케줄: 구글 시트에서 읽어오기 -->
+  <script>
+    function handleScheduleSheet(resp) {
+      try {
+        const rows = resp.table.rows || [];
+        const byDay = {};             // { "월요일": [ {time,title}, ... ] }
+        const dayLabelByCol = {};     // 열 인덱스 -> 요일 이름 (월요일, 화요일 ...)
+        let currentPeriod = "";       // "오전" / "오후"
+
+        rows.forEach((row) => {
+          const cells = row.c || [];
+          const values = cells.map(c =>
+            (c && c.v != null) ? String(c.v).trim() : ""
+          );
+
+          // B열 이후에 '요일'이 들어간 셀 → 요일 헤더로 사용
+          for (let j = 1; j < values.length; j++) {
+            const v = values[j];
+            if (v && v.includes("요일")) {
+              dayLabelByCol[j] = v; // 예: "월요일"
+            }
+          }
+
+          const v0 = values[0]; // A열
+
+          if (!v0) return;
+
+          // "오전"/"오후" 줄
+          if (v0.includes("오전") || v0.includes("오후")) {
+            currentPeriod = v0; // 예: "오후"
+            return;
+          }
+
+          // "…시" 로 끝나는 시간 줄만 사용
+          if (!v0.endsWith("시")) return;
+
+          // 표시할 시간 텍스트: "오후 5시" 같은 형태
+          const timeLabel = currentPeriod ? (currentPeriod + " " + v0) : v0;
+
+          // 각 요일 칸에 내용이 있으면 강의로 추가
+          for (let j = 1; j < values.length; j++) {
+            const title = values[j];
+            const dayLabel = dayLabelByCol[j]; // "월요일" 등
+
+            if (!dayLabel || !title) continue; // 요일 정보 없거나 칸이 비어있으면 무시
+
+            if (!byDay[dayLabel]) byDay[dayLabel] = [];
+            byDay[dayLabel].push({ time: timeLabel, title: title });
+          }
+        });
+
+        const gridEl  = document.getElementById("top-schedule-grid");
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (!gridEl || !emptyEl) return;
+
+        gridEl.innerHTML = "";
+
+        const dayOrder = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"];
+        const days = dayOrder.filter(d => byDay[d] && byDay[d].length);
+
+        if (!days.length) {
+          emptyEl.textContent = "등록된 강의 스케줄이 없습니다.";
+          emptyEl.style.display = "block";
+          return;
+        }
+
+        emptyEl.style.display = "none";
+
+        days.forEach(dayLabel => {
+          const dayDiv = document.createElement("div");
+          dayDiv.className = "top-schedule-day";
+
+          const nameDiv = document.createElement("div");
+          nameDiv.className = "top-schedule-day-name";
+          nameDiv.textContent = dayLabel;
+          dayDiv.appendChild(nameDiv);
+
+          byDay[dayLabel].forEach(item => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "top-schedule-item";
+            itemDiv.innerHTML =
+              '<div class="top-schedule-time">'  + item.time  + '</div>' +
+              '<div class="top-schedule-title">' + item.title + '</div>';
+            dayDiv.appendChild(itemDiv);
+          });
+
+          gridEl.appendChild(dayDiv);
+        });
+
+      } catch (e) {
+        console.error("schedule sheet parse error:", e);
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (emptyEl) {
+          emptyEl.textContent = "스케줄 정보를 불러오는 중 오류가 발생했습니다.";
+          emptyEl.style.display = "block";
+        }
+      }
+    }
+  </script>
+
+  <!-- 구글 시트에서 주간 스케줄 불러오기 (unique 주간 스케쥴표) -->
+  <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
 
   <script>
+    /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
+
+    const raw = localStorage.getItem("uniqueCurrentUser");
+    if (!raw) {
+      window.location.href = "the-unique-gate.html";
+    }
+
+    let currentId = "";
+    let currentName = "";
+    let currentTeam = "";
+    let currentJoin = "";
+
+    try {
+      const user = JSON.parse(raw || "{}");
+      currentId   = (user.id || "").toLowerCase();
+      currentName = user.name || "";
+      currentTeam = user.team || "";
+      currentJoin = user.joinedAt || "";
+    } catch (e) {
+      console.error(e);
+      window.location.href = "the-unique-gate.html";
+    }
+
+    document.getElementById("member-hello").textContent =
+      (currentName || currentId || "멤버") + "님, 오늘도 성장하러 오셨군요.";
+    document.getElementById("member-name").textContent =
+      currentId || currentName || "Unknown";
+
+    const teamText =
+      currentTeam
+        ? (currentTeam === currentName ? "소속: HQ" : "소속: " + currentTeam)
+        : "소속: HQ";
+    document.getElementById("member-team").textContent = teamText;
+
+    /* ─────────────  1. 직급 코드 → 배지 이미지 + 스케일 ───────────── */
+
+    const RANK_ORDER = [
+      "Star1", "Star2", "Star3",
+      "Pro1", "Pro2", "Pro3",
+      "Pro4", "Pro5", "Pro6",
+      "Pro7", "Pro8", "Pro9", "Pro10"
+    ];
+
+    const RANK_BADGES = {
+      Star1: "img/star1.png",
+      Star2: "img/star2.png",
+      Star3: "img/star3.png",
+      Pro1:  "img/pro1.png",
+      Pro2:  "img/pro2.png",
+      Pro3:  "img/pro3.png",
+      Pro4:  "img/pro4.png",
+      Pro5:  "img/pro5.png",
+      Pro6:  "img/pro6.png",
+      Pro7:  "img/pro7.png",
+      Pro8:  "img/pro8.png",
+      Pro9:  "img/pro9.png",
+      Pro10: "img/pro10.png"
+    };
+
+    const RANK_SCALE = {
+      Star1: 0.80,
+      Star2: 0.88,
+      Star3: 0.96,
+      Pro1:  1.04,
+      Pro2:  1.08,
+      Pro3:  1.12,
+      Pro4:  1.16,
+      Pro5:  1.20,
+      Pro6:  1.24,
+      Pro7:  1.28,
+      Pro8:  1.32,
+      Pro9:  1.36,
+      Pro10: 1.40
+    };
+
+    const RANK_REQUIRED = {
+      Star2: { left: 7, right: 7 },      // Star1 → Star2
+      Star3: { left: 15, right: 15 },    // Star2 → Star3
+      Pro1:  { left: 40, right: 40 },    // Star3 → Pro1
+      Pro2:  { left: 80, right: 80 },
+      Pro3:  { left: 150, right: 150 },
+      Pro4:  { left: 250, right: 250 },
+      Pro5:  { left: 400, right: 400 },
+      Pro6:  { left: 650, right: 650 },
+      Pro7:  { left: 1000, right: 1000 },
+      Pro8:  { left: 2000, right: 2000 },
+      Pro9:  { left: 3000, right: 3000 },
+      Pro10: { left: 4000, right: 4000 }
+    };
+
+    function getBadgeSrc(rankCode) {
+      return RANK_BADGES[rankCode] || "img/member.png";
+    }
+
+    function applyRankScale(imgEl, rankCode, extra = 1) {
+      const base = RANK_SCALE[rankCode] || 1;
+      imgEl.style.setProperty("--rank-scale", base * extra);
+    }
+
+    function setRequiredCounts(currentRankCode, nextRankCode) {
+      const leftEl  = document.getElementById("goal-left-count");
+      const rightEl = document.getElementById("goal-right-count");
+      if (!leftEl || !rightEl) return;
+
+      let left  = Number(leftEl.textContent)  || 0;
+      let right = Number(rightEl.textContent) || 0;
+
+      if (!currentRankCode || currentRankCode === "-" || currentRankCode === "NONE") {
+        if (nextRankCode === "Star1") {
+          left = 2;
+          right = 1;
+        }
+      } else {
+        const info = RANK_REQUIRED[nextRankCode];
+        if (info) {
+          left  = info.left;
+          right = info.right;
+        }
+      }
+
+      leftEl.textContent  = String(left);
+      rightEl.textContent = String(right);
+    }
+
+    function getName(rec) {
+      return String(rec.name || rec.userName || "").trim();
+    }
+    function getTeam(rec) {
+      return String(rec.team || rec.group || "").trim();
+    }
+    function getJoin(rec) {
+      return String(rec.joinedAt || rec.joinDate || "").trim();
+    }
+    function getRankCode(rec) {
+      return String(rec.rank || rec.rankCode || rec.level || "").trim();
+    }
+
+    function pickMyRankRecord(list, name, team, joinedAt) {
+      const sameNameTeam = list.filter(
+        (m) => getName(m) === name && getTeam(m) === team
+      );
+
+      if (sameNameTeam.length === 0) return null;
+      if (sameNameTeam.length === 1) return sameNameTeam[0];
+
+      if (joinedAt) {
+        const exact = sameNameTeam.find(
+          (m) => getJoin(m) === String(joinedAt).trim()
+        );
+        if (exact) return exact;
+      }
+
+      return sameNameTeam[0];
+    }
+
+    let currentRankCode = null;
+
+    fetch("rank-hall.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.members || []);
+
+        const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
+
+        const currentImgEl   = document.getElementById("member-rank-img");
+        const nextImgEl      = document.getElementById("next-rank-img");
+        const currentMiniEl  = document.getElementById("member-rank-mini");
+        const nextMiniEl     = document.getElementById("next-rank-mini");
+        const goalHeaderEl   = document.getElementById("goal-next-rank-title");
+
+        if (!myRec) {
+          currentMiniEl.textContent = "현재 직급: 정회원";
+          nextMiniEl.textContent    = "다음 직급: 1스타";
+
+          currentImgEl.src = "img/member.png";
+          nextImgEl.src    = "img/star1.png";
+
+          goalHeaderEl.innerHTML    = '다음 목표: <span>1스타</span>';
+          setRequiredCounts(null, "Star1");
+          return;
+        }
+
+        const myCode = getRankCode(myRec);
+        currentRankCode = myCode || null;
+
+        if (myCode) {
+          currentMiniEl.textContent = "현재 직급: " + myCode;
+        } else {
+          currentMiniEl.textContent = "현재 직급: 정회원";
+        }
+
+        currentImgEl.src = myCode ? getBadgeSrc(myCode) : "img/member.png";
+        if (myCode) applyRankScale(currentImgEl, myCode);
+
+        const idx = RANK_ORDER.indexOf(myCode);
+        let nextCode = null;
+        if (idx >= 0 && idx < RANK_ORDER.length - 1) {
+          nextCode = RANK_ORDER[idx + 1];
+        }
+
+        if (!nextCode) {
+          nextMiniEl.textContent  = "다음 직급: -";
+          goalHeaderEl.innerHTML  = '다음 목표: <span>-</span>';
+          nextImgEl.style.opacity = 0.2;
+          setRequiredCounts(myCode, null);
+          return;
+        }
+
+        goalHeaderEl.innerHTML = '다음 목표: <span>' + nextCode + '</span>';
+        nextMiniEl.textContent = "다음 직급: " + nextCode;
+        setRequiredCounts(myCode, nextCode);
+
+        nextImgEl.src = getBadgeSrc(nextCode);
+        applyRankScale(nextImgEl, nextCode, 1.35);
+        nextImgEl.style.opacity = 1;
+      })
+      .catch((err) => {
+        console.error("rank-hall.json 로드 오류:", err);
+      });
+
+    // 다음 직급 배지 / 텍스트 클릭 시 rank-hall.html 새 창
     (function () {
-      const imgInput   = document.getElementById("promo-image");
-      const titleInput = document.getElementById("promo-title");
-      const bodyInput  = document.getElementById("promo-body");
-      const out        = document.getElementById("promo-code-output");
-      const genBtn     = document.getElementById("generate-btn");
-      const copyBtn    = document.getElementById("copy-btn");
+      const imgEl   = document.getElementById("next-rank-img");
+      const labelEl = document.getElementById("next-rank-mini");
 
-      const popupTitleInput = document.getElementById("popup-title");
-      const popupBodyInput  = document.getElementById("popup-body");
-      const popupOut        = document.getElementById("popup-code-output");
-      const popupGenBtn     = document.getElementById("generate-popup-btn");
-      const popupCopyBtn    = document.getElementById("copy-popup-btn");
-
-      const noticePreviewBlock = document.getElementById("notice-preview-block");
-
-      /* ───────────── 프로모션 코드 생성기 ───────────── */
-      if (genBtn && out) {
-        genBtn.addEventListener("click", function () {
-          const img   = (imgInput.value   || "").trim();
-          const title = (titleInput.value || "").trim();
-          const body  = (bodyInput.value  || "").trim();
-
-          const safeTitle = title || "THE UNIQUE 프로모션";
-          const safeBody  = body  || "여기에 참가자에게 노출할 프로모션 안내 문구를 입력해 주세요.";
-
-          let visualBlock = "";
-          if (img) {
-            visualBlock =
-`    <div class="unique-promo-visual">
-      <img src="${img}" alt="The Unique 프로모션 이미지">
-    </div>`;
-          }
-
-          const html =
-`<!-- THE UNIQUE 프로모션 블록 시작 -->
-<section class="unique-promo-hero">
-  <div class="unique-promo-inner">
-${visualBlock}
-    <div class="unique-promo-copy">
-      <h1>${safeTitle}</h1>
-      <p>
-        ${safeBody.replace(/\n/g, "<br>")}
-      </p>
-    </div>
-  </div>
-</section>
-<!-- THE UNIQUE 프로모션 블록 끝 -->
-`;
-
-          out.value = html.trim() + "\n";
-        });
+      function openRankPage() {
+        window.open("rank-hall.html", "_blank");
       }
 
-      if (copyBtn && out) {
-        copyBtn.addEventListener("click", function () {
-          if (!out.value.trim()) {
-            alert("먼저 [프로모션 HTML 코드 생성] 버튼을 눌러 코드를 만들어 주세요.");
-            return;
-          }
-          out.select();
-          try {
-            document.execCommand("copy");
-            alert("프로모션 코드가 복사되었습니다. the-unique-promo.html에 붙여 넣으세요.");
-          } catch (e) {
-            alert("복사에 실패했습니다. 수동으로 선택하여 복사해 주세요.");
-          }
-        });
+      if (imgEl) {
+        imgEl.style.cursor = "pointer";
+        imgEl.addEventListener("click", openRankPage);
       }
-
-      /* ───────────── 공지 팝업 스크립트 생성기 ───────────── */
-      if (popupGenBtn && popupOut) {
-        popupGenBtn.addEventListener("click", function () {
-          const title = (popupTitleInput.value || "").trim();
-          const body  = (popupBodyInput.value  || "").trim();
-
-          let js = "";
-          js += "<!-- 공지 팝업 스크립트 시작 -->\\n";
-          js += "<scr" + "ipt>\\n";
-          js += "(function(){\\n";
-          js += "  var popupTitle = " + JSON.stringify(title) + ";\\n";
-          js += "  var popupBody  = " + JSON.stringify(body)  + ";\\n";
-          js += "  if (!popupTitle || !popupBody) return;\\n";
-          js += "  document.addEventListener(\\\"DOMContentLoaded\\\", function () {\\n";
-          js += "    if (document.querySelector(\\\".unique-notice-popup-backdrop\\\")) return;\\n";
-          js += "    var wrap = document.createElement(\\\"div\\\");\\n";
-          js += "    wrap.className = \\\"unique-notice-popup-backdrop\\\";\\n";
-          js += "    var bodyHtml = popupBody.replace(/\\\\n/g, \\\"<br>\\\");\\n";
-          js += "    wrap.innerHTML = "
-            + "\"<div class=\\\\\\\"unique-notice-popup\\\\\\\"><div class=\\\\\\\"unique-notice-popup-inner\\\\\\\">\" +"
-            + "\"<h2>\" + popupTitle + \"</h2>\" +"
-            + "\"<p>\" + bodyHtml + \"</p>\" +"
-            + "\"<button type=\\\\\\\"button\\\\\\\" class=\\\\\\\"unique-notice-popup-close\\\\\\\">닫기</button>\" +"
-            + "\"</div></div>\";\\n";
-          js += "    document.body.appendChild(wrap);\\n";
-          js += "    var btn = wrap.querySelector(\\\".unique-notice-popup-close\\\");\\n";
-          js += "    if (btn) btn.addEventListener(\\\"click\\\", function(){ wrap.remove(); });\\n";
-          js += "  });\\n";
-          js += "})();\\n";
-          js += "</scr" + "ipt>\\n";
-          js += "<!-- 공지 팝업 스크립트 끝 -->\\n";
-
-          popupOut.value = js;
-        });
-      }
-
-      if (popupCopyBtn && popupOut) {
-        popupCopyBtn.addEventListener("click", function () {
-          if (!popupOut.value.trim()) {
-            alert("먼저 [공지 팝업 스크립트 생성] 버튼을 눌러 코드를 만들어 주세요.");
-            return;
-          }
-          popupOut.select();
-          try {
-            document.execCommand("copy");
-            alert("공지 팝업 코드가 복사되었습니다. 원하는 페이지의 하단에 붙여 넣으세요.");
-          } catch (e) {
-            alert("복사에 실패했습니다. 수동으로 선택하여 복사해 주세요.");
-          }
-        });
-      }
-
-      // 공지 문서 미리보기는 항상 노출 (나중에 원하면 로컬 토글도 달 수 있음)
-      if (noticePreviewBlock) {
-        noticePreviewBlock.style.display = "block";
+      if (labelEl) {
+        labelEl.style.cursor = "pointer";
+        labelEl.addEventListener("click", openRankPage);
       }
     })();
+
+    /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
+
+    (function setupEbooks() {
+      const listEl = document.getElementById("ebook-list");
+      if (!listEl) return;
+
+      function renderFromItems(books) {
+        listEl.innerHTML = "";
+
+        books.forEach(function (book) {
+          const card = document.createElement("a");
+          card.className = "ebook-card";
+
+          const href = book.link || "#";
+          card.href = href;
+          if (href && href !== "#") {
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+          }
+
+          const thumb = document.createElement("div");
+          thumb.className = "ebook-thumb";
+          const img = document.createElement("img");
+          img.src = book.cover;
+          img.alt = book.title || "";
+
+          const posY = (typeof book.posY === "number") ? book.posY : 50;
+          img.style.objectPosition = "50% " + posY + "%";
+
+          thumb.appendChild(img);
+
+          const body = document.createElement("div");
+          const title = document.createElement("div");
+          title.className = "ebook-meta-title";
+          title.textContent = book.title || "";
+
+          const desc = document.createElement("div");
+          desc.className = "ebook-meta-desc";
+          const descText = book.description || book.subtitle || "";
+          desc.textContent = descText;
+
+          const cta = document.createElement("div");
+          cta.className = "ebook-meta-cta";
+          cta.textContent = "클릭하여 eBook 페이지로 이동";
+
+          body.appendChild(title);
+          body.appendChild(desc);
+          body.appendChild(cta);
+
+          card.appendChild(thumb);
+          card.appendChild(body);
+
+          listEl.appendChild(card);
+        });
+      }
+
+      function renderDefault() {
+        const EBOOKS = [
+          {
+            id: "unique-basic",
+            title: "협력을 배우고 협력을 만들어낸다.",
+            subtitle: "누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
+            cover: "img/ebook-the-unique-system-book.jpg",
+            link: "ebook.html",
+            visible: true,
+            order: 1,
+            posY: 50
+          },
+          {
+            id: "unique-sot",
+            title: "현대 사회에 맞는 여행도구 so.t",
+            subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
+            cover: "img/ebook-network-marketing-cover.jpg",
+            link: "ebook1.html",
+            visible: true,
+            order: 2,
+            posY: 50
+          }
+        ];
+        renderFromItems(EBOOKS);
+      }
+
+      fetch("ebook-config.json")
+        .then(function (res) {
+          if (!res.ok) throw new Error("status " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          let items = (data && data.items) ? data.items.slice() : [];
+          if (!items.length) {
+            renderDefault();
+            return;
+          }
+
+          items = items.filter(function (item) {
+            return item.visible !== false;
+          });
+
+          const myRank = currentRankCode;
+          const myIdx = myRank ? RANK_ORDER.indexOf(myRank) : -1;
+
+          if (myIdx >= 0) {
+            items = items.filter(function (item) {
+              let ok = true;
+
+              if (item.rankMin) {
+                const minIdx = RANK_ORDER.indexOf(item.rankMin);
+                if (minIdx >= 0 && myIdx < minIdx) ok = false;
+              }
+              if (item.rankMax) {
+                const maxIdx = RANK_ORDER.indexOf(item.rankMax);
+                if (maxIdx >= 0 && myIdx > maxIdx) ok = false;
+              }
+              return ok;
+            });
+          }
+
+          items.sort(function (a, b) {
+            return (a.order || 0) - (b.order || 0);
+          });
+
+          renderFromItems(items);
+        })
+        .catch(function (err) {
+          console.error("ebook-config.json 로드 오류:", err);
+          renderDefault();
+        });
+    })();
+
+    /* ─────────────  3. 프로모션/여행/So.T 버튼 ───────────── */
+
+    (function setupButtons() {
+      const promoBtn   = document.getElementById("promo-btn");
+      const travelBtn  = document.getElementById("travel-btn");
+      const sotBtn     = document.getElementById("sot-btn");
+      const promoBadge = document.getElementById("promo-badge");
+
+      if (!promoBtn) return;
+
+      const PROMO_VERSION = "2025-12-02-01";
+      const seenPromo  = localStorage.getItem("uniquePromoSeen");
+
+      if (promoBadge && seenPromo !== PROMO_VERSION) {
+        promoBadge.classList.remove("hidden");
+      }
+
+      promoBtn.addEventListener("click", () => {
+        window.open("the-unique-promo.html", "_blank");
+        localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
+        if (promoBadge) promoBadge.classList.add("hidden");
+      });
+
+      if (travelBtn) {
+        travelBtn.addEventListener("click", () => {
+          window.open("index.html", "_blank");
+        });
+      }
+
+      if (sotBtn) {
+        sotBtn.addEventListener("click", () => {
+          window.open("https://www.ssoti.com/", "_blank");
+        });
+      }
+    })();
+
+    /* ─────────────  4. 로그아웃  ───────────── */
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem("uniqueCurrentUser");
+      window.location.href = "the-unique-gate.html";
+    });
+  </script>
+
+  <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        if (!document.body.textContent.includes('소속') ||
+            !document.body.textContent.includes('HQ')) {
+          return;
+        }
+
+        var candidates = Array.from(document.querySelectorAll('body *'));
+        var target = candidates.find(function (el) {
+          if (el === document.body || el === document.documentElement) return false;
+          var text = (el.textContent || '').trim();
+          if (!text) return false;
+          if (!text.includes('소속') || !text.includes('HQ')) return false;
+          if (text.length > 30) return false;
+          return true;
+        });
+
+        if (!target) return;
+
+        var btn = document.createElement('button');
+        btn.textContent = '시스템 핸드북';
+        btn.style.marginLeft = '8px';
+        btn.style.padding = '4px 10px';
+        btn.style.borderRadius = '999px';
+        btn.style.border = '1px solid rgba(255,255,255,0.4)';
+        btn.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
+        btn.style.color = '#111827';
+        btn.style.fontSize = '11px';
+        btn.style.fontWeight = '700';
+        btn.style.cursor = 'pointer';
+        btn.style.verticalAlign = 'middle';
+
+        btn.addEventListener('click', function () {
+          window.location.href = 'unique-map.html';
+        });
+
+        target.appendChild(btn);
+      } catch (e) {
+        console.error('HQ 버튼 생성 중 에러:', e);
+      }
+    });
   </script>
 </body>
 </html>
