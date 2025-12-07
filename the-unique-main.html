@@ -397,7 +397,7 @@
       color: #FACC15;
     }
 
-        .ebook-admin-link-wrap {
+    .ebook-admin-link-wrap {
       margin-top: 6px;
       text-align: right;
     }
@@ -575,25 +575,27 @@
             <div class="rank-badge-box">
               <div class="rank-road">
                 <div class="rank-slot">
+                  <!-- 기본: 무직급 = 정회원 -->
                   <img
                     id="member-rank-img"
                     class="rank-icon"
-                    src="img/rank/default.png"
+                    src="img/member.png"
                     alt="현재 직급 배지"
                   />
-                  <div id="member-rank-mini" class="rank-mini-label">현재 직급: -</div>
+                  <div id="member-rank-mini" class="rank-mini-label">현재 직급: 정회원</div>
                 </div>
 
                 <span class="rank-arrow">➜</span>
 
                 <div class="rank-slot rank-slot-next">
+                  <!-- 기본: 다음 직급 = 1스타 -->
                   <img
                     id="next-rank-img"
                     class="rank-icon rank-icon-next"
-                    src="img/rank/default-next.png"
+                    src="img/star1.png"
                     alt="다음 직급 배지"
                   />
-                  <div id="next-rank-mini" class="rank-mini-label">다음 직급: -</div>
+                  <div id="next-rank-mini" class="rank-mini-label">다음 직급: 1스타</div>
                 </div>
               </div>
             </div>
@@ -625,7 +627,8 @@
           <div class="goal-panel">
             <div class="goal-header">
               <div id="goal-next-rank-title" class="goal-header-text">
-                다음 목표: <span>-</span>
+                <!-- 기본: 무직급 다음 목표 = 1스타 -->
+                다음 목표: <span>1스타</span>
               </div>
             </div>
 
@@ -640,11 +643,13 @@
               <div class="next-goal-bottom">
                 <div class="goal-side goal-left">
                   <div class="goal-label">좌측 필요</div>
-                  <div id="goal-left-count" class="goal-count">0</div>
+                  <!-- 기본: 2명 -->
+                  <div id="goal-left-count" class="goal-count">2</div>
                 </div>
                 <div class="goal-side goal-right">
                   <div class="goal-label">우측 필요</div>
-                  <div id="goal-right-count" class="goal-count">0</div>
+                  <!-- 기본: 1명 -->
+                  <div id="goal-right-count" class="goal-count">1</div>
                 </div>
               </div>
             </div>
@@ -652,7 +657,6 @@
         </section>
 
         <!-- eBook 패널 -->
-               <!-- eBook 패널 -->
         <section class="ebook-panel">
           <div class="section-title">
             다음 목표를 위해 학습하시겠습니까?
@@ -737,7 +741,7 @@
       Pro7:  "img/pro7.png",
       Pro8:  "img/pro8.png",
       Pro9:  "img/pro9.png",
-      Pro10: "img/pro10.png"
+      Pro10:"img/pro10.png"
     };
 
     const RANK_SCALE = {
@@ -772,7 +776,7 @@
     };
 
     function getBadgeSrc(rankCode) {
-      return RANK_BADGES[rankCode] || "img/rank/default.png";
+      return RANK_BADGES[rankCode] || "img/member.png";
     }
 
     function applyRankScale(imgEl, rankCode, extra = 1) {
@@ -785,10 +789,11 @@
       const rightEl = document.getElementById("goal-right-count");
       if (!leftEl || !rightEl) return;
 
-      let left = 0;
-      let right = 0;
+      let left = Number(leftEl.textContent) || 0;
+      let right = Number(rightEl.textContent) || 0;
 
       if (!currentRankCode || currentRankCode === "-" || currentRankCode === "NONE") {
+        // 무직급 + 다음 Star1 이면 2 / 1
         if (nextRankCode === "Star1") {
           left = 2;
           right = 1;
@@ -836,6 +841,8 @@
       return sameNameTeam[0];
     }
 
+    let currentRankCode = null;
+
     fetch("rank-hall.json")
       .then((res) => res.json())
       .then((data) => {
@@ -849,24 +856,30 @@
         const nextMiniEl     = document.getElementById("next-rank-mini");
         const goalHeaderEl   = document.getElementById("goal-next-rank-title");
 
+        // 🔹 rank-hall.json 에 내 기록이 없을 때 = 무직급 기본값 유지
         if (!myRec) {
-          currentMiniEl.textContent = "현재 직급: -";
-          nextMiniEl.textContent    = "다음 직급: -";
-          goalHeaderEl.innerHTML    = '다음 목표: <span>-</span>';
-          setRequiredCounts(null, null);
+          currentMiniEl.textContent = "현재 직급: 정회원";
+          nextMiniEl.textContent    = "다음 직급: 1스타";
+
+          currentImgEl.src = "img/member.png";
+          nextImgEl.src    = "img/star1.png";
+
+          goalHeaderEl.innerHTML    = '다음 목표: <span>1스타</span>';
+          setRequiredCounts(null, "Star1");
           return;
         }
 
         const myCode = getRankCode(myRec);
         currentRankCode = myCode || null;
+
         if (myCode) {
           currentMiniEl.textContent = "현재 직급: " + myCode;
         } else {
-          currentMiniEl.textContent = "현재 직급: -";
+          currentMiniEl.textContent = "현재 직급: 정회원";
         }
 
-        currentImgEl.src = getBadgeSrc(myCode);
-        applyRankScale(currentImgEl, myCode);
+        currentImgEl.src = myCode ? getBadgeSrc(myCode) : "img/member.png";
+        if (myCode) applyRankScale(currentImgEl, myCode);
 
         const idx = RANK_ORDER.indexOf(myCode);
         let nextCode = null;
@@ -875,9 +888,9 @@
         }
 
         if (!nextCode) {
-          nextMiniEl.textContent     = "다음 직급: -";
-          goalHeaderEl.innerHTML     = '다음 목표: <span>-</span>';
-          nextImgEl.style.opacity    = 0.2;
+          nextMiniEl.textContent  = "다음 직급: -";
+          goalHeaderEl.innerHTML  = '다음 목표: <span>-</span>';
+          nextImgEl.style.opacity = 0.2;
           setRequiredCounts(myCode, null);
           return;
         }
@@ -906,11 +919,7 @@
         console.error("rank-hall.json 로드 오류:", err);
       });
 
-    /* ─────────────  2. eBook 리스트 ───────────── */
-
-        /* ─────────────  2. eBook 리스트 (ebook-config.json 사용) ───────────── */
-
-        /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
+    /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
 
     (function setupEbooks() {
       const listEl = document.getElementById("ebook-list");
@@ -968,7 +977,7 @@
         });
       }
 
-      // JSON 못 읽었을 때 쓸 기본값 (지금 화면에 보이던 내용)
+      // JSON 못 읽었을 때 기본값
       function renderDefault() {
         const EBOOKS = [
           {
@@ -995,7 +1004,6 @@
         renderFromItems(EBOOKS);
       }
 
-      // JSON에서 읽어서 직급별 필터 적용
       fetch("ebook-config.json")
         .then(function (res) {
           if (!res.ok) throw new Error("status " + res.status);
@@ -1008,7 +1016,7 @@
             return;
           }
 
-          // 1) 노출 ON 인 것만
+          // 1) visible ON
           items = items.filter(function (item) {
             return item.visible !== false;
           });
@@ -1033,7 +1041,7 @@
             });
           }
 
-          // 3) 순서대로 정렬
+          // 3) 순서 정렬
           items.sort(function (a, b) {
             return (a.order || 0) - (b.order || 0);
           });
