@@ -684,7 +684,7 @@
     The Unique &copy; 2025 · internal use only
   </div>
 
-  <script>
+   <script>
     /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
 
     const raw = localStorage.getItem("uniqueCurrentUser");
@@ -741,7 +741,7 @@
       Pro7:  "img/pro7.png",
       Pro8:  "img/pro8.png",
       Pro9:  "img/pro9.png",
-      Pro10:"img/pro10.png"
+      Pro10: "img/pro10.png"
     };
 
     const RANK_SCALE = {
@@ -776,6 +776,7 @@
     };
 
     function getBadgeSrc(rankCode) {
+      // 랭크 코드가 없으면 기본 정회원 배지 유지
       return RANK_BADGES[rankCode] || "img/member.png";
     }
 
@@ -789,11 +790,12 @@
       const rightEl = document.getElementById("goal-right-count");
       if (!leftEl || !rightEl) return;
 
-      let left = Number(leftEl.textContent) || 0;
+      // 기본값(무직급용)은 HTML에 이미 2 / 1 로 들어가 있음
+      let left  = Number(leftEl.textContent)  || 0;
       let right = Number(rightEl.textContent) || 0;
 
       if (!currentRankCode || currentRankCode === "-" || currentRankCode === "NONE") {
-        // 무직급 + 다음 Star1 이면 2 / 1
+        // 무직급 + 다음 Star1이면 2 / 1
         if (nextRankCode === "Star1") {
           left = 2;
           right = 1;
@@ -902,22 +904,30 @@
         nextImgEl.src = getBadgeSrc(nextCode);
         applyRankScale(nextImgEl, nextCode, 1.35);
         nextImgEl.style.opacity = 1;
-
-        (function () {
-          const imgEl   = document.getElementById("next-rank-img");
-          const labelEl = document.getElementById("next-rank-mini");
-          function openRankHall() {
-            window.open("rank-hall.html", "_blank");
-          }
-          imgEl.style.cursor   = "pointer";
-          labelEl.style.cursor = "pointer";
-          imgEl.addEventListener("click", openRankHall);
-          labelEl.addEventListener("click", openRankHall);
-        })();
       })
       .catch((err) => {
         console.error("rank-hall.json 로드 오류:", err);
       });
+
+    // 🔥 직급이 있든 없든, 항상 다음 직급 배지/텍스트를 누르면 rank 페이지로 이동
+    (function () {
+      const imgEl   = document.getElementById("next-rank-img");
+      const labelEl = document.getElementById("next-rank-mini");
+
+      function openRankPage() {
+        // 이미 다른 직급에서도 쓰고 있는 rank 페이지 이름으로 맞춰줘
+        window.open("rank.html", "_blank");
+      }
+
+      if (imgEl) {
+        imgEl.style.cursor = "pointer";
+        imgEl.addEventListener("click", openRankPage);
+      }
+      if (labelEl) {
+        labelEl.style.cursor = "pointer";
+        labelEl.addEventListener("click", openRankPage);
+      }
+    })();
 
     /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
 
@@ -939,7 +949,6 @@
             card.rel = "noopener noreferrer";
           }
 
-          // 썸네일
           const thumb = document.createElement("div");
           thumb.className = "ebook-thumb";
           const img = document.createElement("img");
@@ -951,7 +960,6 @@
 
           thumb.appendChild(img);
 
-          // 텍스트 영역
           const body = document.createElement("div");
           const title = document.createElement("div");
           title.className = "ebook-meta-title";
@@ -977,7 +985,6 @@
         });
       }
 
-      // JSON 못 읽었을 때 기본값
       function renderDefault() {
         const EBOOKS = [
           {
@@ -1016,12 +1023,10 @@
             return;
           }
 
-          // 1) visible ON
           items = items.filter(function (item) {
             return item.visible !== false;
           });
 
-          // 2) 직급별 노출 필터
           const myRank = currentRankCode;
           const myIdx = myRank ? RANK_ORDER.indexOf(myRank) : -1;
 
@@ -1041,7 +1046,6 @@
             });
           }
 
-          // 3) 순서 정렬
           items.sort(function (a, b) {
             return (a.order || 0) - (b.order || 0);
           });
