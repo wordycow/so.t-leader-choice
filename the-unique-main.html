@@ -77,14 +77,9 @@
       z-index: 1;
     }
 
-    /* ───── 상단 타이틀 ───── */
     .title-wrap {
       text-align: center;
-      margin: 16px 0 20px;
-    }
-
-    .title-text {
-      display: inline-block;
+      margin-bottom: 22px;
     }
 
     .title-en {
@@ -527,9 +522,9 @@
       opacity: 0.85;
     }
 
-    /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
+        /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
     .top-schedule-panel {
-      margin: 4px 0 18px;
+      margin: 10px 0 18px;
       border-radius: 18px;
       padding: 10px 14px 12px;
       background: radial-gradient(circle at top,
@@ -541,53 +536,11 @@
         0 12px 26px rgba(0,0,0,0.9);
     }
 
-    .top-schedule-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-
-    /* 스케줄 헤더 오른쪽 아이콘 (Discord / YouTube) */
-    .top-schedule-social {
-      display: flex;
-      align-items: center;
-      gap: -10px; /* 거의 붙게 */
-    }
-
-    .top-schedule-social a {
-      display: inline-block;
-      cursor: pointer;
-      text-decoration: none;
-    }
-
-    .top-schedule-social a img {
-      display: block;
-      width: 48px;   /* 지금 큰 화면 기준의 대략 절반 정도 */
-      height: 48px;
-      border-radius: 50%;
-      transition: transform 0.12s ease, filter 0.12s ease;
-    }
-     /* 디스코드 아이콘(첫 번째) 2배 */
-.top-schedule-social a:first-child img {
-  width: 96px;   /* 48 × 2 */
-  height: 96px;
-}
-
-/* 유튜브 아이콘(두 번째) 3배 */
-.top-schedule-social a:last-child img {
-  width: 144px;  /* 48 × 3 */
-  height: 96px;
-}
-    .top-schedule-social a:hover img {
-      transform: translateY(1px) scale(1.05);
-      filter: brightness(1.05);
-    }
-
     .top-schedule-header {
       font-size: 13px;
       font-weight: 600;
       color: #e5e7eb;
+      margin-bottom: 6px;
     }
 
     .top-schedule-grid {
@@ -655,7 +608,6 @@
         font-size: 28px;
         letter-spacing: 0.22em;
       }
-
       .layout {
         grid-template-columns: minmax(0, 1fr);
         gap: 18px;
@@ -666,24 +618,6 @@
       .ebook-card {
         flex: 1 1 100%;
       }
-      /* ── 디스코드 / 유튜브 아이콘 – 스케줄 밖으로 빼기 ── */
-.tu-sns-row {
-  max-width: 1000px;      /* 스케줄 카드 폭이랑 비슷하게 */
-  margin: 24px auto 0;    /* 위에서 조금 띄우고, 가운데 정렬 */
-  padding: 0 24px;
-  display: flex;
-  justify-content: flex-end;  /* 오른쪽 정렬 */
-  align-items: center;
-}
-
-.tu-sns-row a {
-  display: block;
-}
-
-/* 두 아이콘을 완전히 붙이기 (살짝 겹치게) */
-.tu-sns-row a + a {
-  margin-left: -8px;   /* 숫자 줄이면 더 겹치고, 늘리면 살짝 떨어짐 */
-}
     }
   </style>
 </head>
@@ -695,42 +629,24 @@
   <div class="page-wrap">
     <main class="main-card">
       <div class="main-inner">
-        <div class="title-wrap">
-          <div class="title-text">
-            <div class="title-en">THE UNIQUE</div>
-            <div class="subtitle-en">운동과 공부는 버릴게 없다!</div>
-          </div>
+               <div class="title-wrap">
+          <div class="title-en">THE UNIQUE</div>
+          <div class="subtitle-en">운동과 공부는 버릴게 없다!</div>
         </div>
 
         <!-- 주간 강의 스케줄: THE UNIQUE 타이틀 바로 아래 전체 폭 -->
         <section class="top-schedule-panel">
-          <div class="top-schedule-row">
-            <div class="top-schedule-header">이번 주 강의 스케줄</div>
+          <div class="top-schedule-header">이번 주 강의 스케줄</div>
 
-            <div class="top-schedule-social">
-              <a
-                href="https://discord.gg/3cUN7QXMSY"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img src="img/discord-round.png" alt="Discord" />
-              </a>
-              <a
-                href="https://www.youtube.com/@%EC%8F%98%ED%8B%B0So.T"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img src="img/youtube-round.png" alt="YouTube" />
-              </a>
-            </div>
-          </div>
-
+          <!-- JS가 데이터를 불러오기 전까지는 이 문구가 보임 -->
           <div id="top-schedule-empty" class="top-schedule-empty">
             주간 스케줄을 불러오는 중입니다...
           </div>
 
+          <!-- 실제 시간표가 채워질 그리드 -->
           <div id="top-schedule-grid" class="top-schedule-grid"></div>
         </section>
+
 
         <section class="layout">
           <!-- 왼쪽: 회원 인사 + 직급 -->
@@ -768,6 +684,7 @@
               </div>
             </div>
 
+            <!-- 공지사항 버튼 제거, 나머지만 유지 -->
             <div class="member-actions">
               <button id="promo-btn" class="action-btn">
                 프로모션
@@ -810,10 +727,12 @@
               <div class="next-goal-bottom">
                 <div class="goal-side goal-left">
                   <div class="goal-label">좌측 필요</div>
+                  <!-- 기본: 2명 -->
                   <div id="goal-left-count" class="goal-count">2</div>
                 </div>
                 <div class="goal-side goal-right">
                   <div class="goal-label">우측 필요</div>
+                  <!-- 기본: 1명 -->
                   <div id="goal-right-count" class="goal-count">1</div>
                 </div>
               </div>
@@ -828,10 +747,11 @@
           </div>
           <div id="ebook-list" class="ebook-list"></div>
 
+          <!-- eBook 관리자 페이지로 가는 링크 -->
           <div class="ebook-admin-link-wrap">
             <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">
-              eBook 관리자 열기
-            </a>
+  eBook 관리자 열기
+</a>
           </div>
         </section>
       </div>
@@ -844,7 +764,7 @@
     <div id="promo-grid" class="promo-grid"></div>
   </div>
 
-  <div class="footer-note">
+   <div class="footer-note">
     The Unique &copy; 2025 · internal use only
   </div>
 
@@ -959,7 +879,7 @@
       window.location.href = "the-unique-gate.html";
     }
 
-    let currentId = "";
+       let currentId = "";
     let currentName = "";
     let currentTeam = "";
     let currentJoin = "";
@@ -1005,6 +925,7 @@
         }
       }
     })();
+
 
     /* ─────────────  1. 직급 코드 → 배지 이미지 + 스케일 ───────────── */
 
@@ -1106,10 +1027,10 @@
       return String(rec.joinedAt || rec.joinDate || "").trim();
     }
     function getRankCode(rec) {
-      return String(rec.rank || rec.rankCode || "").trim();
+      return String(rec.rank || rec.rankCode || rec.level || "").trim();
     }
 
-    function pickMyRankRecord(list, name, team, joinedAt) {
+        function pickMyRankRecord(list, name, team, joinedAt) {
       // 1) 이름으로 먼저 후보 찾기
       let byName = list.filter(function (m) {
         return getName(m) === name;
@@ -1155,6 +1076,7 @@
       // 4) 남아 있는 후보 중 첫 번째 사용
       return candidates[0];
     }
+
 
     let currentRankCode = null;
 
@@ -1413,14 +1335,16 @@
     });
   </script>
 
-  <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
+    <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       try {
+        // ★ 전역 플래그로 HQ 여부 체크
         if (!window.uniqueIsHQ) {
           return; // HQ가 아니면 버튼 자체를 만들지 않음
         }
 
+        // "소속: HQ" 표시가 들어간 엘리먼트 찾기
         var candidates = Array.from(document.querySelectorAll('body *'));
         var target = candidates.find(function (el) {
           if (el === document.body || el === document.documentElement) return false;
@@ -1456,17 +1380,5 @@
       }
     });
   </script>
- <!-- 스케줄 박스 밖으로 뺀 디스코드 / 유튜브 아이콘 -->
-<div class="tu-sns-row">
-  <!-- 아까 잘라낸 아이콘 코드 여기 안에 붙여 넣기 -->
-  <a href="DISCORD_LINK" target="_blank">
-    <img src="img/discord-....png" alt="Discord">
-  </a>
-  <a href="YOUTUBE_LINK" target="_blank">
-    <img src="img/youtube-....png" alt="YouTube">
-  </a>
-</div>
-  
-</main>  
 </body>
 </html>
