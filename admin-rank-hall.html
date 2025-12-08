@@ -269,6 +269,7 @@
               직급
               <select id="rank-select">
                 <option value="">-- 직급 선택 --</option>
+                <option value="Member">Member</option>
                 <option value="Star1">Star1</option>
                 <option value="Star2">Star2</option>
                 <option value="Star3">Star3</option>
@@ -364,6 +365,7 @@
         </p>
         <h3 style="font-size:14px; margin-top:10px;">파일 이름 규칙</h3>
         <ul>
+          <li><code>Member</code> → <code>img/member.png</code></li>
           <li><code>Star1</code> → <code>img/star1.png</code></li>
           <li><code>Star2</code> → <code>img/star2.png</code></li>
           <li><code>Star3</code> → <code>img/star3.png</code></li>
@@ -398,10 +400,9 @@
 
   <script>
     const RANK_ORDER = [
-      "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
-      "Star3","Star2","Star1"
-    ];
-
+  "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
+  "Star3","Star2","Star1","Member"   // 🔹 Member 최하위
+];
     function getRankIndex(rank) {
       const i = RANK_ORDER.indexOf(rank);
       return i === -1 ? 999 : i;
@@ -550,13 +551,20 @@
 
     // ===== 일괄 직급 업데이트 (Star + Pro 숫자 + Pro 로마 숫자) =====
     function normalizeRankLabel(raw) {
-      if (!raw) return "";
-      let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
+  if (!raw) return "";
+  let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
 
-      // STAR (한글 / 영문)
-      if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
-      if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
-      if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
+  // MEMBER (한글 / 영문)
+  if (t.includes("MEMBER") || t.includes("멤버")) return "Member";  // 🔹 추가
+
+  // STAR (한글 / 영문)
+  if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
+  if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
+  if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
+
+  // PRO ...
+}
+
 
       // PRO 숫자 (PRO6, 프로10 등)
       let m = t.match(/PRO(\d{1,2})/);
@@ -644,10 +652,22 @@
 
         const name = (parts[1] || "").trim();
         const joinDate = (parts[2] || "").trim();
-        const rawRank = (parts[3] || "").trim();
-        const rank = normalizeRankLabel(rawRank);
+               const rawRank = (parts[3] || "").trim();
+        let rank;
 
-        if (!name || !rank) continue;
+        if (!rawRank) {
+          // 🔹 직급 칸이 완전히 비어 있으면 → 무직급 = Member
+          rank = "Member";
+        } else {
+          // 🔹 뭔가 써 있으면 normalizeRankLabel로 Star/Pro/Member 판별
+          rank = normalizeRankLabel(rawRank);
+          if (!rank) {
+            // 알아먹을 수 없는 직급 텍스트면 그냥 건너뛴다
+            continue;
+          }
+        }
+
+        if (!name) continue;
 
         upsertRankByName(name, rank, joinDate);
         updatedCount++;
