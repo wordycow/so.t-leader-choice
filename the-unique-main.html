@@ -76,83 +76,74 @@
       position: relative;
       z-index: 1;
     }
-    /* ───── 상단 타이틀 + 디스코드/유튜브 ───── */
+
+    /* ───── 상단 타이틀 ───── */
     .title-wrap {
-      position: relative;
-      text-align: center;      /* THE UNIQUE를 항상 중앙에 */
-      margin-bottom: 8px;      /* 타이틀과 스케줄 사이 간격 줄이기 */
-      padding-top: 8px;
-      padding-bottom: 0;
+      text-align: center;
+      margin: 16px 0 20px;
     }
 
     .title-text {
-      display: inline-block;   /* 타이틀 블록만 기준으로 가운데 정렬 */
-    }
-
-    .title-social {
-      position: absolute;
-      right: 32px;             /* 오른쪽 끝에 붙이기 */
-      bottom: -10px;           /* 스케줄 쪽으로 살짝 내려서 "서 있는" 느낌 */
-      display: flex;
-      align-items: center;
-      gap: 4px;                /* 거의 붙을 정도로 가까이 */
-    }
-
-    .social-circle-btn {
       display: inline-block;
-      cursor: pointer;
-      text-decoration: none;
     }
 
-    .social-circle-btn img {
+    .title-en {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 32px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+
+      color: #FACC15; /* 금색 글자 */
+      text-shadow:
+        0 0 16px rgba(245,158,11,0.9),
+        0 4px 18px rgba(0,0,0,0.95);
+    }
+
+    .subtitle-en {
+      font-size: 11px;
+      color: #94A3B8;
+      letter-spacing: 0.12em;
+      text-transform: none;
+    }
+
+    /* ───── 오른쪽 플로팅 소셜 버튼 (디스코드 / 유튜브) ───── */
+    .floating-social {
+      position: fixed;
+      top: 140px;         /* 필요하면 위/아래 조정 */
+      right: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 50;
+    }
+
+    .floating-social a {
+      display: inline-block;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .floating-social a img {
       display: block;
-      width: 40px;             /* 아이콘 실제 크기 */
-      height: 40px;
-      border-radius: 50%;      /* PNG가 약간 네모여도 깔끔하게 */
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
       transition: transform 0.12s ease, filter 0.12s ease;
     }
 
-    .social-circle-btn:hover img {
-      transform: translateY(1px) scale(1.03);
+    .floating-social a:hover img {
+      transform: translateY(2px) scale(1.05);
       filter: brightness(1.05);
     }
 
-       @media (max-width: 768px) {
-      .page-wrap { margin-top: 40px; }
-      .main-card {
-        padding: 24px 18px 20px;
-        border-radius: 22px;
-      }
-      .title-en {
-        font-size: 28px;
-        letter-spacing: 0.22em;
-      }
-
-      /* 🔽 모바일에서는 버튼을 아래로 내려서 겹치지 않게 */
-      .title-wrap {
-        padding-top: 12px;
-        padding-bottom: 4px;
-        margin-bottom: 12px;
-      }
-
-      .title-social {
-        position: static;      /* 절대 위치 해제 */
-        margin-top: 8px;
-        justify-content: center;
-      }
-
-      .layout {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 18px;
-      }
-      .ebook-list {
-        flex-direction: column;
-      }
-      .ebook-card {
-        flex: 1 1 100%;
-      }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2.4fr) minmax(0, 3fr);
+      gap: 24px;
+      align-items: stretch; /* 좌/우 카드 높이 동일하게 */
     }
-
 
     /* ───── 회원 정보 + 직급 ───── */
     .member-panel {
@@ -566,9 +557,9 @@
       opacity: 0.85;
     }
 
-        /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
+    /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
     .top-schedule-panel {
-      margin: 0px 0 18px;
+      margin: 4px 0 18px;
       border-radius: 18px;
       padding: 10px 14px 12px;
       background: radial-gradient(circle at top,
@@ -652,12 +643,18 @@
         font-size: 28px;
         letter-spacing: 0.22em;
       }
-      /* 🔽 이 부분 추가 */
-      .title-wrap {
-        flex-direction: column;
-        align-items: center;
+
+      .floating-social {
+        top: 100px;
+        right: 12px;
+        gap: 6px;
       }
-      
+
+      .floating-social a img {
+        width: 40px;
+        height: 40px;
+      }
+
       .layout {
         grid-template-columns: minmax(0, 1fr);
         gap: 18px;
@@ -676,39 +673,33 @@
     <img src="img/bg-unique-main.jpg" class="scene-bg" alt="The Unique main background" />
   </div>
 
+  <!-- 오른쪽 플로팅 Discord / YouTube 버튼 -->
+  <div class="floating-social">
+    <a
+      href="https://discord.gg/3cUN7QXMSY"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <img src="img/discord-round.png" alt="Discord" />
+    </a>
+    <a
+      href="https://www.youtube.com/@%EC%8F%98%ED%8B%B0So.T"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <img src="img/youtube-round.png" alt="YouTube" />
+    </a>
+  </div>
+
   <div class="page-wrap">
     <main class="main-card">
       <div class="main-inner">
-                             <div class="title-wrap">
+        <div class="title-wrap">
           <div class="title-text">
             <div class="title-en">THE UNIQUE</div>
             <div class="subtitle-en">운동과 공부는 버릴게 없다!</div>
           </div>
-
-          <div class="title-social">
-            <!-- 디스코드 버튼 -->
-            <a
-              class="social-circle-btn discord"
-              href="https://discord.gg/3cUN7QXMSY"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img src="img/discord-round.png" alt="디스코드" />
-            </a>
-
-            <!-- 유튜브 버튼 (쏘티 채널 링크) -->
-<a
-  class="social-circle-btn youtube"
-  href="https://www.youtube.com/@%EC%8F%98%ED%8B%B0So.T"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  <img src="img/youtube-round.png" alt="유튜브" />
-</a>
-
-          </div>
         </div>
-
 
         <!-- 주간 강의 스케줄: THE UNIQUE 타이틀 바로 아래 전체 폭 -->
         <section class="top-schedule-panel">
@@ -722,7 +713,6 @@
           <!-- 실제 시간표가 채워질 그리드 -->
           <div id="top-schedule-grid" class="top-schedule-grid"></div>
         </section>
-
 
         <section class="layout">
           <!-- 왼쪽: 회원 인사 + 직급 -->
@@ -760,7 +750,6 @@
               </div>
             </div>
 
-            <!-- 공지사항 버튼 제거, 나머지만 유지 -->
             <div class="member-actions">
               <button id="promo-btn" class="action-btn">
                 프로모션
@@ -823,11 +812,10 @@
           </div>
           <div id="ebook-list" class="ebook-list"></div>
 
-          <!-- eBook 관리자 페이지로 가는 링크 -->
           <div class="ebook-admin-link-wrap">
             <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">
-  eBook 관리자 열기
-</a>
+              eBook 관리자 열기
+            </a>
           </div>
         </section>
       </div>
@@ -840,7 +828,7 @@
     <div id="promo-grid" class="promo-grid"></div>
   </div>
 
-   <div class="footer-note">
+  <div class="footer-note">
     The Unique &copy; 2025 · internal use only
   </div>
 
@@ -955,7 +943,7 @@
       window.location.href = "the-unique-gate.html";
     }
 
-       let currentId = "";
+    let currentId = "";
     let currentName = "";
     let currentTeam = "";
     let currentJoin = "";
@@ -1001,7 +989,6 @@
         }
       }
     })();
-
 
     /* ─────────────  1. 직급 코드 → 배지 이미지 + 스케일 ───────────── */
 
@@ -1103,10 +1090,10 @@
       return String(rec.joinedAt || rec.joinDate || "").trim();
     }
     function getRankCode(rec) {
-      return String(rec.rank || rec.rankCode || rec.level || "").trim();
+      return String(rec.rank || rec.rankCode || "").trim();
     }
 
-        function pickMyRankRecord(list, name, team, joinedAt) {
+    function pickMyRankRecord(list, name, team, joinedAt) {
       // 1) 이름으로 먼저 후보 찾기
       let byName = list.filter(function (m) {
         return getName(m) === name;
@@ -1152,7 +1139,6 @@
       // 4) 남아 있는 후보 중 첫 번째 사용
       return candidates[0];
     }
-
 
     let currentRankCode = null;
 
@@ -1411,16 +1397,14 @@
     });
   </script>
 
-    <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
+  <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       try {
-        // ★ 전역 플래그로 HQ 여부 체크
         if (!window.uniqueIsHQ) {
           return; // HQ가 아니면 버튼 자체를 만들지 않음
         }
 
-        // "소속: HQ" 표시가 들어간 엘리먼트 찾기
         var candidates = Array.from(document.querySelectorAll('body *'));
         var target = candidates.find(function (el) {
           if (el === document.body || el === document.documentElement) return false;
