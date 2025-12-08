@@ -141,9 +141,9 @@
     }
 
     .rank-pay-amount {
-      font-size: 26px;               /* 💥 크게 */
+      font-size: 26px;
       font-weight: 900;
-      color: #ffd54a;                /* 진한 금색 */
+      color: #ffd54a;
       letter-spacing: 0.05em;
       text-shadow: 0 2px 6px rgba(0,0,0,1);
     }
@@ -175,14 +175,15 @@
       backdrop-filter: none;
     }
 
-    /* 직급별 카드 폭 (Star1 가장 작고 Pro10 가장 크게) */
-    .card.xs   { width: 145px; }  /* Star1 */
-    .card.sm   { width: 175px; }  /* Star2 */
-    .card.md   { width: 195px; }  /* Star3 */
-    .card.lg   { width: 220px; }  /* Pro1~3 */
-    .card.xl   { width: 245px; }  /* Pro4~6 */
-    .card.xxl  { width: 275px; }  /* Pro7~9 */
-    .card.xxxl { width: 300px; }  /* Pro10 */
+    /* 직급별 카드 폭 (Member 가장 작고 Pro10 가장 크게) */
+    .card.xxs   { width: 100px; }  /* Member */
+    .card.xs    { width: 145px; }  /* Star1 */
+    .card.sm    { width: 175px; }  /* Star2 */
+    .card.md    { width: 195px; }  /* Star3 */
+    .card.lg    { width: 220px; }  /* Pro1~3 */
+    .card.xl    { width: 245px; }  /* Pro4~6 */
+    .card.xxl   { width: 275px; }  /* Pro7~9 */
+    .card.xxxl  { width: 300px; }  /* Pro10 */
 
     .card-image-wrap {
       position: relative;
@@ -222,13 +223,14 @@
     }
 
     /* 직급별 이름 크기 */
-    .card.xs   .card-name { font-size: 14px; }  /* Star1 */
-    .card.sm   .card-name { font-size: 16px; }  /* Star2 */
-    .card.md   .card-name { font-size: 18px; }  /* Star3 */
-    .card.lg   .card-name { font-size: 19px; }  /* Pro1~3 */
-    .card.xl   .card-name { font-size: 20px; }  /* Pro4~6 */
-    .card.xxl  .card-name { font-size: 21px; }  /* Pro7~9 */
-    .card.xxxl .card-name { font-size: 22px; }  /* Pro10 */
+    .card.xxs   .card-name { font-size: 10px; }  /* Member */
+    .card.xs    .card-name { font-size: 14px; }  /* Star1 */
+    .card.sm    .card-name { font-size: 16px; }  /* Star2 */
+    .card.md    .card-name { font-size: 18px; }  /* Star3 */
+    .card.lg    .card-name { font-size: 19px; }  /* Pro1~3 */
+    .card.xl    .card-name { font-size: 20px; }  /* Pro4~6 */
+    .card.xxl   .card-name { font-size: 21px; }  /* Pro7~9 */
+    .card.xxxl  .card-name { font-size: 22px; }  /* Pro10 */
 
     .card-name-sub {
       font-size: 12px;
@@ -267,6 +269,7 @@
 
     @media (max-width: 640px) {
       .card,
+      .card.xxs,
       .card.xs,
       .card.sm,
       .card.md,
@@ -284,6 +287,7 @@
 
     @media (max-width: 480px) {
       .card,
+      .card.xxs,
       .card.xs,
       .card.sm,
       .card.md,
@@ -331,13 +335,19 @@
   </div>
 
   <script>
+    // Member까지 포함한 직급 정렬 순서 (위에서 아래)
     const RANK_ORDER = [
       "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
-      "Star3","Star2","Star1"
+      "Star3","Star2","Star1","Member"
     ];
 
-    // 🔸 직급 조건 + 수당(하루 금액) 정의 (숫자/꼬리 분리)
+    // 🔸 직급 조건 + 수당(하루 금액) 정의
     const RANK_INFO = {
+      Member: {
+        condition: "구독 중 (직급 미달성)",
+        payAmount: "$0",
+        payTail: ""
+      },
       Star1: {
         condition: "직급 달성 조건: 좌·우 직접추천 2:1 또는 1:2 (최소 1:1 충족)",
         payAmount: "$10",
@@ -424,6 +434,7 @@
 
     function rankLabel(rank) {
       if (!rank) return "";
+      if (rank === "Member") return "Member";       // 또는 "정회원"
       if (rank.startsWith("Star")) {
         const n = rank.replace("Star", "");
         return `스타 ${n}`;
@@ -436,6 +447,7 @@
     }
 
     function sectionTitle(rank) {
+      if (rank === "Member") return "MEMBER";
       if (rank.startsWith("Star")) return `STAR ${rank.replace("Star","")}`;
       if (rank.startsWith("Pro"))  return `PRO ${rank.replace("Pro","")}`;
       return rank;
@@ -443,7 +455,8 @@
 
     // 직급 → 이미지 파일 자동 매칭
     function getImageForRank(rank) {
-      if (!rank) return "img/star1.png";
+      if (!rank) return "img/member.png";
+      if (rank === "Member") return "img/member.png";
       if (rank.startsWith("Star")) {
         const n = rank.replace("Star", "");
         return `img/star${n}.png`;
@@ -452,12 +465,13 @@
         const n = rank.replace("Pro", "");
         return `img/pro${n}.png`;
       }
-      return "img/star1.png";
+      return "img/member.png";
     }
 
     // 직급 → 카드 크기 클래스
     function getCardSizeClass(rank) {
-      if (!rank) return "md";
+      if (!rank) return "xxs";
+      if (rank === "Member") return "xxs";
 
       if (rank.startsWith("Star")) {
         const n = parseInt(rank.replace("Star", ""), 10) || 1;
@@ -560,11 +574,12 @@
           meta.className = "rank-meta";
           meta.innerHTML = `
             <div class="rank-condition">${info.condition}</div>
-            <div class="rank-pay">
-              <span class="rank-pay-label">지급 구독 수수료</span>
-              <span class="rank-pay-amount">${info.payAmount}</span>
-              <span class="rank-pay-tail">${info.payTail}</span>
-            </div>
+            ${info.payAmount ? `
+              <div class="rank-pay">
+                <span class="rank-pay-label">지급 구독 수수료</span>
+                <span class="rank-pay-amount">${info.payAmount}</span>
+                <span class="rank-pay-tail">${info.payTail}</span>
+              </div>` : ""}
           `;
           section.appendChild(meta);
         }
