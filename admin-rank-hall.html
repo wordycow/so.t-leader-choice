@@ -227,6 +227,22 @@
       font-size: 11px;
       cursor: pointer;
     }
+
+    /* 오른쪽 텍스트 편집 영역 */
+    #rank-note-editor {
+      width: 100%;
+      min-height: 220px;
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    .note-tools {
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
@@ -339,7 +355,7 @@
         </div>
       </section>
 
-      <!-- 오른쪽: 이미지 자동 매칭 규칙 안내 -->
+      <!-- 오른쪽: 이미지 자동 매칭 규칙 안내 + 텍스트 편집 영역 -->
       <section class="glass-panel">
         <h2>이미지 자동 매칭 규칙 (읽기 전용)</h2>
         <p class="hint">
@@ -359,6 +375,23 @@
           그러니까, <strong>직급 이름만 잘 맞추면</strong> 이미지는 자동으로 붙는 구조야.<br />
           이 관리자 페이지에서는 사람/직급/가입일/카드 텍스트만 관리하면 된다.
         </p>
+
+        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(148,163,184,0.5);" />
+
+        <h3>직급 안내 문구 / 공지 편집</h3>
+        <p class="hint">
+          오른쪽 <code>rank-hall.html</code> 상단에 들어갈 안내 문구나 공지를  
+          여기서 붙여넣고 편집한 뒤, <strong>텍스트 복사</strong> 버튼으로 가져다 쓰면 돼.
+          (브라우저에 자동 저장되니까, 새로 열어도 내용이 남아 있어.)
+        </p>
+        <textarea
+          id="rank-note-editor"
+          placeholder="여기에 직급 안내 문구, 공지, 카드에 들어갈 긴 텍스트 등을 자유롭게 작성하세요."
+        ></textarea>
+        <div class="note-tools">
+          <button id="note-copy-btn" class="secondary-btn">텍스트 복사</button>
+          <button id="note-clear-btn" class="secondary-btn">내용 비우기</button>
+        </div>
       </section>
     </div>
   </div>
@@ -627,6 +660,62 @@
         `반영된 인원: ${updatedCount}명\n\n` +
         `마음에 들면 JSON 복사 버튼 눌러서 rank-hall.json에 붙여 넣으면 돼.`
       );
+    });
+
+    // ===== 오른쪽 텍스트 편집기 (localStorage 저장 + 복사) =====
+    const NOTE_STORAGE_KEY = "rankHallNoteEditor";
+    const noteEditor = document.getElementById("rank-note-editor");
+    const noteCopyBtn = document.getElementById("note-copy-btn");
+    const noteClearBtn = document.getElementById("note-clear-btn");
+
+    // 초기 로드 시 localStorage에서 불러오기
+    try {
+      const saved = localStorage.getItem(NOTE_STORAGE_KEY);
+      if (saved != null) {
+        noteEditor.value = saved;
+      }
+    } catch (e) {
+      console.warn("rankHall note load failed:", e);
+    }
+
+    // 입력할 때마다 저장
+    noteEditor.addEventListener("input", () => {
+      try {
+        localStorage.setItem(NOTE_STORAGE_KEY, noteEditor.value);
+      } catch (e) {
+        console.warn("rankHall note save failed:", e);
+      }
+    });
+
+    // 텍스트 복사
+    noteCopyBtn.addEventListener("click", () => {
+      const text = noteEditor.value || "";
+      if (!text.trim()) {
+        alert("복사할 텍스트가 없습니다.");
+        return;
+      }
+      noteEditor.select();
+      noteEditor.setSelectionRange(0, noteEditor.value.length);
+      try {
+        const ok = document.execCommand("copy");
+        if (ok) {
+          alert("텍스트가 복사되었습니다. rank-hall.html 등 원하는 곳에 붙여 넣으세요.");
+        } else {
+          alert("복사에 실패했습니다. 텍스트를 직접 드래그해서 복사해 주세요.");
+        }
+      } catch (e) {
+        alert("복사에 실패했습니다. 텍스트를 직접 드래그해서 복사해 주세요.");
+      }
+    });
+
+    // 내용 비우기
+    noteClearBtn.addEventListener("click", () => {
+      if (!noteEditor.value.trim()) return;
+      if (!confirm("편집 내용을 모두 비울까요? (localStorage에 저장된 내용도 지워집니다.)")) return;
+      noteEditor.value = "";
+      try {
+        localStorage.removeItem(NOTE_STORAGE_KEY);
+      } catch (e) {}
     });
 
     // 초기 렌더
