@@ -1030,37 +1030,39 @@
       return String(rec.rank || rec.rankCode || rec.level || "").trim();
     }
 
-    function     function pickMyRankRecord(list, name, team, joinedAt) {
-      // 1️⃣ 이름으로 먼저 후보 찾기
+        function pickMyRankRecord(list, name, team, joinedAt) {
+      // 1) 이름으로 먼저 후보 찾기
       let byName = list.filter(function (m) {
         return getName(m) === name;
       });
 
       if (!byName.length) {
-        return null; // 이름 자체가 없으면 직급 정보 없음
+        // 이름이 전혀 없으면 직급 정보 없음
+        return null;
       }
       if (byName.length === 1) {
-        return byName[0]; // 이름이 유일하면 그대로 사용
+        // 이름이 유일하면 그대로 사용
+        return byName[0];
       }
 
-      // 2️⃣ 같은 이름이 여러 명이면, 소속까지 같은 사람을 우선 시도
+      // 2) 같은 이름이 여러 명이면, 소속까지 같은 사람을 우선 시도
       let candidates = byName;
       if (team) {
-        const byNameTeam = byName.filter(function (m) {
+        var byTeam = byName.filter(function (m) {
           return getTeam(m) === team;
         });
-        if (byNameTeam.length === 1) {
-          return byNameTeam[0];
+        if (byTeam.length === 1) {
+          return byTeam[0];
         }
-        if (byNameTeam.length > 1) {
-          candidates = byNameTeam;
+        if (byTeam.length > 1) {
+          candidates = byTeam;
         }
       }
 
-      // 3️⃣ 그래도 여러 명이면, 가입일(joinedAt)까지 같은 사람 우선
+      // 3) 그래도 여러 명이면, 가입일(joinedAt)까지 같은 사람 우선
       if (joinedAt) {
-        const joined = String(joinedAt).trim();
-        const byJoin = candidates.filter(function (m) {
+        var joined = String(joinedAt).trim();
+        var byJoin = candidates.filter(function (m) {
           return getJoin(m) === joined;
         });
         if (byJoin.length === 1) {
@@ -1071,13 +1073,10 @@
         }
       }
 
-      // 4️⃣ 남아 있는 후보 중 첫 번째 사용 (완벽하진 않지만, 그래도 직급 하나는 보여주게)
+      // 4) 남아 있는 후보 중 첫 번째 사용
       return candidates[0];
     }
 
-
-      return sameNameTeam[0];
-    }
 
     let currentRankCode = null;
 
