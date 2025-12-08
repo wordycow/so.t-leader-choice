@@ -76,48 +76,26 @@
       position: relative;
       z-index: 1;
     }
-
+    /* ───── 상단 타이틀 + 디스코드/유튜브 ───── */
     .title-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 8px;   /* 🔽 22px → 8px 로 줄임 */
-}
+      position: relative;
+      text-align: center;      /* THE UNIQUE를 항상 중앙에 */
+      margin-bottom: 8px;      /* 타이틀과 스케줄 사이 간격 줄이기 */
+      padding-top: 8px;
+      padding-bottom: 0;
+    }
 
     .title-text {
-      flex: 1 1 auto;
-      text-align: center;
+      display: inline-block;   /* 타이틀 블록만 기준으로 가운데 정렬 */
     }
 
-
-
-
-    .title-en {
-      font-family: "Cinzel", "Times New Roman", serif;
-      font-weight: 700;
-      font-size: 32px;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-
-      color: #FACC15; /* 금색 글자 */
-      text-shadow:
-        0 0 16px rgba(245,158,11,0.9),
-        0 4px 18px rgba(0,0,0,0.95);
-    }
-
-    .subtitle-en {
-      font-size: 11px;
-      color: #94A3B8;
-      letter-spacing: 0.12em;
-      text-transform: none;
-    }
-         /* ───── 상단 우측: 디스코드 / 유튜브 아이콘 버튼 ───── */
     .title-social {
+      position: absolute;
+      right: 32px;             /* 오른쪽 끝에 붙이기 */
+      bottom: -10px;           /* 스케줄 쪽으로 살짝 내려서 "서 있는" 느낌 */
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 4px;                /* 거의 붙을 정도로 가까이 */
     }
 
     .social-circle-btn {
@@ -128,32 +106,53 @@
 
     .social-circle-btn img {
       display: block;
-      width: 80px;    /* PNG 크기에 맞게 조절 */
-      height: 80px;
-      border-radius: 80%;  /* PNG가 원형이 아니라도 둥글게 */
+      width: 40px;             /* 아이콘 실제 크기 */
+      height: 40px;
+      border-radius: 50%;      /* PNG가 약간 네모여도 깔끔하게 */
       transition: transform 0.12s ease, filter 0.12s ease;
     }
 
     .social-circle-btn:hover img {
-      transform: translateY(-1px) scale(1.04);
+      transform: translateY(1px) scale(1.03);
       filter: brightness(1.05);
     }
 
+       @media (max-width: 768px) {
+      .page-wrap { margin-top: 40px; }
+      .main-card {
+        padding: 24px 18px 20px;
+        border-radius: 22px;
+      }
+      .title-en {
+        font-size: 28px;
+        letter-spacing: 0.22em;
+      }
 
-    @media (max-width: 768px) {
+      /* 🔽 모바일에서는 버튼을 아래로 내려서 겹치지 않게 */
       .title-wrap {
+        padding-top: 12px;
+        padding-bottom: 4px;
+        margin-bottom: 12px;
+      }
+
+      .title-social {
+        position: static;      /* 절대 위치 해제 */
+        margin-top: 8px;
+        justify-content: center;
+      }
+
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+      }
+      .ebook-list {
         flex-direction: column;
-        align-items: center;
-        gap: 10px;
+      }
+      .ebook-card {
+        flex: 1 1 100%;
       }
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 2.4fr) minmax(0, 3fr);
-      gap: 24px;
-      align-items: stretch; /* 좌/우 카드 높이 동일하게 */
-    }
 
     /* ───── 회원 정보 + 직급 ───── */
     .member-panel {
@@ -569,7 +568,7 @@
 
         /* ───── 주간 강의 스케줄 (타이틀 아래 전체 폭) ───── */
     .top-schedule-panel {
-      margin: 6px 0 18px;
+      margin: 0px 0 18px;
       border-radius: 18px;
       padding: 10px 14px 12px;
       background: radial-gradient(circle at top,
