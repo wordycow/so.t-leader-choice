@@ -630,56 +630,68 @@
       }
     }
 
-    document.getElementById("bulk-apply").addEventListener("click", () => {
-      const text = document.getElementById("bulk-input").value;
-      if (!text.trim()) {
-        alert("붙여 넣을 내용을 먼저 입력해 줘.");
-        return;
+   document.getElementById("bulk-apply").addEventListener("click", () => {
+  const text = document.getElementById("bulk-input").value;
+  if (!text.trim()) {
+    alert("붙여 넣을 내용을 먼저 입력해 줘.");
+    return;
+  }
+
+  const lines = text.split(/\r?\n/);
+  let updatedCount = 0;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // 형식:
+    // 1) [L]KR-15323995 / 이름 / 2025-11-21 / 스타III
+    // 2) [L]KR-15323995 / 이름 / 스타III          (가입일 생략 버전)
+    const parts = line.split(" / ");
+    if (parts.length < 3) continue;   // 코드 / 이름 / (뭔가 하나) 는 있어야 함
+
+    const name = (parts[1] || "").trim();
+    if (!name) continue;
+
+    let joinDate = "";
+    let rawRank  = "";
+
+    if (parts.length >= 4) {
+      // [코드] / 이름 / 가입일 / 직급
+      joinDate = (parts[2] || "").trim();
+      rawRank  = (parts[3] || "").trim();
+    } else {
+      // [코드] / 이름 / 직급  (가입일 없음)
+      joinDate = "";
+      rawRank  = (parts[2] || "").trim();
+    }
+
+    let rank;
+
+    if (!rawRank) {
+      // 🔹 직급 칸이 완전히 비어 있으면 → 무직급 = Member
+      rank = "Member";
+    } else {
+      // 🔹 뭔가 써 있으면 normalizeRankLabel로 Star/Pro/ProX 등 판별
+      rank = normalizeRankLabel(rawRank);
+      if (!rank) {
+        // 알아먹을 수 없는 직급 텍스트면 건너뛰기
+        continue;
       }
+    }
 
-      const lines = text.split(/\r?\n/);
-      let updatedCount = 0;
+    upsertRankByName(name, rank, joinDate);
+    updatedCount++;
+  }
 
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (!line) continue;
+  renderRankTable();
 
-        // [L]KR-15323995 / 이름 / 2025-11-21 / 스타III 또는 Pro 6 또는 프로X
-        const parts = line.split(" / ");
-        if (parts.length < 4) continue;
-
-        const name = (parts[1] || "").trim();
-        const joinDate = (parts[2] || "").trim();
-               const rawRank = (parts[3] || "").trim();
-        let rank;
-
-        if (!rawRank) {
-          // 🔹 직급 칸이 완전히 비어 있으면 → 무직급 = Member
-          rank = "Member";
-        } else {
-          // 🔹 뭔가 써 있으면 normalizeRankLabel로 Star/Pro/Member 판별
-          rank = normalizeRankLabel(rawRank);
-          if (!rank) {
-            // 알아먹을 수 없는 직급 텍스트면 그냥 건너뛴다
-            continue;
-          }
-        }
-
-        if (!name) continue;
-
-        upsertRankByName(name, rank, joinDate);
-        updatedCount++;
-      }
-
-      renderRankTable();
-
-      alert(
-        `일괄 업데이트 완료.\n` +
-        `반영된 인원: ${updatedCount}명\n\n` +
-        `마음에 들면 JSON 복사 버튼 눌러서 rank-hall.json에 붙여 넣으면 돼.`
-      );
-    });
-
+  alert(
+    `일괄 업데이트 완료.\n` +
+    `반영된 인원: ${updatedCount}명\n\n` +
+    `마음에 들면 JSON 복사 버튼 눌러서 rank-hall.json에 붙여 넣으면 돼.`
+  );
+});
     // ===== 오른쪽 텍스트 편집기 (localStorage 저장 + 복사) =====
     const NOTE_STORAGE_KEY = "rankHallNoteEditor";
     const noteEditor = document.getElementById("rank-note-editor");
