@@ -390,235 +390,159 @@
   </div>
 
   <script>
-    (function() {
-      const STORAGE_TEMPLATE_KEY = "the_unique_work_tool_template_v1";
-      const STORAGE_METRIC_KEY = "the_unique_work_tool_metrics_v1";
-      const STORAGE_INPUT_KEY = "the_unique_work_tool_inputs_v1";
+(function () {
+  // ===== 1) 고정 링크 설정 =====
+  const DEFAULT_DISCORD = 'https://discord.gg/3cUN7QXMSY';
+  const DEFAULT_YOUTUBE = 'https://www.youtube.com/@%EC%8F%98%EB%8B%BSo.T';
+  const DEFAULT_SITE    = 'https://wordycow.github.io/so.t-leader-choice/the-unique-main.html';
 
-      // 기본 템플릿
-      const defaultTemplate = [
-        "[{{상대이름}}님에게 보내는 기본 문장]",
-        "",
-        "{{상대이름}} 요즘에 {{관심키워드}} 이야기 자주 했잖아.",
-        "",
-        "나는 지금 THE UNIQUE라는 시스템으로",
-        "시간·돈·자유를 같이 만드는 일을 준비하고 있어.",
-        "",
-        "내가 하고 싶은 건,",
-        "내가 혼자 뛰는 게 아니라",
-        "나랑 맞는 사람들과 같이 구조를 타고 올라가는 거야.",
-        "",
-        "그래서 10분만에 구조만 간단히 설명해 볼게.",
-        "아니다 싶으면 편하게 \"난 패스\"라고 해도 돼.",
-        "",
-        "자세한 내용은 내가 정리해 둔 공식 채널에서 볼 수 있어:",
-        "- 디스코드 : {{디스코드링크}}",
-        "- 유튜브   : {{유튜브링크}}",
-        "- 사이트   : {{사이트링크}}",
-        "",
-        "한 번만 쭉 보고 느낌을 솔직하게 말해줘.",
-        "",
-        "– {{내이름}}"
-      ].join("\\n");
+  const inputName    = document.getElementById('inputName');
+  const inputTopic   = document.getElementById('inputTopic');
+  const inputMyName  = document.getElementById('inputMyName');
+  const inputDiscord = document.getElementById('inputDiscord');
+  const inputYoutube = document.getElementById('inputYoutube');
+  const inputSite    = document.getElementById('inputSite');
 
-      // 요소 가져오기
-      const templateEditor = document.getElementById("templateEditor");
-      const resultText = document.getElementById("resultText");
+  const btnBuildText   = document.getElementById('btnBuildText');
+  const btnClearInputs = document.getElementById('btnClearInputs');
+  const btnCopyResult  = document.getElementById('btnCopyResult');
+  const btnClearResult = document.getElementById('btnClearResult');
 
-      const inputName = document.getElementById("inputName");
-      const inputTopic = document.getElementById("inputTopic");
-      const inputMyName = document.getElementById("inputMyName");
-      const inputDiscord = document.getElementById("inputDiscord");
-      const inputYoutube = document.getElementById("inputYoutube");
-      const inputSite = document.getElementById("inputSite");
+  const resultText     = document.getElementById('resultText');
+  const templateEditor = document.getElementById('templateEditor'); // 있으면 쓰고, 없으면 기본 템플릿 사용
 
-      const todayLeads = document.getElementById("todayLeads");
-      const todayPitches = document.getElementById("todayPitches");
-      const todayInvites = document.getElementById("todayInvites");
+  // ===== 2) 링크 입력칸 고정 (읽기 전용) =====
+  if (inputDiscord) {
+    inputDiscord.value = DEFAULT_DISCORD;
+    inputDiscord.readOnly = true;
+  }
+  if (inputYoutube) {
+    inputYoutube.value = DEFAULT_YOUTUBE;
+    inputYoutube.readOnly = true;
+  }
+  if (inputSite) {
+    inputSite.value = DEFAULT_SITE;
+    inputSite.readOnly = true;
+  }
 
-      const btnBuildText = document.getElementById("btnBuildText");
-      const btnClearInputs = document.getElementById("btnClearInputs");
-      const btnSaveTemplate = document.getElementById("btnSaveTemplate");
-      const btnResetTemplate = document.getElementById("btnResetTemplate");
-      const btnCopyResult = document.getElementById("btnCopyResult");
-      const btnClearResult = document.getElementById("btnClearResult");
+  // ===== 3) 기본 템플릿 =====
+  const defaultTemplate = `[{{상대이름}}님에게 보내는 기본 문장]
 
-      // --- 템플릿 로드 ---
-      function loadTemplate() {
-        const saved = localStorage.getItem(STORAGE_TEMPLATE_KEY);
-        templateEditor.value = saved || defaultTemplate;
-      }
+{{상대이름}} 요즘에 {{관심키워드}} 이야기 자주 했잖아.
 
-      // --- 템플릿 저장 ---
-      function saveTemplate() {
-        try {
-          localStorage.setItem(STORAGE_TEMPLATE_KEY, templateEditor.value);
-          alert("템플릿이 이 브라우저에 저장되었습니다.");
-        } catch (e) {
-          alert("템플릿 저장 중 오류가 발생했습니다. (localStorage 사용 불가)");
-        }
-      }
+나는 지금 THE UNIQUE라는 시스템으로
+시간·돈·자유를 같이 만드는 일을 준비하고 있어.
 
-      // --- 템플릿 초기화 ---
-      function resetTemplate() {
-        if (confirm("기본 템플릿으로 되돌릴까요? (지금 쓴 내용은 사라집니다)")) {
-          templateEditor.value = defaultTemplate;
-          saveTemplate();
-        }
-      }
+내가 하고 싶은 건,
+내가 혼자 뛰는 게 아니라
+나랑 맞는 사람들과 같이 구조를 타고 올라가는 거야.
 
-      // --- 입력값 로드/저장 ---
-      function loadInputs() {
-        try {
-          const raw = localStorage.getItem(STORAGE_INPUT_KEY);
-          if (!raw) return;
-          const data = JSON.parse(raw);
-          if (data.name) inputName.value = data.name;
-          if (data.topic) inputTopic.value = data.topic;
-          if (data.myName) inputMyName.value = data.myName;
-          if (data.discord) inputDiscord.value = data.discord;
-          if (data.youtube) inputYoutube.value = data.youtube;
-          if (data.site) inputSite.value = data.site;
-        } catch (_) {}
-      }
+그래서 10분만에 구조만 간단히 설명해 볼게.
+아니다 싶으면 편하게 "난 패스"라고 해도 돼.
 
-      function saveInputs() {
-        const data = {
-          name: inputName.value || "",
-          topic: inputTopic.value || "",
-          myName: inputMyName.value || "",
-          discord: inputDiscord.value || "",
-          youtube: inputYoutube.value || "",
-          site: inputSite.value || ""
-        };
-        try {
-          localStorage.setItem(STORAGE_INPUT_KEY, JSON.stringify(data));
-        } catch (_) {}
-      }
+자세한 내용은 우리가 쓰는 공식 채널에서 볼 수 있어:
+- 디스코드 : {{디스코드링크}}
+- 유튜브   : {{유튜브링크}}
+- 사이트   : {{사이트링크}}
 
-      // --- 오늘 지표 로드/저장 ---
-      function loadMetrics() {
-        try {
-          const raw = localStorage.getItem(STORAGE_METRIC_KEY);
-          if (!raw) return;
-          const data = JSON.parse(raw);
-          if (typeof data.leads === "number") todayLeads.value = data.leads;
-          if (typeof data.pitches === "number") todayPitches.value = data.pitches;
-          if (typeof data.invites === "number") todayInvites.value = data.invites;
-        } catch (_) {}
-      }
+한 번만 쭉 보고 느낌을 솔직하게 말해줘.
 
-      function saveMetrics() {
-        const data = {
-          leads: Number(todayLeads.value) || 0,
-          pitches: Number(todayPitches.value) || 0,
-          invites: Number(todayInvites.value) || 0
-        };
-        try {
-          localStorage.setItem(STORAGE_METRIC_KEY, JSON.stringify(data));
-        } catch (_) {}
-      }
+– {{내이름}}`;
 
-      // --- 문장 만들기 ---
-      function buildText() {
-        let tpl = templateEditor.value || defaultTemplate;
+  // 템플릿 가져오기 (편집기 있으면 그 내용, 없으면 기본)
+  function getCurrentTemplate() {
+    if (templateEditor && templateEditor.value.trim()) {
+      return templateEditor.value;
+    }
+    return defaultTemplate;
+  }
 
-        const replacements = {
-          "상대이름": inputName.value || "",
-          "관심키워드": inputTopic.value || "",
-          "내이름": inputMyName.value || "",
-          "디스코드링크": inputDiscord.value || "",
-          "유튜브링크": inputYoutube.value || "",
-          "사이트링크": inputSite.value || ""
-        };
+  // ===== 4) 문장 만들기 =====
+  function buildText() {
+    if (!resultText) return;
 
-        Object.keys(replacements).forEach(function(key) {
-          const value = replacements[key];
-          const pattern = new RegExp("\\\\{\\\\{" + key + "\\\\}\\\\}", "g");
-          tpl = tpl.replace(pattern, value);
+    const name   = (inputName  && inputName.value)  || '';
+    const topic  = (inputTopic && inputTopic.value) || '';
+    const myName = (inputMyName && inputMyName.value) || '';
+
+    let tpl = getCurrentTemplate();
+
+    tpl = tpl
+      .replace(/{{상대이름}}/g, name)
+      .replace(/{{관심키워드}}/g, topic)
+      .replace(/{{내이름}}/g, myName)
+      .replace(/{{디스코드링크}}/g, DEFAULT_DISCORD)
+      .replace(/{{유튜브링크}}/g, DEFAULT_YOUTUBE)
+      .replace(/{{사이트링크}}/g, DEFAULT_SITE);
+
+    resultText.value = tpl;
+  }
+
+  // ===== 5) 복사 기능 =====
+  function copyResult() {
+    if (!resultText) return;
+    const text = resultText.value || '';
+    if (!text.trim()) {
+      alert('복사할 내용이 없습니다. 먼저 문장을 만들어 주세요.');
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(function () {
+          alert('문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.');
+        })
+        .catch(function () {
+          fallbackCopy();
         });
+    } else {
+      fallbackCopy();
+    }
 
-        resultText.value = tpl;
+    function fallbackCopy() {
+      try {
+        resultText.focus();
+        resultText.select();
+        const ok = document.execCommand('copy');
+        alert(ok
+          ? '문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.'
+          : '자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
+      } catch (e) {
+        alert('자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
       }
+    }
+  }
 
-      // --- 입력 초기화 ---
-      function clearInputs() {
-        if (!confirm("이 입력값들을 모두 비울까요? (템플릿은 그대로 둡니다)")) return;
-        inputName.value = "";
-        inputTopic.value = "";
-        inputMyName.value = "";
-        inputDiscord.value = "";
-        inputYoutube.value = "";
-        inputSite.value = "";
-        saveInputs();
-      }
+  // ===== 6) 입력/결과 초기화 =====
+  function clearInputs() {
+    if (!confirm('이름/관심/내 이름만 비울까요?')) return;
+    if (inputName) inputName.value = '';
+    if (inputTopic) inputTopic.value = '';
+    if (inputMyName) inputMyName.value = '';
+  }
 
-      // --- 결과 비우기 ---
-      function clearResult() {
-        resultText.value = "";
-      }
+  function clearResult() {
+    if (!resultText) return;
+    resultText.value = '';
+  }
 
-      // --- 결과 복사 ---
-      function copyResult() {
-        const text = resultText.value || "";
-        if (!text.trim()) {
-          alert("복사할 내용이 없습니다. 먼저 문장을 만들어 주세요.");
-          return;
-        }
+  // ===== 7) 이벤트 연결 (있을 때만) =====
+  if (btnBuildText) {
+    btnBuildText.addEventListener('click', buildText);
+  }
+  if (btnClearInputs) {
+    btnClearInputs.addEventListener('click', clearInputs);
+  }
+  if (btnCopyResult) {
+    btnCopyResult.addEventListener('click', copyResult);
+  }
+  if (btnClearResult) {
+    btnClearResult.addEventListener('click', clearResult);
+  }
 
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text)
-            .then(function() {
-              alert("문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.");
-            })
-            .catch(function() {
-              fallbackCopy(text);
-            });
-        } else {
-          fallbackCopy(text);
-        }
-      }
-
-      function fallbackCopy(text) {
-        try {
-          resultText.focus();
-          resultText.select();
-          const ok = document.execCommand("copy");
-          alert(ok
-            ? "문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다."
-            : "자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.");
-        } catch (e) {
-          alert("자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.");
-        }
-      }
-
-      // 이벤트 연결
-      btnBuildText.addEventListener("click", function() {
-        saveInputs();
-        buildText();
-      });
-
-      btnClearInputs.addEventListener("click", clearInputs);
-      btnSaveTemplate.addEventListener("click", saveTemplate);
-      btnResetTemplate.addEventListener("click", resetTemplate);
-      btnCopyResult.addEventListener("click", copyResult);
-      btnClearResult.addEventListener("click", clearResult);
-
-      [todayLeads, todayPitches, todayInvites].forEach(function(el) {
-        el.addEventListener("change", saveMetrics);
-        el.addEventListener("blur", saveMetrics);
-      });
-
-      [inputName, inputTopic, inputMyName, inputDiscord, inputYoutube, inputSite].forEach(function(el) {
-        el.addEventListener("blur", saveInputs);
-      });
-
-      // 초기 로드
-      loadTemplate();
-      loadInputs();
-      loadMetrics();
-      buildText(); // 첫 화면에 한 번 만들어 둔다.
-    })();
-  </script>
+  // 페이지 열리자마자 한 번 생성해 두기
+  buildText();
+})();
+</script>
 </body>
 </html>
