@@ -1412,66 +1412,68 @@
   <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-           try {
-        // "소속:" 이라는 글자가 들어간 엘리먼트 찾기 (HQ / 비HQ 공통)
-        var candidates = Array.from(document.querySelectorAll('body *'));
-        var target = candidates.find(function (el) {
-          if (el === document.body || el === document.documentElement) return false;
-          var text = (el.textContent || '').trim();
-          if (!text) return false;
-          if (!text.includes('소속:')) return false; // HQ든 아니든 공통
-          if (text.length > 40) return false;
-          return true;
-        });
+          try {
+  // "소속:" 이라는 글자가 들어간 엘리먼트 찾기 (HQ / 비HQ 공통)
+  var candidates = Array.from(document.querySelectorAll('body *'));
+  var target = candidates.find(function (el) {
+    if (el === document.body || el === document.documentElement) return false;
+    var text = (el.textContent || '').trim();
+    if (!text) return false;
+    if (!text.includes('소속:')) return false; // HQ든 아니든 공통
+    if (text.length > 40) return false;
+    return true;
+  });
 
-        if (!target) return;
+  if (!target) return;
 
-        // === 1) 모든 소속 공통: "일하기 도구" 버튼 ===
-        var btnWorkTool = document.createElement('button');
-        btnWorkTool.textContent = '일하기 도구';
-        btnWorkTool.style.marginLeft = '8px';
-        btnWorkTool.style.padding = '4px 10px';
-        btnWorkTool.style.borderRadius = '999px';
-        btnWorkTool.style.border = '1px solid rgba(255,255,255,0.4)';
-        btnWorkTool.style.background = 'linear-gradient(135deg, #f97316, #ec4899)';
-        btnWorkTool.style.color = '#111827';
-        btnWorkTool.style.fontSize = '11px';
-        btnWorkTool.style.fontWeight = '700';
-        btnWorkTool.style.cursor = 'pointer';
-        btnWorkTool.style.verticalAlign = 'middle';
+  // === 1) 모든 소속 공통: "일하기 도구" 버튼 ===
+  var btnWorkTool = document.createElement('button');
+  btnWorkTool.textContent = '일하기 도구';
+  btnWorkTool.style.marginLeft = '8px';
+  btnWorkTool.style.padding = '4px 10px';
+  btnWorkTool.style.borderRadius = '999px';
+  btnWorkTool.style.border = '1px solid rgba(255,255,255,0.4)';
+  btnWorkTool.style.background = 'linear-gradient(135deg, #f97316, #ec4899)';
+  btnWorkTool.style.color = '#111827';
+  btnWorkTool.style.fontSize = '11px';
+  btnWorkTool.style.fontWeight = '700';
+  btnWorkTool.style.cursor = 'pointer';
+  btnWorkTool.style.verticalAlign = 'middle';
 
-        btnWorkTool.addEventListener('click', function () {
-          window.location.href = 'the-unique-work-tool.html';
-        });
+  // 👉 새창(새 탭)으로 일하기 도구 열기
+  btnWorkTool.addEventListener('click', function () {
+    window.open('the-unique-work-tool.html', '_blank', 'noopener');
+  });
 
-        // 일하기 도구 버튼을 먼저 붙여둔다
-        target.appendChild(btnWorkTool);
+  // 일하기 도구 버튼을 먼저 붙인다
+  target.appendChild(btnWorkTool);
 
-        // === 2) HQ 전용: "시스템 핸드북" 버튼 ===
-        if (window.uniqueIsHQ) {
-          var btnHandbook = document.createElement('button');
-          btnHandbook.textContent = '시스템 핸드북';
-          btnHandbook.style.marginLeft = '8px';
-          btnHandbook.style.padding = '4px 10px';
-          btnHandbook.style.borderRadius = '999px';
-          btnHandbook.style.border = '1px solid rgba(255,255,255,0.4)';
-          btnHandbook.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
-          btnHandbook.style.color = '#111827';
-          btnHandbook.style.fontSize = '11px';
-          btnHandbook.style.fontWeight = '700';
-          btnHandbook.style.cursor = 'pointer';
-          btnHandbook.style.verticalAlign = 'middle';
+  // === 2) HQ 전용: "시스템 핸드북" 버튼 ===
+  if (window.uniqueIsHQ) {
+    var btnHandbook = document.createElement('button');
+    btnHandbook.textContent = '시스템 핸드북';
+    btnHandbook.style.marginLeft = '8px';
+    btnHandbook.style.padding = '4px 10px';
+    btnHandbook.style.borderRadius = '999px';
+    btnHandbook.style.border = '1px solid rgba(255,255,255,0.4)';
+    btnHandbook.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
+    btnHandbook.style.color = '#111827';
+    btnHandbook.style.fontSize = '11px';
+    btnHandbook.style.fontWeight = '700';
+    btnHandbook.style.cursor = 'pointer';
+    btnHandbook.style.verticalAlign = 'middle';
 
-          btnHandbook.addEventListener('click', function () {
-            window.location.href = 'unique-map.html';
-          });
+    // 👉 시스템 핸드북도 새창(새 탭)으로
+    btnHandbook.addEventListener('click', function () {
+      window.open('unique-map.html', '_blank', 'noopener');
+    });
 
-          // 버튼 순서를 "시스템 핸드북 | 일하기 도구"로 보이게 하기 위해
-          target.insertBefore(btnHandbook, btnWorkTool);
-        }
-      } catch (e) {
-        console.error('HQ/일하기 버튼 생성 중 에러:', e);
-      }
+    // 버튼 순서를 "시스템 핸드북 | 일하기 도구"로 보이게 하기 위해
+    target.insertBefore(btnHandbook, btnWorkTool);
+  }
+} catch (e) {
+  console.error('HQ/일하기 버튼 생성 중 에러:', e);
+}
     });
   </script>
 </body>
