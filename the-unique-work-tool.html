@@ -5,17 +5,17 @@
   <title>The Unique – 일하기 도구 (THE UNIQUE CORE)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- 폰트 (기존 The Unique 스타일 계열) -->
+  <!-- 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: #e5e7eb;
       min-height: 100vh;
       background: radial-gradient(circle at top, #020617 0, #020617 40%, #000 100%);
@@ -133,7 +133,7 @@
       color: #e5e7eb;
       font-size: 13px;
       line-height: 1.5;
-      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
 
     .btn-row {
@@ -232,7 +232,7 @@
       display: block;
       margin-top: 4px;
       font-size: 10px;
-      color: #9ca3af;
+      color: #d1d5db;
     }
 
     footer {
@@ -246,6 +246,38 @@
       color: #e5e7eb;
       font-weight: 500;
     }
+
+    /* 레벨 선택 스타일 */
+    .level-select {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin: 6px 0 4px;
+    }
+
+    .level-label {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .level-btn {
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .level-btn.level-active {
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      color: #022c22;
+      border-color: rgba(74,222,128,0.95);
+      box-shadow: 0 0 0 1px rgba(22,163,74,0.5);
+    }
   </style>
 </head>
 <body>
@@ -255,43 +287,63 @@
       <p>“일하기 도구” – 이름만 바꿔서 바로 던질 수 있는 사업 설명 + 오늘 일한 기준</p>
       <div class="tagline">
         명단을 쓰고, 정보를 전달하고, 그 횟수로 내가 일했는지를 본다.  
-        감정이 아니라 <strong>“오늘 몇 번 전달했는가”</strong>로 판단한다.
+        감정이 아니라 <strong>“오늘 몇 번 설명했는가”</strong>로 판단한다.
       </div>
     </header>
 
-    <!-- 1. 오늘 일 한 눈에 보기 -->
+    <!-- 1. 오늘 일 기준 + 레벨 선택 -->
     <section class="card">
       <h2>오늘 나는 실제로 일을 했는가?</h2>
-      <p>아래 숫자 세 개만 보면 된다. 이 중 하나라도 0이면, 오늘은 거의 일 안 한 날로 본다.</p>
+      <p>
+        THE UNIQUE에서 “일했다”의 기준은 감정이 아니라 <strong>설명 횟수</strong>다.<br />
+        아래에서 오늘 내가 적용할 기준(레벨)을 고르고, 그 목표에 비해 지금 숫자를 채워가면 된다.
+      </p>
+
+      <!-- 기준 선택 -->
+      <div class="level-select">
+        <span class="level-label">오늘 기준 선택:</span>
+        <button type="button" class="level-btn" data-level="basic">정회원 ~ 스타3</button>
+        <button type="button" class="level-btn" data-level="mid">Pro1 ~ Pro3</button>
+        <button type="button" class="level-btn" data-level="high">Pro4 이상 도전자</button>
+      </div>
+      <div class="small-note" id="levelDesc">
+        (위 버튼 중 하나를 누르면, 오늘 목표가 여기 표시됩니다.)
+      </div>
 
       <div class="metric-row">
         <div class="metric">
-          <label for="todayLeads">오늘 새로 쓴 명단</label>
+          <label for="todayLeads" id="labelLeads">신규 설명 진행 수</label>
           <input id="todayLeads" type="number" min="0" placeholder="0" />
-          <small>이름을 새로 적은 사람 수</small>
+          <small id="helpLeads">
+            오늘 <strong>새로 명단 적고, 실제로 구조 설명까지 끝낸 사람 수</strong>.
+          </small>
         </div>
         <div class="metric">
-          <label for="todayPitches">오늘 사업 설명 전달</label>
+          <label for="todayPitches" id="labelPitches">후원 설명 진행 수</label>
           <input id="todayPitches" type="number" min="0" placeholder="0" />
-          <small>직접·통화·온라인 포함 “구조 설명” 횟수</small>
+          <small id="helpPitches">
+            파트너·다운에게 대신 구조 설명해 준 횟수.
+          </small>
         </div>
         <div class="metric">
-          <label for="todayInvites">오늘 디지털 초대</label>
+          <label for="todayInvites" id="labelInvites">오늘 디지털 초대 수</label>
           <input id="todayInvites" type="number" min="0" placeholder="0" />
-          <small>디스코드 / 유튜브 / 사이트에 보낸 초대 링크 수</small>
+          <small id="helpInvites">
+            디스코드 / 유튜브 / 사이트 링크를 실제로 보낸 횟수.
+          </small>
         </div>
       </div>
 
       <div class="small-note">
-        이 숫자들은 이 브라우저에만 저장된다. (localStorage)  
-        기기·브라우저를 바꾸면 새로 시작한다고 보면 된다.
+        이 숫자들은 이 브라우저에만 저장된다. (localStorage)<br />
+        <strong>내가 선택한 기준(레벨)에 맞게, 오늘을 그냥 보내지 않았는지 확인하는 용도</strong>다.
       </div>
     </section>
 
-    <!-- 2. 상대 이름만 바꾸는 기본 정보 입력 -->
+    <!-- 2. 상대 정보 입력 -->
     <section class="card">
       <h2>1단계 – 상대 정보만 넣으면 되는 입력란</h2>
-      <p>상대 이름과 관심사, 링크만 넣고 아래 버튼을 누르면, 바로 카톡·디엠에 붙여 넣을 수 있는 문장이 만들어진다.</p>
+      <p>상대 이름과 관심사만 넣고 아래 버튼을 누르면, 바로 카톡·디엠에 붙여 넣을 수 있는 문장이 만들어진다.</p>
 
       <div class="field-row">
         <div class="field">
@@ -307,22 +359,22 @@
       <div class="field-row">
         <div class="field">
           <label for="inputMyName">내 이름</label>
-          <input id="inputMyName" type="text" placeholder="예: 유송, 써나" />
+          <input id="inputMyName" type="text" placeholder="예: 이유송, 써나" />
         </div>
         <div class="field">
-          <label for="inputDiscord">디스코드 링크</label>
-          <input id="inputDiscord" type="text" placeholder="https://discord.gg/..." />
+          <label for="inputDiscord">디스코드 링크 (고정)</label>
+          <input id="inputDiscord" type="text" readonly />
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label for="inputYoutube">유튜브 링크</label>
-          <input id="inputYoutube" type="text" placeholder="https://youtube.com/..." />
+          <label for="inputYoutube">유튜브 링크 (고정)</label>
+          <input id="inputYoutube" type="text" readonly />
         </div>
         <div class="field">
-          <label for="inputSite">THE UNIQUE 사이트 링크</label>
-          <input id="inputSite" type="text" placeholder="https://wordycow.github.io/..." />
+          <label for="inputSite">THE UNIQUE 사이트 링크 (고정)</label>
+          <input id="inputSite" type="text" readonly />
         </div>
       </div>
 
@@ -332,7 +384,7 @@
       </div>
 
       <div class="small-note">
-        ※ 위 입력값은 이 브라우저에만 임시 저장된다. 자주 쓰는 링크라면 그대로 두고 쓰면 된다.
+        ※ 링크 3개는 시스템에서 고정해 둔 값이다. 이름·관심사만 바꿔서 쓰면 된다.
       </div>
     </section>
 
@@ -341,7 +393,7 @@
       <h2>2단계 – 내가 쓰는 기본 템플릿 (자유 편집 가능)</h2>
       <p>
         여기 있는 문장은 <strong>“기본 골격”</strong>이다.  
-        문장을 마음대로 바꾸고, 아래 버튼으로 템플릿을 저장하면 이 브라우저에서 계속 유지된다.
+        문장을 마음대로 바꾸고, 저장하면 이 브라우저에서 계속 유지된다.
       </p>
 
       <div class="divider-text">사용 가능한 치환 키워드</div>
@@ -354,7 +406,7 @@
         <span class="pill">{{사이트링크}}</span>
       </div>
 
-      <textarea id="templateEditor" placeholder="여기에 기본 템플릿이 들어갑니다."></textarea>
+      <textarea id="templateEditor"></textarea>
 
       <div class="btn-row">
         <button class="btn-secondary" id="btnSaveTemplate">템플릿 저장 (이 브라우저)</button>
@@ -367,7 +419,7 @@
       </div>
     </section>
 
-    <!-- 4. 결과 문장 + 복사 버튼 -->
+    <!-- 4. 결과 문장 -->
     <section class="card">
       <h2>3단계 – 완성 문장 (여기서 바로 복사해서 보낸다)</h2>
       <p>버튼을 눌러 만든 문장이 여기에 뜬다. 카톡, 디스코드 DM, 인스타, 어디든 붙여 넣으면 된다.</p>
@@ -389,160 +441,314 @@
     </footer>
   </div>
 
+  <!-- 메인 스크립트 전체 -->
   <script>
-(function () {
-  // ===== 1) 고정 링크 설정 =====
-  const DEFAULT_DISCORD = 'https://discord.gg/3cUN7QXMSY';
-  const DEFAULT_YOUTUBE = 'https://www.youtube.com/@%EC%8F%98%EB%8B%BSo.T';
-  const DEFAULT_SITE    = 'https://wordycow.github.io/so.t-leader-choice/the-unique-main.html';
+  (function () {
+    // ===== 고정 링크 =====
+    const DEFAULT_DISCORD = 'https://discord.gg/3cUN7QXMSY';
+    const DEFAULT_YOUTUBE = 'https://www.youtube.com/@%EC%8F%98%EB%8B%BSo.T';
+    const DEFAULT_SITE    = 'https://wordycow.github.io/so.t-leader-choice/the-unique-main.html';
 
-  const inputName    = document.getElementById('inputName');
-  const inputTopic   = document.getElementById('inputTopic');
-  const inputMyName  = document.getElementById('inputMyName');
-  const inputDiscord = document.getElementById('inputDiscord');
-  const inputYoutube = document.getElementById('inputYoutube');
-  const inputSite    = document.getElementById('inputSite');
+    // ===== 템플릿 기본값 =====
+    const STORAGE_TEMPLATE_KEY = 'tu_work_template_v1';
+    const STORAGE_METRIC_KEY   = 'tu_work_metrics_v3';
+    const STORAGE_LEVEL_KEY    = 'tu_work_level_v1';
 
-  const btnBuildText   = document.getElementById('btnBuildText');
-  const btnClearInputs = document.getElementById('btnClearInputs');
-  const btnCopyResult  = document.getElementById('btnCopyResult');
-  const btnClearResult = document.getElementById('btnClearResult');
+    const defaultTemplate = [
+      '[{{상대이름}}님에게 보내는 기본 문장]',
+      '',
+      '{{상대이름}} 요즘에 {{관심키워드}} 이야기 자주 했잖아.',
+      '',
+      '나는 지금 THE UNIQUE라는 시스템으로',
+      '시간·돈·자유를 같이 만드는 일을 준비하고 있어.',
+      '',
+      '내가 하고 싶은 건,',
+      '내가 혼자 뛰는 게 아니라',
+      '나랑 맞는 사람들과 같이 구조를 타고 올라가는 거야.',
+      '',
+      '그래서 10분만에 구조만 간단히 설명해 볼게.',
+      '아니다 싶으면 편하게 "난 패스"라고 해도 돼.',
+      '',
+      '자세한 내용은 우리가 쓰는 공식 채널에서 볼 수 있어:',
+      '- 디스코드 : {{디스코드링크}}',
+      '- 유튜브   : {{유튜브링크}}',
+      '- 사이트   : {{사이트링크}}',
+      '',
+      '한 번만 쭉 보고 느낌을 솔직하게 말해줘.',
+      '',
+      '– {{내이름}}'
+    ].join('\\n');
 
-  const resultText     = document.getElementById('resultText');
-  const templateEditor = document.getElementById('templateEditor'); // 있으면 쓰고, 없으면 기본 템플릿 사용
+    // ===== 레벨(기준) 정의 =====
+    const LEVELS = {
+      basic: {
+        name: '정회원 ~ 스타3',
+        subtitle: '습관 만드는 단계',
+        leadsTarget: 3,
+        pitchesTarget: 1,
+        invitesTarget: 3,
+        leadsText: '신규 설명 3명 (사업설명 완성하기)',
+        pitchesText: '후원 설명 1회 (1:2 미팅)',
+        invitesText: '디지털 초대 3회 (링크 전달과 안내)'
+      },
+      mid: {
+        name: 'Pro1 ~ Pro3',
+        subtitle: '조금씩 성과 나기 시작, 사람 붙기 시작',
+        leadsTarget: 3,
+        pitchesTarget: 3,
+        invitesTarget: 6,
+        leadsText: '신규 설명 3명 (완성된 사업설명)',
+        pitchesText: '후원 설명 3회 (1:2 미팅)',
+        invitesText: '디지털 초대 6회 (링크 전달과 안내)'
+      },
+      high: {
+        name: 'Pro4 이상 도전자',
+        subtitle: '리더십 단계, 깊이 들어간 사람들',
+        leadsTarget: 1,
+        pitchesTarget: 2,
+        invitesTarget: 10,
+        leadsText: '신규 설명 1명',
+        pitchesText: '후원 설명 2회 (다수의 인원 대상)',
+        invitesText: '디지털 초대 10회 (링크 전달과 안내)'
+      }
+    };
 
-  // ===== 2) 링크 입력칸 고정 (읽기 전용) =====
-  if (inputDiscord) {
-    inputDiscord.value = DEFAULT_DISCORD;
-    inputDiscord.readOnly = true;
-  }
-  if (inputYoutube) {
-    inputYoutube.value = DEFAULT_YOUTUBE;
-    inputYoutube.readOnly = true;
-  }
-  if (inputSite) {
-    inputSite.value = DEFAULT_SITE;
-    inputSite.readOnly = true;
-  }
+    // ===== DOM 요소 =====
+    const inputName    = document.getElementById('inputName');
+    const inputTopic   = document.getElementById('inputTopic');
+    const inputMyName  = document.getElementById('inputMyName');
+    const inputDiscord = document.getElementById('inputDiscord');
+    const inputYoutube = document.getElementById('inputYoutube');
+    const inputSite    = document.getElementById('inputSite');
 
-  // ===== 3) 기본 템플릿 =====
-  const defaultTemplate = `[{{상대이름}}님에게 보내는 기본 문장]
+    const btnBuildText   = document.getElementById('btnBuildText');
+    const btnClearInputs = document.getElementById('btnClearInputs');
+    const btnCopyResult  = document.getElementById('btnCopyResult');
+    const btnClearResult = document.getElementById('btnClearResult');
+    const btnSaveTemplate = document.getElementById('btnSaveTemplate');
+    const btnResetTemplate = document.getElementById('btnResetTemplate');
 
-{{상대이름}} 요즘에 {{관심키워드}} 이야기 자주 했잖아.
+    const resultText     = document.getElementById('resultText');
+    const templateEditor = document.getElementById('templateEditor');
 
-나는 지금 THE UNIQUE라는 시스템으로
-시간·돈·자유를 같이 만드는 일을 준비하고 있어.
+    const todayLeads   = document.getElementById('todayLeads');
+    const todayPitches = document.getElementById('todayPitches');
+    const todayInvites = document.getElementById('todayInvites');
 
-내가 하고 싶은 건,
-내가 혼자 뛰는 게 아니라
-나랑 맞는 사람들과 같이 구조를 타고 올라가는 거야.
+    const labelLeads   = document.getElementById('labelLeads');
+    const labelPitches = document.getElementById('labelPitches');
+    const labelInvites = document.getElementById('labelInvites');
 
-그래서 10분만에 구조만 간단히 설명해 볼게.
-아니다 싶으면 편하게 "난 패스"라고 해도 돼.
+    const helpLeads    = document.getElementById('helpLeads');
+    const helpPitches  = document.getElementById('helpPitches');
+    const helpInvites  = document.getElementById('helpInvites');
+    const levelDesc    = document.getElementById('levelDesc');
+    const levelButtons = Array.from(document.querySelectorAll('.level-btn'));
 
-자세한 내용은 우리가 쓰는 공식 채널에서 볼 수 있어:
-- 디스코드 : {{디스코드링크}}
-- 유튜브   : {{유튜브링크}}
-- 사이트   : {{사이트링크}}
-
-한 번만 쭉 보고 느낌을 솔직하게 말해줘.
-
-– {{내이름}}`;
-
-  // 템플릿 가져오기 (편집기 있으면 그 내용, 없으면 기본)
-  function getCurrentTemplate() {
-    if (templateEditor && templateEditor.value.trim()) {
-      return templateEditor.value;
+    // ===== 링크 고정 세팅 =====
+    if (inputDiscord) {
+      inputDiscord.value = DEFAULT_DISCORD;
+      inputDiscord.readOnly = true;
     }
-    return defaultTemplate;
-  }
-
-  // ===== 4) 문장 만들기 =====
-  function buildText() {
-    if (!resultText) return;
-
-    const name   = (inputName  && inputName.value)  || '';
-    const topic  = (inputTopic && inputTopic.value) || '';
-    const myName = (inputMyName && inputMyName.value) || '';
-
-    let tpl = getCurrentTemplate();
-
-    tpl = tpl
-      .replace(/{{상대이름}}/g, name)
-      .replace(/{{관심키워드}}/g, topic)
-      .replace(/{{내이름}}/g, myName)
-      .replace(/{{디스코드링크}}/g, DEFAULT_DISCORD)
-      .replace(/{{유튜브링크}}/g, DEFAULT_YOUTUBE)
-      .replace(/{{사이트링크}}/g, DEFAULT_SITE);
-
-    resultText.value = tpl;
-  }
-
-  // ===== 5) 복사 기능 =====
-  function copyResult() {
-    if (!resultText) return;
-    const text = resultText.value || '';
-    if (!text.trim()) {
-      alert('복사할 내용이 없습니다. 먼저 문장을 만들어 주세요.');
-      return;
+    if (inputYoutube) {
+      inputYoutube.value = DEFAULT_YOUTUBE;
+      inputYoutube.readOnly = true;
+    }
+    if (inputSite) {
+      inputSite.value = DEFAULT_SITE;
+      inputSite.readOnly = true;
     }
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(function () {
-          alert('문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.');
-        })
-        .catch(function () {
-          fallbackCopy();
-        });
-    } else {
-      fallbackCopy();
-    }
-
-    function fallbackCopy() {
+    // ===== 템플릿 로드/저장 =====
+    function loadTemplate() {
+      let saved = null;
       try {
-        resultText.focus();
-        resultText.select();
-        const ok = document.execCommand('copy');
-        alert(ok
-          ? '문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.'
-          : '자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
+        saved = localStorage.getItem(STORAGE_TEMPLATE_KEY);
+      } catch (e) {}
+      templateEditor.value = saved || defaultTemplate;
+    }
+
+    function saveTemplate() {
+      try {
+        localStorage.setItem(STORAGE_TEMPLATE_KEY, templateEditor.value);
+        alert('템플릿이 이 브라우저에 저장되었습니다.');
       } catch (e) {
-        alert('자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
+        alert('템플릿 저장 중 오류가 발생했습니다.');
       }
     }
-  }
 
-  // ===== 6) 입력/결과 초기화 =====
-  function clearInputs() {
-    if (!confirm('이름/관심/내 이름만 비울까요?')) return;
-    if (inputName) inputName.value = '';
-    if (inputTopic) inputTopic.value = '';
-    if (inputMyName) inputMyName.value = '';
-  }
+    function resetTemplate() {
+      if (!confirm('기본 템플릿으로 되돌릴까요? (지금 쓴 내용은 사라집니다)')) return;
+      templateEditor.value = defaultTemplate;
+      saveTemplate();
+    }
 
-  function clearResult() {
-    if (!resultText) return;
-    resultText.value = '';
-  }
+    // ===== 문장 만들기 =====
+    function buildText() {
+      if (!resultText) return;
 
-  // ===== 7) 이벤트 연결 (있을 때만) =====
-  if (btnBuildText) {
-    btnBuildText.addEventListener('click', buildText);
-  }
-  if (btnClearInputs) {
-    btnClearInputs.addEventListener('click', clearInputs);
-  }
-  if (btnCopyResult) {
-    btnCopyResult.addEventListener('click', copyResult);
-  }
-  if (btnClearResult) {
-    btnClearResult.addEventListener('click', clearResult);
-  }
+      const name   = (inputName  && inputName.value)  || '';
+      const topic  = (inputTopic && inputTopic.value) || '';
+      const myName = (inputMyName && inputMyName.value) || '';
 
-  // 페이지 열리자마자 한 번 생성해 두기
-  buildText();
-})();
-</script>
+      let tpl = (templateEditor && templateEditor.value.trim())
+        ? templateEditor.value
+        : defaultTemplate;
+
+      const map = {
+        '상대이름': name,
+        '관심키워드': topic,
+        '내이름': myName,
+        '디스코드링크': DEFAULT_DISCORD,
+        '유튜브링크': DEFAULT_YOUTUBE,
+        '사이트링크': DEFAULT_SITE
+      };
+
+      Object.keys(map).forEach(function (key) {
+        const pattern = new RegExp('{{' + key + '}}', 'g');
+        tpl = tpl.replace(pattern, map[key]);
+      });
+
+      resultText.value = tpl;
+    }
+
+    // ===== 복사 기능 =====
+    function copyResult() {
+      if (!resultText) return;
+      const text = resultText.value || '';
+      if (!text.trim()) {
+        alert('복사할 내용이 없습니다. 먼저 문장을 만들어 주세요.');
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(function () {
+            alert('문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.');
+          })
+          .catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+
+      function fallbackCopy() {
+        try {
+          resultText.focus();
+          resultText.select();
+          const ok = document.execCommand('copy');
+          alert(ok
+            ? '문장이 복사되었습니다. 카톡/DM에 붙여 넣으면 됩니다.'
+            : '자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
+        } catch (e) {
+          alert('자동 복사가 잘 안 됩니다. 직접 드래그해서 복사해 주세요.');
+        }
+      }
+    }
+
+    function clearInputs() {
+      if (!confirm('이름/관심/내 이름만 비울까요?')) return;
+      if (inputName) inputName.value = '';
+      if (inputTopic) inputTopic.value = '';
+      if (inputMyName) inputMyName.value = '';
+    }
+
+    function clearResult() {
+      if (!resultText) return;
+      resultText.value = '';
+    }
+
+    // ===== 레벨 적용 =====
+    function applyLevel(levelKey) {
+      const cfg = LEVELS[levelKey] || LEVELS.basic;
+
+      levelButtons.forEach(function (btn) {
+        btn.classList.toggle('level-active', btn.dataset.level === levelKey);
+      });
+
+      if (labelLeads) {
+        labelLeads.textContent = '신규 설명 진행 수 (목표 ' + cfg.leadsTarget + ')';
+      }
+      if (labelPitches) {
+        labelPitches.textContent = '후원 설명 진행 수 (목표 ' + cfg.pitchesTarget + ')';
+      }
+      if (labelInvites) {
+        labelInvites.textContent = '오늘 디지털 초대 수 (목표 ' + cfg.invitesTarget + ')';
+      }
+
+      if (helpLeads)   helpLeads.textContent   = cfg.leadsText;
+      if (helpPitches) helpPitches.textContent = cfg.pitchesText;
+      if (helpInvites) helpInvites.textContent = cfg.invitesText;
+
+      if (levelDesc) {
+        levelDesc.innerHTML =
+          '<strong>' + cfg.name + '</strong> · ' + cfg.subtitle +
+          '<br />오늘 목표: 신규 ' + cfg.leadsTarget +
+          ' / 후원 ' + cfg.pitchesTarget +
+          ' / 초대 ' + cfg.invitesTarget;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_LEVEL_KEY, levelKey);
+      } catch (e) {}
+    }
+
+    // ===== 지표 저장/로드 =====
+    function loadMetrics() {
+      try {
+        const raw = localStorage.getItem(STORAGE_METRIC_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (typeof data.leads === 'number')   todayLeads.value   = data.leads;
+        if (typeof data.pitches === 'number') todayPitches.value = data.pitches;
+        if (typeof data.invites === 'number') todayInvites.value = data.invites;
+      } catch (e) {}
+    }
+
+    function saveMetrics() {
+      const data = {
+        leads:   Number(todayLeads.value)   || 0,
+        pitches: Number(todayPitches.value) || 0,
+        invites: Number(todayInvites.value) || 0
+      };
+      try {
+        localStorage.setItem(STORAGE_METRIC_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    // ===== 이벤트 연결 =====
+    if (btnBuildText)   btnBuildText.addEventListener('click', buildText);
+    if (btnClearInputs) btnClearInputs.addEventListener('click', clearInputs);
+    if (btnCopyResult)  btnCopyResult.addEventListener('click', copyResult);
+    if (btnClearResult) btnClearResult.addEventListener('click', clearResult);
+    if (btnSaveTemplate) btnSaveTemplate.addEventListener('click', saveTemplate);
+    if (btnResetTemplate) btnResetTemplate.addEventListener('click', resetTemplate);
+
+    [todayLeads, todayPitches, todayInvites].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('change', saveMetrics);
+      el.addEventListener('blur', saveMetrics);
+    });
+
+    levelButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyLevel(btn.dataset.level);
+      });
+    });
+
+    // ===== 초기화 =====
+    if (templateEditor) loadTemplate();
+    loadMetrics();
+
+    let savedLevel = 'basic';
+    try {
+      const stored = localStorage.getItem(STORAGE_LEVEL_KEY);
+      if (stored && LEVELS[stored]) savedLevel = stored;
+    } catch (e) {}
+    applyLevel(savedLevel);
+
+    // 첫 화면에 기본 문장 한 번 만들어두기
+    buildText();
+  })();
+  </script>
 </body>
 </html>
