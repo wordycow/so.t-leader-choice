@@ -3,333 +3,570 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The Unique · Public Market</title>
+  <title>UNIQUE 마켓</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { margin:0; font-family:system-ui,-apple-system,"Pretendard",sans-serif; background:#0b1220; color:#e5e7eb; }
-    .wrap { max-width:1100px; margin:0 auto; padding:18px; }
-    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
-    .card { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); border-radius:16px; padding:14px; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .col { flex:1 1 320px; min-width:320px; }
-    input, textarea, select, button { width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#e5e7eb; }
-    button { cursor:pointer; font-weight:800; }
-    button.secondary { background:transparent; }
-    .muted { opacity:.75; font-size:13px; }
-    .list .item { padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.10); margin-bottom:10px; background:rgba(255,255,255,.04); }
-    .pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18); font-size:12px; opacity:.9; }
-    .btns { display:flex; gap:8px; }
-    .btns button { width:auto; }
-    hr { border:0; border-top:1px solid rgba(255,255,255,.12); margin:12px 0; }
-    .hide { display:none !important; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,"Pretendard",sans-serif;background:#0b1220;color:#e5e7eb}
+    a{color:inherit}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+    .brand{font-weight:900;letter-spacing:.12em}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);font-size:12px}
+    .btns{display:flex;gap:8px;flex-wrap:wrap}
+    button{cursor:pointer}
+    .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#e5e7eb;font-weight:800}
+    .btn.primary{background:rgba(255,255,255,.12)}
+    .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.4)}
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);padding:12px}
+    .muted{opacity:.75;font-size:12px}
+    input,textarea,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#e5e7eb;outline:none}
+    textarea{min-height:84px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:620px){.row{grid-template-columns:1fr}}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .thumb{width:84px;height:84px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;position:relative}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb .x{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:10px;padding:2px 6px;font-size:11px}
+    .feed{display:grid;grid-template-columns: repeat(3, minmax(0,1fr));gap:12px}
+    @media(max-width:980px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
+    @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
+    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);overflow:hidden}
+    .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .postTitle{font-weight:900}
+    .postMeta{font-size:12px;opacity:.8;margin-top:6px;line-height:1.4}
+    .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
+    .postBtns{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:12px;opacity:.9}
+    .detailImgGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    @media(max-width:620px){.detailImgGrid{grid-template-columns:1fr}}
+    .detailImgGrid img{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:#0a1020;object-fit:cover}
+    .comment{border-top:1px solid rgba(255,255,255,.08);padding:10px 0}
+    .commentHead{display:flex;justify-content:space-between;gap:10px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div style="font-size:20px;font-weight:900;">The Unique · Public Market</div>
-        <div class="muted">누구나 열람 가능 / 등록·댓글·수정은 로그인 필요</div>
-      </div>
-
-      <div class="card" style="min-width:340px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-          <div style="font-weight:900;">계정</div>
-          <button id="btnLogout" class="secondary hide">로그아웃</button>
-        </div>
-
-        <div id="who" class="muted" style="margin:8px 0 10px;">비로그인 상태</div>
-
-        <div id="authBox">
-          <input id="email" type="email" placeholder="이메일" />
-          <input id="password" type="password" placeholder="비밀번호(6자+)" style="margin-top:8px;" />
-          <div class="row" style="margin-top:10px;">
-            <div class="col"><button id="btnLogin">로그인</button></div>
-            <div class="col"><button id="btnSignup" class="secondary">회원가입</button></div>
-          </div>
-          <div id="authMsg" class="muted" style="margin-top:10px;"></div>
-        </div>
-      </div>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="brand">UNIQUE 마켓</div>
+      <div id="who" class="muted">로딩 중...</div>
     </div>
+    <div class="btns">
+      <button class="btn" id="btnMain">UNIQUE MAIN</button>
+      <button class="btn danger" id="btnLogout">로그아웃</button>
+    </div>
+  </div>
 
-    <div class="row" style="margin-top:12px;">
-      <div class="col">
-        <div id="createBox" class="card hide" style="margin-bottom:12px;">
-          <div style="font-weight:900; margin-bottom:8px;">물건 올리기(로그인 필요)</div>
-          <input id="newTitle" placeholder="제목" />
-          <textarea id="newDesc" placeholder="설명" rows="4" style="margin-top:8px;"></textarea>
-          <select id="newStatus" style="margin-top:8px;">
-            <option value="판매중">판매중</option>
-            <option value="예약중">예약중</option>
-            <option value="판매완료">판매완료</option>
-          </select>
-          <button id="btnCreate" style="margin-top:10px;">등록</button>
-          <div id="createMsg" class="muted" style="margin-top:8px;"></div>
+  <div id="status" class="pill" style="display:none;"></div>
+
+  <div id="viewList">
+    <div class="grid">
+      <!-- 작성/수정 -->
+      <div class="card">
+        <div style="font-weight:900;margin-bottom:8px;">등록 / 수정</div>
+        <div class="muted" style="margin-bottom:10px;">이미지 1~3장 (JPG/PNG/GIF). 새 이미지 선택 시 기존 이미지는 교체됩니다.</div>
+
+        <div class="row">
+          <div>
+            <div class="muted" style="margin:0 0 6px;">제목</div>
+            <input id="fTitle" placeholder="예: 미개봉 단백질 2통" />
+          </div>
+          <div>
+            <div class="muted" style="margin:0 0 6px;">수량</div>
+            <input id="fQty" type="number" placeholder="예: 2" />
+          </div>
         </div>
 
-        <div class="card list">
-          <div style="font-weight:900; margin-bottom:8px;">물건 목록(공개)</div>
-          <div id="items" class="muted">불러오는 중...</div>
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <div class="muted" style="margin:0 0 6px;">연락처</div>
+            <input id="fContact" placeholder="예: 010-xxxx-xxxx / 오픈채팅 링크" />
+          </div>
+          <div>
+            <div class="muted" style="margin:0 0 6px;">지역</div>
+            <input id="fRegion" placeholder="예: 서울 강남 / 부산 해운대" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="muted" style="margin:0 0 6px;">설명</div>
+          <textarea id="fDesc" placeholder="상태/사용감/전달 방식 등"></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="muted" style="margin:0 0 6px;">이미지(최대 3개)</div>
+          <input id="fImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+          <div id="imgPreview" class="thumbs"></div>
+        </div>
+
+        <div class="btns" style="margin-top:10px;">
+          <button class="btn primary" id="btnSave">등록하기</button>
+          <button class="btn" id="btnCancelEdit" style="display:none;">수정 취소</button>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          - <b>숨김</b>은 내 글만 보이게 합니다.<br>
+          - <b>이미지 편집</b>은 “교체/삭제/재업로드” 방식으로 구현했습니다.
         </div>
       </div>
 
-      <div class="col">
-        <div class="card">
-          <div style="font-weight:900; margin-bottom:8px;">상세 / 댓글(공개)</div>
-          <div id="detail" class="muted">왼쪽에서 물건을 선택하세요.</div>
+      <!-- 리스트 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="font-weight:900;">게시글</div>
+          <button class="btn" id="btnRefresh">새로고침</button>
         </div>
+        <div class="muted" style="margin-top:6px;">아래 카드 클릭 → 상세(댓글) 페이지</div>
+        <div style="height:10px"></div>
+        <div id="feed" class="feed"></div>
       </div>
     </div>
   </div>
 
+  <div id="viewDetail" style="display:none;">
+    <div class="card">
+      <div class="btns" style="margin-bottom:10px;">
+        <button class="btn" id="btnBack">← 목록</button>
+      </div>
+      <div id="detail"></div>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ✅ 여기에 네 값 입력
-  const SUPABASE_URL = "https://YOURPROJECT.supabase.co";
-  const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+  // ✅ Supabase 설정
+  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+  const BUCKET = "market";
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const $ = (id) => document.getElementById(id);
-  const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const show = (el, on) => el.style.display = on ? "" : "none";
+
+  const stateEl = $("status");
+  function setStatus(msg, isErr=false){
+    if (!msg){ show(stateEl,false); return; }
+    show(stateEl,true);
+    stateEl.textContent = msg;
+    stateEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.16)";
+    stateEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(255,255,255,.05)";
+  }
 
   let session = null;
-  let currentItem = null;
+  let user = null;
 
-  function setVisible(el, on) {
-    el.classList.toggle("hide", !on);
+  // form state
+  let editingId = null;
+  let selectedFiles = [];
+  let previewUrls = [];
+
+  function getPostIdFromUrl(){
+    const u = new URL(location.href);
+    return u.searchParams.get("id");
   }
 
-  function shortId(uuid) {
-    if (!uuid) return "unknown";
-    return uuid.slice(0, 8);
+  function toPublicUrl(path){
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
-  async function refreshSession() {
-    const { data } = await sb.auth.getSession();
-    session = data.session || null;
-
-    setVisible($("btnLogout"), !!session);
-    setVisible($("createBox"), !!session);
-    $("who").textContent = session ? `로그인: ${session.user.email || shortId(session.user.id)}` : "비로그인 상태";
-    $("authMsg").textContent = "";
-
-    // 공개 목록은 항상 로드
-    await loadItems();
-
-    // 현재 상세가 열려 있으면 UI만 다시 렌더
-    if (currentItem?.id) await openItem(currentItem.id);
+  function fileExt(file){
+    const n = file.name || "";
+    const dot = n.lastIndexOf(".");
+    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
   }
 
-  sb.auth.onAuthStateChange((_event, sess) => {
-    session = sess;
-    refreshSession();
+  function safeName(s){ return (s||"").toString().trim(); }
+
+  function clearPreviews(){
+    previewUrls.forEach(u => URL.revokeObjectURL(u));
+    previewUrls = [];
+    selectedFiles = [];
+    $("fImages").value = "";
+    $("imgPreview").innerHTML = "";
+  }
+
+  function renderPreviews(){
+    const box = $("imgPreview");
+    box.innerHTML = "";
+    selectedFiles.slice(0,3).forEach((file, idx) => {
+      const url = URL.createObjectURL(file);
+      previewUrls.push(url);
+      const d = document.createElement("div");
+      d.className = "thumb";
+      d.innerHTML = `<img src="${url}" alt=""><button class="x" type="button">X</button>`;
+      d.querySelector(".x").onclick = () => {
+        selectedFiles.splice(idx, 1);
+        renderPreviews();
+      };
+      box.appendChild(d);
+    });
+  }
+
+  $("fImages").addEventListener("change", (e) => {
+    clearPreviews();
+    const files = Array.from(e.target.files || []);
+    selectedFiles = files.slice(0,3);
+    renderPreviews();
   });
 
-  async function loadItems() {
-    const { data, error } = await sb
-      .from("items")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      $("items").innerHTML = `<div class="muted">불러오기 실패: ${esc(error.message)}</div>`;
-      return;
+  async function requireLogin(){
+    const { data } = await sb.auth.getSession();
+    session = data.session;
+    if (!session) {
+      location.href = "the-unique-gate.html";
+      return false;
     }
-
-    if (!data?.length) {
-      $("items").innerHTML = `<div class="muted">아직 등록된 물건이 없습니다.</div>`;
-      return;
-    }
-
-    $("items").innerHTML = data.map(it => `
-      <div class="item">
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-          <div>
-            <div style="font-weight:900;">${esc(it.title)}</div>
-            <div class="muted" style="margin-top:4px; white-space:pre-wrap;">${esc(it.description || "")}</div>
-            <div style="margin-top:8px;"><span class="pill">${esc(it.status)}</span></div>
-            <div class="muted" style="margin-top:6px; font-size:12px;">
-              작성자: ${esc(shortId(it.owner))} · ${esc(new Date(it.created_at).toLocaleString("ko-KR"))}
-            </div>
-          </div>
-          <div class="btns">
-            <button onclick="openItem(${it.id})">보기</button>
-          </div>
-        </div>
-      </div>
-    `).join("");
+    user = session.user;
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const email = user.email || "";
+    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    return true;
   }
 
-  window.openItem = async function(id) {
-    const { data: items, error } = await sb.from("items").select("*").eq("id", id).limit(1);
-    if (error || !items?.length) return;
-
-    currentItem = items[0];
-
-    const isOwner = !!session && currentItem.owner === session.user.id;
-
-    const statusEditor = isOwner ? `
-      <hr />
-      <div class="muted" style="margin-bottom:6px;">내 물건 상태 변경</div>
-      <select id="editStatus">
-        ${["판매중","예약중","판매완료"].map(s => `<option value="${s}" ${currentItem.status===s?"selected":""}>${s}</option>`).join("")}
-      </select>
-      <button style="margin-top:8px;" onclick="updateStatus()">상태 저장</button>
-      <div id="statusMsg" class="muted" style="margin-top:6px;"></div>
-    ` : `
-      <hr />
-      <div class="muted">상태 변경은 등록자만 가능합니다.</div>
-    `;
-
-    const commentsHtml = await renderComments(id);
-
-    const commentBox = session ? `
-      <div style="margin-top:10px;">
-        <textarea id="commentText" rows="3" placeholder="댓글을 입력하세요"></textarea>
-        <button style="margin-top:8px;" onclick="addComment()">댓글 등록</button>
-        <div id="commentMsg" class="muted" style="margin-top:6px;"></div>
-      </div>
-    ` : `
-      <div class="muted" style="margin-top:10px;">댓글 작성은 로그인 후 가능합니다.</div>
-    `;
-
-    $("detail").innerHTML = `
-      <div style="font-weight:900; font-size:18px;">${esc(currentItem.title)}</div>
-      <div class="muted" style="margin-top:6px; white-space:pre-wrap;">${esc(currentItem.description || "")}</div>
-      <div style="margin-top:10px;"><span class="pill">${esc(currentItem.status)}</span></div>
-      <div class="muted" style="margin-top:6px; font-size:12px;">
-        작성자: ${esc(shortId(currentItem.owner))} · ${esc(new Date(currentItem.created_at).toLocaleString("ko-KR"))}
-      </div>
-
-      ${statusEditor}
-
-      <hr />
-      <div style="font-weight:900; margin-bottom:8px;">댓글(공개)</div>
-      <div id="comments">${commentsHtml}</div>
-
-      ${commentBox}
-    `;
-  }
-
-  async function renderComments(itemId) {
-    const { data, error } = await sb
-      .from("comments")
-      .select("*")
-      .eq("item_id", itemId)
-      .order("created_at", { ascending: true });
-
-    if (error) return `<div class="muted">댓글 불러오기 실패: ${esc(error.message)}</div>`;
-    if (!data?.length) return `<div class="muted">아직 댓글이 없습니다.</div>`;
-
-    return data.map(c => `
-      <div style="padding:10px; border:1px solid rgba(255,255,255,.10); border-radius:12px; margin-bottom:8px;">
-        <div class="muted" style="font-size:12px;">
-          작성자: ${esc(shortId(c.user_id))} · ${esc(new Date(c.created_at).toLocaleString("ko-KR"))}
-        </div>
-        <div style="margin-top:6px; white-space:pre-wrap;">${esc(c.content)}</div>
-      </div>
-    `).join("");
-  }
-
-  window.addComment = async function() {
-    if (!session || !currentItem) return;
-    const text = $("commentText").value.trim();
-    if (!text) return;
-
-    $("commentMsg").textContent = "등록 중...";
-    const { error } = await sb.from("comments").insert({
-      item_id: currentItem.id,
-      user_id: session.user.id,
-      content: text
-    });
-
-    if (error) {
-      $("commentMsg").textContent = "실패: " + error.message;
-      return;
-    }
-
-    $("commentText").value = "";
-    $("commentMsg").textContent = "등록 완료";
-    $("comments").innerHTML = await renderComments(currentItem.id);
-  }
-
-  window.updateStatus = async function() {
-    if (!session || !currentItem) return;
-    const next = $("editStatus").value;
-    $("statusMsg").textContent = "저장 중...";
-
-    const { error } = await sb
-      .from("items")
-      .update({ status: next })
-      .eq("id", currentItem.id);
-
-    if (error) {
-      $("statusMsg").textContent = "실패: " + error.message;
-      return;
-    }
-
-    $("statusMsg").textContent = "저장 완료";
-    await loadItems();
-    await openItem(currentItem.id);
-  }
-
-  $("btnCreate").onclick = async () => {
-    if (!session) return;
-    const title = $("newTitle").value.trim();
-    const description = $("newDesc").value.trim();
-    const status = $("newStatus").value;
-
-    if (!title) {
-      $("createMsg").textContent = "제목은 필수입니다.";
-      return;
-    }
-
-    $("createMsg").textContent = "등록 중...";
-    const { error } = await sb.from("items").insert({
-      owner: session.user.id,
-      title,
-      description,
-      status
-    });
-
-    if (error) {
-      $("createMsg").textContent = "실패: " + error.message;
-      return;
-    }
-
-    $("newTitle").value = "";
-    $("newDesc").value = "";
-    $("newStatus").value = "판매중";
-    $("createMsg").textContent = "등록 완료!";
-    await loadItems();
-  };
-
-  $("btnLogin").onclick = async () => {
-    $("authMsg").textContent = "로그인 중...";
-    const email = $("email").value.trim();
-    const password = $("password").value;
-
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    $("authMsg").textContent = error ? ("실패: " + error.message) : "로그인 완료";
-  };
-
-  $("btnSignup").onclick = async () => {
-    $("authMsg").textContent = "회원가입 중...";
-    const email = $("email").value.trim();
-    const password = $("password").value;
-
-    const { error } = await sb.auth.signUp({ email, password });
-    $("authMsg").textContent = error
-      ? ("실패: " + error.message)
-      : "가입 완료! (설정에 따라 이메일 인증이 필요할 수 있음)";
-  };
-
+  $("btnMain").onclick = () => location.href = "the-unique-main.html";
   $("btnLogout").onclick = async () => {
     await sb.auth.signOut();
-    currentItem = null;
-    $("detail").innerHTML = `<div class="muted">왼쪽에서 물건을 선택하세요.</div>`;
+    location.href = "the-unique-gate.html";
   };
 
-  refreshSession();
+  async function loadPosts(){
+    setStatus("불러오는 중...");
+    const { data, error } = await sb
+      .from("market_posts")
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if (error) { setStatus("불러오기 실패: " + error.message, true); return []; }
+    setStatus("");
+    return data || [];
+  }
+
+  function postCardHtml(p){
+    const imgs = Array.isArray(p.images) ? p.images : [];
+    const cover = imgs[0] || "";
+    const hiddenBadge = p.is_hidden ? `<span class="chip">숨김</span>` : "";
+    return `
+      <div class="post" data-id="${p.id}">
+        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
+        <div class="postTop">
+          <div>
+            <div class="postTitle">${escapeHtml(p.title)}</div>
+            <div class="postMeta">
+              ${hiddenBadge}
+              <span class="chip">수량 ${p.qty ?? "-"}</span>
+              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
+              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
+            </div>
+          </div>
+          <div class="postBtns">
+            ${p.owner === user.id ? `<button class="btn" data-act="edit">수정</button>` : ""}
+            ${p.owner === user.id ? `<button class="btn" data-act="hide">${p.is_hidden ? "표시" : "숨김"}</button>` : ""}
+            ${p.owner === user.id ? `<button class="btn danger" data-act="del">삭제</button>` : ""}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  async function renderFeed(){
+    const posts = await loadPosts();
+    const feed = $("feed");
+    feed.innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
+
+    feed.querySelectorAll(".post").forEach(el => {
+      const id = el.getAttribute("data-id");
+
+      el.addEventListener("click", (e) => {
+        const act = e.target?.getAttribute?.("data-act");
+        if (act) return; // 버튼 클릭은 아래에서 처리
+        location.href = `team-market.html?id=${id}`;
+      });
+
+      el.querySelectorAll("button[data-act]").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const act = btn.getAttribute("data-act");
+          if (act === "edit") await startEdit(id);
+          if (act === "hide") await toggleHide(id, btn.textContent.includes("숨김"));
+          if (act === "del") await deletePost(id);
+        });
+      });
+    });
+  }
+
+  async function startEdit(id){
+    setStatus("수정 불러오는 중...");
+    const { data, error } = await sb.from("market_posts").select("*").eq("id", id).single();
+    if (error) { setStatus("불러오기 실패: " + error.message, true); return; }
+    if (data.owner !== user.id) { setStatus("내 글만 수정 가능합니다.", true); return; }
+
+    editingId = data.id;
+    $("btnCancelEdit").style.display = "";
+    $("btnSave").textContent = "수정 저장";
+
+    $("fTitle").value = data.title || "";
+    $("fQty").value = data.qty ?? "";
+    $("fContact").value = data.contact || "";
+    $("fRegion").value = data.region || "";
+    $("fDesc").value = data.description || "";
+
+    clearPreviews(); // 새 이미지 선택하면 기존이 교체됨
+    setStatus("수정 모드: 이미지를 선택하면 기존 이미지는 교체됩니다.");
+  }
+
+  $("btnCancelEdit").onclick = () => {
+    editingId = null;
+    $("btnCancelEdit").style.display = "none";
+    $("btnSave").textContent = "등록하기";
+    $("fTitle").value = ""; $("fQty").value = ""; $("fContact").value = ""; $("fRegion").value = ""; $("fDesc").value = "";
+    clearPreviews();
+    setStatus("");
+  };
+
+  async function uploadImages(postId){
+    // 선택 파일이 없으면 null 반환(=기존 유지)
+    if (!selectedFiles.length) return null;
+
+    setStatus("이미지 업로드 중...");
+    const urls = [];
+    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
+      const f = selectedFiles[i];
+      const ext = fileExt(f);
+      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert: false, contentType: f.type });
+      if (error) { throw new Error("이미지 업로드 실패: " + error.message); }
+      urls.push(toPublicUrl(path));
+    }
+    return urls;
+  }
+
+  async function createPost(){
+    const title = safeName($("fTitle").value);
+    if (!title) { setStatus("제목은 필수입니다.", true); return; }
+
+    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
+    const contact = safeName($("fContact").value);
+    const region = safeName($("fRegion").value);
+    const description = safeName($("fDesc").value);
+
+    setStatus("등록 중...");
+    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+
+    const { data, error } = await sb
+      .from("market_posts")
+      .insert({ owner: user.id, owner_name, title, qty, contact, region, description })
+      .select("id")
+      .single();
+
+    if (error) { setStatus("등록 실패: " + error.message, true); return; }
+
+    try{
+      const urls = await uploadImages(data.id);
+      if (urls) {
+        await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
+      }
+      setStatus("등록 완료!");
+      $("btnCancelEdit").click();
+      await renderFeed();
+    } catch(e){
+      setStatus(e.message, true);
+    }
+  }
+
+  async function updatePost(){
+    const title = safeName($("fTitle").value);
+    if (!title) { setStatus("제목은 필수입니다.", true); return; }
+
+    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
+    const contact = safeName($("fContact").value);
+    const region = safeName($("fRegion").value);
+    const description = safeName($("fDesc").value);
+
+    setStatus("수정 저장 중...");
+
+    // 기존 데이터
+    const { data: old, error: e1 } = await sb.from("market_posts").select("*").eq("id", editingId).single();
+    if (e1) { setStatus("기존 글 불러오기 실패: " + e1.message, true); return; }
+
+    let images = old.images || [];
+    try{
+      const newUrls = await uploadImages(editingId);
+      if (newUrls) images = newUrls; // 새 이미지 선택 시 교체
+    } catch(e){
+      setStatus(e.message, true); return;
+    }
+
+    const { error } = await sb
+      .from("market_posts")
+      .update({ title, qty, contact, region, description, images })
+      .eq("id", editingId);
+
+    if (error) { setStatus("수정 실패: " + error.message, true); return; }
+
+    setStatus("수정 완료!");
+    $("btnCancelEdit").click();
+    await renderFeed();
+  }
+
+  $("btnSave").onclick = async () => {
+    if (!editingId) await createPost();
+    else await updatePost();
+  };
+
+  async function toggleHide(id, willHide){
+    const { data, error } = await sb.from("market_posts").select("owner,is_hidden").eq("id", id).single();
+    if (error) { setStatus("실패: " + error.message, true); return; }
+    if (data.owner !== user.id) { setStatus("내 글만 숨김/표시 가능합니다.", true); return; }
+
+    const { error: e2 } = await sb.from("market_posts").update({ is_hidden: !data.is_hidden }).eq("id", id);
+    if (e2) { setStatus("실패: " + e2.message, true); return; }
+    await renderFeed();
+  }
+
+  async function deletePost(id){
+    if (!confirm("삭제할까요?")) return;
+    const { error } = await sb.from("market_posts").delete().eq("id", id);
+    if (error) { setStatus("삭제 실패: " + error.message, true); return; }
+    await renderFeed();
+  }
+
+  $("btnRefresh").onclick = () => renderFeed();
+
+  // ===== Detail View =====
+  async function renderDetail(postId){
+    show($("viewList"), false);
+    show($("viewDetail"), true);
+
+    const { data: post, error } = await sb.from("market_posts").select("*").eq("id", postId).single();
+    if (error) { $("detail").innerHTML = `<div class="muted">불러오기 실패: ${escapeHtml(error.message)}</div>`; return; }
+
+    const isOwner = post.owner === user.id;
+    const imgs = Array.isArray(post.images) ? post.images : [];
+    const imgHtml = imgs.length
+      ? `<div class="detailImgGrid">${imgs.map(u => `<img src="${u}" alt="">`).join("")}</div>`
+      : `<div class="muted">이미지가 없습니다.</div>`;
+
+    $("detail").innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:900;font-size:18px;">${escapeHtml(post.title)}</div>
+          <div class="muted" style="margin-top:6px;">
+            수량: ${post.qty ?? "-"} · 지역: ${escapeHtml(post.region || "-")}<br>
+            연락: ${escapeHtml(post.contact || "-")}<br>
+            작성자: ${escapeHtml(post.owner_name || post.owner.slice(0,8))}
+          </div>
+        </div>
+        <div class="btns">
+          ${isOwner ? `<button class="btn" id="btnEditHere">수정</button>` : ""}
+          ${isOwner ? `<button class="btn" id="btnHideHere">${post.is_hidden ? "표시" : "숨김"}</button>` : ""}
+          ${isOwner ? `<button class="btn danger" id="btnDelHere">삭제</button>` : ""}
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
+      ${imgHtml}
+
+      <div style="height:10px"></div>
+      <div class="card" style="padding:12px;margin-top:10px;">
+        <div style="font-weight:900;margin-bottom:6px;">설명</div>
+        <div style="white-space:pre-wrap;">${escapeHtml(post.description || "")}</div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div style="font-weight:900;">댓글</div>
+      <div class="muted" style="margin-top:4px;">댓글은 작성자/글쓴이가 삭제할 수 있습니다.</div>
+
+      <div style="margin-top:10px;">
+        <textarea id="cText" placeholder="댓글을 입력하세요"></textarea>
+        <div class="btns" style="margin-top:8px;">
+          <button class="btn primary" id="btnAddComment">댓글 등록</button>
+        </div>
+        <div id="cMsg" class="muted" style="margin-top:6px;"></div>
+      </div>
+
+      <div id="comments" style="margin-top:12px;"></div>
+    `;
+
+    if (isOwner) {
+      $("btnEditHere").onclick = async () => { location.href = "team-market.html"; setTimeout(()=>startEdit(postId), 50); };
+      $("btnHideHere").onclick = async () => { await toggleHide(postId); location.reload(); };
+      $("btnDelHere").onclick = async () => { await deletePost(postId); location.href = "team-market.html"; };
+    }
+
+    async function loadComments(){
+      const { data, error } = await sb
+        .from("market_comments")
+        .select("*")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+
+      if (error) { $("comments").innerHTML = `<div class="muted">댓글 로드 실패: ${escapeHtml(error.message)}</div>`; return; }
+      if (!data?.length) { $("comments").innerHTML = `<div class="muted">댓글이 없습니다.</div>`; return; }
+
+      $("comments").innerHTML = data.map(c => {
+        const canDel = (c.user_id === user.id) || isOwner;
+        return `
+          <div class="comment">
+            <div class="commentHead">
+              <div class="muted">${escapeHtml(c.user_name || c.user_id.slice(0,8))} · ${new Date(c.created_at).toLocaleString()}</div>
+              ${canDel ? `<button class="btn danger" data-del="${c.id}" style="padding:6px 10px;">삭제</button>` : ""}
+            </div>
+            <div style="white-space:pre-wrap;margin-top:6px;">${escapeHtml(c.content)}</div>
+          </div>
+        `;
+      }).join("");
+
+      $("comments").querySelectorAll("button[data-del]").forEach(btn => {
+        btn.onclick = async () => {
+          const cid = btn.getAttribute("data-del");
+          const { error } = await sb.from("market_comments").delete().eq("id", cid);
+          if (error) { $("cMsg").textContent = "삭제 실패: " + error.message; return; }
+          await loadComments();
+        };
+      });
+    }
+
+    await loadComments();
+
+    $("btnAddComment").onclick = async () => {
+      const text = ($("cText").value || "").trim();
+      if (!text) return;
+      $("cMsg").textContent = "등록 중...";
+
+      const user_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+
+      const { error } = await sb
+        .from("market_comments")
+        .insert({ post_id: postId, user_id: user.id, user_name, content: text });
+
+      if (error) { $("cMsg").textContent = "등록 실패: " + error.message; return; }
+      $("cText").value = "";
+      $("cMsg").textContent = "등록 완료";
+      await loadComments();
+    };
+  }
+
+  $("btnBack").onclick = () => location.href = "team-market.html";
+
+  // ===== Boot =====
+  (async () => {
+    const ok = await requireLogin();
+    if (!ok) return;
+
+    const pid = getPostIdFromUrl();
+    if (pid) await renderDetail(pid);
+    else await renderFeed();
+  })();
 </script>
 </body>
 </html>
