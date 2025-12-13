@@ -403,7 +403,7 @@
       }
     }
   </script>
-<!-- ✅ START: Supabase OAuth (루프 해결 최종 블록) -->
+<!-- ✅ START: Supabase OAuth (루프 방지/자동이동 없음) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -411,7 +411,6 @@
 
   const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
   const GATE_URL  = SITE_BASE + "/the-unique-gate.html";
-  const MAIN_URL  = SITE_BASE + "/the-unique-main.html";
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -431,14 +430,14 @@
     oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
   }
 
+  // ✅ URL에 남은 로그인 파라미터/해시 정리
   function cleanOAuthArtifacts(){
-    // query 정리
     const u = new URL(location.href);
     const err = u.searchParams.get("error_description") || u.searchParams.get("error");
+
     ["code","state","error","error_description"].forEach(k => u.searchParams.delete(k));
     history.replaceState({}, document.title, u.pathname);
 
-    // hash 정리(#access_token=...)
     if (location.hash && location.hash.includes("access_token")) {
       history.replaceState({}, document.title, location.pathname);
     }
@@ -446,47 +445,11 @@
     if (err) sayOAuth("소셜 로그인 오류: " + err, true);
   }
 
-  // ✅ 무한루프 방지 (메인이 다시 게이트로 보낼 때 자동으로 멈춤)
-  function canRedirect(){
-    const key = "unique_redirect_guard";
-    const now = Date.now();
-    let s = {};
-    try { s = JSON.parse(sessionStorage.getItem(key) || "{}"); } catch {}
-    if (!s.t || (now - s.t) > 8000) { s.t = now; s.c = 0; }
-    s.c++;
-    sessionStorage.setItem(key, JSON.stringify(s));
-
-    if (s.c >= 4) {
-      sayOAuth("⚠️ 메인 페이지가 다시 게이트로 돌려보내고 있어 이동을 멈췄습니다. the-unique-main.html의 게이트 체크를 수정해야 합니다.", true);
-      return false;
-    }
-    return true;
-  }
-
-  // ✅ 핵심: 소셜 로그인만 해도 main이 통과할 수 있게 uniqueCurrentUser를 자동 생성
-  function ensureUniqueCurrentUser(user){
-    if (localStorage.getItem("uniqueCurrentUser")) return;
-
-    const provider = user?.app_metadata?.provider || "oauth";
-    const name = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
-    const email = user?.email || "";
-    const idGuess = (email ? email.split("@")[0] : (provider + "-" + (user?.id || "").slice(0,8))).toLowerCase();
-
-    localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-      id: idGuess,
-      name: name || email || "member",
-      team: "SOCIAL",
-      joinedAt: "",
-      via: provider
-    }));
-  }
-
-  async function syncAndGo(){
+  async function renderOAuthState(){
     const { data, error } = await sb.auth.getSession();
     if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
 
     const sess = data?.session;
-
     if (!sess) {
       if (btnLogout) btnLogout.style.display = "none";
       return;
@@ -505,15 +468,11 @@
       loggedInAt: new Date().toISOString()
     }));
 
-    ensureUniqueCurrentUser(user);
-
     if (btnLogout) btnLogout.style.display = "inline-flex";
     sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
 
-    // ✅ 여기서 바로 메인으로 이동 (단, 루프 방지)
-    if (canRedirect()) {
-      setTimeout(() => location.href = MAIN_URL, 200);
-    }
+    // ✅ 여기서 메인으로 자동 이동을 절대 하지 않음 (루프 방지)
+    // 이제 "아이디 입력 → 로그인"으로 메인 입장
   }
 
   async function signIn(provider, scopes){
@@ -528,12 +487,10 @@
     if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
   }
 
-  // 버튼 이벤트
   document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
   document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
 
-  // ✅ 카카오는 일단 이메일 스코프 빼고 성공부터(koe205 줄이기)
-  //    Supabase > Kakao Provider에서 "Allow users without an email" ON 해두는 걸 추천
+  // ✅ 카카오는 일단 이메일 스코프 빼고 성공부터 (KOE205 줄이기)
   document.getElementById("btnKakao")?.addEventListener("click", () =>
     signIn("kakao", "profile_nickname profile_image")
   );
@@ -541,16 +498,15 @@
   btnLogout?.addEventListener("click", async () => {
     await sb.auth.signOut();
     localStorage.removeItem("uniqueOAuthUser");
-    localStorage.removeItem("uniqueCurrentUser");
     sayOAuth("소셜 로그아웃 완료");
     if (btnLogout) btnLogout.style.display = "none";
   });
 
   (async () => {
     cleanOAuthArtifacts();
-    await syncAndGo();
+    await renderOAuthState();
     sb.auth.onAuthStateChange(async () => {
-      await syncAndGo();
+      await renderOAuthState();
     });
   })();
 </script>
