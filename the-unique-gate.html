@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
 
-  <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
   <meta property="og:description" content="Invitation-only access for action takers.">
@@ -18,7 +17,6 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- THE UNIQUE 타이틀용 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -182,7 +180,7 @@
       background:#FEE500;
       color:#111827;
       border-color: rgba(254,229,0,0.95);
-      box-shadow: 0 10px 26px rgba(0,0,0,1);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.95);
       letter-spacing:0.08em;
     }
 
@@ -197,30 +195,10 @@
 
     .spirit{ position:absolute; pointer-events:none; z-index:5; }
     .spirit img{ display:block; width:100%; height:auto; }
-
-    .spirit-witch{
-      top:30%;
-      right:22%;
-      width:3%;
-      animation: witchFloat 5s ease-in-out infinite alternate;
-      z-index:30;
-    }
-    @keyframes witchFloat{
-      from { transform: translateY(5px) translateX(0); }
-      to   { transform: translateY(-20px) translateX(6px); }
-    }
-
-    .spirit-bat{
-      top:-20%;
-      right:0%;
-      width:43%;
-      animation: batFloat 2s ease-in-out infinite alternate;
-      z-index:1;
-    }
-    @keyframes batFloat{
-      from { transform: translateY(8px); }
-      to   { transform: translateY(22px); }
-    }
+    .spirit-witch{ top:30%; right:22%; width:3%; animation: witchFloat 5s ease-in-out infinite alternate; z-index:30; }
+    @keyframes witchFloat{ from { transform: translateY(5px) translateX(0); } to { transform: translateY(-20px) translateX(6px); } }
+    .spirit-bat{ top:-20%; right:0%; width:43%; animation: batFloat 2s ease-in-out infinite alternate; z-index:1; }
+    @keyframes batFloat{ from { transform: translateY(8px); } to { transform: translateY(22px); } }
 
     @media (max-width: 768px){
       .gate-card{ padding:24px 20px 18px; border-radius:22px; }
@@ -247,7 +225,7 @@
 
         <form id="gate-form" class="form-body">
           <div class="gate-input-wrap">
-            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디" />
+            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디(구글시트 기준)" />
           </div>
 
           <div class="btn-row">
@@ -298,7 +276,7 @@
     <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
   </div>
 
-  <!-- ✅ 1) 시트 파싱 콜백 -->
+  <!-- ✅ 구글시트 파싱 -->
   <script>
     let allowedIds = null;
     let memberInfoById = {};
@@ -311,10 +289,11 @@
 
         rows.forEach((row) => {
           const cells = row.c || [];
-          const tsCell   = cells[5] || cells[0];
-          const idCell   = cells[1];
-          const nameCell = cells[2];
-          const teamCell = cells[4];
+
+          const tsCell   = cells[5] || cells[0];  // 가입일(없으면 타임스탬프)
+          const idCell   = cells[1];              // 아이디
+          const nameCell = cells[2];              // 이름
+          const teamCell = cells[4];              // 소속
 
           if (!idCell || idCell.v == null) return;
 
@@ -339,10 +318,10 @@
     }
   </script>
 
-  <!-- ✅ 2) 구글 시트 JSONP 로딩 -->
-  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
+  <!-- ✅ 여기 중요: gid=160409301 사용 -->
+  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?gid=160409301&tqx=responseHandler:handleSheetResponse"></script>
 
-  <!-- ✅ 3) 아이디 로그인 처리 -->
+  <!-- ✅ 아이디 로그인 -->
   <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
@@ -362,7 +341,7 @@
       }
 
       if (sheetError) {
-        statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        statusEl.textContent = "회원 확인 중 오류(시트 접근)를 확인해 주세요.";
         statusEl.classList.add("status-error");
         return;
       }
@@ -389,7 +368,7 @@
     });
   </script>
 
-  <!-- ✅ 4) Supabase OAuth (단일 1개만) -->
+  <!-- ✅ Supabase OAuth (표시는 하되, 메인 입장은 시트 아이디로만) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -440,17 +419,14 @@
       }));
 
       if (btnLogout) btnLogout.style.display = "inline-flex";
-      sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
+      sayOAuth(`소셜 로그인 OK ✅ 이제 시트 아이디 입력 후 [로그인] 누르세요. (${provider.toUpperCase()})`);
     }
 
     async function signIn(provider, scopes){
       sayOAuth("로그인 창 여는 중...");
       const { error } = await sb.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: GATE_URL,
-          ...(scopes ? { scopes } : {})
-        }
+        options: { redirectTo: GATE_URL, ...(scopes ? { scopes } : {}) }
       });
       if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
     }
@@ -468,7 +444,6 @@
       if (btnLogout) btnLogout.style.display = "none";
     });
 
-    // ✅ 시작: 세션 표시만 하고 자동이동은 안 함(루프 방지)
     (async () => {
       await renderOAuthState();
       sb.auth.onAuthStateChange(async () => {
