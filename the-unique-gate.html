@@ -529,15 +529,18 @@
       if (btnLogout) btnLogout.style.display = "inline-flex";
       sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
     }
+    let _redirected = false;
 
-    async function maybeAutoContinue(){
-      const current = localStorage.getItem("uniqueCurrentUser");
-      if (!current) return;
-      const { data } = await sb.auth.getSession();
-      if (data?.session) location.href = MAIN_URL;
-    }
+async function maybeAutoContinue(){
+  if (_redirected) return;
 
-    async function signIn(provider){
+  const { data } = await sb.auth.getSession();
+  if (data?.session) {
+    _redirected = true;
+    setTimeout(() => location.href = MAIN_URL, 200);
+  }
+}
+   async function signIn(provider){
       sayOAuth("로그인 창 여는 중...");
       const { error } = await sb.auth.signInWithOAuth({
         provider,
@@ -548,7 +551,18 @@
 
     document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
     document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
-    document.getElementById("btnKakao")?.addEventListener("click", () => signIn("kakao"));
+    document.getElementById("btnKakao")?.addEventListener("click", () => {
+  sayOAuth("로그인 창 여는 중...");
+  sb.auth.signInWithOAuth({
+    provider: "kakao",
+    options: {
+      redirectTo: GATE_URL,
+      scopes: "profile_nickname profile_image account_email"
+    }
+  });
+if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
+});
+
 
     btnLogout?.addEventListener("click", async () => {
       await sb.auth.signOut();
