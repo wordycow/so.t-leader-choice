@@ -230,16 +230,10 @@
 
           <div class="btn-row" style="margin-top:10px;">
             <!-- GOOGLE ONLY -->
-            <button type="button" id="btnGoogle" class="btn btn-google btn-with-icon">
-              <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
-                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
-                <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
-                <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
-                <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
-              </svg>
-              <span>GOOGLE로 로그인</span>
-            </button>
-
+           <button type="button" id="btnGoogle" class="btn btn-google btn-with-icon">
+  <svg viewBox="0 0 533.5 544.3" aria-hidden="true"> ... </svg>
+  <span>UNIQUE 마켓</span>
+</button>
             <button type="button" id="btnToMarket" class="btn btn-ghost" style="display:none;">마켓으로 이동</button>
             <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;">구글 로그아웃</button>
           </div>
@@ -378,19 +372,25 @@
     const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
     // ✅ 구글 로그인 성공 후 보낼 페이지 (파일명만 바꾸면 됨)
-    const GOOGLE_AFTER_URL = "market.html";
+   const GOOGLE_AFTER_URL = "market.html"; // 네 마켓 파일명으로 맞추기
 
-    const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
+document.getElementById("btnGoogle")?.addEventListener("click", async () => {
+  // ✅ 이미 로그인(세션 있음) → 바로 마켓으로
+  const { data } = await sb.auth.getSession();
+  if (data?.session) {
+    location.href = GOOGLE_AFTER_URL;
+    return;
+  }
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        flowType: "implicit",
-        detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true
-      }
-    });
+  // ✅ 로그인(세션 없음) → 구글 OAuth 실행
+  sayOAuth("구글 로그인 창 여는 중...");
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: GATE_URL }
+  });
 
+  if (error) sayOAuth("구글 로그인 시작 실패: " + error.message, true);
+});
     const oauthStatusEl = document.getElementById("oauth-status");
     const btnLogout = document.getElementById("btnLogout");
     const btnToMarket = document.getElementById("btnToMarket");
