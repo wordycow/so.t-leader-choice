@@ -208,6 +208,38 @@
       border-color: rgba(148,163,184,0.9);
     }
 
+    .divider {
+      margin: 14px 0 6px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      user-select: none;
+    }
+
+    .btn-social {
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      border-color: rgba(148,163,184,0.35);
+      color: #e5e7eb;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.9);
+      letter-spacing: 0.10em;
+    }
+    .btn-social:hover {
+      border-color: rgba(248,181,84,0.75);
+      transform: translateY(-1px);
+    }
+    .btn-kakao {
+      background: radial-gradient(circle at top, rgba(254,229,0,0.95), rgba(202,138,4,0.55));
+      border-color: rgba(254,229,0,0.95);
+      color: #111827;
+      box-shadow: 0 10px 26px rgba(0,0,0,1);
+      letter-spacing: 0.08em;
+    }
+    .btn-kakao:hover {
+      transform: translateY(-1px);
+    }
+
     .status {
       min-height: 18px;
       font-size: 11px;
@@ -313,6 +345,17 @@
           </div>
 
           <div id="status" class="status"></div>
+
+          <div class="divider">OR</div>
+
+          <div class="btn-row" style="margin-top:10px;">
+            <button type="button" id="btnGoogle" class="btn btn-social">Google로 로그인</button>
+            <button type="button" id="btnDiscord" class="btn btn-social">Discord로 로그인</button>
+            <button type="button" id="btnKakao" class="btn btn-kakao">Kakao로 로그인</button>
+            <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;">소셜 로그아웃</button>
+          </div>
+
+          <div id="oauth-status" class="status"></div>
         </form>
       </div>
     </main>
@@ -376,7 +419,7 @@
   <!-- 2) 구글 시트를 JSONP 방식으로 불러오기 -->
   <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
-  <!-- 3) 로그인 처리 -->
+  <!-- 3) 로그인 처리(시트 기반) -->
   <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
@@ -427,6 +470,131 @@
         statusEl.classList.add("status-error");
       }
     });
+  </script>
+
+  <!-- 4) Supabase OAuth 로그인(구글/디스코드/카카오) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ✅ 여기만 바꿔: Supabase Project Settings → API → anon public key
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq"; // ⚠️ service_role 절대 넣지 말기
+
+    const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
+    const GATE_URL = SITE_BASE + "/the-unique-gate.html";
+    const MAIN_URL = SITE_BASE + "/the-unique-main.html";
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { flowType: "pkce", detectSessionInUrl: true }
+    });
+
+    const oauthStatusEl = document.getElementById("oauth-status");
+    const btnLogout = document.getElementById("btnLogout");
+    const btnGoogle = document.getElementById("btnGoogle");
+    const btnDiscord = document.getElementById("btnDiscord");
+    const btnKakao = document.getElementById("btnKakao");
+
+    function sayOAuth(msg, isErr = false) {
+      if (!oauthStatusEl) return;
+      oauthStatusEl.textContent = msg || "";
+      oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+    }
+
+    async function handleOAuthCallback() {
+      const url = new URL(window.location.href);
+
+      const err = url.searchParams.get("error_description") || url.searchParams.get("error");
+      if (err) {
+        sayOAuth("소셜 로그인 오류: " + err, true);
+        return;
+      }
+
+      const code = url.searchParams.get("code");
+      if (code) {
+        sayOAuth("소셜 로그인 처리 중...");
+        const { error } = await sb.auth.exchangeCodeForSession(code);
+        if (error) {
+          sayOAuth("세션 처리 실패: " + error.message, true);
+          return;
+        }
+
+        url.searchParams.delete("code");
+        url.searchParams.delete("state");
+        window.history.replaceState({}, document.title, url.pathname);
+      }
+    }
+
+    async function renderOAuthState() {
+      const { data } = await sb.auth.getSession();
+      const sess = data?.session;
+
+      if (!sess) {
+        if (btnLogout) btnLogout.style.display = "none";
+        sayOAuth("");
+        return;
+      }
+
+      const user = sess.user || {};
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const email = user.email || "";
+      const provider = user.app_metadata?.provider || "";
+
+      localStorage.setItem("uniqueOAuthUser", JSON.stringify({
+        uid: user.id,
+        provider,
+        email,
+        name,
+        loggedInAt: new Date().toISOString()
+      }));
+
+      if (btnLogout) btnLogout.style.display = "inline-flex";
+      sayOAuth(`소셜 로그인 완료 ✅ ${name || email || (provider ? provider.toUpperCase() : "USER")}`);
+    }
+
+    async function maybeAutoContinue() {
+      // 아이디 게이트를 한번 통과해 uniqueCurrentUser가 저장된 사람이라면,
+      // 소셜 로그인까지 된 상태에서 자동 메인 이동
+      const current = localStorage.getItem("uniqueCurrentUser");
+      if (!current) return;
+
+      const { data } = await sb.auth.getSession();
+      if (data?.session) window.location.href = MAIN_URL;
+    }
+
+    async function signIn(provider) {
+      if (SUPABASE_ANON_KEY === "PASTE_YOUR_ANON_KEY_HERE") {
+        sayOAuth("Supabase ANON KEY를 아직 입력하지 않았습니다.", true);
+        return;
+      }
+
+      sayOAuth("소셜 로그인 창 여는 중...");
+      const { error } = await sb.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: GATE_URL }
+      });
+      if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
+    }
+
+    btnGoogle?.addEventListener("click", () => signIn("google"));
+    btnDiscord?.addEventListener("click", () => signIn("discord"));
+    btnKakao?.addEventListener("click", () => signIn("kakao"));
+
+    btnLogout?.addEventListener("click", async () => {
+      await sb.auth.signOut();
+      localStorage.removeItem("uniqueOAuthUser");
+      sayOAuth("소셜 로그아웃 완료");
+      if (btnLogout) btnLogout.style.display = "none";
+    });
+
+    (async () => {
+      await handleOAuthCallback();
+      await renderOAuthState();
+      await maybeAutoContinue();
+
+      sb.auth.onAuthStateChange(async () => {
+        await renderOAuthState();
+        await maybeAutoContinue();
+      });
+    })();
   </script>
 </body>
 </html>
