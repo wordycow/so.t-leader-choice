@@ -2,754 +2,466 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>so.t 직급 관리자</title>
+  <title>The Unique – Rank Hall 관리자</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   <style>
     * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; height:100%; }
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI","Pretendard", sans-serif;
+      background: radial-gradient(circle at top, #020617, #020617 55%);
+      color:#e5e7eb;
+    }
+    a{ color:inherit; }
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #111827;
-      min-height: 100vh;
+    .page-wrap{ max-width:1200px; margin:32px auto 40px; padding:0 16px 24px; }
+    .header{ margin-bottom:14px; }
+    .title{
+      font-size:24px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+      color:#facc15; text-shadow:0 0 10px rgba(250,204,21,0.7);
+    }
+    .subtitle{ font-size:12px; color:#9ca3af; margin-top:4px; line-height:1.6; }
 
-      /* rank-hall.html과 동일한 우주 배경 */
-      background: #020617;
-      background-image:
-        url("img/bg-stars.jpg"),
-        radial-gradient(circle at top, rgba(15,23,42,0.25) 0, rgba(15,23,42,0.9) 65%, #020617 100%);
-      background-size: cover, cover;
-      background-position: center top, center top;
-      background-attachment: fixed, fixed;
-      animation: bg-pan 60s linear infinite alternate;
+    .toolbar{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+    .toolbar-btn{
+      padding:7px 12px; border-radius:999px;
+      border:1px solid rgba(148,163,184,0.8);
+      background: rgba(15,23,42,0.98);
+      color:#e5e7eb; font-size:11px; font-weight:700;
+      letter-spacing:0.08em; text-transform:uppercase;
+      cursor:pointer;
+      transition: background .15s ease, transform .08s ease, border-color .15s ease;
+    }
+    .toolbar-btn.primary{
+      border-color: rgba(248,181,84,0.9);
+      background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      color:#fef2f2;
+    }
+    .toolbar-btn:hover{
+      transform: translateY(-1px);
+      background: rgba(30,64,175,0.9);
+      border-color: rgba(191,219,254,0.9);
+    }
+    .toolbar input{
+      height:30px; padding:0 12px; border-radius:999px;
+      border:1px solid rgba(51,65,85,0.9);
+      background: rgba(15,23,42,0.98);
+      color:#e5e7eb; font-size:12px; outline:none;
+      min-width: 220px;
+    }
+    .toolbar input:focus{
+      border-color: rgba(248,181,84,0.9);
+      box-shadow: 0 0 0 1px rgba(248,181,84,0.6);
     }
 
-    @keyframes bg-pan {
-      0% { background-position: center top, center top; }
-      100% { background-position: center 20%, center top; }
+    .layout{
+      display:grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
+      gap:14px;
+      align-items:flex-start;
     }
-
-    .page-wrap {
-      max-width: 1300px;
-      margin: 24px auto 32px;
-      padding: 0 12px 32px;
-      width: 100%;
+    .panel{
+      border-radius:20px;
+      padding:14px 14px 16px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
+      box-shadow: 0 0 0 1px rgba(30,64,118,0.8), 0 18px 45px rgba(0,0,0,0.95);
     }
+    .panel-title{ font-size:13px; font-weight:700; margin-bottom:8px; }
+    .panel-sub{ font-size:11px; color:#9ca3af; margin-bottom:10px; line-height:1.6; }
 
-    h1 {
-      font-size: 22px;
-      margin-bottom: 6px;
-      color: #f9fafb;
-    }
-
-    .sub {
-      font-size: 13px;
-      color: #e5e7eb;
-      margin-bottom: 16px;
-    }
-
-    .layout {
-      display: grid;
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .card{
+      border-radius:18px;
+      padding:12px;
+      background: radial-gradient(circle at top, #020617, #020617);
+      border:1px solid rgba(51,65,85,0.9);
+      display:grid;
       grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
+      gap:10px;
     }
 
-    @media (min-width: 1040px) {
-      .layout {
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-      }
+    .row{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .row.full{ grid-template-columns: 1fr; }
+
+    .label{ font-size:11px; color:#9ca3af; margin-bottom:3px; }
+    .input, .textarea{
+      width:100%;
+      border-radius:10px;
+      border:1px solid rgba(51,65,85,0.9);
+      background: rgba(15,23,42,0.98);
+      color:#e5e7eb;
+      font-size:12px;
+      padding:6px 8px;
+      outline:none;
+    }
+    .textarea{ min-height:56px; resize:vertical; }
+    .input:focus, .textarea:focus{
+      border-color: rgba(248,181,84,0.9);
+      box-shadow: 0 0 0 1px rgba(248,181,84,0.6);
     }
 
-    .glass-panel {
-      background: rgba(15,23,42,0.88);
-      border-radius: 18px;
-      padding: 14px 16px 16px;
-      box-shadow: 0 14px 40px rgba(15,23,42,0.85);
-      border: 1px solid rgba(148,163,184,0.4);
-      color: #e5e7eb;
-      backdrop-filter: blur(8px);
+    .meta{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; font-size:11px; color:#9ca3af;
     }
-
-    .glass-panel h2,
-    .glass-panel h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      color: #f9fafb;
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 10px; border-radius:999px;
+      border:1px solid rgba(148,163,184,0.35);
+      background: rgba(2,6,23,0.65);
+      color:#cbd5e1;
     }
+    .pill input{ width:12px; height:12px; }
 
-    .glass-panel p {
-      margin: 0;
+    .delete-btn{
+      align-self:flex-start;
+      padding:4px 10px; border-radius:999px;
+      border:1px solid rgba(248,113,113,0.9);
+      background: rgba(127,29,29,0.9);
+      color:#fee2e2;
+      cursor:pointer;
+      font-size:11px; font-weight:700;
     }
+    .delete-btn:hover{ transform: translateY(-1px); }
 
-    .field-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .field-row label {
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-      min-width: 140px;
-    }
-
-    input,
-    select,
-    textarea {
-      padding: 6px 8px;
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.9);
-      font-size: 13px;
-      font-family: inherit;
-      background: rgba(15,23,42,0.8);
-      color: #f9fafb;
-    }
-
-    textarea {
+    .json-textarea{
+      width:100%;
+      min-height:360px;
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,0.9);
+      background:#020617;
+      color:#e5e7eb;
+      font-size:11px;
+      padding:8px 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       resize: vertical;
-      background: rgba(15,23,42,0.9);
+      line-height:1.55;
+    }
+    .json-textarea:focus{
+      outline:none;
+      border-color: rgba(248,181,84,0.9);
+      box-shadow: 0 0 0 1px rgba(248,181,84,0.6);
     }
 
-    .primary-btn,
-    .secondary-btn {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      white-space: nowrap;
-    }
+    .footer-note{ margin-top:10px; font-size:11px; color:#6b7280; text-align:right; opacity:.85; }
 
-    .primary-btn {
-      background: #1d4ed8;
-      color: #f9fafb;
-    }
-
-    .secondary-btn {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .tools-row {
-      margin: 6px 0 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .rank-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      margin-top: 6px;
-    }
-
-    .rank-table th,
-    .rank-table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid rgba(148,163,184,0.35);
-    }
-
-    .rank-table th {
-      text-align: left;
-      background: rgba(15,23,42,0.9);
-      font-weight: 600;
-    }
-
-    .rank-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    #bulk-input {
-      width: 100%;
-      min-height: 120px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      margin-top: 6px;
-    }
-
-    .hint {
-      font-size: 12px;
-      color: #cbd5f5;
-      margin-top: 2px;
-    }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      background: rgba(15,23,42,0.9);
-      padding: 1px 4px;
-      border-radius: 4px;
-      color: #e5e7eb;
-    }
-
-    ul {
-      padding-left: 18px;
-      margin: 4px 0 0;
-      font-size: 13px;
-      color: #e5e7eb;
-    }
-
-    ul li {
-      margin-top: 2px;
-    }
-
-    /* 카드 텍스트 셀 */
-    .tagline-cell {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .tagline-text {
-      flex: 1;
-      min-height: 1em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 12px;
-    }
-
-    .small-btn {
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: none;
-      background: #e5e7eb;
-      color: #111827;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    /* 오른쪽 텍스트 편집 영역 */
-    #rank-note-editor {
-      width: 100%;
-      min-height: 220px;
-      margin-top: 6px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 13px;
-    }
-
-    .note-tools {
-      margin-top: 6px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+    @media (max-width: 960px){
+      .layout{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
+
 <body>
   <div class="page-wrap">
-    <h1>so.t 직급 관리자</h1>
-    <p class="sub">
-      이 페이지에서 직급자 목록(<code>rank-hall.json</code>)만 관리해.  
-      이미지는 파일 이름 규칙으로 <code>rank-hall.html</code>에서 자동 매칭할 거라 별도 등록이 필요 없어.
-    </p>
+    <header class="header">
+      <div class="title">THE UNIQUE – RANK HALL ADMIN</div>
+      <div class="subtitle">
+        이 화면에서 <code>rank-hall.json</code> (또는 <code>hall.json</code>)용 데이터를 편집합니다.<br>
+        ✅ <strong>id(시트 아이디)</strong>를 포함해서 저장하면, “이름 매칭” 문제 없이 100% 정확하게 직급을 찾습니다.
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button id="add-btn" class="toolbar-btn primary">+ 멤버 추가</button>
+      <button id="export-btn" class="toolbar-btn">JSON 내보내기</button>
+      <button id="import-btn" class="toolbar-btn">JSON 불러오기</button>
+      <button id="copy-btn" class="toolbar-btn">JSON 복사</button>
+
+      <a class="toolbar-btn" target="_blank" rel="noopener noreferrer"
+         href="https://github.com/wordycow/so.t-leader-choice/blob/main/rank-hall.json">
+        rank-hall.json 열기
+      </a>
+
+      <input id="search" placeholder="검색 (id / 이름 / 직급)" />
+    </div>
 
     <div class="layout">
-      <!-- 왼쪽: 직급자 관리 -->
-      <section class="glass-panel">
-        <h2>직급자 관리 (rank-hall.json)</h2>
-        <p style="font-size:13px; color:#e5e7eb;">
-          개별 직급자는 위 폼에서 “<strong>+ 직급자 추가</strong>” 버튼으로,  
-          많은 인원은 아래 “일괄 직급 업데이트”에서 한 번에 붙여넣어서 관리.
-        </p>
-
-        <!-- 개별 추가 폼 -->
-        <form id="rank-form">
-          <div class="field-row">
-            <label>
-              직급
-              <select id="rank-select">
-                <option value="">-- 직급 선택 --</option>
-                <option value="Member">Member</option>
-                <option value="Star1">Star1</option>
-                <option value="Star2">Star2</option>
-                <option value="Star3">Star3</option>
-                <option value="Pro1">Pro1</option>
-                <option value="Pro2">Pro2</option>
-                <option value="Pro3">Pro3</option>
-                <option value="Pro4">Pro4</option>
-                <option value="Pro5">Pro5</option>
-                <option value="Pro6">Pro6</option>
-                <option value="Pro7">Pro7</option>
-                <option value="Pro8">Pro8</option>
-                <option value="Pro9">Pro9</option>
-                <option value="Pro10">Pro10</option>
-                <option value="custom">+ 새 직급 직접 입력</option>
-              </select>
-            </label>
-
-            <label id="custom-rank-wrap" style="display:none;">
-              새 직급 이름
-              <input type="text" id="custom-rank" placeholder="예: Royal Director" />
-            </label>
-          </div>
-
-          <div class="field-row">
-            <label>
-              이름
-              <input type="text" id="member-name" placeholder="이름" />
-            </label>
-            <label>
-              가입일
-              <input type="date" id="join-date" />
-            </label>
-          </div>
-
-          <div class="field-row">
-            <label style="flex:1;">
-              카드 텍스트 (한 줄)
-              <input type="text" id="member-tagline" placeholder="예: 우주 최초 Pro10 달성자" />
-            </label>
-          </div>
-
-          <button type="submit" class="primary-btn">+ 직급자 추가</button>
-        </form>
-
-        <div class="tools-row">
-          <button id="copy-rank-json" class="secondary-btn">
-            rank-hall.json용 JSON 복사
-          </button>
+      <section class="panel">
+        <div class="panel-title">직급자 편집</div>
+        <div class="panel-sub">
+          - <strong>id</strong>: 게이트에서 쓰는 아이디(시트 아이디)와 동일하게(소문자 권장)<br>
+          - <strong>rank</strong>: 예) STAR3 / PRO2 / STAFF 등<br>
+          - <strong>note</strong>: 직급자 노트(한 줄 또는 여러 줄)
         </div>
 
-        <table class="rank-table">
-          <thead>
-            <tr>
-              <th>직급</th>
-              <th>이름</th>
-              <th>가입일</th>
-              <th>가입 후 일수</th>
-              <th>카드 텍스트</th>
-            </tr>
-          </thead>
-          <tbody id="rank-table-body">
-          </tbody>
-        </table>
-
-        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(148,163,184,0.5);" />
-
-        <!-- 일괄 업데이트 -->
-        <h3>일괄 직급 업데이트</h3>
-        <p style="font-size:13px; color:#e5e7eb;">
-          아래처럼 생긴 리스트를 그대로 붙여 넣으면, <strong>스타I·스타II·스타III·Pro1~Pro10</strong>까지 자동으로 반영돼.<br />
-          예) <code>[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III</code><br />
-          예) <code>[R]KR-12345678 / 아무개 / 2025-12-01 / Pro 6</code><br />
-          예) <code>[R]KR-10921084 / 린 / 2025-11-21 / 프로X</code>
-        </p>
-
-        <textarea
-          id="bulk-input"
-          placeholder="[L]KR-15323995 / 이유송 / 2025-11-21 / 스타III&#10;[R]KR-19863422 / 이은진 / 2025-11-21 / Pro 6"
-        ></textarea>
-        <div class="tools-row">
-          <button id="bulk-apply" class="secondary-btn">
-            붙여넣기 내용으로 직급자 업데이트
-          </button>
-        </div>
+        <div id="list" class="list"></div>
       </section>
 
-      <!-- 오른쪽: 이미지 자동 매칭 규칙 안내 + 텍스트 편집 영역 -->
-      <section class="glass-panel">
-        <h2>이미지 자동 매칭 규칙 (읽기 전용)</h2>
-        <p class="hint">
-          이미지는 GitHub <code>img</code> 폴더에 파일명만 맞춰 올려두면 돼.  
-          <strong>별도의 등록 없이</strong> <code>rank-hall.html</code>에서 규칙대로 자동 연결할 거야.
-        </p>
-        <h3 style="font-size:14px; margin-top:10px;">파일 이름 규칙</h3>
-        <ul>
-          <li><code>Member</code> → <code>img/member.png</code></li>
-          <li><code>Star1</code> → <code>img/star1.png</code></li>
-          <li><code>Star2</code> → <code>img/star2.png</code></li>
-          <li><code>Star3</code> → <code>img/star3.png</code></li>
-          <li><code>Pro1</code> → <code>img/pro1.png</code></li>
-          <li>…</li>
-          <li><code>Pro10</code> → <code>img/pro10.png</code></li>
-        </ul>
-        <p class="hint" style="margin-top:10px;">
-          그러니까, <strong>직급 이름만 잘 맞추면</strong> 이미지는 자동으로 붙는 구조야.<br />
-          이 관리자 페이지에서는 사람/직급/가입일/카드 텍스트만 관리하면 된다.
-        </p>
-
-        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(148,163,184,0.5);" />
-
-        <h3>직급 안내 문구 / 공지 편집</h3>
-        <p class="hint">
-          오른쪽 <code>rank-hall.html</code> 상단에 들어갈 안내 문구나 공지를  
-          여기서 붙여넣고 편집한 뒤, <strong>텍스트 복사</strong> 버튼으로 가져다 쓰면 돼.
-          (브라우저에 자동 저장되니까, 새로 열어도 내용이 남아 있어.)
-        </p>
-        <textarea
-          id="rank-note-editor"
-          placeholder="여기에 직급 안내 문구, 공지, 카드에 들어갈 긴 텍스트 등을 자유롭게 작성하세요."
-        ></textarea>
-        <div class="note-tools">
-          <button id="note-copy-btn" class="secondary-btn">텍스트 복사</button>
-          <button id="note-clear-btn" class="secondary-btn">내용 비우기</button>
+      <section class="panel">
+        <div class="panel-title">rank-hall.json 미리보기 / 편집</div>
+        <div class="panel-sub">
+          ▸ [JSON 내보내기] 누르면 아래에 JSON이 만들어짐 → 그대로 <code>rank-hall.json</code>에 붙여넣기<br>
+          ▸ Import는 아래 textarea에 JSON 붙여넣고 [JSON 불러오기] 누르면 됨
         </div>
+        <textarea id="json" class="json-textarea" spellcheck="false"></textarea>
       </section>
     </div>
+
+    <div class="footer-note">THE UNIQUE – Rank Hall Admin · so.t-leader-choice</div>
   </div>
 
   <script>
-    const RANK_ORDER = [
-  "Pro10","Pro9","Pro8","Pro7","Pro6","Pro5","Pro4","Pro3","Pro2","Pro1",
-  "Star3","Star2","Star1","Member"   // 🔹 Member 최하위
-];
-    function getRankIndex(rank) {
-      const i = RANK_ORDER.indexOf(rank);
-      return i === -1 ? 999 : i;
-    }
+    (function(){
+      let members = [];
 
-    function calcDaysFromJoin(joinDateStr) {
-      if (!joinDateStr) return "";
-      const join = new Date(joinDateStr);
-      if (isNaN(join.getTime())) return "";
-      const today = new Date();
-      const joinMs = new Date(join.getFullYear(), join.getMonth(), join.getDate()).getTime();
-      const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-      const diffDays = Math.floor((todayMs - joinMs) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) return "";
-      return diffDays;
-    }
+      const listEl = document.getElementById("list");
+      const jsonEl = document.getElementById("json");
+      const searchEl = document.getElementById("search");
 
-    let rankData = [];
+      const addBtn = document.getElementById("add-btn");
+      const exportBtn = document.getElementById("export-btn");
+      const importBtn = document.getElementById("import-btn");
+      const copyBtn = document.getElementById("copy-btn");
 
-    const rankSelect = document.getElementById("rank-select");
-    const customRankWrap = document.getElementById("custom-rank-wrap");
-    const customRankInput = document.getElementById("custom-rank");
+      function nowIso(){ return new Date().toISOString(); }
 
-    rankSelect.addEventListener("change", () => {
-      if (rankSelect.value === "custom") {
-        customRankWrap.style.display = "flex";
-      } else {
-        customRankWrap.style.display = "none";
-        customRankInput.value = "";
-      }
-    });
-
-    function renderRankTable() {
-      const tbody = document.getElementById("rank-table-body");
-      tbody.innerHTML = "";
-
-      const sorted = [...rankData].sort((a, b) => {
-        const rankDiff = getRankIndex(a.rank) - getRankIndex(b.rank);
-        if (rankDiff !== 0) return rankDiff;
-
-        if (!a.joinDate && !b.joinDate) return 0;
-        if (!a.joinDate) return 1;
-        if (!b.joinDate) return -1;
-        return a.joinDate.localeCompare(b.joinDate);
-      });
-
-      sorted.forEach((item) => {
-        const days = calcDaysFromJoin(item.joinDate);
-        const daysText = days === "" ? "" : `${days}일`;
-
-        const originalIndex = rankData.indexOf(item);
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.rank}</td>
-          <td>${item.name}</td>
-          <td>${item.joinDate || ""}</td>
-          <td>${daysText}</td>
-          <td>
-            <div class="tagline-cell">
-              <span class="tagline-text">${item.tagline || ""}</span>
-              <button type="button"
-                      class="small-btn edit-tagline-btn"
-                      data-idx="${originalIndex}">
-                편집
-              </button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      attachTaglineEditors();
-    }
-
-    function attachTaglineEditors() {
-      document.querySelectorAll(".edit-tagline-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const idx = parseInt(btn.dataset.idx, 10);
-          if (isNaN(idx) || idx < 0 || idx >= rankData.length) return;
-
-          const current = rankData[idx];
-          const currentText = current.tagline || "";
-
-          const next = window.prompt(
-            `"${current.name}" 카드 텍스트(한 줄)를 입력하세요.\n비우면 카드 텍스트가 삭제됩니다.`,
-            currentText
-          );
-
-          if (next === null) return;   // 취소
-
-          current.tagline = next.trim();
-          renderRankTable();
-        });
-      });
-    }
-
-    document.getElementById("rank-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-
-      let rank = rankSelect.value;
-      if (rank === "custom") {
-        rank = customRankInput.value.trim();
+      function normId(v){
+        return (v || "").toString().trim().toLowerCase();
       }
 
-      const name = document.getElementById("member-name").value.trim();
-      const joinDate = document.getElementById("join-date").value;
-      const tagline = document.getElementById("member-tagline").value.trim();
-
-      if (!rank || !name) {
-        alert("직급과 이름은 필수야.");
-        return;
+      function createDefault(){
+        return {
+          id: "",
+          name: "",
+          rank: "",
+          note: "",
+          visible: true,
+          order: members.length + 1,
+          updatedAt: nowIso()
+        };
       }
 
-      rankData.push({
-        name,
-        rank,
-        joinDate: joinDate || "",
-        tagline: tagline || ""
-      });
+      function exportData(){
+        // ✅ 반드시 포함해야 하는 필드만 정리해서 내보냄
+        const out = members
+          .slice()
+          .sort((a,b) => (a.order||0) - (b.order||0))
+          .map(m => ({
+            id: normId(m.id),
+            name: (m.name || "").toString().trim(),
+            rank: (m.rank || "").toString().trim(),
+            note: (m.note || "").toString(),
+            visible: m.visible !== false,
+            order: Number.isFinite(+m.order) ? +m.order : 0,
+            updatedAt: (m.updatedAt || nowIso())
+          }));
 
-      document.getElementById("member-name").value = "";
-      document.getElementById("join-date").value = "";
-      document.getElementById("member-tagline").value = "";
-      rankSelect.value = "";
-      customRankWrap.style.display = "none";
-      customRankInput.value = "";
+        return { members: out };
+      }
 
-      renderRankTable();
-    });
+      function updateJsonTextarea(){
+        jsonEl.value = JSON.stringify(exportData(), null, 2);
+      }
 
-    document.getElementById("copy-rank-json").addEventListener("click", () => {
-      const json = JSON.stringify(rankData, null, 2);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(json)
-          .then(() => alert("rank-hall.json용 JSON이 클립보드에 복사됐어.\nGitHub의 rank-hall.json에 그대로 붙여넣으면 돼."))
-          .catch(() => {
-            alert("클립보드 복사 실패. 콘솔에 JSON을 찍어둘게.");
-            console.log(json);
+      function render(){
+        const q = (searchEl.value || "").toLowerCase().trim();
+        listEl.innerHTML = "";
+
+        members
+          .slice()
+          .sort((a,b) => (a.order||0) - (b.order||0))
+          .forEach((m, idx) => {
+            const hay = `${m.id} ${m.name} ${m.rank}`.toLowerCase();
+            if (q && !hay.includes(q)) return;
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const meta = document.createElement("div");
+            meta.className = "meta";
+
+            const left = document.createElement("div");
+            left.className = "pill";
+            const vis = document.createElement("input");
+            vis.type = "checkbox";
+            vis.checked = m.visible !== false;
+            vis.addEventListener("change", () => {
+              m.visible = vis.checked;
+              m.updatedAt = nowIso();
+              updateJsonTextarea();
+            });
+            left.appendChild(vis);
+            left.appendChild(document.createTextNode("노출"));
+
+            const right = document.createElement("div");
+            right.textContent = `updated: ${m.updatedAt ? m.updatedAt.split("T")[0] : "-"}`;
+
+            meta.appendChild(left);
+            meta.appendChild(right);
+
+            const row1 = document.createElement("div");
+            row1.className = "row";
+
+            // id
+            row1.appendChild(field("아이디(id)", m.id, (v) => {
+              m.id = normId(v);
+              m.updatedAt = nowIso();
+            }, { placeholder:"예: yusong (소문자 권장)" }));
+
+            // name
+            row1.appendChild(field("이름(name)", m.name, (v) => {
+              m.name = v;
+              m.updatedAt = nowIso();
+            }, { placeholder:"예: 이유송" }));
+
+            const row2 = document.createElement("div");
+            row2.className = "row";
+
+            // rank
+            row2.appendChild(field("직급(rank)", m.rank, (v) => {
+              m.rank = v;
+              m.updatedAt = nowIso();
+            }, { placeholder:"예: PRO3 / STAR2 / STAFF" }));
+
+            // order
+            row2.appendChild(field("정렬(order)", m.order, (v) => {
+              const n = parseInt(v, 10);
+              m.order = isNaN(n) ? 0 : n;
+              m.updatedAt = nowIso();
+            }, { type:"number", placeholder:"예: 1" }));
+
+            const row3 = document.createElement("div");
+            row3.className = "row full";
+
+            // note
+            row3.appendChild(field("직급자 노트(note)", m.note, (v) => {
+              m.note = v;
+              m.updatedAt = nowIso();
+            }, { textarea:true, placeholder:"메모/노트 (여러 줄 가능)" }));
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "delete-btn";
+            del.textContent = "삭제";
+            del.addEventListener("click", () => {
+              if (!confirm("이 멤버를 삭제할까요?")) return;
+              members.splice(members.indexOf(m), 1);
+              render();
+              updateJsonTextarea();
+            });
+
+            card.appendChild(meta);
+            card.appendChild(row1);
+            card.appendChild(row2);
+            card.appendChild(row3);
+            card.appendChild(del);
+
+            listEl.appendChild(card);
           });
-      } else {
-        alert("클립보드 API를 쓸 수 없어서 콘솔에 JSON을 찍었어.");
-        console.log(json);
-      }
-    });
-
-    // ===== 일괄 직급 업데이트 (Star + Pro 숫자 + Pro 로마 숫자) =====
-       // ===== 일괄 직급 업데이트 (Star + Pro 숫자 + Pro 로마 숫자) =====
-    function normalizeRankLabel(raw) {
-      if (!raw) return "";
-      let t = raw.replace(/\s+/g, "").toUpperCase();  // 공백 제거 + 대문자
-
-      // MEMBER (한글 / 영문)
-      if (t.includes("MEMBER") || t.includes("멤버")) return "Member";
-
-      // STAR (한글 / 영문)
-      if (t.includes("스타III") || t.includes("스타3") || t.includes("STAR3")) return "Star3";
-      if (t.includes("스타II")  || t.includes("스타2") || t.includes("STAR2")) return "Star2";
-      if (t.includes("스타I")   || t.includes("스타1") || t.includes("STAR1")) return "Star1";
-
-      // PRO 숫자 (PRO6, 프로10 등)
-      let m = t.match(/PRO(\d{1,2})/);
-      if (m) {
-        let num = parseInt(m[1], 10);
-        if (!isNaN(num) && num >= 1) {
-          if (num > 10) num = 10;
-          return `Pro${num}`;
-        }
       }
 
-      m = t.match(/프로(\d{1,2})/);
-      if (m) {
-        let num = parseInt(m[1], 10);
-        if (!isNaN(num) && num >= 1) {
-          if (num > 10) num = 10;
-          return `Pro${num}`;
-        }
-      }
+      function field(labelText, value, onChange, opt={}){
+        const wrap = document.createElement("div");
 
-      // PRO 로마 숫자 (PROI ~ PROX, 프로I ~ 프로X)
-      const romanMap = {
-        "I": 1,
-        "II": 2,
-        "III": 3,
-        "IV": 4,
-        "V": 5,
-        "VI": 6,
-        "VII": 7,
-        "VIII": 8,
-        "IX": 9,
-        "X": 10
-      };
+        const lab = document.createElement("div");
+        lab.className = "label";
+        lab.textContent = labelText;
+        wrap.appendChild(lab);
 
-      m = t.match(/PRO([IVX]+)/);
-      if (m) {
-        const rn = m[1];
-        const num = romanMap[rn];
-        if (num) return `Pro${num}`;
-      }
-
-      m = t.match(/프로([IVX]+)/);
-      if (m) {
-        const rn = m[1];
-        const num = romanMap[rn];
-        if (num) return `Pro${num}`;
-      }
-
-      return "";
-    }
-
-
-    function upsertRankByName(name, rank, joinDate) {
-      const existing = rankData.find((item) => item.name === name);
-
-      if (existing) {
-        existing.rank = rank;
-        if (joinDate) existing.joinDate = joinDate;
-      } else {
-        rankData.push({
-          name,
-          rank,
-          joinDate: joinDate || "",
-          tagline: ""
-        });
-      }
-    }
-
-   document.getElementById("bulk-apply").addEventListener("click", () => {
-  const text = document.getElementById("bulk-input").value;
-  if (!text.trim()) {
-    alert("붙여 넣을 내용을 먼저 입력해 줘.");
-    return;
-  }
-
-  const lines = text.split(/\r?\n/);
-  let updatedCount = 0;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    // 형식:
-    // 1) [L]KR-15323995 / 이름 / 2025-11-21 / 스타III
-    // 2) [L]KR-15323995 / 이름 / 스타III          (가입일 생략 버전)
-    const parts = line.split(" / ");
-    if (parts.length < 3) continue;   // 코드 / 이름 / (뭔가 하나) 는 있어야 함
-
-    const name = (parts[1] || "").trim();
-    if (!name) continue;
-
-    let joinDate = "";
-    let rawRank  = "";
-
-    if (parts.length >= 4) {
-      // [코드] / 이름 / 가입일 / 직급
-      joinDate = (parts[2] || "").trim();
-      rawRank  = (parts[3] || "").trim();
-    } else {
-      // [코드] / 이름 / 직급  (가입일 없음)
-      joinDate = "";
-      rawRank  = (parts[2] || "").trim();
-    }
-
-    let rank;
-
-    if (!rawRank) {
-      // 🔹 직급 칸이 완전히 비어 있으면 → 무직급 = Member
-      rank = "Member";
-    } else {
-      // 🔹 뭔가 써 있으면 normalizeRankLabel로 Star/Pro/ProX 등 판별
-      rank = normalizeRankLabel(rawRank);
-      if (!rank) {
-        // 알아먹을 수 없는 직급 텍스트면 건너뛰기
-        continue;
-      }
-    }
-
-    upsertRankByName(name, rank, joinDate);
-    updatedCount++;
-  }
-
-  renderRankTable();
-
-  alert(
-    `일괄 업데이트 완료.\n` +
-    `반영된 인원: ${updatedCount}명\n\n` +
-    `마음에 들면 JSON 복사 버튼 눌러서 rank-hall.json에 붙여 넣으면 돼.`
-  );
-});
-    // ===== 오른쪽 텍스트 편집기 (localStorage 저장 + 복사) =====
-    const NOTE_STORAGE_KEY = "rankHallNoteEditor";
-    const noteEditor = document.getElementById("rank-note-editor");
-    const noteCopyBtn = document.getElementById("note-copy-btn");
-    const noteClearBtn = document.getElementById("note-clear-btn");
-
-    // 초기 로드 시 localStorage에서 불러오기
-    try {
-      const saved = localStorage.getItem(NOTE_STORAGE_KEY);
-      if (saved != null) {
-        noteEditor.value = saved;
-      }
-    } catch (e) {
-      console.warn("rankHall note load failed:", e);
-    }
-
-    // 입력할 때마다 저장
-    noteEditor.addEventListener("input", () => {
-      try {
-        localStorage.setItem(NOTE_STORAGE_KEY, noteEditor.value);
-      } catch (e) {
-        console.warn("rankHall note save failed:", e);
-      }
-    });
-
-    // 텍스트 복사
-    noteCopyBtn.addEventListener("click", () => {
-      const text = noteEditor.value || "";
-      if (!text.trim()) {
-        alert("복사할 텍스트가 없습니다.");
-        return;
-      }
-      noteEditor.select();
-      noteEditor.setSelectionRange(0, noteEditor.value.length);
-      try {
-        const ok = document.execCommand("copy");
-        if (ok) {
-          alert("텍스트가 복사되었습니다. rank-hall.html 등 원하는 곳에 붙여 넣으세요.");
+        let el;
+        if (opt.textarea){
+          el = document.createElement("textarea");
+          el.className = "textarea";
+          el.placeholder = opt.placeholder || "";
+          el.value = value ?? "";
+          el.addEventListener("input", () => { onChange(el.value); updateJsonTextarea(); });
         } else {
-          alert("복사에 실패했습니다. 텍스트를 직접 드래그해서 복사해 주세요.");
+          el = document.createElement("input");
+          el.className = "input";
+          el.type = opt.type || "text";
+          el.placeholder = opt.placeholder || "";
+          el.value = value ?? "";
+          el.addEventListener("input", () => { onChange(el.value); updateJsonTextarea(); });
         }
-      } catch (e) {
-        alert("복사에 실패했습니다. 텍스트를 직접 드래그해서 복사해 주세요.");
+
+        wrap.appendChild(el);
+        return wrap;
       }
-    });
 
-    // 내용 비우기
-    noteClearBtn.addEventListener("click", () => {
-      if (!noteEditor.value.trim()) return;
-      if (!confirm("편집 내용을 모두 비울까요? (localStorage에 저장된 내용도 지워집니다.)")) return;
-      noteEditor.value = "";
-      try {
-        localStorage.removeItem(NOTE_STORAGE_KEY);
-      } catch (e) {}
-    });
+      // Buttons
+      addBtn.addEventListener("click", () => {
+        members.push(createDefault());
+        render();
+        updateJsonTextarea();
+      });
 
-    // 초기 렌더
-    renderRankTable();
+      exportBtn.addEventListener("click", () => {
+        updateJsonTextarea();
+        alert("현재 직급자 목록이 JSON으로 출력되었습니다. 그대로 rank-hall.json에 붙여 넣으면 됩니다.");
+      });
+
+      importBtn.addEventListener("click", () => {
+        const text = (jsonEl.value || "").trim();
+        if (!text) { alert("불러올 JSON이 없습니다. 먼저 JSON을 붙여 넣어 주세요."); return; }
+        try {
+          const parsed = JSON.parse(text);
+          const arr =
+            parsed.members || parsed.items || (Array.isArray(parsed) ? parsed : []);
+
+          if (!Array.isArray(arr)) throw new Error("members/items 배열이 없습니다.");
+
+          members = arr.map((m, i) => ({
+            id: normId(m.id),
+            name: (m.name || "").toString(),
+            rank: (m.rank || m.level || m.title || "").toString(),
+            note: (m.note || m.memo || "").toString(),
+            visible: m.visible !== false,
+            order: Number.isFinite(+m.order) ? +m.order : (i+1),
+            updatedAt: (m.updatedAt || nowIso())
+          }));
+
+          render();
+          updateJsonTextarea();
+          alert("JSON에서 직급자 목록을 불러왔습니다.");
+        } catch(e){
+          console.error(e);
+          alert("JSON 파싱 실패. 형식을 확인해 주세요.");
+        }
+      });
+
+      copyBtn.addEventListener("click", () => {
+        if (!jsonEl.value.trim()) updateJsonTextarea();
+        jsonEl.select();
+        jsonEl.setSelectionRange(0, jsonEl.value.length);
+        try {
+          const ok = document.execCommand("copy");
+          alert(ok ? "JSON이 클립보드에 복사되었습니다." : "복사 실패. 직접 드래그해서 복사해 주세요.");
+        } catch {
+          alert("복사 실패. 직접 드래그해서 복사해 주세요.");
+        }
+      });
+
+      searchEl.addEventListener("input", () => render());
+
+      // Initial load: rank-hall.json
+      fetch("rank-hall.json?v=" + Date.now(), { cache:"no-store" })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => {
+          const arr = data.members || data.items || (Array.isArray(data) ? data : []);
+          members = Array.isArray(arr) ? arr.map((m,i) => ({
+            id: normId(m.id),
+            name: (m.name || "").toString(),
+            rank: (m.rank || m.level || m.title || "").toString(),
+            note: (m.note || m.memo || "").toString(),
+            visible: m.visible !== false,
+            order: Number.isFinite(+m.order) ? +m.order : (i+1),
+            updatedAt: (m.updatedAt || nowIso())
+          })) : [];
+          render();
+          updateJsonTextarea();
+        })
+        .catch(err => {
+          console.warn("rank-hall.json 로드 실패(없어도 OK):", err);
+          members = [];
+          render();
+          updateJsonTextarea();
+        });
+    })();
   </script>
 </body>
 </html>
