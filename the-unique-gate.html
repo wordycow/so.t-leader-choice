@@ -398,152 +398,181 @@
     });
   </script>
 
-  <!-- ✅ Supabase OAuth: 로그인하면 (이름이 시트에 있으면) 자동 통과 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+  <!-- ✅ START: Supabase OAuth (구글 최초 로그인도 무조건 통과 + 시트 이름 매칭시 시트정보 적용) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq"; // ✅ anon
 
-    const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
-    const GATE_URL  = SITE_BASE + "/the-unique-gate.html";
+  const MAIN_REL = "the-unique-main.html"; // ✅ 상대경로가 제일 안정적
+  const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        flowType: "implicit",
-        detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
+
+  const oauthStatusEl = document.getElementById("oauth-status");
+  const btnLogout = document.getElementById("btnLogout");
+
+  function sayOAuth(msg, isErr=false){
+    if (!oauthStatusEl) return;
+    oauthStatusEl.textContent = msg || "";
+    oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+  }
+
+  function normName(s){
+    return (s || "").toString().trim().toLowerCase().replace(/\s+/g,"");
+  }
+
+  function cleanOAuthArtifacts(){
+    // query 정리
+    const u = new URL(location.href);
+    ["code","state","error","error_description"].forEach(k => u.searchParams.delete(k));
+    history.replaceState({}, document.title, u.pathname);
+
+    // hash(#access_token=...) 정리 (세션 잡힌 뒤에도 남아있으면 지움)
+    if (location.hash && location.hash.includes("access_token")) {
+      history.replaceState({}, document.title, location.pathname);
+    }
+  }
+
+  function buildProvisionalUser(user){
+    const provider = (user?.app_metadata?.provider || "oauth").toString();
+    const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.nickname || "";
+    const email = user?.email || "";
+    const idGuess = (email ? email.split("@")[0] : (provider + "-" + (user?.id || "").slice(0,8))).toLowerCase();
+
+    return {
+      id: idGuess,
+      name: name || email || "member",
+      team: "SOCIAL",
+      joinedAt: "",
+      via: "oauth-direct:" + provider
+    };
+  }
+
+  async function waitForSheetReady(timeoutMs=6000){
+    const start = Date.now();
+    while (!window.allowedIds && !window.sheetError && (Date.now() - start) < timeoutMs) {
+      await new Promise(r => setTimeout(r, 120));
+    }
+  }
+
+  function setCurrentUserFromSheetId(idLower){
+    const info = (window.memberInfoById || {})[idLower] || {};
+    localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+      id: idLower,
+      name: info.name || "",
+      team: info.team || "",
+      joinedAt: info.joinedAt || "",
+      via: "oauth-name-match"
+    }));
+  }
+
+  function tryMatchSheetByName(oauthName){
+    const dict = window.memberInfoById || {};
+    const key = normName(oauthName);
+    if (!key) return null;
+
+    const matches = [];
+    for (const [idLower, info] of Object.entries(dict)) {
+      if (normName(info?.name) === key) matches.push(idLower);
+    }
+    // 이름이 딱 1명만 매칭되면 그 아이디로 확정
+    if (matches.length === 1) return matches[0];
+    return null; // 0명 또는 여러명은 자동 확정 불가
+  }
+
+  function redirectToMainOnce(){
+    // onAuthStateChange가 여러 번 불려도 한 번만 이동
+    if (sessionStorage.getItem("unique_gate_redirected") === "1") return;
+    sessionStorage.setItem("unique_gate_redirected", "1");
+    setTimeout(() => { location.href = MAIN_REL; }, 200);
+  }
+
+  async function onOAuthSessionReady(sess){
+    const user = sess.user || {};
+    const provider = user.app_metadata?.provider || "";
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || "";
+    const email = user.email || "";
+
+    localStorage.setItem("uniqueOAuthUser", JSON.stringify({
+      uid: user.id,
+      provider,
+      email,
+      name,
+      loggedInAt: new Date().toISOString()
+    }));
+
+    if (btnLogout) btnLogout.style.display = "inline-flex";
+
+    // ✅ 1) 시트 준비되면 이름 매칭으로 “정식” 유저 세팅(가능할 때만)
+    await waitForSheetReady();
+    const sheetId = (!window.sheetError && window.memberInfoById) ? tryMatchSheetByName(name) : null;
+
+    if (sheetId) {
+      setCurrentUserFromSheetId(sheetId);
+      sayOAuth(`OK ✅ 시트 이름 매칭됨 → 통과 (${provider.toUpperCase()})`);
+    } else {
+      // ✅ 2) 이름이 안 맞아도 최초 로그인은 무조건 통과 (임시 유저 생성)
+      if (!localStorage.getItem("uniqueCurrentUser")) {
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify(buildProvisionalUser(user)));
       }
-    });
-
-    const oauthStatusEl = document.getElementById("oauth-status");
-    const btnLogout = document.getElementById("btnLogout");
-
-    function sayOAuth(msg, isErr=false){
-      if (!oauthStatusEl) return;
-      oauthStatusEl.textContent = msg || "";
-      oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+      sayOAuth(`OK ✅ 최초 소셜 로그인 통과 (임시) (${provider.toUpperCase()})`);
     }
 
-    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+    cleanOAuthArtifacts();
+    redirectToMainOnce();
+  }
 
-    async function waitForSheetReady(timeoutMs=6000){
-      const start = Date.now();
-      while (!allowedIds && !sheetError && (Date.now() - start) < timeoutMs) {
-        await sleep(120);
-      }
-    }
+  async function renderOAuthState(){
+    const { data, error } = await sb.auth.getSession();
+    if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
 
-    async function tryAutoPassByName(user){
-      await waitForSheetReady();
-
-      if (sheetError) {
-        sayOAuth("소셜 로그인 OK. 그런데 시트를 못 읽어서 자동 통과 불가. 아이디로 로그인하세요.", true);
-        return;
-      }
-      if (!allowedIds) {
-        sayOAuth("소셜 로그인 OK. 시트 로딩 중… 잠시 후 새로고침 또는 아이디 로그인하세요.");
-        return;
-      }
-
-      const provider = (user?.app_metadata?.provider || "").toString();
-      const oauthName =
-        user?.user_metadata?.full_name ||
-        user?.user_metadata?.name ||
-        user?.user_metadata?.nickname ||
-        "";
-
-      const nk = (oauthName || "").toString().trim().toLowerCase().replace(/\s+/g,"");
-      if (!nk) {
-        sayOAuth(`소셜 로그인 OK. 이름 정보가 없어서 자동 통과 불가 → 아이디로 로그인하세요. (${provider.toUpperCase()})`, true);
-        return;
-      }
-
-      const matches = memberIdsByName[nk] || [];
-      if (matches.length === 1) {
-        const idLower = matches[0];
-        const info = memberInfoById[idLower] || {};
-
-        localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-          id: idLower,
-          name: info.name || oauthName || "",
-          team: info.team || "",
-          joinedAt: info.joinedAt || "",
-          via: "oauth-name-match:" + provider
-        }));
-
-        // 통과
-        window.location.href = "the-unique-main.html";
-        return;
-      }
-
-      if (matches.length > 1) {
-        sayOAuth(`"${oauthName}" 이름이 시트에서 여러 명과 겹칩니다. 아이디로 로그인하세요.`, true);
-        return;
-      }
-
-      sayOAuth(`소셜 로그인 OK. 하지만 "${oauthName}" 이름이 시트에 없습니다 → 아이디로 로그인하세요.`, true);
-    }
-
-    async function renderOAuthState(){
-      const { data, error } = await sb.auth.getSession();
-      if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
-
-      const sess = data?.session;
-      if (!sess) {
-        if (btnLogout) btnLogout.style.display = "none";
-        return;
-      }
-
-      const user = sess.user || {};
-      const provider = user.app_metadata?.provider || "";
-      const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-      const email = user.email || "";
-
-      localStorage.setItem("uniqueOAuthUser", JSON.stringify({
-        uid: user.id,
-        provider,
-        email,
-        name,
-        loggedInAt: new Date().toISOString()
-      }));
-
-      if (btnLogout) btnLogout.style.display = "inline-flex";
-      sayOAuth(`소셜 로그인 OK ✅ 이름 매칭 중... (${provider.toUpperCase()})`);
-
-      // ✅ 여기서 자동 통과 시도(이름이 시트에 있으면 바로 메인으로)
-      await tryAutoPassByName(user);
-    }
-
-    async function signIn(provider, scopes){
-      sayOAuth("로그인 창 여는 중...");
-      const { error } = await sb.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: GATE_URL, ...(scopes ? { scopes } : {}) }
-      });
-      if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
-    }
-
-    document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
-    document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
-    // 카카오는 KOE205 줄이려고 이메일 스코프 제외(필요하면 나중에 추가)
-    document.getElementById("btnKakao")?.addEventListener("click", () =>
-      signIn("kakao", "profile_nickname profile_image")
-    );
-
-    btnLogout?.addEventListener("click", async () => {
-      await sb.auth.signOut();
-      localStorage.removeItem("uniqueOAuthUser");
-      sayOAuth("소셜 로그아웃 완료");
+    const sess = data?.session;
+    if (!sess) {
       if (btnLogout) btnLogout.style.display = "none";
-    });
+      return;
+    }
 
-    (async () => {
+    await onOAuthSessionReady(sess);
+  }
+
+  async function signIn(provider, scopes){
+    sayOAuth("로그인 창 여는 중...");
+    const { error } = await sb.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: GATE_URL, ...(scopes ? { scopes } : {}) }
+    });
+    if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
+  }
+
+  // 버튼 연결
+  document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
+  document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
+  document.getElementById("btnKakao")?.addEventListener("click", () => signIn("kakao", "profile_nickname profile_image"));
+
+  btnLogout?.addEventListener("click", async () => {
+    await sb.auth.signOut();
+    localStorage.removeItem("uniqueOAuthUser");
+    localStorage.removeItem("uniqueCurrentUser");
+    sessionStorage.removeItem("unique_gate_redirected");
+    sayOAuth("소셜 로그아웃 완료");
+    if (btnLogout) btnLogout.style.display = "none";
+  });
+
+  (async () => {
+    await renderOAuthState();
+    sb.auth.onAuthStateChange(async () => {
       await renderOAuthState();
-      sb.auth.onAuthStateChange(async () => {
-        await renderOAuthState();
-      });
-    })();
-  </script>
+    });
+  })();
+</script>
+<!-- ✅ END: Supabase OAuth -->
 </body>
 </html>
