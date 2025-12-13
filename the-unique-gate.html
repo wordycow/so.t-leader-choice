@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
 
+  <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
   <meta property="og:description" content="Invitation-only access for action takers.">
@@ -17,6 +18,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- THE UNIQUE 타이틀용 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -225,7 +227,7 @@
 
         <form id="gate-form" class="form-body">
           <div class="gate-input-wrap">
-            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디(구글시트 기준)" />
+            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디(시트)" />
           </div>
 
           <div class="btn-row">
@@ -276,11 +278,20 @@
     <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
   </div>
 
-  <!-- ✅ 구글시트 파싱 -->
+  <!-- ✅ 시트 파싱 (id, name, team, joinedAt) -->
   <script>
     let allowedIds = null;
     let memberInfoById = {};
+    let memberIdsByName = {}; // { normName: [idLower, ...] }
     let sheetError = false;
+
+    function normName(s){
+      return (s || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ""); // 공백 제거
+    }
 
     function handleSheetResponse(resp) {
       try {
@@ -290,7 +301,7 @@
         rows.forEach((row) => {
           const cells = row.c || [];
 
-          const tsCell   = cells[5] || cells[0];  // 가입일(없으면 타임스탬프)
+          const tsCell   = cells[5] || cells[0];  // 가입일/타임스탬프
           const idCell   = cells[1];              // 아이디
           const nameCell = cells[2];              // 이름
           const teamCell = cells[4];              // 소속
@@ -308,6 +319,12 @@
           const joinedAt = tsCell && tsCell.v ? String(tsCell.v).trim() : "";
 
           memberInfoById[idLower] = { id: rawId, name, team, joinedAt };
+
+          const nk = normName(name);
+          if (nk) {
+            if (!memberIdsByName[nk]) memberIdsByName[nk] = [];
+            memberIdsByName[nk].push(idLower);
+          }
         });
 
         allowedIds = new Set(ids);
@@ -318,10 +335,22 @@
     }
   </script>
 
-  <!-- ✅ 여기 중요: gid=160409301 사용 -->
-  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?gid=160409301&tqx=responseHandler:handleSheetResponse"></script>
+  <!-- ✅ 구글시트 JSONP 로딩 (gid=160409301) -->
+  <script>
+    (function(){
+      const SSID = "1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM";
+      const GID  = "160409301";
+      const base = `https://docs.google.com/spreadsheets/d/${SSID}/gviz/tq`;
+      const url1 = `${base}?gid=${GID}&tqx=responseHandler:handleSheetResponse&cb=${Date.now()}`;
 
-  <!-- ✅ 아이디 로그인 -->
+      const s = document.createElement("script");
+      s.src = url1;
+      s.onerror = () => { sheetError = true; console.error("시트 JSONP 로드 실패"); };
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <!-- ✅ 아이디 로그인: (시트) 아이디로만 통과 -->
   <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
@@ -341,7 +370,7 @@
       }
 
       if (sheetError) {
-        statusEl.textContent = "회원 확인 중 오류(시트 접근)를 확인해 주세요.";
+        statusEl.textContent = "회원 확인 중 오류(시트 접근). 시트 공유를 '링크 공개(보기)'로 바꿔주세요.";
         statusEl.classList.add("status-error");
         return;
       }
@@ -358,7 +387,8 @@
           id: normalized,
           name: info.name || "",
           team: info.team || "",
-          joinedAt: info.joinedAt || ""
+          joinedAt: info.joinedAt || "",
+          via: "sheet-id"
         }));
         window.location.href = "the-unique-main.html";
       } else {
@@ -368,7 +398,7 @@
     });
   </script>
 
-  <!-- ✅ Supabase OAuth (표시는 하되, 메인 입장은 시트 아이디로만) -->
+  <!-- ✅ Supabase OAuth: 로그인하면 (이름이 시트에 있으면) 자동 통과 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -395,6 +425,66 @@
       oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
     }
 
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    async function waitForSheetReady(timeoutMs=6000){
+      const start = Date.now();
+      while (!allowedIds && !sheetError && (Date.now() - start) < timeoutMs) {
+        await sleep(120);
+      }
+    }
+
+    async function tryAutoPassByName(user){
+      await waitForSheetReady();
+
+      if (sheetError) {
+        sayOAuth("소셜 로그인 OK. 그런데 시트를 못 읽어서 자동 통과 불가. 아이디로 로그인하세요.", true);
+        return;
+      }
+      if (!allowedIds) {
+        sayOAuth("소셜 로그인 OK. 시트 로딩 중… 잠시 후 새로고침 또는 아이디 로그인하세요.");
+        return;
+      }
+
+      const provider = (user?.app_metadata?.provider || "").toString();
+      const oauthName =
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        user?.user_metadata?.nickname ||
+        "";
+
+      const nk = (oauthName || "").toString().trim().toLowerCase().replace(/\s+/g,"");
+      if (!nk) {
+        sayOAuth(`소셜 로그인 OK. 이름 정보가 없어서 자동 통과 불가 → 아이디로 로그인하세요. (${provider.toUpperCase()})`, true);
+        return;
+      }
+
+      const matches = memberIdsByName[nk] || [];
+      if (matches.length === 1) {
+        const idLower = matches[0];
+        const info = memberInfoById[idLower] || {};
+
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+          id: idLower,
+          name: info.name || oauthName || "",
+          team: info.team || "",
+          joinedAt: info.joinedAt || "",
+          via: "oauth-name-match:" + provider
+        }));
+
+        // 통과
+        window.location.href = "the-unique-main.html";
+        return;
+      }
+
+      if (matches.length > 1) {
+        sayOAuth(`"${oauthName}" 이름이 시트에서 여러 명과 겹칩니다. 아이디로 로그인하세요.`, true);
+        return;
+      }
+
+      sayOAuth(`소셜 로그인 OK. 하지만 "${oauthName}" 이름이 시트에 없습니다 → 아이디로 로그인하세요.`, true);
+    }
+
     async function renderOAuthState(){
       const { data, error } = await sb.auth.getSession();
       if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
@@ -419,7 +509,10 @@
       }));
 
       if (btnLogout) btnLogout.style.display = "inline-flex";
-      sayOAuth(`소셜 로그인 OK ✅ 이제 시트 아이디 입력 후 [로그인] 누르세요. (${provider.toUpperCase()})`);
+      sayOAuth(`소셜 로그인 OK ✅ 이름 매칭 중... (${provider.toUpperCase()})`);
+
+      // ✅ 여기서 자동 통과 시도(이름이 시트에 있으면 바로 메인으로)
+      await tryAutoPassByName(user);
     }
 
     async function signIn(provider, scopes){
@@ -433,6 +526,7 @@
 
     document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
     document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
+    // 카카오는 KOE205 줄이려고 이메일 스코프 제외(필요하면 나중에 추가)
     document.getElementById("btnKakao")?.addEventListener("click", () =>
       signIn("kakao", "profile_nickname profile_image")
     );
