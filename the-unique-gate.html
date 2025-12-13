@@ -25,270 +25,215 @@
 
   <style>
     * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; height:100%; }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-
-    body {
+    body{
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #f9fafb;
-      background: #000;
+      color:#f9fafb;
+      background:#000;
     }
 
-    .scene {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
+    .scene{ position:fixed; inset:0; overflow:hidden; }
+    .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+
+    .page-wrap{
+      position:absolute; inset:0;
+      display:flex; justify-content:center; align-items:center;
+      padding:24px 12px;
+      z-index:10;
     }
 
-    .scene-bg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .page-wrap {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px 12px;
-      z-index: 10;
-    }
-
-    .gate-card {
-      position: relative;
-      border-radius: 26px;
-      padding: 28px 26px 22px;
-
+    .gate-card{
+      position:relative;
+      border-radius:26px;
+      padding:28px 26px 22px;
       background: radial-gradient(circle at top, rgba(248,181,84,0.15), rgba(15,23,42,0.96));
-      border: 1px solid rgba(250, 204, 21, 0.95);
-      box-shadow:
-        0 0 20px rgba(250, 204, 21, 0.75),
-        0 28px 70px rgba(0,0,0,0.95);
+      border:1px solid rgba(250,204,21,0.95);
+      box-shadow: 0 0 20px rgba(250,204,21,0.75), 0 28px 70px rgba(0,0,0,0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-
       overflow: visible;
-      z-index: 20; /* ✅ 카드가 위로 */
+      z-index:20; /* 카드가 위로 */
     }
 
-    .gate-inner {
-      position: relative;
-      z-index: 1;
-    }
+    .gate-inner{ position:relative; z-index:1; }
 
-    .gate-title-wrap {
-      text-align: center;
-      margin-bottom: 22px;
-    }
+    .gate-title-wrap{ text-align:center; margin-bottom:22px; }
 
-    .gate-title {
-      font-family: "Cinzel", "Times New Roman", serif;
-      font-weight: 700;
-      font-size: 40px;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
+    .gate-title{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:700;
+      font-size:40px;
+      letter-spacing:0.24em;
+      text-transform:uppercase;
+      margin-bottom:8px;
 
       background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
 
-      text-shadow:
-        0 0 10px rgba(250, 204, 21, 0.9),
-        0 4px 18px rgba(0,0,0,1);
+      text-shadow: 0 0 10px rgba(250,204,21,0.9), 0 4px 18px rgba(0,0,0,1);
     }
 
-    .gate-subtitle-en {
-      font-size: 11px;
-      color: #f9fafb;
-      opacity: 0.9;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-shadow:
-        0 1px 3px rgba(0,0,0,0.9),
-        0 0 6px rgba(0,0,0,0.6);
+    .gate-subtitle-en{
+      font-size:11px;
+      opacity:0.9;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
     }
 
-    .form-body {
-      max-width: 360px;
-      margin: 0 auto;
-    }
+    .form-body{ max-width:360px; margin:0 auto; }
 
-    .gate-input-wrap {
-      margin-bottom: 10px;
-    }
+    .gate-input-wrap{ margin-bottom:10px; }
 
-    .gate-input {
-      width: 100%;
-      padding: 11px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(55,65,81,0.9);
+    .gate-input{
+      width:100%;
+      padding:11px 14px;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,0.9);
       background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
-      color: #f9fafb;
-      font-size: 13px;
-      outline: none;
-      box-shadow:
-        0 4px 14px rgba(0,0,0,0.75) inset,
-        0 0 0 1px rgba(0,0,0,0.55);
+      color:#f9fafb;
+      font-size:13px;
+      outline:none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.75) inset, 0 0 0 1px rgba(0,0,0,0.55);
     }
-
-    .gate-input::placeholder { color: #6b7280; }
-
-    .gate-input:focus {
+    .gate-input::placeholder{ color:#6b7280; }
+    .gate-input:focus{
       border-color: rgba(248,181,84,0.95);
-      box-shadow:
-        0 0 0 1px rgba(248,181,84,0.6),
-        0 6px 22px rgba(0,0,0,0.9) inset;
+      box-shadow: 0 0 0 1px rgba(248,181,84,0.6), 0 6px 22px rgba(0,0,0,0.9) inset;
     }
 
-    .btn-row {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 14px;
-      margin-bottom: 6px;
+    .btn-row{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:14px;
+      margin-bottom:6px;
     }
 
-    .btn {
-      width: 100%;
-      min-height: 42px; /* ✅ 높이 고정(로그인 버튼 느낌) */
-      padding: 10px 10px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition:
-        transform 0.12s ease,
-        box-shadow 0.12s ease,
-        background 0.12s ease,
-        border-color 0.12s ease;
+    .btn{
+      width:100%;
+      min-height:42px;
+      padding:10px 10px;
+      border-radius:999px;
+      border:1px solid transparent;
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      text-decoration:none;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
     }
 
-    .btn-primary {
+    .btn-primary{
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
       border-color: rgba(248,181,84,0.95);
-      color: #fef2f2;
-      box-shadow:
-        0 10px 26px rgba(0,0,0,1),
-        0 0 0 1px rgba(0,0,0,0.5) inset;
+      color:#fef2f2;
+      box-shadow: 0 10px 26px rgba(0,0,0,1), 0 0 0 1px rgba(0,0,0,0.5) inset;
     }
-    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary:hover{ transform: translateY(-1px); }
 
-    .btn-ghost {
+    .btn-ghost{
       background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
       border-color: rgba(55,65,81,1);
-      color: #e5e7eb;
+      color:#e5e7eb;
       box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
-    .btn-ghost:hover { border-color: rgba(148,163,184,0.9); }
+    .btn-ghost:hover{ border-color: rgba(148,163,184,0.9); }
 
-    .divider {
-      margin: 14px 0 6px;
-      text-align: center;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.75;
-      user-select: none;
+    .divider{
+      margin:14px 0 6px;
+      text-align:center;
+      font-size:11px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      opacity:0.75;
+      user-select:none;
     }
 
-    /* ✅ 아이콘 때문에 버튼이 커지던 문제 해결 */
-    .btn-with-icon { gap: 10px; justify-content: center; }
-    .btn-with-icon svg {
-      width: 18px !important;
-      height: 18px !important;
-      max-width: 18px !important;
-      max-height: 18px !important;
+    /* 아이콘 때문에 버튼 커지던 문제 해결 */
+    .btn-with-icon{ gap:10px; justify-content:center; }
+    .btn-with-icon svg{
+      width:18px !important; height:18px !important;
+      max-width:18px !important; max-height:18px !important;
       flex: 0 0 18px !important;
-      display: block !important;
+      display:block !important;
     }
-    .btn-with-icon span { line-height: 1; }
+    .btn-with-icon span{ line-height:1; }
 
-    /* ✅ 소셜 버튼 색(예시 이미지 스타일) */
+    /* 소셜 버튼 색 */
     .btn-google{
-      background: #ffffff;
-      color: #111827;
+      background:#ffffff;
+      color:#111827;
       border-color: rgba(255,255,255,0.9);
       box-shadow: 0 10px 26px rgba(0,0,0,1);
-      letter-spacing: 0.08em;
+      letter-spacing:0.08em;
     }
-
     .btn-discord{
-      background: #5865F2;
-      color: #ffffff;
+      background:#5865F2;
+      color:#ffffff;
       border-color: rgba(88,101,242,0.95);
       box-shadow: 0 10px 26px rgba(0,0,0,1);
-      letter-spacing: 0.08em;
+      letter-spacing:0.08em;
     }
-
     .btn-kakao{
-      background: #FEE500;
-      color: #111827;
+      background:#FEE500;
+      color:#111827;
       border-color: rgba(254,229,0,0.95);
       box-shadow: 0 10px 26px rgba(0,0,0,1);
-      letter-spacing: 0.08em;
+      letter-spacing:0.08em;
     }
 
-    .status {
-      min-height: 18px;
-      font-size: 11px;
-      text-align: center;
-      margin-top: 2px;
+    .status{
+      min-height:18px;
+      font-size:11px;
+      text-align:center;
+      margin-top:2px;
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
-    .status-error { color: #fecaca; }
+    .status-error{ color:#fecaca; }
 
     /* 마녀 & 박쥐 */
-    .spirit { position: absolute; pointer-events: none; z-index: 5; }
-    .spirit img { display: block; width: 100%; height: auto; }
+    .spirit{ position:absolute; pointer-events:none; z-index:5; }
+    .spirit img{ display:block; width:100%; height:auto; }
 
-    .spirit-witch {
-      top: 30%;
-      right: 22%;
-      width: 3%;
+    .spirit-witch{
+      top:30%;
+      right:22%;
+      width:3%;
       animation: witchFloat 5s ease-in-out infinite alternate;
-      z-index: 30;
+      z-index:30;
     }
-    @keyframes witchFloat {
+    @keyframes witchFloat{
       from { transform: translateY(5px) translateX(0); }
       to   { transform: translateY(-20px) translateX(6px); }
     }
 
-    .spirit-bat {
-      top: -20%;
-      right: 0%;
-      width: 43%;
+    .spirit-bat{
+      top:-20%;
+      right:0%;
+      width:43%;
       animation: batFloat 2s ease-in-out infinite alternate;
-      z-index: 1; /* ✅ 박쥐는 카드 뒤 */
+      z-index:1; /* 박쥐는 카드 뒤 */
     }
-    @keyframes batFloat {
+    @keyframes batFloat{
       from { transform: translateY(8px); }
       to   { transform: translateY(22px); }
     }
 
-    @media (max-width: 768px) {
-      .gate-card { padding: 24px 20px 18px; border-radius: 22px; }
-      .gate-title { font-size: 32px; letter-spacing: 0.22em; }
-      .form-body { max-width: 100%; }
+    @media (max-width: 768px){
+      .gate-card{ padding:24px 20px 18px; border-radius:22px; }
+      .gate-title{ font-size:32px; letter-spacing:0.22em; }
+      .form-body{ max-width:100%; }
 
-      .spirit-witch { top: 26%; right: 20%; width: 10%; }
-      .spirit-bat   { top: 18%; right: 10%; width: 30%; }
+      .spirit-witch{ top:26%; right:20%; width:10%; }
+      .spirit-bat{ top:18%; right:10%; width:30%; }
     }
   </style>
 </head>
@@ -321,7 +266,6 @@
           <div class="divider">OR</div>
 
           <div class="btn-row" style="margin-top:10px;">
-            <!-- GOOGLE -->
             <button type="button" id="btnGoogle" class="btn btn-google btn-with-icon">
               <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
                 <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
@@ -332,7 +276,6 @@
               <span>GOOGLE로 로그인</span>
             </button>
 
-            <!-- DISCORD -->
             <button type="button" id="btnDiscord" class="btn btn-discord btn-with-icon">
               <svg viewBox="0 0 245 240" aria-hidden="true">
                 <path fill="currentColor" d="M104.4 104.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.3-5 10.2-11.1 0-6.1-4.6-11.1-10.2-11.1zm36.2 0c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.3-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1z"/>
@@ -341,7 +284,6 @@
               <span>DISCORD로 로그인</span>
             </button>
 
-            <!-- KAKAO -->
             <button type="button" id="btnKakao" class="btn btn-kakao btn-with-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#111827" d="M12 3C6.5 3 2 6.4 2 10.6c0 2.7 1.9 5.1 4.8 6.5L6 21l4.3-2.4c.6.1 1.1.1 1.7.1 5.5 0 10-3.4 10-7.6S17.5 3 12 3z"/>
@@ -403,113 +345,160 @@
       }
     }
   </script>
-<!-- ✅ START: Supabase OAuth (루프 방지/자동이동 없음) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq"; // ✅ anon
 
-  const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
-  const GATE_URL  = SITE_BASE + "/the-unique-gate.html";
+  <!-- 2) ✅ 구글 시트 JSONP 로딩 (너 파일에서 빠져있던 핵심) -->
+  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      flowType: "implicit",
-      detectSessionInUrl: true,
-      persistSession: true,
-      autoRefreshToken: true
-    }
-  });
+  <!-- 3) 아이디 로그인 처리 (너 파일에서 빠져있던 핵심) -->
+  <script>
+    const form = document.getElementById("gate-form");
+    const idInput = document.getElementById("login-id");
+    const statusEl = document.getElementById("status");
 
-  const oauthStatusEl = document.getElementById("oauth-status");
-  const btnLogout = document.getElementById("btnLogout");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
 
-  function sayOAuth(msg, isErr=false){
-    if (!oauthStatusEl) return;
-    oauthStatusEl.textContent = msg || "";
-    oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
-  }
+      const id = (idInput.value || "").trim();
+      statusEl.textContent = "";
+      statusEl.className = "status";
 
-  // ✅ URL에 남은 로그인 파라미터/해시 정리
-  function cleanOAuthArtifacts(){
-    const u = new URL(location.href);
-    const err = u.searchParams.get("error_description") || u.searchParams.get("error");
+      if (!id) {
+        statusEl.textContent = "아이디를 입력해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
 
-    ["code","state","error","error_description"].forEach(k => u.searchParams.delete(k));
-    history.replaceState({}, document.title, u.pathname);
+      if (sheetError) {
+        statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        statusEl.classList.add("status-error");
+        return;
+      }
 
-    if (location.hash && location.hash.includes("access_token")) {
-      history.replaceState({}, document.title, location.pathname);
-    }
+      if (!allowedIds) {
+        statusEl.textContent = "회원 정보 불러오는 중입니다. 잠시 후 다시 시도해 주세요.";
+        return;
+      }
 
-    if (err) sayOAuth("소셜 로그인 오류: " + err, true);
-  }
-
-  async function renderOAuthState(){
-    const { data, error } = await sb.auth.getSession();
-    if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
-
-    const sess = data?.session;
-    if (!sess) {
-      if (btnLogout) btnLogout.style.display = "none";
-      return;
-    }
-
-    const user = sess.user || {};
-    const provider = user.app_metadata?.provider || "";
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-
-    localStorage.setItem("uniqueOAuthUser", JSON.stringify({
-      uid: user.id,
-      provider,
-      email,
-      name,
-      loggedInAt: new Date().toISOString()
-    }));
-
-    if (btnLogout) btnLogout.style.display = "inline-flex";
-    sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
-
-    // ✅ 여기서 메인으로 자동 이동을 절대 하지 않음 (루프 방지)
-    // 이제 "아이디 입력 → 로그인"으로 메인 입장
-  }
-
-  async function signIn(provider, scopes){
-    sayOAuth("로그인 창 여는 중...");
-    const { error } = await sb.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: GATE_URL,
-        ...(scopes ? { scopes } : {})
+      const normalized = id.toLowerCase();
+      if (allowedIds.has(normalized)) {
+        const info = memberInfoById[normalized] || {};
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+          id: normalized,
+          name: info.name || "",
+          team: info.team || "",
+          joinedAt: info.joinedAt || ""
+        }));
+        window.location.href = "the-unique-main.html";
+      } else {
+        statusEl.textContent = "등록되지 않은 아이디입니다.";
+        statusEl.classList.add("status-error");
       }
     });
-    if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
-  }
+  </script>
 
-  document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
-  document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
+  <!-- 4) Supabase OAuth (단일 1개) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq"; // ✅ anon
 
-  // ✅ 카카오는 일단 이메일 스코프 빼고 성공부터 (KOE205 줄이기)
-  document.getElementById("btnKakao")?.addEventListener("click", () =>
-    signIn("kakao", "profile_nickname profile_image")
-  );
+    const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
+    const GATE_URL  = SITE_BASE + "/the-unique-gate.html";
 
-  btnLogout?.addEventListener("click", async () => {
-    await sb.auth.signOut();
-    localStorage.removeItem("uniqueOAuthUser");
-    sayOAuth("소셜 로그아웃 완료");
-    if (btnLogout) btnLogout.style.display = "none";
-  });
-
-  (async () => {
-    cleanOAuthArtifacts();
-    await renderOAuthState();
-    sb.auth.onAuthStateChange(async () => {
-      await renderOAuthState();
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        flowType: "implicit",
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true
+      }
     });
-  })();
-</script>
-<!-- ✅ END: Supabase OAuth -->
+
+    const oauthStatusEl = document.getElementById("oauth-status");
+    const btnLogout = document.getElementById("btnLogout");
+
+    function sayOAuth(msg, isErr=false){
+      if (!oauthStatusEl) return;
+      oauthStatusEl.textContent = msg || "";
+      oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+    }
+
+    function cleanOAuthArtifacts(){
+      const u = new URL(location.href);
+      const err = u.searchParams.get("error_description") || u.searchParams.get("error");
+
+      ["code","state","error","error_description"].forEach(k => u.searchParams.delete(k));
+      history.replaceState({}, document.title, u.pathname);
+
+      if (location.hash && location.hash.includes("access_token")) {
+        history.replaceState({}, document.title, location.pathname);
+      }
+
+      if (err) sayOAuth("소셜 로그인 오류: " + err, true);
+    }
+
+    async function renderOAuthState(){
+      const { data, error } = await sb.auth.getSession();
+      if (error) { sayOAuth("세션 확인 실패: " + error.message, true); return; }
+
+      const sess = data?.session;
+      if (!sess) {
+        if (btnLogout) btnLogout.style.display = "none";
+        return;
+      }
+
+      const user = sess.user || {};
+      const provider = user.app_metadata?.provider || "";
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const email = user.email || "";
+
+      localStorage.setItem("uniqueOAuthUser", JSON.stringify({
+        uid: user.id,
+        provider,
+        email,
+        name,
+        loggedInAt: new Date().toISOString()
+      }));
+
+      if (btnLogout) btnLogout.style.display = "inline-flex";
+      sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
+      // ✅ 자동 이동은 안 함(루프 방지). 메인 입장은 "아이디 입력 → 로그인"
+    }
+
+    async function signIn(provider, scopes){
+      sayOAuth("로그인 창 여는 중...");
+      const { error } = await sb.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: GATE_URL,
+          ...(scopes ? { scopes } : {})
+        }
+      });
+      if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
+    }
+
+    document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
+    document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
+
+    // ✅ 카카오는 우선 이메일 스코프 빼고 성공부터 (KOE205 줄이기)
+    document.getElementById("btnKakao")?.addEventListener("click", () =>
+      signIn("kakao", "profile_nickname profile_image")
+    );
+
+    btnLogout?.addEventListener("click", async () => {
+      await sb.auth.signOut();
+      localStorage.removeItem("uniqueOAuthUser");
+      sayOAuth("소셜 로그아웃 완료");
+      if (btnLogout) btnLogout.style.display = "none";
+    });
+
+    (async () => {
+      cleanOAuthArtifacts();
+      await renderOAuthState();
+      sb.auth.onAuthStateChange(async () => {
+        await renderOAuthState();
+      });
+    })();
+  </script>
 </body>
 </html>
