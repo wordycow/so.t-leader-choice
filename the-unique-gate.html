@@ -18,7 +18,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- THE UNIQUE 타이틀용 폰트 -->
+  <!-- 타이틀 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       overflow: visible;
-      z-index: 20;
+      z-index:20; /* 카드가 위로 */
     }
 
     .gate-inner{ position:relative; z-index:1; }
@@ -118,7 +118,7 @@
       border-radius:999px;
       border:1px solid transparent;
       font-size:13px;
-      font-weight:600;
+      font-weight:700;
       letter-spacing:0.12em;
       text-transform:uppercase;
       cursor:pointer;
@@ -145,18 +145,26 @@
     }
     .btn-ghost:hover{ border-color: rgba(148,163,184,0.9); }
 
-    .divider{
-  margin: 14px 0 6px;
-  text-align: center;
-  font-size: 15px;      /* ✅ 기존 11px → 15px */
-  font-weight: 800;     /* ✅ 더 굵게 */
-  letter-spacing: 0.24em;
-  text-transform: none; /* ✅ 한글이라 uppercase 불필요 */
-  opacity: 0.95;
-  user-select: none;
-}
+    /* 가운데 & */
+    .divider-amp{
+      margin: 14px 0 10px;
+      text-align: center;
+      font-family: "Cinzel","Times New Roman",serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.35em;
+      color: transparent;
+      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-shadow:
+        0 0 12px rgba(250,204,21,0.75),
+        0 6px 18px rgba(0,0,0,1);
+      opacity: 0.95;
+      user-select: none;
+    }
 
-    /* 아이콘 크기 고정 */
+    /* 아이콘 때문에 버튼 커지던 문제 해결 */
     .btn-with-icon{ gap:10px; justify-content:center; }
     .btn-with-icon svg{
       width:18px !important; height:18px !important;
@@ -166,13 +174,18 @@
     }
     .btn-with-icon span{ line-height:1; }
 
-    /* 구글 버튼 스타일 */
-    .btn-google{
-      background:#ffffff;
+    /* UNIQUE 마켓 버튼(골드) */
+    .btn-market{
+      background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
       color:#111827;
-      border-color: rgba(255,255,255,0.9);
-      box-shadow: 0 10px 26px rgba(0,0,0,1);
-      letter-spacing:0.08em;
+      border-color: rgba(250,204,21,0.95);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.95);
+      letter-spacing: 0.16em;
+      font-weight: 900;
+    }
+    .btn-market:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(0,0,0,1);
     }
 
     .status{
@@ -187,10 +200,30 @@
     /* 마녀 & 박쥐 */
     .spirit{ position:absolute; pointer-events:none; z-index:5; }
     .spirit img{ display:block; width:100%; height:auto; }
-    .spirit-witch{ top:30%; right:22%; width:3%; animation: witchFloat 5s ease-in-out infinite alternate; z-index:30; }
-    @keyframes witchFloat{ from { transform: translateY(5px) translateX(0); } to { transform: translateY(-20px) translateX(6px); } }
-    .spirit-bat{ top:-20%; right:0%; width:43%; animation: batFloat 2s ease-in-out infinite alternate; z-index:1; }
-    @keyframes batFloat{ from { transform: translateY(8px); } to { transform: translateY(22px); } }
+
+    .spirit-witch{
+      top:30%;
+      right:22%;
+      width:3%;
+      animation: witchFloat 5s ease-in-out infinite alternate;
+      z-index:30;
+    }
+    @keyframes witchFloat{
+      from { transform: translateY(5px) translateX(0); }
+      to   { transform: translateY(-20px) translateX(6px); }
+    }
+
+    .spirit-bat{
+      top:-20%;
+      right:0%;
+      width:43%;
+      animation: batFloat 2s ease-in-out infinite alternate;
+      z-index:1; /* 박쥐는 카드 뒤 */
+    }
+    @keyframes batFloat{
+      from { transform: translateY(8px); }
+      to   { transform: translateY(22px); }
+    }
 
     @media (max-width: 768px){
       .gate-card{ padding:24px 20px 18px; border-radius:22px; }
@@ -199,20 +232,6 @@
       .spirit-witch{ top:26%; right:20%; width:10%; }
       .spirit-bat{ top:18%; right:10%; width:30%; }
     }
-    .btn-market{
-  background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
-  color:#111827;
-  border-color: rgba(250,204,21,0.95);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.95);
-  letter-spacing: 0.16em;
-  font-weight: 800;
-}
-
-.btn-market:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 16px 36px rgba(0,0,0,1);
-}
-
   </style>
 </head>
 
@@ -241,28 +260,20 @@
 
           <div id="status" class="status"></div>
 
-          <div class="divider">&</div>
+          <div class="divider-amp">&amp;</div>
 
           <div class="btn-row" style="margin-top:10px;">
-            <!-- GOOGLE ONLY -->
-           <button type="button" id="btnGoogle" class="btn btn-market btn-with-icon">
-  <!-- 작은 G -->
-  <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
-    <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
-    <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
-    <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
-    <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
-  </svg>
+            <!-- ✅ 구글로 마켓 (G만) -->
+            <button type="button" id="btnMarket" class="btn btn-market btn-with-icon">
+              <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
+                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
+                <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
+                <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
+                <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
+              </svg>
+              <span>UNIQUE 마켓</span>
+            </button>
 
-  <!-- 마켓 아이콘 -->
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="currentColor" d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.2 14h9.9c.75 0 1.4-.41 1.74-1.03L21 6H7.42L6.7 4.4A2 2 0 0 0 4.9 3H3v2h1.9l3.6 8.2-1.35 2.45C6.52 16.37 7 17.2 7.9 17.2H20v-2H7.9l1.1-2.0Z"/>
-  </svg>
-
-  <span>UNIQUE 마켓</span>
-</button>
-
-            <button type="button" id="btnToMarket" class="btn btn-ghost" style="display:none;">마켓으로 이동</button>
             <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;">구글 로그아웃</button>
           </div>
 
@@ -275,7 +286,7 @@
     <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
   </div>
 
-  <!-- ====== 시트는 “아이디 로그인할 때만” 로드(속도 개선 핵심) ====== -->
+  <!-- ====== 시트는 아이디 로그인 눌렀을 때만 로드(속도 개선) ====== -->
   <script>
     let allowedIds = null;
     let memberInfoById = {};
@@ -330,7 +341,6 @@
         s.onerror = () => { sheetError = true; resolve(); };
         document.head.appendChild(s);
 
-        // 혹시 onload가 안 잡혀도, callback이 실행되면 allowedIds가 세팅됨
         setTimeout(() => resolve(), 1800);
       });
 
@@ -357,7 +367,6 @@
         return;
       }
 
-      // ✅ 필요할 때만 시트 로드
       if (!allowedIds && !sheetError) {
         statusEl.textContent = "회원 정보 불러오는 중...";
         await loadSheetOnce();
@@ -393,66 +402,84 @@
     });
   </script>
 
-  <!-- ====== Supabase Google OAuth ONLY ====== -->
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  // ✅ Supabase
-  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+  <!-- ====== 구글 로그인 → 마켓(team-market.html / market.html) ====== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-  // ✅ 이동할 마켓
-  const MARKET_URL = "team-market.html";
+    const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
+    const MARKET_CANDIDATES = ["team-market.html", "market.html"]; // 둘 중 존재하는 걸로 이동
 
-  // ✅ gate URL (redirectTo용)
-  const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
-
-  // ✅ 여기서 sb를 먼저 만든다 (에러 해결 핵심)
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
-  });
-
-  const oauthStatusEl = document.getElementById("oauth-status");
-  const btnLogout = document.getElementById("btnLogout");
-  const btnMarket = document.getElementById("btnGoogle"); // UNIQUE 마켓 버튼
-
-  function say(msg, isErr=false){
-    if (!oauthStatusEl) return;
-    oauthStatusEl.textContent = msg || "";
-    oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
-  }
-
-  async function goMarketIfLoggedIn(){
-    const { data } = await sb.auth.getSession();
-    if (data?.session) location.href = MARKET_URL;
-  }
-
-  async function signInGoogle(){
-    // 이미 로그인 되어 있으면 바로 마켓
-    const { data } = await sb.auth.getSession();
-    if (data?.session) { location.href = MARKET_URL; return; }
-
-    say("구글 로그인 여는 중...");
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: GATE_URL }
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
     });
-    if (error) say("구글 로그인 실패: " + error.message, true);
-  }
 
-  btnMarket?.addEventListener("click", () => signInGoogle());
+    const oauthStatusEl = document.getElementById("oauth-status");
+    const btnLogout = document.getElementById("btnLogout");
+    const btnMarket = document.getElementById("btnMarket");
 
-  btnLogout?.addEventListener("click", async () => {
-    await sb.auth.signOut();
-    say("로그아웃 완료");
-  });
+    function say(msg, isErr=false){
+      if (!oauthStatusEl) return;
+      oauthStatusEl.textContent = msg || "";
+      oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+    }
 
-  // 로그인 콜백으로 돌아오면 자동으로 마켓 이동
-  sb.auth.onAuthStateChange((evt, session) => {
-    if (evt === "SIGNED_IN" && session) location.href = MARKET_URL;
-  });
+    let _marketResolved = null;
+    async function resolveMarketUrl(){
+      if (_marketResolved) return _marketResolved;
 
-  // 이미 로그인 상태로 gate에 들어온 경우도 바로 마켓 이동
-  goMarketIfLoggedIn();
-</script>
+      for (const p of MARKET_CANDIDATES) {
+        try{
+          const r = await fetch(p + "?v=" + Date.now(), { method: "GET", cache: "no-store" });
+          if (r.ok) { _marketResolved = p; return p; }
+        } catch {}
+      }
+      _marketResolved = "team-market.html";
+      return _marketResolved;
+    }
+
+    async function goMarket(){
+      const url = await resolveMarketUrl();
+      location.href = url;
+    }
+
+    async function openGoogleOrGoMarket(){
+      const { data } = await sb.auth.getSession();
+      if (data?.session) {
+        await goMarket();
+        return;
+      }
+
+      say("구글 로그인 여는 중...");
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: GATE_URL }
+      });
+      if (error) say("구글 로그인 실패: " + error.message, true);
+    }
+
+    btnMarket?.addEventListener("click", () => openGoogleOrGoMarket());
+
+    btnLogout?.addEventListener("click", async () => {
+      await sb.auth.signOut();
+      say("로그아웃 완료");
+      btnLogout.style.display = "none";
+    });
+
+    // 로그인 콜백으로 돌아오면 즉시 마켓 이동
+    sb.auth.onAuthStateChange(async (evt, session) => {
+      if (evt === "SIGNED_IN" && session) {
+        btnLogout.style.display = "inline-flex";
+        await goMarket();
+      }
+    });
+
+    // 이미 로그인 상태면 로그아웃 버튼만 보여주기
+    (async () => {
+      const { data } = await sb.auth.getSession();
+      if (data?.session) btnLogout.style.display = "inline-flex";
+    })();
+  </script>
 </body>
 </html>
