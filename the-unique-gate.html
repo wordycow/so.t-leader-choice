@@ -109,6 +109,8 @@
       gap:10px;
       margin-top:14px;
       margin-bottom:6px;
+      .btn-row{ margin-bottom: 2px; }      /* 기존 6px -> 2px */
+.divider-amp{ margin: 8px 0 8px; }   /* 기존보다 위아래 줄이기 */
     }
 
     .btn{
@@ -264,15 +266,17 @@
 
           <div class="btn-row" style="margin-top:10px;">
             <!-- ✅ 구글로 마켓 (G만) -->
-            <button type="button" id="btnMarket" class="btn btn-market btn-with-icon">
-              <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
-                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
-                <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
-                <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
-                <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
-              </svg>
-              <span>UNIQUE 마켓</span>
-            </button>
+           <button type="button" id="btnMarket" class="btn btn-market btn-with-icon">
+  <!-- G 아이콘만 -->
+  <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
+    <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
+    <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
+    <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
+    <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
+  </svg>
+  <span>UNIQUE 마켓</span>
+</button>
+
 
             <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;">구글 로그아웃</button>
           </div>
@@ -403,83 +407,54 @@
   </script>
 
   <!-- ====== 구글 로그인 → 마켓(team-market.html / market.html) ====== -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ✅ Supabase(anon)
+  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-    const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
-    const MARKET_CANDIDATES = ["team-market.html", "market.html"]; // 둘 중 존재하는 걸로 이동
+  // ✅ 목적지(마켓)
+  const MARKET_URL = "team-market.html";
+  const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  // ✅ sb 먼저 생성 (sb is not defined 해결 핵심)
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+  });
+
+  const btnMarket = document.getElementById("btnMarket");
+  const oauthStatusEl = document.getElementById("oauth-status");
+
+  function say(t){ if(oauthStatusEl) oauthStatusEl.textContent = t || ""; }
+
+  async function goMarketIfLoggedIn(){
+    const { data } = await sb.auth.getSession();
+    if (data?.session) location.href = MARKET_URL;
+  }
+
+  async function openGoogleOrGoMarket(){
+    const { data } = await sb.auth.getSession();
+    if (data?.session) { location.href = MARKET_URL; return; }
+
+    say("구글 로그인 여는 중...");
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: GATE_URL }
     });
+    if (error) say("구글 로그인 실패: " + error.message);
+  }
 
-    const oauthStatusEl = document.getElementById("oauth-status");
-    const btnLogout = document.getElementById("btnLogout");
-    const btnMarket = document.getElementById("btnMarket");
+  // ✅ 버튼 클릭
+  btnMarket?.addEventListener("click", openGoogleOrGoMarket);
 
-    function say(msg, isErr=false){
-      if (!oauthStatusEl) return;
-      oauthStatusEl.textContent = msg || "";
-      oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
-    }
+  // ✅ 로그인 콜백으로 돌아오면 자동 이동
+  sb.auth.onAuthStateChange((evt, session) => {
+    if (evt === "SIGNED_IN" && session) location.href = MARKET_URL;
+  });
 
-    let _marketResolved = null;
-    async function resolveMarketUrl(){
-      if (_marketResolved) return _marketResolved;
+  // ✅ 이미 로그인 상태면 바로 마켓
+  goMarketIfLoggedIn();
+</script>
 
-      for (const p of MARKET_CANDIDATES) {
-        try{
-          const r = await fetch(p + "?v=" + Date.now(), { method: "GET", cache: "no-store" });
-          if (r.ok) { _marketResolved = p; return p; }
-        } catch {}
-      }
-      _marketResolved = "team-market.html";
-      return _marketResolved;
-    }
-
-    async function goMarket(){
-      const url = await resolveMarketUrl();
-      location.href = url;
-    }
-
-    async function openGoogleOrGoMarket(){
-      const { data } = await sb.auth.getSession();
-      if (data?.session) {
-        await goMarket();
-        return;
-      }
-
-      say("구글 로그인 여는 중...");
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: GATE_URL }
-      });
-      if (error) say("구글 로그인 실패: " + error.message, true);
-    }
-
-    btnMarket?.addEventListener("click", () => openGoogleOrGoMarket());
-
-    btnLogout?.addEventListener("click", async () => {
-      await sb.auth.signOut();
-      say("로그아웃 완료");
-      btnLogout.style.display = "none";
-    });
-
-    // 로그인 콜백으로 돌아오면 즉시 마켓 이동
-    sb.auth.onAuthStateChange(async (evt, session) => {
-      if (evt === "SIGNED_IN" && session) {
-        btnLogout.style.display = "inline-flex";
-        await goMarket();
-      }
-    });
-
-    // 이미 로그인 상태면 로그아웃 버튼만 보여주기
-    (async () => {
-      const { data } = await sb.auth.getSession();
-      if (data?.session) btnLogout.style.display = "inline-flex";
-    })();
-  </script>
 </body>
 </html>
