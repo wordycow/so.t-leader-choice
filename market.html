@@ -64,6 +64,7 @@
 
   <div id="viewList">
     <div class="grid">
+      <!-- 작성/수정 -->
       <div class="card">
         <div style="font-weight:900;margin-bottom:8px;">등록 / 수정</div>
         <div class="muted" style="margin-bottom:10px;">이미지 1~3장 (JPG/PNG/GIF). 새 이미지 선택 시 기존 이미지는 교체됩니다.</div>
@@ -112,6 +113,7 @@
         </div>
       </div>
 
+      <!-- 리스트 -->
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <div style="font-weight:900;">게시글</div>
@@ -140,7 +142,7 @@
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
 
-  // ✅ Redirect는 market.html 자신(쿼리 없이)로 돌아오게
+  // ✅ redirectTo는 “market.html 자신(쿼리 없이)”로
   const REDIRECT_TO = location.origin + location.pathname;
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -186,7 +188,7 @@
       return false;
     }
 
-    // ✅ 로그인 완료 후 autologin 파라미터 제거(깔끔/루프 방지)
+    // ✅ 로그인 완료 후 autologin 제거(루프/지연 방지)
     const u2 = new URL(location.href);
     if (u2.searchParams.get("autologin") === "1") {
       u2.searchParams.delete("autologin");
@@ -201,12 +203,15 @@
   }
 
   $("btnMain").onclick = () => location.href = "the-unique-main.html";
+
+  // ✅ 로그아웃 확실히
   $("btnLogout").onclick = async () => {
+    setStatus("로그아웃 중...");
     await sb.auth.signOut();
-    location.href = "the-unique-gate.html";
+    location.replace("the-unique-gate.html");
   };
 
-  // ===== 이하 기존 마켓 로직(유송님 코드 그대로) =====
+  // ===== 이하 유송님 기존 로직 유지 =====
   let editingId = null;
   let selectedFiles = [];
   let previewUrls = [];
@@ -471,8 +476,7 @@
     const ok = await requireLogin();
     if (!ok) return;
 
-    const pid = getPostIdFromUrl();
-    if (pid) { location.href = "market.html"; return; } // 상세는 다음 단계에서 정리
+    // (상세는 내일 이어서)
     await renderFeed();
   })();
 </script>
