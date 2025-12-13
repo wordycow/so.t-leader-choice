@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Unique · Public Market</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { margin:0; font-family:system-ui,-apple-system,"Pretendard",sans-serif; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width:1100px; margin:0 auto; padding:18px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .card { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); border-radius:16px; padding:14px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .col { flex:1 1 320px; min-width:320px; }
+    input, textarea, select, button { width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#e5e7eb; }
+    button { cursor:pointer; font-weight:800; }
+    button.secondary { background:transparent; }
+    .muted { opacity:.75; font-size:13px; }
+    .list .item { padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.10); margin-bottom:10px; background:rgba(255,255,255,.04); }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18); font-size:12px; opacity:.9; }
+    .btns { display:flex; gap:8px; }
+    .btns button { width:auto; }
+    hr { border:0; border-top:1px solid rgba(255,255,255,.12); margin:12px 0; }
+    .hide { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div style="font-size:20px;font-weight:900;">The Unique · Public Market</div>
+        <div class="muted">누구나 열람 가능 / 등록·댓글·수정은 로그인 필요</div>
+      </div>
+
+      <div class="card" style="min-width:340px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <div style="font-weight:900;">계정</div>
+          <button id="btnLogout" class="secondary hide">로그아웃</button>
+        </div>
+
+        <div id="who" class="muted" style="margin:8px 0 10px;">비로그인 상태</div>
+
+        <div id="authBox">
+          <input id="email" type="email" placeholder="이메일" />
+          <input id="password" type="password" placeholder="비밀번호(6자+)" style="margin-top:8px;" />
+          <div class="row" style="margin-top:10px;">
+            <div class="col"><button id="btnLogin">로그인</button></div>
+            <div class="col"><button id="btnSignup" class="secondary">회원가입</button></div>
+          </div>
+          <div id="authMsg" class="muted" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div class="col">
+        <div id="createBox" class="card hide" style="margin-bottom:12px;">
+          <div style="font-weight:900; margin-bottom:8px;">물건 올리기(로그인 필요)</div>
+          <input id="newTitle" placeholder="제목" />
+          <textarea id="newDesc" placeholder="설명" rows="4" style="margin-top:8px;"></textarea>
+          <select id="newStatus" style="margin-top:8px;">
+            <option value="판매중">판매중</option>
+            <option value="예약중">예약중</option>
+            <option value="판매완료">판매완료</option>
+          </select>
+          <button id="btnCreate" style="margin-top:10px;">등록</button>
+          <div id="createMsg" class="muted" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card list">
+          <div style="font-weight:900; margin-bottom:8px;">물건 목록(공개)</div>
+          <div id="items" class="muted">불러오는 중...</div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div style="font-weight:900; margin-bottom:8px;">상세 / 댓글(공개)</div>
+          <div id="detail" class="muted">왼쪽에서 물건을 선택하세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ✅ 여기에 네 값 입력
+  const SUPABASE_URL = "https://YOURPROJECT.supabase.co";
+  const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (id) => document.getElementById(id);
+  const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  let session = null;
+  let currentItem = null;
+
+  function setVisible(el, on) {
+    el.classList.toggle("hide", !on);
+  }
+
+  function shortId(uuid) {
+    if (!uuid) return "unknown";
+    return uuid.slice(0, 8);
+  }
+
+  async function refreshSession() {
+    const { data } = await sb.auth.getSession();
+    session = data.session || null;
+
+    setVisible($("btnLogout"), !!session);
+    setVisible($("createBox"), !!session);
+    $("who").textContent = session ? `로그인: ${session.user.email || shortId(session.user.id)}` : "비로그인 상태";
+    $("authMsg").textContent = "";
+
+    // 공개 목록은 항상 로드
+    await loadItems();
+
+    // 현재 상세가 열려 있으면 UI만 다시 렌더
+    if (currentItem?.id) await openItem(currentItem.id);
+  }
+
+  sb.auth.onAuthStateChange((_event, sess) => {
+    session = sess;
+    refreshSession();
+  });
+
+  async function loadItems() {
+    const { data, error } = await sb
+      .from("items")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      $("items").innerHTML = `<div class="muted">불러오기 실패: ${esc(error.message)}</div>`;
+      return;
+    }
+
+    if (!data?.length) {
+      $("items").innerHTML = `<div class="muted">아직 등록된 물건이 없습니다.</div>`;
+      return;
+    }
+
+    $("items").innerHTML = data.map(it => `
+      <div class="item">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+          <div>
+            <div style="font-weight:900;">${esc(it.title)}</div>
+            <div class="muted" style="margin-top:4px; white-space:pre-wrap;">${esc(it.description || "")}</div>
+            <div style="margin-top:8px;"><span class="pill">${esc(it.status)}</span></div>
+            <div class="muted" style="margin-top:6px; font-size:12px;">
+              작성자: ${esc(shortId(it.owner))} · ${esc(new Date(it.created_at).toLocaleString("ko-KR"))}
+            </div>
+          </div>
+          <div class="btns">
+            <button onclick="openItem(${it.id})">보기</button>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  window.openItem = async function(id) {
+    const { data: items, error } = await sb.from("items").select("*").eq("id", id).limit(1);
+    if (error || !items?.length) return;
+
+    currentItem = items[0];
+
+    const isOwner = !!session && currentItem.owner === session.user.id;
+
+    const statusEditor = isOwner ? `
+      <hr />
+      <div class="muted" style="margin-bottom:6px;">내 물건 상태 변경</div>
+      <select id="editStatus">
+        ${["판매중","예약중","판매완료"].map(s => `<option value="${s}" ${currentItem.status===s?"selected":""}>${s}</option>`).join("")}
+      </select>
+      <button style="margin-top:8px;" onclick="updateStatus()">상태 저장</button>
+      <div id="statusMsg" class="muted" style="margin-top:6px;"></div>
+    ` : `
+      <hr />
+      <div class="muted">상태 변경은 등록자만 가능합니다.</div>
+    `;
+
+    const commentsHtml = await renderComments(id);
+
+    const commentBox = session ? `
+      <div style="margin-top:10px;">
+        <textarea id="commentText" rows="3" placeholder="댓글을 입력하세요"></textarea>
+        <button style="margin-top:8px;" onclick="addComment()">댓글 등록</button>
+        <div id="commentMsg" class="muted" style="margin-top:6px;"></div>
+      </div>
+    ` : `
+      <div class="muted" style="margin-top:10px;">댓글 작성은 로그인 후 가능합니다.</div>
+    `;
+
+    $("detail").innerHTML = `
+      <div style="font-weight:900; font-size:18px;">${esc(currentItem.title)}</div>
+      <div class="muted" style="margin-top:6px; white-space:pre-wrap;">${esc(currentItem.description || "")}</div>
+      <div style="margin-top:10px;"><span class="pill">${esc(currentItem.status)}</span></div>
+      <div class="muted" style="margin-top:6px; font-size:12px;">
+        작성자: ${esc(shortId(currentItem.owner))} · ${esc(new Date(currentItem.created_at).toLocaleString("ko-KR"))}
+      </div>
+
+      ${statusEditor}
+
+      <hr />
+      <div style="font-weight:900; margin-bottom:8px;">댓글(공개)</div>
+      <div id="comments">${commentsHtml}</div>
+
+      ${commentBox}
+    `;
+  }
+
+  async function renderComments(itemId) {
+    const { data, error } = await sb
+      .from("comments")
+      .select("*")
+      .eq("item_id", itemId)
+      .order("created_at", { ascending: true });
+
+    if (error) return `<div class="muted">댓글 불러오기 실패: ${esc(error.message)}</div>`;
+    if (!data?.length) return `<div class="muted">아직 댓글이 없습니다.</div>`;
+
+    return data.map(c => `
+      <div style="padding:10px; border:1px solid rgba(255,255,255,.10); border-radius:12px; margin-bottom:8px;">
+        <div class="muted" style="font-size:12px;">
+          작성자: ${esc(shortId(c.user_id))} · ${esc(new Date(c.created_at).toLocaleString("ko-KR"))}
+        </div>
+        <div style="margin-top:6px; white-space:pre-wrap;">${esc(c.content)}</div>
+      </div>
+    `).join("");
+  }
+
+  window.addComment = async function() {
+    if (!session || !currentItem) return;
+    const text = $("commentText").value.trim();
+    if (!text) return;
+
+    $("commentMsg").textContent = "등록 중...";
+    const { error } = await sb.from("comments").insert({
+      item_id: currentItem.id,
+      user_id: session.user.id,
+      content: text
+    });
+
+    if (error) {
+      $("commentMsg").textContent = "실패: " + error.message;
+      return;
+    }
+
+    $("commentText").value = "";
+    $("commentMsg").textContent = "등록 완료";
+    $("comments").innerHTML = await renderComments(currentItem.id);
+  }
+
+  window.updateStatus = async function() {
+    if (!session || !currentItem) return;
+    const next = $("editStatus").value;
+    $("statusMsg").textContent = "저장 중...";
+
+    const { error } = await sb
+      .from("items")
+      .update({ status: next })
+      .eq("id", currentItem.id);
+
+    if (error) {
+      $("statusMsg").textContent = "실패: " + error.message;
+      return;
+    }
+
+    $("statusMsg").textContent = "저장 완료";
+    await loadItems();
+    await openItem(currentItem.id);
+  }
+
+  $("btnCreate").onclick = async () => {
+    if (!session) return;
+    const title = $("newTitle").value.trim();
+    const description = $("newDesc").value.trim();
+    const status = $("newStatus").value;
+
+    if (!title) {
+      $("createMsg").textContent = "제목은 필수입니다.";
+      return;
+    }
+
+    $("createMsg").textContent = "등록 중...";
+    const { error } = await sb.from("items").insert({
+      owner: session.user.id,
+      title,
+      description,
+      status
+    });
+
+    if (error) {
+      $("createMsg").textContent = "실패: " + error.message;
+      return;
+    }
+
+    $("newTitle").value = "";
+    $("newDesc").value = "";
+    $("newStatus").value = "판매중";
+    $("createMsg").textContent = "등록 완료!";
+    await loadItems();
+  };
+
+  $("btnLogin").onclick = async () => {
+    $("authMsg").textContent = "로그인 중...";
+    const email = $("email").value.trim();
+    const password = $("password").value;
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    $("authMsg").textContent = error ? ("실패: " + error.message) : "로그인 완료";
+  };
+
+  $("btnSignup").onclick = async () => {
+    $("authMsg").textContent = "회원가입 중...";
+    const email = $("email").value.trim();
+    const password = $("password").value;
+
+    const { error } = await sb.auth.signUp({ email, password });
+    $("authMsg").textContent = error
+      ? ("실패: " + error.message)
+      : "가입 완료! (설정에 따라 이메일 인증이 필요할 수 있음)";
+  };
+
+  $("btnLogout").onclick = async () => {
+    await sb.auth.signOut();
+    currentItem = null;
+    $("detail").innerHTML = `<div class="muted">왼쪽에서 물건을 선택하세요.</div>`;
+  };
+
+  refreshSession();
+</script>
+</body>
+</html>
