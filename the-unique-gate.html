@@ -12,172 +12,102 @@
   <style>
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
-
-    body{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color:#f9fafb;
-      background:#000;
-    }
+    body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; color:#f9fafb; background:#000; }
 
     .scene{ position:fixed; inset:0; overflow:hidden; }
     .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
-    .page-wrap{
-      position:absolute; inset:0;
-      display:flex; justify-content:center; align-items:center;
-      padding:24px 12px;
-      z-index:10;
-    }
+    .page-wrap{ position:absolute; inset:0; display:flex; justify-content:center; align-items:center; padding:24px 12px; z-index:10; }
 
     .gate-card{
-      position:relative;
-      border-radius:26px;
-      padding:28px 26px 22px;
+      position:relative; border-radius:26px; padding:28px 26px 22px;
       background: radial-gradient(circle at top, rgba(248,181,84,0.15), rgba(15,23,42,0.96));
       border:1px solid rgba(250,204,21,0.95);
       box-shadow: 0 0 20px rgba(250,204,21,0.75), 0 28px 70px rgba(0,0,0,0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       z-index:20;
     }
 
     .gate-title-wrap{ text-align:center; margin-bottom:18px; }
     .gate-title{
-      font-family:"Cinzel","Times New Roman",serif;
-      font-weight:700;
-      font-size:40px;
-      letter-spacing:0.24em;
-      text-transform:uppercase;
-      margin-bottom:8px;
+      font-family:"Cinzel","Times New Roman",serif; font-weight:700; font-size:40px;
+      letter-spacing:0.24em; text-transform:uppercase; margin-bottom:8px;
       background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
       -webkit-background-clip:text; background-clip:text; color:transparent;
       text-shadow: 0 0 10px rgba(250,204,21,0.9), 0 4px 18px rgba(0,0,0,1);
     }
-    .gate-subtitle-en{
-      font-size:11px;
-      opacity:0.9;
-      letter-spacing:0.12em;
-      text-transform:uppercase;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
-    }
+    .gate-subtitle-en{ font-size:11px; opacity:.9; letter-spacing:.12em; text-transform:uppercase; }
 
     .form-body{ max-width:360px; margin:0 auto; }
 
     .gate-input{
-      width:100%;
-      padding:11px 14px;
-      border-radius:999px;
+      width:100%; padding:11px 14px; border-radius:999px;
       border:1px solid rgba(55,65,81,0.9);
       background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
-      color:#f9fafb;
-      font-size:13px;
-      outline:none;
+      color:#f9fafb; font-size:13px; outline:none;
       box-shadow: 0 4px 14px rgba(0,0,0,0.75) inset, 0 0 0 1px rgba(0,0,0,0.55);
       margin-bottom:10px;
     }
-    .gate-input::placeholder{ color:#6b7280; }
 
-    .btn-row{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top:10px;
-      margin-bottom:2px; /* ✅ 회원가입 ↔ & 간격 줄임 */
-    }
-
+    .btn-row{ display:flex; flex-direction:column; gap:10px; margin-top:10px; margin-bottom:2px; }
     .btn{
-      width:100%;
-      min-height:42px;
-      padding:10px 10px;
-      border-radius:999px;
-      border:1px solid transparent;
-      font-size:13px;
-      font-weight:900;
-      letter-spacing:0.12em;
-      text-transform:uppercase;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      text-decoration:none;
-      transition: transform .12s ease, box-shadow .12s ease;
+      width:100%; min-height:42px; padding:10px 10px; border-radius:999px;
+      border:1px solid transparent; font-size:13px; font-weight:900;
+      letter-spacing:0.12em; text-transform:uppercase; cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center; text-decoration:none;
     }
-
     .btn-primary{
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
-      border-color: rgba(248,181,84,0.95);
-      color:#fef2f2;
+      border-color: rgba(248,181,84,0.95); color:#fef2f2;
       box-shadow: 0 10px 26px rgba(0,0,0,1), 0 0 0 1px rgba(0,0,0,0.5) inset;
     }
-
     .btn-ghost{
       background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
-      border-color: rgba(55,65,81,1);
-      color:#e5e7eb;
+      border-color: rgba(55,65,81,1); color:#e5e7eb;
       box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
 
     .divider-amp{
-      margin: 6px 0 8px; /* ✅ 위아래 줄임 */
-      text-align: center;
-      font-family: "Cinzel","Times New Roman",serif;
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0.35em;
-      color: transparent;
+      margin: 6px 0 8px; text-align:center;
+      font-family:"Cinzel","Times New Roman",serif;
+      font-size:22px; font-weight:800; letter-spacing:0.35em;
+      color:transparent;
       background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
+      -webkit-background-clip:text; background-clip:text;
       text-shadow: 0 0 12px rgba(250,204,21,0.75), 0 6px 18px rgba(0,0,0,1);
-      opacity: 0.95;
-      user-select: none;
+      user-select:none;
     }
 
     .btn-with-icon{ gap:10px; justify-content:center; }
-    .btn-with-icon svg{
-      width:18px !important; height:18px !important;
-      max-width:18px !important; max-height:18px !important;
-      flex: 0 0 18px !important;
-      display:block !important;
-    }
-    .btn-with-icon span{ line-height:1; }
+    .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
 
     .btn-market{
       background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
-      color:#111827;
-      border-color: rgba(250,204,21,0.95);
+      color:#111827; border-color: rgba(250,204,21,0.95);
       box-shadow: 0 12px 28px rgba(0,0,0,0.95);
-      letter-spacing: 0.16em;
-      font-weight: 900;
+      letter-spacing: 0.16em; font-weight: 900;
     }
 
-    .status{
-      min-height:18px;
-      font-size:11px;
-      text-align:center;
-      margin-top:6px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-    }
-    .status-error{ color:#fecaca; }
+    .status{ min-height:18px; font-size:11px; text-align:center; margin-top:6px; opacity:.85; }
+    .status-error{ color:#fecaca; opacity:1; }
 
-    @media (max-width: 768px){
+    @media (max-width:768px){
       .gate-card{ padding:24px 20px 18px; border-radius:22px; }
       .gate-title{ font-size:32px; letter-spacing:0.22em; }
       .form-body{ max-width:100%; }
     }
   </style>
 </head>
-
 <body>
   <div class="scene">
-    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
+    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="bg">
   </div>
 
   <div class="page-wrap">
     <main class="gate-card">
       <div class="gate-title-wrap">
         <div class="gate-title">THE UNIQUE</div>
-        <div class="gate-subtitle-en">Invitation-only access for action takers</div>
+        <div class="gate-subtitle-en">INVITATION-ONLY ACCESS FOR ACTION TAKERS</div>
       </div>
 
       <form id="gate-form" class="form-body">
@@ -192,8 +122,8 @@
 
         <div class="divider-amp">&amp;</div>
 
-        <!-- ✅ href는 혹시 JS가 안 먹어도 최소 이동(백업) -->
-        <a id="btnMarket" class="btn btn-market btn-with-icon" href="team-market.html">
+        <!-- ✅ 마켓 버튼은 JS 없이 링크라 100% 눌림 -->
+        <a class="btn btn-market btn-with-icon" href="team-market.html?autologin=1">
           <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
             <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
             <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
@@ -202,14 +132,11 @@
           </svg>
           <span>UNIQUE 마켓</span>
         </a>
-
-        <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;margin-top:10px;">구글 로그아웃</button>
-        <div id="oauth-status" class="status"></div>
       </form>
     </main>
   </div>
 
-  <!-- ====== 구글시트는 아이디 로그인 눌렀을 때만 로드 ====== -->
+  <!-- 시트는 아이디 로그인할 때만 로드 -->
   <script>
     let allowedIds = null;
     let memberInfoById = {};
@@ -220,14 +147,12 @@
       try {
         const rows = resp.table.rows || [];
         const ids = [];
-
         rows.forEach((row) => {
           const cells = row.c || [];
           const tsCell   = cells[5] || cells[0];
           const idCell   = cells[1];
           const nameCell = cells[2];
           const teamCell = cells[4];
-
           if (!idCell || idCell.v == null) return;
 
           const rawId = String(idCell.v).trim();
@@ -239,15 +164,10 @@
           const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
           const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
           const joinedAt = tsCell && tsCell.v ? String(tsCell.v).trim() : "";
-
           memberInfoById[idLower] = { id: rawId, name, team, joinedAt };
         });
-
         allowedIds = new Set(ids);
-      } catch (e) {
-        console.error("시트 파싱 오류:", e);
-        sheetError = true;
-      }
+      } catch (e) { sheetError = true; }
     }
 
     function loadSheetOnce() {
@@ -256,128 +176,42 @@
         const SSID = "1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM";
         const GID  = "160409301";
         const url  = `https://docs.google.com/spreadsheets/d/${SSID}/gviz/tq?gid=${GID}&tqx=responseHandler:handleSheetResponse&cb=${Date.now()}`;
-
         const s = document.createElement("script");
         s.src = url;
         s.onload = () => resolve();
         s.onerror = () => { sheetError = true; resolve(); };
         document.head.appendChild(s);
-
         setTimeout(() => resolve(), 1800);
       });
       return _sheetPromise;
     }
-  </script>
 
-  <!-- ====== 아이디 로그인 ====== -->
-  <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
     const statusEl = document.getElementById("status");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const id = (idInput.value || "").trim();
       statusEl.textContent = "";
       statusEl.className = "status";
 
-      if (!id) {
-        statusEl.textContent = "아이디를 입력해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      if (!allowedIds && !sheetError) {
-        statusEl.textContent = "회원 정보 불러오는 중...";
-        await loadSheetOnce();
-      }
-
-      if (sheetError) {
-        statusEl.textContent = "시트 접근 오류. 시트 공유를 '링크 공개(보기)'로 바꿔야 합니다.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      if (!allowedIds) {
-        statusEl.textContent = "회원 정보가 아직 준비되지 않았습니다. 새로고침 후 다시 시도해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
+      if (!id) { statusEl.textContent = "아이디를 입력해 주세요."; statusEl.classList.add("status-error"); return; }
+      if (!allowedIds && !sheetError) { statusEl.textContent = "회원 정보 불러오는 중..."; await loadSheetOnce(); }
+      if (sheetError || !allowedIds) { statusEl.textContent = "시트 로딩 실패(공유 설정 확인)"; statusEl.classList.add("status-error"); return; }
 
       const normalized = id.toLowerCase();
       if (allowedIds.has(normalized)) {
         const info = memberInfoById[normalized] || {};
         localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-          id: normalized,
-          name: info.name || "",
-          team: info.team || "",
-          joinedAt: info.joinedAt || "",
-          via: "sheet-id"
+          id: normalized, name: info.name || "", team: info.team || "", joinedAt: info.joinedAt || "", via:"sheet-id"
         }));
-        window.location.href = "the-unique-main.html";
+        location.href = "the-unique-main.html";
       } else {
         statusEl.textContent = "등록되지 않은 아이디입니다.";
         statusEl.classList.add("status-error");
       }
     });
-  </script>
-
-  <!-- ====== 구글 인증(마켓만) ====== -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-    const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
-    const MARKET_URL = "team-market.html";
-
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-    });
-
-    const btnMarket = document.getElementById("btnMarket");
-    const btnLogout = document.getElementById("btnLogout");
-    const oauthMsg = document.getElementById("oauth-status");
-
-    function say(t){ if(oauthMsg) oauthMsg.textContent = t || ""; }
-
-    async function openMarketOrLogin(e){
-      // JS가 정상 로드된 경우만 OAuth로 처리(그 외엔 href로 그냥 이동)
-      if (e) e.preventDefault();
-
-      const { data } = await sb.auth.getSession();
-      if (data?.session) {
-        location.href = MARKET_URL;
-        return;
-      }
-
-      say("구글 로그인 여는 중...");
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: GATE_URL }
-      });
-      if (error) say("구글 로그인 실패: " + error.message);
-    }
-
-    // 클릭 연결
-    btnMarket?.addEventListener("click", openMarketOrLogin);
-
-    // 로그인 콜백으로 돌아오면 즉시 마켓 이동
-    sb.auth.onAuthStateChange((evt, session) => {
-      if (evt === "SIGNED_IN" && session) location.href = MARKET_URL;
-    });
-
-    btnLogout?.addEventListener("click", async () => {
-      await sb.auth.signOut();
-      say("로그아웃 완료");
-      btnLogout.style.display = "none";
-    });
-
-    // 이미 로그인 상태면 로그아웃 버튼 표시
-    (async () => {
-      const { data } = await sb.auth.getSession();
-      if (data?.session) btnLogout.style.display = "inline-flex";
-    })();
   </script>
 </body>
 </html>
