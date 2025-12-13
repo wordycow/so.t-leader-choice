@@ -404,55 +404,135 @@
     }
   </script>
 
-  <!-- 2) 구글 시트 JSONP 로딩(이게 빠지면 아이디 게이트가 안 됨) -->
-  <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
+  <!-- ✅ START: Supabase OAuth (복붙 블록) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ✅ Supabase 정보
+  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq"; // ✅ anon key
 
-  <!-- 3) 아이디 게이트 로그인 -->
-  <script>
-    const form = document.getElementById("gate-form");
-    const idInput = document.getElementById("login-id");
-    const statusEl = document.getElementById("status");
+  // ✅ 사이트 주소
+  const SITE_BASE = "https://wordycow.github.io/so.t-leader-choice";
+  const GATE_URL  = SITE_BASE + "/the-unique-gate.html";
+  const MAIN_URL  = SITE_BASE + "/the-unique-main.html";
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+  // ✅ OAuth: implicit(정적 페이지에서 제일 안정적)
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
 
-      const id = (idInput.value || "").trim();
-      statusEl.textContent = "";
-      statusEl.className = "status";
+  const oauthStatusEl = document.getElementById("oauth-status");
+  const btnLogout = document.getElementById("btnLogout");
 
-      if (!id) {
-        statusEl.textContent = "아이디를 입력해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-      if (sheetError) {
-        statusEl.textContent = "회원 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-      if (!allowedIds) {
-        statusEl.textContent = "회원 정보 불러오는 중입니다. 잠시 후 다시 시도해 주세요.";
-        return;
-      }
+  function sayOAuth(msg, isErr=false){
+    if (!oauthStatusEl) return;
+    oauthStatusEl.textContent = msg || "";
+    oauthStatusEl.className = "status" + (isErr ? " status-error" : "");
+  }
 
-      const normalized = id.toLowerCase();
-      if (allowedIds.has(normalized)) {
-        const info = memberInfoById[normalized] || {};
-        localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-          id: normalized,
-          name: info.name || "",
-          team: info.team || "",
-          joinedAt: info.joinedAt || ""
-        }));
-        window.location.href = "the-unique-main.html";
-      } else {
-        statusEl.textContent = "등록되지 않은 아이디입니다.";
-        statusEl.classList.add("status-error");
+  // ✅ 예전 PKCE 찌꺼기 제거 + 오류 메시지 표시
+  function cleanLegacyParams(){
+    const u = new URL(location.href);
+
+    const err = u.searchParams.get("error_description") || u.searchParams.get("error");
+    if (err) {
+      sayOAuth("소셜 로그인 오류: " + err, true);
+    }
+
+    // query 정리
+    ["code","state","error","error_description"].forEach(k => u.searchParams.delete(k));
+    history.replaceState({}, document.title, u.pathname);
+
+    // hash(#access_token=...) 정리
+    if (location.hash && location.hash.includes("access_token")) {
+      history.replaceState({}, document.title, location.pathname);
+    }
+  }
+
+  let _redirected = false;
+
+  async function renderOAuthStateAndGo(){
+    const { data, error } = await sb.auth.getSession();
+    if (error) {
+      sayOAuth("세션 확인 실패: " + error.message, true);
+      return;
+    }
+
+    const sess = data?.session;
+
+    // 로그인 안 된 상태
+    if (!sess) {
+      if (btnLogout) btnLogout.style.display = "none";
+      return;
+    }
+
+    // 로그인 된 상태
+    const user = sess.user || {};
+    const provider = user.app_metadata?.provider || "";
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const email = user.email || "";
+
+    localStorage.setItem("uniqueOAuthUser", JSON.stringify({
+      uid: user.id,
+      provider,
+      email,
+      name,
+      loggedInAt: new Date().toISOString()
+    }));
+
+    if (btnLogout) btnLogout.style.display = "inline-flex";
+    sayOAuth(`OK ✅ ${name || email || "USER"} (${provider ? provider.toUpperCase() : "OAUTH"})`);
+
+    // ✅ 여기 핵심: 세션 잡히면 무조건 메인으로 이동
+    if (!_redirected) {
+      _redirected = true;
+      setTimeout(() => location.href = MAIN_URL, 200);
+    }
+  }
+
+  async function signIn(provider, scopes){
+    sayOAuth("로그인 창 여는 중...");
+    const { error } = await sb.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: GATE_URL,
+        ...(scopes ? { scopes } : {})
       }
     });
-  </script>
+    if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
+  }
 
-  <!-- 4) Supabase OAuth(implicit 단일) -->
+  // ✅ 버튼 이벤트
+  document.getElementById("btnGoogle")?.addEventListener("click", () => signIn("google"));
+  document.getElementById("btnDiscord")?.addEventListener("click", () => signIn("discord"));
+  document.getElementById("btnKakao")?.addEventListener("click", () =>
+    signIn("kakao", "profile_nickname profile_image account_email")
+  );
+
+  btnLogout?.addEventListener("click", async () => {
+    await sb.auth.signOut();
+    localStorage.removeItem("uniqueOAuthUser");
+    sayOAuth("소셜 로그아웃 완료");
+    if (btnLogout) btnLogout.style.display = "none";
+  });
+
+  // ✅ 시작
+  (async () => {
+    cleanLegacyParams();
+    await renderOAuthStateAndGo();
+
+    sb.auth.onAuthStateChange(async () => {
+      await renderOAuthStateAndGo();
+    });
+  })();
+</script>
+<!-- ✅ END: Supabase OAuth (복붙 블록) -->
+ <!-- 4) Supabase OAuth(implicit 단일) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
