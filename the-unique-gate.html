@@ -407,32 +407,24 @@
   </script>
 
   <!-- ====== 구글 로그인 → 마켓(team-market.html / market.html) ====== -->
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ✅ Supabase(anon)
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-  // ✅ 목적지(마켓)
   const MARKET_URL = "team-market.html";
   const GATE_URL = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
 
-  // ✅ sb 먼저 생성 (sb is not defined 해결 핵심)
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
   });
 
-  const btnMarket = document.getElementById("btnMarket");
-  const oauthStatusEl = document.getElementById("oauth-status");
+  const btn = document.getElementById("btnMarket");
+  const msg = document.getElementById("oauth-status");
 
-  function say(t){ if(oauthStatusEl) oauthStatusEl.textContent = t || ""; }
+  function say(t){ if(msg) msg.textContent = t || ""; }
 
-  async function goMarketIfLoggedIn(){
-    const { data } = await sb.auth.getSession();
-    if (data?.session) location.href = MARKET_URL;
-  }
-
-  async function openGoogleOrGoMarket(){
+  async function openMarket(){
     const { data } = await sb.auth.getSession();
     if (data?.session) { location.href = MARKET_URL; return; }
 
@@ -441,20 +433,23 @@
       provider: "google",
       options: { redirectTo: GATE_URL }
     });
+
     if (error) say("구글 로그인 실패: " + error.message);
   }
 
-  // ✅ 버튼 클릭
-  btnMarket?.addEventListener("click", openGoogleOrGoMarket);
+  if (btn) btn.onclick = openMarket;
 
-  // ✅ 로그인 콜백으로 돌아오면 자동 이동
   sb.auth.onAuthStateChange((evt, session) => {
     if (evt === "SIGNED_IN" && session) location.href = MARKET_URL;
   });
 
-  // ✅ 이미 로그인 상태면 바로 마켓
-  goMarketIfLoggedIn();
+  (async () => {
+    const { data } = await sb.auth.getSession();
+    if (data?.session) {
+      say("이미 로그인 상태입니다. 마켓으로 이동합니다.");
+      location.href = MARKET_URL;
+    }
+  })();
 </script>
-
 </body>
 </html>
