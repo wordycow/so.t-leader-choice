@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UNIQUE 마켓</title>
 
-  <!-- favicon 404 제거 -->
   <link rel="icon" href="data:,">
-
-  <!-- Supabase UMD -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
@@ -32,7 +29,19 @@
       z-index:-1;
     }
 
-    .wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
+    /* ✅ 오른쪽 미리보기 공간 확보(데스크탑) */
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:16px;
+      padding-right: 360px;
+      position:relative;
+      z-index:1
+    }
+    @media(max-width:1100px){
+      .wrap{ padding-right:16px; }
+    }
+
     .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
     .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
     .who{opacity:.9;font-size:12px;margin-top:4px}
@@ -99,12 +108,71 @@
     @media(max-width:900px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
     @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
 
-    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);overflow:hidden}
+    .post{
+      border-radius:16px;border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+      cursor:pointer;
+      position:relative;
+    }
     .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
     .postTitle{font-weight:900}
     .postMeta{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
     .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
-    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);margin-right:6px}
+
+    .postActions{
+      position:absolute; top:10px; right:10px;
+      display:flex; gap:6px; flex-wrap:wrap;
+      z-index:2;
+    }
+    .miniBtn{
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);
+      color:#e5e7eb;
+      cursor:pointer;
+    }
+    .miniBtn.danger{
+      border-color: rgba(248,113,113,.55);
+      background: rgba(127,29,29,.35);
+      color:#fee2e2;
+    }
+
+    .chip{
+      display:inline-block;padding:3px 8px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.08);margin-right:6px
+    }
+
+    /* ✅ 오른쪽 고정 미리보기 패널 */
+    .floatingPreview{
+      position:fixed;
+      top:88px;
+      right:16px;
+      width:320px;
+      max-height: calc(100vh - 110px);
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      backdrop-filter: blur(8px);
+      padding:12px;
+      z-index:50;
+      display:none;
+    }
+    .floatingPreview .fpTitle{font-weight:900; margin:0 0 6px; font-size:14px}
+    .floatingPreview .fpMeta{font-size:12px; opacity:.85; line-height:1.5}
+    .floatingPreview .fpImg{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;margin:10px 0}
+    .floatingPreview .fpImg img{width:100%;height:100%;object-fit:cover;display:block}
+    .floatingPreview .fpDesc{font-size:12px;opacity:.9;white-space:pre-line;line-height:1.55}
+    .floatingPreview .fpBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .floatingPreview .fpClose{margin-left:auto}
+
+    @media(max-width:1100px){
+      .floatingPreview{display:none !important;}
+    }
   </style>
 </head>
 
@@ -126,8 +194,11 @@
 
   <div class="stack">
     <div class="card">
-      <div style="font-weight:900;margin-bottom:8px;">등록</div>
-      <div class="muted" style="margin-bottom:10px;">이미지 1~3장 (JPG/PNG/GIF). (파일 선택은 로그인 전에도 가능)</div>
+      <div style="font-weight:900;margin-bottom:8px;">등록 / 수정</div>
+      <div class="muted" style="margin-bottom:10px;">
+        이미지 1~3장 (JPG/PNG/GIF).<br>
+        ✅ 수정 시: 새 이미지를 선택하면 기존 이미지는 “교체”됩니다.
+      </div>
 
       <div class="row">
         <div>
@@ -162,7 +233,11 @@
         <div id="imgPreview" class="thumbs"></div>
       </div>
 
-      <button class="btn primary" id="btnSave" type="button">등록하기</button>
+      <div class="btns" style="margin-top:10px;">
+        <button class="btn primary" id="btnSave" type="button">등록하기</button>
+        <button class="btn" id="btnCancelEdit" type="button" style="display:none;">수정 취소</button>
+      </div>
+
       <div id="inlineStatus" class="muted" style="margin-top:8px;"></div>
       <div id="loginNote" class="muted" style="margin-top:8px;">로그인 확인 중...</div>
     </div>
@@ -177,6 +252,9 @@
   </div>
 </div>
 
+<!-- ✅ 오른쪽 고정 미리보기 -->
+<aside id="floatingPreview" class="floatingPreview"></aside>
+
 <script>
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -190,6 +268,8 @@
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
   const inlineEl = $("inlineStatus");
+  const feedEl = $("feed");
+  const fpEl = $("floatingPreview");
 
   function setStatus(msg, isErr=false){
     if (!msg){
@@ -215,16 +295,42 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // ✅ hash 제거
+    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거
+  }
+
+  function base64UrlToJson(b64url){
+    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const binary = atob(b64 + pad);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
+  }
+
+  function decodeUserFromAccessToken(token){
+    try{
+      const parts = (token || "").split(".");
+      if (parts.length < 2) return null;
+      const payload = base64UrlToJson(parts[1]);
+      return {
+        id: payload.sub || "",
+        email: payload.email || "",
+        name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
+      };
+    }catch(e){
+      return null;
+    }
+  }
+
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
   }
 
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
-
-  // JS 에러를 화면에 표시
-  window.addEventListener("error", (e) => setStatus("JS 오류: " + (e?.message || e), true));
-  window.addEventListener("unhandledrejection", (e) => setStatus("Promise 오류: " + (e?.reason?.message || e?.reason || e), true));
 
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
@@ -249,54 +355,14 @@
   let user = null;
   let sbApi = null;
 
-  function base64UrlToJson(b64url){
-    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
-    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
-    const binary = atob(b64 + pad);
-    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-    const json = new TextDecoder().decode(bytes);
-    return JSON.parse(json);
-  }
-
-  function decodeUserFromAccessToken(token){
-    try{
-      const parts = (token || "").split(".");
-      if (parts.length < 2) return null;
-      const payload = base64UrlToJson(parts[1]);
-      return {
-        id: payload.sub || "",
-        email: payload.email || "",
-        name:
-          payload.user_metadata?.full_name ||
-          payload.user_metadata?.name ||
-          payload.name ||
-          ""
-      };
-    }catch(e){
-      return null;
-    }
-  }
-
-  function setLoggedOutUI(){
-    $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
-  }
-  function setLoggedInUI(){
-    const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
-    $("who").textContent = `로그인: ${label}`;
-    $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
-  }
-
   function buildApiClient(){
     sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-      },
+      global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storageKey: "sb-market-auth-api"
+        persistSession:false,
+        autoRefreshToken:false,
+        detectSessionInUrl:false,
+        storageKey:"sb-market-auth-api"
       }
     });
   }
@@ -312,13 +378,24 @@
         refreshToken = rt || null;
         safeLSSet(TOKEN_KEY, accessToken);
         if (refreshToken) safeLSSet(REFRESH_KEY, refreshToken);
-        cleanUrlAll(); // ✅ 주소창 토큰 제거
+        cleanUrlAll();
       }
     }
     if (!accessToken){
       accessToken = safeLSGet(TOKEN_KEY);
       refreshToken = safeLSGet(REFRESH_KEY);
     }
+  }
+
+  function setLoggedOutUI(){
+    $("who").textContent = "로그인 필요";
+    $("loginNote").textContent = "등록/댓글은 로그인 후 가능합니다.";
+  }
+
+  function setLoggedInUI(){
+    const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
+    $("who").textContent = `로그인: ${label}`;
+    $("loginNote").textContent = "로그인 완료 ✅ 등록/수정/삭제 가능합니다.";
   }
 
   // 상단 버튼
@@ -339,7 +416,6 @@
 
   $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
-    // skipBrowserRedirect로 URL을 받아서 직접 이동 (안정적)
     const { data, error } = await sbAuth.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO, skipBrowserRedirect: true }
@@ -385,45 +461,93 @@
     renderPreviews();
   });
 
-  function toPublicUrl(path){
-    return sbApi.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  }
   function fileExt(file){
     const n = file.name || "";
     const dot = n.lastIndexOf(".");
     return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
   }
+
+  function toPublicUrl(path){
+    return sbApi.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
   function safeName(s){ return (s||"").toString().trim(); }
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+
+  // public url -> storage path 추출(삭제에 사용)
+  function storagePathFromPublicUrl(url){
+    try{
+      const marker = `/storage/v1/object/public/${BUCKET}/`;
+      const idx = url.indexOf(marker);
+      if (idx < 0) return null;
+      return url.slice(idx + marker.length);
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function removeOldImages(urls){
+    const paths = (urls || [])
+      .map(storagePathFromPublicUrl)
+      .filter(Boolean);
+    if (!paths.length) return;
+    // 실패해도 진행은 계속
+    await sbApi.storage.from(BUCKET).remove(paths);
   }
 
   async function uploadImages(postId){
-    if (!selectedFiles.length) return [];
+    if (!selectedFiles.length) return null; // null = "이미지 변경 없음"
     setStatus("이미지 업로드 중...");
     const urls = [];
-
     for (let i=0; i<Math.min(3, selectedFiles.length); i++){
       const f = selectedFiles[i];
       const ext = fileExt(f);
       const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-
-      const { error } = await sbApi.storage.from(BUCKET).upload(path, f, {
-        upsert:false,
-        contentType:f.type
-      });
+      const { error } = await sbApi.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
       if (error) throw new Error(error.message);
       urls.push(toPublicUrl(path));
     }
     return urls;
   }
 
-  async function createPost(){
+  // ===== 수정/삭제 상태 =====
+  let editId = null;
+  let editOldImages = [];
+  const postsMap = new Map(); // id -> post
+
+  function enterEditMode(p){
+    editId = p.id;
+    editOldImages = Array.isArray(p.images) ? p.images : [];
+
+    $("fTitle").value = p.title || "";
+    $("fQty").value = (p.qty ?? "");
+    $("fContact").value = p.contact || "";
+    $("fRegion").value = p.region || "";
+    $("fDesc").value = p.description || "";
+
+    clearPreviews(); // 새 파일 선택은 선택 사항(선택하면 교체)
+    $("btnSave").textContent = "수정 저장";
+    $("btnCancelEdit").style.display = "";
+    setStatus("수정 모드: 내용을 바꾸고 ‘수정 저장’을 누르세요.");
+    showFloatingPreview(p);
+  }
+
+  function exitEditMode(){
+    editId = null;
+    editOldImages = [];
+    $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
+    clearPreviews();
+    $("btnSave").textContent = "등록하기";
+    $("btnCancelEdit").style.display = "none";
+    setStatus("");
+  }
+
+  $("btnCancelEdit").addEventListener("click", () => exitEditMode());
+
+  // ===== 등록/수정/삭제 =====
+  async function upsertPost(){
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
-    if (!user?.id) return setStatus("등록하려면 로그인이 필요합니다.", true);
+    if (!user?.id) return setStatus("등록/수정하려면 로그인이 필요합니다.", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
@@ -431,61 +555,208 @@
     const description = safeName($("fDesc").value);
     const owner_name = user.name || user.email || "";
 
-    setStatus("등록 중...");
+    if (!editId){
+      // ✅ 새 글 등록
+      setStatus("등록 중...");
+      const { data, error } = await sbApi
+        .from("market_posts")
+        .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
+        .select("id")
+        .single();
 
-    const { data, error } = await sbApi
+      if (error) return setStatus("등록 실패: " + error.message, true);
+
+      try{
+        const urls = await uploadImages(data.id);
+        if (Array.isArray(urls) && urls.length){
+          const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", data.id);
+          if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
+        }
+        setStatus("등록 완료!");
+        exitEditMode();
+        await renderFeed();
+      }catch(e){
+        setStatus("이미지 업로드 실패: " + (e?.message || e), true);
+      }
+      return;
+    }
+
+    // ✅ 수정
+    setStatus("수정 중...");
+    const { error: e1 } = await sbApi
       .from("market_posts")
-      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
-      .select("id")
-      .single();
+      .update({ title, qty, contact, region, description })
+      .eq("id", editId);
 
-    if (error) return setStatus("등록 실패: " + error.message, true);
+    if (e1) return setStatus("수정 실패: " + e1.message, true);
 
     try{
-      const urls = await uploadImages(data.id);
-      if (urls.length){
-        const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
+      const urls = await uploadImages(editId);
+      if (urls !== null) {
+        // 새 이미지 선택했으면 → 기존 이미지 삭제 후 교체
+        await removeOldImages(editOldImages);
+        const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", editId);
+        if (e2) return setStatus("이미지 갱신 실패: " + e2.message, true);
       }
-
-      setStatus("등록 완료!");
-      clearPreviews();
-      $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
+      setStatus("수정 완료!");
+      const p = postsMap.get(editId);
+      exitEditMode();
       await renderFeed();
+      if (p) showFloatingPreview(p);
     }catch(e){
       setStatus("이미지 업로드 실패: " + (e?.message || e), true);
     }
   }
 
+  async function deletePost(postId){
+    if (!user?.id) return setStatus("삭제하려면 로그인이 필요합니다.", true);
+    const p = postsMap.get(postId);
+    if (!p) return;
+
+    if (!confirm("정말 삭제할까요?")) return;
+
+    setStatus("삭제 중...");
+    try{
+      // 이미지 삭제(실패해도 계속)
+      await removeOldImages(Array.isArray(p.images) ? p.images : []);
+    }catch(e){}
+
+    const { error } = await sbApi.from("market_posts").delete().eq("id", postId);
+    if (error) return setStatus("삭제 실패: " + error.message, true);
+
+    setStatus("삭제 완료!");
+    if (editId === postId) exitEditMode();
+    hideFloatingPreview();
+    await renderFeed();
+  }
+
+  // ===== 피드 렌더 + 이벤트 =====
+  function postCardHtml(p){
+    const imgs = Array.isArray(p.images) ? p.images : [];
+    const cover = imgs[0] || "";
+    const isMine = user?.id && p.owner === user.id;
+
+    return `
+      <div class="post" data-postid="${p.id}">
+        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
+
+        ${isMine ? `
+          <div class="postActions">
+            <button class="miniBtn" data-act="edit" data-id="${p.id}" type="button">수정</button>
+            <button class="miniBtn danger" data-act="del" data-id="${p.id}" type="button">삭제</button>
+          </div>
+        ` : ``}
+
+        <div class="postTop">
+          <div>
+            <div class="postTitle">${escapeHtml(p.title || "")}</div>
+            <div class="postMeta">
+              <span class="chip">수량 ${escapeHtml(p.qty ?? "-")}</span>
+              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
+              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   async function renderFeed(){
     if (!sbApi) return;
+
     const { data, error } = await sbApi.from("market_posts").select("*").order("created_at", { ascending:false });
     if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
 
     const posts = data || [];
-    $("feed").innerHTML = posts.map(p => {
-      const imgs = Array.isArray(p.images) ? p.images : [];
-      const cover = imgs[0] || "";
-      return `
-        <div class="post">
-          ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
-          <div class="postTop">
-            <div>
-              <div class="postTitle">${escapeHtml(p.title)}</div>
-              <div class="postMeta">
-                <span class="chip">수량 ${p.qty ?? "-"}</span>
-                <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-                <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
+    postsMap.clear();
+    posts.forEach(p => postsMap.set(p.id, p));
+
+    feedEl.innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
     setStatus("");
   }
 
-  $("btnSave").addEventListener("click", (e) => { e.preventDefault(); createPost(); });
+  // ✅ feed 클릭 이벤트(수정/삭제/미리보기)
+  feedEl.addEventListener("click", (e) => {
+    const actBtn = e.target.closest("[data-act]");
+    if (actBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const act = actBtn.getAttribute("data-act");
+      const id = actBtn.getAttribute("data-id");
+      if (!id) return;
+
+      if (act === "edit"){
+        const p = postsMap.get(id);
+        if (!p) return;
+        if (p.owner !== user?.id) return setStatus("내 글만 수정할 수 있습니다.", true);
+        enterEditMode(p);
+      }
+      if (act === "del"){
+        const p = postsMap.get(id);
+        if (!p) return;
+        if (p.owner !== user?.id) return setStatus("내 글만 삭제할 수 있습니다.", true);
+        deletePost(id);
+      }
+      return;
+    }
+
+    const card = e.target.closest(".post");
+    if (!card) return;
+    const id = card.getAttribute("data-postid");
+    const p = postsMap.get(id);
+    if (!p) return;
+
+    // ✅ “내가 올린 상품”만 오른쪽 미리보기 띄우기
+    if (p.owner === user?.id) showFloatingPreview(p);
+    else {
+      // 남의 글 클릭은(원하면) 상세로 보낼 수도 있음
+      setStatus("내 글을 클릭하면 오른쪽에 미리보기가 뜹니다.");
+    }
+  });
+
+  // ===== 오른쪽 미리보기 =====
+  function showFloatingPreview(p){
+    if (!fpEl) return;
+    const imgs = Array.isArray(p.images) ? p.images : [];
+    const cover = imgs[0] || "";
+
+    fpEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="fpTitle">내 상품 미리보기</div>
+        <button class="miniBtn fpClose" type="button" id="fpClose">닫기</button>
+      </div>
+
+      <div class="fpTitle" style="margin-top:8px;">${escapeHtml(p.title || "")}</div>
+      <div class="fpMeta">
+        수량: <b>${escapeHtml(p.qty ?? "-")}</b> · 지역: <b>${escapeHtml(p.region || "-")}</b><br>
+        연락: <b>${escapeHtml(p.contact || "-")}</b>
+      </div>
+
+      ${cover ? `<div class="fpImg"><img src="${cover}" alt=""></div>` : ``}
+
+      <div class="fpDesc">${escapeHtml(p.description || "")}</div>
+
+      <div class="fpBtns">
+        <button class="btn primary" type="button" id="fpEdit">수정</button>
+        <button class="btn danger" type="button" id="fpDel">삭제</button>
+      </div>
+    `;
+
+    fpEl.style.display = "";
+
+    fpEl.querySelector("#fpClose").onclick = () => hideFloatingPreview();
+    fpEl.querySelector("#fpEdit").onclick = () => enterEditMode(p);
+    fpEl.querySelector("#fpDel").onclick = () => deletePost(p.id);
+  }
+
+  function hideFloatingPreview(){
+    if (!fpEl) return;
+    fpEl.style.display = "none";
+    fpEl.innerHTML = "";
+  }
+
+  // ===== 등록 버튼 =====
+  $("btnSave").addEventListener("click", (e) => { e.preventDefault(); upsertPost(); });
   $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); renderFeed(); });
 
   // Boot
