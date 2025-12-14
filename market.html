@@ -22,8 +22,7 @@
     }
     body::before{
       content:"";
-      position:fixed;
-      inset:0;
+      position:fixed; inset:0;
       background: radial-gradient(circle at top,
         rgba(2,6,23,.12),
         rgba(2,6,23,.48) 65%,
@@ -93,18 +92,11 @@
       display:grid;
       grid-template-columns: repeat(4, minmax(0,1fr));
       gap:12px;
-      min-height:360px;
+      min-height:240px;
     }
     @media(max-width:1100px){.feed{grid-template-columns: repeat(3, minmax(0,1fr));}}
     @media(max-width:900px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
     @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
-
-    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);overflow:hidden}
-    .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-    .postTitle{font-weight:900}
-    .postMeta{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
-    .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
-    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);margin-right:6px}
   </style>
 </head>
 
@@ -127,7 +119,7 @@
   <div class="stack">
     <div class="card">
       <div style="font-weight:900;margin-bottom:8px;">등록</div>
-      <div class="muted" style="margin-bottom:10px;">이미지 1~3장 (JPG/PNG/GIF).</div>
+      <div class="muted" style="margin-bottom:10px;">이미지 1~3장 (JPG/PNG/GIF). (파일 선택은 로그인 전에도 가능)</div>
 
       <div class="row">
         <div>
@@ -166,9 +158,7 @@
         <button class="btn primary" id="btnSave">등록하기</button>
       </div>
 
-      <div id="loginNote" class="muted" style="margin-top:8px;">
-        로그인 확인 중...
-      </div>
+      <div id="loginNote" class="muted" style="margin-top:8px;">로그인 확인 중...</div>
     </div>
 
     <div class="card">
@@ -198,13 +188,9 @@
     statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
     statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
   }
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  const withTimeout = (p, ms, label="timeout") =>
-    Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label)), ms))]);
 
-  function autologinOn(){
-    return new URL(location.href).searchParams.get("autologin") === "1";
-  }
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
   function cleanUrl(removeCode=true){
     const u = new URL(location.href);
     u.searchParams.delete("autologin");
@@ -222,8 +208,17 @@
     return;
   }
 
-  // ✅ detectSessionInUrl은 끄고, 우리가 직접 code 교환을 통제(에러 표출)
+  // ✅ fetch 자체가 멈추는 경우를 막기 위해 20초 타임아웃 fetch 적용
+  function fetchWithTimeout(input, init = {}) {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 20000);
+    return fetch(input, { ...init, signal: controller.signal })
+      .finally(() => clearTimeout(t));
+  }
+
+  // ✅ 우리가 code 교환을 직접 제어해서, 실패 이유를 화면에 보여준다
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { fetch: fetchWithTimeout },
     auth: { flowType:"pkce", detectSessionInUrl:false, persistSession:true, autoRefreshToken:true }
   });
 
@@ -232,7 +227,7 @@
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "파일 선택은 가능. 등록하려면 상단 ‘구글 로그인’을 누르세요.";
+    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
   }
   function setLoggedInUI(){
     const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
@@ -244,7 +239,6 @@
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
 
   $("btnReset").addEventListener("click", () => {
-    // ✅ PKCE verifier 꼬였을 때 한방 초기화
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -269,37 +263,50 @@
     const code = u.searchParams.get("code");
     if (!code) return true;
 
-    setStatus("로그인 처리 중 (코드 교환)...");
+    setStatus("로그인 처리 중... (코드 교환)", false);
+
+    // ✅ 강제 실패시키지 않고, 진행 안내만 띄움
+    const slowHint = setTimeout(() => {
+      setStatus(
+        "로그인 교환이 지연되고 있어요.\n" +
+        "보통 ‘확장프로그램/회사망’이 supabase.co 요청을 막을 때 이런 증상이 납니다.\n" +
+        "→ 시크릿 창(확장 OFF)에서 다시 시도해보세요.\n" +
+        "그래도 안 되면 상단 ‘초기화’ 후 재로그인.",
+        true
+      );
+    }, 6000);
 
     try{
-      const res = await withTimeout(sb.auth.exchangeCodeForSession(code), 8000, "code exchange timeout");
-      if (res?.error) throw res.error;
+      const { data, error } = await sb.auth.exchangeCodeForSession(code);
+      clearTimeout(slowHint);
 
-      // 교환 성공이면 code 제거
+      if (error) throw error;
+      if (data?.session) {
+        session = data.session;
+        user = data.session.user;
+      }
       cleanUrl(true);
       setStatus("");
       return true;
     } catch(e){
+      clearTimeout(slowHint);
       console.error(e);
       setStatus(
         "로그인 코드 교환 실패 ❌\n" +
         "에러: " + (e?.message || e) + "\n\n" +
-        "해결: 상단 ‘초기화’ 누르고 다시 ‘구글 로그인’",
+        "해결:\n" +
+        "1) 상단 ‘초기화’ 누르고 재시도\n" +
+        "2) 시크릿 창(확장 OFF)에서 재시도",
         true
       );
-      // 실패 시 code는 남겨둠(디버그용)
       return false;
     }
   }
 
   async function getSessionFast(){
-    const end = Date.now() + 2000; // ✅ 2초 안에 결론
+    const end = Date.now() + 2500;
     while (Date.now() < end){
-      const { data, error } = await sb.auth.getSession();
-      if (error){
-        setStatus("세션 확인 오류: " + error.message, true);
-        return null;
-      }
+      const { data } = await sb.auth.getSession();
       if (data.session) return data.session;
       await sleep(200);
     }
@@ -310,9 +317,7 @@
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    // code 있으면 먼저 교환 시도
     const okExchange = await exchangeIfCode();
-    // 교환 실패면 바로 로그아웃 UI로 내려주기(무한 확인중 방지)
     if (!okExchange){
       setLoggedOutUI();
       return false;
@@ -320,39 +325,19 @@
 
     const s = await getSessionFast();
     if (!s){
-      setStatus("");
       setLoggedOutUI();
-
-      // autologin=1이면 탭당 1회 자동 시작
-      if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
-        sessionStorage.setItem("market_oauth_started","1");
-        $("btnLogin").click();
-      }
+      setStatus(""); // 조용히
       return false;
     }
 
-    sessionStorage.removeItem("market_oauth_started");
     session = s;
     user = s.user;
-    setStatus("");
     setLoggedInUI();
+    setStatus("");
     return true;
   }
 
-  // 늦게 세션 잡혀도 UI 갱신
-  sb.auth.onAuthStateChange((_ev, s) => {
-    if (s?.user) {
-      sessionStorage.removeItem("market_oauth_started");
-      session = s;
-      user = s.user;
-      cleanUrl(true);
-      setStatus("");
-      setLoggedInUI();
-      renderFeed();
-    }
-  });
-
-  // ===== 이미지 프리뷰 =====
+  // ===== 이미지 프리뷰(로그인과 무관) =====
   let selectedFiles = [];
   let previewUrls = [];
 
@@ -390,11 +375,6 @@
     return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
   }
   function safeName(s){ return (s||"").toString().trim(); }
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
-  }
 
   async function uploadImages(postId){
     if (!selectedFiles.length) return [];
@@ -420,76 +400,41 @@
       return;
     }
 
-    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
-    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-
+    // 여기부터는 DB/RLS 설정에 따라 실패할 수 있음(실패 메시지 그대로 표시됨)
     setStatus("등록 중...");
-    const { data, error } = await sb
-      .from("market_posts")
-      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
-      .select("id")
-      .single();
-
-    if (error) return setStatus("등록 실패: " + error.message, true);
-
     try{
+      const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
+      const contact = safeName($("fContact").value);
+      const region = safeName($("fRegion").value);
+      const description = safeName($("fDesc").value);
+      const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+
+      const { data, error } = await sb
+        .from("market_posts")
+        .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
+        .select("id")
+        .single();
+
+      if (error) return setStatus("등록 실패: " + error.message, true);
+
       const urls = await uploadImages(data.id);
       if (urls.length) {
         const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) throw new Error("DB 업데이트 실패: " + e2.message);
+        if (e2) return setStatus("DB 업데이트 실패: " + e2.message, true);
       }
+
       setStatus("등록 완료!");
       clearPreviews();
       $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
-      await renderFeed();
     } catch(e){
-      setStatus(e.message, true);
+      setStatus("등록 중 오류: " + (e?.message || e), true);
     }
   }
 
-  async function loadPosts(){
-    setStatus("게시글 불러오는 중...");
-    const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
-    if (error) { setStatus("불러오기 실패: " + error.message, true); return []; }
-    return data || [];
-  }
-
-  function postCardHtml(p){
-    const imgs = Array.isArray(p.images) ? p.images : [];
-    const cover = imgs[0] || "";
-    return `
-      <div class="post">
-        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
-        <div class="postTop">
-          <div>
-            <div class="postTitle">${escapeHtml(p.title)}</div>
-            <div class="postMeta">
-              <span class="chip">수량 ${p.qty ?? "-"}</span>
-              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  async function renderFeed(){
-    const posts = await loadPosts();
-    $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
-    setStatus("");
-  }
-
   $("btnSave").addEventListener("click", () => createPost());
-  $("btnRefresh").addEventListener("click", () => renderFeed());
+  $("btnRefresh").addEventListener("click", () => location.reload());
 
-  (async () => {
-    await requireLogin();
-    await renderFeed();
-  })();
+  (async () => { await requireLogin(); })();
 })();
 </script>
 </body>
