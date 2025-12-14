@@ -170,7 +170,6 @@
     </div>
   </div>
 </div>
-
 <script>
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -189,16 +188,17 @@
     statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
   }
 
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  function cleanUrl(removeCode=true){
+  function cleanUrl(){
     const u = new URL(location.href);
     u.searchParams.delete("autologin");
-    if (removeCode){
-      u.searchParams.delete("code");
-      u.searchParams.delete("state");
-    }
+    u.searchParams.delete("code");
+    u.searchParams.delete("state");
+    // 해시(#access_token...) 제거까지 한 번에
     history.replaceState({}, document.title, u.pathname + u.search);
+  }
+
+  function autologinOn(){
+    return new URL(location.href).searchParams.get("autologin") === "1";
   }
 
   if (!window.supabase){
@@ -208,18 +208,14 @@
     return;
   }
 
-  // ✅ fetch 자체가 멈추는 경우를 막기 위해 20초 타임아웃 fetch 적용
-  function fetchWithTimeout(input, init = {}) {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 20000);
-    return fetch(input, { ...init, signal: controller.signal })
-      .finally(() => clearTimeout(t));
-  }
-
-  // ✅ 우리가 code 교환을 직접 제어해서, 실패 이유를 화면에 보여준다
+  // ✅ Implicit: code 교환 없이 hash 토큰(#access_token=...)로 세션 생성
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { fetch: fetchWithTimeout },
-    auth: { flowType:"pkce", detectSessionInUrl:false, persistSession:true, autoRefreshToken:true }
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true
+    }
   });
 
   let session = null;
@@ -227,7 +223,7 @@
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
+    $("loginNote").textContent = "파일 선택은 가능. 등록하려면 상단 ‘구글 로그인’을 누르세요.";
   }
   function setLoggedInUI(){
     const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
@@ -236,9 +232,9 @@
     $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
   }
 
-  $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
+  $("btnExit").onclick = () => location.replace("the-unique-gate.html");
 
-  $("btnReset").addEventListener("click", () => {
+  $("btnReset").onclick = () => {
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -247,97 +243,58 @@
       sessionStorage.clear();
     }catch(e){}
     location.replace("market.html?autologin=1");
-  });
+  };
 
-  $("btnLogin").addEventListener("click", async () => {
+  $("btnLogin").onclick = async () => {
     setStatus("구글 로그인 이동 중...");
     const { error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO }
     });
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
-  });
-
-  async function exchangeIfCode(){
-    const u = new URL(location.href);
-    const code = u.searchParams.get("code");
-    if (!code) return true;
-
-    setStatus("로그인 처리 중... (코드 교환)", false);
-
-    // ✅ 강제 실패시키지 않고, 진행 안내만 띄움
-    const slowHint = setTimeout(() => {
-      setStatus(
-        "로그인 교환이 지연되고 있어요.\n" +
-        "보통 ‘확장프로그램/회사망’이 supabase.co 요청을 막을 때 이런 증상이 납니다.\n" +
-        "→ 시크릿 창(확장 OFF)에서 다시 시도해보세요.\n" +
-        "그래도 안 되면 상단 ‘초기화’ 후 재로그인.",
-        true
-      );
-    }, 6000);
-
-    try{
-      const { data, error } = await sb.auth.exchangeCodeForSession(code);
-      clearTimeout(slowHint);
-
-      if (error) throw error;
-      if (data?.session) {
-        session = data.session;
-        user = data.session.user;
-      }
-      cleanUrl(true);
-      setStatus("");
-      return true;
-    } catch(e){
-      clearTimeout(slowHint);
-      console.error(e);
-      setStatus(
-        "로그인 코드 교환 실패 ❌\n" +
-        "에러: " + (e?.message || e) + "\n\n" +
-        "해결:\n" +
-        "1) 상단 ‘초기화’ 누르고 재시도\n" +
-        "2) 시크릿 창(확장 OFF)에서 재시도",
-        true
-      );
-      return false;
-    }
-  }
-
-  async function getSessionFast(){
-    const end = Date.now() + 2500;
-    while (Date.now() < end){
-      const { data } = await sb.auth.getSession();
-      if (data.session) return data.session;
-      await sleep(200);
-    }
-    return null;
-  }
+  };
 
   async function requireLogin(){
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    const okExchange = await exchangeIfCode();
-    if (!okExchange){
+    // ✅ 지금처럼 ?code= 로 돌아오는 경우(=PKCE 리턴)면 안내하고 URL 정리
+    const u = new URL(location.href);
+    if (u.searchParams.get("code")) {
+      setStatus(
+        "지금은 PKCE(code)로 돌아왔는데, 이 환경에서 code→session 교환이 막혀서 멈추는 중입니다.\n" +
+        "→ 상단 ‘초기화’ 누른 뒤 ‘구글 로그인’으로 다시 시도하세요(implicit 모드로 받게 됩니다).",
+        true
+      );
+      cleanUrl();
       setLoggedOutUI();
       return false;
     }
 
-    const s = await getSessionFast();
-    if (!s){
+    // ✅ implicit는 해시 토큰이 있으면 여기서 바로 세션이 잡힘
+    const { data, error } = await sb.auth.getSession();
+    if (error){
+      setStatus("세션 확인 오류: " + error.message, true);
       setLoggedOutUI();
-      setStatus(""); // 조용히
       return false;
     }
 
-    session = s;
-    user = s.user;
-    setLoggedInUI();
+    if (!data.session){
+      setStatus("");
+      setLoggedOutUI();
+      if (autologinOn()) $("btnLogin").click();
+      return false;
+    }
+
+    session = data.session;
+    user = session.user;
     setStatus("");
+    cleanUrl();
+    setLoggedInUI();
     return true;
   }
 
-  // ===== 이미지 프리뷰(로그인과 무관) =====
+  // ===== 이미지 프리뷰 =====
   let selectedFiles = [];
   let previewUrls = [];
 
@@ -348,6 +305,7 @@
     $("fImages").value = "";
     $("imgPreview").innerHTML = "";
   }
+
   function renderPreviews(){
     const box = $("imgPreview");
     box.innerHTML = "";
@@ -361,6 +319,7 @@
       box.appendChild(d);
     });
   }
+
   $("fImages").addEventListener("change", (e) => {
     previewUrls.forEach(u => URL.revokeObjectURL(u));
     previewUrls = [];
@@ -400,41 +359,41 @@
       return;
     }
 
-    // 여기부터는 DB/RLS 설정에 따라 실패할 수 있음(실패 메시지 그대로 표시됨)
     setStatus("등록 중...");
+    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
+    const contact = safeName($("fContact").value);
+    const region = safeName($("fRegion").value);
+    const description = safeName($("fDesc").value);
+    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+
+    const { data, error } = await sb
+      .from("market_posts")
+      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
+      .select("id")
+      .single();
+
+    if (error) return setStatus("등록 실패: " + error.message, true);
+
     try{
-      const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-      const contact = safeName($("fContact").value);
-      const region = safeName($("fRegion").value);
-      const description = safeName($("fDesc").value);
-      const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-
-      const { data, error } = await sb
-        .from("market_posts")
-        .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
-        .select("id")
-        .single();
-
-      if (error) return setStatus("등록 실패: " + error.message, true);
-
       const urls = await uploadImages(data.id);
       if (urls.length) {
         const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) return setStatus("DB 업데이트 실패: " + e2.message, true);
+        if (e2) throw new Error("DB 업데이트 실패: " + e2.message);
       }
-
       setStatus("등록 완료!");
       clearPreviews();
       $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
     } catch(e){
-      setStatus("등록 중 오류: " + (e?.message || e), true);
+      setStatus(e.message, true);
     }
   }
 
-  $("btnSave").addEventListener("click", () => createPost());
-  $("btnRefresh").addEventListener("click", () => location.reload());
+  $("btnSave").onclick = () => createPost();
+  $("btnRefresh").onclick = () => location.reload();
 
-  (async () => { await requireLogin(); })();
+  (async () => {
+    await requireLogin();
+  })();
 })();
 </script>
 </body>
