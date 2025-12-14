@@ -184,6 +184,9 @@
   const BUCKET = "market";
   const REDIRECT_TO = location.origin + location.pathname;
 
+  const TOKEN_KEY = "market_access_token";
+  const REFRESH_KEY = "market_refresh_token";
+
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
   const inlineEl = $("inlineStatus");
@@ -208,16 +211,43 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거됨
+    // ✅ hash 제거 (토큰 숨기기)
+    history.replaceState({}, document.title, u.pathname + u.search);
+  }
+
+  function safeLSSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function safeLSGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function safeLSRemove(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+  function base64UrlToJson(b64url){
+    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const str = atob(b64 + pad);
+    return JSON.parse(str);
+  }
+
+  function decodeUserFromAccessToken(token){
+    try{
+      const parts = (token || "").split(".");
+      if (parts.length < 2) return null;
+      const payload = base64UrlToJson(parts[1]);
+      return {
+        id: payload.sub || "",
+        email: payload.email || "",
+        name:
+          payload.user_metadata?.full_name ||
+          payload.user_metadata?.name ||
+          payload.name ||
+          ""
+      };
+    }catch(e){
+      return null;
+    }
   }
 
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
-
-  // JS 에러를 화면에 표시
-  window.addEventListener("error", (e) => setStatus("JS 오류: " + (e?.message || e), true));
-  window.addEventListener("unhandledrejection", (e) => setStatus("Promise 오류: " + (e?.reason?.message || e?.reason || e), true));
 
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
@@ -226,27 +256,43 @@
     return;
   }
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType: "implicit", detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
+  // ✅ 로그인 시작용(redirect만)
+  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { flowType:"implicit", detectSessionInUrl:false, persistSession:false, autoRefreshToken:false }
   });
 
-  let session = null;
+  let accessToken = null;
+  let refreshToken = null;
   let user = null;
+
+  // ✅ API 호출용(Authorization 헤더 고정)
+  let sbApi = null;
+  function buildApiClient(){
+    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+      },
+      auth: { persistSession:false, autoRefreshToken:false }
+    });
+  }
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "파일 선택은 가능. 등록하려면 상단 ‘구글 로그인’을 누르세요.";
+    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
   }
   function setLoggedInUI(){
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
+    $("who").textContent = `로그인: ${label}`;
     $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
   }
 
+  // 상단 버튼
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
 
   $("btnReset").addEventListener("click", () => {
+    safeLSRemove(TOKEN_KEY);
+    safeLSRemove(REFRESH_KEY);
+    // sb- 키들도 정리(확장/캐시 꼬임 방지)
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -259,94 +305,37 @@
 
   $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
-    const { error } = await sb.auth.signInWithOAuth({
+    const { error } = await sbAuth.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO }
     });
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
   });
 
-  async function importSessionFromHash(){
+  // ✅ 1) URL hash에서 토큰 읽기 → 저장 → URL에서 토큰 제거
+  function loadTokenFromHashOrStorage(){
     const hash = (location.hash || "").replace(/^#/, "");
-    if (!hash) return null;
-    if (!hash.includes("access_token=") && !hash.includes("error=")) return null;
-
-    setStatus("로그인 토큰 처리 중...");
-
-    if (typeof sb.auth.getSessionFromUrl === "function") {
-      const { data, error } = await sb.auth.getSessionFromUrl({ storeSession: true });
-      if (error) throw error;
-      if (data?.session) {
-        cleanUrlAll();
-        setStatus("");
-        return data.session;
+    if (hash.includes("access_token=")){
+      const p = new URLSearchParams(hash);
+      const at = p.get("access_token");
+      const rt = p.get("refresh_token");
+      if (at){
+        accessToken = at;
+        refreshToken = rt || null;
+        safeLSSet(TOKEN_KEY, accessToken);
+        if (refreshToken) safeLSSet(REFRESH_KEY, refreshToken);
+        cleanUrlAll(); // ✅ 토큰 주소창에서 제거
       }
     }
-
-    const p = new URLSearchParams(hash);
-    const access_token = p.get("access_token");
-    const refresh_token = p.get("refresh_token");
-    const err = p.get("error");
-    const errDesc = p.get("error_description");
-
-    if (err) throw new Error(errDesc || err);
-    if (!access_token) return null;
-    if (!refresh_token) throw new Error("refresh_token이 없습니다. 상단 ‘초기화’ 후 재로그인 해보세요.");
-
-    const { data, error } = await sb.auth.setSession({ access_token, refresh_token });
-    if (error) throw error;
-
-    cleanUrlAll();
-    setStatus("");
-    return data.session || null;
+    if (!accessToken){
+      accessToken = safeLSGet(TOKEN_KEY);
+      refreshToken = safeLSGet(REFRESH_KEY);
+    }
   }
 
-  async function requireLogin(){
-    try {
-      const sHash = await importSessionFromHash();
-      if (sHash) {
-        session = sHash; user = sHash.user;
-        setLoggedInUI();
-        return true;
-      }
-    } catch (e) {
-      setStatus("로그인 토큰 처리 실패: " + (e?.message || e), true);
-      setLoggedOutUI();
-      return false;
-    }
-
-    const { data, error } = await sb.auth.getSession();
-    if (error) {
-      setStatus("세션 확인 오류: " + error.message, true);
-      setLoggedOutUI();
-      return false;
-    }
-    if (!data.session) {
-      setStatus("");
-      setLoggedOutUI();
-      if (autologinOn()) $("btnLogin").click();
-      return false;
-    }
-
-    session = data.session; user = session.user;
-    setStatus("");
-    setLoggedInUI();
-    return true;
-  }
-
-  // ========= 업로드/등록 =========
+  // ===== 이미지 프리뷰 =====
   let selectedFiles = [];
   let previewUrls = [];
-
-  function fileExt(file){
-    const n = file.name || "";
-    const dot = n.lastIndexOf(".");
-    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
-  }
-
-  function toPublicUrl(path){
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  }
 
   function clearPreviews(){
     previewUrls.forEach(u => URL.revokeObjectURL(u));
@@ -380,6 +369,14 @@
     renderPreviews();
   });
 
+  function toPublicUrl(path){
+    return sbApi.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+  function fileExt(file){
+    const n = file.name || "";
+    const dot = n.lastIndexOf(".");
+    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
+  }
   function safeName(s){ return (s||"").toString().trim(); }
   function escapeHtml(s){
     return (s||"").toString()
@@ -391,11 +388,16 @@
     if (!selectedFiles.length) return [];
     setStatus("이미지 업로드 중...");
     const urls = [];
+
     for (let i=0; i<Math.min(3, selectedFiles.length); i++){
       const f = selectedFiles[i];
       const ext = fileExt(f);
       const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
+
+      const { error } = await sbApi.storage.from(BUCKET).upload(path, f, {
+        upsert:false,
+        contentType:f.type
+      });
       if (error) throw new Error(error.message);
       urls.push(toPublicUrl(path));
     }
@@ -405,18 +407,20 @@
   async function createPost(){
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
-    if (!user) return setStatus("등록하려면 로그인이 필요합니다.", true);
+
+    if (!user?.id) return setStatus("등록하려면 로그인이 필요합니다.", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
     const region = safeName($("fRegion").value);
     const description = safeName($("fDesc").value);
-    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+    const owner_name = user.name || user.email || "";
 
     setStatus("등록 중...");
-    const { data, error } = await sb
+
+    const { data, error } = await sbApi
       .from("market_posts")
-      .insert({ owner:user.id, owner_name, title, qty, contact, region, description, images: [] })
+      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
       .select("id")
       .single();
 
@@ -425,9 +429,10 @@
     try{
       const urls = await uploadImages(data.id);
       if (urls.length){
-        const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
+        const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", data.id);
         if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
       }
+
       setStatus("등록 완료!");
       clearPreviews();
       $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
@@ -438,7 +443,8 @@
   }
 
   async function renderFeed(){
-    const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
+    if (!sbApi) return;
+    const { data, error } = await sbApi.from("market_posts").select("*").order("created_at", { ascending:false });
     if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
 
     const posts = data || [];
@@ -464,29 +470,32 @@
     setStatus("");
   }
 
-  $("btnSave").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    createPost();
-  });
+  // 버튼 이벤트
+  $("btnSave").addEventListener("click", (e) => { e.preventDefault(); createPost(); });
+  $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); renderFeed(); });
 
-  $("btnRefresh").addEventListener("click", (e) => {
-    e.preventDefault();
-    renderFeed();
-  });
-
-  sb.auth.onAuthStateChange((_ev, s) => {
-    if (s?.user) {
-      session = s; user = s.user;
-      cleanUrlAll();
-      setStatus("");
-      setLoggedInUI();
-      renderFeed();
-    }
-  });
-
+  // ===== 부트 =====
   (async () => {
-    await requireLogin();
+    loadTokenFromHashOrStorage();
+
+    if (!accessToken){
+      setLoggedOutUI();
+      setStatus("");
+      if (autologinOn()) $("btnLogin").click();
+      return;
+    }
+
+    user = decodeUserFromAccessToken(accessToken);
+    buildApiClient();
+
+    if (!user?.id){
+      setLoggedOutUI();
+      setStatus("토큰은 있는데 사용자 정보를 못 읽었습니다. ‘초기화’ 후 재로그인 해주세요.", true);
+      return;
+    }
+
+    setLoggedInUI();
+    setStatus("");
     await renderFeed();
   })();
 })();
