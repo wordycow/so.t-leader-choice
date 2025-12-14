@@ -221,11 +221,14 @@ async function requireLogin(){
 
   // ✅ 로그아웃 확실히
   $("btnLogout").onclick = async () => {
-    setStatus("로그아웃 중...");
-    await sb.auth.signOut();
-    location.replace("the-unique-gate.html");
-  };
+  setStatus("로그아웃 중...");
+  await sb.auth.signOut();
 
+  // 로컬 상태도 같이 정리(꼬임 방지)
+  localStorage.removeItem("uniqueOAuthUser");
+
+  location.replace("the-unique-gate.html");
+};
   // ===== 이하 유송님 기존 로직 유지 =====
   let editingId = null;
   let selectedFiles = [];
