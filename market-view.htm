@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UNIQUE 마켓 – 게시글</title>
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <style>
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Pretendard",sans-serif;
+      color:#e5e7eb;
+      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
+      position:relative;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background: radial-gradient(circle at top, rgba(2,6,23,.10), rgba(2,6,23,.45) 65%, rgba(2,6,23,.55));
+      z-index:-1;
+    }
+
+    .wrap{max-width:980px;margin:0 auto;padding:16px;position:relative;z-index:1}
+    .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+    .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
+    .who{opacity:.9;font-size:12px;margin-top:4px}
+
+    .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button{cursor:pointer}
+    .btn{
+      padding:10px 12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.12);
+      color:#e5e7eb;font-weight:800
+    }
+    .btn.primary{background:rgba(255,255,255,.18)}
+    .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.45)}
+
+    .pill{
+      padding:8px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.18);
+      font-size:12px;
+      margin-bottom:12px;
+      display:none;
+      white-space:pre-line;
+    }
+
+    .card{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.20);
+      padding:14px;
+      backdrop-filter: blur(6px);
+      margin-bottom:12px;
+    }
+
+    .title{font-size:18px;font-weight:900;margin:0 0 8px}
+    .meta{font-size:12px;opacity:.85;line-height:1.5}
+    .desc{margin-top:10px;font-size:13px;line-height:1.65;white-space:pre-line}
+
+    .mainImg{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;margin-bottom:10px}
+    .mainImg img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap}
+    .thumb{width:96px;height:64px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;cursor:pointer;opacity:.9}
+    .thumb:hover{opacity:1}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:720px){.row{grid-template-columns:1fr}}
+
+    textarea{
+      width:100%;min-height:90px;resize:vertical;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      color:#e5e7eb;outline:none
+    }
+
+    .comment{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      padding:10px 12px;
+      margin-top:10px;
+    }
+    .commentTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .commentName{font-weight:900;font-size:13px}
+    .commentTime{font-size:11px;opacity:.75}
+    .commentBody{margin-top:6px;font-size:13px;line-height:1.6;white-space:pre-line}
+    .commentDel{font-size:11px;padding:6px 8px;border-radius:10px;border:1px solid rgba(248,113,113,.45);background:rgba(127,29,29,.35);color:#fee2e2}
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="brand">UNIQUE 마켓 – 게시글</div>
+      <div id="who" class="who">로그인 확인 중...</div>
+    </div>
+    <div class="btns">
+      <button class="btn" id="btnBack" type="button">← 마켓</button>
+      <button class="btn danger" id="btnExit" type="button">나가기</button>
+      <button class="btn primary" id="btnLogin" type="button">구글 로그인</button>
+      <button class="btn" id="btnReset" type="button">초기화</button>
+    </div>
+  </div>
+
+  <div id="status" class="pill"></div>
+
+  <div class="card" id="postCard">
+    <div id="postTitle" class="title">로딩 중...</div>
+    <div id="postMeta" class="meta"></div>
+    <div id="imgBox" style="margin-top:10px;"></div>
+    <div id="postDesc" class="desc"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:900;margin-bottom:8px;">댓글</div>
+    <textarea id="cBody" placeholder="댓글을 입력하세요"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn primary" id="btnComment" type="button">댓글 등록</button>
+      <button class="btn" id="btnReload" type="button">댓글 새로고침</button>
+    </div>
+    <div id="commentList"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+  const BUCKET = "market";
+  const TOKEN_KEY = "market_access_token";
+  const REFRESH_KEY = "market_refresh_token";
+  const RETURN_TO_KEY = "market_return_to";
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+
+  function setStatus(msg, isErr=false){
+    if (!msg){ statusEl.style.display="none"; return; }
+    statusEl.style.display="";
+    statusEl.textContent = msg;
+    statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
+    statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
+  }
+
+  function safeLSSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function safeLSGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function safeLSRemove(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+  function base64UrlToJson(b64url){
+    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const binary = atob(b64 + pad);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
+  }
+  function decodeUserFromAccessToken(token){
+    try{
+      const parts = (token || "").split(".");
+      if (parts.length < 2) return null;
+      const payload = base64UrlToJson(parts[1]);
+      return {
+        id: payload.sub || "",
+        email: payload.email || "",
+        name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
+      };
+    }catch(e){ return null; }
+  }
+
+  // 이 페이지에서 로그인 누르면 market.html로 보내서 토큰 받고, 다시 여기로 돌아오게 함
+  function marketHtmlUrl(){
+    const base = location.pathname.replace(/\/[^\/]*$/, ""); // /so.t-leader-choice
+    return location.origin + base + "/market.html";
+  }
+
+  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: false,
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: "sb-market-auth-login"
+    }
+  });
+
+  let accessToken = null;
+  let refreshToken = null;
+  let user = null;
+  let sbApi = null;
+
+  function buildApiClient(){
+    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
+      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:"sb-market-auth-api" }
+    });
+  }
+
+  function loadTokenFromStorage(){
+    accessToken = safeLSGet(TOKEN_KEY);
+    refreshToken = safeLSGet(REFRESH_KEY);
+  }
+
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  function formatTime(iso){
+    try{
+      const d = new Date(iso);
+      return d.toLocaleString();
+    }catch(e){ return iso || ""; }
+  }
+
+  function getPostId(){
+    const u = new URL(location.href);
+    return u.searchParams.get("id") || "";
+  }
+
+  // UI 버튼
+  $("btnBack").onclick = () => location.href = "market.html";
+  $("btnExit").onclick = () => location.replace("the-unique-gate.html");
+  $("btnReset").onclick = () => {
+    safeLSRemove(TOKEN_KEY);
+    safeLSRemove(REFRESH_KEY);
+    safeLSRemove(RETURN_TO_KEY);
+    location.href = "market.html?autologin=1";
+  };
+  $("btnLogin").onclick = async () => {
+    // 로그인 후 다시 이 페이지로 돌아오게 저장
+    safeLSSet(RETURN_TO_KEY, location.origin + location.pathname + location.search);
+    setStatus("구글 로그인 이동 중...");
+    const { data, error } = await sbAuth.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: marketHtmlUrl(), skipBrowserRedirect: true }
+    });
+    if (error) return setStatus("구글 로그인 시작 실패: " + error.message, true);
+    if (data?.url) location.assign(data.url);
+    else setStatus("로그인 URL 생성 실패", true);
+  };
+
+  async function loadPost(){
+    const postId = getPostId();
+    if (!postId) {
+      setStatus("잘못된 접근: id가 없습니다.", true);
+      $("postTitle").textContent = "ID 없음";
+      return null;
+    }
+    const { data, error } = await sbApi.from("market_posts").select("*").eq("id", postId).single();
+    if (error) {
+      setStatus("게시글 불러오기 실패: " + error.message, true);
+      $("postTitle").textContent = "불러오기 실패";
+      return null;
+    }
+    return data;
+  }
+
+  function renderImages(urls){
+    const box = $("imgBox");
+    box.innerHTML = "";
+    if (!urls || !urls.length) return;
+
+    const main = document.createElement("div");
+    main.className = "mainImg";
+    main.innerHTML = `<img id="mainImg" src="${urls[0]}" alt="">`;
+    box.appendChild(main);
+
+    const thumbs = document.createElement("div");
+    thumbs.className = "thumbs";
+    urls.forEach((u) => {
+      const t = document.createElement("div");
+      t.className = "thumb";
+      t.innerHTML = `<img src="${u}" alt="">`;
+      t.onclick = () => { const img = document.getElementById("mainImg"); if (img) img.src = u; };
+      thumbs.appendChild(t);
+    });
+    box.appendChild(thumbs);
+  }
+
+  function renderPost(p){
+    $("postTitle").textContent = p.title || "(제목 없음)";
+    $("postMeta").innerHTML =
+      `수량: <b>${escapeHtml(p.qty ?? "-")}</b> · 지역: <b>${escapeHtml(p.region || "-")}</b><br>` +
+      `연락: <b>${escapeHtml(p.contact || "-")}</b><br>` +
+      `작성자: <b>${escapeHtml(p.owner_name || "-")}</b> · ${formatTime(p.created_at)}`;
+    $("postDesc").textContent = p.description || "";
+    renderImages(Array.isArray(p.images) ? p.images : []);
+  }
+
+  async function loadComments(){
+    const postId = getPostId();
+    const { data, error } = await sbApi
+      .from("market_comments")
+      .select("*")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setStatus("댓글 불러오기 실패: " + error.message, true);
+      return [];
+    }
+    return data || [];
+  }
+
+  function renderComments(list){
+    const box = $("commentList");
+    if (!list.length) {
+      box.innerHTML = `<div class="muted" style="margin-top:10px;">아직 댓글이 없습니다.</div>`;
+      return;
+    }
+
+    box.innerHTML = list.map(c => {
+      const canDelete = user?.id && c.owner === user.id;
+      return `
+        <div class="comment">
+          <div class="commentTop">
+            <div>
+              <div class="commentName">${escapeHtml(c.owner_name || "익명")}</div>
+              <div class="commentTime">${formatTime(c.created_at)}</div>
+            </div>
+            ${canDelete ? `<button class="commentDel" data-id="${c.id}" type="button">삭제</button>` : ``}
+          </div>
+          <div class="commentBody">${escapeHtml(c.body || "")}</div>
+        </div>
+      `;
+    }).join("");
+
+    // 삭제 바인딩
+    box.querySelectorAll(".commentDel").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
+        if (!confirm("이 댓글을 삭제할까요?")) return;
+        const { error } = await sbApi.from("market_comments").delete().eq("id", id);
+        if (error) return setStatus("댓글 삭제 실패: " + error.message, true);
+        setStatus("댓글 삭제 완료");
+        const again = await loadComments();
+        renderComments(again);
+      });
+    });
+  }
+
+  async function addComment(){
+    const postId = getPostId();
+    const body = ($("cBody").value || "").trim();
+    if (!body) return setStatus("댓글 내용을 입력하세요.", true);
+    if (!user?.id) return setStatus("댓글 작성은 로그인 후 가능합니다.", true);
+
+    setStatus("댓글 등록 중...");
+    const owner_name = user.name || user.email || "";
+
+    const { error } = await sbApi.from("market_comments").insert({
+      post_id: postId,
+      owner: user.id,
+      owner_name,
+      body
+    });
+
+    if (error) return setStatus("댓글 등록 실패: " + error.message, true);
+
+    $("cBody").value = "";
+    setStatus("댓글 등록 완료!");
+    const again = await loadComments();
+    renderComments(again);
+  }
+
+  $("btnComment").onclick = () => addComment();
+  $("btnReload").onclick = async () => renderComments(await loadComments());
+
+  // Boot
+  (async () => {
+    loadTokenFromStorage();
+    if (!accessToken) {
+      $("who").textContent = "로그인 필요";
+      setStatus("댓글/상세보기는 로그인 후 가능합니다.", true);
+      return;
+    }
+
+    user = decodeUserFromAccessToken(accessToken);
+    if (!user?.id) {
+      $("who").textContent = "로그인 필요";
+      setStatus("토큰은 있는데 사용자 정보를 못 읽었습니다. ‘초기화’ 후 재로그인 해주세요.", true);
+      return;
+    }
+
+    buildApiClient();
+    $("who").textContent = `로그인: ${user.name || user.email || user.id.slice(0,8)}`;
+    setStatus("");
+
+    const post = await loadPost();
+    if (post) renderPost(post);
+
+    const comments = await loadComments();
+    renderComments(comments);
+  })();
+})();
+</script>
+</body>
+</html>
