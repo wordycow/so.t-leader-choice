@@ -1340,7 +1340,9 @@
           return res.json();
         })
         .then(function (data) {
-          let items = (data && data.items) ? data.items.slice() : [];
+          let items = Array.isArray(data)
+  ? data.slice()
+  : (data && Array.isArray(data.items) ? data.items.slice() : []);
           if (!items.length) {
             renderDefault();
             return;
