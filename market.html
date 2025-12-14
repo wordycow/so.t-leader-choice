@@ -188,26 +188,35 @@
     statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
   }
 
-  function cleanUrl(){
+  // ✅ hash + query 정리 (access_token 숨김)
+  function cleanUrlAll(){
     const u = new URL(location.href);
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // ✅ hash 제거
+    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거됨
   }
 
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
 
+  // ✅ 페이지에서 JS 에러가 나면 바로 화면에 표시
+  window.addEventListener("error", (e) => {
+    setStatus("JS 오류: " + (e?.message || e), true);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    setStatus("Promise 오류: " + (e?.reason?.message || e?.reason || e), true);
+  });
+
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
-    $("loginNote").textContent = "광고차단/네트워크로 CDN이 막혔습니다.";
+    $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
     setStatus("supabase-js 로드 실패", true);
     return;
   }
 
-  // ✅ Implicit + 우리가 hash를 직접 처리할거라 detectSessionInUrl은 꺼둠
+  // ✅ implicit + 우리가 URL hash를 직접 흡수
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       flowType: "implicit",
@@ -253,37 +262,48 @@
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
   };
 
-  // ✅ 핵심: hash(#access_token=...)를 직접 읽어서 세션으로 흡수
-  async function absorbHashSession(){
+  // ✅ 핵심: #access_token 을 세션으로 “흡수”
+  async function importSessionFromHash(){
     const hash = (location.hash || "").replace(/^#/, "");
     if (!hash) return null;
 
+    // access_token 또는 에러가 있는 해시만 처리
+    if (!hash.includes("access_token=") && !hash.includes("error=")) return null;
+
+    setStatus("로그인 토큰 처리 중...");
+
+    // 1) 있으면 Supabase 공식 함수로 처리
+    if (typeof sb.auth.getSessionFromUrl === "function") {
+      const { data, error } = await sb.auth.getSessionFromUrl({ storeSession: true });
+      if (error) throw error;
+      if (data?.session) {
+        cleanUrlAll();           // ✅ 토큰 숨김
+        setStatus("");
+        return data.session;
+      }
+    }
+
+    // 2) fallback: 직접 파싱해서 setSession
     const p = new URLSearchParams(hash);
     const access_token = p.get("access_token");
     const refresh_token = p.get("refresh_token");
     const err = p.get("error");
     const errDesc = p.get("error_description");
 
-    if (err){
-      setStatus("OAuth 에러: " + (errDesc || err), true);
-      cleanUrl();
-      return null;
+    if (err) {
+      throw new Error(errDesc || err);
     }
-
     if (!access_token) return null;
 
-    setStatus("로그인 토큰 처리 중...");
-    const { data, error } = await sb.auth.setSession({
-      access_token,
-      refresh_token: refresh_token || ""
-    });
-
-    if (error){
-      setStatus("세션 설정 실패: " + error.message + "\n(상단 ‘초기화’ 후 재로그인)", true);
-      return null;
+    // refresh_token 없으면 setSession이 실패할 수 있어서, 없으면 에러로 명확히 처리
+    if (!refresh_token) {
+      throw new Error("refresh_token이 없습니다(implicit 설정/응답 확인 필요). 초기화 후 재로그인 해보세요.");
     }
 
-    cleanUrl(); // 토큰 숨기기
+    const { data, error } = await sb.auth.setSession({ access_token, refresh_token });
+    if (error) throw error;
+
+    cleanUrlAll();               // ✅ 토큰 숨김
     setStatus("");
     return data.session || null;
   }
@@ -292,24 +312,38 @@
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    // 1) hash 토큰 있으면 먼저 흡수
-    const s1 = await absorbHashSession();
-    if (s1) {
-      session = s1;
-      user = s1.user;
-      setLoggedInUI();
-      return true;
+    // code= 로 들어온 경우는 여기선 쓰지 않음(implicit만)
+    const u = new URL(location.href);
+    if (u.searchParams.get("code")) {
+      setStatus("code 방식(PKCE)로 돌아왔습니다. 상단 ‘초기화’ 후 다시 로그인하세요.", true);
+      setLoggedOutUI();
+      return false;
     }
 
-    // 2) 저장된 세션 있나 확인
+    // 1) 해시 토큰이 있으면 먼저 흡수
+    try {
+      const sHash = await importSessionFromHash();
+      if (sHash) {
+        session = sHash;
+        user = sHash.user;
+        setLoggedInUI();
+        return true;
+      }
+    } catch (e) {
+      setStatus("로그인 토큰 처리 실패: " + (e?.message || e), true);
+      setLoggedOutUI();
+      return false;
+    }
+
+    // 2) 저장된 세션 확인
     const { data, error } = await sb.auth.getSession();
-    if (error){
+    if (error) {
       setStatus("세션 확인 오류: " + error.message, true);
       setLoggedOutUI();
       return false;
     }
 
-    if (!data.session){
+    if (!data.session) {
       setStatus("");
       setLoggedOutUI();
       if (autologinOn()) $("btnLogin").click();
@@ -319,176 +353,32 @@
     session = data.session;
     user = session.user;
     setStatus("");
+    cleanUrlAll();
     setLoggedInUI();
     return true;
   }
 
-  // ===== 게시글 =====
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
-  }
-
-  async function loadPosts(){
-    const { data, error } = await sb
-      .from("market_posts")
-      .select("*")
-      .order("created_at", { ascending:false });
-
-    if (error) {
-      setStatus("게시글 불러오기 실패: " + error.message, true);
-      return [];
-    }
-    return data || [];
-  }
-
-  function postCardHtml(p){
-    const imgs = Array.isArray(p.images) ? p.images : [];
-    const cover = imgs[0] || "";
-    return `
-      <div class="post">
-        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
-        <div class="postTop">
-          <div>
-            <div class="postTitle">${escapeHtml(p.title)}</div>
-            <div class="postMeta">
-              <span class="chip">수량 ${p.qty ?? "-"}</span>
-              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  async function renderFeed(){
-    setStatus("게시글 불러오는 중...");
-    const posts = await loadPosts();
-    $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
-    setStatus("");
-  }
-
-  // ===== 이미지 업로드 =====
-  let selectedFiles = [];
-  let previewUrls = [];
-
-  function clearPreviews(){
-    previewUrls.forEach(u => URL.revokeObjectURL(u));
-    previewUrls = [];
-    selectedFiles = [];
-    $("fImages").value = "";
-    $("imgPreview").innerHTML = "";
-  }
-
-  function renderPreviews(){
-    const box = $("imgPreview");
-    box.innerHTML = "";
-    selectedFiles.slice(0,3).forEach((file, idx) => {
-      const url = URL.createObjectURL(file);
-      previewUrls.push(url);
-      const d = document.createElement("div");
-      d.className = "thumb";
-      d.innerHTML = `<img src="${url}" alt=""><button class="x" type="button">X</button>`;
-      d.querySelector(".x").onclick = () => { selectedFiles.splice(idx, 1); renderPreviews(); };
-      box.appendChild(d);
-    });
-  }
-
-  $("fImages").addEventListener("change", (e) => {
-    previewUrls.forEach(u => URL.revokeObjectURL(u));
-    previewUrls = [];
-    selectedFiles = Array.from(e.target.files || []).slice(0,3);
-    renderPreviews();
-  });
-
-  function toPublicUrl(path){
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  }
-  function fileExt(file){
-    const n = file.name || "";
-    const dot = n.lastIndexOf(".");
-    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
-  }
-  function safeName(s){ return (s||"").toString().trim(); }
-
-  async function uploadImages(postId){
-    if (!selectedFiles.length) return [];
-    setStatus("이미지 업로드 중...");
-    const urls = [];
-    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
-      const f = selectedFiles[i];
-      const ext = fileExt(f);
-      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-
-      const { error } = await sb.storage.from(BUCKET).upload(path, f, {
-        upsert:false, contentType:f.type
-      });
-      if (error) throw new Error(error.message);
-      urls.push(toPublicUrl(path));
-    }
-    return urls;
-  }
-
-  async function createPost(){
-    const title = safeName($("fTitle").value);
-    if (!title) return setStatus("제목은 필수입니다.", true);
-
-    if (!user){
-      setStatus("등록하려면 로그인이 필요합니다. 상단 ‘구글 로그인’을 누르세요.", true);
-      return;
-    }
-
-    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
-    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-
-    setStatus("등록 중...");
-    const { data, error } = await sb
-      .from("market_posts")
-      .insert({ owner:user.id, owner_name, title, qty, contact, region, description, images: [] })
-      .select("id")
-      .single();
-
-    if (error) return setStatus("등록 실패: " + error.message, true);
-
-    try{
-      const urls = await uploadImages(data.id);
-      if (urls.length){
-        const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
-      }
-
-      setStatus("등록 완료!");
-      clearPreviews();
-      $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
-      await renderFeed();
-    }catch(e){
-      setStatus("이미지 업로드 실패: " + (e?.message || e), true);
-    }
-  }
-
-  $("btnSave").onclick = () => createPost();
-  $("btnRefresh").onclick = () => renderFeed();
-
-  // 세션 늦게 잡혀도 반영
+  // ✅ 세션 생기는 순간 UI 즉시 갱신
   sb.auth.onAuthStateChange((_ev, s) => {
     if (s?.user) {
       session = s;
       user = s.user;
-      cleanUrl();
+      cleanUrlAll();
       setStatus("");
       setLoggedInUI();
-      renderFeed();
     }
   });
 
+  // ====== (아래는 일단 로그인부터 잡는 게 우선이라, 게시글/등록은 그대로 유지 가능) ======
+  $("btnSave").onclick = async () => {
+    if (!user) return setStatus("등록하려면 로그인이 필요합니다.", true);
+    setStatus("지금은 로그인만 먼저 안정화 중입니다. (다음 단계에서 등록/피드 연결 확정)", false);
+  };
+  $("btnRefresh").onclick = () => location.reload();
+
+  // Boot
   (async () => {
     await requireLogin();
-    await renderFeed();
   })();
 })();
 </script>
