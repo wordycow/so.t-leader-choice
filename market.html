@@ -8,6 +8,7 @@
   <!-- favicon 404 제거 -->
   <link rel="icon" href="data:,">
 
+  <!-- Supabase UMD -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
@@ -97,6 +98,13 @@
     @media(max-width:1100px){.feed{grid-template-columns: repeat(3, minmax(0,1fr));}}
     @media(max-width:900px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
     @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
+
+    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);overflow:hidden}
+    .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .postTitle{font-weight:900}
+    .postMeta{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
+    .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
+    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);margin-right:6px}
   </style>
 </head>
 
@@ -108,9 +116,9 @@
       <div id="who" class="who">로그인 확인 중...</div>
     </div>
     <div class="btns">
-      <button class="btn danger" id="btnExit">나가기</button>
-      <button class="btn primary" id="btnLogin">구글 로그인</button>
-      <button class="btn" id="btnReset" title="로그인 꼬였을 때 초기화">초기화</button>
+      <button class="btn danger" id="btnExit" type="button">나가기</button>
+      <button class="btn primary" id="btnLogin" type="button">구글 로그인</button>
+      <button class="btn" id="btnReset" type="button" title="로그인 꼬였을 때 초기화">초기화</button>
     </div>
   </div>
 
@@ -155,19 +163,20 @@
       </div>
 
       <button class="btn primary" id="btnSave" type="button">등록하기</button>
-<div id="inlineStatus" class="muted" style="margin-top:8px;"></div>
+      <div id="inlineStatus" class="muted" style="margin-top:8px;"></div>
       <div id="loginNote" class="muted" style="margin-top:8px;">로그인 확인 중...</div>
     </div>
 
     <div class="card">
       <div class="feedWrap">
         <div style="font-weight:900;">게시글</div>
-        <button class="btn" id="btnRefresh">새로고침</button>
+        <button class="btn" id="btnRefresh" type="button">새로고침</button>
       </div>
       <div id="feed" class="feed"></div>
     </div>
   </div>
 </div>
+
 <script>
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -177,10 +186,9 @@
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
-  const inlineEl = $("inlineStatus"); // ✅ 너 코드에 빠져있던 핵심
+  const inlineEl = $("inlineStatus");
 
   function setStatus(msg, isErr=false){
-    // 상단 status
     if (!msg){
       statusEl.style.display="none";
     } else {
@@ -189,7 +197,6 @@
       statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
       statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
     }
-    // 버튼 아래 inlineStatus
     if (inlineEl){
       inlineEl.textContent = msg || "";
       inlineEl.style.color = isErr ? "#fecaca" : "#e5e7eb";
@@ -204,6 +211,14 @@
     history.replaceState({}, document.title, u.pathname + u.search); // hash 제거됨
   }
 
+  function autologinOn(){
+    return new URL(location.href).searchParams.get("autologin") === "1";
+  }
+
+  // JS 에러를 화면에 표시
+  window.addEventListener("error", (e) => setStatus("JS 오류: " + (e?.message || e), true));
+  window.addEventListener("unhandledrejection", (e) => setStatus("Promise 오류: " + (e?.reason?.message || e?.reason || e), true));
+
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
     $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
@@ -212,12 +227,7 @@
   }
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      flowType: "implicit",
-      detectSessionInUrl: false,
-      persistSession: true,
-      autoRefreshToken: true
-    }
+    auth: { flowType: "implicit", detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
   });
 
   let session = null;
@@ -234,9 +244,9 @@
     $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
   }
 
-  $("btnExit").onclick = () => location.replace("the-unique-gate.html");
+  $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
 
-  $("btnReset").onclick = () => {
+  $("btnReset").addEventListener("click", () => {
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -245,16 +255,16 @@
       sessionStorage.clear();
     }catch(e){}
     location.replace("market.html?autologin=1");
-  };
+  });
 
-  $("btnLogin").onclick = async () => {
+  $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
     const { error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO }
     });
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
-  };
+  });
 
   async function importSessionFromHash(){
     const hash = (location.hash || "").replace(/^#/, "");
@@ -263,7 +273,6 @@
 
     setStatus("로그인 토큰 처리 중...");
 
-    // Supabase helper가 있으면 우선 사용
     if (typeof sb.auth.getSessionFromUrl === "function") {
       const { data, error } = await sb.auth.getSessionFromUrl({ storeSession: true });
       if (error) throw error;
@@ -293,12 +302,10 @@
   }
 
   async function requireLogin(){
-    // 1) 해시 토큰 흡수
     try {
       const sHash = await importSessionFromHash();
       if (sHash) {
-        session = sHash;
-        user = sHash.user;
+        session = sHash; user = sHash.user;
         setLoggedInUI();
         return true;
       }
@@ -308,7 +315,6 @@
       return false;
     }
 
-    // 2) 저장된 세션
     const { data, error } = await sb.auth.getSession();
     if (error) {
       setStatus("세션 확인 오류: " + error.message, true);
@@ -318,19 +324,29 @@
     if (!data.session) {
       setStatus("");
       setLoggedOutUI();
+      if (autologinOn()) $("btnLogin").click();
       return false;
     }
 
-    session = data.session;
-    user = session.user;
+    session = data.session; user = session.user;
     setStatus("");
     setLoggedInUI();
     return true;
   }
 
-  // ✅ 파일 프리뷰
+  // ========= 업로드/등록 =========
   let selectedFiles = [];
   let previewUrls = [];
+
+  function fileExt(file){
+    const n = file.name || "";
+    const dot = n.lastIndexOf(".");
+    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
+  }
+
+  function toPublicUrl(path){
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
 
   function clearPreviews(){
     previewUrls.forEach(u => URL.revokeObjectURL(u));
@@ -364,17 +380,12 @@
     renderPreviews();
   });
 
-  function toPublicUrl(path){
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  }
-
-  function fileExt(file){
-    const n = file.name || "";
-    const dot = n.lastIndexOf(".");
-    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
-  }
-
   function safeName(s){ return (s||"").toString().trim(); }
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
 
   async function uploadImages(postId){
     if (!selectedFiles.length) return [];
@@ -394,7 +405,6 @@
   async function createPost(){
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
-
     if (!user) return setStatus("등록하려면 로그인이 필요합니다.", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
@@ -422,16 +432,9 @@
       clearPreviews();
       $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
       await renderFeed();
-    } catch(e){
+    }catch(e){
       setStatus("이미지 업로드 실패: " + (e?.message || e), true);
     }
-  }
-
-  // ✅ 게시글 렌더
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
   }
 
   async function renderFeed(){
@@ -461,7 +464,6 @@
     setStatus("");
   }
 
-  // ✅ 버튼 이벤트는 addEventListener로 고정(겹쳐도 안전)
   $("btnSave").addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -473,11 +475,9 @@
     renderFeed();
   });
 
-  // 세션 변화 감지
   sb.auth.onAuthStateChange((_ev, s) => {
     if (s?.user) {
-      session = s;
-      user = s.user;
+      session = s; user = s.user;
       cleanUrlAll();
       setStatus("");
       setLoggedInUI();
@@ -485,330 +485,6 @@
     }
   });
 
-  // Boot
-  (async () => {
-    await requireLogin();
-    await renderFeed();
-  })();
-})();
-<script>
-(() => {
-  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-  const BUCKET = "market";
-  const REDIRECT_TO = location.origin + location.pathname;
-
-  const $ = (id) => document.getElementById(id);
-  const statusEl = $("status");
-  const inlineEl = $("inlineStatus"); // ✅ 너 코드에 빠져있던 핵심
-
-  function setStatus(msg, isErr=false){
-    // 상단 status
-    if (!msg){
-      statusEl.style.display="none";
-    } else {
-      statusEl.style.display="";
-      statusEl.textContent = msg;
-      statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
-      statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
-    }
-    // 버튼 아래 inlineStatus
-    if (inlineEl){
-      inlineEl.textContent = msg || "";
-      inlineEl.style.color = isErr ? "#fecaca" : "#e5e7eb";
-    }
-  }
-
-  function cleanUrlAll(){
-    const u = new URL(location.href);
-    u.searchParams.delete("autologin");
-    u.searchParams.delete("code");
-    u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거됨
-  }
-
-  if (!window.supabase){
-    $("who").textContent = "supabase-js 로드 실패";
-    $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
-    setStatus("supabase-js 로드 실패", true);
-    return;
-  }
-
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      flowType: "implicit",
-      detectSessionInUrl: false,
-      persistSession: true,
-      autoRefreshToken: true
-    }
-  });
-
-  let session = null;
-  let user = null;
-
-  function setLoggedOutUI(){
-    $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "파일 선택은 가능. 등록하려면 상단 ‘구글 로그인’을 누르세요.";
-  }
-  function setLoggedInUI(){
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-    $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
-  }
-
-  $("btnExit").onclick = () => location.replace("the-unique-gate.html");
-
-  $("btnReset").onclick = () => {
-    try{
-      for (let i = localStorage.length - 1; i >= 0; i--){
-        const k = localStorage.key(i);
-        if (k && k.startsWith("sb-")) localStorage.removeItem(k);
-      }
-      sessionStorage.clear();
-    }catch(e){}
-    location.replace("market.html?autologin=1");
-  };
-
-  $("btnLogin").onclick = async () => {
-    setStatus("구글 로그인 이동 중...");
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: REDIRECT_TO }
-    });
-    if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
-  };
-
-  async function importSessionFromHash(){
-    const hash = (location.hash || "").replace(/^#/, "");
-    if (!hash) return null;
-    if (!hash.includes("access_token=") && !hash.includes("error=")) return null;
-
-    setStatus("로그인 토큰 처리 중...");
-
-    // Supabase helper가 있으면 우선 사용
-    if (typeof sb.auth.getSessionFromUrl === "function") {
-      const { data, error } = await sb.auth.getSessionFromUrl({ storeSession: true });
-      if (error) throw error;
-      if (data?.session) {
-        cleanUrlAll();
-        setStatus("");
-        return data.session;
-      }
-    }
-
-    const p = new URLSearchParams(hash);
-    const access_token = p.get("access_token");
-    const refresh_token = p.get("refresh_token");
-    const err = p.get("error");
-    const errDesc = p.get("error_description");
-
-    if (err) throw new Error(errDesc || err);
-    if (!access_token) return null;
-    if (!refresh_token) throw new Error("refresh_token이 없습니다. 상단 ‘초기화’ 후 재로그인 해보세요.");
-
-    const { data, error } = await sb.auth.setSession({ access_token, refresh_token });
-    if (error) throw error;
-
-    cleanUrlAll();
-    setStatus("");
-    return data.session || null;
-  }
-
-  async function requireLogin(){
-    // 1) 해시 토큰 흡수
-    try {
-      const sHash = await importSessionFromHash();
-      if (sHash) {
-        session = sHash;
-        user = sHash.user;
-        setLoggedInUI();
-        return true;
-      }
-    } catch (e) {
-      setStatus("로그인 토큰 처리 실패: " + (e?.message || e), true);
-      setLoggedOutUI();
-      return false;
-    }
-
-    // 2) 저장된 세션
-    const { data, error } = await sb.auth.getSession();
-    if (error) {
-      setStatus("세션 확인 오류: " + error.message, true);
-      setLoggedOutUI();
-      return false;
-    }
-    if (!data.session) {
-      setStatus("");
-      setLoggedOutUI();
-      return false;
-    }
-
-    session = data.session;
-    user = session.user;
-    setStatus("");
-    setLoggedInUI();
-    return true;
-  }
-
-  // ✅ 파일 프리뷰
-  let selectedFiles = [];
-  let previewUrls = [];
-
-  function clearPreviews(){
-    previewUrls.forEach(u => URL.revokeObjectURL(u));
-    previewUrls = [];
-    selectedFiles = [];
-    $("fImages").value = "";
-    $("imgPreview").innerHTML = "";
-  }
-
-  function renderPreviews(){
-    const box = $("imgPreview");
-    box.innerHTML = "";
-    selectedFiles.slice(0,3).forEach((file, idx) => {
-      const url = URL.createObjectURL(file);
-      previewUrls.push(url);
-      const d = document.createElement("div");
-      d.className = "thumb";
-      d.innerHTML = `<img src="${url}" alt=""><button class="x" type="button">X</button>`;
-      d.querySelector(".x").onclick = () => {
-        selectedFiles.splice(idx, 1);
-        renderPreviews();
-      };
-      box.appendChild(d);
-    });
-  }
-
-  $("fImages").addEventListener("change", (e) => {
-    previewUrls.forEach(u => URL.revokeObjectURL(u));
-    previewUrls = [];
-    selectedFiles = Array.from(e.target.files || []).slice(0,3);
-    renderPreviews();
-  });
-
-  function toPublicUrl(path){
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  }
-
-  function fileExt(file){
-    const n = file.name || "";
-    const dot = n.lastIndexOf(".");
-    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
-  }
-
-  function safeName(s){ return (s||"").toString().trim(); }
-
-  async function uploadImages(postId){
-    if (!selectedFiles.length) return [];
-    setStatus("이미지 업로드 중...");
-    const urls = [];
-    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
-      const f = selectedFiles[i];
-      const ext = fileExt(f);
-      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
-      if (error) throw new Error(error.message);
-      urls.push(toPublicUrl(path));
-    }
-    return urls;
-  }
-
-  async function createPost(){
-    const title = safeName($("fTitle").value);
-    if (!title) return setStatus("제목은 필수입니다.", true);
-
-    if (!user) return setStatus("등록하려면 로그인이 필요합니다.", true);
-
-    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
-    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-
-    setStatus("등록 중...");
-    const { data, error } = await sb
-      .from("market_posts")
-      .insert({ owner:user.id, owner_name, title, qty, contact, region, description, images: [] })
-      .select("id")
-      .single();
-
-    if (error) return setStatus("등록 실패: " + error.message, true);
-
-    try{
-      const urls = await uploadImages(data.id);
-      if (urls.length){
-        const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
-      }
-      setStatus("등록 완료!");
-      clearPreviews();
-      $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
-      await renderFeed();
-    } catch(e){
-      setStatus("이미지 업로드 실패: " + (e?.message || e), true);
-    }
-  }
-
-  // ✅ 게시글 렌더
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
-  }
-
-  async function renderFeed(){
-    const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
-    if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
-
-    const posts = data || [];
-    $("feed").innerHTML = posts.map(p => {
-      const imgs = Array.isArray(p.images) ? p.images : [];
-      const cover = imgs[0] || "";
-      return `
-        <div class="post">
-          ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
-          <div class="postTop">
-            <div>
-              <div class="postTitle">${escapeHtml(p.title)}</div>
-              <div class="postMeta">
-                <span class="chip">수량 ${p.qty ?? "-"}</span>
-                <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-                <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
-    setStatus("");
-  }
-
-  // ✅ 버튼 이벤트는 addEventListener로 고정(겹쳐도 안전)
-  $("btnSave").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    createPost();
-  });
-
-  $("btnRefresh").addEventListener("click", (e) => {
-    e.preventDefault();
-    renderFeed();
-  });
-
-  // 세션 변화 감지
-  sb.auth.onAuthStateChange((_ev, s) => {
-    if (s?.user) {
-      session = s;
-      user = s.user;
-      cleanUrlAll();
-      setStatus("");
-      setLoggedInUI();
-      renderFeed();
-    }
-  });
-
-  // Boot
   (async () => {
     await requireLogin();
     await renderFeed();
