@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UNIQUE 마켓</title>
+
+  <!-- ✅ favicon 404 제거 -->
+  <link rel="icon" href="data:,">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -16,15 +20,15 @@
       background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
       position:relative;
     }
-    /* ✅ 배경 더 밝게(오버레이 약하게) */
+    /* ✅ 배경 더 밝게 */
     body::before{
       content:"";
       position:fixed;
       inset:0;
       background: radial-gradient(circle at top,
-        rgba(2,6,23,.18),
-        rgba(2,6,23,.55) 65%,
-        rgba(2,6,23,.65)
+        rgba(2,6,23,.12),
+        rgba(2,6,23,.48) 65%,
+        rgba(2,6,23,.58)
       );
       z-index:-1;
     }
@@ -32,17 +36,17 @@
     .wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
     .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
     .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
-    .who{opacity:.85;font-size:12px;margin-top:4px}
+    .who{opacity:.9;font-size:12px;margin-top:4px}
 
     .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     button{cursor:pointer}
     .btn{
       padding:10px 12px;border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.10);
+      background:rgba(255,255,255,.12);
       color:#e5e7eb;font-weight:800
     }
-    .btn.primary{background:rgba(255,255,255,.16)}
+    .btn.primary{background:rgba(255,255,255,.18)}
     .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.45)}
 
     .pill{
@@ -64,7 +68,7 @@
       backdrop-filter: blur(6px);
     }
 
-    .muted{opacity:.8;font-size:12px}
+    .muted{opacity:.85;font-size:12px}
     input,textarea{
       width:100%;padding:10px 12px;border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
@@ -114,7 +118,6 @@
     </div>
     <div class="btns">
       <button class="btn danger" id="btnExit">나가기</button>
-      <!-- ✅ 로그인 버튼 항상 보이게 -->
       <button class="btn primary" id="btnLogin">구글 로그인</button>
     </div>
   </div>
@@ -160,11 +163,9 @@
       </div>
 
       <div class="btns" style="margin-top:10px;">
-        <!-- ✅ disabled 제거: 눌렀을 때 로그인 유도 -->
         <button class="btn primary" id="btnSave">등록하기</button>
       </div>
 
-      <!-- ✅ 문구를 “고정 텍스트”가 아니라 “상태 텍스트”로 -->
       <div id="loginNote" class="muted" style="margin-top:8px;">
         로그인 확인 중...
       </div>
@@ -185,11 +186,11 @@
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
-  const REDIRECT_TO = location.origin + location.pathname; // .../market.html
+  const REDIRECT_TO = location.origin + location.pathname;
 
   const $ = (id) => document.getElementById(id);
-
   const statusEl = $("status");
+
   function setStatus(msg, isErr=false){
     if (!msg){ statusEl.style.display="none"; return; }
     statusEl.style.display="";
@@ -211,7 +212,7 @@
 
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
-    $("loginNote").textContent = "CDN 로딩이 막혔습니다(광고차단/네트워크 확인).";
+    $("loginNote").textContent = "광고차단/네트워크로 CDN이 막혔습니다.";
     setStatus("supabase-js 로드 실패", true);
     return;
   }
@@ -225,7 +226,7 @@
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 눌러주세요.";
+    $("loginNote").textContent = "파일 선택은 가능. 등록하려면 상단 ‘구글 로그인’을 누르세요.";
   }
   function setLoggedInUI(){
     const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
@@ -243,55 +244,56 @@
       provider: "google",
       options: { redirectTo: REDIRECT_TO }
     });
-    if (error){
-      setStatus("구글 로그인 시작 실패: " + error.message, true);
-    }
+    if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
   }
 
-  // ✅ 로그인 확인은 “2초 내 결론”
+  async function exchangeIfCode(){
+    const u = new URL(location.href);
+    const code = u.searchParams.get("code");
+    if (!code) return;
+    setStatus("로그인 처리 중...");
+    const { error } = await sb.auth.exchangeCodeForSession(code);
+    if (error) setStatus("로그인 처리 실패: " + error.message, true);
+  }
+
   async function requireLoginFast(){
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    // OAuth 리다이렉트 직후 세션이 늦게 잡히는 경우도 있어서 짧게 폴링
+    await exchangeIfCode();
+
+    // ✅ 2초 내 결론
     const start = Date.now();
     while (Date.now() - start < 2000){
-      try{
-        const { data } = await sb.auth.getSession();
-        if (data.session){
-          session = data.session;
-          user = session.user;
-          cleanUrl();
-          setStatus("");
-          setLoggedInUI();
-          return true;
-        }
-      } catch(e) {
-        console.error(e);
-        setStatus("세션 확인 오류: " + (e?.message || e), true);
-        break;
+      const { data, error } = await sb.auth.getSession();
+      if (error) { setStatus("세션 오류: " + error.message, true); break; }
+      if (data.session){
+        session = data.session;
+        user = session.user;
+        sessionStorage.removeItem("market_oauth_started");
+        cleanUrl();
+        setStatus("");
+        setLoggedInUI();
+        return true;
       }
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // ✅ 여기까지 왔으면 “로그인 안 된 상태”로 확정
     setStatus("");
     setLoggedOutUI();
 
-    // autologin=1이면 1회 자동 시작
+    // ✅ autologin=1이면 탭당 1회 자동 시도
     if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
       sessionStorage.setItem("market_oauth_started","1");
       await startOAuth();
     }
-
     return false;
   }
 
-  // auth 이벤트로도 즉시 반영
+  // 세션이 늦게 잡혀도 즉시 UI 갱신
   sb.auth.onAuthStateChange((_ev, s) => {
     if (s?.user) {
-      session = s;
-      user = s.user;
+      session = s; user = s.user;
       sessionStorage.removeItem("market_oauth_started");
       cleanUrl();
       setStatus("");
