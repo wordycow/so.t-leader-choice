@@ -257,25 +257,34 @@
   }
 
   // ✅ 로그인 시작용(redirect만)
-  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType:"implicit", detectSessionInUrl:false, persistSession:false, autoRefreshToken:false }
-  });
-
-  let accessToken = null;
-  let refreshToken = null;
-  let user = null;
-
-  // ✅ API 호출용(Authorization 헤더 고정)
-  let sbApi = null;
-  function buildApiClient(){
-    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-      },
-      auth: { persistSession:false, autoRefreshToken:false }
-    });
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    flowType: "implicit",
+    detectSessionInUrl: false,
+    persistSession: true,
+    autoRefreshToken: true,
+    storageKey: "sb-market-auth-login"   // ✅ login용 key
   }
+});
 
+let accessToken = null;
+let refreshToken = null;
+let user = null;
+
+// ✅ API 호출용(Authorization 헤더 고정)
+let sbApi = null;
+function buildApiClient(){
+  sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: "sb-market-auth-api"   // ✅ api용 key (login이랑 다르게)
+    }
+  });
+}
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
     $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
