@@ -39,8 +39,10 @@
     .postMeta{font-size:12px;opacity:.8;margin-top:6px;line-height:1.4}
     .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
     .postBtns{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);margin-right:6px}
   </style>
 </head>
+
 <body>
 <div class="wrap">
   <div class="topbar">
@@ -98,7 +100,6 @@
 
         <div class="btns" style="margin-top:10px;">
           <button class="btn primary" id="btnSave">등록하기</button>
-          <button class="btn" id="btnCancelEdit" style="display:none;">수정 취소</button>
         </div>
       </div>
 
@@ -120,11 +121,16 @@
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
-  const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
+  const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html (쿼리 없이)
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-});
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
 
   const $ = (id) => document.getElementById(id);
   const show = (el, on) => el.style.display = on ? "" : "none";
@@ -148,74 +154,81 @@
   function cleanUrlAfterLogin(){
     const u = new URL(location.href);
     if (u.searchParams.get("autologin") === "1") u.searchParams.delete("autologin");
+    // hash(#access_token...) 제거
     history.replaceState({}, document.title, u.pathname + u.search);
   }
 
-  const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
+  async function waitForSession(maxMs=6000){
+    const start = Date.now();
+    while (Date.now() - start < maxMs){
+      const { data } = await sb.auth.getSession();
+      if (data.session) return data.session;
+      await new Promise(r => setTimeout(r, 150));
+    }
+    return null;
+  }
 
-function autologinOn(){
-  return new URL(location.href).searchParams.get("autologin") === "1";
-}
+  async function requireLogin(){
+    // 1) 기본 세션 확인
+    const { data } = await sb.auth.getSession();
+    session = data.session;
 
-function cleanUrlAfterLogin(){
-  const u = new URL(location.href);
-  if (u.searchParams.get("autologin") === "1") u.searchParams.delete("autologin");
-  // hash(#access_token...) 제거
-  history.replaceState({}, document.title, u.pathname + u.search);
-}
-async function requireLogin(){
-  const { data } = await sb.auth.getSession();
-  session = data.session;
+    // 2) OAuth 리다이렉트 직후(해시/코드)면 세션 생길 때까지 잠깐 대기
+    const hasTokenInUrl =
+      location.hash.includes("access_token=") ||
+      location.hash.includes("refresh_token=") ||
+      new URL(location.href).searchParams.has("code");
 
-  // ✅ 세션 없으면
-  if (!session) {
-    if (autologinOn()) {
-      // ✅ autologin 반복 방지(무한 재시도 막음)
-      if (sessionStorage.getItem("market_oauth_started") === "1") {
-        setStatus("구글 로그인 완료 대기 중... (잠시만)");
+    if (!session && hasTokenInUrl){
+      setStatus("로그인 처리 중...");
+      session = await waitForSession(8000);
+    }
+
+    // 3) 세션 없으면: autologin이면 OAuth 시작 / 아니면 게이트로
+    if (!session) {
+      if (autologinOn()) {
+        if (sessionStorage.getItem("market_oauth_started") === "1") {
+          setStatus("구글 로그인 진행 중...");
+          return false;
+        }
+        sessionStorage.setItem("market_oauth_started", "1");
+
+        setStatus("구글 로그인 이동 중...");
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: REDIRECT_TO }
+        });
+        if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
         return false;
       }
-      sessionStorage.setItem("market_oauth_started", "1");
 
-      setStatus("구글 로그인 진행 중...");
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: REDIRECT_TO }
-      });
-      if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
+      location.replace("the-unique-gate.html");
       return false;
     }
 
+    // 4) 로그인 완료 처리
+    sessionStorage.removeItem("market_oauth_started");
+    cleanUrlAfterLogin();
+
+    user = session.user;
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const email = user.email || "";
+    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    setStatus("");
+    return true;
+  }
+
+  // ✅ 버튼 이벤트(여기서 무조건 살아있어야 함)
+  $("btnMain").addEventListener("click", () => location.href = "the-unique-main.html");
+
+  $("btnLogout").addEventListener("click", async () => {
+    setStatus("로그아웃 중...");
+    try { await sb.auth.signOut(); } catch(e) {}
+    sessionStorage.removeItem("market_oauth_started");
+    setStatus("");
     location.replace("the-unique-gate.html");
-    return false;
-  }
+  });
 
-  // ✅ 세션 있으면 URL 정리 + 화면 갱신
-  sessionStorage.removeItem("market_oauth_started");
-  cleanUrlAfterLogin();
-
-  user = session.user;
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-  const email = user.email || "";
-  $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-  setStatus(""); // 로딩/등록 문구 제거
-  return true;
-}
-
-
-  // ✅ 버튼들(여기서 무조건 살아있음)
-  $("btnMain").onclick = () => location.href = "the-unique-main.html";
-  $("btnLogout").onclick = async () => {
-  setStatus("로그아웃 중...");
-  try {
-    await sb.auth.signOut();
-  } catch (e) {
-    // signOut 실패해도 이동은 강제
-  }
-  localStorage.removeItem("uniqueOAuthUser");
-  sessionStorage.removeItem("market_oauth_started");
-  location.replace("the-unique-gate.html");
-};
   // ===== 업로드/등록 =====
   let selectedFiles = [];
   let previewUrls = [];
@@ -234,8 +247,9 @@ async function requireLogin(){
     previewUrls.forEach(u => URL.revokeObjectURL(u));
     previewUrls = [];
     selectedFiles = [];
-    $("fImages").value = "";
     $("imgPreview").innerHTML = "";
+    // 등록 완료 후에만 input 비우는게 안정적
+    $("fImages").value = "";
   }
 
   function renderPreviews(){
@@ -256,9 +270,10 @@ async function requireLogin(){
   }
 
   $("fImages").addEventListener("change", (e) => {
-    clearPreviews();
-    const files = Array.from(e.target.files || []);
-    selectedFiles = files.slice(0,3);
+    // 이전 프리뷰만 제거하고, 새 선택 파일은 유지
+    previewUrls.forEach(u => URL.revokeObjectURL(u));
+    previewUrls = [];
+    selectedFiles = Array.from(e.target.files || []).slice(0,3);
     renderPreviews();
   });
 
@@ -321,7 +336,7 @@ async function requireLogin(){
     }
   }
 
-  $("btnSave").onclick = () => createPost();
+  $("btnSave").addEventListener("click", () => createPost());
 
   function escapeHtml(s){
     return (s||"").toString()
@@ -366,7 +381,21 @@ async function requireLogin(){
     $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
   }
 
-  $("btnRefresh").onclick = () => renderFeed();
+  $("btnRefresh").addEventListener("click", () => renderFeed());
+
+  // ✅ auth 변화 감지 (리다이렉트 직후 세션 늦게 잡히는 경우 대응)
+  sb.auth.onAuthStateChange((_event, s) => {
+    if (s && !user) {
+      session = s;
+      user = s.user;
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const email = user.email || "";
+      $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+      cleanUrlAfterLogin();
+      renderFeed();
+      setStatus("");
+    }
+  });
 
   // Boot
   (async () => {
