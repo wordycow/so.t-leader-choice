@@ -25,9 +25,9 @@
       content:"";
       position:fixed; inset:0;
       background: radial-gradient(circle at top,
-        rgba(2,6,23,.12),
-        rgba(2,6,23,.48) 65%,
-        rgba(2,6,23,.58)
+        rgba(2,6,23,.10),
+        rgba(2,6,23,.45) 65%,
+        rgba(2,6,23,.55)
       );
       z-index:-1;
     }
@@ -206,24 +206,56 @@
     }
   }
 
+  function safeLSSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function safeLSGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function safeLSRemove(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
   function cleanUrlAll(){
     const u = new URL(location.href);
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    // ✅ hash 제거 (토큰 숨기기)
-    history.replaceState({}, document.title, u.pathname + u.search);
+    history.replaceState({}, document.title, u.pathname + u.search); // ✅ hash 제거
   }
 
-  function safeLSSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
-  function safeLSGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
-  function safeLSRemove(k){ try{ localStorage.removeItem(k); }catch(e){} }
+  function autologinOn(){
+    return new URL(location.href).searchParams.get("autologin") === "1";
+  }
+
+  // JS 에러를 화면에 표시
+  window.addEventListener("error", (e) => setStatus("JS 오류: " + (e?.message || e), true));
+  window.addEventListener("unhandledrejection", (e) => setStatus("Promise 오류: " + (e?.reason?.message || e?.reason || e), true));
+
+  if (!window.supabase){
+    $("who").textContent = "supabase-js 로드 실패";
+    $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
+    setStatus("supabase-js 로드 실패", true);
+    return;
+  }
+
+  // 로그인 시작용(redirect만) - storageKey 충돌 방지
+  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: false,
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: "sb-market-auth-login"
+    }
+  });
+
+  let accessToken = null;
+  let refreshToken = null;
+  let user = null;
+  let sbApi = null;
 
   function base64UrlToJson(b64url){
     const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
     const pad = "=".repeat((4 - (b64.length % 4)) % 4);
-    const str = atob(b64 + pad);
-    return JSON.parse(str);
+    const binary = atob(b64 + pad);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
   }
 
   function decodeUserFromAccessToken(token){
@@ -245,46 +277,6 @@
     }
   }
 
-  function autologinOn(){
-    return new URL(location.href).searchParams.get("autologin") === "1";
-  }
-
-  if (!window.supabase){
-    $("who").textContent = "supabase-js 로드 실패";
-    $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
-    setStatus("supabase-js 로드 실패", true);
-    return;
-  }
-
-  // ✅ 로그인 시작용(redirect만)
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    flowType: "implicit",
-    detectSessionInUrl: false,
-    persistSession: true,
-    autoRefreshToken: true,
-    storageKey: "sb-market-auth-login"   // ✅ login용 key
-  }
-});
-
-let accessToken = null;
-let refreshToken = null;
-let user = null;
-
-// ✅ API 호출용(Authorization 헤더 고정)
-let sbApi = null;
-function buildApiClient(){
-  sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      storageKey: "sb-market-auth-api"   // ✅ api용 key (login이랑 다르게)
-    }
-  });
-}
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
     $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 누르세요.";
@@ -295,13 +287,46 @@ function buildApiClient(){
     $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
   }
 
+  function buildApiClient(){
+    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storageKey: "sb-market-auth-api"
+      }
+    });
+  }
+
+  function loadTokenFromHashOrStorage(){
+    const hash = (location.hash || "").replace(/^#/, "");
+    if (hash.includes("access_token=")){
+      const p = new URLSearchParams(hash);
+      const at = p.get("access_token");
+      const rt = p.get("refresh_token");
+      if (at){
+        accessToken = at;
+        refreshToken = rt || null;
+        safeLSSet(TOKEN_KEY, accessToken);
+        if (refreshToken) safeLSSet(REFRESH_KEY, refreshToken);
+        cleanUrlAll(); // ✅ 주소창 토큰 제거
+      }
+    }
+    if (!accessToken){
+      accessToken = safeLSGet(TOKEN_KEY);
+      refreshToken = safeLSGet(REFRESH_KEY);
+    }
+  }
+
   // 상단 버튼
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
 
   $("btnReset").addEventListener("click", () => {
     safeLSRemove(TOKEN_KEY);
     safeLSRemove(REFRESH_KEY);
-    // sb- 키들도 정리(확장/캐시 꼬임 방지)
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -314,33 +339,15 @@ function buildApiClient(){
 
   $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
-    const { error } = await sbAuth.auth.signInWithOAuth({
+    // skipBrowserRedirect로 URL을 받아서 직접 이동 (안정적)
+    const { data, error } = await sbAuth.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: REDIRECT_TO }
+      options: { redirectTo: REDIRECT_TO, skipBrowserRedirect: true }
     });
-    if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
+    if (error) return setStatus("구글 로그인 시작 실패: " + error.message, true);
+    if (data?.url) location.assign(data.url);
+    else setStatus("로그인 URL 생성 실패", true);
   });
-
-  // ✅ 1) URL hash에서 토큰 읽기 → 저장 → URL에서 토큰 제거
-  function loadTokenFromHashOrStorage(){
-    const hash = (location.hash || "").replace(/^#/, "");
-    if (hash.includes("access_token=")){
-      const p = new URLSearchParams(hash);
-      const at = p.get("access_token");
-      const rt = p.get("refresh_token");
-      if (at){
-        accessToken = at;
-        refreshToken = rt || null;
-        safeLSSet(TOKEN_KEY, accessToken);
-        if (refreshToken) safeLSSet(REFRESH_KEY, refreshToken);
-        cleanUrlAll(); // ✅ 토큰 주소창에서 제거
-      }
-    }
-    if (!accessToken){
-      accessToken = safeLSGet(TOKEN_KEY);
-      refreshToken = safeLSGet(REFRESH_KEY);
-    }
-  }
 
   // ===== 이미지 프리뷰 =====
   let selectedFiles = [];
@@ -416,7 +423,6 @@ function buildApiClient(){
   async function createPost(){
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
-
     if (!user?.id) return setStatus("등록하려면 로그인이 필요합니다.", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
@@ -479,12 +485,14 @@ function buildApiClient(){
     setStatus("");
   }
 
-  // 버튼 이벤트
   $("btnSave").addEventListener("click", (e) => { e.preventDefault(); createPost(); });
   $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); renderFeed(); });
 
-  // ===== 부트 =====
+  // Boot
   (async () => {
+    $("who").textContent = "로그인 확인 중...";
+    $("loginNote").textContent = "로그인 확인 중...";
+
     loadTokenFromHashOrStorage();
 
     if (!accessToken){
@@ -495,14 +503,13 @@ function buildApiClient(){
     }
 
     user = decodeUserFromAccessToken(accessToken);
-    buildApiClient();
-
     if (!user?.id){
       setLoggedOutUI();
       setStatus("토큰은 있는데 사용자 정보를 못 읽었습니다. ‘초기화’ 후 재로그인 해주세요.", true);
       return;
     }
 
+    buildApiClient();
     setLoggedInUI();
     setStatus("");
     await renderFeed();
