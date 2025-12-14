@@ -123,8 +123,8 @@
   const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-  });
+  auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+});
 
   const $ = (id) => document.getElementById(id);
   const show = (el, on) => el.style.display = on ? "" : "none";
@@ -151,42 +151,71 @@
     history.replaceState({}, document.title, u.pathname + u.search);
   }
 
-  async function requireLogin(){
-    const { data } = await sb.auth.getSession();
-    session = data.session;
+  const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
 
-    if (!session) {
-      if (autologinOn()) {
-        setStatus("구글 로그인 진행 중...");
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: REDIRECT_TO }
-        });
-        if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
+function autologinOn(){
+  return new URL(location.href).searchParams.get("autologin") === "1";
+}
+
+function cleanUrlAfterLogin(){
+  const u = new URL(location.href);
+  if (u.searchParams.get("autologin") === "1") u.searchParams.delete("autologin");
+  // hash(#access_token...) 제거
+  history.replaceState({}, document.title, u.pathname + u.search);
+}
+async function requireLogin(){
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+
+  // ✅ 세션 없으면
+  if (!session) {
+    if (autologinOn()) {
+      // ✅ autologin 반복 방지(무한 재시도 막음)
+      if (sessionStorage.getItem("market_oauth_started") === "1") {
+        setStatus("구글 로그인 완료 대기 중... (잠시만)");
         return false;
       }
-      location.replace("the-unique-gate.html");
+      sessionStorage.setItem("market_oauth_started", "1");
+
+      setStatus("구글 로그인 진행 중...");
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: REDIRECT_TO }
+      });
+      if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
       return false;
     }
 
-    cleanUrlAfterLogin();
-
-    user = session.user;
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-    return true;
+    location.replace("the-unique-gate.html");
+    return false;
   }
+
+  // ✅ 세션 있으면 URL 정리 + 화면 갱신
+  sessionStorage.removeItem("market_oauth_started");
+  cleanUrlAfterLogin();
+
+  user = session.user;
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+  const email = user.email || "";
+  $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+  setStatus(""); // 로딩/등록 문구 제거
+  return true;
+}
+
 
   // ✅ 버튼들(여기서 무조건 살아있음)
   $("btnMain").onclick = () => location.href = "the-unique-main.html";
   $("btnLogout").onclick = async () => {
-    setStatus("로그아웃 중...");
+  setStatus("로그아웃 중...");
+  try {
     await sb.auth.signOut();
-    localStorage.removeItem("uniqueOAuthUser");
-    location.replace("the-unique-gate.html");
-  };
-
+  } catch (e) {
+    // signOut 실패해도 이동은 강제
+  }
+  localStorage.removeItem("uniqueOAuthUser");
+  sessionStorage.removeItem("market_oauth_started");
+  location.replace("the-unique-gate.html");
+};
   // ===== 업로드/등록 =====
   let selectedFiles = [];
   let previewUrls = [];
@@ -259,6 +288,7 @@
   async function createPost(){
     const title = safeName($("fTitle").value);
     if (!title) { setStatus("제목은 필수입니다.", true); return; }
+    if (!user) { setStatus("로그인이 아직 완료되지 않았습니다. 새로고침 후 다시 시도해주세요.", true); return; }
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
