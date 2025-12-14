@@ -39,12 +39,6 @@
     .postMeta{font-size:12px;opacity:.8;margin-top:6px;line-height:1.4}
     .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
     .postBtns{display:flex;gap:6px;flex-wrap:wrap}
-    .chip{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:12px;opacity:.9}
-    .detailImgGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    @media(max-width:620px){.detailImgGrid{grid-template-columns:1fr}}
-    .detailImgGrid img{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:#0a1020;object-fit:cover}
-    .comment{border-top:1px solid rgba(255,255,255,.08);padding:10px 0}
-    .commentHead{display:flex;justify-content:space-between;gap:10px}
   </style>
 </head>
 <body>
@@ -106,11 +100,6 @@
           <button class="btn primary" id="btnSave">등록하기</button>
           <button class="btn" id="btnCancelEdit" style="display:none;">수정 취소</button>
         </div>
-
-        <div class="muted" style="margin-top:10px;">
-          - <b>숨김</b>은 내 글만 보이게 합니다.<br>
-          - <b>이미지 편집</b>은 “교체/삭제/재업로드” 방식입니다.
-        </div>
       </div>
 
       <!-- 리스트 -->
@@ -119,35 +108,23 @@
           <div style="font-weight:900;">게시글</div>
           <button class="btn" id="btnRefresh">새로고침</button>
         </div>
-        <div class="muted" style="margin-top:6px;">아래 카드 클릭 → 상세(댓글) 페이지</div>
         <div style="height:10px"></div>
         <div id="feed" class="feed"></div>
       </div>
     </div>
   </div>
-
-  <div id="viewDetail" style="display:none;">
-    <div class="card">
-      <div class="btns" style="margin-bottom:10px;">
-        <button class="btn" id="btnBack">← 목록</button>
-      </div>
-      <div id="detail"></div>
-    </div>
-  </div>
 </div>
 
 <script>
-  // ✅ Supabase 설정
+  // ===== Supabase 설정 =====
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
-
-  // ✅ redirectTo는 “market.html 자신(쿼리 없이)”로
-  const REDIRECT_TO = location.origin + location.pathname;
+  const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-});
+    auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+  });
 
   const $ = (id) => document.getElementById(id);
   const show = (el, on) => el.style.display = on ? "" : "none";
@@ -168,76 +145,51 @@
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
 
-  async function requireLogin(){
-    const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
-
-function autologinOn(){
-  return new URL(location.href).searchParams.get("autologin") === "1";
-}
-
-function cleanUrlAfterLogin(){
-  const u = new URL(location.href);
-
-  // autologin 제거
-  if (u.searchParams.get("autologin") === "1") {
-    u.searchParams.delete("autologin");
+  function cleanUrlAfterLogin(){
+    const u = new URL(location.href);
+    if (u.searchParams.get("autologin") === "1") u.searchParams.delete("autologin");
+    history.replaceState({}, document.title, u.pathname + u.search);
   }
 
-  // #access_token 같은 해시 제거(implicit 로그인 후 깔끔하게)
-  const clean = u.pathname + u.search;
-  history.replaceState({}, document.title, clean);
-}
+  async function requireLogin(){
+    const { data } = await sb.auth.getSession();
+    session = data.session;
 
-async function requireLogin(){
-  const { data } = await sb.auth.getSession();
-  session = data.session;
-
-  // ✅ 세션이 없으면
-  if (!session) {
-    if (autologinOn()) {
-      setStatus("구글 로그인 진행 중...");
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: REDIRECT_TO }
-      });
-      if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
+    if (!session) {
+      if (autologinOn()) {
+        setStatus("구글 로그인 진행 중...");
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: REDIRECT_TO }
+        });
+        if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
+        return false;
+      }
+      location.replace("the-unique-gate.html");
       return false;
     }
 
-    location.replace("the-unique-gate.html");
-    return false;
+    cleanUrlAfterLogin();
+
+    user = session.user;
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const email = user.email || "";
+    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    return true;
   }
 
-  // ✅ 세션 있으면 URL 정리 + 사용자 표시
-  cleanUrlAfterLogin();
-
-  user = session.user;
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-  const email = user.email || "";
-  $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-  return true;
-}
+  // ✅ 버튼들(여기서 무조건 살아있음)
   $("btnMain").onclick = () => location.href = "the-unique-main.html";
-
-  // ✅ 로그아웃 확실히
   $("btnLogout").onclick = async () => {
-  setStatus("로그아웃 중...");
-  await sb.auth.signOut();
+    setStatus("로그아웃 중...");
+    await sb.auth.signOut();
+    localStorage.removeItem("uniqueOAuthUser");
+    location.replace("the-unique-gate.html");
+  };
 
-  // 로컬 상태도 같이 정리(꼬임 방지)
-  localStorage.removeItem("uniqueOAuthUser");
-
-  location.replace("the-unique-gate.html");
-};
-  // ===== 이하 유송님 기존 로직 유지 =====
-  let editingId = null;
+  // ===== 업로드/등록 =====
   let selectedFiles = [];
   let previewUrls = [];
-
-  function getPostIdFromUrl(){
-    const u = new URL(location.href);
-    return u.searchParams.get("id");
-  }
 
   function toPublicUrl(path){
     return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
@@ -248,8 +200,6 @@ async function requireLogin(){
     const dot = n.lastIndexOf(".");
     return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
   }
-
-  function safeName(s){ return (s||"").toString().trim(); }
 
   function clearPreviews(){
     previewUrls.forEach(u => URL.revokeObjectURL(u));
@@ -283,6 +233,66 @@ async function requireLogin(){
     renderPreviews();
   });
 
+  function safeName(s){ return (s||"").toString().trim(); }
+
+  async function uploadImages(postId){
+    if (!selectedFiles.length) return [];
+
+    setStatus("이미지 업로드 중...");
+    const urls = [];
+    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
+      const f = selectedFiles[i];
+      const ext = fileExt(f);
+      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
+
+      const { error } = await sb.storage.from(BUCKET).upload(path, f, {
+        upsert: false,
+        contentType: f.type
+      });
+
+      if (error) throw new Error("이미지 업로드 실패: " + error.message);
+      urls.push(toPublicUrl(path));
+    }
+    return urls;
+  }
+
+  async function createPost(){
+    const title = safeName($("fTitle").value);
+    if (!title) { setStatus("제목은 필수입니다.", true); return; }
+
+    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
+    const contact = safeName($("fContact").value);
+    const region = safeName($("fRegion").value);
+    const description = safeName($("fDesc").value);
+
+    setStatus("등록 중...");
+    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+
+    const { data, error } = await sb
+      .from("market_posts")
+      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
+      .select("id")
+      .single();
+
+    if (error) { setStatus("등록 실패: " + error.message, true); return; }
+
+    try{
+      const urls = await uploadImages(data.id);
+      if (urls.length) {
+        const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
+        if (e2) throw new Error("DB 업데이트 실패: " + e2.message);
+      }
+      setStatus("등록 완료!");
+      clearPreviews();
+      $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
+      await renderFeed();
+    } catch(e){
+      setStatus(e.message, true);
+    }
+  }
+
+  $("btnSave").onclick = () => createPost();
+
   function escapeHtml(s){
     return (s||"").toString()
       .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
@@ -304,24 +314,17 @@ async function requireLogin(){
   function postCardHtml(p){
     const imgs = Array.isArray(p.images) ? p.images : [];
     const cover = imgs[0] || "";
-    const hiddenBadge = p.is_hidden ? `<span class="chip">숨김</span>` : "";
     return `
-      <div class="post" data-id="${p.id}">
+      <div class="post">
         ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
         <div class="postTop">
           <div>
             <div class="postTitle">${escapeHtml(p.title)}</div>
             <div class="postMeta">
-              ${hiddenBadge}
               <span class="chip">수량 ${p.qty ?? "-"}</span>
               <span class="chip">${escapeHtml(p.region || "-")}</span><br>
               <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
             </div>
-          </div>
-          <div class="postBtns">
-            ${p.owner === user.id ? `<button class="btn" data-act="edit">수정</button>` : ""}
-            ${p.owner === user.id ? `<button class="btn" data-act="hide">${p.is_hidden ? "표시" : "숨김"}</button>` : ""}
-            ${p.owner === user.id ? `<button class="btn danger" data-act="del">삭제</button>` : ""}
           </div>
         </div>
       </div>
@@ -330,171 +333,15 @@ async function requireLogin(){
 
   async function renderFeed(){
     const posts = await loadPosts();
-    const feed = $("feed");
-    feed.innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
-
-    feed.querySelectorAll(".post").forEach(el => {
-      const id = el.getAttribute("data-id");
-
-      el.addEventListener("click", (e) => {
-        const act = e.target?.getAttribute?.("data-act");
-        if (act) return;
-        location.href = `market.html?id=${id}`;
-      });
-
-      el.querySelectorAll("button[data-act]").forEach(btn => {
-        btn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const act = btn.getAttribute("data-act");
-          if (act === "edit") await startEdit(id);
-          if (act === "hide") await toggleHide(id);
-          if (act === "del") await deletePost(id);
-        });
-      });
-    });
-  }
-
-  async function startEdit(id){
-    setStatus("수정 불러오는 중...");
-    const { data, error } = await sb.from("market_posts").select("*").eq("id", id).single();
-    if (error) { setStatus("불러오기 실패: " + error.message, true); return; }
-    if (data.owner !== user.id) { setStatus("내 글만 수정 가능합니다.", true); return; }
-
-    editingId = data.id;
-    $("btnCancelEdit").style.display = "";
-    $("btnSave").textContent = "수정 저장";
-
-    $("fTitle").value = data.title || "";
-    $("fQty").value = data.qty ?? "";
-    $("fContact").value = data.contact || "";
-    $("fRegion").value = data.region || "";
-    $("fDesc").value = data.description || "";
-
-    clearPreviews();
-    setStatus("수정 모드: 이미지를 선택하면 기존 이미지는 교체됩니다.");
-  }
-
-  $("btnCancelEdit").onclick = () => {
-    editingId = null;
-    $("btnCancelEdit").style.display = "none";
-    $("btnSave").textContent = "등록하기";
-    $("fTitle").value = ""; $("fQty").value = ""; $("fContact").value = ""; $("fRegion").value = ""; $("fDesc").value = "";
-    clearPreviews();
-    setStatus("");
-  };
-
-  async function uploadImages(postId){
-    if (!selectedFiles.length) return null;
-
-    setStatus("이미지 업로드 중...");
-    const urls = [];
-    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
-      const f = selectedFiles[i];
-      const ext = fileExt(f);
-      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert: false, contentType: f.type });
-      if (error) throw new Error("이미지 업로드 실패: " + error.message);
-      urls.push(toPublicUrl(path));
-    }
-    return urls;
-  }
-
-  async function createPost(){
-    const title = safeName($("fTitle").value);
-    if (!title) { setStatus("제목은 필수입니다.", true); return; }
-
-    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
-
-    setStatus("등록 중...");
-    const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-
-    const { data, error } = await sb
-      .from("market_posts")
-      .insert({ owner: user.id, owner_name, title, qty, contact, region, description })
-      .select("id")
-      .single();
-
-    if (error) { setStatus("등록 실패: " + error.message, true); return; }
-
-    try{
-      const urls = await uploadImages(data.id);
-      if (urls) await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-      setStatus("등록 완료!");
-      $("btnCancelEdit").click();
-      await renderFeed();
-    } catch(e){
-      setStatus(e.message, true);
-    }
-  }
-
-  async function updatePost(){
-    const title = safeName($("fTitle").value);
-    if (!title) { setStatus("제목은 필수입니다.", true); return; }
-
-    const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
-
-    setStatus("수정 저장 중...");
-
-    const { data: old, error: e1 } = await sb.from("market_posts").select("*").eq("id", editingId).single();
-    if (e1) { setStatus("기존 글 불러오기 실패: " + e1.message, true); return; }
-
-    let images = old.images || [];
-    try{
-      const newUrls = await uploadImages(editingId);
-      if (newUrls) images = newUrls;
-    } catch(e){
-      setStatus(e.message, true); return;
-    }
-
-    const { error } = await sb
-      .from("market_posts")
-      .update({ title, qty, contact, region, description, images })
-      .eq("id", editingId);
-
-    if (error) { setStatus("수정 실패: " + error.message, true); return; }
-
-    setStatus("수정 완료!");
-    $("btnCancelEdit").click();
-    await renderFeed();
-  }
-
-  $("btnSave").onclick = async () => {
-    if (!editingId) await createPost();
-    else await updatePost();
-  };
-
-  async function toggleHide(id){
-    const { data, error } = await sb.from("market_posts").select("owner,is_hidden").eq("id", id).single();
-    if (error) { setStatus("실패: " + error.message, true); return; }
-    if (data.owner !== user.id) { setStatus("내 글만 숨김/표시 가능합니다.", true); return; }
-
-    const { error: e2 } = await sb.from("market_posts").update({ is_hidden: !data.is_hidden }).eq("id", id);
-    if (e2) { setStatus("실패: " + e2.message, true); return; }
-    await renderFeed();
-  }
-
-  async function deletePost(id){
-    if (!confirm("삭제할까요?")) return;
-    const { error } = await sb.from("market_posts").delete().eq("id", id);
-    if (error) { setStatus("삭제 실패: " + error.message, true); return; }
-    await renderFeed();
+    $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
   }
 
   $("btnRefresh").onclick = () => renderFeed();
-  $("btnBack").onclick = () => location.href = "market.html";
 
   // Boot
   (async () => {
     const ok = await requireLogin();
     if (!ok) return;
-
-    // (상세는 내일 이어서)
     await renderFeed();
   })();
 </script>
