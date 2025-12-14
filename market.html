@@ -146,8 +146,8 @@
   const REDIRECT_TO = location.origin + location.pathname;
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-  });
+  auth: { flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+});
 
   const $ = (id) => document.getElementById(id);
   const show = (el, on) => el.style.display = on ? "" : "none";
@@ -169,39 +169,54 @@
   }
 
   async function requireLogin(){
-    const { data } = await sb.auth.getSession();
-    session = data.session;
+    const REDIRECT_TO = location.origin + location.pathname; // ✅ market.html(쿼리 없이)
 
-    if (!session) {
-      // ✅ gate에서 넘어온 autologin=1이면 구글 로그인 자동 시작
-      if (autologinOn()) {
-        setStatus("구글 로그인 진행 중...");
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: REDIRECT_TO }
-        });
-        if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
-        return false;
-      }
+function autologinOn(){
+  return new URL(location.href).searchParams.get("autologin") === "1";
+}
 
-      location.href = "the-unique-gate.html";
+function cleanUrlAfterLogin(){
+  const u = new URL(location.href);
+
+  // autologin 제거
+  if (u.searchParams.get("autologin") === "1") {
+    u.searchParams.delete("autologin");
+  }
+
+  // #access_token 같은 해시 제거(implicit 로그인 후 깔끔하게)
+  const clean = u.pathname + u.search;
+  history.replaceState({}, document.title, clean);
+}
+
+async function requireLogin(){
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+
+  // ✅ 세션이 없으면
+  if (!session) {
+    if (autologinOn()) {
+      setStatus("구글 로그인 진행 중...");
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: REDIRECT_TO }
+      });
+      if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
       return false;
     }
 
-    // ✅ 로그인 완료 후 autologin 제거(루프/지연 방지)
-    const u2 = new URL(location.href);
-    if (u2.searchParams.get("autologin") === "1") {
-      u2.searchParams.delete("autologin");
-      history.replaceState({}, document.title, u2.pathname + u2.search);
-    }
-
-    user = session.user;
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-    return true;
+    location.replace("the-unique-gate.html");
+    return false;
   }
 
+  // ✅ 세션 있으면 URL 정리 + 사용자 표시
+  cleanUrlAfterLogin();
+
+  user = session.user;
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+  const email = user.email || "";
+  $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+  return true;
+}
   $("btnMain").onclick = () => location.href = "the-unique-main.html";
 
   // ✅ 로그아웃 확실히
