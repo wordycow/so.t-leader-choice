@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UNIQUE 마켓</title>
 
-  <!-- ✅ favicon 404 제거 -->
+  <!-- favicon 404 제거 -->
   <link rel="icon" href="data:,">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -20,7 +20,6 @@
       background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
       position:relative;
     }
-    /* ✅ 배경 더 밝게 */
     body::before{
       content:"";
       position:fixed;
@@ -119,6 +118,7 @@
     <div class="btns">
       <button class="btn danger" id="btnExit">나가기</button>
       <button class="btn primary" id="btnLogin">구글 로그인</button>
+      <button class="btn" id="btnReset" title="로그인 꼬였을 때 초기화">초기화</button>
     </div>
   </div>
 
@@ -198,15 +198,20 @@
     statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
     statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
   }
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const withTimeout = (p, ms, label="timeout") =>
+    Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label)), ms))]);
 
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
-  function cleanUrl(){
+  function cleanUrl(removeCode=true){
     const u = new URL(location.href);
     u.searchParams.delete("autologin");
-    u.searchParams.delete("code");
-    u.searchParams.delete("state");
+    if (removeCode){
+      u.searchParams.delete("code");
+      u.searchParams.delete("state");
+    }
     history.replaceState({}, document.title, u.pathname + u.search);
   }
 
@@ -217,8 +222,9 @@
     return;
   }
 
+  // ✅ detectSessionInUrl은 끄고, 우리가 직접 code 교환을 통제(에러 표출)
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType:"pkce", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+    auth: { flowType:"pkce", detectSessionInUrl:false, persistSession:true, autoRefreshToken:true }
   });
 
   let session = null;
@@ -236,66 +242,110 @@
   }
 
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
-  $("btnLogin").addEventListener("click", () => startOAuth());
 
-  async function startOAuth(){
+  $("btnReset").addEventListener("click", () => {
+    // ✅ PKCE verifier 꼬였을 때 한방 초기화
+    try{
+      for (let i = localStorage.length - 1; i >= 0; i--){
+        const k = localStorage.key(i);
+        if (k && k.startsWith("sb-")) localStorage.removeItem(k);
+      }
+      sessionStorage.clear();
+    }catch(e){}
+    location.replace("market.html?autologin=1");
+  });
+
+  $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
     const { error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO }
     });
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
-  }
+  });
 
   async function exchangeIfCode(){
     const u = new URL(location.href);
     const code = u.searchParams.get("code");
-    if (!code) return;
-    setStatus("로그인 처리 중...");
-    const { error } = await sb.auth.exchangeCodeForSession(code);
-    if (error) setStatus("로그인 처리 실패: " + error.message, true);
+    if (!code) return true;
+
+    setStatus("로그인 처리 중 (코드 교환)...");
+
+    try{
+      const res = await withTimeout(sb.auth.exchangeCodeForSession(code), 8000, "code exchange timeout");
+      if (res?.error) throw res.error;
+
+      // 교환 성공이면 code 제거
+      cleanUrl(true);
+      setStatus("");
+      return true;
+    } catch(e){
+      console.error(e);
+      setStatus(
+        "로그인 코드 교환 실패 ❌\n" +
+        "에러: " + (e?.message || e) + "\n\n" +
+        "해결: 상단 ‘초기화’ 누르고 다시 ‘구글 로그인’",
+        true
+      );
+      // 실패 시 code는 남겨둠(디버그용)
+      return false;
+    }
   }
 
-  async function requireLoginFast(){
+  async function getSessionFast(){
+    const end = Date.now() + 2000; // ✅ 2초 안에 결론
+    while (Date.now() < end){
+      const { data, error } = await sb.auth.getSession();
+      if (error){
+        setStatus("세션 확인 오류: " + error.message, true);
+        return null;
+      }
+      if (data.session) return data.session;
+      await sleep(200);
+    }
+    return null;
+  }
+
+  async function requireLogin(){
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    await exchangeIfCode();
+    // code 있으면 먼저 교환 시도
+    const okExchange = await exchangeIfCode();
+    // 교환 실패면 바로 로그아웃 UI로 내려주기(무한 확인중 방지)
+    if (!okExchange){
+      setLoggedOutUI();
+      return false;
+    }
 
-    // ✅ 2초 내 결론
-    const start = Date.now();
-    while (Date.now() - start < 2000){
-      const { data, error } = await sb.auth.getSession();
-      if (error) { setStatus("세션 오류: " + error.message, true); break; }
-      if (data.session){
-        session = data.session;
-        user = session.user;
-        sessionStorage.removeItem("market_oauth_started");
-        cleanUrl();
-        setStatus("");
-        setLoggedInUI();
-        return true;
+    const s = await getSessionFast();
+    if (!s){
+      setStatus("");
+      setLoggedOutUI();
+
+      // autologin=1이면 탭당 1회 자동 시작
+      if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
+        sessionStorage.setItem("market_oauth_started","1");
+        $("btnLogin").click();
       }
-      await new Promise(r => setTimeout(r, 200));
+      return false;
     }
 
+    sessionStorage.removeItem("market_oauth_started");
+    session = s;
+    user = s.user;
     setStatus("");
-    setLoggedOutUI();
-
-    // ✅ autologin=1이면 탭당 1회 자동 시도
-    if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
-      sessionStorage.setItem("market_oauth_started","1");
-      await startOAuth();
-    }
-    return false;
+    setLoggedInUI();
+    return true;
   }
 
-  // 세션이 늦게 잡혀도 즉시 UI 갱신
+  // 늦게 세션 잡혀도 UI 갱신
   sb.auth.onAuthStateChange((_ev, s) => {
     if (s?.user) {
-      session = s; user = s.user;
       sessionStorage.removeItem("market_oauth_started");
-      cleanUrl();
+      session = s;
+      user = s.user;
+      cleanUrl(true);
       setStatus("");
       setLoggedInUI();
       renderFeed();
@@ -313,7 +363,6 @@
     $("fImages").value = "";
     $("imgPreview").innerHTML = "";
   }
-
   function renderPreviews(){
     const box = $("imgPreview");
     box.innerHTML = "";
@@ -327,7 +376,6 @@
       box.appendChild(d);
     });
   }
-
   $("fImages").addEventListener("change", (e) => {
     previewUrls.forEach(u => URL.revokeObjectURL(u));
     previewUrls = [];
@@ -439,7 +487,7 @@
   $("btnRefresh").addEventListener("click", () => renderFeed());
 
   (async () => {
-    await requireLoginFast();
+    await requireLogin();
     await renderFeed();
   })();
 })();
