@@ -16,34 +16,39 @@
       background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
       position:relative;
     }
+    /* ✅ 배경 더 밝게(오버레이 약하게) */
     body::before{
       content:"";
       position:fixed;
       inset:0;
-      background: radial-gradient(circle at top, rgba(2,6,23,.55), rgba(2,6,23,.88) 60%, rgba(2,6,23,.92));
+      background: radial-gradient(circle at top,
+        rgba(2,6,23,.18),
+        rgba(2,6,23,.55) 65%,
+        rgba(2,6,23,.65)
+      );
       z-index:-1;
     }
 
     .wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
     .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
     .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
-    .who{opacity:.75;font-size:12px;margin-top:4px}
+    .who{opacity:.85;font-size:12px;margin-top:4px}
 
     .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     button{cursor:pointer}
     .btn{
       padding:10px 12px;border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.06);
+      background:rgba(255,255,255,.10);
       color:#e5e7eb;font-weight:800
     }
-    .btn.primary{background:rgba(255,255,255,.12)}
-    .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.4)}
+    .btn.primary{background:rgba(255,255,255,.16)}
+    .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.45)}
 
     .pill{
       padding:8px 12px;border-radius:14px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.18);
       font-size:12px;
       margin-bottom:12px;
       display:none;
@@ -53,13 +58,13 @@
     .stack{display:flex;flex-direction:column;gap:12px}
     .card{
       border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.20);
       padding:14px;
       backdrop-filter: blur(6px);
     }
 
-    .muted{opacity:.75;font-size:12px}
+    .muted{opacity:.8;font-size:12px}
     input,textarea{
       width:100%;padding:10px 12px;border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
@@ -71,7 +76,7 @@
     @media(max-width:720px){.row{grid-template-columns:1fr}}
 
     .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;position:relative}
+    .thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#0a1020;position:relative}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .thumb .x{
       position:absolute;top:6px;right:6px;
@@ -91,12 +96,12 @@
     @media(max-width:900px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
     @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
 
-    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);overflow:hidden}
+    .post{border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);overflow:hidden}
     .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
     .postTitle{font-weight:900}
     .postMeta{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
     .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
-    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);margin-right:6px}
+    .chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);margin-right:6px}
   </style>
 </head>
 
@@ -109,7 +114,8 @@
     </div>
     <div class="btns">
       <button class="btn danger" id="btnExit">나가기</button>
-      <button class="btn primary" id="btnLogin" style="display:none;">구글 로그인</button>
+      <!-- ✅ 로그인 버튼 항상 보이게 -->
+      <button class="btn primary" id="btnLogin">구글 로그인</button>
     </div>
   </div>
 
@@ -154,11 +160,13 @@
       </div>
 
       <div class="btns" style="margin-top:10px;">
-        <button class="btn primary" id="btnSave" disabled>등록하기</button>
+        <!-- ✅ disabled 제거: 눌렀을 때 로그인 유도 -->
+        <button class="btn primary" id="btnSave">등록하기</button>
       </div>
 
-      <div class="muted" style="margin-top:8px;">
-        ※ 파일 선택은 로그인 전에도 가능. 등록하기는 로그인 후 활성화됩니다.
+      <!-- ✅ 문구를 “고정 텍스트”가 아니라 “상태 텍스트”로 -->
+      <div id="loginNote" class="muted" style="margin-top:8px;">
+        로그인 확인 중...
       </div>
     </div>
 
@@ -177,7 +185,7 @@
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
-  const REDIRECT_TO = location.origin + location.pathname;
+  const REDIRECT_TO = location.origin + location.pathname; // .../market.html
 
   const $ = (id) => document.getElementById(id);
 
@@ -186,12 +194,9 @@
     if (!msg){ statusEl.style.display="none"; return; }
     statusEl.style.display="";
     statusEl.textContent = msg;
-    statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.16)";
-    statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(255,255,255,.06)";
+    statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
+    statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
   }
-
-  function showLogin(on){ $("btnLogin").style.display = on ? "" : "none"; }
-  function setSaveEnabled(on){ $("btnSave").disabled = !on; }
 
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
@@ -204,11 +209,10 @@
     history.replaceState({}, document.title, u.pathname + u.search);
   }
 
-  // ✅ supabase 로딩 안전장치
   if (!window.supabase){
     $("who").textContent = "supabase-js 로드 실패";
-    setStatus("CDN 로딩이 막혔습니다.\n브라우저 확장(광고차단) 또는 네트워크를 확인하세요.", true);
-    showLogin(true);
+    $("loginNote").textContent = "CDN 로딩이 막혔습니다(광고차단/네트워크 확인).";
+    setStatus("supabase-js 로드 실패", true);
     return;
   }
 
@@ -218,6 +222,17 @@
 
   let session = null;
   let user = null;
+
+  function setLoggedOutUI(){
+    $("who").textContent = "로그인 필요";
+    $("loginNote").textContent = "등록하려면 상단 ‘구글 로그인’을 눌러주세요.";
+  }
+  function setLoggedInUI(){
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const email = user.email || "";
+    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    $("loginNote").textContent = "로그인 완료 ✅ 등록 가능합니다.";
+  }
 
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
   $("btnLogin").addEventListener("click", () => startOAuth());
@@ -230,73 +245,60 @@
     });
     if (error){
       setStatus("구글 로그인 시작 실패: " + error.message, true);
-      showLogin(true);
     }
   }
 
-  async function safeGetSession(){
-    try{
-      const { data, error } = await sb.auth.getSession();
-      if (error) throw error;
-      return data.session || null;
-    }catch(e){
-      console.error(e);
-      setStatus("세션 확인 중 오류: " + (e?.message || e), true);
-      return null;
-    }
-  }
-
-  async function exchangeIfCode(){
-    const u = new URL(location.href);
-    const code = u.searchParams.get("code");
-    if (!code) return;
-    setStatus("로그인 처리 중...");
-    try{
-      const { error } = await sb.auth.exchangeCodeForSession(code);
-      if (error) throw error;
-    }catch(e){
-      console.error(e);
-      setStatus("로그인 처리 실패: " + (e?.message || e), true);
-    }
-  }
-
-  async function requireLogin(){
+  // ✅ 로그인 확인은 “2초 내 결론”
+  async function requireLoginFast(){
     $("who").textContent = "로그인 확인 중...";
-    showLogin(false);
-    setSaveEnabled(false);
+    $("loginNote").textContent = "로그인 확인 중...";
 
-    await exchangeIfCode();
-
-    // ✅ 3초 안에 결론 내리기(무한 ‘확인중’ 방지)
+    // OAuth 리다이렉트 직후 세션이 늦게 잡히는 경우도 있어서 짧게 폴링
     const start = Date.now();
-    while (Date.now() - start < 3000){
-      session = await safeGetSession();
-      if (session) break;
-      await new Promise(r => setTimeout(r, 250));
-    }
-
-    if (!session){
-      $("who").textContent = "로그인 필요 (상단 ‘구글 로그인’)";
-      showLogin(true);
-      setStatus("");
-      if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
-        sessionStorage.setItem("market_oauth_started","1");
-        await startOAuth();
+    while (Date.now() - start < 2000){
+      try{
+        const { data } = await sb.auth.getSession();
+        if (data.session){
+          session = data.session;
+          user = session.user;
+          cleanUrl();
+          setStatus("");
+          setLoggedInUI();
+          return true;
+        }
+      } catch(e) {
+        console.error(e);
+        setStatus("세션 확인 오류: " + (e?.message || e), true);
+        break;
       }
-      return false;
+      await new Promise(r => setTimeout(r, 200));
     }
 
-    sessionStorage.removeItem("market_oauth_started");
-    cleanUrl();
-
-    user = session.user;
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-    const email = user.email || "";
-    $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
+    // ✅ 여기까지 왔으면 “로그인 안 된 상태”로 확정
     setStatus("");
-    setSaveEnabled(true);
-    return true;
+    setLoggedOutUI();
+
+    // autologin=1이면 1회 자동 시작
+    if (autologinOn() && sessionStorage.getItem("market_oauth_started") !== "1"){
+      sessionStorage.setItem("market_oauth_started","1");
+      await startOAuth();
+    }
+
+    return false;
   }
+
+  // auth 이벤트로도 즉시 반영
+  sb.auth.onAuthStateChange((_ev, s) => {
+    if (s?.user) {
+      session = s;
+      user = s.user;
+      sessionStorage.removeItem("market_oauth_started");
+      cleanUrl();
+      setStatus("");
+      setLoggedInUI();
+      renderFeed();
+    }
+  });
 
   // ===== 이미지 프리뷰 =====
   let selectedFiles = [];
@@ -363,10 +365,8 @@
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
 
-    // ✅ 로그인 안됐으면 바로 로그인 유도 (파일 선택은 유지됨)
     if (!user){
-      setStatus("등록하려면 로그인이 필요합니다. 상단 '구글 로그인'을 눌러주세요.", true);
-      showLogin(true);
+      setStatus("등록하려면 로그인이 필요합니다. 상단 ‘구글 로그인’을 누르세요.", true);
       return;
     }
 
@@ -401,6 +401,7 @@
   }
 
   async function loadPosts(){
+    setStatus("게시글 불러오는 중...");
     const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
     if (error) { setStatus("불러오기 실패: " + error.message, true); return []; }
     return data || [];
@@ -427,7 +428,6 @@
   }
 
   async function renderFeed(){
-    setStatus("게시글 불러오는 중...");
     const posts = await loadPosts();
     $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
     setStatus("");
@@ -436,26 +436,8 @@
   $("btnSave").addEventListener("click", () => createPost());
   $("btnRefresh").addEventListener("click", () => renderFeed());
 
-  // ✅ 세션이 늦게 잡혀도 UI 갱신
-  sb.auth.onAuthStateChange((_ev, s) => {
-    if (s?.user) {
-      session = s; user = s.user;
-      cleanUrl();
-      const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
-      const email = user.email || "";
-      $("who").textContent = `로그인: ${name || email || user.id.slice(0,8)}`;
-      setStatus("");
-      showLogin(false);
-      setSaveEnabled(true);
-      renderFeed();
-    }
-  });
-
-  // Boot
   (async () => {
-    // 파일 선택은 항상 가능 → 등록만 로그인 후
-    setSaveEnabled(false);
-    await requireLogin();
+    await requireLoginFast();
     await renderFeed();
   })();
 })();
