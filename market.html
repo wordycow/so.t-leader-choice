@@ -193,8 +193,7 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    // 해시(#access_token...) 제거까지 한 번에
-    history.replaceState({}, document.title, u.pathname + u.search);
+    history.replaceState({}, document.title, u.pathname + u.search); // ✅ hash 제거
   }
 
   function autologinOn(){
@@ -208,11 +207,11 @@
     return;
   }
 
-  // ✅ Implicit: code 교환 없이 hash 토큰(#access_token=...)로 세션 생성
+  // ✅ Implicit + 우리가 hash를 직접 처리할거라 detectSessionInUrl은 꺼둠
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       flowType: "implicit",
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
       persistSession: true,
       autoRefreshToken: true
     }
@@ -254,24 +253,55 @@
     if (error) setStatus("구글 로그인 시작 실패: " + error.message, true);
   };
 
+  // ✅ 핵심: hash(#access_token=...)를 직접 읽어서 세션으로 흡수
+  async function absorbHashSession(){
+    const hash = (location.hash || "").replace(/^#/, "");
+    if (!hash) return null;
+
+    const p = new URLSearchParams(hash);
+    const access_token = p.get("access_token");
+    const refresh_token = p.get("refresh_token");
+    const err = p.get("error");
+    const errDesc = p.get("error_description");
+
+    if (err){
+      setStatus("OAuth 에러: " + (errDesc || err), true);
+      cleanUrl();
+      return null;
+    }
+
+    if (!access_token) return null;
+
+    setStatus("로그인 토큰 처리 중...");
+    const { data, error } = await sb.auth.setSession({
+      access_token,
+      refresh_token: refresh_token || ""
+    });
+
+    if (error){
+      setStatus("세션 설정 실패: " + error.message + "\n(상단 ‘초기화’ 후 재로그인)", true);
+      return null;
+    }
+
+    cleanUrl(); // 토큰 숨기기
+    setStatus("");
+    return data.session || null;
+  }
+
   async function requireLogin(){
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    // ✅ 지금처럼 ?code= 로 돌아오는 경우(=PKCE 리턴)면 안내하고 URL 정리
-    const u = new URL(location.href);
-    if (u.searchParams.get("code")) {
-      setStatus(
-        "지금은 PKCE(code)로 돌아왔는데, 이 환경에서 code→session 교환이 막혀서 멈추는 중입니다.\n" +
-        "→ 상단 ‘초기화’ 누른 뒤 ‘구글 로그인’으로 다시 시도하세요(implicit 모드로 받게 됩니다).",
-        true
-      );
-      cleanUrl();
-      setLoggedOutUI();
-      return false;
+    // 1) hash 토큰 있으면 먼저 흡수
+    const s1 = await absorbHashSession();
+    if (s1) {
+      session = s1;
+      user = s1.user;
+      setLoggedInUI();
+      return true;
     }
 
-    // ✅ implicit는 해시 토큰이 있으면 여기서 바로 세션이 잡힘
+    // 2) 저장된 세션 있나 확인
     const { data, error } = await sb.auth.getSession();
     if (error){
       setStatus("세션 확인 오류: " + error.message, true);
@@ -289,12 +319,58 @@
     session = data.session;
     user = session.user;
     setStatus("");
-    cleanUrl();
     setLoggedInUI();
     return true;
   }
 
-  // ===== 이미지 프리뷰 =====
+  // ===== 게시글 =====
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  async function loadPosts(){
+    const { data, error } = await sb
+      .from("market_posts")
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if (error) {
+      setStatus("게시글 불러오기 실패: " + error.message, true);
+      return [];
+    }
+    return data || [];
+  }
+
+  function postCardHtml(p){
+    const imgs = Array.isArray(p.images) ? p.images : [];
+    const cover = imgs[0] || "";
+    return `
+      <div class="post">
+        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
+        <div class="postTop">
+          <div>
+            <div class="postTitle">${escapeHtml(p.title)}</div>
+            <div class="postMeta">
+              <span class="chip">수량 ${p.qty ?? "-"}</span>
+              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
+              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function renderFeed(){
+    setStatus("게시글 불러오는 중...");
+    const posts = await loadPosts();
+    $("feed").innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
+    setStatus("");
+  }
+
+  // ===== 이미지 업로드 =====
   let selectedFiles = [];
   let previewUrls = [];
 
@@ -327,7 +403,9 @@
     renderPreviews();
   });
 
-  function toPublicUrl(path){ return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+  function toPublicUrl(path){
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
   function fileExt(file){
     const n = file.name || "";
     const dot = n.lastIndexOf(".");
@@ -343,8 +421,11 @@
       const f = selectedFiles[i];
       const ext = fileExt(f);
       const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
-      if (error) throw new Error("이미지 업로드 실패: " + error.message);
+
+      const { error } = await sb.storage.from(BUCKET).upload(path, f, {
+        upsert:false, contentType:f.type
+      });
+      if (error) throw new Error(error.message);
       urls.push(toPublicUrl(path));
     }
     return urls;
@@ -359,16 +440,16 @@
       return;
     }
 
-    setStatus("등록 중...");
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
     const region = safeName($("fRegion").value);
     const description = safeName($("fDesc").value);
     const owner_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
 
+    setStatus("등록 중...");
     const { data, error } = await sb
       .from("market_posts")
-      .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
+      .insert({ owner:user.id, owner_name, title, qty, contact, region, description, images: [] })
       .select("id")
       .single();
 
@@ -376,23 +457,38 @@
 
     try{
       const urls = await uploadImages(data.id);
-      if (urls.length) {
+      if (urls.length){
         const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
-        if (e2) throw new Error("DB 업데이트 실패: " + e2.message);
+        if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
       }
+
       setStatus("등록 완료!");
       clearPreviews();
       $("fTitle").value=""; $("fQty").value=""; $("fContact").value=""; $("fRegion").value=""; $("fDesc").value="";
-    } catch(e){
-      setStatus(e.message, true);
+      await renderFeed();
+    }catch(e){
+      setStatus("이미지 업로드 실패: " + (e?.message || e), true);
     }
   }
 
   $("btnSave").onclick = () => createPost();
-  $("btnRefresh").onclick = () => location.reload();
+  $("btnRefresh").onclick = () => renderFeed();
+
+  // 세션 늦게 잡혀도 반영
+  sb.auth.onAuthStateChange((_ev, s) => {
+    if (s?.user) {
+      session = s;
+      user = s.user;
+      cleanUrl();
+      setStatus("");
+      setLoggedInUI();
+      renderFeed();
+    }
+  });
 
   (async () => {
     await requireLogin();
+    await renderFeed();
   })();
 })();
 </script>
