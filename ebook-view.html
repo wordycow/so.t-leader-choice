@@ -238,124 +238,108 @@
     </div>
   </div>
 
-  <script>
-    // 쿼리스트링에서 id 읽기 (예: ebook-view.html?id=need smpl)
-    function getQueryId() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      return id ? id.trim() : "";
-    }
+ <script>
+  function getQueryId() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    return id ? id.trim() : "";
+  }
 
-    function renderError(msg) {
-      const content = document.getElementById("content");
-      content.innerHTML =
-        '<div class="error-box">' +
-        (msg || "요청하신 eBook 정보를 찾을 수 없습니다.") +
+  function renderError(msg) {
+    const content = document.getElementById("content");
+    content.innerHTML =
+      '<div class="error-box">' +
+      (msg || "요청하신 eBook 정보를 찾을 수 없습니다.") +
+      "</div>";
+  }
+
+  function renderEbook(item) {
+    const content = document.getElementById("content");
+    if (!item) return renderError();
+
+    const title = item.title || "제목 없음";
+    const subtitle = item.subtitle || "";
+    const desc = item.description || "";
+    const cover = item.cover || "";
+    const video = item.video || "";
+    const audio = item.audio || "";
+    const idTag = item.id || "";
+
+    let html = "";
+    html += '<section class="main-card">';
+    html += '  <div class="cover-wrap">';
+    html += '    <div class="cover">';
+    if (cover) html += '      <img src="' + cover + '" alt="' + title + ' 커버 이미지" />';
+    html += "    </div>";
+    if (idTag) html += '    <div class="tag">' + idTag + "</div>";
+    html += "  </div>";
+
+    html += '  <div class="info">';
+    html += '    <div class="info-title">' + title + "</div>";
+    if (subtitle) html += '    <div class="info-sub">' + subtitle + "</div>";
+    if (desc) html += '    <div class="info-desc">' + desc + "</div>";
+    html += "  </div>";
+    html += "</section>";
+
+    html += '<section class="media-section">';
+    html += '  <div class="media-title">영상 · 음성</div>';
+    html += '  <div class="media-sub">eBook에 연결된 영상/음원 자료를 재생할 수 있습니다.</div>';
+
+    if (video) {
+      html +=
+        '  <video controls playsinline poster="' + (cover || "") + '">' +
+        '    <source src="' + video + '" type="video/mp4" />' +
+        "    브라우저에서 동영상을 재생할 수 없습니다." +
+        "  </video>";
+    }
+    if (audio) {
+      html +=
+        '  <audio controls>' +
+        '    <source src="' + audio + '" type="audio/mpeg" />' +
+        "    브라우저에서 오디오를 재생할 수 없습니다." +
+        "  </audio>";
+    }
+    if (!video && !audio) {
+      html +=
+        '  <div class="empty-media">' +
+        "등록된 영상/음원 파일이 없습니다. 커버 이미지만 제공되는 eBook입니다." +
         "</div>";
     }
 
-    function renderEbook(item) {
-      const content = document.getElementById("content");
-      if (!item) {
-        renderError();
-        return;
+    html += "</section>";
+    content.innerHTML = html;
+  }
+
+  (async function init() {
+    const id = getQueryId();
+    if (!id) return renderError("eBook ID가 지정되지 않았습니다. (예: ebook-view.html?id=3-line)");
+
+    try {
+      const res = await fetch("ebook-config.json", { cache: "no-store" });
+
+      if (!res.ok) {
+        return renderError("ebook-config.json을 찾을 수 없습니다. (HTTP " + res.status + ")");
       }
 
-      const title = item.title || "제목 없음";
-      const subtitle = item.subtitle || "";
-      const desc = item.description || "";
-      const cover = item.cover || "";
-      const video = item.video || "";
-      const audio = item.audio || "";
-      const idTag = item.id || "";
-
-      let html = "";
-
-      // 메인 카드
-      html += '<section class="main-card">';
-      html += '  <div class="cover-wrap">';
-      html += '    <div class="cover">';
-      if (cover) {
-        html += '      <img src="' + cover + '" alt="' + title + ' 커버 이미지" />';
-      }
-      html += '    </div>';
-      if (idTag) {
-        html += '    <div class="tag">' + idTag + "</div>";
-      }
-      html += "  </div>";
-
-      html += '  <div class="info">';
-      html += '    <div class="info-title">' + title + "</div>";
-      if (subtitle) {
-        html += '    <div class="info-sub">' + subtitle + "</div>";
-      }
-      if (desc) {
-        html += '    <div class="info-desc">' + desc + "</div>";
-      }
-      html += "  </div>";
-
-      html += "</section>";
-
-      // 미디어 섹션
-      html += '<section class="media-section">';
-      html += '  <div class="media-title">영상 · 음성</div>';
-      html += '  <div class="media-sub">eBook에 연결된 영상/음원 자료를 재생할 수 있습니다.</div>';
-
-      if (video) {
-        html +=
-          '  <video controls poster="' + (cover || "") + '">' +
-          '    <source src="' + video + '" type="video/mp4" />' +
-          "    브라우저에서 동영상을 재생할 수 없습니다. 파일을 직접 다운로드해서 확인해 주세요." +
-          "  </video>";
+      const text = (await res.text()).replace(/^\uFEFF/, ""); // BOM 제거
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("JSON parse error:", e, text.slice(0, 200));
+        return renderError("ebook-config.json JSON 형식이 깨져있습니다. (마지막 쉼표/주석/따옴표 확인)");
       }
 
-      if (audio) {
-        html +=
-          '  <audio controls>' +
-          '    <source src="' + audio + '" type="audio/mpeg" />' +
-          "    브라우저에서 오디오를 재생할 수 없습니다." +
-          "  </audio>";
-      }
+      const items = (data && data.items) ? data.items : (Array.isArray(data) ? data : []);
+      const target = items.find(it => (it.id || "").trim() === id);
 
-      if (!video && !audio) {
-        html +=
-          '  <div class="empty-media">' +
-          "등록된 영상/음원 파일이 없습니다. 커버 이미지만 제공되는 eBook입니다." +
-          "</div>";
-      }
-
-      html += "</section>";
-
-      content.innerHTML = html;
+      if (!target) return renderError("ID가 '" + id + "' 인 eBook 항목을 찾을 수 없습니다.");
+      renderEbook(target);
+    } catch (err) {
+      console.error(err);
+      renderError("ebook-config.json을 불러오는 중 오류가 발생했습니다.");
     }
-
-    (function init() {
-      const id = getQueryId();
-      if (!id) {
-        renderError("eBook ID가 지정되지 않았습니다. (예: ebook-view.html?id=need smpl)");
-        return;
-      }
-
-      fetch("ebook-config.json")
-        .then((res) => res.json())
-        .then((data) => {
-          let items = (data && data.items) ? data.items : (Array.isArray(data) ? data : []);
-          const target = items.find(function (item) {
-            return (item.id || "").trim() === id;
-          });
-
-          if (!target) {
-            renderError("ID가 '" + id + "' 인 eBook 항목을 찾을 수 없습니다.");
-            return;
-          }
-
-          renderEbook(target);
-        })
-        .catch((err) => {
-          console.error(err);
-          renderError("ebook-config.json 을 불러오는 중 오류가 발생했습니다.");
-        });
-    })();
-  </script>
+  })();
+</script>
 </body>
 </html>
