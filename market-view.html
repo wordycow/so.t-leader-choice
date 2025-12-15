@@ -92,11 +92,33 @@
       padding:10px 12px;
       margin-top:10px;
     }
+    .comment.reply{
+      border-left: 2px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+    }
+
     .commentTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .commentName{font-weight:900;font-size:13px}
     .commentTime{font-size:11px;opacity:.75}
     .commentBody{margin-top:6px;font-size:13px;line-height:1.6;white-space:pre-line}
-    .commentDel{font-size:11px;padding:6px 8px;border-radius:10px;border:1px solid rgba(248,113,113,.45);background:rgba(127,29,29,.35);color:#fee2e2}
+
+    .commentBtn{
+      font-size:11px;padding:6px 8px;border-radius:10px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);
+      color:#e5e7eb;
+      cursor:pointer;
+    }
+
+    .commentDel{
+      font-size:11px;padding:6px 8px;border-radius:10px;
+      border:1px solid rgba(248,113,113,.45);
+      background:rgba(127,29,29,.35);
+      color:#fee2e2;
+      cursor:pointer;
+    }
+
+    .replyTag{font-size:11px;opacity:.8;margin-left:6px}
   </style>
 </head>
 
@@ -126,6 +148,13 @@
 
   <div class="card" id="comments">
     <div style="font-weight:900;margin-bottom:8px;">댓글</div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+      <div id="replying" class="muted" style="display:none;flex:1;min-width:220px;"></div>
+      <button class="btn" id="btnCancelReply" type="button"
+        style="display:none;padding:6px 10px;border-radius:10px;">답글 취소</button>
+    </div>
+
     <textarea id="cBody" placeholder="댓글을 입력하세요"></textarea>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
       <button class="btn primary" id="btnComment" type="button">댓글 등록</button>
@@ -141,7 +170,6 @@
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-  const VIEW_PAGE = "market-view.html";   // 현재 파일명(참고용)
   const MARKET_PAGE = "market.html";
   const TOKEN_KEY = "market_access_token";
   const REFRESH_KEY = "market_refresh_token";
@@ -149,10 +177,19 @@
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
+  const commentListEl = $("commentList");
 
   let accessToken = null;
   let refreshToken = null;
   let user = null;
+
+  let postOwnerId = null;
+
+  // reply state
+  let replyToId = null;
+  let replyToName = null;
+
+  let commentMap = new Map();
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
@@ -192,7 +229,7 @@
     const u = new URL(location.href);
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search);
+    history.replaceState({}, document.title, u.pathname + u.search + u.hash);
   }
 
   function base64UrlToJson(b64url){
@@ -318,8 +355,8 @@
 
   function setWho(){
     if (!user?.id){
-      $("who").textContent = "로그인 안됨(읽기만 가능할 수 있음)";
-      $("commentHint").textContent = "댓글 작성/삭제는 로그인 후 가능합니다.";
+      $("who").textContent = "로그인 안됨(읽기만 가능)";
+      $("commentHint").textContent = "댓글 작성/삭제/답글은 로그인 후 가능합니다.";
       return;
     }
     const label = user.name || user.email || user.id.slice(0,8);
@@ -330,6 +367,28 @@
   function marketHtmlUrl(){
     const base = location.pathname.replace(/\/[^\/]*$/, "");
     return location.origin + base + "/" + MARKET_PAGE;
+  }
+
+  function setReplyTarget(c){
+    replyToId = c.id;
+    replyToName = c.owner_name || "익명";
+
+    $("replying").style.display = "";
+    $("btnCancelReply").style.display = "";
+    $("replying").textContent = `답글 대상: ${replyToName} · “${(c.body||"").slice(0,40)}${(c.body||"").length>40?"…":""}”`;
+
+    const ta = $("cBody");
+    ta.placeholder = `@${replyToName} 에게 답글...`;
+    setTimeout(() => ta.focus(), 60);
+  }
+
+  function clearReplyTarget(){
+    replyToId = null;
+    replyToName = null;
+    $("replying").style.display = "none";
+    $("btnCancelReply").style.display = "none";
+    const ta = $("cBody");
+    ta.placeholder = "댓글을 입력하세요";
   }
 
   // UI 버튼
@@ -343,7 +402,6 @@
   };
 
   $("btnLogin").onclick = async () => {
-    // ✅ 로그인 후 다시 이 페이지로 돌아오게 저장
     safeLSSet(RETURN_TO_KEY, location.href);
     setStatus("구글 로그인 이동 중...");
 
@@ -357,6 +415,8 @@
     else setStatus("로그인 URL 생성 실패", true);
   };
 
+  $("btnCancelReply").onclick = () => clearReplyTarget();
+
   async function loadPost(){
     const postId = getPostId();
     if (!postId) {
@@ -364,12 +424,15 @@
       $("postTitle").textContent = "ID 없음";
       return null;
     }
+
     const { data, error } = await sb.from("market_posts").select("*").eq("id", postId).single();
     if (error) {
-      setStatus("게시글 불러오기 실패: " + error.message + "\n(권한 문제면 로그인 필요)", true);
+      setStatus("게시글 불러오기 실패: " + error.message, true);
       $("postTitle").textContent = "불러오기 실패";
       return null;
     }
+
+    postOwnerId = data.owner || null;
     return data;
   }
 
@@ -413,13 +476,57 @@
       .from("market_comments")
       .select("*")
       .eq("post_id", postId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true }); // 대댓글은 보통 시간순이 깔끔
 
     if (error) {
-      setStatus("댓글 불러오기 실패: " + error.message + "\n(권한 문제면 로그인 필요)", true);
+      setStatus("댓글 불러오기 실패: " + error.message, true);
       return [];
     }
     return data || [];
+  }
+
+  function buildTree(raw){
+    const list = (raw || []).map(c => ({...c, children:[]}));
+    const byId = new Map();
+    list.forEach(c => byId.set(c.id, c));
+
+    const roots = [];
+    list.forEach(c => {
+      const pid = c.parent_id;
+      if (pid && byId.has(pid)) byId.get(pid).children.push(c);
+      else roots.push(c);
+    });
+
+    // 정렬: 루트는 최신이 아래로 쌓이게(이미 asc라 그대로), 자식도 그대로
+    return { roots, byId };
+  }
+
+  function renderNode(c, depth){
+    const canDelete = user?.id && (c.owner === user.id || postOwnerId === user.id);
+    const indent = depth * 18;
+
+    return `
+      <div class="comment ${depth ? "reply" : ""}" style="margin-left:${indent}px;">
+        <div class="commentTop">
+          <div>
+            <div class="commentName">
+              ${escapeHtml(c.owner_name || "익명")}
+              ${depth ? `<span class="replyTag">↳ 답글</span>` : ``}
+            </div>
+            <div class="commentTime">${formatTime(c.created_at)}</div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="commentBtn" data-act="reply" data-id="${c.id}" type="button">답글</button>
+            ${canDelete ? `<button class="commentDel" data-act="del" data-id="${c.id}" type="button">삭제</button>` : ``}
+          </div>
+        </div>
+
+        <div class="commentBody">${escapeHtml(c.body || "")}</div>
+      </div>
+
+      ${(c.children || []).map(ch => renderNode(ch, depth + 1)).join("")}
+    `;
   }
 
   function renderComments(list){
@@ -429,68 +536,88 @@
       return;
     }
 
-    box.innerHTML = list.map(c => {
-      const canDelete = user?.id && c.owner === user.id;
-      return `
-        <div class="comment">
-          <div class="commentTop">
-            <div>
-              <div class="commentName">${escapeHtml(c.owner_name || "익명")}</div>
-              <div class="commentTime">${formatTime(c.created_at)}</div>
-            </div>
-            ${canDelete ? `<button class="commentDel" data-id="${c.id}" type="button">삭제</button>` : ``}
-          </div>
-          <div class="commentBody">${escapeHtml(c.body || "")}</div>
-        </div>
-      `;
-    }).join("");
+    const { roots, byId } = buildTree(list);
+    commentMap = byId;
 
-    box.querySelectorAll(".commentDel").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        if (!id) return;
-        const ok = await ensureValidAuth();
-        if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+    box.innerHTML = roots.map(r => renderNode(r, 0)).join("");
+  }
 
-        if (!confirm("이 댓글을 삭제할까요?")) return;
-        const { error } = await sb.from("market_comments").delete().eq("id", id);
-        if (error) return setStatus("댓글 삭제 실패: " + error.message, true);
+  async function deleteComment(commentId){
+    const ok = await ensureValidAuth();
+    if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
 
-        setStatus("댓글 삭제 완료");
-        const again = await loadComments();
-        renderComments(again);
-      });
-    });
+    if (!confirm("이 댓글을 삭제할까요?\n(대댓글이 달린 댓글이면 대댓글도 같이 삭제됩니다)")) return;
+
+    const { error } = await sb.from("market_comments").delete().eq("id", commentId);
+    if (error){
+      return setStatus(
+        "댓글 삭제 실패: " + error.message +
+        "\n(상품 주인 삭제가 안 되면 Supabase RLS 정책을 추가해야 합니다.)",
+        true
+      );
+    }
+
+    setStatus("댓글 삭제 완료");
+    const again = await loadComments();
+    renderComments(again);
   }
 
   async function addComment(){
     const postId = getPostId();
     const body = ($("cBody").value || "").trim();
-    if (!body) return setStatus("댓글 내용을 입력하세요.", true);
+    if (!body) return setStatus("내용을 입력하세요.", true);
 
     const ok = await ensureValidAuth();
-    if (!ok) return setStatus("댓글 작성은 로그인 후 가능합니다.", true);
+    if (!ok) return setStatus("댓글/답글은 로그인 후 가능합니다.", true);
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
 
-    setStatus("댓글 등록 중...");
-    const owner_name = user.name || user.email || "";
+    setStatus(replyToId ? "답글 등록 중..." : "댓글 등록 중...");
 
-    const { error } = await sb.from("market_comments").insert({
+    const owner_name = user.name || user.email || "";
+    const payload = {
       post_id: postId,
       owner: user.id,
       owner_name,
-      body
-    });
+      body,
+      parent_id: replyToId || null
+    };
 
-    if (error) return setStatus("댓글 등록 실패: " + error.message, true);
+    const { error } = await sb.from("market_comments").insert(payload);
+    if (error) return setStatus("등록 실패: " + error.message, true);
 
     $("cBody").value = "";
-    setStatus("댓글 등록 완료!");
+    clearReplyTarget();
+    setStatus("등록 완료!");
+
     const again = await loadComments();
     renderComments(again);
   }
+
+  // 댓글 버튼(답글/삭제) 이벤트 위임
+  commentListEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+
+    const act = btn.getAttribute("data-act");
+    const id = btn.getAttribute("data-id");
+    if (!id) return;
+
+    const c = commentMap.get(id);
+    if (!c) return;
+
+    if (act === "reply"){
+      if (!user?.id) return setStatus("답글은 로그인 후 가능합니다.", true);
+      setReplyTarget(c);
+      return;
+    }
+
+    if (act === "del"){
+      deleteComment(id);
+      return;
+    }
+  });
 
   function scrollToCommentsIfNeeded(){
     if (location.hash === "#comments"){
