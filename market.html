@@ -286,6 +286,23 @@
   let editOldImages = [];
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // ✅ 관리자(너/매니저) 체크
+let isAdmin = false;
+
+async function loadIsAdmin(){
+  try{
+    const { data, error } = await sb
+      .from("market_admins")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .limit(1);
+    if (error) return false;
+    return Array.isArray(data) && data.length > 0;
+  }catch(e){
+    return false;
+  }
+}
+
     global: {
       fetch: async (url, init = {}) => {
         const headers = new Headers(init.headers || {});
@@ -462,13 +479,13 @@
     $("loginNote").textContent = "등록/수정/삭제/댓글/알림은 로그인 후 가능합니다.";
     btnBell.style.display = "none";
   }
-
   function setLoggedInUI(){
-    const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
-    $("who").textContent = `로그인: ${label}`;
-    $("loginNote").textContent = "로그인 완료 ✅";
-    btnBell.style.display = "";
-  }
+  const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
+  $("who").textContent = `로그인: ${label}${isAdmin ? " (관리자)" : ""}`;
+  $("loginNote").textContent = "로그인 완료 ✅";
+  btnBell.style.display = "";
+}
+
 
   // 상단 버튼
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
@@ -667,57 +684,62 @@
       setStatus("이미지 업로드 실패: " + (e?.message || e), true);
     }
   }
+async function deletePost(postId){
+  const ok = await ensureValidAuth();
+  if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
 
-  async function deletePost(postId){
-    const ok = await ensureValidAuth();
-    if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+  const p = postsMap.get(postId);
+  if (!p) return;
+  if (!confirm("정말 삭제할까요?")) return;
 
-    const p = postsMap.get(postId);
-    if (!p) return;
-    if (!confirm("정말 삭제할까요?")) return;
+  setStatus("삭제 중...");
 
-    setStatus("삭제 중...");
-    try{ await sb.from("market_comments").delete().eq("post_id", postId); }catch(e){}
-    try{ await sb.from("market_notifications").delete().eq("post_id", postId); }catch(e){}
-    try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
-
-    const { error } = await sb.from("market_posts").delete().eq("id", postId);
-    if (error) return setStatus("삭제 실패: " + error.message, true);
-
-    setStatus("삭제 완료!");
-    if (editId === postId) exitEditMode();
-    await renderFeed();
+  const { error } = await sb.from("market_posts").delete().eq("id", postId);
+  if (error) {
+    return setStatus(
+      "삭제 실패: " + error.message +
+      "\n(댓글 때문에 막히면 DB에 post_id ON DELETE CASCADE가 필요합니다.)",
+      true
+    );
   }
 
+  // 이미지 정리(실패해도 게시글 삭제는 유지)
+  try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
+
+  setStatus("삭제 완료!");
+  if (editId === postId) exitEditMode();
+  await renderFeed();
+}
   function postCardHtml(p){
-    const imgs = Array.isArray(p.images) ? p.images : [];
-    const cover = imgs[0] || "";
-    const isMine = user?.id && p.owner === user.id;
+  const imgs = Array.isArray(p.images) ? p.images : [];
+  const cover = imgs[0] || "";
+  const canManage = user?.id && (p.owner === user.id || isAdmin); // ✅ 내글 or 관리자
 
-    return `
-      <div class="post" data-postid="${p.id}">
-        ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
+  return `
+    <div class="post" data-postid="${p.id}">
+      ${cover ? `<img class="postImg" src="${cover}" alt="">` : `<div class="postImg"></div>`}
 
-        ${isMine ? `
-          <div class="postActions">
-            <button class="miniBtn" data-act="edit" data-id="${p.id}" type="button">수정</button>
-            <button class="miniBtn danger" data-act="del" data-id="${p.id}" type="button">삭제</button>
-          </div>
-        ` : ``}
+      ${canManage ? `
+        <div class="postActions">
+          <button class="miniBtn" data-act="edit" data-id="${p.id}" type="button">수정</button>
+          <button class="miniBtn danger" data-act="del" data-id="${p.id}" type="button">삭제</button>
+        </div>
+      ` : ``}
 
-        <div class="postTop">
-          <div>
-            <div class="postTitle">${escapeHtml(p.title || "")}</div>
-            <div class="postMeta">
-              <span class="chip">수량 ${escapeHtml(p.qty ?? "-")}</span>
-              <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
-            </div>
+      <div class="postTop">
+        <div>
+          <div class="postTitle">${escapeHtml(p.title || "")}</div>
+          <div class="postMeta">
+            <span class="chip">수량 ${escapeHtml(p.qty ?? "-")}</span>
+            <span class="chip">${escapeHtml(p.region || "-")}</span><br>
+            <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
           </div>
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
+
 
   async function renderFeed(){
     const ok = await ensureValidAuth();
@@ -743,9 +765,7 @@
 
       const p = postsMap.get(id);
       if (!p) return;
-
-      if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
-
+      if (!(p.owner === user?.id || isAdmin)) return setStatus("권한이 없습니다.", true);
       if (act === "edit") enterEditMode(p);
       if (act === "del") deletePost(id);
       return;
@@ -943,18 +963,19 @@
       return;
     }
 
-    await ensureValidAuth();
-    user = decodeUserFromAccessToken(accessToken);
+  await ensureValidAuth();
+user = decodeUserFromAccessToken(accessToken);
 
-    if (!user?.id){
-      setLoggedOutUI();
-      return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
-    }
+if (!user?.id){
+  setLoggedOutUI();
+  return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
+}
 
-    setLoggedInUI();
-    setStatus("");
-    await renderFeed();
-    await refreshBadge();
+isAdmin = await loadIsAdmin();   // ✅ 추가
+setLoggedInUI();
+setStatus("");
+await renderFeed();
+   await refreshBadge();
     await checkNewNotiAlert();
 
     setInterval(async () => {
