@@ -256,8 +256,10 @@
   const BUCKET = "market";
   const REDIRECT_TO = location.origin + location.pathname;
 
+  const VIEW_PAGE = "market-view.html";
   const TOKEN_KEY = "market_access_token";
   const REFRESH_KEY = "market_refresh_token";
+  const RETURN_TO_KEY = "market_return_to";
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
@@ -269,15 +271,13 @@
   let refreshToken = null;
   let user = null;
 
-  // ✅ 단일 클라이언트(이걸로 끝)
+  // ✅ 단일 클라이언트
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
       fetch: async (url, init = {}) => {
         const headers = new Headers(init.headers || {});
-        // apikey는 항상
         if (!headers.has("apikey")) headers.set("apikey", SUPABASE_ANON_KEY);
 
-        // REST / Storage는 유저 토큰 붙이기
         const u = String(url);
         if (accessToken && (u.includes("/rest/v1/") || u.includes("/storage/v1/"))) {
           headers.set("Authorization", "Bearer " + accessToken);
@@ -290,7 +290,7 @@
       detectSessionInUrl: false,
       persistSession: false,
       autoRefreshToken: false,
-      storageKey: "sb-market-single"   // 경고 제거용
+      storageKey: "sb-market-single"
     }
   });
 
@@ -318,7 +318,7 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거
+    history.replaceState({}, document.title, u.pathname + u.search);
   }
 
   function escapeHtml(s){
@@ -419,13 +419,17 @@
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
 
+  // ✅ OAuth 해시 토큰 파싱 + 저장 (해시로 들어왔는지 여부 리턴)
   function loadTokenFromHashOrStorage(){
+    let fromHash = false;
+
     const hash = (location.hash || "").replace(/^#/, "");
     if (hash.includes("access_token=")){
       const p = new URLSearchParams(hash);
       const at = p.get("access_token");
       const rt = p.get("refresh_token");
       if (at){
+        fromHash = true;
         accessToken = at;
         refreshToken = rt || null;
         safeLSSet(TOKEN_KEY, accessToken);
@@ -433,15 +437,35 @@
         cleanUrlAll();
       }
     }
+
     if (!accessToken){
       accessToken = safeLSGet(TOKEN_KEY);
       refreshToken = safeLSGet(REFRESH_KEY);
     }
+
+    return fromHash;
+  }
+
+  // ✅ market-view에서 로그인 눌렀을 때, OAuth 후 다시 view로 돌아가기
+  function handleReturnToAfterOAuth(){
+    const returnTo = safeLSGet(RETURN_TO_KEY);
+    if (!returnTo) return false;
+
+    safeLSRemove(RETURN_TO_KEY);
+    try{
+      const now = location.href.split("#")[0];
+      const target = String(returnTo).split("#")[0];
+      if (target && target !== now){
+        location.replace(returnTo);
+        return true;
+      }
+    }catch(e){}
+    return false;
   }
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "등록/수정/삭제는 로그인 후 가능합니다.";
+    $("loginNote").textContent = "읽기는 가능 / 등록·수정·삭제는 로그인 후 가능합니다.";
   }
 
   function setLoggedInUI(){
@@ -455,7 +479,7 @@
   $("btnReset").addEventListener("click", () => {
     safeLSRemove(TOKEN_KEY);
     safeLSRemove(REFRESH_KEY);
-    // 과거 sb-* 흔적도 싹 정리
+    safeLSRemove(RETURN_TO_KEY);
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -543,7 +567,7 @@
   async function uploadImages(postId){
     if (!selectedFiles.length) return null;
     const ok = await ensureValidAuth();
-    if (!ok) return null;
+    if (!ok) throw new Error("로그인이 필요합니다.");
 
     setStatus("이미지 업로드 중...");
     const urls = [];
@@ -597,7 +621,7 @@
     if (!title) return setStatus("제목은 필수입니다.", true);
 
     const ok = await ensureValidAuth();
-    if (!ok) return;
+    if (!ok) return setStatus("등록/수정은 로그인 후 가능합니다.", true);
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
@@ -658,7 +682,7 @@
 
   async function deletePost(postId){
     const ok = await ensureValidAuth();
-    if (!ok) return;
+    if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
 
     const p = postsMap.get(postId);
     if (!p) return;
@@ -706,11 +730,10 @@
   }
 
   async function renderFeed(){
-    const ok = await ensureValidAuth();
-    if (!ok) return;
-
     const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
-    if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
+    if (error){
+      return setStatus("게시글 불러오기 실패: " + error.message + "\n(읽기 권한이 막혀있다면 로그인 필요)", true);
+    }
 
     const posts = data || [];
     postsMap.clear();
@@ -719,6 +742,9 @@
     setStatus("");
   }
 
+  // ✅ 클릭 동작 업그레이드:
+  // - 내 글 클릭: 오른쪽 미리보기
+  // - 내 글이 아닌 글 클릭: market-view로 이동 + 댓글로 스크롤
   feedEl.addEventListener("click", (e) => {
     const actBtn = e.target.closest("[data-act]");
     if (actBtn){
@@ -744,8 +770,11 @@
     const p = postsMap.get(id);
     if (!p) return;
 
-    if (p.owner === user?.id) showFloatingPreview(p);
-    else setStatus("내 글 클릭 → 오른쪽 미리보기");
+    if (p.owner === user?.id) {
+      showFloatingPreview(p);
+    } else {
+      location.href = `${VIEW_PAGE}?id=${encodeURIComponent(id)}#comments`;
+    }
   });
 
   function showFloatingPreview(p){
@@ -768,6 +797,7 @@
       <div class="fpDesc">${escapeHtml(p.description || "")}</div>
 
       <div class="fpBtns">
+        <button class="btn" type="button" id="fpOpen">상세/댓글</button>
         <button class="btn primary" type="button" id="fpEdit">수정</button>
         <button class="btn danger" type="button" id="fpDel">삭제</button>
       </div>
@@ -775,6 +805,7 @@
 
     fpEl.style.display = "";
     fpEl.querySelector("#fpClose").onclick = () => hideFloatingPreview();
+    fpEl.querySelector("#fpOpen").onclick = () => location.href = `${VIEW_PAGE}?id=${encodeURIComponent(p.id)}#comments`;
     fpEl.querySelector("#fpEdit").onclick = () => enterEditMode(p);
     fpEl.querySelector("#fpDel").onclick = () => deletePost(p.id);
   }
@@ -792,21 +823,27 @@
     $("who").textContent = "로그인 확인 중...";
     $("loginNote").textContent = "로그인 확인 중...";
 
-    loadTokenFromHashOrStorage();
+    const fromHash = loadTokenFromHashOrStorage();
+
+    // OAuth로 돌아온 경우: return_to 있으면 바로 복귀
+    if (fromHash){
+      if (handleReturnToAfterOAuth()) return;
+    }
 
     if (!accessToken || !refreshToken){
       setLoggedOutUI();
       setStatus("");
+      await renderFeed();
       if (autologinOn()) $("btnLogin").click();
       return;
     }
 
-    // 만료/임박이면 자동 갱신
     await ensureValidAuth();
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id){
       setLoggedOutUI();
+      await renderFeed();
       return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
     }
 
@@ -814,7 +851,6 @@
     setStatus("");
     await renderFeed();
 
-    // 1분마다 토큰 임박 체크 → 자동 갱신
     setInterval(async () => {
       if (!accessToken || !refreshToken) return;
       if (tokenExpiringSoon(accessToken, 120)){
