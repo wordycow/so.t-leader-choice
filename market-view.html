@@ -14,7 +14,7 @@
       margin:0;
       font-family:system-ui,-apple-system,"Pretendard",sans-serif;
       color:#e5e7eb;
-      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat; /* ✅ market와 동일 */
+      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
       position:relative;
     }
     body::before{
@@ -69,20 +69,32 @@
     .meta{font-size:12px;opacity:.85;line-height:1.5}
     .desc{margin-top:10px;font-size:13px;line-height:1.65;white-space:pre-line}
 
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:720px){.row{grid-template-columns:1fr}}
+
+    input,textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      color:#e5e7eb;
+      outline:none
+    }
+    textarea{min-height:90px;resize:vertical}
+
     .mainImg{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;margin-bottom:10px}
     .mainImg img{width:100%;height:100%;object-fit:cover;display:block}
 
     .thumbs{display:flex;gap:8px;flex-wrap:wrap}
-    .thumb{width:96px;height:64px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;cursor:pointer;opacity:.9}
+    .thumb{width:96px;height:64px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;cursor:pointer;opacity:.9;position:relative}
     .thumb:hover{opacity:1}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-
-    textarea{
-      width:100%;min-height:90px;resize:vertical;
-      padding:10px 12px;border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.25);
-      color:#e5e7eb;outline:none
+    .thumb .x{
+      position:absolute;top:6px;right:6px;
+      background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.18);
+      color:#fff;border-radius:10px;padding:2px 6px;font-size:11px
     }
 
     .comment{
@@ -92,24 +104,10 @@
       padding:10px 12px;
       margin-top:10px;
     }
-    .comment.reply{
-      border-left: 2px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-    }
-
     .commentTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .commentName{font-weight:900;font-size:13px}
     .commentTime{font-size:11px;opacity:.75}
     .commentBody{margin-top:6px;font-size:13px;line-height:1.6;white-space:pre-line}
-
-    .commentBtn{
-      font-size:11px;padding:6px 8px;border-radius:10px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
-      color:#e5e7eb;
-      cursor:pointer;
-    }
-
     .commentDel{
       font-size:11px;padding:6px 8px;border-radius:10px;
       border:1px solid rgba(248,113,113,.45);
@@ -117,8 +115,6 @@
       color:#fee2e2;
       cursor:pointer;
     }
-
-    .replyTag{font-size:11px;opacity:.8;margin-left:6px}
   </style>
 </head>
 
@@ -146,15 +142,56 @@
     <div id="postDesc" class="desc"></div>
   </div>
 
-  <div class="card" id="comments">
-    <div style="font-weight:900;margin-bottom:8px;">댓글</div>
-
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-      <div id="replying" class="muted" style="display:none;flex:1;min-width:220px;"></div>
-      <button class="btn" id="btnCancelReply" type="button"
-        style="display:none;padding:6px 10px;border-radius:10px;">답글 취소</button>
+  <!-- ✅ 내 글이면 수정/삭제 카드 표시 -->
+  <div class="card" id="editCard" style="display:none;">
+    <div style="font-weight:900;margin-bottom:8px;">게시글 수정 (내 글)</div>
+    <div class="muted" style="margin-bottom:10px;">
+      새 이미지를 선택하면 기존 이미지는 “교체”됩니다. (최대 3개)
     </div>
 
+    <div class="row">
+      <div>
+        <div class="muted" style="margin:0 0 6px;">제목</div>
+        <input id="eTitle" placeholder="제목" />
+      </div>
+      <div>
+        <div class="muted" style="margin:0 0 6px;">수량</div>
+        <input id="eQty" type="number" placeholder="수량" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <div class="muted" style="margin:0 0 6px;">연락처</div>
+        <input id="eContact" placeholder="연락처" />
+      </div>
+      <div>
+        <div class="muted" style="margin:0 0 6px;">지역</div>
+        <input id="eRegion" placeholder="지역" />
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="muted" style="margin:0 0 6px;">설명</div>
+      <textarea id="eDesc" placeholder="설명"></textarea>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="muted" style="margin:0 0 6px;">이미지 교체(선택)</div>
+      <input id="eImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+      <div id="eImgPreview" class="thumbs" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="btns" style="margin-top:10px;">
+      <button class="btn primary" id="btnUpdate" type="button">수정 저장</button>
+      <button class="btn danger" id="btnDeletePost" type="button">게시글 삭제</button>
+      <button class="btn" id="btnResetEdit" type="button">되돌리기</button>
+    </div>
+    <div id="editHint" class="muted" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card" id="comments">
+    <div style="font-weight:900;margin-bottom:8px;">댓글</div>
     <textarea id="cBody" placeholder="댓글을 입력하세요"></textarea>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
       <button class="btn primary" id="btnComment" type="button">댓글 등록</button>
@@ -169,6 +206,7 @@
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+  const BUCKET = "market";
 
   const MARKET_PAGE = "market.html";
   const TOKEN_KEY = "market_access_token";
@@ -177,19 +215,13 @@
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
-  const commentListEl = $("commentList");
 
   let accessToken = null;
   let refreshToken = null;
   let user = null;
 
+  let currentPost = null;
   let postOwnerId = null;
-
-  // reply state
-  let replyToId = null;
-  let replyToName = null;
-
-  let commentMap = new Map();
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
@@ -355,8 +387,8 @@
 
   function setWho(){
     if (!user?.id){
-      $("who").textContent = "로그인 안됨(읽기만 가능)";
-      $("commentHint").textContent = "댓글 작성/삭제/답글은 로그인 후 가능합니다.";
+      $("who").textContent = "로그인 필요";
+      $("commentHint").textContent = "댓글 작성/삭제 및 게시글 수정은 로그인 후 가능합니다.";
       return;
     }
     const label = user.name || user.email || user.id.slice(0,8);
@@ -367,28 +399,6 @@
   function marketHtmlUrl(){
     const base = location.pathname.replace(/\/[^\/]*$/, "");
     return location.origin + base + "/" + MARKET_PAGE;
-  }
-
-  function setReplyTarget(c){
-    replyToId = c.id;
-    replyToName = c.owner_name || "익명";
-
-    $("replying").style.display = "";
-    $("btnCancelReply").style.display = "";
-    $("replying").textContent = `답글 대상: ${replyToName} · “${(c.body||"").slice(0,40)}${(c.body||"").length>40?"…":""}”`;
-
-    const ta = $("cBody");
-    ta.placeholder = `@${replyToName} 에게 답글...`;
-    setTimeout(() => ta.focus(), 60);
-  }
-
-  function clearReplyTarget(){
-    replyToId = null;
-    replyToName = null;
-    $("replying").style.display = "none";
-    $("btnCancelReply").style.display = "none";
-    const ta = $("cBody");
-    ta.placeholder = "댓글을 입력하세요";
   }
 
   // UI 버튼
@@ -415,8 +425,7 @@
     else setStatus("로그인 URL 생성 실패", true);
   };
 
-  $("btnCancelReply").onclick = () => clearReplyTarget();
-
+  // ===== 게시글 로드/렌더 =====
   async function loadPost(){
     const postId = getPostId();
     if (!postId) {
@@ -424,14 +433,12 @@
       $("postTitle").textContent = "ID 없음";
       return null;
     }
-
     const { data, error } = await sb.from("market_posts").select("*").eq("id", postId).single();
     if (error) {
       setStatus("게시글 불러오기 실패: " + error.message, true);
       $("postTitle").textContent = "불러오기 실패";
       return null;
     }
-
     postOwnerId = data.owner || null;
     return data;
   }
@@ -470,63 +477,183 @@
     renderImages(Array.isArray(p.images) ? p.images : []);
   }
 
+  // ===== 내 글 수정 UI =====
+  let selectedFiles = [];
+  let previewUrls = [];
+
+  function clearPreviews(){
+    previewUrls.forEach(u => URL.revokeObjectURL(u));
+    previewUrls = [];
+    selectedFiles = [];
+    $("eImages").value = "";
+    $("eImgPreview").innerHTML = "";
+  }
+
+  function renderPreviews(){
+    const box = $("eImgPreview");
+    box.innerHTML = "";
+    selectedFiles.slice(0,3).forEach((file, idx) => {
+      const url = URL.createObjectURL(file);
+      previewUrls.push(url);
+      const d = document.createElement("div");
+      d.className = "thumb";
+      d.innerHTML = `<img src="${url}" alt=""><button class="x" type="button">X</button>`;
+      d.querySelector(".x").onclick = () => {
+        selectedFiles.splice(idx, 1);
+        renderPreviews();
+      };
+      box.appendChild(d);
+    });
+  }
+
+  $("eImages").addEventListener("change", (e) => {
+    previewUrls.forEach(u => URL.revokeObjectURL(u));
+    previewUrls = [];
+    selectedFiles = Array.from(e.target.files || []).slice(0,3);
+    renderPreviews();
+  });
+
+  function fillEditForm(p){
+    $("eTitle").value = p.title || "";
+    $("eQty").value = (p.qty ?? "");
+    $("eContact").value = p.contact || "";
+    $("eRegion").value = p.region || "";
+    $("eDesc").value = p.description || "";
+    $("editHint").textContent = "";
+    clearPreviews();
+  }
+
+  function fileExt(file){
+    const n = file.name || "";
+    const dot = n.lastIndexOf(".");
+    return dot >= 0 ? n.slice(dot+1).toLowerCase() : "png";
+  }
+
+  function toPublicUrl(path){
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
+  function storagePathFromPublicUrl(url){
+    try{
+      const marker = `/storage/v1/object/public/${BUCKET}/`;
+      const idx = url.indexOf(marker);
+      if (idx < 0) return null;
+      return url.slice(idx + marker.length);
+    }catch(e){ return null; }
+  }
+
+  async function removeOldImages(urls){
+    const paths = (urls || []).map(storagePathFromPublicUrl).filter(Boolean);
+    if (!paths.length) return;
+    await sb.storage.from(BUCKET).remove(paths);
+  }
+
+  async function uploadImages(postId){
+    if (!selectedFiles.length) return null;
+
+    const ok = await ensureValidAuth();
+    if (!ok) throw new Error("로그인이 필요합니다.");
+
+    const urls = [];
+    for (let i=0; i<Math.min(3, selectedFiles.length); i++){
+      const f = selectedFiles[i];
+      const ext = fileExt(f);
+      const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
+      if (error) throw new Error(error.message);
+      urls.push(toPublicUrl(path));
+    }
+    return urls;
+  }
+
+  async function updatePost(){
+    if (!currentPost) return;
+
+    const ok = await ensureValidAuth();
+    if (!ok) return setStatus("수정은 로그인 후 가능합니다.", true);
+
+    user = decodeUserFromAccessToken(accessToken);
+    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
+    if (currentPost.owner !== user.id) return setStatus("내 글만 수정 가능합니다.", true);
+
+    const title = ($("eTitle").value || "").trim();
+    if (!title) return setStatus("제목은 필수입니다.", true);
+
+    const qty = $("eQty").value ? parseInt($("eQty").value, 10) : null;
+    const contact = ($("eContact").value || "").trim();
+    const region = ($("eRegion").value || "").trim();
+    const description = ($("eDesc").value || "").trim();
+
+    setStatus("수정 중...");
+
+    const { error: e1 } = await sb
+      .from("market_posts")
+      .update({ title, qty, contact, region, description })
+      .eq("id", currentPost.id);
+
+    if (e1) return setStatus("수정 실패: " + e1.message, true);
+
+    try{
+      const newUrls = await uploadImages(currentPost.id);
+      if (Array.isArray(newUrls) && newUrls.length){
+        // 새 이미지 업로드 성공 후 기존 삭제 + DB 갱신
+        try{ await removeOldImages(Array.isArray(currentPost.images)?currentPost.images:[]); }catch(e){}
+        const { error: e2 } = await sb.from("market_posts").update({ images: newUrls }).eq("id", currentPost.id);
+        if (e2) return setStatus("이미지 갱신 실패: " + e2.message, true);
+      }
+    }catch(e){
+      return setStatus("이미지 업로드 실패: " + (e?.message || e), true);
+    }
+
+    setStatus("수정 완료!");
+    currentPost = await loadPost();
+    if (currentPost){
+      renderPost(currentPost);
+      fillEditForm(currentPost);
+    }
+  }
+
+  async function deletePost(){
+    if (!currentPost) return;
+
+    const ok = await ensureValidAuth();
+    if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+
+    user = decodeUserFromAccessToken(accessToken);
+    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
+    if (currentPost.owner !== user.id) return setStatus("내 글만 삭제 가능합니다.", true);
+
+    if (!confirm("정말 게시글을 삭제할까요?\n(이미지/댓글도 함께 정리하는 것을 시도합니다)")) return;
+
+    setStatus("삭제 중...");
+
+    // 댓글 삭제 시도(정책 없으면 실패할 수 있음)
+    try{ await sb.from("market_comments").delete().eq("post_id", currentPost.id); }catch(e){}
+
+    // 이미지 삭제
+    try{ await removeOldImages(Array.isArray(currentPost.images)?currentPost.images:[]); }catch(e){}
+
+    const { error } = await sb.from("market_posts").delete().eq("id", currentPost.id);
+    if (error) return setStatus("게시글 삭제 실패: " + error.message, true);
+
+    setStatus("삭제 완료! 마켓으로 이동합니다.");
+    setTimeout(() => location.href = MARKET_PAGE, 400);
+  }
+
+  // ===== 댓글 =====
   async function loadComments(){
     const postId = getPostId();
     const { data, error } = await sb
       .from("market_comments")
       .select("*")
       .eq("post_id", postId)
-      .order("created_at", { ascending: true }); // 대댓글은 보통 시간순이 깔끔
+      .order("created_at", { ascending: false });
 
     if (error) {
       setStatus("댓글 불러오기 실패: " + error.message, true);
       return [];
     }
     return data || [];
-  }
-
-  function buildTree(raw){
-    const list = (raw || []).map(c => ({...c, children:[]}));
-    const byId = new Map();
-    list.forEach(c => byId.set(c.id, c));
-
-    const roots = [];
-    list.forEach(c => {
-      const pid = c.parent_id;
-      if (pid && byId.has(pid)) byId.get(pid).children.push(c);
-      else roots.push(c);
-    });
-
-    // 정렬: 루트는 최신이 아래로 쌓이게(이미 asc라 그대로), 자식도 그대로
-    return { roots, byId };
-  }
-
-  function renderNode(c, depth){
-    const canDelete = user?.id && (c.owner === user.id || postOwnerId === user.id);
-    const indent = depth * 18;
-
-    return `
-      <div class="comment ${depth ? "reply" : ""}" style="margin-left:${indent}px;">
-        <div class="commentTop">
-          <div>
-            <div class="commentName">
-              ${escapeHtml(c.owner_name || "익명")}
-              ${depth ? `<span class="replyTag">↳ 답글</span>` : ``}
-            </div>
-            <div class="commentTime">${formatTime(c.created_at)}</div>
-          </div>
-
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="commentBtn" data-act="reply" data-id="${c.id}" type="button">답글</button>
-            ${canDelete ? `<button class="commentDel" data-act="del" data-id="${c.id}" type="button">삭제</button>` : ``}
-          </div>
-        </div>
-
-        <div class="commentBody">${escapeHtml(c.body || "")}</div>
-      </div>
-
-      ${(c.children || []).map(ch => renderNode(ch, depth + 1)).join("")}
-    `;
   }
 
   function renderComments(list){
@@ -536,88 +663,77 @@
       return;
     }
 
-    const { roots, byId } = buildTree(list);
-    commentMap = byId;
+    box.innerHTML = list.map(c => {
+      const canDelete =
+        user?.id &&
+        (c.owner === user.id || (postOwnerId && postOwnerId === user.id)); // 상품 주인도 보이게(정책 필요)
 
-    box.innerHTML = roots.map(r => renderNode(r, 0)).join("");
-  }
+      return `
+        <div class="comment">
+          <div class="commentTop">
+            <div>
+              <div class="commentName">${escapeHtml(c.owner_name || "익명")}</div>
+              <div class="commentTime">${formatTime(c.created_at)}</div>
+            </div>
+            ${canDelete ? `<button class="commentDel" data-id="${c.id}" type="button">삭제</button>` : ``}
+          </div>
+          <div class="commentBody">${escapeHtml(c.body || "")}</div>
+        </div>
+      `;
+    }).join("");
 
-  async function deleteComment(commentId){
-    const ok = await ensureValidAuth();
-    if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+    box.querySelectorAll(".commentDel").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
 
-    if (!confirm("이 댓글을 삭제할까요?\n(대댓글이 달린 댓글이면 대댓글도 같이 삭제됩니다)")) return;
+        const ok = await ensureValidAuth();
+        if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
 
-    const { error } = await sb.from("market_comments").delete().eq("id", commentId);
-    if (error){
-      return setStatus(
-        "댓글 삭제 실패: " + error.message +
-        "\n(상품 주인 삭제가 안 되면 Supabase RLS 정책을 추가해야 합니다.)",
-        true
-      );
-    }
+        if (!confirm("이 댓글을 삭제할까요?")) return;
+        const { error } = await sb.from("market_comments").delete().eq("id", id);
 
-    setStatus("댓글 삭제 완료");
-    const again = await loadComments();
-    renderComments(again);
+        if (error){
+          return setStatus(
+            "댓글 삭제 실패: " + error.message +
+            "\n(상품 주인이 남 댓글을 삭제하려면 Supabase RLS 정책이 필요할 수 있어요.)",
+            true
+          );
+        }
+
+        setStatus("댓글 삭제 완료");
+        renderComments(await loadComments());
+      });
+    });
   }
 
   async function addComment(){
     const postId = getPostId();
     const body = ($("cBody").value || "").trim();
-    if (!body) return setStatus("내용을 입력하세요.", true);
+    if (!body) return setStatus("댓글 내용을 입력하세요.", true);
 
     const ok = await ensureValidAuth();
-    if (!ok) return setStatus("댓글/답글은 로그인 후 가능합니다.", true);
+    if (!ok) return setStatus("댓글 작성은 로그인 후 가능합니다.", true);
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
 
-    setStatus(replyToId ? "답글 등록 중..." : "댓글 등록 중...");
-
+    setStatus("댓글 등록 중...");
     const owner_name = user.name || user.email || "";
-    const payload = {
+
+    const { error } = await sb.from("market_comments").insert({
       post_id: postId,
       owner: user.id,
       owner_name,
-      body,
-      parent_id: replyToId || null
-    };
+      body
+    });
 
-    const { error } = await sb.from("market_comments").insert(payload);
-    if (error) return setStatus("등록 실패: " + error.message, true);
+    if (error) return setStatus("댓글 등록 실패: " + error.message, true);
 
     $("cBody").value = "";
-    clearReplyTarget();
-    setStatus("등록 완료!");
-
-    const again = await loadComments();
-    renderComments(again);
+    setStatus("댓글 등록 완료!");
+    renderComments(await loadComments());
   }
-
-  // 댓글 버튼(답글/삭제) 이벤트 위임
-  commentListEl.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-act]");
-    if (!btn) return;
-
-    const act = btn.getAttribute("data-act");
-    const id = btn.getAttribute("data-id");
-    if (!id) return;
-
-    const c = commentMap.get(id);
-    if (!c) return;
-
-    if (act === "reply"){
-      if (!user?.id) return setStatus("답글은 로그인 후 가능합니다.", true);
-      setReplyTarget(c);
-      return;
-    }
-
-    if (act === "del"){
-      deleteComment(id);
-      return;
-    }
-  });
 
   function scrollToCommentsIfNeeded(){
     if (location.hash === "#comments"){
@@ -631,6 +747,10 @@
   $("btnComment").onclick = () => addComment();
   $("btnReload").onclick = async () => renderComments(await loadComments());
 
+  $("btnUpdate").onclick = () => updatePost();
+  $("btnDeletePost").onclick = () => deletePost();
+  $("btnResetEdit").onclick = () => { if (currentPost) fillEditForm(currentPost); };
+
   // Boot
   (async () => {
     loadTokenFromHashOrStorage();
@@ -639,15 +759,22 @@
       await ensureValidAuth();
       user = decodeUserFromAccessToken(accessToken);
     }
-
     setWho();
 
-    const post = await loadPost();
-    if (post) renderPost(post);
+    currentPost = await loadPost();
+    if (currentPost){
+      renderPost(currentPost);
 
-    const comments = await loadComments();
-    renderComments(comments);
+      // ✅ 내 글이면 수정 카드 표시
+      if (user?.id && currentPost.owner === user.id){
+        $("editCard").style.display = "";
+        fillEditForm(currentPost);
+      } else {
+        $("editCard").style.display = "none";
+      }
+    }
 
+    renderComments(await loadComments());
     scrollToCommentsIfNeeded();
 
     setInterval(async () => {
