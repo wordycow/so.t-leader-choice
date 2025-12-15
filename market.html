@@ -745,37 +745,33 @@
   // ✅ 클릭 동작 업그레이드:
   // - 내 글 클릭: 오른쪽 미리보기
   // - 내 글이 아닌 글 클릭: market-view로 이동 + 댓글로 스크롤
-  feedEl.addEventListener("click", (e) => {
-    const actBtn = e.target.closest("[data-act]");
-    if (actBtn){
-      e.preventDefault();
-      e.stopPropagation();
-      const act = actBtn.getAttribute("data-act");
-      const id = actBtn.getAttribute("data-id");
-      if (!id) return;
+ feedEl.addEventListener("click", (e) => {
+  const actBtn = e.target.closest("[data-act]");
+  if (actBtn){
+    e.preventDefault();
+    e.stopPropagation();
+    const act = actBtn.getAttribute("data-act");
+    const id = actBtn.getAttribute("data-id");
+    if (!id) return;
 
-      const p = postsMap.get(id);
-      if (!p) return;
-
-      if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
-
-      if (act === "edit") enterEditMode(p);
-      if (act === "del") deletePost(id);
-      return;
-    }
-
-    const card = e.target.closest(".post");
-    if (!card) return;
-    const id = card.getAttribute("data-postid");
     const p = postsMap.get(id);
     if (!p) return;
 
-    if (p.owner === user?.id) {
-      showFloatingPreview(p);
-    } else {
-      location.href = `${VIEW_PAGE}?id=${encodeURIComponent(id)}#comments`;
-    }
-  });
+    if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
+
+    if (act === "edit") enterEditMode(p);
+    if (act === "del") deletePost(id);
+    return;
+  }
+
+  const card = e.target.closest(".post");
+  if (!card) return;
+  const id = card.getAttribute("data-postid");
+  if (!id) return;
+
+  // ✅ 내 글/남 글 상관없이 상세(댓글)로 이동
+  location.href = `${VIEW_PAGE}?id=${encodeURIComponent(id)}#comments`;
+});
 
   function showFloatingPreview(p){
     const imgs = Array.isArray(p.images) ? p.images : [];
