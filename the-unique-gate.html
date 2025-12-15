@@ -108,60 +108,70 @@
     .status{ min-height:18px; font-size:11px; text-align:center; margin-top:6px; opacity:.85; }
     .status-error{ color:#fecaca; opacity:1; }
 
-    /* =========================
-       ✅ 마녀 & 박쥐 복구 (누락된 부분)
-       ========================= */
-    .spirit{
-      position:absolute;
-      pointer-events:none;
-      z-index:5; /* 텍스트/폼(10)보다 아래 */
-    }
-    .spirit img{
-      display:block;
-      width:100%;
-      height:auto;
-    }
+   /* =========================
+   ✅ 마녀 & 박쥐 (달 근처 이동 + 크기 확대 + 좌우 이동)
+   조절은 여기 변수 4개만 건드리면 됨
+   ========================= */
+:root{
+  --witch-size: 9%;     /* ✅ 마녀 크기(PC) */
+  --bat-size:  18%;     /* ✅ 박쥐 크기(PC) */
+  --witch-x:  86%;      /* ✅ 마녀 X 위치(오른쪽으로 갈수록 ↑) */
+  --witch-y:  10%;      /* ✅ 마녀 Y 위치(위로 갈수록 ↓) */
+  --bat-x:    78%;      /* ✅ 박쥐 X 위치 */
+  --bat-y:     6%;      /* ✅ 박쥐 Y 위치 */
+}
 
-    .spirit-witch{
-      top: 30%;
-      right: 22%;
-      width: 3%;
-      animation: witchFloat 5s ease-in-out infinite alternate;
-    }
+.spirit{
+  position:absolute;
+  pointer-events:none;
+  z-index: 6;
+}
 
-    @keyframes witchFloat{
-      from { transform: translateY(5px) translateX(0); }
-      to   { transform: translateY(-20px) translateX(6px); }
-    }
+.spirit img{
+  display:block;
+  width:100%;
+  height:auto;
+  filter: drop-shadow(0 0 10px rgba(250,204,21,0.55));
+}
 
-    .spirit-bat{
-      top: -20%;
-      right: 0%;
-      width: 43%;
-      animation: batFloat 2s ease-in-out infinite alternate;
-    }
+/* ✅ 달 근처: 오른쪽 위 */
+.spirit-witch{
+  left: var(--witch-x);
+  top:  var(--witch-y);
+  width: var(--witch-size);
+  animation: witchDrift 4.8s ease-in-out infinite alternate;
+}
 
-    @keyframes batFloat{
-      from { transform: translateY(8px); }
-      to   { transform: translateY(22px); }
-    }
+.spirit-bat{
+  left: var(--bat-x);
+  top:  var(--bat-y);
+  width: var(--bat-size);
+  animation: batDrift 2.6s ease-in-out infinite alternate;
+  opacity: 0.95;
+}
 
-    @media (max-width:768px){
-      .gate-card{ padding:24px 20px 18px; border-radius:22px; }
-      .gate-title{ font-size:32px; letter-spacing:0.22em; }
-      .form-body{ max-width:100%; }
+/* ✅ “왔다리 갔다리(좌우)” + 살짝 위아래 */
+@keyframes witchDrift{
+  from { transform: translateX(-18px) translateY(6px) rotate(-2deg); }
+  to   { transform: translateX(18px)  translateY(-10px) rotate(2deg); }
+}
+@keyframes batDrift{
+  from { transform: translateX(-26px) translateY(4px) rotate(-1deg); }
+  to   { transform: translateX(26px)  translateY(12px) rotate(1deg); }
+}
 
-      .spirit-witch{
-        top: 26%;
-        right: 20%;
-        width: 10%;
-      }
-      .spirit-bat{
-        top: 18%;
-        right: 10%;
-        width: 30%;
-      }
-    }
+/* ✅ 모바일에서는 크기/위치 자동 조정(너 요청: gate에서 모바일도 보이게 했으니) */
+@media (max-width:768px){
+  :root{
+    --witch-size: 16%;
+    --bat-size:  30%;
+    --witch-x:   72%;
+    --witch-y:   8%;
+    --bat-x:     58%;
+    --bat-y:     3%;
+  }
+}
+
   </style>
 </head>
 
