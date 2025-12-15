@@ -1,10 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <title>The Unique – Member Hall</title>
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- THE UNIQUE 타이틀용 폰트 -->
@@ -13,758 +11,484 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    * { box-sizing: border-box; }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%}
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      color:#f9fafb;
+      background-color:#0B1120;
+      background-image:radial-gradient(circle at top, rgba(148,163,184,0.18), transparent 55%);
+      background-attachment:fixed;
     }
 
-    /* 메인 배경: Midnight Blue */
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color: #f9fafb;
-      background-color: #0B1120;
-      background-image: radial-gradient(circle at top, rgba(148,163,184,0.18), transparent 55%);
-      background-attachment: fixed;
+    .scene{
+      position:fixed; inset:0;
+      overflow:hidden;
+      pointer-events:none;
+    }
+    .scene-bg{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover;
+      opacity:.55;
+      mix-blend-mode:screen;
     }
 
-    .scene {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
+    .page-wrap{
+      position:relative;
+      z-index:10;
+      max-width:1200px;
+      margin:72px auto 40px;
+      padding:0 16px;
+      width:100%;
     }
 
-    .scene-bg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.55;
-      mix-blend-mode: screen;
+    .main-card{
+      position:relative;
+      width:100%;
+      max-width:920px;
+      margin:0 auto;
+      border-radius:26px;
+      padding:28px 32px 26px;
+
+      background:#1e2848;
+      border:1px solid rgba(245,158,11,0.95);
+      box-shadow:
+        0 0 24px rgba(245,158,11,0.65),
+        0 35px 90px rgba(0,0,0,0.95);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
 
-    .page-wrap {
-      position: relative;
-      z-index: 10;
-      max-width: 1200px;
-      margin: 72px auto 40px;
-      padding: 0 16px;
-      width: 100%;
+    .main-inner{position:relative; z-index:1;}
+
+    .title-wrap{text-align:center; margin-bottom:22px;}
+    .title-en{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:700;
+      font-size:32px;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+      color:#FACC15;
+      text-shadow: 0 0 16px rgba(245,158,11,0.9), 0 4px 18px rgba(0,0,0,0.95);
+    }
+    .subtitle-en{
+      font-size:11px;
+      color:#94A3B8;
+      letter-spacing:.12em;
+      text-transform:none;
     }
 
-    .main-card {
-  position: relative;
-  width: 100%;
-  max-width: 920px;
-  margin: 0 auto;
-  border-radius: 26px;
-  padding: 28px 32px 26px;
+    /* ===== 상단 SNS 아이콘 ===== */
+    .top-sns-icons{
+      position:absolute;
+      top:68px;
+      right:46px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      z-index:5;
 
-  /* 메인 큰 블럭 배경색 */
-  background: #1e2848;
-  border: 1px solid rgba(245,158,11,0.95); /* 전체 테두리 금색 */
-  box-shadow:none !important;
-}
+      background:#1e2848;
+      border-radius:999px;
+      padding:1px;
+      border:1px solid rgba(245,158,11,0.35);
 
-    .main-inner {
-      position: relative;
-      z-index: 1;
+      /* ✅ 선처럼 보이던 그림자 제거 */
+      box-shadow:none;
+    }
+    .top-sns-icons a{display:block; line-height:0; text-decoration:none;}
+    .top-sns-icons img{display:block; width:42px; height:42px;}
+
+    /* ===== 마켓 버튼 (PC만 표시) ===== */
+    .top-market-btn{
+      position:absolute;
+      top:68px;
+      left:46px;
+      z-index:6;
+
+      display:none; /* PC에서만 */
+      align-items:center;
+      justify-content:center;
+
+      padding:10px 14px;
+      border-radius:999px;
+
+      border:1px solid rgba(245,158,11,0.85);
+      background: radial-gradient(circle at top, rgba(29,41,83,0.92), rgba(11,17,32,0.88));
+      color:#FACC15;
+
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:0.08em;
+      text-decoration:none;
+
+      box-shadow:
+        0 10px 22px rgba(0,0,0,0.60),
+        0 0 0 1px rgba(15,23,42,0.9) inset;
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform .12s ease, filter .12s ease, background .12s ease;
+    }
+    .top-market-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+      background: radial-gradient(circle at top, rgba(245,158,11,0.20), rgba(11,17,32,0.88));
     }
 
-    .title-wrap {
-      text-align: center;
-      margin-bottom: 22px;
+    /* ===== 주간 스케줄 ===== */
+    .top-schedule-panel{
+      margin:10px 0 18px;
+      border-radius:18px;
+      padding:10px 14px 12px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.99));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.85),
+        0 12px 26px rgba(0,0,0,0.9);
     }
-
-    .title-en {
-      font-family: "Cinzel", "Times New Roman", serif;
-      font-weight: 700;
-      font-size: 32px;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-
-      color: #FACC15; /* 금색 글자 */
-      text-shadow:
-        0 0 16px rgba(245,158,11,0.9),
-        0 4px 18px rgba(0,0,0,0.95);
+    .top-schedule-header{
+      font-size:13px;
+      font-weight:600;
+      color:#e5e7eb;
+      margin-bottom:6px;
     }
-
-    .subtitle-en {
-      font-size: 11px;
-      color: #94A3B8;
-      letter-spacing: 0.12em;
-      text-transform: none;
+    .top-schedule-grid{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0,1fr));
+      gap:8px;
+      font-size:11px;
     }
+    .top-schedule-day{
+      background: rgba(15,23,42,0.98);
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,0.9);
+      padding:6px 7px;
+    }
+    .top-schedule-day-name{
+      font-weight:600;
+      color:#facc15;
+      margin-bottom:4px;
+      word-break:keep-all;
+    }
+    .top-schedule-item{margin-bottom:5px;}
+    .top-schedule-time{
+      font-weight:600;
+      color:#e5e7eb;
+      word-break:keep-all;
+      line-height:1.25;
+    }
+    .top-schedule-title{
+      color:#c4b5fd;
+      word-break:keep-all;
+      line-height:1.38;
+    }
+    .top-schedule-empty{font-size:11px;color:#9ca3af;}
 
-    .layout {
-      display: grid;
+    /* ===== 메인 레이아웃 ===== */
+    .layout{
+      display:grid;
       grid-template-columns: minmax(0, 2.4fr) minmax(0, 3fr);
-      gap: 24px;
-      align-items: stretch; /* 좌/우 카드 높이 동일하게 */
+      gap:24px;
+      align-items:stretch;
     }
 
-    /* ───── 회원 정보 + 직급 ───── */
-    .member-panel {
-      border-radius: 22px;
-      padding: 16px 18px;
+    .member-panel{
+      border-radius:22px;
+      padding:16px 18px;
       background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.85),
         0 12px 28px rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
+      display:flex;
+      flex-direction:column;
     }
 
-    .member-hello {
-      font-size: 14px;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 6px;
-    }
+    .member-hello{font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;}
+    .member-name{font-size:20px;font-weight:700;margin-bottom:4px;color:#fff;}
+    .member-id{display:none;}
+    .member-meta{font-size:12px;color:#94A3B8;margin-bottom:6px;}
 
-    .member-name {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: #FFFFFF;
-    }
-
-    .member-id { display: none; }
-
-    .member-meta {
-      font-size: 12px;
-      color: #94A3B8;
-      margin-bottom: 6px;
-    }
-
-    /* 직급 박스 (키운 버전) */
-    .rank-badge-box {
-      margin-top: 16px;
-       padding: 20px 26px 20px;
-      border-radius: 22px;
+    .rank-badge-box{
+      margin-top:16px;
+      padding:20px 26px 20px;
+      border-radius:22px;
       background: radial-gradient(circle at top, #1D2953, #0B1120);
-      border: 1px solid rgba(148,163,184,0.9);
+      border:1px solid rgba(148,163,184,0.9);
       box-shadow:
         0 0 0 1px rgba(15,23,42,1),
         0 16px 32px rgba(15,23,42,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
 
-    .rank-road {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .rank-road{display:flex;align-items:center;gap:12px;}
+    .rank-slot{display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .rank-slot-next{margin-top:12px;}
+    .rank-icon{
+      max-height:130px;
+      height:auto;
+      width:auto;
+      border-radius:12px;
+      object-fit:contain;
+      background:transparent;
+      --rank-scale:1;
+      transform:scale(var(--rank-scale));
+      transform-origin:center bottom;
     }
-
-    .rank-slot {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
+    .rank-icon-next{opacity:1;}
+    .rank-arrow{
+      font-size:22px;
+      color:#F59E0B;
+      text-shadow:0 0 10px rgba(245,158,11,0.7);
+      margin:0 -4px;
     }
+    .rank-mini-label{font-size:11px;color:#E5E7EB;opacity:.95;}
 
-    .rank-slot-next {
-      margin-top: 12px;
-    }
-
-    .rank-icon {
-      max-height: 130px;
-      height: auto;
-      width: auto;
-      border-radius: 12px;
-      object-fit: contain;
-      background: transparent;
-    
-      --rank-scale: 1;
-      transform: scale(var(--rank-scale));
-      transform-origin: center bottom;
-    }
-
-    .rank-icon-next { opacity: 1; }
-
-    .rank-arrow {
-      font-size: 22px;
-      color: #F59E0B;
-      text-shadow: 0 0 10px rgba(245,158,11,0.7);
-      margin: 0 -4px;   /* 화살표 양쪽을 살짝 당겨서 전체 간격 감소 */
-    }
-
-    .rank-mini-label {
-      font-size: 11px;
-      color: #E5E7EB;
-      opacity: 0.95;
-    }
-
-    .rank-text-block { display: none; }
-
-    /* ───── 목표 + 마녀 ───── */
-    .goal-panel {
-      border-radius: 22px;
-      padding: 16px 18px;
+    .goal-panel{
+      border-radius:22px;
+      padding:16px 18px;
       background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.75),
         0 12px 28px rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
+      display:flex;
+      flex-direction:column;
     }
 
-    .goal-header { margin-bottom: 6px; }
-    .goal-header-text {
-      font-size: 14px;
-      font-weight: 700;
-      color: #E5E7EB;
-    }
-    .goal-header-text span {
-      color: #FACC15; /* Pro1 금색 강조 */
-      font-weight: 800;
-      margin-left: 4px;
-    }
+    .goal-header{margin-bottom:6px;}
+    .goal-header-text{font-size:14px;font-weight:700;color:#E5E7EB;}
+    .goal-header-text span{color:#FACC15;font-weight:800;margin-left:4px;}
 
-    .next-goal-card {
-      flex: 1 1 auto;
-      border-radius: 18px;
-      padding: 18px 24px 18px;
+    .next-goal-card{
+      flex:1 1 auto;
+      border-radius:18px;
+      padding:18px 24px 18px;
       background: url("img/next-goal-bg.jpg") center center / cover no-repeat;
-      border: 1px solid #F59E0B;
+      border:1px solid #F59E0B;
       box-shadow:
         0 0 0 1px rgba(15,23,42,1),
         0 10px 24px rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
     }
 
-    .next-goal-top {
-      display: flex;
-      justify-content: center;
-      margin-top: 40px;
-      margin-bottom: 32px;
+    .next-goal-top{
+      display:flex;
+      justify-content:center;
+      margin-top:40px;
+      margin-bottom:32px;
     }
-
-    .goal-me-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .goal-witch {
-      max-height: 200px;
-      height: auto;
-      width: auto;
-      display: block;
+    .goal-me-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .goal-witch{
+      max-height:200px;
+      height:auto;
+      width:auto;
+      display:block;
       animation: witchFloat 4s ease-in-out infinite alternate;
       filter:
         drop-shadow(0 0 10px rgba(245,158,11,0.9))
         drop-shadow(0 6px 14px rgba(0,0,0,0.8));
     }
 
-    .goal-me-label { display: none; }
-
-    .next-goal-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
+    .next-goal-bottom{display:flex;justify-content:space-between;align-items:flex-end;}
+    .goal-side{display:flex;flex-direction:column;gap:4px;flex:1;}
+    .goal-label{
+      font-size:14px;
+      color:#FACC15;
+      text-shadow:0 0 8px rgba(245,158,11,0.8), 0 2px 10px rgba(0,0,0,0.9);
     }
-
-    .goal-side {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
+    .goal-count{
+      font-size:72px;
+      font-weight:800;
+      color:#FACC15;
+      text-shadow:0 0 12px rgba(245,158,11,0.9), 0 0 22px rgba(0,0,0,0.9);
+      line-height:1;
     }
-
-    .goal-arrow { display: none; }
-
-    .goal-label {
-      font-size: 14px;
-      color: #FACC15;
-      text-shadow:
-        0 0 8px rgba(245,158,11,0.8),
-        0 2px 10px rgba(0,0,0,0.9);
-    }
-
-    .goal-count {
-      font-size: 72px;
-      font-weight: 800;
-      color: #FACC15;
-      text-shadow:
-        0 0 12px rgba(245,158,11,0.9),
-        0 0 22px rgba(0,0,0,0.9);
-      line-height: 1;
-    }
-
-    .goal-left { align-items: flex-start; }
-    .goal-right { align-items: flex-end; }
-
-    .goal-left .goal-count,
-    .goal-left .goal-label { text-align: left; }
-
-    .goal-right .goal-count,
-    .goal-right .goal-label { text-align: right; }
+    .goal-left{align-items:flex-start;}
+    .goal-right{align-items:flex-end;}
+    .goal-left .goal-count,.goal-left .goal-label{text-align:left;}
+    .goal-right .goal-count,.goal-right .goal-label{text-align:right;}
 
     /* eBook 패널 */
-    .ebook-panel {
-      margin-top: 18px;
-      border-radius: 18px;
-      padding: 12px 16px 16px;
+    .ebook-panel{
+      margin-top:18px;
+      border-radius:18px;
+      padding:12px 16px 16px;
       background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.85),
         0 10px 24px rgba(0,0,0,0.9);
     }
-
-    .ebook-panel .section-title {
-      margin-bottom: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #E5E7EB;
-    }
-
-    .ebook-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .ebook-card {
-      border-radius: 16px;
-      padding: 14px;
+    .ebook-panel .section-title{margin-bottom:8px;font-size:13px;font-weight:600;color:#E5E7EB;}
+    .ebook-list{display:flex;flex-wrap:wrap;gap:10px;}
+    .ebook-card{
+      border-radius:16px;
+      padding:14px;
       background: linear-gradient(135deg, #111827, #020617);
-      display: flex;
-      gap: 14px;
-      align-items: stretch;
-      text-decoration: none;
-      color: #E5E7EB;
+      display:flex;
+      gap:14px;
+      align-items:stretch;
+      text-decoration:none;
+      color:#E5E7EB;
       box-shadow:
         0 0 0 1px rgba(30,64,118,0.9),
         0 14px 26px rgba(0,0,0,0.9);
-      min-height: 120px;
-
-      flex: 1 1 calc(50% - 10px);
-      min-width: 0;
+      min-height:120px;
+      flex:1 1 calc(50% - 10px);
+      min-width:0;
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
     }
-
-    .ebook-card:hover {
-      transform: translateY(-1px);
+    .ebook-card:hover{
+      transform:translateY(-1px);
       box-shadow:
         0 18px 40px rgba(0,0,0,0.95),
         0 0 0 1px rgba(248,250,252,0.6);
       background: linear-gradient(135deg, #1E293B, #020617);
     }
+    .ebook-thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#020617;}
+    .ebook-thumb img{width:100%;height:100%;object-fit:cover;}
+    .ebook-meta-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;}
+    .ebook-meta-desc{font-size:11px;color:#CBD5F5;opacity:.9;}
+    .ebook-meta-cta{margin-top:4px;font-size:11px;color:#FACC15;}
+    .ebook-admin-link-wrap{margin-top:6px;text-align:right;}
+    .ebook-admin-link{font-size:11px;color:#9CA3AF;text-decoration:none;opacity:.75;}
+    .ebook-admin-link:hover{opacity:1;color:#FACC15;}
 
-    .ebook-thumb {
-      width: 96px;
-      height: 96px;
-      border-radius: 12px;
-      overflow: hidden;
-      flex-shrink: 0;
-      background: #020617;
-    }
-
-    .ebook-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .ebook-meta-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #FFFFFF;
-      margin-bottom: 4px;
-    }
-
-    .ebook-meta-desc {
-      font-size: 11px;
-      color: #CBD5F5;
-      opacity: 0.9;
-    }
-
-    .ebook-meta-cta {
-      margin-top: 4px;
-      font-size: 11px;
-      color: #FACC15;
-    }
-
-    .ebook-admin-link-wrap {
-      margin-top: 6px;
-      text-align: right;
-    }
-
-    .ebook-admin-link {
-      font-size: 11px;
-      color: #9CA3AF;
-      text-decoration: none;
-      opacity: 0.75;
-    }
-
-    .ebook-admin-link:hover {
-      opacity: 1;
-      color: #FACC15;
-    }
-
-    /* ───── 프로모션/여행/So.T 버튼 ───── */
-    .member-actions {
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .action-btn {
-      width: 100%;
-      padding: 9px 10px;
-      border-radius: 999px;
-      border: 1px solid #F59E0B;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-
+    /* 버튼 */
+    .member-actions{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+    .action-btn{
+      width:100%;
+      padding:9px 10px;
+      border-radius:999px;
+      border:1px solid #F59E0B;
+      font-size:11px;
+      font-weight:600;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
       background: radial-gradient(circle at top, #1D2953, #0B1120);
-      color: #FFFFFF;
+      color:#fff;
       box-shadow:
         0 8px 18px rgba(0,0,0,0.9),
         0 0 0 1px rgba(15,23,42,0.9) inset;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
     }
-
-    .action-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.06);
+    .action-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.06);
       box-shadow:
         0 14px 26px rgba(0,0,0,1),
         0 0 0 1px rgba(245,158,11,0.85) inset;
     }
-
-    .action-badge {
-      min-width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: #EF4444;
-      color: #FEF2F2;
-      font-size: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
+    .action-badge{
+      min-width:16px;height:16px;border-radius:999px;
+      background:#EF4444;color:#FEF2F2;font-size:10px;
+      display:inline-flex;align-items:center;justify-content:center;padding:0 4px;
+    }
+    .action-badge.hidden{display:none;}
+    .sot-logo-text{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-size:16px;
+      letter-spacing:.15em;
+      color:#FACC15;
     }
 
-    .action-badge.hidden { display: none; }
-
-    .action-btn-sot { padding: 9px 10px; }
-
-    .sot-logo-text {
-      font-family: "Cinzel", "Times New Roman", serif;
-      font-size: 16px;
-      letter-spacing: 0.15em;
-      color: #FACC15;
-    }
-
-    /* 로그아웃 버튼 */
-    .logout-row {
-      margin-top: 10px;
-      text-align: right;
-    }
-
-    .logout-btn {
-      width: 100%;
-      padding: 10px 10px;
-      border-radius: 999px;
-      border: none;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
+    .logout-row{margin-top:10px;text-align:right;}
+    .logout-btn{
+      width:100%;
+      padding:10px 10px;
+      border-radius:999px;
+      border:none;
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      cursor:pointer;
       background: linear-gradient(180deg, #B91C1C, #7F1D1D);
-      color: #FEF2F2;
+      color:#FEF2F2;
       box-shadow:
         0 10px 24px rgba(0,0,0,0.9),
         0 0 0 1px rgba(127,29,29,0.9) inset;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
     }
-
-    .logout-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
+    .logout-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
       box-shadow:
         0 16px 32px rgba(0,0,0,1),
         0 0 0 1px rgba(248,250,252,0.8) inset;
     }
 
-    .promo-section { display: none; }
-
-    .footer-note {
-      margin-top: 12px;
-      font-size: 11px;
-      color: #9CA3AF;
-      text-align: right;
-      max-width: 920px;
-      margin-left: auto;
-      margin-right: auto;
-      opacity: 0.85;
+    .promo-section{display:none;}
+    .footer-note{
+      margin-top:12px;
+      font-size:11px;
+      color:#9CA3AF;
+      text-align:right;
+      max-width:920px;
+      margin-left:auto;
+      margin-right:auto;
+      opacity:.85;
     }
 
- /* ───── 상단 Discord / YouTube 아이콘 (THE UNIQUE 큰 상자 오른쪽 위) ───── */
-/* ───── 상단 Discord / YouTube 아이콘 (THE UNIQUE 큰 상자 오른쪽 위) ───── */
-.top-sns-icons{
-  position: absolute;
-  top: 68px;
-  right: 46px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  z-index: 5;
+    @keyframes witchFloat{
+      0%{transform:translateY(-10px);}
+      50%{transform:translateY(10px);}
+      100%{transform:translateY(-10px);}
+    }
 
-  background-color: #1e2848;
-  border-radius: 999px;
-  padding: 1px;
-  border: 1px solid rgba(245,158,11,0.35);
+    /* ===== 반응형 ===== */
+    @media (min-width: 901px){
+      .main-card{max-width:1120px;}
+      .top-market-btn{display:inline-flex;} /* ✅ PC만 마켓 버튼 */
 
-  /* ✅ 아이콘 아래 ‘선’처럼 보이던 거 제거 */
-  box-shadow: none;
-}
-.top-sns-icons a{
-  display:block;
-  line-height:0;
-  text-decoration:none;
-}
-.top-sns-icons img{
-  display:block;
-  width: 42px;
-  height: 42px;
-}
+      .top-schedule-panel{padding:14px 18px 16px;}
+      .top-schedule-header{font-size:14px;margin-bottom:10px;}
+      .top-schedule-grid{gap:10px;font-size:12px;}
+      .top-schedule-day{padding:10px 10px;}
+      .top-schedule-item{margin-bottom:9px;}
+    }
 
-/* ✅ 마켓 버튼 (gate 느낌) : 기본은 숨김 → PC에서만 표시 */
-.top-market-btn{
-  position: absolute;
-  top: 68px;
-  left: 46px;
-  z-index: 6;
+    @media (max-width: 900px){
+      .top-schedule-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
+    }
 
-  display: none; /* PC에서만 켜기 */
-  align-items: center;
-  justify-content: center;
+    @media (max-width: 768px){
+      .page-wrap{margin-top:40px;}
+      .main-card{padding:24px 18px 20px;border-radius:22px;max-width:920px;}
+      .title-en{font-size:28px;letter-spacing:.22em;}
+      .layout{grid-template-columns:minmax(0,1fr);gap:18px;}
+      .ebook-list{flex-direction:column;}
+      .ebook-card{flex:1 1 100%;}
+      .top-market-btn{display:none !important;} /* ✅ 모바일 숨김 */
 
-  padding: 10px 14px;
-  border-radius: 999px;
-
-  border: 1px solid rgba(245,158,11,0.85);
-  background: radial-gradient(circle at top, rgba(29,41,83,0.92), rgba(11,17,32,0.88));
-  color: #FACC15;
-
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.60),
-    0 0 0 1px rgba(15,23,42,0.9) inset;
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: transform .12s ease, filter .12s ease, background .12s ease;
-}
-.top-market-btn:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.08);
-  background: radial-gradient(circle at top, rgba(245,158,11,0.20), rgba(11,17,32,0.88));
-}
-
-/* ───── 주간 강의 스케줄: 모바일에서 2열 ───── */
-@media (max-width: 900px){
-  .top-schedule-grid{
-    grid-template-columns: repeat(2, minmax(0,1fr));
-  }
-}
-
-/* ✅ PC 전용: 스케줄 글씨 안 끊기게 + 간격/사이즈 + 마켓 버튼 표시 */
-@media (min-width: 901px){
-
-  .main-card{ max-width: 1120px; } /* PC에서만 넓게 */
-
-  .top-market-btn{ display: inline-flex; } /* ✅ PC에서만 보임 */
-
-  .top-schedule-panel{ padding: 14px 18px 16px; }
-  .top-schedule-header{ font-size: 14px; margin-bottom: 10px; }
-
-  .top-schedule-grid{ gap: 10px; font-size: 12px; }
-  .top-schedule-day{ padding: 10px 10px; }
-
-  .top-schedule-day-name{
-    font-size: 13px;
-    margin-bottom: 8px;
-    word-break: keep-all;
-  }
-
-  .top-schedule-item{ margin-bottom: 9px; }
-
-  .top-schedule-time,
-  .top-schedule-title{
-    word-break: keep-all;
-    line-break: strict;
-  }
-
-  .top-schedule-time{ font-size: 12px; line-height: 1.25; }
-  .top-schedule-title{ font-size: 12px; line-height: 1.38; }
-}
-
-/* ───── 모바일 전용 레이아웃 (마켓 버튼은 숨김 유지) ───── */
-@media (max-width: 768px){
-  .page-wrap { margin-top: 40px; }
-  .main-card { padding: 24px 18px 20px; border-radius: 22px; }
-  .title-en { font-size: 28px; letter-spacing: 0.22em; }
-  .layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .ebook-list { flex-direction: column; }
-  .ebook-card { flex: 1 1 100%; }
-
-  .top-market-btn{ display:none !important; } /* ✅ 모바일 숨김 */
-
-  /* SNS: 유튜브 왼쪽 / 디스코드 오른쪽 */
-  .top-sns-icons{
-    top: 54px !important;
-    left: 24px !important;
-    right: 24px !important;
-    height: 48px;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-  .top-sns-icons a{ position:absolute; top:0; }
-  .top-sns-icons .sns-youtube{ left:0; display:block !important; }
-  .top-sns-icons .sns-discord{ right:0; }
-  .top-sns-icons img{ width: 48px !important; height: 48px !important; }
-}
-
-      /* =========================
-   PC 전용: 스케줄 글씨 안 끊기게 + 간격/사이즈 조정
-   ========================= */
-@media (min-width: 901px){
-
-  /* 7칸 스케줄이 넓게 보이도록 메인 카드 폭 확대(PC만) */
-  .main-card{
-  position: relative;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  border-radius: 26px;
-  padding: 28px 32px 26px;
-
-  background: #1e2848;
-  border: 1px solid rgba(245,158,11,0.95);
-  box-shadow:
-    0 0 24px rgba(245,158,11,0.65),
-    0 35px 90px rgba(0,0,0,0.95);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-
-  /* 스케줄 패널 자체 여백을 조금 더 확보 */
-  .top-schedule-panel{
-    padding: 14px 18px 16px;
-  }
-
-  .top-schedule-header{
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-
-  /* 7열 유지 + 글씨 살짝 키우되, 줄간격을 넉넉하게 */
-  .top-schedule-grid{
-    gap: 10px;
-    font-size: 12px;
-  }
-
-  .top-schedule-day{
-    padding: 10px 10px;
-  }
-
-  .top-schedule-day-name{
-    font-size: 13px;
-    margin-bottom: 8px;
-    word-break: keep-all;
-  }
-
-  /* 항목 간격 */
-  .top-schedule-item{
-    margin-bottom: 9px;
-  }
-
-  /* ✅ 한글이 글자 단위로 찢어지는 것 방지 */
-  .top-schedule-time,
-  .top-schedule-title{
-    word-break: keep-all;
-    line-break: strict;
-  }
-
-  /* 텍스트 가독성(줄간격) */
-  .top-schedule-time{
-    font-size: 12px;
-    line-height: 1.25;
-  }
-
-  .top-schedule-title{
-    font-size: 12px;
-    line-height: 1.38;
-  }
-
-/* =========================
-   마켓 버튼 (표시한 좌상단)
-   ========================= */
-.top-market-btn{
-  position: absolute;
-  top: 68px;     /* top-sns-icons와 같은 높이 */
-  left: 46px;    /* 좌측 위치 */
-  z-index: 6;
-
-  padding: 10px 14px;
-  border-radius: 999px;
-
-  border: 1px solid rgba(245,158,11,0.9);
-  background: rgba(15,23,42,0.55);
-  color: #f9fafb;
-
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-decoration: none;
-
-  box-shadow:
-    0 10px 20px rgba(0,0,0,0.6),
-    0 0 0 1px rgba(15,23,42,0.9) inset;
-  backdrop-filter: blur(10px);
-}
-
-.top-market-btn:hover{
-  filter: brightness(1.08);
-  background: rgba(245,158,11,0.18);
-}
-
-/* 모바일에서는 일단 숨김(원하면 모바일 위치도 따로 잡아줄게) */
-@media (max-width: 768px){
-  .top-market-btn{ display:none; }
-}
+      /* 모바일 SNS: 유튜브 왼쪽 / 디스코드 오른쪽 */
+      .top-sns-icons{
+        top:54px !important;
+        left:24px !important;
+        right:24px !important;
+        height:48px;
+        background:transparent !important;
+        padding:0 !important;
+        border:none !important;
+      }
+      .top-sns-icons a{position:absolute; top:0;}
+      .top-sns-icons .sns-youtube{left:0; display:block !important;}
+      .top-sns-icons .sns-discord{right:0;}
+      .top-sns-icons img{width:48px !important;height:48px !important;}
     }
   </style>
 </head>
+
 <body>
   <div class="scene">
     <img src="img/bg-unique-main.jpg" class="scene-bg" alt="The Unique main background" />
@@ -773,36 +497,31 @@
   <div class="page-wrap">
     <main class="main-card">
       <!-- 상단 Discord / YouTube 버튼 -->
-     <div class="top-sns-icons">
-  <a class="sns-discord" href="https://discord.gg/3cUN7QXMSY" target="_blank" rel="noopener noreferrer">
-    <img src="img/discord-round.png" alt="Discord" />
-  </a>
-  <a class="sns-youtube" href="https://www.youtube.com/@%EC%8F%98%ED%8B%B0So.T" target="_blank" rel="noopener noreferrer">
-    <img src="img/youtube-round.png" alt="YouTube" />
-  </a>
-</div>
+      <div class="top-sns-icons">
+        <a class="sns-discord" href="https://discord.gg/3cUN7QXMSY" target="_blank" rel="noopener noreferrer">
+          <img src="img/discord-round.png" alt="Discord" />
+        </a>
+        <a class="sns-youtube" href="https://www.youtube.com/@%EC%8F%98%ED%8B%B0So.T" target="_blank" rel="noopener noreferrer">
+          <img src="img/youtube-round.png" alt="YouTube" />
+        </a>
+      </div>
+
+      <!-- PC만 마켓 버튼 -->
       <a class="top-market-btn" href="market.html" target="_blank" rel="noopener noreferrer">마켓</a>
-        <div class="main-inner">
+
+      <div class="main-inner">
         <div class="title-wrap">
           <div class="title-en">THE UNIQUE</div>
           <div class="subtitle-en">운동과 공부는 버릴게 없다!</div>
         </div>
 
-        <!-- 주간 강의 스케줄: THE UNIQUE 타이틀 바로 아래 전체 폭 -->
         <section class="top-schedule-panel">
           <div class="top-schedule-header">이번 주 강의 스케줄</div>
-
-          <!-- JS가 데이터를 불러오기 전까지는 이 문구가 보임 -->
-          <div id="top-schedule-empty" class="top-schedule-empty">
-            주간 스케줄을 불러오는 중입니다...
-          </div>
-
-          <!-- 실제 시간표가 채워질 그리드 -->
+          <div id="top-schedule-empty" class="top-schedule-empty">주간 스케줄을 불러오는 중입니다...</div>
           <div id="top-schedule-grid" class="top-schedule-grid"></div>
         </section>
 
         <section class="layout">
-          <!-- 왼쪽: 회원 인사 + 직급 -->
           <div class="member-panel">
             <div class="member-hello" id="member-hello">오늘도 성장하러 오셨군요.</div>
             <div id="member-name" class="member-name">회원 이름</div>
@@ -812,80 +531,56 @@
             <div class="rank-badge-box">
               <div class="rank-road">
                 <div class="rank-slot">
-                  <!-- 기본: 무직급 = 정회원 -->
-                  <img
-                    id="member-rank-img"
-                    class="rank-icon"
-                    src="img/member.png"
-                    alt="현재 직급 배지"
-                  />
+                  <img id="member-rank-img" class="rank-icon" src="img/member.png" alt="현재 직급 배지" />
                   <div id="member-rank-mini" class="rank-mini-label">현재 직급: 정회원</div>
                 </div>
 
                 <span class="rank-arrow">➜</span>
 
                 <div class="rank-slot rank-slot-next">
-                  <!-- 기본: 다음 직급 = 1스타 -->
-                  <img
-                    id="next-rank-img"
-                    class="rank-icon rank-icon-next"
-                    src="img/star1.png"
-                    alt="다음 직급 배지"
-                  />
+                  <img id="next-rank-img" class="rank-icon rank-icon-next" src="img/star1.png" alt="다음 직급 배지" />
                   <div id="next-rank-mini" class="rank-mini-label">다음 직급: 1스타</div>
                 </div>
               </div>
             </div>
 
-            <!-- 공지사항 버튼 제거, 나머지만 유지 -->
             <div class="member-actions">
               <button id="promo-btn" class="action-btn">
                 프로모션
                 <span id="promo-badge" class="action-badge hidden">N</span>
               </button>
 
-              <button id="travel-btn" class="action-btn">
-                여행신청
-              </button>
+              <button id="travel-btn" class="action-btn">여행신청</button>
 
-              <button id="sot-btn" class="action-btn action-btn-sot">
+              <button id="sot-btn" class="action-btn">
                 <span class="sot-logo-text">So.T</span>
               </button>
             </div>
 
             <div class="logout-row">
-              <button type="button" id="logout-btn" class="logout-btn">
-                로그아웃
-              </button>
+              <button type="button" id="logout-btn" class="logout-btn">로그아웃</button>
             </div>
           </div>
 
-          <!-- 오른쪽: 다음 목표 + 마녀 -->
           <div class="goal-panel">
             <div class="goal-header">
-              <div id="goal-next-rank-title" class="goal-header-text">
-                <!-- 기본: 무직급 다음 목표 = 1스타 -->
-                다음 목표: <span>1스타</span>
-              </div>
+              <div id="goal-next-rank-title" class="goal-header-text">다음 목표: <span>1스타</span></div>
             </div>
 
             <div class="next-goal-card">
               <div class="next-goal-top">
                 <div class="goal-me-wrap">
                   <img src="img/witch-float.png" alt="나" class="goal-witch" />
-                  <div class="goal-me-label"></div>
                 </div>
               </div>
 
               <div class="next-goal-bottom">
                 <div class="goal-side goal-left">
                   <div class="goal-label">좌측 필요</div>
-                  <!-- 기본: 2명 -->
                   <div id="goal-left-count" class="goal-count">2</div>
                 </div>
                 <div class="goal-side goal-right">
                   <div class="goal-label">우측 필요</div>
-                  <!-- 기본: 1명 -->
                   <div id="goal-right-count" class="goal-count">1</div>
                 </div>
               </div>
@@ -893,29 +588,19 @@
           </div>
         </section>
 
-        <!-- eBook 패널 -->
         <section class="ebook-panel">
-          <div class="section-title">
-            다음 목표를 위해 학습하시겠습니까?
-          </div>
+          <div class="section-title">다음 목표를 위해 학습하시겠습니까?</div>
           <div id="ebook-list" class="ebook-list"></div>
 
-          <!-- eBook 관리자 페이지로 가는 링크 -->
           <div class="ebook-admin-link-wrap">
-            <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">
-              eBook 관리자 열기
-            </a>
+            <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">eBook 관리자 열기</a>
           </div>
         </section>
       </div>
     </main>
   </div>
 
-  <!-- 프로모션 섹션은 숨김 -->
-  <div id="promo-section" class="promo-section">
-    <div class="promo-title">프로모션</div>
-    <div id="promo-grid" class="promo-grid"></div>
-  </div>
+  <div id="promo-section" class="promo-section"></div>
 
   <div class="footer-note">
     The Unique &copy; 2025 · internal use only
@@ -926,47 +611,31 @@
     function handleScheduleSheet(resp) {
       try {
         const rows = resp.table.rows || [];
-        const byDay = {};             // { "월요일": [ {time,title}, ... ] }
-        const dayLabelByCol = {};     // 열 인덱스 -> 요일 이름 (월요일, 화요일 ...)
-        let currentPeriod = "";       // "오전" / "오후"
+        const byDay = {};
+        const dayLabelByCol = {};
+        let currentPeriod = "";
 
         rows.forEach((row) => {
           const cells = row.c || [];
-          const values = cells.map(c =>
-            (c && c.v != null) ? String(c.v).trim() : ""
-          );
+          const values = cells.map(c => (c && c.v != null) ? String(c.v).trim() : "");
 
-          // B열 이후에 '요일'이 들어간 셀 → 요일 헤더로 사용
           for (let j = 1; j < values.length; j++) {
             const v = values[j];
-            if (v && v.includes("요일")) {
-              dayLabelByCol[j] = v; // 예: "월요일"
-            }
+            if (v && v.includes("요일")) dayLabelByCol[j] = v;
           }
 
-          const v0 = values[0]; // A열
-
+          const v0 = values[0];
           if (!v0) return;
 
-          // "오전"/"오후" 줄
-          if (v0.includes("오전") || v0.includes("오후")) {
-            currentPeriod = v0; // 예: "오후"
-            return;
-          }
-
-          // "…시" 로 끝나는 시간 줄만 사용
+          if (v0.includes("오전") || v0.includes("오후")) { currentPeriod = v0; return; }
           if (!v0.endsWith("시")) return;
 
-          // 표시할 시간 텍스트: "오후 5시" 같은 형태
           const timeLabel = currentPeriod ? (currentPeriod + " " + v0) : v0;
 
-          // 각 요일 칸에 내용이 있으면 강의로 추가
           for (let j = 1; j < values.length; j++) {
             const title = values[j];
-            const dayLabel = dayLabelByCol[j]; // "월요일" 등
-
-            if (!dayLabel || !title) continue; // 요일 정보 없거나 칸이 비어있으면 무시
-
+            const dayLabel = dayLabelByCol[j];
+            if (!dayLabel || !title) continue;
             if (!byDay[dayLabel]) byDay[dayLabel] = [];
             byDay[dayLabel].push({ time: timeLabel, title: title });
           }
@@ -1021,22 +690,13 @@
     }
   </script>
 
-  <!-- 구글 시트에서 주간 스케줄 불러오기 (unique 주간 스케쥴표) -->
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
 
   <script>
-    /* ─────────────  0. 로그인 정보 기본 세팅  ───────────── */
-
     const raw = localStorage.getItem("uniqueCurrentUser");
-    if (!raw) {
-      window.location.href = "the-unique-gate.html";
-    }
+    if (!raw) window.location.href = "the-unique-gate.html";
 
-    let currentId = "";
-    let currentName = "";
-    let currentTeam = "";
-    let currentJoin = "";
-    let isHQ = false; // ★ HQ 여부 플래그
+    let currentId = "", currentName = "", currentTeam = "", currentJoin = "", isHQ = false;
 
     try {
       const user = JSON.parse(raw || "{}");
@@ -1049,14 +709,7 @@
       window.location.href = "the-unique-gate.html";
     }
 
-    // HQ 판별: "이름"과 "소속"이 완전히 같은 경우만 HQ
-    if (currentName && currentTeam && currentName === currentTeam) {
-      isHQ = true;
-    } else {
-      isHQ = false;
-    }
-
-    // 전역으로도 저장 (다른 스크립트에서 사용)
+    isHQ = !!(currentName && currentTeam && currentName === currentTeam);
     window.uniqueIsHQ = isHQ;
 
     document.getElementById("member-hello").textContent =
@@ -1064,200 +717,99 @@
     document.getElementById("member-name").textContent =
       currentId || currentName || "Unknown";
 
-    const teamText = isHQ
-      ? "소속: HQ"
-      : (currentTeam ? "소속: " + currentTeam : "소속: -");
+    const teamText = isHQ ? "소속: HQ" : (currentTeam ? "소속: " + currentTeam : "소속: -");
     document.getElementById("member-team").textContent = teamText;
 
-    // ★ HQ가 아니면 eBook 관리자 링크 숨기기
     (function hideEbookAdminForNonHQ() {
       if (!isHQ) {
         const linkEl = document.getElementById("ebook-admin-link");
-        if (linkEl) {
-          linkEl.style.display = "none";
-        }
+        if (linkEl) linkEl.style.display = "none";
       }
     })();
 
-    /* ─────────────  1. 직급 코드 → 배지 이미지 + 스케일 ───────────── */
-
-    const RANK_ORDER = [
-      "Star1", "Star2", "Star3",
-      "Pro1", "Pro2", "Pro3",
-      "Pro4", "Pro5", "Pro6",
-      "Pro7", "Pro8", "Pro9", "Pro10"
-    ];
-
+    const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
     const RANK_BADGES = {
-      Star1: "img/star1.png",
-      Star2: "img/star2.png",
-      Star3: "img/star3.png",
-      Pro1:  "img/pro1.png",
-      Pro2:  "img/pro2.png",
-      Pro3:  "img/pro3.png",
-      Pro4:  "img/pro4.png",
-      Pro5:  "img/pro5.png",
-      Pro6:  "img/pro6.png",
-      Pro7:  "img/pro7.png",
-      Pro8:  "img/pro8.png",
-      Pro9:  "img/pro9.png",
-      Pro10: "img/pro10.png"
+      Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
+      Pro1:"img/pro1.png", Pro2:"img/pro2.png", Pro3:"img/pro3.png",
+      Pro4:"img/pro4.png", Pro5:"img/pro5.png", Pro6:"img/pro6.png",
+      Pro7:"img/pro7.png", Pro8:"img/pro8.png", Pro9:"img/pro9.png", Pro10:"img/pro10.png"
     };
-
-    const RANK_SCALE = {
-      Star1: 0.80,
-      Star2: 0.88,
-      Star3: 0.96,
-      Pro1:  1.04,
-      Pro2:  1.08,
-      Pro3:  1.12,
-      Pro4:  1.16,
-      Pro5:  1.20,
-      Pro6:  1.24,
-      Pro7:  1.28,
-      Pro8:  1.32,
-      Pro9:  1.36,
-      Pro10: 1.40
-    };
-
+    const RANK_SCALE = { Star1:0.80, Star2:0.88, Star3:0.96, Pro1:1.04, Pro2:1.08, Pro3:1.12, Pro4:1.16, Pro5:1.20, Pro6:1.24, Pro7:1.28, Pro8:1.32, Pro9:1.36, Pro10:1.40 };
     const RANK_REQUIRED = {
-      Star2: { left: 7, right: 7 },      // Star1 → Star2
-      Star3: { left: 15, right: 15 },    // Star2 → Star3
-      Pro1:  { left: 40, right: 40 },    // Star3 → Pro1
-      Pro2:  { left: 80, right: 80 },
-      Pro3:  { left: 150, right: 150 },
-      Pro4:  { left: 250, right: 250 },
-      Pro5:  { left: 400, right: 400 },
-      Pro6:  { left: 650, right: 650 },
-      Pro7:  { left: 1000, right: 1000 },
-      Pro8:  { left: 2000, right: 2000 },
-      Pro9:  { left: 3000, right: 3000 },
-      Pro10: { left: 4000, right: 4000 }
+      Star2:{left:7,right:7}, Star3:{left:15,right:15}, Pro1:{left:40,right:40},
+      Pro2:{left:80,right:80}, Pro3:{left:150,right:150}, Pro4:{left:250,right:250},
+      Pro5:{left:400,right:400}, Pro6:{left:650,right:650}, Pro7:{left:1000,right:1000},
+      Pro8:{left:2000,right:2000}, Pro9:{left:3000,right:3000}, Pro10:{left:4000,right:4000}
     };
 
-    function getBadgeSrc(rankCode) {
-      return RANK_BADGES[rankCode] || "img/member.png";
-    }
-
-    function applyRankScale(imgEl, rankCode, extra = 1) {
+    function getBadgeSrc(rankCode){ return RANK_BADGES[rankCode] || "img/member.png"; }
+    function applyRankScale(imgEl, rankCode, extra=1){
       const base = RANK_SCALE[rankCode] || 1;
       imgEl.style.setProperty("--rank-scale", base * extra);
     }
-
-    function setRequiredCounts(currentRankCode, nextRankCode) {
+    function setRequiredCounts(currentRankCode, nextRankCode){
       const leftEl  = document.getElementById("goal-left-count");
       const rightEl = document.getElementById("goal-right-count");
       if (!leftEl || !rightEl) return;
 
-      let left  = Number(leftEl.textContent)  || 0;
-      let right = Number(rightEl.textContent) || 0;
-
-      // 현재 직급이 없는 상태 + Member 도 "무직급"으로 취급
-      const isNoRank =
-        !currentRankCode ||
-        currentRankCode === "-" ||
-        currentRankCode === "NONE" ||
-        String(currentRankCode).toLowerCase() === "member";
-
-      // 무직급/Member → 다음 목표가 Star1 이면 2 / 1
-      if (isNoRank && nextRankCode === "Star1") {
-        left  = 2;
-        right = 1;
-      } else {
-        const info = RANK_REQUIRED[nextRankCode];
-        if (info) {
-          left  = info.left;
-          right = info.right;
-        }
+      const isNoRank = !currentRankCode || currentRankCode === "-" || currentRankCode === "NONE" || String(currentRankCode).toLowerCase() === "member";
+      if (isNoRank && nextRankCode === "Star1"){
+        leftEl.textContent = "2";
+        rightEl.textContent = "1";
+        return;
       }
-
-      leftEl.textContent  = String(left);
-      rightEl.textContent = String(right);
-    }
-
-    function getName(rec) {
-      return String(rec.name || rec.userName || "").trim();
-    }
-    function getTeam(rec) {
-      return String(rec.team || rec.group || "").trim();
-    }
-    function getJoin(rec) {
-      return String(rec.joinedAt || rec.joinDate || "").trim();
-    }
-    function getRankCode(rec) {
-      return String(rec.rank || rec.rankCode || rec.level || "").trim();
-    }
-
-    function pickMyRankRecord(list, name, team, joinedAt) {
-      // 1) 이름으로 먼저 후보 찾기
-      let byName = list.filter(function (m) {
-        return getName(m) === name;
-      });
-
-      if (!byName.length) {
-        // 이름이 전혀 없으면 직급 정보 없음
-        return null;
+      const info = RANK_REQUIRED[nextRankCode];
+      if (info){
+        leftEl.textContent = String(info.left);
+        rightEl.textContent = String(info.right);
       }
-      if (byName.length === 1) {
-        // 이름이 유일하면 그대로 사용
-        return byName[0];
-      }
+    }
 
-      // 2) 같은 이름이 여러 명이면, 소속까지 같은 사람을 우선 시도
+    function getName(rec){ return String(rec.name || rec.userName || "").trim(); }
+    function getTeam(rec){ return String(rec.team || rec.group || "").trim(); }
+    function getJoin(rec){ return String(rec.joinedAt || rec.joinDate || "").trim(); }
+    function getRankCode(rec){ return String(rec.rank || rec.rankCode || rec.level || "").trim(); }
+
+    function pickMyRankRecord(list, name, team, joinedAt){
+      let byName = list.filter(m => getName(m) === name);
+      if (!byName.length) return null;
+      if (byName.length === 1) return byName[0];
+
       let candidates = byName;
-      if (team) {
-        var byTeam = byName.filter(function (m) {
-          return getTeam(m) === team;
-        });
-        if (byTeam.length === 1) {
-          return byTeam[0];
-        }
-        if (byTeam.length > 1) {
-          candidates = byTeam;
-        }
+      if (team){
+        const byTeam = byName.filter(m => getTeam(m) === team);
+        if (byTeam.length === 1) return byTeam[0];
+        if (byTeam.length > 1) candidates = byTeam;
       }
-
-      // 3) 그래도 여러 명이면, 가입일(joinedAt)까지 같은 사람 우선
-      if (joinedAt) {
-        var joined = String(joinedAt).trim();
-        var byJoin = candidates.filter(function (m) {
-          return getJoin(m) === joined;
-        });
-        if (byJoin.length === 1) {
-          return byJoin[0];
-        }
-        if (byJoin.length > 1) {
-          candidates = byJoin;
-        }
+      if (joinedAt){
+        const joined = String(joinedAt).trim();
+        const byJoin = candidates.filter(m => getJoin(m) === joined);
+        if (byJoin.length === 1) return byJoin[0];
+        if (byJoin.length > 1) candidates = byJoin;
       }
-
-      // 4) 남아 있는 후보 중 첫 번째 사용
       return candidates[0];
     }
 
     let currentRankCode = null;
 
     fetch("rank-hall.json")
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         const list = Array.isArray(data) ? data : (data.members || []);
-
         const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
 
-        const currentImgEl   = document.getElementById("member-rank-img");
-        const nextImgEl      = document.getElementById("next-rank-img");
-        const currentMiniEl  = document.getElementById("member-rank-mini");
-        const nextMiniEl     = document.getElementById("next-rank-mini");
-        const goalHeaderEl   = document.getElementById("goal-next-rank-title");
+        const currentImgEl  = document.getElementById("member-rank-img");
+        const nextImgEl     = document.getElementById("next-rank-img");
+        const currentMiniEl = document.getElementById("member-rank-mini");
+        const nextMiniEl    = document.getElementById("next-rank-mini");
+        const goalHeaderEl  = document.getElementById("goal-next-rank-title");
 
-        if (!myRec) {
+        if (!myRec){
           currentMiniEl.textContent = "현재 직급: 정회원";
-          nextMiniEl.textContent    = "다음 직급: 1스타";
-
+          nextMiniEl.textContent = "다음 직급: 1스타";
           currentImgEl.src = "img/member.png";
-          nextImgEl.src    = "img/star1.png";
-
-          goalHeaderEl.innerHTML    = '다음 목표: <span>1스타</span>';
+          nextImgEl.src = "img/star1.png";
+          goalHeaderEl.innerHTML = '다음 목표: <span>1스타</span>';
           setRequiredCounts(null, "Star1");
           return;
         }
@@ -1265,44 +817,26 @@
         const myCode = getRankCode(myRec);
         currentRankCode = myCode || null;
 
-        // 1) 현재 직급 텍스트 + 이미지
-        if (myCode) {
-          currentMiniEl.textContent = "현재 직급: " + myCode;
-        } else {
-          currentMiniEl.textContent = "현재 직급: Member";
-        }
-
+        currentMiniEl.textContent = myCode ? ("현재 직급: " + myCode) : "현재 직급: Member";
         currentImgEl.src = myCode ? getBadgeSrc(myCode) : "img/member.png";
-        if (myCode && RANK_SCALE[myCode]) {
-          applyRankScale(currentImgEl, myCode);
-        }
+        if (myCode && RANK_SCALE[myCode]) applyRankScale(currentImgEl, myCode);
 
-        // 2) 다음 직급 계산
         let nextCode = null;
         const idx = RANK_ORDER.indexOf(myCode);
 
-        // 2-1) 무직급 / Member 인 경우 → 무조건 Star1 이 다음 직급
-        if (!myCode ||
-            myCode === "-" ||
-            myCode === "NONE" ||
-            myCode.toLowerCase() === "member") {
+        if (!myCode || myCode === "-" || myCode === "NONE" || myCode.toLowerCase() === "member"){
           nextCode = "Star1";
-        }
-        // 2-2) 그 외에는 배열에서 바로 다음 단계
-        else if (idx >= 0 && idx < RANK_ORDER.length - 1) {
+        } else if (idx >= 0 && idx < RANK_ORDER.length - 1){
           nextCode = RANK_ORDER[idx + 1];
         }
 
-        // 3) 다음 직급이 없으면 (최상위)
-        if (!nextCode) {
-          nextMiniEl.textContent  = "다음 직급: -";
-          goalHeaderEl.innerHTML  = '다음 목표: <span>-</span>';
+        if (!nextCode){
+          nextMiniEl.textContent = "다음 직급: -";
+          goalHeaderEl.innerHTML = '다음 목표: <span>-</span>';
           nextImgEl.style.opacity = 0.2;
-          setRequiredCounts(myCode, null);
           return;
         }
 
-        // 4) 다음 직급이 있을 때
         goalHeaderEl.innerHTML = '다음 목표: <span>' + nextCode + '</span>';
         nextMiniEl.textContent = "다음 직급: " + nextCode;
         setRequiredCounts(myCode, nextCode);
@@ -1311,45 +845,29 @@
         applyRankScale(nextImgEl, nextCode, 1.35);
         nextImgEl.style.opacity = 1;
       })
-      .catch((err) => {
-        console.error("rank-hall.json 로드 오류:", err);
-      });
+      .catch(err => console.error("rank-hall.json 로드 오류:", err));
 
-    // 다음 직급 배지 / 텍스트 클릭 시 rank-hall.html 새 창
     (function () {
-      const imgEl   = document.getElementById("next-rank-img");
+      const imgEl = document.getElementById("next-rank-img");
       const labelEl = document.getElementById("next-rank-mini");
-
-      function openRankPage() {
-        window.open("rank-hall.html", "_blank");
-      }
-
-      if (imgEl) {
-        imgEl.style.cursor = "pointer";
-        imgEl.addEventListener("click", openRankPage);
-      }
-      if (labelEl) {
-        labelEl.style.cursor = "pointer";
-        labelEl.addEventListener("click", openRankPage);
-      }
+      function openRankPage(){ window.open("rank-hall.html", "_blank"); }
+      if (imgEl){ imgEl.style.cursor = "pointer"; imgEl.addEventListener("click", openRankPage); }
+      if (labelEl){ labelEl.style.cursor = "pointer"; labelEl.addEventListener("click", openRankPage); }
     })();
 
-    /* ─────────────  2. eBook 리스트 (ebook-config.json + 직급별 노출) ───────────── */
-
-    (function setupEbooks() {
+    (function setupEbooks(){
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
 
-      function renderFromItems(books) {
+      function renderFromItems(books){
         listEl.innerHTML = "";
-
-        books.forEach(function (book) {
+        books.forEach(book => {
           const card = document.createElement("a");
           card.className = "ebook-card";
 
           const href = book.link || "#";
           card.href = href;
-          if (href && href !== "#") {
+          if (href && href !== "#"){
             card.target = "_blank";
             card.rel = "noopener noreferrer";
           }
@@ -1359,10 +877,8 @@
           const img = document.createElement("img");
           img.src = book.cover;
           img.alt = book.title || "";
-
           const posY = (typeof book.posY === "number") ? book.posY : 50;
           img.style.objectPosition = "50% " + posY + "%";
-
           thumb.appendChild(img);
 
           const body = document.createElement("div");
@@ -1372,8 +888,7 @@
 
           const desc = document.createElement("div");
           desc.className = "ebook-meta-desc";
-          const descText = book.description || book.subtitle || "";
-          desc.textContent = descText;
+          desc.textContent = book.description || book.subtitle || "";
 
           const cta = document.createElement("div");
           cta.className = "ebook-meta-cta";
@@ -1385,105 +900,78 @@
 
           card.appendChild(thumb);
           card.appendChild(body);
-
           listEl.appendChild(card);
         });
       }
 
-      function renderDefault() {
-        const EBOOKS = [
+      function renderDefault(){
+        renderFromItems([
           {
-            id: "unique-basic",
-            title: "협력을 배우고 협력을 만들어낸다.",
-            subtitle: "누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
-            cover: "img/ebook-the-unique-system-book.jpg",
-            link: "ebook.html",
-            visible: true,
-            order: 1,
-            posY: 50
+            id:"unique-basic",
+            title:"협력을 배우고 협력을 만들어낸다.",
+            subtitle:"누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.",
+            cover:"img/ebook-the-unique-system-book.jpg",
+            link:"ebook.html",
+            visible:true,
+            order:1,
+            posY:50
           },
           {
-            id: "unique-sot",
-            title: "현대 사회에 맞는 여행도구 so.t",
-            subtitle: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
-            cover: "img/ebook-network-marketing-cover.jpg",
-            link: "ebook1.html",
-            visible: true,
-            order: 2,
-            posY: 50
+            id:"unique-sot",
+            title:"현대 사회에 맞는 여행도구 so.t",
+            subtitle:"so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
+            cover:"img/ebook-network-marketing-cover.jpg",
+            link:"ebook1.html",
+            visible:true,
+            order:2,
+            posY:50
           }
-        ];
-        renderFromItems(EBOOKS);
+        ]);
       }
 
       fetch("ebook-config.json")
-        .then(function (res) {
-          if (!res.ok) throw new Error("status " + res.status);
-          return res.json();
-        })
-        .then(function (data) {
-          let items = Array.isArray(data)
-  ? data.slice()
-  : (data && Array.isArray(data.items) ? data.items.slice() : []);
-          if (!items.length) {
-            renderDefault();
-            return;
-          }
+        .then(res => { if (!res.ok) throw new Error("status " + res.status); return res.json(); })
+        .then(data => {
+          let items = Array.isArray(data) ? data.slice() : (data && Array.isArray(data.items) ? data.items.slice() : []);
+          if (!items.length){ renderDefault(); return; }
 
-          items = items.filter(function (item) {
-            return item.visible !== false;
-          });
+          items = items.filter(item => item.visible !== false);
 
           const myRank = currentRankCode;
           const myIdx = myRank ? RANK_ORDER.indexOf(myRank) : -1;
-
-          if (myIdx >= 0) {
-            items = items.filter(function (item) {
+          if (myIdx >= 0){
+            items = items.filter(item => {
               let ok = true;
-
-              if (item.rankMin) {
+              if (item.rankMin){
                 const minIdx = RANK_ORDER.indexOf(item.rankMin);
                 if (minIdx >= 0 && myIdx < minIdx) ok = false;
               }
-              if (item.rankMax) {
+              if (item.rankMax){
                 const maxIdx = RANK_ORDER.indexOf(item.rankMax);
                 if (maxIdx >= 0 && myIdx > maxIdx) ok = false;
               }
               return ok;
             });
           }
-          if (!items.length) {
-  renderDefault();
-  return;
-}
-          items.sort(function (a, b) {
-            return (a.order || 0) - (b.order || 0);
-          });
 
+          if (!items.length){ renderDefault(); return; }
+
+          items.sort((a,b) => (a.order||0) - (b.order||0));
           renderFromItems(items);
         })
-        .catch(function (err) {
-          console.error("ebook-config.json 로드 오류:", err);
-          renderDefault();
-        });
+        .catch(err => { console.error("ebook-config.json 로드 오류:", err); renderDefault(); });
     })();
 
-    /* ─────────────  3. 프로모션/여행/So.T 버튼 ───────────── */
-
-    (function setupButtons() {
-      const promoBtn   = document.getElementById("promo-btn");
-      const travelBtn  = document.getElementById("travel-btn");
-      const sotBtn     = document.getElementById("sot-btn");
+    (function setupButtons(){
+      const promoBtn = document.getElementById("promo-btn");
+      const travelBtn = document.getElementById("travel-btn");
+      const sotBtn = document.getElementById("sot-btn");
       const promoBadge = document.getElementById("promo-badge");
-
       if (!promoBtn) return;
 
       const PROMO_VERSION = "2025-12-02-01";
-      const seenPromo  = localStorage.getItem("uniquePromoSeen");
-
-      if (promoBadge && seenPromo !== PROMO_VERSION) {
-        promoBadge.classList.remove("hidden");
-      }
+      const seenPromo = localStorage.getItem("uniquePromoSeen");
+      if (promoBadge && seenPromo !== PROMO_VERSION) promoBadge.classList.remove("hidden");
 
       promoBtn.addEventListener("click", () => {
         window.open("the-unique-promo.html", "_blank");
@@ -1491,20 +979,9 @@
         if (promoBadge) promoBadge.classList.add("hidden");
       });
 
-      if (travelBtn) {
-        travelBtn.addEventListener("click", () => {
-          window.open("index.html", "_blank");
-        });
-      }
-
-      if (sotBtn) {
-        sotBtn.addEventListener("click", () => {
-          window.open("https://www.ssoti.com/", "_blank");
-        });
-      }
+      if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
     })();
-
-    /* ─────────────  4. 로그아웃  ───────────── */
 
     document.getElementById("logout-btn").addEventListener("click", () => {
       localStorage.removeItem("uniqueCurrentUser");
@@ -1512,71 +989,58 @@
     });
   </script>
 
-  <!-- HQ 전용 시스템 핸드북 버튼 (소속: HQ 옆에) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-          try {
-  // "소속:" 이라는 글자가 들어간 엘리먼트 찾기 (HQ / 비HQ 공통)
-  var candidates = Array.from(document.querySelectorAll('body *'));
-  var target = candidates.find(function (el) {
-    if (el === document.body || el === document.documentElement) return false;
-    var text = (el.textContent || '').trim();
-    if (!text) return false;
-    if (!text.includes('소속:')) return false; // HQ든 아니든 공통
-    if (text.length > 40) return false;
-    return true;
-  });
+      try {
+        var candidates = Array.from(document.querySelectorAll('body *'));
+        var target = candidates.find(function (el) {
+          if (el === document.body || el === document.documentElement) return false;
+          var text = (el.textContent || '').trim();
+          if (!text) return false;
+          if (!text.includes('소속:')) return false;
+          if (text.length > 40) return false;
+          return true;
+        });
+        if (!target) return;
 
-  if (!target) return;
+        var btnWorkTool = document.createElement('button');
+        btnWorkTool.textContent = '일하기 도구';
+        btnWorkTool.style.marginLeft = '8px';
+        btnWorkTool.style.padding = '4px 10px';
+        btnWorkTool.style.borderRadius = '999px';
+        btnWorkTool.style.border = '1px solid rgba(255,255,255,0.4)';
+        btnWorkTool.style.background = 'linear-gradient(135deg, #f97316, #ec4899)';
+        btnWorkTool.style.color = '#111827';
+        btnWorkTool.style.fontSize = '11px';
+        btnWorkTool.style.fontWeight = '700';
+        btnWorkTool.style.cursor = 'pointer';
+        btnWorkTool.style.verticalAlign = 'middle';
+        btnWorkTool.addEventListener('click', function () {
+          window.open('the-unique-work-tool.html', '_blank', 'noopener');
+        });
+        target.appendChild(btnWorkTool);
 
-  // === 1) 모든 소속 공통: "일하기 도구" 버튼 ===
-  var btnWorkTool = document.createElement('button');
-  btnWorkTool.textContent = '일하기 도구';
-  btnWorkTool.style.marginLeft = '8px';
-  btnWorkTool.style.padding = '4px 10px';
-  btnWorkTool.style.borderRadius = '999px';
-  btnWorkTool.style.border = '1px solid rgba(255,255,255,0.4)';
-  btnWorkTool.style.background = 'linear-gradient(135deg, #f97316, #ec4899)';
-  btnWorkTool.style.color = '#111827';
-  btnWorkTool.style.fontSize = '11px';
-  btnWorkTool.style.fontWeight = '700';
-  btnWorkTool.style.cursor = 'pointer';
-  btnWorkTool.style.verticalAlign = 'middle';
-
-  // 👉 새창(새 탭)으로 일하기 도구 열기
-  btnWorkTool.addEventListener('click', function () {
-    window.open('the-unique-work-tool.html', '_blank', 'noopener');
-  });
-
-  // 일하기 도구 버튼을 먼저 붙인다
-  target.appendChild(btnWorkTool);
-
-  // === 2) HQ 전용: "시스템 핸드북" 버튼 ===
-  if (window.uniqueIsHQ) {
-    var btnHandbook = document.createElement('button');
-    btnHandbook.textContent = '시스템 핸드북';
-    btnHandbook.style.marginLeft = '8px';
-    btnHandbook.style.padding = '4px 10px';
-    btnHandbook.style.borderRadius = '999px';
-    btnHandbook.style.border = '1px solid rgba(255,255,255,0.4)';
-    btnHandbook.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
-    btnHandbook.style.color = '#111827';
-    btnHandbook.style.fontSize = '11px';
-    btnHandbook.style.fontWeight = '700';
-    btnHandbook.style.cursor = 'pointer';
-    btnHandbook.style.verticalAlign = 'middle';
-
-    // 👉 시스템 핸드북도 새창(새 탭)으로
-    btnHandbook.addEventListener('click', function () {
-      window.open('unique-map.html', '_blank', 'noopener');
-    });
-
-    // 버튼 순서를 "시스템 핸드북 | 일하기 도구"로 보이게 하기 위해
-    target.insertBefore(btnHandbook, btnWorkTool);
-  }
-} catch (e) {
-  console.error('HQ/일하기 버튼 생성 중 에러:', e);
-}
+        if (window.uniqueIsHQ) {
+          var btnHandbook = document.createElement('button');
+          btnHandbook.textContent = '시스템 핸드북';
+          btnHandbook.style.marginLeft = '8px';
+          btnHandbook.style.padding = '4px 10px';
+          btnHandbook.style.borderRadius = '999px';
+          btnHandbook.style.border = '1px solid rgba(255,255,255,0.4)';
+          btnHandbook.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
+          btnHandbook.style.color = '#111827';
+          btnHandbook.style.fontSize = '11px';
+          btnHandbook.style.fontWeight = '700';
+          btnHandbook.style.cursor = 'pointer';
+          btnHandbook.style.verticalAlign = 'middle';
+          btnHandbook.addEventListener('click', function () {
+            window.open('unique-map.html', '_blank', 'noopener');
+          });
+          target.insertBefore(btnHandbook, btnWorkTool);
+        }
+      } catch (e) {
+        console.error('HQ/일하기 버튼 생성 중 에러:', e);
+      }
     });
   </script>
 </body>
