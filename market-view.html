@@ -166,34 +166,31 @@
     .notiTitle{font-weight:900;font-size:13px}
     .notiTime{font-size:11px;opacity:.75;margin-top:3px}
     .notiBody{font-size:12px;opacity:.9;margin-top:6px;white-space:pre-line;line-height:1.45}
-/* ✅ market-view 버튼 가독성 업 */
-.btn{
-  font-size: 13px !important;
-  padding: 11px 14px !important;
-  border: 1px solid rgba(255,255,255,.22) !important;
-  background: rgba(255,255,255,.16) !important;
-  color: #f9fafb !important;
-}
 
-.btn.primary{
-  border-color: rgba(250,204,21,.65) !important;
-  background: rgba(250,204,21,.18) !important;
-}
-
-.btn.danger{
-  border-color: rgba(239,68,68,.65) !important;
-  background: rgba(239,68,68,.18) !important;
-}
-
-.commentBtn{
-  font-size: 12px !important;
-  padding: 7px 10px !important;
-}
-
-.commentDel{
-  font-size: 12px !important;
-  padding: 7px 10px !important;
-}
+    /* ✅ 버튼 가독성 업(필요한 만큼만) */
+    .btn{
+      font-size: 13px !important;
+      padding: 11px 14px !important;
+      border: 1px solid rgba(255,255,255,.22) !important;
+      background: rgba(255,255,255,.16) !important;
+      color: #f9fafb !important;
+    }
+    .btn.primary{
+      border-color: rgba(250,204,21,.65) !important;
+      background: rgba(250,204,21,.18) !important;
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,.65) !important;
+      background: rgba(239,68,68,.18) !important;
+    }
+    .commentBtn{
+      font-size: 12px !important;
+      padding: 7px 10px !important;
+    }
+    .commentDel{
+      font-size: 12px !important;
+      padding: 7px 10px !important;
+    }
   </style>
 </head>
 
@@ -225,9 +222,9 @@
     <div id="postDesc" class="desc"></div>
   </div>
 
-  <!-- 내 글이면 수정 카드 표시 -->
+  <!-- ✅ 작성자 or 관리자면 수정 카드 표시 -->
   <div class="card" id="editCard" style="display:none;">
-    <div style="font-weight:900;margin-bottom:8px;">게시글 수정 (내 글)</div>
+    <div id="editCardTitle" style="font-weight:900;margin-bottom:8px;">게시글 수정</div>
     <div class="muted" style="margin-bottom:10px;">새 이미지를 선택하면 기존 이미지는 “교체”됩니다. (최대 3개)</div>
 
     <div class="row">
@@ -315,6 +312,9 @@
   let refreshToken = null;
   let user = null;
 
+  // ✅ 관리자(너/매니저)
+  let isAdmin = false;
+
   let currentPost = null;
   let postOwnerId = null;
 
@@ -345,6 +345,20 @@
       storageKey: "sb-market-view"
     }
   });
+
+  async function loadIsAdmin(){
+    try{
+      const { data, error } = await sb
+        .from("market_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .limit(1);
+      if (error) return false;
+      return Array.isArray(data) && data.length > 0;
+    }catch(e){
+      return false;
+    }
+  }
 
   function setStatus(msg, isErr=false){
     if (!msg){ statusEl.style.display="none"; return; }
@@ -426,6 +440,7 @@
       safeLSSet(REFRESH_KEY, refreshToken);
 
       user = decodeUserFromAccessToken(accessToken);
+      isAdmin = user?.id ? await loadIsAdmin() : false;
       setWho();
       setStatus("");
       return true;
@@ -485,7 +500,7 @@
       return;
     }
     const label = user.name || user.email || user.id.slice(0,8);
-    $("who").textContent = `로그인: ${label}`;
+    $("who").textContent = `로그인: ${label}${isAdmin ? " (관리자)" : ""}`;
     $("commentHint").textContent = "";
     btnBell.style.display = "";
   }
@@ -576,7 +591,7 @@
     renderImages(Array.isArray(p.images) ? p.images : []);
   }
 
-  // ===== 내 글 수정 =====
+  // ===== 내 글/관리자 수정 =====
   let selectedFiles = [];
   let previewUrls = [];
 
@@ -670,7 +685,7 @@
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
-    if (!currentPost || currentPost.owner !== user.id) return setStatus("내 글만 수정 가능합니다.", true);
+    if (!currentPost || !(currentPost.owner === user.id || isAdmin)) return setStatus("권한이 없습니다.", true);
 
     const title = ($("eTitle").value || "").trim();
     if (!title) return setStatus("제목은 필수입니다.", true);
@@ -714,14 +729,21 @@
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
-    if (!currentPost || currentPost.owner !== user.id) return setStatus("내 글만 삭제 가능합니다.", true);
+    if (!currentPost || !(currentPost.owner === user.id || isAdmin)) return setStatus("권한이 없습니다.", true);
 
-    if (!confirm("정말 게시글을 삭제할까요?\n(댓글/알림은 DB에서 자동 정리됩니다)")) return;
+    if (!confirm("정말 게시글을 삭제할까요?\n(댓글/알림은 DB CASCADE 설정이 필요할 수 있습니다)")) return;
 
     setStatus("삭제 중...");
     try{ await removeOldImages(Array.isArray(currentPost.images)?currentPost.images:[]); }catch(e){}
+
     const { error } = await sb.from("market_posts").delete().eq("id", currentPost.id);
-    if (error) return setStatus("게시글 삭제 실패: " + error.message, true);
+    if (error) {
+      return setStatus(
+        "게시글 삭제 실패: " + error.message +
+        "\n(댓글 때문에 막히면 DB에 post_id ON DELETE CASCADE가 필요합니다.)",
+        true
+      );
+    }
 
     setStatus("삭제 완료! 마켓으로 이동합니다.");
     setTimeout(() => location.href = MARKET_PAGE, 400);
@@ -786,9 +808,10 @@
   }
 
   function renderNode(c, depth){
-    const canDelete = user?.id && (c.owner === user.id || postOwnerId === user.id);
-    const indent = Math.min(depth, 6) * 18;
+    // ✅ 댓글 삭제는 "게시물 주인만" (댓글 작성자는 삭제 불가)
+    const canDelete = user?.id && (postOwnerId === user.id);
 
+    const indent = Math.min(depth, 6) * 18;
     return `
       <div class="comment ${depth ? "reply" : ""}" id="c_${c.id}" style="margin-left:${indent}px;">
         <div class="commentTop">
@@ -859,6 +882,9 @@
   async function deleteComment(id){
     const ok = await ensureValidAuth();
     if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+
+    // UI가 postOwner에게만 보이지만, 안전하게 한번 더 체크
+    if (!(user?.id && postOwnerId === user.id)) return setStatus("권한이 없습니다.", true);
 
     if (!confirm("이 댓글을 삭제할까요?\n(대댓글이 달린 댓글이면 대댓글도 같이 삭제됩니다)")) return;
 
@@ -1087,17 +1113,23 @@
 
     await ensureValidAuth();
     user = decodeUserFromAccessToken(accessToken);
+    isAdmin = user?.id ? await loadIsAdmin() : false;
     setWho();
 
     currentPost = await loadPost();
     if (currentPost){
       renderPost(currentPost);
 
-      if (user?.id && currentPost.owner === user.id){
-        $("editCard").style.display = "";
+      const canEdit = user?.id && (currentPost.owner === user.id || isAdmin);
+      $("editCard").style.display = canEdit ? "" : "none";
+
+      if (canEdit){
         fillEditForm(currentPost);
-      } else {
-        $("editCard").style.display = "none";
+        if (isAdmin && currentPost.owner !== user.id){
+          $("editCardTitle").textContent = "게시글 수정 (관리자 권한)";
+        } else {
+          $("editCardTitle").textContent = "게시글 수정";
+        }
       }
     }
 
