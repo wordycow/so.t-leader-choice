@@ -111,60 +111,65 @@
        ✅ 마녀/박쥐: 달(오른쪽 위) 기준으로 고정 + 왔다리갔다리
        - 카드 안이 아니라 "화면 전체(page-wrap)" 기준
        ========================= */
-    .spirit{
-      position:absolute;
-      pointer-events:none;
-      z-index:12; /* 카드(20)보다 아래 */
-    }
-    .spirit img{
-      display:block;
-      width:100%;
-      height:auto;
-      filter: drop-shadow(0 0 10px rgba(250,204,21,0.55));
-    }
+   .spirit{
+  position:absolute;
+  pointer-events:none;
+  z-index:12; /* 카드보다 아래 */
+}
+.spirit img{
+  display:block;
+  width:100%;
+  height:auto;
+  filter: drop-shadow(0 0 10px rgba(250,204,21,0.45));
+}
 
-    /* 박쥐(달 위쪽 주변) */
-    .spirit-bat{
-      top: 7vh;
-      right: 4vw;
-      width: clamp(160px, 18vw, 320px);
-      animation: batDrift 3.2s ease-in-out infinite alternate;
-      opacity: .95;
-    }
+/* ✅ 위아래만 */
+@keyframes bobY {
+  from { transform: translateY(-10px); }
+  to   { transform: translateY(14px); }
+}
+@keyframes bobY2 {
+  from { transform: translateY(10px); }
+  to   { transform: translateY(-14px); }
+}
 
-    /* 마녀(달 안쪽/가까이) */
-    .spirit-witch{
-      top: 14vh;
-      right: 14vw;
-      width: clamp(56px, 5.5vw, 110px);
-      animation: witchDrift 4.6s ease-in-out infinite alternate;
-    }
+/* ✅ 박쥐 무리 - 오른쪽(화면 끝에 붙어서 잘리게) */
+.spirit-bat-right{
+  top: 7vh;
+  right: -6vw;                 /* ✅ 더 붙이고 싶으면 -10vw */
+  width: clamp(280px, 30vw, 560px);
+  animation: bobY 2.4s ease-in-out infinite alternate;
+  opacity: .95;
+}
 
-    @keyframes batDrift{
-      from { transform: translateX(-26px) translateY(4px) rotate(-1deg); }
-      to   { transform: translateX(26px)  translateY(12px) rotate(1deg); }
-    }
-    @keyframes witchDrift{
-      from { transform: translateX(-16px) translateY(6px) rotate(-2deg); }
-      to   { transform: translateX(16px)  translateY(-10px) rotate(2deg); }
-    }
+/* ✅ 박쥐 무리 - 왼쪽(성 기준 왼쪽에 한 무리) */
+.spirit-bat-left{
+  top: 9vh;
+  right: 18vw;                 /* ✅ 성 중심 기준 왼쪽으로 */
+  width: clamp(220px, 24vw, 460px);
+  animation: bobY2 2.8s ease-in-out infinite alternate;
+  opacity: .92;
+}
+/* 왼쪽 무리는 좌우 반전해서 ‘양쪽으로 갈라진’ 느낌 */
+.spirit-bat-left img{
+  transform: scaleX(-1);
+  transform-origin: center;
+}
 
-    @media (max-width:768px){
-      .gate-card{ padding:24px 20px 18px; border-radius:22px; }
-      .gate-title{ font-size:32px; letter-spacing:0.22em; }
-      .form-body{ max-width:100%; }
+/* ✅ 마녀: 성 왼쪽 / 지금보다 작게 */
+.spirit-witch{
+  top: 14vh;
+  right: 16vw;                 /* ✅ 성의 왼쪽 라인 쪽 */
+  width: clamp(30px, 3.2vw, 68px);
+  animation: bobY 3.6s ease-in-out infinite alternate;
+}
 
-      /* 모바일에서도 달 근처로 유지(조금 더 크게) */
-      .spirit-bat{
-        top: 6vh;
-        right: -2vw;
-        width: 46vw;
-      }
-      .spirit-witch{
-        top: 13vh;
-        right: 18vw;
-        width: 14vw;
-      }
+/* 모바일 보정(선택) */
+@media (max-width:768px){
+  .spirit-bat-right{ top: 6vh; right: -18vw; width: 78vw; }
+  .spirit-bat-left { top: 8vh; right: 28vw; width: 60vw; }
+  .spirit-witch    { top: 12vh; right: 26vw; width: 16vw; }
+}
     }
   </style>
 </head>
