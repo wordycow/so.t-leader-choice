@@ -83,24 +83,23 @@
 
     /* ===== 상단 SNS 아이콘 ===== */
     .top-sns-icons{
-      position:absolute;
-      top:68px;
-      right:46px;
-      display:flex;
-      align-items:center;
-      gap:6px;
-      z-index:5;
+  position:absolute;
+  top:68px;
+  right:46px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  z-index:5;
 
-      background:#1e2848;
-      border-radius:999px;
-      padding:1px;
-      border:1px solid rgba(245,158,11,0.35);
+  /* ✅ 뒤 배경/테두리/패딩 제거 */
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+.top-sns-icons a{display:block; line-height:0; text-decoration:none;}
+.top-sns-icons img{display:block; width:42px; height:42px;}
 
-      /* ✅ 선처럼 보이던 그림자 제거 */
-      box-shadow:none;
-    }
-    .top-sns-icons a{display:block; line-height:0; text-decoration:none;}
-    .top-sns-icons img{display:block; width:42px; height:42px;}
 
     /* ===== 마켓 버튼 (PC만 표시) ===== */
     .top-market-btn{
@@ -160,6 +159,48 @@
       color:#e5e7eb;
       margin-bottom:6px;
     }
+    /* ✅ 스케줄 제목줄 = (왼쪽: 이번 주 강의 스케줄 / 오른쪽: UNIQUE MARKET) */
+.top-schedule-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
+}
+
+/* 기존 header의 margin-bottom이 줄간격을 깨니까 0으로 */
+.top-schedule-head .top-schedule-header{
+  margin-bottom:0;
+}
+
+/* ✅ UNIQUE MARKET 링크 스타일 */
+.schedule-market-link{
+  font-family:"Cinzel","Times New Roman",serif;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.18em;
+
+  color:#FACC15;
+  text-decoration:none;
+  text-shadow:
+    0 0 10px rgba(245,158,11,0.85),
+    0 4px 14px rgba(0,0,0,0.85);
+
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(245,158,11,0.45);
+  background: rgba(15,23,42,0.20);
+  backdrop-filter: blur(8px);
+}
+.schedule-market-link:hover{
+  filter:brightness(1.08);
+  background: rgba(245,158,11,0.10);
+}
+
+/* ✅ 모바일에선 숨김 */
+@media (max-width:768px){
+  .schedule-market-link{ display:none; }
+}
     .top-schedule-grid{
       display:grid;
       grid-template-columns: repeat(7, minmax(0,1fr));
@@ -510,10 +551,6 @@
           <img src="img/youtube-round.png" alt="YouTube" />
         </a>
       </div>
-
-      <!-- PC만 마켓 버튼 -->
-      <a class="top-market-btn" href="market.html" target="_blank" rel="noopener noreferrer">Unique 마켓</a>
-
       <div class="main-inner">
         <div class="title-wrap">
           <div class="title-en">THE UNIQUE</div>
@@ -521,9 +558,10 @@
         </div>
 
         <section class="top-schedule-panel">
-          <div class="top-schedule-header">이번 주 강의 스케줄</div>
-          <div id="top-schedule-empty" class="top-schedule-empty">주간 스케줄을 불러오는 중입니다...</div>
-          <div id="top-schedule-grid" class="top-schedule-grid"></div>
+         <div class="top-schedule-head">
+  <div class="top-schedule-header">이번 주 강의 스케줄</div>
+  <a class="schedule-market-link" href="market.html" target="_blank" rel="noopener noreferrer">UNIQUE MARKET</a>
+</div>
         </section>
 
         <section class="layout">
