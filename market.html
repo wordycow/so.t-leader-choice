@@ -253,7 +253,6 @@
   </div>
 </div>
 
-<!-- 알림 패널 -->
 <aside id="notiPanel" class="notiPanel"></aside>
 
 <script>
@@ -268,6 +267,7 @@
   const TOKEN_KEY = "market_access_token";
   const REFRESH_KEY = "market_refresh_token";
   const RETURN_TO_KEY = "market_return_to";
+  const NOTI_LAST_ALERT_KEY_PREFIX = "market_noti_last_alert_";
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
@@ -281,7 +281,6 @@
   let refreshToken = null;
   let user = null;
 
-  // ✅ 관리자(너/매니저) 체크
   let isAdmin = false;
 
   const postsMap = new Map();
@@ -419,7 +418,7 @@
       safeLSSet(REFRESH_KEY, refreshToken);
 
       user = decodeUserFromAccessToken(accessToken);
-      isAdmin = await loadIsAdmin();
+      isAdmin = user?.id ? await loadIsAdmin() : false;
       setLoggedInUI();
       setStatus("");
       return true;
@@ -686,7 +685,6 @@
     }
   }
 
-  // ✅ 게시글 삭제: 게시글만 삭제(댓글/알림은 DB CASCADE 권장)
   async function deletePost(postId){
     const ok = await ensureValidAuth();
     if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
@@ -698,7 +696,7 @@
     setStatus("삭제 중...");
 
     const { error } = await sb.from("market_posts").delete().eq("id", postId);
-    if (error) {
+    if (error){
       return setStatus(
         "삭제 실패: " + error.message +
         "\n(댓글 때문에 막히면 DB에 post_id ON DELETE CASCADE가 필요합니다.)",
@@ -706,7 +704,6 @@
       );
     }
 
-    // 이미지 정리(실패해도 게시글 삭제는 유지)
     try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
 
     setStatus("삭제 완료!");
@@ -717,7 +714,7 @@
   function postCardHtml(p){
     const imgs = Array.isArray(p.images) ? p.images : [];
     const cover = imgs[0] || "";
-    const canManage = user?.id && (p.owner === user.id || isAdmin); // ✅ 내글 or 관리자
+    const canManage = user?.id && (p.owner === user.id || isAdmin);
 
     return `
       <div class="post" data-postid="${p.id}">
@@ -790,8 +787,6 @@
   // ---------------------------
   // 알림(🔔)
   // ---------------------------
-  const NOTI_LAST_ALERT_KEY_PREFIX = "market_noti_last_alert_";
-
   function fmtTime(iso){
     try{ return new Date(iso).toLocaleString(); }catch(e){ return iso || ""; }
   }
@@ -975,7 +970,7 @@
       return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
     }
 
-    isAdmin = await loadIsAdmin();   // ✅ 관리자 로드
+    isAdmin = await loadIsAdmin();
     setLoggedInUI();
 
     setStatus("");
