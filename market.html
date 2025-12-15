@@ -29,6 +29,7 @@
       z-index:-1;
     }
 
+    /* 오른쪽 패널 자리 확보(데스크탑) */
     .wrap{
       max-width:1200px;margin:0 auto;padding:16px;
       padding-right:360px;
@@ -140,6 +141,7 @@
       background:rgba(255,255,255,.08);margin-right:6px
     }
 
+    /* 오른쪽 고정 미리보기 */
     .floatingPreview{
       position:fixed;
       top:88px;
@@ -179,7 +181,7 @@
     <div class="btns">
       <button class="btn danger" id="btnExit" type="button">나가기</button>
       <button class="btn primary" id="btnLogin" type="button">구글 로그인</button>
-      <button class="btn" id="btnReset" type="button" title="로그인 꼬였을 때 초기화">초기화</button>
+      <button class="btn" id="btnReset" type="button" title="로그인/토큰 초기화">초기화</button>
     </div>
   </div>
 
@@ -263,6 +265,35 @@
   const feedEl = $("feed");
   const fpEl = $("floatingPreview");
 
+  let accessToken = null;
+  let refreshToken = null;
+  let user = null;
+
+  // ✅ 단일 클라이언트(이걸로 끝)
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      fetch: async (url, init = {}) => {
+        const headers = new Headers(init.headers || {});
+        // apikey는 항상
+        if (!headers.has("apikey")) headers.set("apikey", SUPABASE_ANON_KEY);
+
+        // REST / Storage는 유저 토큰 붙이기
+        const u = String(url);
+        if (accessToken && (u.includes("/rest/v1/") || u.includes("/storage/v1/"))) {
+          headers.set("Authorization", "Bearer " + accessToken);
+        }
+        return fetch(url, { ...init, headers });
+      }
+    },
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: false,
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: "sb-market-single"   // 경고 제거용
+    }
+  });
+
   function setStatus(msg, isErr=false){
     if (!msg){
       statusEl.style.display="none";
@@ -287,7 +318,16 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search);
+    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거
+  }
+
+  function escapeHtml(s){
+    return (s||"").toString()
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
   }
 
   function base64UrlToJson(b64url){
@@ -304,9 +344,7 @@
       const parts = (token || "").split(".");
       if (parts.length < 2) return null;
       return base64UrlToJson(parts[1]);
-    }catch(e){
-      return null;
-    }
+    }catch(e){ return null; }
   }
 
   function decodeUserFromAccessToken(token){
@@ -319,7 +357,7 @@
     };
   }
 
-  function tokenExpiringSoon(token, skewSec = 90){
+  function tokenExpiringSoon(token, skewSec = 120){
     const payload = decodeJwtPayload(token);
     const exp = payload?.exp ? payload.exp * 1000 : 0;
     if (!exp) return true;
@@ -329,12 +367,12 @@
   async function refreshTokens(){
     if (!refreshToken) return false;
 
-    setStatus("로그인 갱신 중...");
-
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 12000);
 
     try{
+      setStatus("로그인 갱신 중...");
+
       const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
         method: "POST",
         signal: controller.signal,
@@ -354,15 +392,12 @@
 
       accessToken = json.access_token;
       refreshToken = json.refresh_token || refreshToken;
-
       safeLSSet(TOKEN_KEY, accessToken);
       safeLSSet(REFRESH_KEY, refreshToken);
 
       user = decodeUserFromAccessToken(accessToken);
-      buildApiClient();
       setLoggedInUI();
       setStatus("");
-
       return true;
     }catch(e){
       setStatus("로그인 만료: 다시 '구글 로그인' 해주세요.\n(" + (e?.message || e) + ")", true);
@@ -372,37 +407,16 @@
     }
   }
 
+  async function ensureValidAuth(){
+    if (!accessToken || !refreshToken) return false;
+    if (tokenExpiringSoon(accessToken, 120)){
+      return await refreshTokens();
+    }
+    return true;
+  }
+
   function autologinOn(){
     return new URL(location.href).searchParams.get("autologin") === "1";
-  }
-
-  if (!window.supabase){
-    $("who").textContent = "supabase-js 로드 실패";
-    $("loginNote").textContent = "CDN(광고차단/네트워크) 문제";
-    setStatus("supabase-js 로드 실패", true);
-    return;
-  }
-
-  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      flowType: "implicit",
-      detectSessionInUrl: false,
-      persistSession: false,
-      autoRefreshToken: false,
-      storageKey: "sb-market-auth-login"
-    }
-  });
-
-  let accessToken = null;
-  let refreshToken = null;
-  let user = null;
-  let sbApi = null;
-
-  function buildApiClient(){
-    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
-      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:"sb-market-auth-api" }
-    });
   }
 
   function loadTokenFromHashOrStorage(){
@@ -425,16 +439,6 @@
     }
   }
 
-  async function ensureValidAuth(){
-    if (!accessToken || !refreshToken) return false;
-
-    if (tokenExpiringSoon(accessToken, 90)){
-      const ok = await refreshTokens();
-      return ok;
-    }
-    return true;
-  }
-
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
     $("loginNote").textContent = "등록/수정/삭제는 로그인 후 가능합니다.";
@@ -446,11 +450,12 @@
     $("loginNote").textContent = "로그인 완료 ✅ 등록/수정/삭제 가능합니다.";
   }
 
+  // 상단 버튼
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
-
   $("btnReset").addEventListener("click", () => {
     safeLSRemove(TOKEN_KEY);
     safeLSRemove(REFRESH_KEY);
+    // 과거 sb-* 흔적도 싹 정리
     try{
       for (let i = localStorage.length - 1; i >= 0; i--){
         const k = localStorage.key(i);
@@ -463,7 +468,7 @@
 
   $("btnLogin").addEventListener("click", async () => {
     setStatus("구글 로그인 이동 중...");
-    const { data, error } = await sbAuth.auth.signInWithOAuth({
+    const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: REDIRECT_TO, skipBrowserRedirect: true }
     });
@@ -515,39 +520,30 @@
   }
 
   function toPublicUrl(path){
-    return sbApi.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
-  
+
   function safeName(s){ return (s||"").toString().trim(); }
-  function escapeHtml(s){
-  return (s||"").toString()
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
+
   function storagePathFromPublicUrl(url){
     try{
       const marker = `/storage/v1/object/public/${BUCKET}/`;
       const idx = url.indexOf(marker);
       if (idx < 0) return null;
       return url.slice(idx + marker.length);
-    }catch(e){
-      return null;
-    }
+    }catch(e){ return null; }
   }
 
   async function removeOldImages(urls){
     const paths = (urls || []).map(storagePathFromPublicUrl).filter(Boolean);
     if (!paths.length) return;
-    await sbApi.storage.from(BUCKET).remove(paths);
+    await sb.storage.from(BUCKET).remove(paths);
   }
 
   async function uploadImages(postId){
     if (!selectedFiles.length) return null;
-    await ensureValidAuth();
-    buildApiClient();
+    const ok = await ensureValidAuth();
+    if (!ok) return null;
 
     setStatus("이미지 업로드 중...");
     const urls = [];
@@ -555,7 +551,7 @@
       const f = selectedFiles[i];
       const ext = fileExt(f);
       const path = `posts/${postId}/${Date.now()}_${i}.${ext}`;
-      const { error } = await sbApi.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
+      const { error } = await sb.storage.from(BUCKET).upload(path, f, { upsert:false, contentType:f.type });
       if (error) throw new Error(error.message);
       urls.push(toPublicUrl(path));
     }
@@ -600,18 +596,11 @@
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
 
-    if (!accessToken || !refreshToken){
-      setLoggedOutUI();
-      return setStatus("로그인이 필요합니다.", true);
-    }
-
-    // ✅ 만료면 자동 갱신
     const ok = await ensureValidAuth();
     if (!ok) return;
-    buildApiClient();
 
     user = decodeUserFromAccessToken(accessToken);
-    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. 초기화 후 재로그인", true);
+    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
@@ -621,7 +610,7 @@
 
     if (!editId){
       setStatus("등록 중...");
-      const { data, error } = await sbApi
+      const { data, error } = await sb
         .from("market_posts")
         .insert({ owner: user.id, owner_name, title, qty, contact, region, description, images: [] })
         .select("id")
@@ -632,7 +621,7 @@
       try{
         const urls = await uploadImages(data.id);
         if (Array.isArray(urls) && urls.length){
-          const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", data.id);
+          const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", data.id);
           if (e2) return setStatus("이미지 링크 저장 실패: " + e2.message, true);
         }
         setStatus("등록 완료!");
@@ -645,7 +634,7 @@
     }
 
     setStatus("수정 중...");
-    const { error: e1 } = await sbApi
+    const { error: e1 } = await sb
       .from("market_posts")
       .update({ title, qty, contact, region, description })
       .eq("id", editId);
@@ -655,8 +644,8 @@
     try{
       const urls = await uploadImages(editId);
       if (urls !== null) {
-        await removeOldImages(editOldImages);
-        const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", editId);
+        try{ await removeOldImages(editOldImages); }catch(e){}
+        const { error: e2 } = await sb.from("market_posts").update({ images: urls }).eq("id", editId);
         if (e2) return setStatus("이미지 갱신 실패: " + e2.message, true);
       }
       setStatus("수정 완료!");
@@ -670,7 +659,6 @@
   async function deletePost(postId){
     const ok = await ensureValidAuth();
     if (!ok) return;
-    buildApiClient();
 
     const p = postsMap.get(postId);
     if (!p) return;
@@ -678,7 +666,7 @@
 
     setStatus("삭제 중...");
     try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
-    const { error } = await sbApi.from("market_posts").delete().eq("id", postId);
+    const { error } = await sb.from("market_posts").delete().eq("id", postId);
     if (error) return setStatus("삭제 실패: " + error.message, true);
 
     setStatus("삭제 완료!");
@@ -720,9 +708,8 @@
   async function renderFeed(){
     const ok = await ensureValidAuth();
     if (!ok) return;
-    buildApiClient();
 
-    const { data, error } = await sbApi.from("market_posts").select("*").order("created_at", { ascending:false });
+    const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
     if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
 
     const posts = data || [];
@@ -778,7 +765,6 @@
       </div>
 
       ${cover ? `<div class="fpImg"><img src="${cover}" alt=""></div>` : ``}
-
       <div class="fpDesc">${escapeHtml(p.description || "")}</div>
 
       <div class="fpBtns">
@@ -786,6 +772,7 @@
         <button class="btn danger" type="button" id="fpDel">삭제</button>
       </div>
     `;
+
     fpEl.style.display = "";
     fpEl.querySelector("#fpClose").onclick = () => hideFloatingPreview();
     fpEl.querySelector("#fpEdit").onclick = () => enterEditMode(p);
@@ -814,27 +801,24 @@
       return;
     }
 
-    // ✅ 만료면 자동 갱신
+    // 만료/임박이면 자동 갱신
     await ensureValidAuth();
-    user = decodeUserFromAccessToken(accessToken);
 
+    user = decodeUserFromAccessToken(accessToken);
     if (!user?.id){
       setLoggedOutUI();
-      setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
-      return;
+      return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
     }
 
-    buildApiClient();
     setLoggedInUI();
     setStatus("");
     await renderFeed();
 
-    // ✅ 1분마다 자동 갱신 체크
+    // 1분마다 토큰 임박 체크 → 자동 갱신
     setInterval(async () => {
       if (!accessToken || !refreshToken) return;
-      if (tokenExpiringSoon(accessToken, 120)) {
+      if (tokenExpiringSoon(accessToken, 120)){
         await refreshTokens();
-        buildApiClient();
       }
     }, 60_000);
   })();
