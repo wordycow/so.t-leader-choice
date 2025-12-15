@@ -36,8 +36,8 @@
     .scene {
       position: fixed;
       inset: 0;
-      overflow: hidden;           /* ✅ 오른쪽 바트 '날개 잘림' 가능 */
-      pointer-events: none;       /* ✅ 클릭 방해 X */
+      overflow: hidden;      /* ✅ 오른쪽 박쥐 날개 잘림 */
+      pointer-events: none;
       z-index: 0;
     }
 
@@ -202,6 +202,7 @@
       user-select: none;
     }
 
+    /* ✅ Google만 남김 */
     .btn-social {
       background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
       border-color: rgba(148,163,184,0.35);
@@ -214,15 +215,6 @@
       transform: translateY(-1px);
     }
 
-    .btn-kakao {
-      background: radial-gradient(circle at top, rgba(254,229,0,0.95), rgba(202,138,4,0.55));
-      border-color: rgba(254,229,0,0.95);
-      color: #111827;
-      box-shadow: 0 10px 26px rgba(0,0,0,1);
-      letter-spacing: 0.08em;
-    }
-    .btn-kakao:hover { transform: translateY(-1px); }
-
     .status {
       min-height: 18px;
       font-size: 11px;
@@ -232,38 +224,33 @@
     }
     .status-error { color: #fecaca; }
 
-    /* =========================================================
-       ✅ 마녀 & 박쥐 (달 기준으로 재배치 + 위아래로만 움직임)
-       - 마녀: 성 왼쪽 / 더 작게
-       - 박쥐: 더 크게 / 오른쪽 끝에 붙어서 살짝 잘리게 / 위아래만
-       ========================================================= */
+    /* =========================
+       ✅ 박쥐/마녀 (그림자 없음, 위아래만)
+       ========================= */
     :root{
-      /* 박쥐 */
-      --bat-top: -6vh;
-      --bat-right: 0vw;                 /* 오른쪽으로 더 붙이면 -10vw */
-      --bat-width: clamp(400px, 38vw, 720px);
+      --bat-top: 5vh;
+      --bat-right: -7vw;                 /* ✅ 더 잘리게: -12vw */
+      --bat-width: clamp(320px, 38vw, 720px); /* ✅ 더 넓게: 38vw → 55vw */
       --bat-bob: 16px;
 
-      /* 마녀 */
-      --witch-top: 34vh;
-      --witch-right: 26vw;               /* 값 ↑ = 더 왼쪽(성 왼쪽으로) */
-      --witch-width: clamp(60px, 2.2vw, 88px);
+      --witch-top: 14vh;
+      --witch-right: 23vw;
+      --witch-width: clamp(18px, 2.2vw, 44px);
       --witch-bob: 10px;
     }
 
     .spirit{
       position:absolute;
       pointer-events:none;
-      z-index: 1; /* 배경 위, 카드 아래 */
+      z-index: 1;
     }
     .spirit img{
       display:block;
       width:100%;
       height:auto;
-      filter: none !important;
+      filter: none; /* ✅ 그림자/글로우 제거 */
     }
 
-    /* 위아래만 */
     @keyframes floatY {
       from { transform: translateY(calc(-1 * var(--bob))); }
       to   { transform: translateY(var(--bob)); }
@@ -287,6 +274,10 @@
     }
 
     @media (max-width: 768px) {
+      .gate-card { padding: 24px 20px 18px; border-radius: 22px; }
+      .gate-title { font-size: 32px; letter-spacing: 0.22em; }
+      .form-body { max-width: 100%; }
+
       :root{
         --bat-top: 10vh;
         --bat-right: -18vw;
@@ -304,7 +295,7 @@
   <div class="scene">
     <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
 
-    <!-- ✅ 여기로 옮김: 달/성(배경) 기준으로 딱 맞음 -->
+    <!-- ✅ 배경(scene) 기준으로 박쥐/마녀 배치 -->
     <div class="spirit spirit-witch"><img src="img/witch-float.png" alt=""></div>
     <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
   </div>
@@ -331,10 +322,9 @@
 
           <div class="divider">OR</div>
 
+          <!-- ✅ Google만 -->
           <div class="btn-row" style="margin-top:10px;">
             <button type="button" id="btnGoogle" class="btn btn-social">Google로 로그인</button>
-            <button type="button" id="btnDiscord" class="btn btn-social">Discord로 로그인</button>
-            <button type="button" id="btnKakao" class="btn btn-kakao">Kakao로 로그인</button>
             <button type="button" id="btnLogout" class="btn btn-ghost" style="display:none;">소셜 로그아웃</button>
           </div>
 
@@ -387,7 +377,7 @@
   <!-- 2) 시트 로드 -->
   <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
-  <!-- 3) 로그인 처리 -->
+  <!-- 3) 아이디 로그인 -->
   <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
@@ -418,7 +408,7 @@
     });
   </script>
 
-  <!-- 4) Supabase OAuth 로그인 -->
+  <!-- 4) Supabase OAuth (Google만) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -435,8 +425,6 @@
     const oauthStatusEl = document.getElementById("oauth-status");
     const btnLogout = document.getElementById("btnLogout");
     const btnGoogle = document.getElementById("btnGoogle");
-    const btnDiscord = document.getElementById("btnDiscord");
-    const btnKakao = document.getElementById("btnKakao");
 
     function sayOAuth(msg, isErr = false) {
       if (!oauthStatusEl) return;
@@ -473,14 +461,17 @@
       const user = sess.user || {};
       const name = user.user_metadata?.full_name || user.user_metadata?.name || "";
       const email = user.email || "";
-      const provider = user.app_metadata?.provider || "";
 
       localStorage.setItem("uniqueOAuthUser", JSON.stringify({
-        uid: user.id, provider, email, name, loggedInAt: new Date().toISOString()
+        uid: user.id,
+        provider: "google",
+        email,
+        name,
+        loggedInAt: new Date().toISOString()
       }));
 
       if (btnLogout) btnLogout.style.display = "inline-flex";
-      sayOAuth(`소셜 로그인 완료 ✅ ${name || email || (provider ? provider.toUpperCase() : "USER")}`);
+      sayOAuth(`소셜 로그인 완료 ✅ ${name || email || "GOOGLE USER"}`);
     }
 
     async function maybeAutoContinue() {
@@ -490,18 +481,16 @@
       if (data?.session) window.location.href = MAIN_URL;
     }
 
-    async function signIn(provider) {
-      sayOAuth("소셜 로그인 창 여는 중...");
+    async function signInGoogle() {
+      sayOAuth("Google 로그인 창 여는 중...");
       const { error } = await sb.auth.signInWithOAuth({
-        provider,
+        provider: "google",
         options: { redirectTo: GATE_URL }
       });
       if (error) sayOAuth("로그인 시작 실패: " + error.message, true);
     }
 
-    btnGoogle?.addEventListener("click", () => signIn("google"));
-    btnDiscord?.addEventListener("click", () => signIn("discord"));
-    btnKakao?.addEventListener("click", () => signIn("kakao"));
+    btnGoogle?.addEventListener("click", signInGoogle);
 
     btnLogout?.addEventListener("click", async () => {
       await sb.auth.signOut();
@@ -514,6 +503,7 @@
       await handleOAuthCallback();
       await renderOAuthState();
       await maybeAutoContinue();
+
       sb.auth.onAuthStateChange(async () => {
         await renderOAuthState();
         await maybeAutoContinue();
