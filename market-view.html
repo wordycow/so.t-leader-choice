@@ -14,13 +14,17 @@
       margin:0;
       font-family:system-ui,-apple-system,"Pretendard",sans-serif;
       color:#e5e7eb;
-      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
+      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat; /* ✅ market와 동일 */
       position:relative;
     }
     body::before{
       content:"";
       position:fixed; inset:0;
-      background: radial-gradient(circle at top, rgba(2,6,23,.10), rgba(2,6,23,.45) 65%, rgba(2,6,23,.55));
+      background: radial-gradient(circle at top,
+        rgba(2,6,23,.10),
+        rgba(2,6,23,.45) 65%,
+        rgba(2,6,23,.55)
+      );
       z-index:-1;
     }
 
@@ -50,6 +54,8 @@
       white-space:pre-line;
     }
 
+    .muted{opacity:.85;font-size:12px}
+
     .card{
       border-radius:18px;
       border:1px solid rgba(255,255,255,.12);
@@ -70,9 +76,6 @@
     .thumb{width:96px;height:64px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;cursor:pointer;opacity:.9}
     .thumb:hover{opacity:1}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:720px){.row{grid-template-columns:1fr}}
 
     textarea{
       width:100%;min-height:90px;resize:vertical;
@@ -121,7 +124,7 @@
     <div id="postDesc" class="desc"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="comments">
     <div style="font-weight:900;margin-bottom:8px;">댓글</div>
     <textarea id="cBody" placeholder="댓글을 입력하세요"></textarea>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -129,6 +132,7 @@
       <button class="btn" id="btnReload" type="button">댓글 새로고침</button>
     </div>
     <div id="commentList"></div>
+    <div id="commentHint" class="muted" style="margin-top:10px;"></div>
   </div>
 </div>
 
@@ -136,13 +140,41 @@
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-  const BUCKET = "market";
+
+  const VIEW_PAGE = "market-view.html";   // 현재 파일명(참고용)
+  const MARKET_PAGE = "market.html";
   const TOKEN_KEY = "market_access_token";
   const REFRESH_KEY = "market_refresh_token";
   const RETURN_TO_KEY = "market_return_to";
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
+
+  let accessToken = null;
+  let refreshToken = null;
+  let user = null;
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      fetch: async (url, init = {}) => {
+        const headers = new Headers(init.headers || {});
+        if (!headers.has("apikey")) headers.set("apikey", SUPABASE_ANON_KEY);
+
+        const u = String(url);
+        if (accessToken && (u.includes("/rest/v1/") || u.includes("/storage/v1/"))) {
+          headers.set("Authorization", "Bearer " + accessToken);
+        }
+        return fetch(url, { ...init, headers });
+      }
+    },
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: false,
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: "sb-market-view"
+    }
+  });
 
   function setStatus(msg, isErr=false){
     if (!msg){ statusEl.style.display="none"; return; }
@@ -156,6 +188,13 @@
   function safeLSGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function safeLSRemove(k){ try{ localStorage.removeItem(k); }catch(e){} }
 
+  function cleanUrlAll(){
+    const u = new URL(location.href);
+    u.searchParams.delete("code");
+    u.searchParams.delete("state");
+    history.replaceState({}, document.title, u.pathname + u.search);
+  }
+
   function base64UrlToJson(b64url){
     const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
     const pad = "=".repeat((4 - (b64.length % 4)) % 4);
@@ -164,50 +203,101 @@
     const json = new TextDecoder().decode(bytes);
     return JSON.parse(json);
   }
-  function decodeUserFromAccessToken(token){
+
+  function decodeJwtPayload(token){
     try{
       const parts = (token || "").split(".");
       if (parts.length < 2) return null;
-      const payload = base64UrlToJson(parts[1]);
-      return {
-        id: payload.sub || "",
-        email: payload.email || "",
-        name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
-      };
+      return base64UrlToJson(parts[1]);
     }catch(e){ return null; }
   }
 
-  // 이 페이지에서 로그인 누르면 market.html로 보내서 토큰 받고, 다시 여기로 돌아오게 함
-  function marketHtmlUrl(){
-    const base = location.pathname.replace(/\/[^\/]*$/, ""); // /so.t-leader-choice
-    return location.origin + base + "/market.html";
+  function decodeUserFromAccessToken(token){
+    const payload = decodeJwtPayload(token);
+    if (!payload) return null;
+    return {
+      id: payload.sub || "",
+      email: payload.email || "",
+      name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
+    };
   }
 
-  const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      flowType: "implicit",
-      detectSessionInUrl: false,
-      persistSession: false,
-      autoRefreshToken: false,
-      storageKey: "sb-market-auth-login"
+  function tokenExpiringSoon(token, skewSec = 120){
+    const payload = decodeJwtPayload(token);
+    const exp = payload?.exp ? payload.exp * 1000 : 0;
+    if (!exp) return true;
+    return Date.now() > (exp - skewSec*1000);
+  }
+
+  async function refreshTokens(){
+    if (!refreshToken) return false;
+
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 12000);
+
+    try{
+      setStatus("로그인 갱신 중...");
+
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok){
+        const msg = json?.error_description || json?.error || ("HTTP " + res.status);
+        throw new Error(msg);
+      }
+
+      accessToken = json.access_token;
+      refreshToken = json.refresh_token || refreshToken;
+      safeLSSet(TOKEN_KEY, accessToken);
+      safeLSSet(REFRESH_KEY, refreshToken);
+
+      user = decodeUserFromAccessToken(accessToken);
+      setWho();
+      setStatus("");
+      return true;
+    }catch(e){
+      setStatus("로그인 만료: 다시 '구글 로그인' 해주세요.\n(" + (e?.message || e) + ")", true);
+      return false;
+    }finally{
+      clearTimeout(t);
     }
-  });
-
-  let accessToken = null;
-  let refreshToken = null;
-  let user = null;
-  let sbApi = null;
-
-  function buildApiClient(){
-    sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
-      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:"sb-market-auth-api" }
-    });
   }
 
-  function loadTokenFromStorage(){
-    accessToken = safeLSGet(TOKEN_KEY);
-    refreshToken = safeLSGet(REFRESH_KEY);
+  async function ensureValidAuth(){
+    if (!accessToken || !refreshToken) return false;
+    if (tokenExpiringSoon(accessToken, 120)){
+      return await refreshTokens();
+    }
+    return true;
+  }
+
+  function loadTokenFromHashOrStorage(){
+    const hash = (location.hash || "").replace(/^#/, "");
+    if (hash.includes("access_token=")){
+      const p = new URLSearchParams(hash);
+      const at = p.get("access_token");
+      const rt = p.get("refresh_token");
+      if (at){
+        accessToken = at;
+        refreshToken = rt || null;
+        safeLSSet(TOKEN_KEY, accessToken);
+        if (refreshToken) safeLSSet(REFRESH_KEY, refreshToken);
+        cleanUrlAll();
+      }
+    }
+    if (!accessToken){
+      accessToken = safeLSGet(TOKEN_KEY);
+      refreshToken = safeLSGet(REFRESH_KEY);
+    }
   }
 
   function escapeHtml(s){
@@ -217,10 +307,8 @@
   }
 
   function formatTime(iso){
-    try{
-      const d = new Date(iso);
-      return d.toLocaleString();
-    }catch(e){ return iso || ""; }
+    try{ return new Date(iso).toLocaleString(); }
+    catch(e){ return iso || ""; }
   }
 
   function getPostId(){
@@ -228,23 +316,42 @@
     return u.searchParams.get("id") || "";
   }
 
+  function setWho(){
+    if (!user?.id){
+      $("who").textContent = "로그인 안됨(읽기만 가능할 수 있음)";
+      $("commentHint").textContent = "댓글 작성/삭제는 로그인 후 가능합니다.";
+      return;
+    }
+    const label = user.name || user.email || user.id.slice(0,8);
+    $("who").textContent = `로그인: ${label}`;
+    $("commentHint").textContent = "";
+  }
+
+  function marketHtmlUrl(){
+    const base = location.pathname.replace(/\/[^\/]*$/, "");
+    return location.origin + base + "/" + MARKET_PAGE;
+  }
+
   // UI 버튼
-  $("btnBack").onclick = () => location.href = "market.html";
+  $("btnBack").onclick = () => location.href = MARKET_PAGE;
   $("btnExit").onclick = () => location.replace("the-unique-gate.html");
   $("btnReset").onclick = () => {
     safeLSRemove(TOKEN_KEY);
     safeLSRemove(REFRESH_KEY);
     safeLSRemove(RETURN_TO_KEY);
-    location.href = "market.html?autologin=1";
+    location.href = MARKET_PAGE + "?autologin=1";
   };
+
   $("btnLogin").onclick = async () => {
-    // 로그인 후 다시 이 페이지로 돌아오게 저장
-    safeLSSet(RETURN_TO_KEY, location.origin + location.pathname + location.search);
+    // ✅ 로그인 후 다시 이 페이지로 돌아오게 저장
+    safeLSSet(RETURN_TO_KEY, location.href);
     setStatus("구글 로그인 이동 중...");
-    const { data, error } = await sbAuth.auth.signInWithOAuth({
+
+    const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: marketHtmlUrl(), skipBrowserRedirect: true }
     });
+
     if (error) return setStatus("구글 로그인 시작 실패: " + error.message, true);
     if (data?.url) location.assign(data.url);
     else setStatus("로그인 URL 생성 실패", true);
@@ -257,9 +364,9 @@
       $("postTitle").textContent = "ID 없음";
       return null;
     }
-    const { data, error } = await sbApi.from("market_posts").select("*").eq("id", postId).single();
+    const { data, error } = await sb.from("market_posts").select("*").eq("id", postId).single();
     if (error) {
-      setStatus("게시글 불러오기 실패: " + error.message, true);
+      setStatus("게시글 불러오기 실패: " + error.message + "\n(권한 문제면 로그인 필요)", true);
       $("postTitle").textContent = "불러오기 실패";
       return null;
     }
@@ -276,16 +383,18 @@
     main.innerHTML = `<img id="mainImg" src="${urls[0]}" alt="">`;
     box.appendChild(main);
 
-    const thumbs = document.createElement("div");
-    thumbs.className = "thumbs";
-    urls.forEach((u) => {
-      const t = document.createElement("div");
-      t.className = "thumb";
-      t.innerHTML = `<img src="${u}" alt="">`;
-      t.onclick = () => { const img = document.getElementById("mainImg"); if (img) img.src = u; };
-      thumbs.appendChild(t);
-    });
-    box.appendChild(thumbs);
+    if (urls.length > 1){
+      const thumbs = document.createElement("div");
+      thumbs.className = "thumbs";
+      urls.forEach((u) => {
+        const t = document.createElement("div");
+        t.className = "thumb";
+        t.innerHTML = `<img src="${u}" alt="">`;
+        t.onclick = () => { const img = document.getElementById("mainImg"); if (img) img.src = u; };
+        thumbs.appendChild(t);
+      });
+      box.appendChild(thumbs);
+    }
   }
 
   function renderPost(p){
@@ -300,14 +409,14 @@
 
   async function loadComments(){
     const postId = getPostId();
-    const { data, error } = await sbApi
+    const { data, error } = await sb
       .from("market_comments")
       .select("*")
       .eq("post_id", postId)
       .order("created_at", { ascending: false });
 
     if (error) {
-      setStatus("댓글 불러오기 실패: " + error.message, true);
+      setStatus("댓글 불러오기 실패: " + error.message + "\n(권한 문제면 로그인 필요)", true);
       return [];
     }
     return data || [];
@@ -336,14 +445,17 @@
       `;
     }).join("");
 
-    // 삭제 바인딩
     box.querySelectorAll(".commentDel").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-id");
         if (!id) return;
+        const ok = await ensureValidAuth();
+        if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
+
         if (!confirm("이 댓글을 삭제할까요?")) return;
-        const { error } = await sbApi.from("market_comments").delete().eq("id", id);
+        const { error } = await sb.from("market_comments").delete().eq("id", id);
         if (error) return setStatus("댓글 삭제 실패: " + error.message, true);
+
         setStatus("댓글 삭제 완료");
         const again = await loadComments();
         renderComments(again);
@@ -355,12 +467,17 @@
     const postId = getPostId();
     const body = ($("cBody").value || "").trim();
     if (!body) return setStatus("댓글 내용을 입력하세요.", true);
-    if (!user?.id) return setStatus("댓글 작성은 로그인 후 가능합니다.", true);
+
+    const ok = await ensureValidAuth();
+    if (!ok) return setStatus("댓글 작성은 로그인 후 가능합니다.", true);
+
+    user = decodeUserFromAccessToken(accessToken);
+    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
 
     setStatus("댓글 등록 중...");
     const owner_name = user.name || user.email || "";
 
-    const { error } = await sbApi.from("market_comments").insert({
+    const { error } = await sb.from("market_comments").insert({
       post_id: postId,
       owner: user.id,
       owner_name,
@@ -375,34 +492,43 @@
     renderComments(again);
   }
 
+  function scrollToCommentsIfNeeded(){
+    if (location.hash === "#comments"){
+      setTimeout(() => {
+        document.getElementById("comments")?.scrollIntoView({ behavior:"smooth", block:"start" });
+        if (user?.id) document.getElementById("cBody")?.focus();
+      }, 80);
+    }
+  }
+
   $("btnComment").onclick = () => addComment();
   $("btnReload").onclick = async () => renderComments(await loadComments());
 
   // Boot
   (async () => {
-    loadTokenFromStorage();
-    if (!accessToken) {
-      $("who").textContent = "로그인 필요";
-      setStatus("댓글/상세보기는 로그인 후 가능합니다.", true);
-      return;
+    loadTokenFromHashOrStorage();
+
+    if (accessToken && refreshToken){
+      await ensureValidAuth();
+      user = decodeUserFromAccessToken(accessToken);
     }
 
-    user = decodeUserFromAccessToken(accessToken);
-    if (!user?.id) {
-      $("who").textContent = "로그인 필요";
-      setStatus("토큰은 있는데 사용자 정보를 못 읽었습니다. ‘초기화’ 후 재로그인 해주세요.", true);
-      return;
-    }
-
-    buildApiClient();
-    $("who").textContent = `로그인: ${user.name || user.email || user.id.slice(0,8)}`;
-    setStatus("");
+    setWho();
 
     const post = await loadPost();
     if (post) renderPost(post);
 
     const comments = await loadComments();
     renderComments(comments);
+
+    scrollToCommentsIfNeeded();
+
+    setInterval(async () => {
+      if (!accessToken || !refreshToken) return;
+      if (tokenExpiringSoon(accessToken, 120)){
+        await refreshTokens();
+      }
+    }, 60_000);
   })();
 })();
 </script>
