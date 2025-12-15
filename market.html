@@ -517,9 +517,16 @@
   function toPublicUrl(path){
     return sbApi.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
-
+  
   function safeName(s){ return (s||"").toString().trim(); }
-
+  function escapeHtml(s){
+  return (s||"").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
   function storagePathFromPublicUrl(url){
     try{
       const marker = `/storage/v1/object/public/${BUCKET}/`;
