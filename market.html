@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UNIQUE 마켓</title>
-
   <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -21,21 +20,11 @@
     body::before{
       content:"";
       position:fixed; inset:0;
-      background: radial-gradient(circle at top,
-        rgba(2,6,23,.10),
-        rgba(2,6,23,.45) 65%,
-        rgba(2,6,23,.55)
-      );
+      background: radial-gradient(circle at top, rgba(2,6,23,.10), rgba(2,6,23,.45) 65%, rgba(2,6,23,.55));
       z-index:-1;
     }
 
-    /* 오른쪽 패널 자리 확보(데스크탑) */
-    .wrap{
-      max-width:1200px;margin:0 auto;padding:16px;
-      padding-right:360px;
-      position:relative;z-index:1
-    }
-    @media(max-width:1100px){ .wrap{padding-right:16px;} }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
 
     .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
     .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
@@ -51,6 +40,16 @@
     }
     .btn.primary{background:rgba(255,255,255,.18)}
     .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.45)}
+    .btn.bell{position:relative;padding-right:36px}
+    .badge{
+      position:absolute;top:-6px;right:-6px;
+      min-width:20px;height:20px;padding:0 6px;
+      border-radius:999px;
+      background:rgba(248,113,113,.95);
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff;font-size:11px;line-height:18px;
+      display:flex;align-items:center;justify-content:center;
+    }
 
     .pill{
       padding:8px 12px;border-radius:14px;
@@ -141,33 +140,35 @@
       background:rgba(255,255,255,.08);margin-right:6px
     }
 
-    /* 오른쪽 고정 미리보기 */
-    .floatingPreview{
+    /* 알림 패널 */
+    .notiPanel{
       position:fixed;
       top:88px;
       right:16px;
-      width:320px;
+      width:360px;
       max-height: calc(100vh - 110px);
       overflow:auto;
       border-radius:18px;
       border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.25);
+      background:rgba(0,0,0,.30);
       backdrop-filter: blur(8px);
       padding:12px;
-      z-index:50;
+      z-index:100;
       display:none;
     }
-    .floatingPreview .fpTitle{font-weight:900; margin:0 0 6px; font-size:14px}
-    .floatingPreview .fpMeta{font-size:12px; opacity:.85; line-height:1.5}
-    .floatingPreview .fpImg{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#0a1020;margin:10px 0}
-    .floatingPreview .fpImg img{width:100%;height:100%;object-fit:cover;display:block}
-    .floatingPreview .fpDesc{font-size:12px;opacity:.9;white-space:pre-line;line-height:1.55}
-    .floatingPreview .fpBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .floatingPreview .fpClose{margin-left:auto}
-
-    @media(max-width:1100px){
-      .floatingPreview{display:none !important;}
+    .notiHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .notiItem{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      padding:10px 10px;
+      margin-top:8px;
+      cursor:pointer;
     }
+    .notiItem.unread{background:rgba(255,255,255,.10)}
+    .notiTitle{font-weight:900;font-size:13px}
+    .notiTime{font-size:11px;opacity:.75;margin-top:3px}
+    .notiBody{font-size:12px;opacity:.9;margin-top:6px;white-space:pre-line;line-height:1.45}
   </style>
 </head>
 
@@ -178,7 +179,12 @@
       <div class="brand">UNIQUE 마켓</div>
       <div id="who" class="who">로그인 확인 중...</div>
     </div>
+
     <div class="btns">
+      <button class="btn bell" id="btnBell" type="button" style="display:none;">
+        🔔 알림 <span id="badge" class="badge" style="display:none;">0</span>
+      </button>
+
       <button class="btn danger" id="btnExit" type="button">나가기</button>
       <button class="btn primary" id="btnLogin" type="button">구글 로그인</button>
       <button class="btn" id="btnReset" type="button" title="로그인/토큰 초기화">초기화</button>
@@ -247,16 +253,18 @@
   </div>
 </div>
 
-<aside id="floatingPreview" class="floatingPreview"></aside>
+<!-- 알림 패널 -->
+<aside id="notiPanel" class="notiPanel"></aside>
 
 <script>
 (() => {
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const BUCKET = "market";
-  const REDIRECT_TO = location.origin + location.pathname;
 
   const VIEW_PAGE = "market-view.html";
+  const REDIRECT_TO = location.origin + location.pathname;
+
   const TOKEN_KEY = "market_access_token";
   const REFRESH_KEY = "market_refresh_token";
   const RETURN_TO_KEY = "market_return_to";
@@ -265,13 +273,18 @@
   const statusEl = $("status");
   const inlineEl = $("inlineStatus");
   const feedEl = $("feed");
-  const fpEl = $("floatingPreview");
+  const notiPanel = $("notiPanel");
+  const badge = $("badge");
+  const btnBell = $("btnBell");
 
   let accessToken = null;
   let refreshToken = null;
   let user = null;
 
-  // ✅ 단일 클라이언트
+  const postsMap = new Map();
+  let editId = null;
+  let editOldImages = [];
+
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
       fetch: async (url, init = {}) => {
@@ -279,7 +292,7 @@
         if (!headers.has("apikey")) headers.set("apikey", SUPABASE_ANON_KEY);
 
         const u = String(url);
-        if (accessToken && (u.includes("/rest/v1/") || u.includes("/storage/v1/"))) {
+        if (accessToken && (u.includes("/rest/v1/") || u.includes("/storage/v1/") || u.includes("/auth/v1/"))) {
           headers.set("Authorization", "Bearer " + accessToken);
         }
         return fetch(url, { ...init, headers });
@@ -303,10 +316,8 @@
       statusEl.style.borderColor = isErr ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.18)";
       statusEl.style.background = isErr ? "rgba(127,29,29,.25)" : "rgba(0,0,0,.18)";
     }
-    if (inlineEl){
-      inlineEl.textContent = msg || "";
-      inlineEl.style.color = isErr ? "#fecaca" : "#e5e7eb";
-    }
+    inlineEl.textContent = msg || "";
+    inlineEl.style.color = isErr ? "#fecaca" : "#e5e7eb";
   }
 
   function safeLSSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -367,15 +378,10 @@
   async function refreshTokens(){
     if (!refreshToken) return false;
 
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 12000);
-
     try{
       setStatus("로그인 갱신 중...");
-
       const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
         method: "POST",
-        signal: controller.signal,
         headers: {
           "apikey": SUPABASE_ANON_KEY,
           "Authorization": "Bearer " + SUPABASE_ANON_KEY,
@@ -402,16 +408,12 @@
     }catch(e){
       setStatus("로그인 만료: 다시 '구글 로그인' 해주세요.\n(" + (e?.message || e) + ")", true);
       return false;
-    }finally{
-      clearTimeout(t);
     }
   }
 
   async function ensureValidAuth(){
     if (!accessToken || !refreshToken) return false;
-    if (tokenExpiringSoon(accessToken, 120)){
-      return await refreshTokens();
-    }
+    if (tokenExpiringSoon(accessToken, 120)) return await refreshTokens();
     return true;
   }
 
@@ -419,10 +421,8 @@
     return new URL(location.href).searchParams.get("autologin") === "1";
   }
 
-  // ✅ OAuth 해시 토큰 파싱 + 저장 (해시로 들어왔는지 여부 리턴)
   function loadTokenFromHashOrStorage(){
     let fromHash = false;
-
     const hash = (location.hash || "").replace(/^#/, "");
     if (hash.includes("access_token=")){
       const p = new URLSearchParams(hash);
@@ -437,25 +437,19 @@
         cleanUrlAll();
       }
     }
-
     if (!accessToken){
       accessToken = safeLSGet(TOKEN_KEY);
       refreshToken = safeLSGet(REFRESH_KEY);
     }
-
     return fromHash;
   }
 
-  // ✅ market-view에서 로그인 눌렀을 때, OAuth 후 다시 view로 돌아가기
   function handleReturnToAfterOAuth(){
     const returnTo = safeLSGet(RETURN_TO_KEY);
     if (!returnTo) return false;
-
     safeLSRemove(RETURN_TO_KEY);
     try{
-      const now = location.href.split("#")[0];
-      const target = String(returnTo).split("#")[0];
-      if (target && target !== now){
+      if (returnTo && returnTo !== location.href) {
         location.replace(returnTo);
         return true;
       }
@@ -465,13 +459,15 @@
 
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "읽기는 가능 / 등록·수정·삭제는 로그인 후 가능합니다.";
+    $("loginNote").textContent = "등록/수정/삭제/댓글/알림은 로그인 후 가능합니다.";
+    btnBell.style.display = "none";
   }
 
   function setLoggedInUI(){
     const label = user?.name || user?.email || (user?.id ? user.id.slice(0,8) : "");
     $("who").textContent = `로그인: ${label}`;
-    $("loginNote").textContent = "로그인 완료 ✅ 등록/수정/삭제 가능합니다.";
+    $("loginNote").textContent = "로그인 완료 ✅";
+    btnBell.style.display = "";
   }
 
   // 상단 버튼
@@ -547,8 +543,6 @@
     return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
-  function safeName(s){ return (s||"").toString().trim(); }
-
   function storagePathFromPublicUrl(url){
     try{
       const marker = `/storage/v1/object/public/${BUCKET}/`;
@@ -567,9 +561,8 @@
   async function uploadImages(postId){
     if (!selectedFiles.length) return null;
     const ok = await ensureValidAuth();
-    if (!ok) throw new Error("로그인이 필요합니다.");
+    if (!ok) throw new Error("로그인 필요");
 
-    setStatus("이미지 업로드 중...");
     const urls = [];
     for (let i=0; i<Math.min(3, selectedFiles.length); i++){
       const f = selectedFiles[i];
@@ -582,11 +575,7 @@
     return urls;
   }
 
-  // ===== 수정/삭제 상태 =====
-  let editId = null;
-  let editOldImages = [];
-  const postsMap = new Map();
-
+  // ===== 수정 모드 =====
   function enterEditMode(p){
     editId = p.id;
     editOldImages = Array.isArray(p.images) ? p.images : [];
@@ -601,7 +590,6 @@
     $("btnSave").textContent = "수정 저장";
     $("btnCancelEdit").style.display = "";
     setStatus("수정 모드: 내용 수정 후 ‘수정 저장’");
-    showFloatingPreview(p);
   }
 
   function exitEditMode(){
@@ -617,19 +605,19 @@
   $("btnCancelEdit").addEventListener("click", () => exitEditMode());
 
   async function upsertPost(){
-    const title = safeName($("fTitle").value);
-    if (!title) return setStatus("제목은 필수입니다.", true);
-
     const ok = await ensureValidAuth();
     if (!ok) return setStatus("등록/수정은 로그인 후 가능합니다.", true);
 
     user = decodeUserFromAccessToken(accessToken);
     if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
 
+    const title = ($("fTitle").value || "").trim();
+    if (!title) return setStatus("제목은 필수입니다.", true);
+
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
-    const contact = safeName($("fContact").value);
-    const region = safeName($("fRegion").value);
-    const description = safeName($("fDesc").value);
+    const contact = ($("fContact").value || "").trim();
+    const region = ($("fRegion").value || "").trim();
+    const description = ($("fDesc").value || "").trim();
     const owner_name = user.name || user.email || "";
 
     if (!editId){
@@ -689,13 +677,15 @@
     if (!confirm("정말 삭제할까요?")) return;
 
     setStatus("삭제 중...");
+    try{ await sb.from("market_comments").delete().eq("post_id", postId); }catch(e){}
+    try{ await sb.from("market_notifications").delete().eq("post_id", postId); }catch(e){}
     try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
+
     const { error } = await sb.from("market_posts").delete().eq("id", postId);
     if (error) return setStatus("삭제 실패: " + error.message, true);
 
     setStatus("삭제 완료!");
     if (editId === postId) exitEditMode();
-    hideFloatingPreview();
     await renderFeed();
   }
 
@@ -730,89 +720,211 @@
   }
 
   async function renderFeed(){
+    const ok = await ensureValidAuth();
+    if (!ok) return;
+
     const { data, error } = await sb.from("market_posts").select("*").order("created_at", { ascending:false });
-    if (error){
-      return setStatus("게시글 불러오기 실패: " + error.message + "\n(읽기 권한이 막혀있다면 로그인 필요)", true);
-    }
+    if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
 
     const posts = data || [];
     postsMap.clear();
     posts.forEach(p => postsMap.set(p.id, p));
     feedEl.innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
-    setStatus("");
   }
 
-  // ✅ 클릭 동작 업그레이드:
-  // - 내 글 클릭: 오른쪽 미리보기
-  // - 내 글이 아닌 글 클릭: market-view로 이동 + 댓글로 스크롤
- feedEl.addEventListener("click", (e) => {
-  const actBtn = e.target.closest("[data-act]");
-  if (actBtn){
-    e.preventDefault();
-    e.stopPropagation();
-    const act = actBtn.getAttribute("data-act");
-    const id = actBtn.getAttribute("data-id");
+  feedEl.addEventListener("click", (e) => {
+    const actBtn = e.target.closest("[data-act]");
+    if (actBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const act = actBtn.getAttribute("data-act");
+      const id = actBtn.getAttribute("data-id");
+      if (!id) return;
+
+      const p = postsMap.get(id);
+      if (!p) return;
+
+      if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
+
+      if (act === "edit") enterEditMode(p);
+      if (act === "del") deletePost(id);
+      return;
+    }
+
+    const card = e.target.closest(".post");
+    if (!card) return;
+    const id = card.getAttribute("data-postid");
     if (!id) return;
 
-    const p = postsMap.get(id);
-    if (!p) return;
-
-    if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
-
-    if (act === "edit") enterEditMode(p);
-    if (act === "del") deletePost(id);
-    return;
-  }
-
-  const card = e.target.closest(".post");
-  if (!card) return;
-  const id = card.getAttribute("data-postid");
-  if (!id) return;
-
-  // ✅ 내 글/남 글 상관없이 상세(댓글)로 이동
-  location.href = `${VIEW_PAGE}?id=${encodeURIComponent(id)}#comments`;
-});
-
-  function showFloatingPreview(p){
-    const imgs = Array.isArray(p.images) ? p.images : [];
-    const cover = imgs[0] || "";
-
-    fpEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="fpTitle">내 상품 미리보기</div>
-        <button class="miniBtn fpClose" type="button" id="fpClose">닫기</button>
-      </div>
-
-      <div class="fpTitle" style="margin-top:8px;">${escapeHtml(p.title || "")}</div>
-      <div class="fpMeta">
-        수량: <b>${escapeHtml(p.qty ?? "-")}</b> · 지역: <b>${escapeHtml(p.region || "-")}</b><br>
-        연락: <b>${escapeHtml(p.contact || "-")}</b>
-      </div>
-
-      ${cover ? `<div class="fpImg"><img src="${cover}" alt=""></div>` : ``}
-      <div class="fpDesc">${escapeHtml(p.description || "")}</div>
-
-      <div class="fpBtns">
-        <button class="btn" type="button" id="fpOpen">상세/댓글</button>
-        <button class="btn primary" type="button" id="fpEdit">수정</button>
-        <button class="btn danger" type="button" id="fpDel">삭제</button>
-      </div>
-    `;
-
-    fpEl.style.display = "";
-    fpEl.querySelector("#fpClose").onclick = () => hideFloatingPreview();
-    fpEl.querySelector("#fpOpen").onclick = () => location.href = `${VIEW_PAGE}?id=${encodeURIComponent(p.id)}#comments`;
-    fpEl.querySelector("#fpEdit").onclick = () => enterEditMode(p);
-    fpEl.querySelector("#fpDel").onclick = () => deletePost(p.id);
-  }
-
-  function hideFloatingPreview(){
-    fpEl.style.display = "none";
-    fpEl.innerHTML = "";
-  }
+    // ✅ 내 글/남 글 상관없이 상세+댓글로 이동
+    location.href = `${VIEW_PAGE}?id=${encodeURIComponent(id)}#comments`;
+  });
 
   $("btnSave").addEventListener("click", (e) => { e.preventDefault(); upsertPost(); });
   $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); renderFeed(); });
+
+  // ---------------------------
+  // 알림(🔔)
+  // ---------------------------
+  const NOTI_LAST_ALERT_KEY_PREFIX = "market_noti_last_alert_";
+
+  function fmtTime(iso){
+    try{ return new Date(iso).toLocaleString(); }catch(e){ return iso || ""; }
+  }
+
+  function notiText(n){
+    const who = n.actor_name || "누군가";
+    if (n.type === "post_comment") return `${who}님이 내 게시물에 댓글을 달았어요`;
+    if (n.type === "comment_reply") return `${who}님이 내 댓글에 답글을 달았어요`;
+    return `${who}님의 알림`;
+  }
+
+  function toggleNotiPanel(show){
+    const isOpen = notiPanel.style.display !== "none" && notiPanel.style.display !== "";
+    const next = (show === undefined) ? !isOpen : show;
+    notiPanel.style.display = next ? "" : "none";
+  }
+
+  async function getUnreadCount(){
+    const { count, error } = await sb
+      .from("market_notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient", user.id)
+      .eq("read", false);
+
+    if (error) return null;
+    return (typeof count === "number") ? count : null;
+  }
+
+  async function loadNotiList(limit=30){
+    const { data, error } = await sb
+      .from("market_notifications")
+      .select("*")
+      .eq("recipient", user.id)
+      .order("created_at", { ascending:false })
+      .limit(limit);
+
+    if (error) {
+      setStatus("알림 불러오기 실패: " + error.message, true);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function markAllRead(){
+    await sb
+      .from("market_notifications")
+      .update({ read: true })
+      .eq("recipient", user.id)
+      .eq("read", false);
+  }
+
+  async function markRead(id){
+    await sb.from("market_notifications").update({ read:true }).eq("id", id);
+  }
+
+  async function refreshBadge(){
+    const c = await getUnreadCount();
+    if (c === null) return;
+    if (c <= 0) badge.style.display = "none";
+    else { badge.style.display = ""; badge.textContent = String(c); }
+  }
+
+  function renderNotiPanel(list){
+    const items = list.length
+      ? list.map(n => `
+        <div class="notiItem ${n.read ? "" : "unread"}" data-id="${n.id}"
+             data-post="${n.post_id}" data-comment="${n.comment_id}">
+          <div class="notiTitle">${escapeHtml(notiText(n))}</div>
+          <div class="notiTime">${escapeHtml(fmtTime(n.created_at))}</div>
+          <div class="notiBody">${escapeHtml(n.snippet || "")}</div>
+        </div>
+      `).join("")
+      : `<div class="muted">알림이 없습니다.</div>`;
+
+    notiPanel.innerHTML = `
+      <div class="notiHead">
+        <div style="font-weight:900;">알림</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="miniBtn" id="btnAllowNoti" type="button">알림 허용</button>
+          <button class="miniBtn" id="btnReadAll" type="button">모두 읽음</button>
+          <button class="miniBtn" id="btnCloseNoti" type="button">닫기</button>
+        </div>
+      </div>
+      ${items}
+    `;
+
+    notiPanel.querySelector("#btnCloseNoti").onclick = () => toggleNotiPanel(false);
+    notiPanel.querySelector("#btnReadAll").onclick = async () => {
+      await markAllRead();
+      await refreshBadge();
+      const again = await loadNotiList();
+      renderNotiPanel(again);
+    };
+
+    notiPanel.querySelector("#btnAllowNoti").onclick = async () => {
+      if (!("Notification" in window)) return setStatus("이 브라우저는 알림을 지원하지 않습니다.", true);
+      const p = await Notification.requestPermission();
+      if (p === "granted") setStatus("브라우저 알림 허용 완료!");
+      else setStatus("브라우저 알림이 허용되지 않았습니다.", true);
+    };
+
+    notiPanel.querySelectorAll(".notiItem").forEach(el => {
+      el.addEventListener("click", async () => {
+        const id = el.getAttribute("data-id");
+        const postId = el.getAttribute("data-post");
+        const cId = el.getAttribute("data-comment");
+        if (id) await markRead(id);
+        await refreshBadge();
+        toggleNotiPanel(false);
+        location.href = `${VIEW_PAGE}?id=${encodeURIComponent(postId)}#c_${cId}`;
+      });
+    });
+  }
+
+  function maybeBrowserNotify(n){
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    try{
+      new Notification("UNIQUE 마켓", { body: notiText(n) + (n.snippet ? "\n" + n.snippet : "") });
+    }catch(e){}
+  }
+
+  async function checkNewNotiAlert(){
+    const key = NOTI_LAST_ALERT_KEY_PREFIX + user.id;
+    const last = safeLSGet(key);
+
+    const { data } = await sb
+      .from("market_notifications")
+      .select("*")
+      .eq("recipient", user.id)
+      .eq("read", false)
+      .order("created_at", { ascending:false })
+      .limit(1);
+
+    const top = (data && data[0]) ? data[0] : null;
+    if (!top) return;
+
+    const topAt = top.created_at || "";
+    if (last && topAt <= last) return;
+
+    safeLSSet(key, topAt);
+    setStatus("🔔 새 알림: " + notiText(top));
+    maybeBrowserNotify(top);
+    setTimeout(() => setStatus(""), 3500);
+  }
+
+  btnBell.addEventListener("click", async () => {
+    const ok = await ensureValidAuth();
+    if (!ok) return setStatus("알림은 로그인 후 가능합니다.", true);
+
+    toggleNotiPanel();
+    if (notiPanel.style.display !== "none" && notiPanel.style.display !== ""){
+      const list = await loadNotiList();
+      renderNotiPanel(list);
+      await refreshBadge();
+    }
+  });
 
   // Boot
   (async () => {
@@ -820,8 +932,6 @@
     $("loginNote").textContent = "로그인 확인 중...";
 
     const fromHash = loadTokenFromHashOrStorage();
-
-    // OAuth로 돌아온 경우: return_to 있으면 바로 복귀
     if (fromHash){
       if (handleReturnToAfterOAuth()) return;
     }
@@ -829,30 +939,32 @@
     if (!accessToken || !refreshToken){
       setLoggedOutUI();
       setStatus("");
-      await renderFeed();
       if (autologinOn()) $("btnLogin").click();
       return;
     }
 
     await ensureValidAuth();
-
     user = decodeUserFromAccessToken(accessToken);
+
     if (!user?.id){
       setLoggedOutUI();
-      await renderFeed();
       return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
     }
 
     setLoggedInUI();
     setStatus("");
     await renderFeed();
+    await refreshBadge();
+    await checkNewNotiAlert();
 
     setInterval(async () => {
       if (!accessToken || !refreshToken) return;
-      if (tokenExpiringSoon(accessToken, 120)){
-        await refreshTokens();
+      if (tokenExpiringSoon(accessToken, 120)) await refreshTokens();
+      if (user?.id){
+        await refreshBadge();
+        await checkNewNotiAlert();
       }
-    }, 60_000);
+    }, 15000);
   })();
 })();
 </script>
