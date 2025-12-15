@@ -17,7 +17,12 @@
     .scene{ position:fixed; inset:0; overflow:hidden; }
     .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
-    .page-wrap{ position:absolute; inset:0; display:flex; justify-content:center; align-items:center; padding:24px 12px; z-index:10; }
+    .page-wrap{
+      position:absolute; inset:0;
+      display:flex; justify-content:center; align-items:center;
+      padding:24px 12px;
+      z-index:10;
+    }
 
     .gate-card{
       position:relative; border-radius:26px; padding:28px 26px 22px;
@@ -26,11 +31,7 @@
       box-shadow: 0 0 20px rgba(250,204,21,0.75), 0 28px 70px rgba(0,0,0,0.95);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       z-index:20;
-      overflow: visible;
     }
-
-    /* ✅ 텍스트/폼은 스피릿보다 위로 */
-    .gate-title-wrap, .form-body { position: relative; z-index: 10; }
 
     .gate-title-wrap{ text-align:center; margin-bottom:18px; }
     .gate-title{
@@ -91,87 +92,80 @@
     .btn-with-icon span{ line-height:1; }
 
     .btn-market{
-  background: radial-gradient(circle at top, rgba(248,181,84,0.18), rgba(15,23,42,0.96));
-  border-color: rgba(250,204,21,0.95);
-  color:#FACC15;
-  box-shadow: 0 0 18px rgba(250,204,21,0.65), 0 18px 40px rgba(0,0,0,0.95);
-}
-
-.btn-market span{
-  font-family:"Cinzel","Times New Roman",serif;
-  font-weight:900;
-  letter-spacing:0.24em;
-  text-transform:uppercase;
-  text-shadow: 0 0 10px rgba(250,204,21,0.8), 0 4px 16px rgba(0,0,0,1);
-}
+      background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
+      color:#111827; border-color: rgba(250,204,21,0.95);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.95);
+      letter-spacing: 0.16em; font-weight: 900;
+    }
+    .btn-market span{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:900;
+      letter-spacing:0.24em;
+      text-transform:uppercase;
+    }
 
     .status{ min-height:18px; font-size:11px; text-align:center; margin-top:6px; opacity:.85; }
     .status-error{ color:#fecaca; opacity:1; }
 
-   /* =========================
-   ✅ 마녀 & 박쥐 (달 근처 이동 + 크기 확대 + 좌우 이동)
-   조절은 여기 변수 4개만 건드리면 됨
-   ========================= */
-:root{
-  --witch-size: 9%;     /* ✅ 마녀 크기(PC) */
-  --bat-size:  18%;     /* ✅ 박쥐 크기(PC) */
-  --witch-x:  86%;      /* ✅ 마녀 X 위치(오른쪽으로 갈수록 ↑) */
-  --witch-y:  10%;      /* ✅ 마녀 Y 위치(위로 갈수록 ↓) */
-  --bat-x:    78%;      /* ✅ 박쥐 X 위치 */
-  --bat-y:     6%;      /* ✅ 박쥐 Y 위치 */
-}
+    /* =========================
+       ✅ 마녀/박쥐: 달(오른쪽 위) 기준으로 고정 + 왔다리갔다리
+       - 카드 안이 아니라 "화면 전체(page-wrap)" 기준
+       ========================= */
+    .spirit{
+      position:absolute;
+      pointer-events:none;
+      z-index:12; /* 카드(20)보다 아래 */
+    }
+    .spirit img{
+      display:block;
+      width:100%;
+      height:auto;
+      filter: drop-shadow(0 0 10px rgba(250,204,21,0.55));
+    }
 
-.spirit{
-  position:absolute;
-  pointer-events:none;
-  z-index: 6;
-}
+    /* 박쥐(달 위쪽 주변) */
+    .spirit-bat{
+      top: 7vh;
+      right: 4vw;
+      width: clamp(160px, 18vw, 320px);
+      animation: batDrift 3.2s ease-in-out infinite alternate;
+      opacity: .95;
+    }
 
-.spirit img{
-  display:block;
-  width:100%;
-  height:auto;
-  filter: drop-shadow(0 0 10px rgba(250,204,21,0.55));
-}
+    /* 마녀(달 안쪽/가까이) */
+    .spirit-witch{
+      top: 14vh;
+      right: 14vw;
+      width: clamp(56px, 5.5vw, 110px);
+      animation: witchDrift 4.6s ease-in-out infinite alternate;
+    }
 
-/* ✅ 달 근처: 오른쪽 위 */
-.spirit-witch{
-  left: var(--witch-x);
-  top:  var(--witch-y);
-  width: var(--witch-size);
-  animation: witchDrift 4.8s ease-in-out infinite alternate;
-}
+    @keyframes batDrift{
+      from { transform: translateX(-26px) translateY(4px) rotate(-1deg); }
+      to   { transform: translateX(26px)  translateY(12px) rotate(1deg); }
+    }
+    @keyframes witchDrift{
+      from { transform: translateX(-16px) translateY(6px) rotate(-2deg); }
+      to   { transform: translateX(16px)  translateY(-10px) rotate(2deg); }
+    }
 
-.spirit-bat{
-  left: var(--bat-x);
-  top:  var(--bat-y);
-  width: var(--bat-size);
-  animation: batDrift 2.6s ease-in-out infinite alternate;
-  opacity: 0.95;
-}
+    @media (max-width:768px){
+      .gate-card{ padding:24px 20px 18px; border-radius:22px; }
+      .gate-title{ font-size:32px; letter-spacing:0.22em; }
+      .form-body{ max-width:100%; }
 
-/* ✅ “왔다리 갔다리(좌우)” + 살짝 위아래 */
-@keyframes witchDrift{
-  from { transform: translateX(-18px) translateY(6px) rotate(-2deg); }
-  to   { transform: translateX(18px)  translateY(-10px) rotate(2deg); }
-}
-@keyframes batDrift{
-  from { transform: translateX(-26px) translateY(4px) rotate(-1deg); }
-  to   { transform: translateX(26px)  translateY(12px) rotate(1deg); }
-}
-
-/* ✅ 모바일에서는 크기/위치 자동 조정(너 요청: gate에서 모바일도 보이게 했으니) */
-@media (max-width:768px){
-  :root{
-    --witch-size: 16%;
-    --bat-size:  30%;
-    --witch-x:   72%;
-    --witch-y:   8%;
-    --bat-x:     58%;
-    --bat-y:     3%;
-  }
-}
-
+      /* 모바일에서도 달 근처로 유지(조금 더 크게) */
+      .spirit-bat{
+        top: 6vh;
+        right: -2vw;
+        width: 46vw;
+      }
+      .spirit-witch{
+        top: 13vh;
+        right: 18vw;
+        width: 14vw;
+      }
+    }
   </style>
 </head>
 
@@ -181,16 +175,11 @@
   </div>
 
   <div class="page-wrap">
+    <!-- ✅ 달 근처(오른쪽 위) 마녀/박쥐: 카드 밖(화면 기준) -->
+    <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
+    <div class="spirit spirit-witch"><img src="img/witch-float.png" alt=""></div>
+
     <main class="gate-card">
-
-      <!-- ✅ 마녀 / 박쥐 (누락된 HTML 복구) -->
-      <div class="spirit spirit-witch">
-        <img src="img/witch-float.png" alt="">
-      </div>
-      <div class="spirit spirit-bat">
-        <img src="img/bat-float.png" alt="">
-      </div>
-
       <div class="gate-title-wrap">
         <div class="gate-title">THE UNIQUE</div>
         <div class="gate-subtitle-en">INVITATION-ONLY ACCESS FOR ACTION TAKERS</div>
@@ -208,7 +197,6 @@
 
         <div class="divider-amp">&amp;</div>
 
-        <!-- ✅ 마켓 버튼: JS 없이 링크(무조건 동작) -->
         <a class="btn btn-market btn-with-icon" href="market.html?autologin=1">
           <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
             <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
