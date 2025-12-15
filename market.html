@@ -29,18 +29,12 @@
       z-index:-1;
     }
 
-    /* ✅ 오른쪽 미리보기 공간 확보(데스크탑) */
     .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:16px;
-      padding-right: 360px;
-      position:relative;
-      z-index:1
+      max-width:1200px;margin:0 auto;padding:16px;
+      padding-right:360px;
+      position:relative;z-index:1
     }
-    @media(max-width:1100px){
-      .wrap{ padding-right:16px; }
-    }
+    @media(max-width:1100px){ .wrap{padding-right:16px;} }
 
     .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
     .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
@@ -146,7 +140,6 @@
       background:rgba(255,255,255,.08);margin-right:6px
     }
 
-    /* ✅ 오른쪽 고정 미리보기 패널 */
     .floatingPreview{
       position:fixed;
       top:88px;
@@ -252,7 +245,6 @@
   </div>
 </div>
 
-<!-- ✅ 오른쪽 고정 미리보기 -->
 <aside id="floatingPreview" class="floatingPreview"></aside>
 
 <script>
@@ -295,7 +287,7 @@
     u.searchParams.delete("autologin");
     u.searchParams.delete("code");
     u.searchParams.delete("state");
-    history.replaceState({}, document.title, u.pathname + u.search); // hash 제거
+    history.replaceState({}, document.title, u.pathname + u.search);
   }
 
   function base64UrlToJson(b64url){
@@ -307,25 +299,77 @@
     return JSON.parse(json);
   }
 
-  function decodeUserFromAccessToken(token){
+  function decodeJwtPayload(token){
     try{
       const parts = (token || "").split(".");
       if (parts.length < 2) return null;
-      const payload = base64UrlToJson(parts[1]);
-      return {
-        id: payload.sub || "",
-        email: payload.email || "",
-        name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
-      };
+      return base64UrlToJson(parts[1]);
     }catch(e){
       return null;
     }
   }
 
-  function escapeHtml(s){
-    return (s||"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  function decodeUserFromAccessToken(token){
+    const payload = decodeJwtPayload(token);
+    if (!payload) return null;
+    return {
+      id: payload.sub || "",
+      email: payload.email || "",
+      name: payload.user_metadata?.full_name || payload.user_metadata?.name || payload.name || ""
+    };
+  }
+
+  function tokenExpiringSoon(token, skewSec = 90){
+    const payload = decodeJwtPayload(token);
+    const exp = payload?.exp ? payload.exp * 1000 : 0;
+    if (!exp) return true;
+    return Date.now() > (exp - skewSec*1000);
+  }
+
+  async function refreshTokens(){
+    if (!refreshToken) return false;
+
+    setStatus("로그인 갱신 중...");
+
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 12000);
+
+    try{
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok){
+        const msg = json?.error_description || json?.error || ("HTTP " + res.status);
+        throw new Error(msg);
+      }
+
+      accessToken = json.access_token;
+      refreshToken = json.refresh_token || refreshToken;
+
+      safeLSSet(TOKEN_KEY, accessToken);
+      safeLSSet(REFRESH_KEY, refreshToken);
+
+      user = decodeUserFromAccessToken(accessToken);
+      buildApiClient();
+      setLoggedInUI();
+      setStatus("");
+
+      return true;
+    }catch(e){
+      setStatus("로그인 만료: 다시 '구글 로그인' 해주세요.\n(" + (e?.message || e) + ")", true);
+      return false;
+    }finally{
+      clearTimeout(t);
+    }
   }
 
   function autologinOn(){
@@ -339,7 +383,6 @@
     return;
   }
 
-  // 로그인 시작용(redirect만) - storageKey 충돌 방지
   const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       flowType: "implicit",
@@ -358,12 +401,7 @@
   function buildApiClient(){
     sbApi = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
-      auth: {
-        persistSession:false,
-        autoRefreshToken:false,
-        detectSessionInUrl:false,
-        storageKey:"sb-market-auth-api"
-      }
+      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:"sb-market-auth-api" }
     });
   }
 
@@ -387,9 +425,19 @@
     }
   }
 
+  async function ensureValidAuth(){
+    if (!accessToken || !refreshToken) return false;
+
+    if (tokenExpiringSoon(accessToken, 90)){
+      const ok = await refreshTokens();
+      return ok;
+    }
+    return true;
+  }
+
   function setLoggedOutUI(){
     $("who").textContent = "로그인 필요";
-    $("loginNote").textContent = "등록/댓글은 로그인 후 가능합니다.";
+    $("loginNote").textContent = "등록/수정/삭제는 로그인 후 가능합니다.";
   }
 
   function setLoggedInUI(){
@@ -398,7 +446,6 @@
     $("loginNote").textContent = "로그인 완료 ✅ 등록/수정/삭제 가능합니다.";
   }
 
-  // 상단 버튼
   $("btnExit").addEventListener("click", () => location.replace("the-unique-gate.html"));
 
   $("btnReset").addEventListener("click", () => {
@@ -473,7 +520,6 @@
 
   function safeName(s){ return (s||"").toString().trim(); }
 
-  // public url -> storage path 추출(삭제에 사용)
   function storagePathFromPublicUrl(url){
     try{
       const marker = `/storage/v1/object/public/${BUCKET}/`;
@@ -486,16 +532,16 @@
   }
 
   async function removeOldImages(urls){
-    const paths = (urls || [])
-      .map(storagePathFromPublicUrl)
-      .filter(Boolean);
+    const paths = (urls || []).map(storagePathFromPublicUrl).filter(Boolean);
     if (!paths.length) return;
-    // 실패해도 진행은 계속
     await sbApi.storage.from(BUCKET).remove(paths);
   }
 
   async function uploadImages(postId){
-    if (!selectedFiles.length) return null; // null = "이미지 변경 없음"
+    if (!selectedFiles.length) return null;
+    await ensureValidAuth();
+    buildApiClient();
+
     setStatus("이미지 업로드 중...");
     const urls = [];
     for (let i=0; i<Math.min(3, selectedFiles.length); i++){
@@ -512,7 +558,7 @@
   // ===== 수정/삭제 상태 =====
   let editId = null;
   let editOldImages = [];
-  const postsMap = new Map(); // id -> post
+  const postsMap = new Map();
 
   function enterEditMode(p){
     editId = p.id;
@@ -524,10 +570,10 @@
     $("fRegion").value = p.region || "";
     $("fDesc").value = p.description || "";
 
-    clearPreviews(); // 새 파일 선택은 선택 사항(선택하면 교체)
+    clearPreviews();
     $("btnSave").textContent = "수정 저장";
     $("btnCancelEdit").style.display = "";
-    setStatus("수정 모드: 내용을 바꾸고 ‘수정 저장’을 누르세요.");
+    setStatus("수정 모드: 내용 수정 후 ‘수정 저장’");
     showFloatingPreview(p);
   }
 
@@ -543,11 +589,22 @@
 
   $("btnCancelEdit").addEventListener("click", () => exitEditMode());
 
-  // ===== 등록/수정/삭제 =====
   async function upsertPost(){
     const title = safeName($("fTitle").value);
     if (!title) return setStatus("제목은 필수입니다.", true);
-    if (!user?.id) return setStatus("등록/수정하려면 로그인이 필요합니다.", true);
+
+    if (!accessToken || !refreshToken){
+      setLoggedOutUI();
+      return setStatus("로그인이 필요합니다.", true);
+    }
+
+    // ✅ 만료면 자동 갱신
+    const ok = await ensureValidAuth();
+    if (!ok) return;
+    buildApiClient();
+
+    user = decodeUserFromAccessToken(accessToken);
+    if (!user?.id) return setStatus("유저 정보를 못 읽었습니다. 초기화 후 재로그인", true);
 
     const qty = $("fQty").value ? parseInt($("fQty").value, 10) : null;
     const contact = safeName($("fContact").value);
@@ -556,7 +613,6 @@
     const owner_name = user.name || user.email || "";
 
     if (!editId){
-      // ✅ 새 글 등록
       setStatus("등록 중...");
       const { data, error } = await sbApi
         .from("market_posts")
@@ -581,7 +637,6 @@
       return;
     }
 
-    // ✅ 수정
     setStatus("수정 중...");
     const { error: e1 } = await sbApi
       .from("market_posts")
@@ -593,34 +648,29 @@
     try{
       const urls = await uploadImages(editId);
       if (urls !== null) {
-        // 새 이미지 선택했으면 → 기존 이미지 삭제 후 교체
         await removeOldImages(editOldImages);
         const { error: e2 } = await sbApi.from("market_posts").update({ images: urls }).eq("id", editId);
         if (e2) return setStatus("이미지 갱신 실패: " + e2.message, true);
       }
       setStatus("수정 완료!");
-      const p = postsMap.get(editId);
       exitEditMode();
       await renderFeed();
-      if (p) showFloatingPreview(p);
     }catch(e){
       setStatus("이미지 업로드 실패: " + (e?.message || e), true);
     }
   }
 
   async function deletePost(postId){
-    if (!user?.id) return setStatus("삭제하려면 로그인이 필요합니다.", true);
+    const ok = await ensureValidAuth();
+    if (!ok) return;
+    buildApiClient();
+
     const p = postsMap.get(postId);
     if (!p) return;
-
     if (!confirm("정말 삭제할까요?")) return;
 
     setStatus("삭제 중...");
-    try{
-      // 이미지 삭제(실패해도 계속)
-      await removeOldImages(Array.isArray(p.images) ? p.images : []);
-    }catch(e){}
-
+    try{ await removeOldImages(Array.isArray(p.images)?p.images:[]); }catch(e){}
     const { error } = await sbApi.from("market_posts").delete().eq("id", postId);
     if (error) return setStatus("삭제 실패: " + error.message, true);
 
@@ -630,7 +680,6 @@
     await renderFeed();
   }
 
-  // ===== 피드 렌더 + 이벤트 =====
   function postCardHtml(p){
     const imgs = Array.isArray(p.images) ? p.images : [];
     const cover = imgs[0] || "";
@@ -662,7 +711,9 @@
   }
 
   async function renderFeed(){
-    if (!sbApi) return;
+    const ok = await ensureValidAuth();
+    if (!ok) return;
+    buildApiClient();
 
     const { data, error } = await sbApi.from("market_posts").select("*").order("created_at", { ascending:false });
     if (error) return setStatus("게시글 불러오기 실패: " + error.message, true);
@@ -670,12 +721,10 @@
     const posts = data || [];
     postsMap.clear();
     posts.forEach(p => postsMap.set(p.id, p));
-
     feedEl.innerHTML = posts.map(postCardHtml).join("") || `<div class="muted">아직 글이 없습니다.</div>`;
     setStatus("");
   }
 
-  // ✅ feed 클릭 이벤트(수정/삭제/미리보기)
   feedEl.addEventListener("click", (e) => {
     const actBtn = e.target.closest("[data-act]");
     if (actBtn){
@@ -685,18 +734,13 @@
       const id = actBtn.getAttribute("data-id");
       if (!id) return;
 
-      if (act === "edit"){
-        const p = postsMap.get(id);
-        if (!p) return;
-        if (p.owner !== user?.id) return setStatus("내 글만 수정할 수 있습니다.", true);
-        enterEditMode(p);
-      }
-      if (act === "del"){
-        const p = postsMap.get(id);
-        if (!p) return;
-        if (p.owner !== user?.id) return setStatus("내 글만 삭제할 수 있습니다.", true);
-        deletePost(id);
-      }
+      const p = postsMap.get(id);
+      if (!p) return;
+
+      if (p.owner !== user?.id) return setStatus("내 글만 수정/삭제 가능합니다.", true);
+
+      if (act === "edit") enterEditMode(p);
+      if (act === "del") deletePost(id);
       return;
     }
 
@@ -706,17 +750,11 @@
     const p = postsMap.get(id);
     if (!p) return;
 
-    // ✅ “내가 올린 상품”만 오른쪽 미리보기 띄우기
     if (p.owner === user?.id) showFloatingPreview(p);
-    else {
-      // 남의 글 클릭은(원하면) 상세로 보낼 수도 있음
-      setStatus("내 글을 클릭하면 오른쪽에 미리보기가 뜹니다.");
-    }
+    else setStatus("내 글 클릭 → 오른쪽 미리보기");
   });
 
-  // ===== 오른쪽 미리보기 =====
   function showFloatingPreview(p){
-    if (!fpEl) return;
     const imgs = Array.isArray(p.images) ? p.images : [];
     const cover = imgs[0] || "";
 
@@ -741,21 +779,17 @@
         <button class="btn danger" type="button" id="fpDel">삭제</button>
       </div>
     `;
-
     fpEl.style.display = "";
-
     fpEl.querySelector("#fpClose").onclick = () => hideFloatingPreview();
     fpEl.querySelector("#fpEdit").onclick = () => enterEditMode(p);
     fpEl.querySelector("#fpDel").onclick = () => deletePost(p.id);
   }
 
   function hideFloatingPreview(){
-    if (!fpEl) return;
     fpEl.style.display = "none";
     fpEl.innerHTML = "";
   }
 
-  // ===== 등록 버튼 =====
   $("btnSave").addEventListener("click", (e) => { e.preventDefault(); upsertPost(); });
   $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); renderFeed(); });
 
@@ -766,17 +800,20 @@
 
     loadTokenFromHashOrStorage();
 
-    if (!accessToken){
+    if (!accessToken || !refreshToken){
       setLoggedOutUI();
       setStatus("");
       if (autologinOn()) $("btnLogin").click();
       return;
     }
 
+    // ✅ 만료면 자동 갱신
+    await ensureValidAuth();
     user = decodeUserFromAccessToken(accessToken);
+
     if (!user?.id){
       setLoggedOutUI();
-      setStatus("토큰은 있는데 사용자 정보를 못 읽었습니다. ‘초기화’ 후 재로그인 해주세요.", true);
+      setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
       return;
     }
 
@@ -784,6 +821,15 @@
     setLoggedInUI();
     setStatus("");
     await renderFeed();
+
+    // ✅ 1분마다 자동 갱신 체크
+    setInterval(async () => {
+      if (!accessToken || !refreshToken) return;
+      if (tokenExpiringSoon(accessToken, 120)) {
+        await refreshTokens();
+        buildApiClient();
+      }
+    }, 60_000);
   })();
 })();
 </script>
