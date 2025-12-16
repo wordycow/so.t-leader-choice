@@ -16,6 +16,7 @@
   <meta name="twitter:title" content="so.t 직급의 전당">
   <meta name="twitter:description" content="so.t에서 직급을 달성한 리더들의 명예의 전당입니다.">
   <meta name="twitter:image" content="https://wordycow.github.io/so.t-leader-choice/img/og-rank-hall.jpg">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; }
@@ -48,14 +49,9 @@
       width: 100%;
     }
 
-    header {
-      margin-bottom: 16px;
-    }
+    header { margin-bottom: 16px; }
 
-    h1 {
-      font-size: 26px;
-      margin: 0 0 6px;
-    }
+    h1 { font-size: 26px; margin: 0 0 6px; }
 
     .sub {
       font-size: 13px;
@@ -80,13 +76,9 @@
       font-size: 12px;
     }
 
-    main {
-      margin-top: 10px;
-    }
+    main { margin-top: 10px; }
 
-    .rank-section {
-      margin-bottom: 28px;
-    }
+    .rank-section { margin-bottom: 28px; }
 
     .rank-title {
       display: flex;
@@ -95,10 +87,7 @@
       margin-bottom: 4px;
     }
 
-    .rank-title h2 {
-      margin: 0;
-      font-size: 18px;
-    }
+    .rank-title h2 { margin: 0; font-size: 18px; }
 
     .rank-title span.label {
       font-size: 11px;
@@ -194,8 +183,6 @@
     }
 
     .card-image-wrap img {
-      position: relative;
-      z-index: 1;
       width: 100%;
       height: auto;
       object-fit: contain;
@@ -203,12 +190,10 @@
       border-radius: 14px 14px 8px 8px;
     }
 
-    /* 이름/가입일 바탕 완전 투명 */
     .card-body {
       padding: 8px 10px 10px;
       text-align: center;
       background: transparent;
-      backdrop-filter: none;
     }
 
     .card-name {
@@ -222,7 +207,6 @@
       text-overflow: ellipsis;
     }
 
-    /* 직급별 이름 크기 */
     .card.xxs   .card-name { font-size: 10px; }  /* Member */
     .card.xs    .card-name { font-size: 14px; }  /* Star1 */
     .card.sm    .card-name { font-size: 16px; }  /* Star2 */
@@ -279,10 +263,7 @@
       .card.xxxl {
         width: calc(50% - 8px);
       }
-
-      .rank-pay-amount {
-        font-size: 22px;
-      }
+      .rank-pay-amount { font-size: 22px; }
     }
 
     @media (max-width: 480px) {
@@ -297,10 +278,7 @@
       .card.xxxl {
         width: 100%;
       }
-
-      .rank-pay-amount {
-        font-size: 20px;
-      }
+      .rank-pay-amount { font-size: 20px; }
     }
 
     .empty-text {
@@ -315,7 +293,7 @@
     <header>
       <h1>so.t 직급의 전당</h1>
       <p class="sub">
-        so.t에서 직급을 달성한 리더들을 모았습니다. (가입일 기준으로, 높은 직급 순으로 정렬)
+        ✅ rank-hall.json이 <b>members 구조</b>든 <b>배열 구조</b>든 자동으로 읽습니다. (노출(visible)만 표시)
       </p>
       <div class="filter-row">
         <span>필터:</span>
@@ -343,76 +321,20 @@
 
     // 🔸 직급 조건 + 수당(하루 금액) 정의
     const RANK_INFO = {
-      Member: {
-        condition: "구독 중 (직급 미달성)",
-        payAmount: "$0",
-        payTail: ""
-      },
-      Star1: {
-        condition: "직급 달성 조건: 좌·우 직접추천 2:1 또는 1:2 (최소 1:1 충족)",
-        payAmount: "$10",
-        payTail: "USDT / day x 60 day"
-      },
-      Star2: {
-        condition: "직급 달성 조건: 좌·우 팀 7:7",
-        payAmount: "$20",
-        payTail: "USDT / day x 60 day"
-      },
-      Star3: {
-        condition: "직급 달성 조건: 좌·우 팀 15:15",
-        payAmount: "$45",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro1: {
-        condition: "직급 달성 조건: 좌·우 팀 40:40",
-        payAmount: "$120",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro2: {
-        condition: "직급 달성 조건: 좌·우 팀 80:80",
-        payAmount: "$200",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro3: {
-        condition: "직급 달성 조건: 좌·우 팀 150:150",
-        payAmount: "$300",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro4: {
-        condition: "직급 달성 조건: 좌·우 팀 250:250",
-        payAmount: "$500",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro5: {
-        condition: "직급 달성 조건: 좌·우 팀 400:400",
-        payAmount: "$800",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro6: {
-        condition: "직급 달성 조건: 좌·우 팀 650:650",
-        payAmount: "$1,300",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro7: {
-        condition: "직급 달성 조건: 좌·우 팀 1000:1000",
-        payAmount: "$2,000",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro8: {
-        condition: "직급 달성 조건: 좌·우 팀 2000:2000",
-        payAmount: "$3,000",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro9: {
-        condition: "직급 달성 조건: 좌·우 팀 3000:3000",
-        payAmount: "$4,000",
-        payTail: "USDT / day x 60 day"
-      },
-      Pro10: {
-        condition: "직급 달성 조건: 좌·우 팀 4000:4000",
-        payAmount: "$5,000",
-        payTail: "USDT / day x 60 day"
-      }
+      Member: { condition: "구독 중 (직급 미달성)", payAmount: "$0", payTail: "" },
+      Star1: { condition: "직급 달성 조건: 좌·우 직접추천 2:1 또는 1:2 (최소 1:1 충족)", payAmount: "$10",  payTail: "USDT / day x 60 day" },
+      Star2: { condition: "직급 달성 조건: 좌·우 팀 7:7",  payAmount: "$20",  payTail: "USDT / day x 60 day" },
+      Star3: { condition: "직급 달성 조건: 좌·우 팀 15:15", payAmount: "$45",  payTail: "USDT / day x 60 day" },
+      Pro1:  { condition: "직급 달성 조건: 좌·우 팀 40:40",  payAmount: "$120", payTail: "USDT / day x 60 day" },
+      Pro2:  { condition: "직급 달성 조건: 좌·우 팀 80:80",  payAmount: "$200", payTail: "USDT / day x 60 day" },
+      Pro3:  { condition: "직급 달성 조건: 좌·우 팀 150:150", payAmount: "$300", payTail: "USDT / day x 60 day" },
+      Pro4:  { condition: "직급 달성 조건: 좌·우 팀 250:250", payAmount: "$500", payTail: "USDT / day x 60 day" },
+      Pro5:  { condition: "직급 달성 조건: 좌·우 팀 400:400", payAmount: "$800", payTail: "USDT / day x 60 day" },
+      Pro6:  { condition: "직급 달성 조건: 좌·우 팀 650:650", payAmount: "$1,300", payTail: "USDT / day x 60 day" },
+      Pro7:  { condition: "직급 달성 조건: 좌·우 팀 1000:1000", payAmount: "$2,000", payTail: "USDT / day x 60 day" },
+      Pro8:  { condition: "직급 달성 조건: 좌·우 팀 2000:2000", payAmount: "$3,000", payTail: "USDT / day x 60 day" },
+      Pro9:  { condition: "직급 달성 조건: 좌·우 팀 3000:3000", payAmount: "$4,000", payTail: "USDT / day x 60 day" },
+      Pro10: { condition: "직급 달성 조건: 좌·우 팀 4000:4000", payAmount: "$5,000", payTail: "USDT / day x 60 day" }
     };
 
     function getRankIndex(rank) {
@@ -420,29 +342,11 @@
       return i === -1 ? 999 : i;
     }
 
-    function calcDaysFromJoin(joinDateStr) {
-      if (!joinDateStr) return "";
-      const join = new Date(joinDateStr);
-      if (isNaN(join.getTime())) return "";
-      const today = new Date();
-      const joinMs = new Date(join.getFullYear(), join.getMonth(), join.getDate()).getTime();
-      const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-      const diffDays = Math.floor((todayMs - joinMs) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) return "";
-      return diffDays;
-    }
-
     function rankLabel(rank) {
       if (!rank) return "";
-      if (rank === "Member") return "Member";       // 또는 "정회원"
-      if (rank.startsWith("Star")) {
-        const n = rank.replace("Star", "");
-        return `스타 ${n}`;
-      }
-      if (rank.startsWith("Pro")) {
-        const n = rank.replace("Pro", "");
-        return `Pro ${n}`;
-      }
+      if (rank === "Member") return "Member";
+      if (rank.startsWith("Star")) return `스타 ${rank.replace("Star", "")}`;
+      if (rank.startsWith("Pro"))  return `Pro ${rank.replace("Pro", "")}`;
       return rank;
     }
 
@@ -453,33 +357,22 @@
       return rank;
     }
 
-    // 직급 → 이미지 파일 자동 매칭
     function getImageForRank(rank) {
       if (!rank) return "img/member.png";
       if (rank === "Member") return "img/member.png";
-      if (rank.startsWith("Star")) {
-        const n = rank.replace("Star", "");
-        return `img/star${n}.png`;
-      }
-      if (rank.startsWith("Pro")) {
-        const n = rank.replace("Pro", "");
-        return `img/pro${n}.png`;
-      }
+      if (rank.startsWith("Star")) return `img/star${rank.replace("Star","")}.png`;
+      if (rank.startsWith("Pro"))  return `img/pro${rank.replace("Pro","")}.png`;
       return "img/member.png";
     }
 
-    // 직급 → 카드 크기 클래스
     function getCardSizeClass(rank) {
-      if (!rank) return "xxs";
-      if (rank === "Member") return "xxs";
-
+      if (!rank || rank === "Member") return "xxs";
       if (rank.startsWith("Star")) {
         const n = parseInt(rank.replace("Star", ""), 10) || 1;
         if (n === 1) return "xs";
         if (n === 2) return "sm";
-        if (n === 3) return "md";
+        return "md";
       }
-
       if (rank.startsWith("Pro")) {
         const n = parseInt(rank.replace("Pro", ""), 10) || 1;
         if (n <= 3) return "lg";
@@ -487,7 +380,6 @@
         if (n <= 9) return "xxl";
         return "xxxl";
       }
-
       return "md";
     }
 
@@ -498,11 +390,79 @@
       return true;
     }
 
+    // ✅ members/items/배열 전부 호환
+    function extractArray(json) {
+      if (Array.isArray(json)) return json;
+      if (json && Array.isArray(json.members)) return json.members;
+      if (json && Array.isArray(json.items)) return json.items;
+      return [];
+    }
+
+    // ✅ STAR1/PRO2/MEMBER 같은 대문자도 Star1/Pro2/Member로 정규화
+    function romanToInt(roman){
+      if (!roman) return NaN;
+      const s = roman.toUpperCase();
+      const map = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+      let total = 0;
+      for (let i=0; i<s.length; i++){
+        const v = map[s[i]] || 0;
+        const next = map[s[i+1]] || 0;
+        total += (v < next) ? -v : v;
+      }
+      return total;
+    }
+
+    function normalizeRank(raw){
+      let t = (raw || "").toString().trim();
+      if (!t) return "Member";
+
+      const uMap = {"Ⅰ":"I","Ⅱ":"II","Ⅲ":"III","Ⅳ":"IV","Ⅴ":"V","Ⅵ":"VI","Ⅶ":"VII","Ⅷ":"VIII","Ⅸ":"IX","Ⅹ":"X"};
+      t = t.replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]/g, ch => uMap[ch] || ch);
+
+      const compact = t.replace(/\s+/g, "");
+      const upper = compact.toUpperCase();
+
+      if (upper === "MEMBER" || upper === "MEM" || upper === "멤버" || upper === "회원" || upper === "일반") return "Member";
+      if (upper === "STAFF" || upper === "스태프") return "Member"; // 이 페이지에 STAFF 섹션 없어서 안전하게 Member로 처리
+
+      function toNum(rest){
+        if (!rest) return "";
+        if (/^\d+$/.test(rest)) return rest;
+        const n = romanToInt(rest);
+        if (Number.isFinite(n) && n > 0) return String(n);
+        return rest;
+      }
+
+      // STAR1 / PRO2
+      if (upper.startsWith("STAR")) return "Star" + toNum(upper.slice(4).replace(/^[-_]+/, ""));
+      if (upper.startsWith("PRO"))  return "Pro"  + toNum(upper.slice(3).replace(/^[-_]+/, ""));
+
+      // 이미 Star1/Pro2 형태
+      if (compact.toLowerCase().startsWith("star")) return "Star" + toNum(compact.slice(4));
+      if (compact.toLowerCase().startsWith("pro"))  return "Pro"  + toNum(compact.slice(3));
+
+      return "Member";
+    }
+
+    function mapItem(x){
+      const rank = normalizeRank(x.rank || x.level || x.title || "");
+      const name = (x.name || "").toString();
+      const note = (x.note || x.tagline || x.memo || x.tagline || "").toString();
+      const visible = (x.visible !== false);
+      const order = Number.isFinite(+x.order) ? +x.order : 0;
+      const joinDate = (x.joinDate || "").toString(); // 없으면 빈값(표시 안 됨)
+
+      return { name, rank, note, visible, order, joinDate };
+    }
+
     async function loadData() {
       try {
-        const res = await fetch("rank-hall.json");
-        const hall = res.ok ? await res.json() : [];
-        const rankData = Array.isArray(hall) ? hall : [];
+        const res = await fetch("rank-hall.json?v=" + Date.now(), { cache: "no-store" });
+        const json = res.ok ? await res.json() : [];
+        const rawArr = extractArray(json);
+
+        const rankData = rawArr.map(mapItem);
+
         renderAllSections(rankData, document.getElementById("rank-filter").value);
 
         document.getElementById("rank-filter").addEventListener("change", (e) => {
@@ -522,7 +482,9 @@
       main.innerHTML = "";
       main.appendChild(empty);
 
-      const valid = rankData.filter(item => item.rank);
+      // ✅ visible만 표시 + rank 없으면 Member로 이미 보정됨
+      const valid = rankData.filter(item => item.visible !== false);
+
       if (!valid.length) {
         empty.style.display = "block";
         empty.textContent = "아직 표시할 직급자가 없습니다. 관리자 페이지에서 rank-hall.json을 먼저 채워 주세요.";
@@ -537,21 +499,29 @@
       }
       empty.style.display = "none";
 
-      const sorted = [...filtered].sort((a, b) => {
-        const dRank = getRankIndex(a.rank) - getRankIndex(b.rank);
-        if (dRank !== 0) return dRank;
-        if (!a.joinDate && !b.joinDate) return 0;
-        if (!a.joinDate) return 1;
-        if (!b.joinDate) return -1;
-        return a.joinDate.localeCompare(b.joinDate);
-      });
-
+      // rank별 그룹핑
       const grouped = {};
-      for (const item of sorted) {
+      for (const item of filtered) {
         if (!grouped[item.rank]) grouped[item.rank] = [];
         grouped[item.rank].push(item);
       }
 
+      // ✅ 각 rank 내 정렬: order 있으면 order 오름차순, 없으면 joinDate
+      Object.keys(grouped).forEach(rank => {
+        grouped[rank].sort((a,b) => {
+          const ao = Number.isFinite(+a.order) ? +a.order : 999999;
+          const bo = Number.isFinite(+b.order) ? +b.order : 999999;
+          if (ao !== bo) return ao - bo;
+
+          // fallback
+          if (!a.joinDate && !b.joinDate) return 0;
+          if (!a.joinDate) return 1;
+          if (!b.joinDate) return -1;
+          return a.joinDate.localeCompare(b.joinDate);
+        });
+      });
+
+      // rank 섹션 출력 순서
       RANK_ORDER.forEach(rank => {
         const list = grouped[rank];
         if (!list || !list.length) return;
@@ -567,7 +537,6 @@
         `;
         section.appendChild(titleRow);
 
-        // 🔸 직급 조건 + 수당 표시
         const info = RANK_INFO[rank];
         if (info) {
           const meta = document.createElement("div");
@@ -591,15 +560,10 @@
           const imgSrc = getImageForRank(item.rank);
           const sizeClass = getCardSizeClass(item.rank);
           const name = item.name || "";
-          const rawTagline = (item.tagline || "").trim();
+          const rawNote = (item.note || "").trim();
 
-          const taglineHtml = rawTagline
-            ? `<div class="card-name-sub">${rawTagline}</div>`
-            : "";
-
-          const bottomHtml = item.joinDate
-            ? `<div class="card-bottom">${item.joinDate}</div>`
-            : "";
+          const noteHtml = rawNote ? `<div class="card-name-sub">${rawNote}</div>` : "";
+          const bottomHtml = item.joinDate ? `<div class="card-bottom">${item.joinDate}</div>` : "";
 
           const card = document.createElement("article");
           card.className = `card ${sizeClass}`;
@@ -611,11 +575,10 @@
             </div>
             <div class="card-body">
               <div class="card-name">${name}</div>
-              ${taglineHtml}
+              ${noteHtml}
               ${bottomHtml}
             </div>
           `;
-
           grid.appendChild(card);
         });
 
