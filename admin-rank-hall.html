@@ -27,7 +27,7 @@
     }
     .subtitle{ font-size:12px; color:#9ca3af; margin-top:6px; line-height:1.55; }
 
-    /* toolbar */
+    /* toolbar (상단은 핵심 버튼만) */
     .toolbar{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; align-items:center; }
     .btn{
       padding:7px 12px; border-radius:999px;
@@ -38,6 +38,7 @@
       cursor:pointer;
       transition: background .15s ease, transform .08s ease, border-color .15s ease;
       user-select:none;
+      white-space:nowrap;
     }
     .btn.primary{
       border-color: rgba(248,181,84,0.9);
@@ -47,24 +48,26 @@
     .btn:hover{ transform: translateY(-1px); background: rgba(30,64,175,0.9); border-color: rgba(191,219,254,0.9); }
 
     .pill{
-      display:inline-flex; align-items:center; gap:6px;
+      display:inline-flex; align-items:center; justify-content:flex-start; gap:6px;
       padding:6px 10px; border-radius:999px;
       border:1px solid rgba(148,163,184,0.28);
       background: rgba(2,6,23,0.55);
       color:#cbd5e1;
       font-size:11px;
       user-select:none;
+      white-space:nowrap;
+      width:auto;
     }
     .pill input{ width:13px; height:13px; }
 
-    .toolbar input{
-      height:30px; padding:0 12px; border-radius:999px;
+    .input{
+      height:32px; padding:0 12px; border-radius:999px;
       border:1px solid rgba(51,65,85,0.9);
       background: rgba(15,23,42,0.98);
       color:#e5e7eb; font-size:12px; outline:none;
-      min-width: 240px;
+      min-width: 260px;
     }
-    .toolbar input:focus{
+    .input:focus{
       border-color: rgba(248,181,84,0.9);
       box-shadow: 0 0 0 1px rgba(248,181,84,0.55);
     }
@@ -83,8 +86,25 @@
       background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.99));
       box-shadow: 0 0 0 1px rgba(30,64,118,0.78), 0 18px 45px rgba(0,0,0,0.92);
     }
-    .panel-title{ font-size:13px; font-weight:800; margin-bottom:8px; }
-    .panel-sub{ font-size:11px; color:#9ca3af; margin-bottom:10px; line-height:1.55; }
+
+    /* 패널 헤더(왼쪽 설명 + 오른쪽 컨트롤) */
+    .panel-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .panel-head-right{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+      max-width: 52%;
+    }
+    .panel-title{ font-size:13px; font-weight:800; margin:0; }
+    .panel-sub{ font-size:11px; color:#9ca3af; margin-top:6px; line-height:1.55; }
 
     /* bulk paste */
     .bulk-wrap{
@@ -105,6 +125,7 @@
       resize: vertical;
       line-height:1.55;
       outline:none;
+      min-height:140px;
     }
     .ta:focus{
       border-color: rgba(248,181,84,0.9);
@@ -146,8 +167,8 @@
       user-select:none;
     }
     .mvis input{ width:14px; height:14px; }
-    .mactions{ display:flex; justify-content:flex-end; gap:6px; }
 
+    .mactions{ display:flex; justify-content:flex-end; gap:6px; }
     .mini{
       height:28px;
       padding:0 10px;
@@ -159,6 +180,7 @@
       font-weight:800;
       cursor:pointer;
       user-select:none;
+      white-space:nowrap;
     }
     .mini:hover{ transform: translateY(-1px); }
     .mini.danger{
@@ -167,17 +189,14 @@
       color:#fee2e2;
     }
 
+    /* note (기본 숨김) */
     .mmeta{
-      margin-top:6px;
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:6px;
-      padding:0 2px;
-    }
-    .mmeta .note{
       display:none;
+      margin-top:6px;
+      padding:0 2px 2px;
     }
     .note-ta{
+      width:100%;
       min-height:46px;
       padding:8px 9px;
       border-radius:12px;
@@ -220,6 +239,7 @@
       .bulk-wrap{ grid-template-columns: 1fr; }
       .bulk-actions{ flex-direction:row; flex-wrap:wrap; }
       .bulk-actions .btn{ width:auto; flex:1; }
+      .panel-head-right{ max-width:100%; }
       .mrow{ grid-template-columns: 72px 1fr 1fr; }
       .mrow > :nth-child(4),
       .mrow > :nth-child(5),
@@ -239,6 +259,7 @@
       </div>
     </header>
 
+    <!-- ✅ 상단: 핵심 버튼만 -->
     <div class="toolbar">
       <button id="add-btn" class="btn primary">+ 멤버 추가</button>
       <button id="export-btn" class="btn">JSON 내보내기</button>
@@ -249,29 +270,24 @@
          href="https://github.com/wordycow/so.t-leader-choice/blob/main/rank-hall.json">
         rank-hall.json 열기
       </a>
-
-      <label class="pill" title="실수 방지용: 기본은 삭제 숨김">
-        <input id="toggle-delete" type="checkbox" />
-        삭제 버튼 표시
-      </label>
-
-      <label class="pill" title="기본은 숨김(UI 최소화). 필요할 때만 켜기">
-        <input id="toggle-note" type="checkbox" />
-        노트 필드 표시
-      </label>
-
-      <input id="search" placeholder="검색 (id / 이름 / 직급 / 노트)" />
     </div>
 
-    <!-- ✅ 텍스트 붙여넣기 -->
+    <!-- ✅ 텍스트 붙여넣기 (안에 검색창 넣음) -->
     <section class="panel">
-      <div class="panel-title">텍스트 붙여넣기 → 멤버 자동 반영 (노트 포함)</div>
-      <div class="panel-sub">
-        한 줄 1명. 형식: <code>[L]KR-10076355 / 심승철 / 스타I / 노트</code><br>
-        - <code>[L]</code> 같은 태그는 무시<br>
-        - <code>KR-10076355</code> → id 저장(표시 X, 동명이인 구분용)<br>
-        - 직급이 비어있으면 자동으로 <strong>MEMBER</strong><br>
-        - <code>스타I/스타Ⅰ/STAR I</code> → 자동으로 <strong>STAR1</strong>로 정리
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">텍스트 붙여넣기 → 멤버 자동 반영 (노트 포함)</div>
+          <div class="panel-sub">
+            한 줄 1명. 형식: <code>[L]KR-10076355 / 심승철 / 스타I / 노트</code><br>
+            - <code>[L]</code> 같은 태그는 무시 · 직급 비면 <strong>MEMBER</strong><br>
+            - <code>스타I/스타Ⅰ/STAR I</code> → 자동으로 <strong>STAR1</strong>
+          </div>
+        </div>
+
+        <!-- ✅ 검색창: 여기로 이동 -->
+        <div class="panel-head-right">
+          <input id="search" class="input" placeholder="검색 (id / 이름 / 직급 / 노트)" />
+        </div>
       </div>
 
       <div class="bulk-wrap">
@@ -287,13 +303,30 @@
     </section>
 
     <div class="layout">
-      <!-- ✅ 초소형 편집 -->
+      <!-- ✅ 직급자 편집 (여기로 토글 내려줌) -->
       <section class="panel">
-        <div class="panel-title">직급자 편집 (초소형)</div>
-        <div class="panel-sub">
-          필요한 것만: <strong>order / id / name / rank / visible</strong><br>
-          노트는 기본 숨김(상단 “노트 필드 표시” 켜면 수정 가능)
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">직급자 편집 (초소형)</div>
+            <div class="panel-sub">
+              필요한 것만: <strong>order / id / name / rank / visible</strong><br>
+              노트/삭제는 기본 숨김(오른쪽 토글로 필요할 때만 켜기)
+            </div>
+          </div>
+
+          <div class="panel-head-right">
+            <label class="pill" title="노트 입력칸 보이기/숨기기">
+              <input id="toggle-note" type="checkbox" />
+              노트 필드 표시
+            </label>
+
+            <label class="pill" title="실수 방지: 기본은 삭제 숨김">
+              <input id="toggle-delete" type="checkbox" />
+              삭제 버튼 표시
+            </label>
+          </div>
         </div>
+
         <div id="list" class="list"></div>
       </section>
 
@@ -425,9 +458,7 @@
           s = s.replace(/^\s*(\[[^\]]*\]\s*)+/, ""); // [L] 같은 태그 제거
           if (!s) return;
 
-          // "/" 기준
           const parts = s.split("/").map(p => p.trim());
-          // parts: [id, name, rank, note...]
           const id = normId(parts[0] || "");
           const name = (parts[1] || "").toString().trim();
           const rank = normalizeRank(parts[2] || "");
@@ -460,7 +491,6 @@
           if (existing){
             existing.name = p.name;
             existing.rank = p.rank || "MEMBER";
-            // ✅ 노트는 '붙여넣기에 있으면' 덮어쓰기(없으면 유지)
             if (p.note !== "") existing.note = p.note;
             existing.visible = existing.visible !== false;
             existing.updatedAt = nowIso();
@@ -493,13 +523,11 @@
       }
 
       function moveByOrder(id, dir){
-        // dir: -1(위), +1(아래)
         const sorted = members.slice().sort((a,b) => (+a.order||0) - (+b.order||0));
         const idx = sorted.findIndex(m => normId(m.id) === id);
         const j = idx + dir;
         if (idx < 0 || j < 0 || j >= sorted.length) return;
 
-        // swap order
         const a = sorted[idx], b = sorted[j];
         const oa = (+a.order||0), ob = (+b.order||0);
         a.order = ob; b.order = oa;
@@ -526,7 +554,6 @@
             const row = document.createElement("div");
             row.className = "mrow";
 
-            // order
             const order = document.createElement("input");
             order.type = "number";
             order.className = "minput mnum";
@@ -539,11 +566,10 @@
               updateJsonTextarea();
             });
 
-            // id
             const id = document.createElement("input");
             id.type = "text";
             id.className = "minput";
-            id.placeholder = "id (예: kr-10076355)";
+            id.placeholder = "id";
             id.value = m.id ?? "";
             id.addEventListener("input", () => {
               m.id = normId(id.value);
@@ -551,7 +577,6 @@
               updateJsonTextarea();
             });
 
-            // name
             const name = document.createElement("input");
             name.type = "text";
             name.className = "minput";
@@ -563,11 +588,10 @@
               updateJsonTextarea();
             });
 
-            // rank
             const rank = document.createElement("input");
             rank.type = "text";
             rank.className = "minput";
-            rank.placeholder = "직급 (예: STAR1/PRO2/STAFF/MEMBER)";
+            rank.placeholder = "직급 (STAR1/PRO2/STAFF/MEMBER)";
             rank.value = m.rank ?? "";
             rank.addEventListener("input", () => {
               m.rank = rank.value;
@@ -575,7 +599,6 @@
               updateJsonTextarea();
             });
 
-            // visible
             const visWrap = document.createElement("label");
             visWrap.className = "mvis";
             const vis = document.createElement("input");
@@ -589,7 +612,6 @@
             visWrap.appendChild(vis);
             visWrap.appendChild(document.createTextNode("노출"));
 
-            // actions
             const actions = document.createElement("div");
             actions.className = "mactions";
 
@@ -636,6 +658,7 @@
             if (showNote){
               const meta = document.createElement("div");
               meta.className = "mmeta";
+              meta.style.display = "block";
 
               const note = document.createElement("textarea");
               note.className = "note-ta";
@@ -653,7 +676,6 @@
           });
       }
 
-      // Buttons
       addBtn.addEventListener("click", () => {
         members.push(createDefault());
         render();
@@ -674,7 +696,7 @@
           if (!Array.isArray(arr)) throw new Error("members/items 배열이 없습니다.");
 
           members = arr.map((m, i) => ({
-            id: normId(m.id),
+            id: normId(m.id || ""),
             name: (m.name || "").toString(),
             rank: (m.rank || m.level || m.title || "").toString(),
             note: (m.note || m.memo || m.tagline || "").toString(),
@@ -722,7 +744,6 @@
       toggleNoteEl.addEventListener("change", () => render());
       searchEl.addEventListener("input", () => render());
 
-      // Initial load
       fetch("rank-hall.json?v=" + Date.now(), { cache:"no-store" })
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => {
