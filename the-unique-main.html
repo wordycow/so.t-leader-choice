@@ -743,35 +743,93 @@
     function getName(rec){ return String(rec.name || rec.userName || "").trim(); }
     function getTeam(rec){ return String(rec.team || rec.group || "").trim(); }
     function getJoin(rec){ return String(rec.joinedAt || rec.joinDate || "").trim(); }
-    function getRankCode(rec){ return String(rec.rank || rec.rankCode || rec.level || "").trim(); }
+    // ✅ rank code 정규화 (PRO2/STAR1/프로II/스타Ⅰ 등 → Pro2 / Star1 / Member)
+function romanToInt(roman){
+  if (!roman) return NaN;
+  const s = String(roman).toUpperCase();
+  const map = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+  let total = 0;
+  for (let i=0; i<s.length; i++){
+    const v = map[s[i]] || 0;
+    const next = map[s[i+1]] || 0;
+    total += (v < next) ? -v : v;
+  }
+  return total;
+}
 
-    function pickMyRankRecord(list, name, team, joinedAt){
-      let byName = list.filter(m => getName(m) === name);
-      if (!byName.length) return null;
-      if (byName.length === 1) return byName[0];
+function normalizeRankCode(raw){
+  let t = (raw || "").toString().trim();
+  if (!t) return "";
 
-      let candidates = byName;
-      if (team){
-        const byTeam = byName.filter(m => getTeam(m) === team);
-        if (byTeam.length === 1) return byTeam[0];
-        if (byTeam.length > 1) candidates = byTeam;
-      }
-      if (joinedAt){
-        const joined = String(joinedAt).trim();
-        const byJoin = candidates.filter(m => getJoin(m) === joined);
-        if (byJoin.length === 1) return byJoin[0];
-        if (byJoin.length > 1) candidates = byJoin;
-      }
-      return candidates[0];
-    }
+  const uMap = {"Ⅰ":"I","Ⅱ":"II","Ⅲ":"III","Ⅳ":"IV","Ⅴ":"V","Ⅵ":"VI","Ⅶ":"VII","Ⅷ":"VIII","Ⅸ":"IX","Ⅹ":"X"};
+  t = t.replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]/g, ch => uMap[ch] || ch);
+  t = t.replace(/\s+/g, ""); // 공백 제거
 
+  // 한글 접두어 지원
+  if (t.startsWith("스타")) t = "STAR" + t.slice(2);
+  if (t.startsWith("프로")) t = "PRO" + t.slice(2);
+
+  const u = t.toUpperCase();
+
+  if (u === "MEMBER" || u === "MEM" || u === "정회원" || u === "회원" || u === "일반") return "Member";
+  if (u === "-" || u === "NONE") return "";
+
+  function suffixNum(s){
+    s = (s || "").replace(/^[-_]+/, "");
+    if (!s) return "";
+    if (/^\d+$/.test(s)) return String(parseInt(s, 10));
+    const n = romanToInt(s);
+    if (Number.isFinite(n) && n > 0) return String(n);
+    return s;
+  }
+
+  if (u.startsWith("STAR")) return "Star" + suffixNum(u.slice(4));
+  if (u.startsWith("PRO"))  return "Pro"  + suffixNum(u.slice(3));
+
+  // 이미 Star1/Pro2 형태면 유지
+  if (/^Star\d+$/i.test(t)) return "Star" + t.replace(/^\D+/, "");
+  if (/^Pro\d+$/i.test(t))  return "Pro" + t.replace(/^\D+/, "");
+
+  return t;
+}
+
+function getRankCode(rec){
+  return normalizeRankCode(rec.rank || rec.rankCode || rec.level || rec.title || "");
+}
+
+    function pickMyRankRecord(list, id, name, team, joinedAt){
+  const myId = String(id || "").toLowerCase().trim();
+  if (myId){
+    const byId = list.filter(m => String(m.id || "").toLowerCase().trim() === myId);
+    if (byId.length) return byId[0];
+  }
+
+  let byName = list.filter(m => getName(m) === name);
+  if (!byName.length) return null;
+  if (byName.length === 1) return byName[0];
+
+  let candidates = byName;
+  if (team){
+    const byTeam = byName.filter(m => getTeam(m) === team);
+    if (byTeam.length === 1) return byTeam[0];
+    if (byTeam.length > 1) candidates = byTeam;
+  }
+  if (joinedAt){
+    const joined = String(joinedAt).trim();
+    const byJoin = candidates.filter(m => getJoin(m) === joined);
+    if (byJoin.length === 1) return byJoin[0];
+    if (byJoin.length > 1) candidates = byJoin;
+  }
+  return candidates[0];
+}
     let currentRankCode = null;
 
     fetch("rank-hall.json")
       .then(res => res.json())
       .then(data => {
-        const list = Array.isArray(data) ? data : (data.members || []);
-        const myRec = pickMyRankRecord(list, currentName, currentTeam, currentJoin);
+        const listRaw = Array.isArray(data) ? data : (data.members || []);
+const list = listRaw.filter(m => m && m.visible !== false); // ✅ 숨김 제외
+const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, currentJoin); // ✅ id 우선 매칭
 
         const currentImgEl  = document.getElementById("member-rank-img");
         const nextImgEl     = document.getElementById("next-rank-img");
