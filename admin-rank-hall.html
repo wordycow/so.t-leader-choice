@@ -27,7 +27,7 @@
     }
     .subtitle{ font-size:12px; color:#9ca3af; margin-top:6px; line-height:1.55; }
 
-    /* toolbar (상단은 핵심 버튼만) */
+    /* toolbar */
     .toolbar{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; align-items:center; }
     .btn{
       padding:7px 12px; border-radius:999px;
@@ -87,7 +87,6 @@
       box-shadow: 0 0 0 1px rgba(30,64,118,0.78), 0 18px 45px rgba(0,0,0,0.92);
     }
 
-    /* 패널 헤더(왼쪽 설명 + 오른쪽 컨트롤) */
     .panel-head{
       display:flex;
       align-items:flex-start;
@@ -145,11 +144,6 @@
       gap:8px;
       align-items:center;
     }
-    .mrow.pinned{
-      border-color: rgba(250,204,21,0.55);
-      box-shadow: 0 0 0 1px rgba(250,204,21,0.18);
-    }
-
     .minput{
       height:28px;
       width:100%;
@@ -169,8 +163,8 @@
       opacity:.65;
       cursor:not-allowed;
     }
-
     .mnum{ text-align:center; padding:0 6px; }
+
     .mvis{
       display:flex; align-items:center; justify-content:center; gap:6px;
       font-size:11px; color:#cbd5e1;
@@ -197,19 +191,6 @@
       border-color: rgba(248,113,113,0.9);
       background: rgba(127,29,29,0.9);
       color:#fee2e2;
-    }
-    .pin-tag{
-      height:28px;
-      padding:0 10px;
-      border-radius:999px;
-      border:1px solid rgba(250,204,21,0.55);
-      background: rgba(250,204,21,0.12);
-      color:#fde68a;
-      font-size:11px;
-      font-weight:900;
-      display:inline-flex;
-      align-items:center;
-      user-select:none;
     }
 
     /* note (기본 숨김) */
@@ -245,7 +226,7 @@
       color:#e5e7eb;
       font-size:11px;
       padding:8px 9px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","CourierNew", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       resize: vertical;
       line-height:1.55;
       outline:none;
@@ -279,7 +260,7 @@
       <div class="subtitle">
         ✅ <strong>배치 순서(order)</strong>대로 직급의 전당(<code>rank-hall.html</code>)에 표시됩니다.<br>
         ✅ <strong>id</strong>는 동명이인 구분용(표시 X), <strong>name/rank/note</strong>는 표시용입니다.<br>
-        ⭐ 스폰서 <strong>이두연(PRO2)</strong>은 고정 멤버로 자동 유지됩니다(전체 교체/삭제 방지).
+        ✅ <strong>이두연</strong>은 기본 포함(자동 유지)됩니다. (표시/삭제/전체교체로 누락되지 않음)
       </div>
     </header>
 
@@ -340,7 +321,7 @@
               노트 필드 표시
             </label>
 
-            <label class="pill" title="실수 방지: 기본은 삭제 숨김 (스폰서 이두연은 삭제 불가)">
+            <label class="pill" title="실수 방지: 기본은 삭제 숨김 (이두연은 삭제 불가)">
               <input id="toggle-delete" type="checkbox" />
               삭제 버튼 표시
             </label>
@@ -387,37 +368,38 @@
       function nowIso(){ return new Date().toISOString(); }
       function normId(v){ return (v || "").toString().trim().toLowerCase(); }
 
-      // ✅ 스폰서 고정 멤버(절대 삭제/숨김/전체교체로 제거되지 않음)
-      // 나중에 실제 id 알면 아래 id만 바꾸면 됨 (표시에는 영향 없음)
-      const PINNED_SPONSOR = {
-        id: "sponsor-idooyeon",
+      // ✅ 이두연 기본 포함(자동 유지). (표기/라벨 없음)
+      // 필요하면 id만 나중에 바꿔도 됨(표시엔 영향 없음)
+      const PINNED_PERSON = {
+        id: "idooyeon-fixed",
         name: "이두연",
-        rank: "PRO2",
+        defaultRank: "PRO2",
         order: 0
       };
 
-      function ensurePinnedSponsor(){
+      function ensurePinnedPerson(){
         const idx = members.findIndex(m =>
-          normId(m.id) === PINNED_SPONSOR.id ||
-          ((m.name || "").toString().trim() === PINNED_SPONSOR.name)
+          normId(m.id) === PINNED_PERSON.id ||
+          ((m.name || "").toString().trim() === PINNED_PERSON.name)
         );
 
         if (idx >= 0){
           const m = members[idx];
-          m.id = PINNED_SPONSOR.id;
-          m.name = PINNED_SPONSOR.name;
-          m.rank = PINNED_SPONSOR.rank;
-          m.visible = true;                 // 항상 노출
-          if (!Number.isFinite(+m.order)) m.order = PINNED_SPONSOR.order;
+          m.id = PINNED_PERSON.id;
+          m.name = PINNED_PERSON.name;
+          // ✅ rank는 덮어쓰지 않음(비어있을 때만 기본값)
+          if (!String(m.rank || "").trim()) m.rank = PINNED_PERSON.defaultRank;
+          m.visible = true; // 항상 노출
+          if (!Number.isFinite(+m.order)) m.order = PINNED_PERSON.order;
           m.updatedAt = m.updatedAt || nowIso();
         } else {
           members.unshift({
-            id: PINNED_SPONSOR.id,
-            name: PINNED_SPONSOR.name,
-            rank: PINNED_SPONSOR.rank,
+            id: PINNED_PERSON.id,
+            name: PINNED_PERSON.name,
+            rank: PINNED_PERSON.defaultRank,
             note: "",
             visible: true,
-            order: PINNED_SPONSOR.order,
+            order: PINNED_PERSON.order,
             updatedAt: nowIso()
           });
         }
@@ -480,7 +462,7 @@
       }
 
       function exportData(){
-        ensurePinnedSponsor(); // 혹시 누락돼도 export 전에 복구
+        ensurePinnedPerson();
         const out = members
           .slice()
           .sort((a,b) => (+a.order||0) - (+b.order||0))
@@ -541,15 +523,20 @@
 
         if (replace){
           members = [];
-          ensurePinnedSponsor(); // ✅ 전체 교체해도 스폰서는 항상 남김
+          ensurePinnedPerson(); // ✅ 전체 교체해도 이두연은 항상 남김
         }
 
         let added = 0, updated = 0;
         res.out.forEach((p) => {
-          // 스폰서 id를 텍스트로 덮어쓰지 않도록: sponsor와 같은 이름이면 sponsor로 흡수
-          const existing = members.find(m => normId(m.id) === p.id || ((m.name||"").toString().trim() === p.name));
+          const existing = members.find(m =>
+            normId(m.id) === p.id || ((m.name||"").toString().trim() === p.name)
+          );
+
           if (existing){
-            existing.id = (p.name === PINNED_SPONSOR.name) ? PINNED_SPONSOR.id : normId(p.id);
+            // ✅ 이두연이면 id를 고정 id로 흡수
+            if (p.name === PINNED_PERSON.name) existing.id = PINNED_PERSON.id;
+            else existing.id = normId(p.id);
+
             existing.name = p.name;
             existing.rank = p.rank || "MEMBER";
             if (p.note !== "") existing.note = p.note;
@@ -571,7 +558,7 @@
           }
         });
 
-        ensurePinnedSponsor(); // ✅ 혹시라도 누락/숨김 방지
+        ensurePinnedPerson();
         render();
         updateJsonTextarea();
 
@@ -600,7 +587,8 @@
       }
 
       function render(){
-        ensurePinnedSponsor();
+        ensurePinnedPerson();
+
         const q = (searchEl.value || "").toLowerCase().trim();
         const showDelete = toggleDeleteEl.checked;
         const showNote = toggleNoteEl.checked;
@@ -611,14 +599,14 @@
           .slice()
           .sort((a,b) => (+a.order||0) - (+b.order||0))
           .forEach((m) => {
-            const isPinned = normId(m.id) === PINNED_SPONSOR.id;
-            if (isPinned) m.visible = true; // 강제 유지
+            const isPinned = normId(m.id) === PINNED_PERSON.id;
+            if (isPinned) m.visible = true;
 
             const hay = `${m.id} ${m.name} ${m.rank} ${m.note||""}`.toLowerCase();
             if (q && !hay.includes(q)) return;
 
             const row = document.createElement("div");
-            row.className = "mrow" + (isPinned ? " pinned" : "");
+            row.className = "mrow";
 
             const order = document.createElement("input");
             order.type = "number";
@@ -661,18 +649,17 @@
             rank.className = "minput";
             rank.placeholder = "직급 (STAR1/PRO2/STAFF/MEMBER)";
             rank.value = m.rank ?? "";
+            // ✅ 이두연도 rank는 수정 가능
             rank.addEventListener("input", () => {
-              if (isPinned) return;
               m.rank = rank.value;
               m.updatedAt = nowIso();
               updateJsonTextarea();
             });
 
-            // pinned 잠금
+            // ✅ 이두연: id/name만 잠그고 rank는 열어둠
             if (isPinned){
               id.disabled = true;
               name.disabled = true;
-              rank.disabled = true;
             }
 
             const visWrap = document.createElement("label");
@@ -700,13 +687,6 @@
             const actions = document.createElement("div");
             actions.className = "mactions";
 
-            if (isPinned){
-              const pin = document.createElement("div");
-              pin.className = "pin-tag";
-              pin.textContent = "SPONSOR";
-              actions.appendChild(pin);
-            }
-
             const up = document.createElement("button");
             up.type = "button";
             up.className = "mini";
@@ -732,7 +712,7 @@
               del.addEventListener("click", () => {
                 if (!confirm("이 멤버를 삭제할까요?")) return;
                 members.splice(members.indexOf(m), 1);
-                ensurePinnedSponsor();
+                ensurePinnedPerson();
                 render();
                 updateJsonTextarea();
               });
@@ -771,7 +751,7 @@
 
       addBtn.addEventListener("click", () => {
         members.push(createDefault());
-        ensurePinnedSponsor();
+        ensurePinnedPerson();
         render();
         updateJsonTextarea();
       });
@@ -799,7 +779,7 @@
             updatedAt: (m.updatedAt || nowIso())
           }));
 
-          ensurePinnedSponsor();
+          ensurePinnedPerson();
           render();
           updateJsonTextarea();
           alert("JSON에서 목록을 불러왔습니다.");
@@ -830,7 +810,7 @@
 
       bulkApplyBtn.addEventListener("click", () => applyBulk(false));
       bulkReplaceBtn.addEventListener("click", () => {
-        if (!confirm("현재 목록을 모두 지우고, 붙여넣은 텍스트로 전체를 교체할까요?\n(스폰서 이두연은 자동으로 유지됩니다)")) return;
+        if (!confirm("현재 목록을 모두 지우고, 붙여넣은 텍스트로 전체를 교체할까요?\n(이두연은 자동으로 유지됩니다)")) return;
         applyBulk(true);
       });
       bulkClearBtn.addEventListener("click", () => { bulkEl.value = ""; });
@@ -853,14 +833,14 @@
             updatedAt: (m.updatedAt || nowIso())
           })) : [];
 
-          ensurePinnedSponsor();
+          ensurePinnedPerson();
           render();
           updateJsonTextarea();
         })
         .catch(err => {
           console.warn("rank-hall.json 로드 실패(없어도 OK):", err);
           members = [];
-          ensurePinnedSponsor();
+          ensurePinnedPerson();
           render();
           updateJsonTextarea();
         });
