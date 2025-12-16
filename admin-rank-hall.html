@@ -36,11 +36,17 @@
       letter-spacing:0.08em; text-transform:uppercase;
       cursor:pointer;
       transition: background .15s ease, transform .08s ease, border-color .15s ease;
+      user-select:none;
     }
     .toolbar-btn.primary{
       border-color: rgba(248,181,84,0.9);
       background: radial-gradient(circle at top, #f97316, #7f1d1d);
       color:#fef2f2;
+    }
+    .toolbar-btn.danger{
+      border-color: rgba(248,113,113,0.9);
+      background: rgba(127,29,29,0.92);
+      color:#fee2e2;
     }
     .toolbar-btn:hover{
       transform: translateY(-1px);
@@ -64,6 +70,7 @@
       grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
       gap:14px;
       align-items:flex-start;
+      margin-top:14px;
     }
     .panel{
       border-radius:20px;
@@ -148,10 +155,45 @@
       box-shadow: 0 0 0 1px rgba(248,181,84,0.6);
     }
 
+    /* ✅ 일괄 붙여넣기(텍스트→멤버) */
+    .bulk-wrap{
+      display:grid;
+      grid-template-columns: minmax(0,1fr) 210px;
+      gap:10px;
+      align-items:stretch;
+    }
+    .bulk-textarea{
+      width:100%;
+      min-height:140px;
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,0.9);
+      background:#020617;
+      color:#e5e7eb;
+      font-size:12px;
+      padding:10px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      resize: vertical;
+      line-height:1.55;
+      outline:none;
+    }
+    .bulk-textarea:focus{
+      border-color: rgba(248,181,84,0.9);
+      box-shadow: 0 0 0 1px rgba(248,181,84,0.6);
+    }
+    .bulk-actions{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .bulk-actions .toolbar-btn{ width:100%; }
+
     .footer-note{ margin-top:10px; font-size:11px; color:#6b7280; text-align:right; opacity:.85; }
 
     @media (max-width: 960px){
       .layout{ grid-template-columns: 1fr; }
+      .bulk-wrap{ grid-template-columns: 1fr; }
+      .bulk-actions{ flex-direction:row; flex-wrap:wrap; }
+      .bulk-actions .toolbar-btn{ width:auto; flex:1; }
     }
   </style>
 </head>
@@ -180,12 +222,35 @@
       <input id="search" placeholder="검색 (id / 이름 / 직급)" />
     </div>
 
+    <!-- ✅ 여기: 텍스트 붙여넣기 → 자동 반영 창 -->
+    <section class="panel">
+      <div class="panel-title">텍스트 붙여넣기 → 멤버 자동 반영</div>
+      <div class="panel-sub">
+        한 줄에 1명. 형식: <code>[L]KR-10076355 / 심승철 / 스타I</code><br>
+        - <code>[L]</code> 같은 태그는 무시<br>
+        - <code>KR-10076355</code> → <strong>id</strong>로 저장(동명이인 구분용)<br>
+        - 직급이 비어있으면 자동으로 <strong>MEMBER</strong><br>
+        - <code>스타I/스타Ⅰ/STAR I</code> 입력은 자동으로 <strong>STAR1</strong>로 정리
+      </div>
+
+      <div class="bulk-wrap">
+        <textarea id="bulk" class="bulk-textarea" spellcheck="false"
+          placeholder="[L]KR-10076355 / 심승철 / 스타I&#10;KR-10070001 / 홍길동 / PRO2&#10;KR-10070002 / 김철수"></textarea>
+
+        <div class="bulk-actions">
+          <button id="bulk-apply-btn" class="toolbar-btn primary">텍스트 적용</button>
+          <button id="bulk-replace-btn" class="toolbar-btn danger">목록 전체 교체</button>
+          <button id="bulk-clear-btn" class="toolbar-btn">입력 지우기</button>
+        </div>
+      </div>
+    </section>
+
     <div class="layout">
       <section class="panel">
         <div class="panel-title">직급자 편집</div>
         <div class="panel-sub">
           - <strong>id</strong>: 게이트에서 쓰는 아이디(시트 아이디)와 동일하게(소문자 권장)<br>
-          - <strong>rank</strong>: 예) STAR3 / PRO2 / STAFF 등<br>
+          - <strong>rank</strong>: 예) STAR3 / PRO2 / STAFF / MEMBER<br>
           - <strong>note</strong>: 직급자 노트(한 줄 또는 여러 줄)
         </div>
 
@@ -218,6 +283,12 @@
       const importBtn = document.getElementById("import-btn");
       const copyBtn = document.getElementById("copy-btn");
 
+      // ✅ Bulk elements
+      const bulkEl = document.getElementById("bulk");
+      const bulkApplyBtn = document.getElementById("bulk-apply-btn");
+      const bulkReplaceBtn = document.getElementById("bulk-replace-btn");
+      const bulkClearBtn = document.getElementById("bulk-clear-btn");
+
       function nowIso(){ return new Date().toISOString(); }
 
       function normId(v){
@@ -237,7 +308,6 @@
       }
 
       function exportData(){
-        // ✅ 반드시 포함해야 하는 필드만 정리해서 내보냄
         const out = members
           .slice()
           .sort((a,b) => (a.order||0) - (b.order||0))
@@ -265,7 +335,7 @@
         members
           .slice()
           .sort((a,b) => (a.order||0) - (b.order||0))
-          .forEach((m, idx) => {
+          .forEach((m) => {
             const hay = `${m.id} ${m.name} ${m.rank}`.toLowerCase();
             if (q && !hay.includes(q)) return;
 
@@ -301,13 +371,13 @@
             row1.appendChild(field("아이디(id)", m.id, (v) => {
               m.id = normId(v);
               m.updatedAt = nowIso();
-            }, { placeholder:"예: yusong (소문자 권장)" }));
+            }, { placeholder:"예: kr-10076355 (소문자 권장)" }));
 
             // name
             row1.appendChild(field("이름(name)", m.name, (v) => {
               m.name = v;
               m.updatedAt = nowIso();
-            }, { placeholder:"예: 이유송" }));
+            }, { placeholder:"예: 심승철" }));
 
             const row2 = document.createElement("div");
             row2.className = "row";
@@ -316,7 +386,7 @@
             row2.appendChild(field("직급(rank)", m.rank, (v) => {
               m.rank = v;
               m.updatedAt = nowIso();
-            }, { placeholder:"예: PRO3 / STAR2 / STAFF" }));
+            }, { placeholder:"예: STAR1 / PRO2 / STAFF / MEMBER" }));
 
             // order
             row2.appendChild(field("정렬(order)", m.order, (v) => {
@@ -383,6 +453,187 @@
         return wrap;
       }
 
+      // ✅ 로마 숫자 변환(간단)
+      function romanToInt(roman){
+        if (!roman) return NaN;
+        const s = roman.toUpperCase();
+        const map = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+        let total = 0;
+        for (let i=0; i<s.length; i++){
+          const v = map[s[i]] || 0;
+          const next = map[s[i+1]] || 0;
+          total += (v < next) ? -v : v;
+        }
+        return total;
+      }
+
+      // ✅ rank 정규화: 스타I → STAR1, 빈값 → MEMBER
+      function normalizeRank(v){
+        let t = (v || "").toString().trim();
+        if (!t) return "MEMBER";
+
+        const uMap = {
+          "Ⅰ":"I","Ⅱ":"II","Ⅲ":"III","Ⅳ":"IV","Ⅴ":"V",
+          "Ⅵ":"VI","Ⅶ":"VII","Ⅷ":"VIII","Ⅸ":"IX","Ⅹ":"X"
+        };
+        t = t.replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]/g, ch => uMap[ch] || ch);
+
+        const compact = t.replace(/\s+/g, "");
+        const upper = compact.toUpperCase();
+
+        if (upper === "MEMBER" || upper === "MEM" || upper === "멤버" || upper === "회원" || upper === "일반") return "MEMBER";
+        if (upper === "STAFF" || upper === "스태프") return "STAFF";
+
+        function normalizeTier(prefixEng, rest){
+          if (!rest) return prefixEng;
+          rest = rest.replace(/^[\-\_]+/, "");
+          if (/^\d+$/.test(rest)) return prefixEng + parseInt(rest, 10);
+          const n = romanToInt(rest);
+          if (Number.isFinite(n) && n > 0) return prefixEng + n;
+          return prefixEng + rest;
+        }
+
+        if (upper.startsWith("STAR")) return normalizeTier("STAR", upper.slice(4));
+        if (upper.startsWith("스타")) return normalizeTier("STAR", upper.slice(2));
+        if (upper.startsWith("PRO")) return normalizeTier("PRO", upper.slice(3));
+        if (upper.startsWith("프로")) return normalizeTier("PRO", upper.slice(2));
+
+        return upper;
+      }
+
+      function looksLikeId(v){
+        const t = (v || "").toString().trim();
+        if (!t) return false;
+        return /[0-9]/.test(t) || t.includes("-") || t.includes("_");
+      }
+
+      // ✅ 텍스트 줄 파싱: [L]KR-xxxx / 이름 / 직급(/노트 optional)
+      function parseBulkText(text){
+        const lines = (text || "").split(/\r?\n/);
+        const out = [];
+        const skipped = [];
+
+        lines.forEach((line) => {
+          const original = line;
+          let s = (line || "").trim();
+          if (!s) return;
+
+          // 앞쪽 불릿 제거
+          s = s.replace(/^[•\-\–\—\*\+]+\s*/, "");
+
+          // [L] 같은 태그 제거(여러개도)
+          s = s.replace(/^\s*(\[[^\]]*\]\s*)+/, "");
+          if (!s) return;
+
+          // "/"로 분리
+          let parts = s.split("/").map(p => p.trim()).filter(Boolean);
+
+          let id = "", name = "", rank = "", note = "";
+
+          if (parts.length >= 4){
+            id = parts[0];
+            name = parts[1];
+            rank = parts[2];
+            note = parts.slice(3).join(" / ");
+          } else if (parts.length === 3){
+            id = parts[0];
+            name = parts[1];
+            rank = parts[2];
+          } else if (parts.length === 2){
+            if (looksLikeId(parts[0])){
+              id = parts[0];
+              name = parts[1];
+              rank = "";
+            } else {
+              name = parts[0];
+              rank = parts[1];
+              id = "";
+            }
+          } else {
+            const tokens = s.split(/\s+/).filter(Boolean);
+            if (tokens.length >= 2){
+              id = tokens[0];
+              name = tokens[1];
+              rank = tokens.slice(2).join(" ");
+            } else {
+              skipped.push({ line: original, reason: "형식 인식 실패" });
+              return;
+            }
+          }
+
+          id = normId(id);
+          name = (name || "").toString().trim();
+          rank = normalizeRank(rank);
+
+          if (!id){
+            skipped.push({ line: original, reason: "id 없음" });
+            return;
+          }
+          if (!name){
+            skipped.push({ line: original, reason: "이름 없음" });
+            return;
+          }
+
+          out.push({ id, name, rank, note: (note || "").toString() });
+        });
+
+        return { out, skipped };
+      }
+
+      function applyBulk(replace){
+        const text = (bulkEl.value || "").trim();
+        if (!text) { alert("붙여넣을 텍스트가 없습니다."); return; }
+
+        const res = parseBulkText(text);
+        if (!res.out.length) {
+          alert("인식된 데이터가 없습니다. 형식을 확인해 주세요.\n예) [L]KR-10076355 / 심승철 / 스타I");
+          return;
+        }
+
+        if (replace) members = [];
+
+        let added = 0, updated = 0;
+        res.out.forEach((p) => {
+          const existing = members.find(m => normId(m.id) === p.id);
+
+          if (existing){
+            existing.name = p.name;
+            existing.rank = p.rank || "MEMBER";
+            if (p.note && p.note.trim()) existing.note = p.note; // note가 들어오면 덮어씀
+            existing.visible = existing.visible !== false;
+            existing.updatedAt = nowIso();
+            updated++;
+          } else {
+            members.push({
+              id: p.id,
+              name: p.name,
+              rank: p.rank || "MEMBER",
+              note: (p.note || ""),
+              visible: true,
+              order: members.length + 1,
+              updatedAt: nowIso()
+            });
+            added++;
+          }
+        });
+
+        // 전체 교체인 경우 정렬을 1..N으로 재정렬
+        if (replace){
+          members.forEach((m, i) => { m.order = i + 1; });
+        }
+
+        render();
+        updateJsonTextarea();
+
+        let msg = `텍스트 적용 완료!\n추가: ${added}명\n업데이트: ${updated}명`;
+        if (res.skipped.length){
+          msg += `\n스킵: ${res.skipped.length}줄`;
+          const preview = res.skipped.slice(0, 5).map(s => `- ${s.reason}: ${s.line}`).join("\n");
+          msg += `\n\n스킵 예시(최대 5줄):\n${preview}`;
+        }
+        alert(msg);
+      }
+
       // Buttons
       addBtn.addEventListener("click", () => {
         members.push(createDefault());
@@ -435,6 +686,14 @@
           alert("복사 실패. 직접 드래그해서 복사해 주세요.");
         }
       });
+
+      // ✅ Bulk buttons
+      bulkApplyBtn.addEventListener("click", () => applyBulk(false));
+      bulkReplaceBtn.addEventListener("click", () => {
+        if (!confirm("현재 목록을 모두 지우고, 붙여넣은 텍스트로 전체를 교체할까요?")) return;
+        applyBulk(true);
+      });
+      bulkClearBtn.addEventListener("click", () => { bulkEl.value = ""; });
 
       searchEl.addEventListener("input", () => render());
 
