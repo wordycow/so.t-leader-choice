@@ -169,6 +169,17 @@
     .notiTitle{font-weight:900;font-size:13px}
     .notiTime{font-size:11px;opacity:.75;margin-top:3px}
     .notiBody{font-size:12px;opacity:.9;margin-top:6px;white-space:pre-line;line-height:1.45}
+
+    /* ✅ 링크 클릭용(댓글/설명/연락처/알림 snippet 공통) */
+    .rich-text{white-space:pre-wrap;word-break:break-word}
+    .rich-text a{ text-decoration: underline; }
+    .previewBox{
+      margin-top:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+    }
   </style>
 </head>
 
@@ -216,6 +227,8 @@
         <div>
           <div class="muted" style="margin:0 0 6px;">연락처</div>
           <input id="fContact" placeholder="예: 010-xxxx-xxxx / 오픈채팅 링크" />
+          <div class="muted" style="margin-top:6px;">※ 입력창은 링크 클릭이 안 됩니다. 아래 미리보기에서 클릭하세요.</div>
+          <div id="contactPreview" class="previewBox rich-text" style="display:none;"></div>
         </div>
         <div>
           <div class="muted" style="margin:0 0 6px;">지역</div>
@@ -226,6 +239,8 @@
       <div style="margin-top:10px;">
         <div class="muted" style="margin:0 0 6px;">설명</div>
         <textarea id="fDesc" placeholder="상태/사용감/전달 방식 등"></textarea>
+        <div class="muted" style="margin-top:6px;">※ 입력창은 링크 클릭이 안 됩니다. 아래 미리보기에서 클릭하세요.</div>
+        <div id="descPreview" class="previewBox rich-text" style="display:none;"></div>
       </div>
 
       <div style="margin-top:10px;">
@@ -276,6 +291,10 @@
   const notiPanel = $("notiPanel");
   const badge = $("badge");
   const btnBell = $("btnBell");
+
+  // ✅ 링크 미리보기 엘리먼트
+  const contactPreview = $("contactPreview");
+  const descPreview = $("descPreview");
 
   let accessToken = null;
   let refreshToken = null;
@@ -355,6 +374,40 @@
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#39;");
+  }
+
+  // ✅ 텍스트 안 URL을 안전하게 <a>로 바꿔줌 (XSS 방지: 먼저 escapeHtml)
+  function escapeAndLinkify(s){
+    const safe = escapeHtml(s || "");
+    const re = /((https?:\/\/|www\.)[^\s<]+)/gi;
+
+    return safe.replace(re, (m) => {
+      let url = m;
+      let trail = "";
+      while (/[.,!?)}\]]$/.test(url)) {
+        trail = url.slice(-1) + trail;
+        url = url.slice(0, -1);
+      }
+      const href = url.startsWith("http") ? url : `https://${url}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer nofollow">${url}</a>${trail}`;
+    });
+  }
+
+  function renderPreview(el, text){
+    if (!el) return;
+    const v = (text || "").trim();
+    if (!v){
+      el.style.display = "none";
+      el.innerHTML = "";
+      return;
+    }
+    el.style.display = "";
+    el.innerHTML = escapeAndLinkify(v);
+  }
+
+  function refreshFormPreviews(){
+    renderPreview(contactPreview, $("fContact").value);
+    renderPreview(descPreview, $("fDesc").value);
   }
 
   function base64UrlToJson(b64url){
@@ -514,6 +567,10 @@
     else setStatus("로그인 URL 생성 실패", true);
   });
 
+  // ✅ 입력 중 미리보기 업데이트
+  $("fContact").addEventListener("input", refreshFormPreviews);
+  $("fDesc").addEventListener("input", refreshFormPreviews);
+
   // ===== 이미지 프리뷰 =====
   let selectedFiles = [];
   let previewUrls = [];
@@ -607,6 +664,9 @@
     $("btnSave").textContent = "수정 저장";
     $("btnCancelEdit").style.display = "";
     setStatus("수정 모드: 내용 수정 후 ‘수정 저장’");
+
+    // ✅ 미리보기 갱신
+    refreshFormPreviews();
   }
 
   function exitEditMode(){
@@ -617,6 +677,9 @@
     $("btnSave").textContent = "등록하기";
     $("btnCancelEdit").style.display = "none";
     setStatus("");
+
+    // ✅ 미리보기 초기화
+    refreshFormPreviews();
   }
 
   $("btnCancelEdit").addEventListener("click", () => exitEditMode());
@@ -733,7 +796,7 @@
             <div class="postMeta">
               <span class="chip">수량 ${escapeHtml(p.qty ?? "-")}</span>
               <span class="chip">${escapeHtml(p.region || "-")}</span><br>
-              <span class="muted">연락: ${escapeHtml(p.contact || "-")}</span>
+              <span class="muted rich-text">연락: ${escapeAndLinkify(p.contact || "-")}</span>
             </div>
           </div>
         </div>
@@ -755,6 +818,13 @@
   }
 
   feedEl.addEventListener("click", (e) => {
+    // ✅ 카드 전체 클릭 이동과 충돌 방지: 링크 클릭은 링크로만
+    const link = e.target.closest("a");
+    if (link){
+      e.stopPropagation();
+      return;
+    }
+
     const actBtn = e.target.closest("[data-act]");
     if (actBtn){
       e.preventDefault();
@@ -856,7 +926,7 @@
              data-post="${n.post_id}" data-comment="${n.comment_id}">
           <div class="notiTitle">${escapeHtml(notiText(n))}</div>
           <div class="notiTime">${escapeHtml(fmtTime(n.created_at))}</div>
-          <div class="notiBody">${escapeHtml(n.snippet || "")}</div>
+          <div class="notiBody rich-text">${escapeAndLinkify(n.snippet || "")}</div>
         </div>
       `).join("")
       : `<div class="muted">알림이 없습니다.</div>`;
@@ -898,6 +968,11 @@
         toggleNotiPanel(false);
         location.href = `${VIEW_PAGE}?id=${encodeURIComponent(postId)}#c_${cId}`;
       });
+    });
+
+    // ✅ 알림 snippet 안 링크 클릭 시: 알림 이동(댓글로 점프) 막기
+    notiPanel.querySelectorAll("a").forEach(a => {
+      a.addEventListener("click", (e) => e.stopPropagation());
     });
   }
 
@@ -958,6 +1033,8 @@
     if (!accessToken || !refreshToken){
       setLoggedOutUI();
       setStatus("");
+      // ✅ 폼 미리보기 초기화
+      refreshFormPreviews();
       if (autologinOn()) $("btnLogin").click();
       return;
     }
@@ -967,6 +1044,7 @@
 
     if (!user?.id){
       setLoggedOutUI();
+      refreshFormPreviews();
       return setStatus("유저 정보를 못 읽었습니다. ‘초기화’ 후 재로그인", true);
     }
 
@@ -977,6 +1055,9 @@
     await renderFeed();
     await refreshBadge();
     await checkNewNotiAlert();
+
+    // ✅ 초기 1회 미리보기 반영
+    refreshFormPreviews();
 
     setInterval(async () => {
       if (!accessToken || !refreshToken) return;
