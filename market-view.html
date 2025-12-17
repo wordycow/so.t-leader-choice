@@ -167,7 +167,7 @@
     .notiTime{font-size:11px;opacity:.75;margin-top:3px}
     .notiBody{font-size:12px;opacity:.9;margin-top:6px;white-space:pre-line;line-height:1.45}
 
-    /* ✅ 버튼 가독성 업(필요한 만큼만) */
+    /* ✅ 버튼 가독성 업 */
     .btn{
       font-size: 13px !important;
       padding: 11px 14px !important;
@@ -190,6 +190,19 @@
     .commentDel{
       font-size: 12px !important;
       padding: 7px 10px !important;
+    }
+
+    /* ✅ 링크 클릭용(댓글/답글/설명/연락처/알림 공통) */
+    .rich-text { white-space: pre-wrap; word-break: break-word; }
+    .rich-text a { text-decoration: underline; }
+
+    /* ✅ 입력창 아래 미리보기 박스(입력창은 클릭이 안 되니, 여기서 클릭) */
+    .previewBox{
+      margin-top:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
     }
   </style>
 </head>
@@ -219,7 +232,7 @@
     <div id="postTitle" class="title">로딩 중...</div>
     <div id="postMeta" class="meta"></div>
     <div id="imgBox" style="margin-top:10px;"></div>
-    <div id="postDesc" class="desc"></div>
+    <div id="postDesc" class="desc rich-text"></div>
   </div>
 
   <!-- ✅ 작성자 or 관리자면 수정 카드 표시 -->
@@ -242,6 +255,8 @@
       <div>
         <div class="muted" style="margin:0 0 6px;">연락처</div>
         <input id="eContact" placeholder="연락처" />
+        <div class="muted" style="margin-top:6px;">※ 입력창은 링크 클릭이 안 됩니다. 아래 미리보기에서 클릭하세요.</div>
+        <div id="eContactPreview" class="previewBox rich-text" style="display:none;"></div>
       </div>
       <div>
         <div class="muted" style="margin:0 0 6px;">지역</div>
@@ -252,6 +267,8 @@
     <div style="margin-top:10px;">
       <div class="muted" style="margin:0 0 6px;">설명</div>
       <textarea id="eDesc" placeholder="설명"></textarea>
+      <div class="muted" style="margin-top:6px;">※ 입력창은 링크 클릭이 안 됩니다. 아래 미리보기에서 클릭하세요.</div>
+      <div id="eDescPreview" class="previewBox rich-text" style="display:none;"></div>
     </div>
 
     <div style="margin-top:10px;">
@@ -277,6 +294,9 @@
     </div>
 
     <textarea id="cBody" placeholder="댓글을 입력하세요"></textarea>
+    <div class="muted" style="margin-top:6px;">※ 입력창은 링크 클릭이 안 됩니다. 아래 미리보기에서 클릭하세요.</div>
+    <div id="cBodyPreview" class="previewBox rich-text" style="display:none;"></div>
+
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
       <button class="btn primary" id="btnComment" type="button">등록</button>
       <button class="btn" id="btnReload" type="button">새로고침</button>
@@ -307,6 +327,11 @@
   const notiPanel = $("notiPanel");
   const badge = $("badge");
   const btnBell = $("btnBell");
+
+  // ✅ 미리보기 엘리먼트
+  const eContactPreview = $("eContactPreview");
+  const eDescPreview = $("eDescPreview");
+  const cBodyPreview = $("cBodyPreview");
 
   let accessToken = null;
   let refreshToken = null;
@@ -482,6 +507,43 @@
       .replaceAll('"',"&quot;").replaceAll("'","&#39;");
   }
 
+  // ✅ 텍스트를 안전하게 escape 후 URL만 <a>로 변환 (www.도 링크 처리)
+  function escapeAndLinkify(s){
+    const safe = escapeHtml(s || "");
+    const re = /((https?:\/\/|www\.)[^\s<]+)/gi;
+
+    return safe.replace(re, (m) => {
+      let url = m;
+      let trail = "";
+      while (/[.,!?)}\]]$/.test(url)) {
+        trail = url.slice(-1) + trail;
+        url = url.slice(0, -1);
+      }
+      const href = url.startsWith("http") ? url : `https://${url}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer nofollow">${url}</a>${trail}`;
+    });
+  }
+
+  function renderPreview(el, text){
+    if (!el) return;
+    const v = (text || "").trim();
+    if (!v){ el.style.display="none"; el.innerHTML=""; return; }
+    el.style.display="";
+    el.innerHTML = escapeAndLinkify(v);
+  }
+
+  function refreshPreviews(){
+    renderPreview(eContactPreview, $("eContact")?.value || "");
+    renderPreview(eDescPreview, $("eDesc")?.value || "");
+    renderPreview(cBodyPreview, $("cBody")?.value || "");
+  }
+
+  // ✅ rich-text 안 링크 클릭은 상위 클릭(알림 이동 등)과 충돌 방지
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (a && a.closest(".rich-text")) e.stopPropagation();
+  }, true);
+
   function formatTime(iso){
     try{ return new Date(iso).toLocaleString(); }
     catch(e){ return iso || ""; }
@@ -534,6 +596,11 @@
     else setStatus("로그인 URL 생성 실패", true);
   };
 
+  // ✅ 입력 중 미리보기 업데이트
+  $("eContact").addEventListener("input", refreshPreviews);
+  $("eDesc").addEventListener("input", refreshPreviews);
+  $("cBody").addEventListener("input", refreshPreviews);
+
   // ===== 게시글 =====
   async function loadPost(){
     const postId = getPostId();
@@ -583,11 +650,13 @@
 
   function renderPost(p){
     $("postTitle").textContent = p.title || "(제목 없음)";
+
     $("postMeta").innerHTML =
       `수량: <b>${escapeHtml(p.qty ?? "-")}</b> · 지역: <b>${escapeHtml(p.region || "-")}</b><br>` +
-      `연락: <b>${escapeHtml(p.contact || "-")}</b><br>` +
-      `작성자: <b>${escapeHtml(p.owner_name || "-")}</b> · ${formatTime(p.created_at)}`;
-    $("postDesc").textContent = p.description || "";
+      `연락: <span class="rich-text"><b>${escapeAndLinkify(p.contact || "-")}</b></span><br>` +
+      `작성자: <b>${escapeHtml(p.owner_name || "-")}</b> · ${escapeHtml(formatTime(p.created_at))}`;
+
+    $("postDesc").innerHTML = escapeAndLinkify(p.description || "");
     renderImages(Array.isArray(p.images) ? p.images : []);
   }
 
@@ -635,6 +704,7 @@
     $("eDesc").value = p.description || "";
     $("editHint").textContent = "";
     clearPreviews();
+    refreshPreviews();
   }
 
   function fileExt(file){
@@ -808,10 +878,10 @@
   }
 
   function renderNode(c, depth){
-    // ✅ 댓글 삭제는 "게시물 주인만" (댓글 작성자는 삭제 불가)
+    // ✅ 댓글 삭제는 "게시물 주인만"
     const canDelete = user?.id && (postOwnerId === user.id);
-
     const indent = Math.min(depth, 6) * 18;
+
     return `
       <div class="comment ${depth ? "reply" : ""}" id="c_${c.id}" style="margin-left:${indent}px;">
         <div class="commentTop">
@@ -825,7 +895,7 @@
             ${canDelete ? `<button class="commentDel" data-act="del" data-id="${c.id}" type="button">삭제</button>` : ``}
           </div>
         </div>
-        <div class="commentBody">${escapeHtml(c.body || "")}</div>
+        <div class="commentBody rich-text">${escapeAndLinkify(c.body || "")}</div>
       </div>
 
       ${(c.children || []).map(ch => renderNode(ch, depth + 1)).join("")}
@@ -871,6 +941,7 @@
 
     $("cBody").value = "";
     clearReplyTarget();
+    refreshPreviews();
     setStatus("등록 완료!");
 
     const again = await loadComments();
@@ -883,7 +954,6 @@
     const ok = await ensureValidAuth();
     if (!ok) return setStatus("삭제는 로그인 후 가능합니다.", true);
 
-    // UI가 postOwner에게만 보이지만, 안전하게 한번 더 체크
     if (!(user?.id && postOwnerId === user.id)) return setStatus("권한이 없습니다.", true);
 
     if (!confirm("이 댓글을 삭제할까요?\n(대댓글이 달린 댓글이면 대댓글도 같이 삭제됩니다)")) return;
@@ -1006,7 +1076,7 @@
              data-post="${n.post_id}" data-comment="${n.comment_id}">
           <div class="notiTitle">${escapeHtml(notiText(n))}</div>
           <div class="notiTime">${escapeHtml(formatTime(n.created_at))}</div>
-          <div class="notiBody">${escapeHtml(n.snippet || "")}</div>
+          <div class="notiBody rich-text">${escapeAndLinkify(n.snippet || "")}</div>
         </div>
       `).join("")
       : `<div class="muted">알림이 없습니다.</div>`;
@@ -1054,6 +1124,11 @@
           location.href = `market-view.html?id=${encodeURIComponent(postId)}#c_${cId}`;
         }
       });
+    });
+
+    // ✅ notiBody 안 링크 클릭 시: 알림 이동(댓글 점프) 막기
+    notiPanel.querySelectorAll("a").forEach(a => {
+      a.addEventListener("click", (e) => e.stopPropagation());
     });
   }
 
@@ -1104,6 +1179,7 @@
   // Boot
   (async () => {
     loadTokenFromHashOrStorage();
+    refreshPreviews();
 
     if (!accessToken || !refreshToken){
       setStatus("로그인이 필요합니다. 상단 ‘구글 로그인’으로 진행하세요.", true);
