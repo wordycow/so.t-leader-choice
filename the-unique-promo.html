@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>THE UNIQUE 금고</title>
+  <title>THE UNIQUE 금고 - 공동기금</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; }
@@ -75,7 +75,6 @@
     .vault-sub{ margin-top:10px; font-size:12px; color:#9CA3AF; line-height:1.4; }
 
     .vault-actions{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-
     .mini-btn{
       border:1px solid rgba(148,163,184,0.45);
       background:rgba(2,6,23,0.55);
@@ -83,18 +82,6 @@
       padding:8px 10px;
       border-radius:10px;
       cursor:pointer;
-      font-weight:900;
-      font-size:12px;
-    }
-
-    .mini-link{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid rgba(148,163,184,0.35);
-      background:rgba(2,6,23,0.35);
-      color:#e5e7eb;
-      text-decoration:none;
       font-weight:900;
       font-size:12px;
     }
@@ -125,6 +112,10 @@
       border-radius:14px;
       overflow:hidden;
     }
+    .ledger-scroll{
+      max-height: 360px;
+      overflow:auto;
+    }
     table.ledger{ width:100%; border-collapse:collapse; font-size:12px; }
     .ledger th,.ledger td{
       padding:10px 10px;
@@ -132,7 +123,7 @@
       text-align:left;
       vertical-align:top;
     }
-    .ledger th{ background:rgba(15,23,42,0.65); color:#e5e7eb; font-weight:900; }
+    .ledger th{ background:rgba(15,23,42,0.65); color:#e5e7eb; font-weight:900; position: sticky; top: 0; }
     .ledger td{ color:#e5e7eb; }
     .ledger tr:last-child td{ border-bottom:none; }
     .right{ text-align:right; }
@@ -152,6 +143,39 @@
       white-space:pre-wrap;
     }
 
+    .section-title{
+      margin-top:16px;
+      font-size:13px;
+      font-weight:900;
+      color:#e5e7eb;
+    }
+
+    .donation-wrap{
+      margin-top:10px;
+      background:rgba(2,6,23,0.55);
+      border:1px solid rgba(148,163,184,0.35);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .donation-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .donation-total{
+      font-size:12px;
+      color:#cbd5e1;
+      font-weight:800;
+    }
+    .donation-total b{
+      font-size:14px;
+      color:#fff;
+    }
+
     .meta{ margin-top:10px; font-size:11px; color:#9CA3AF; text-align:right; }
 
     @media (max-width:768px){
@@ -159,6 +183,7 @@
       .card{ padding:16px 14px 18px; transform:none; }
       .title{ font-size:20px; }
       .vault-value{ font-size:22px; }
+      .ledger-scroll{ max-height: 320px; }
     }
   </style>
 </head>
@@ -172,8 +197,8 @@
     <div class="card">
       <div class="top-bar">
         <div>
-          <div class="title">THE UNIQUE 금고</div>
-          <div class="subtitle">공동기금(USDT) · 오늘(00:00 KST)부터 발생한 내역만 표시</div>
+          <div class="title">THE UNIQUE 금고 - 공동기금</div>
+          <div class="subtitle">USDT 입금/출금 내역을 개시일 이후부터 누적 공개</div>
         </div>
         <button class="btn-close" onclick="closePage()">창 닫기 ✕</button>
       </div>
@@ -182,54 +207,81 @@
         <div class="vault-label">공동기금 잔액 (USDT · TRC20)</div>
         <div class="vault-value" id="vault-balance">불러오는 중…</div>
 
-        <div class="vault-sub">
-          조회 주소: <span id="vault-address">-</span><br/>
-          조회 범위: <span id="vault-range">-</span>
-        </div>
-
         <div class="vault-actions">
           <button class="mini-btn" onclick="copyVaultAddress()">주소 복사</button>
-          <a class="mini-link" id="vault-link-address" href="#" target="_blank" rel="noopener">TRONSCAN 주소</a>
-          <a class="mini-link" id="vault-link-usdt" href="#" target="_blank" rel="noopener">USDT 컨트랙트</a>
-          <button class="mini-btn" onclick="refreshVault()">새로고침</button>
+          <button class="mini-btn" onclick="refreshAll()">새로고침</button>
         </div>
 
         <div class="vault-grid">
           <div class="vault-item">
-            <div class="k">오늘 들어온 돈</div>
+            <div class="k">누적 들어온 돈</div>
             <div class="v" id="vault-in">-</div>
           </div>
           <div class="vault-item">
-            <div class="k">오늘 나간 돈</div>
+            <div class="k">누적 나간 돈</div>
             <div class="v" id="vault-out">-</div>
           </div>
           <div class="vault-item">
-            <div class="k">오늘 순증감</div>
+            <div class="k">누적 순증감</div>
             <div class="v" id="vault-net">-</div>
           </div>
         </div>
 
         <div class="vault-sub" id="vault-updated">조회시간: -</div>
+        <div class="vault-sub" id="vault-count" style="margin-top:6px;">내역건수: -</div>
         <div class="vault-error" id="vault-error"></div>
 
         <div class="ledger-wrap">
-          <table class="ledger" aria-label="USDT 오늘 내역">
-            <thead>
-              <tr>
-                <th style="width:150px;">시간</th>
-                <th style="width:70px;">구분</th>
-                <th class="right" style="width:140px;">금액</th>
-                <th style="width:170px;">상대</th>
-                <th>TX</th>
-              </tr>
-            </thead>
-            <tbody id="vault-ledger"></tbody>
-          </table>
+          <div class="ledger-scroll">
+            <table class="ledger" aria-label="USDT 누적 내역">
+              <thead>
+                <tr>
+                  <th style="width:150px;">시간</th>
+                  <th style="width:70px;">구분</th>
+                  <th class="right" style="width:140px;">금액</th>
+                  <th style="width:170px;">상대</th>
+                  <th style="width:200px;">TXID</th>
+                </tr>
+              </thead>
+              <tbody id="vault-ledger"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="vault-sub muted" style="margin-top:10px;">
-          ※ 오늘 내역만 표시됩니다. 전체 확인은 TRONSCAN 링크로.
+          ※ 표는 개시일 이후 누적 내역이 시간순으로 아래로 쌓입니다.
         </div>
+
+        <div class="section-title">도네이션</div>
+        <div class="donation-wrap">
+          <div class="donation-top">
+            <div class="donation-total">누적 도네이션 합계: <b id="don-total">-</b> USDT</div>
+            <button class="mini-btn" onclick="openDonation()">도네이션 등록</button>
+          </div>
+
+          <div class="vault-error" id="don-error" style="display:none; margin-top:10px;"></div>
+
+          <div class="ledger-wrap" style="margin-top:10px;">
+            <div class="ledger-scroll" style="max-height:260px;">
+              <table class="ledger" aria-label="기부자 명단">
+                <thead>
+                  <tr>
+                    <th style="width:220px;">이름</th>
+                    <th class="right" style="width:160px;">누적</th>
+                    <th class="right" style="width:80px;">횟수</th>
+                    <th style="width:160px;">최근</th>
+                  </tr>
+                </thead>
+                <tbody id="donors-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="vault-sub muted" style="margin-top:10px;">
+            ※ 도네이션은 “이름 + TXID” 등록 시 명단에 반영됩니다(USDT 입금 TX만 허용).
+          </div>
+        </div>
+
       </section>
 
       <div class="meta">The Unique · Vault</div>
@@ -239,18 +291,14 @@
   <script>
     function closePage(){ window.close(); setTimeout(()=>{ try{ history.back(); }catch(e){} },120); }
 
+    // ===== 고정 지갑 주소 =====
     const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
-    const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
-    // ✅ 네 워커 주소
-    const VAULT_PROXY_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+    // ✅ 네 Cloudflare Worker 주소
+    const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-    function buildTronscanAddressUrl(addr){ return `https://tronscan.org/#/address/${addr}`; }
-    function buildTronscanTokenUrl(contract){ return `https://tronscan.org/#/token20/${contract}`; }
-    function buildTronscanTxUrl(txid){ return `https://tronscan.org/#/transaction/${txid}`; }
-
-    function setVaultError(msg){
-      const el = document.getElementById("vault-error");
+    function setErr(id, msg){
+      const el = document.getElementById(id);
       if(!msg){ el.style.display="none"; el.textContent=""; return; }
       el.style.display="block"; el.textContent=msg;
     }
@@ -260,11 +308,17 @@
       if(a.length<=12) return a;
       return a.slice(0,6)+"…"+a.slice(-4);
     }
+    function shortTx(a){
+      if(!a) return "-";
+      if(a.length<=16) return a;
+      return a.slice(0,10)+"…"+a.slice(-6);
+    }
 
     function copyVaultAddress(){
       const addr = VAULT_TRON_ADDRESS.trim();
       if(!addr) return;
       if(navigator.clipboard?.writeText) navigator.clipboard.writeText(addr).catch(()=>{});
+      else alert("클립보드 권한이 필요합니다.");
     }
 
     function renderLedger(transfers){
@@ -273,11 +327,12 @@
 
       if(!Array.isArray(transfers) || transfers.length===0){
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" class="muted">오늘 발생한 USDT 내역이 없습니다.</td>`;
+        tr.innerHTML = `<td colspan="5" class="muted">개시일 이후 발생한 USDT 내역이 없습니다.</td>`;
         tbody.appendChild(tr);
         return;
       }
 
+      // transfers는 워커에서 시간순(오래된 -> 최신)으로 내려옴
       transfers.forEach(t=>{
         const dt = t.ts ? new Date(t.ts).toLocaleString("ko-KR") : "-";
         const dir = t.direction==="IN" ? `<span class="tag-in">입금</span>`
@@ -285,7 +340,6 @@
                  : `<span class="muted">-</span>`;
 
         const counterparty = (t.direction==="IN") ? t.from : (t.direction==="OUT") ? t.to : "-";
-        const txLink = t.txid ? `<a class="mini-link" href="${buildTronscanTxUrl(t.txid)}" target="_blank" rel="noopener">보기</a>` : "-";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -293,60 +347,138 @@
           <td>${dir}</td>
           <td class="right">${t.amount} USDT</td>
           <td title="${counterparty}">${shortAddr(counterparty)}</td>
-          <td>${txLink}</td>
+          <td title="${t.txid || "-"}">${shortTx(t.txid)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 항상 최신으로 스크롤 내리기(쌓이는 느낌)
+      const sc = document.querySelector(".ledger-scroll");
+      if (sc) sc.scrollTop = sc.scrollHeight;
+    }
+
+    async function fetchVault(){
+      setErr("vault-error", "");
+      document.getElementById("vault-balance").textContent = "불러오는 중…";
+
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      const res = await fetch(api, { cache:"no-store" });
+
+      const text = await res.text();
+      let data = null;
+      try{ data = JSON.parse(text); }catch(e){}
+
+      if(!res.ok){
+        const msg = data?.message ? data.message : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      if(!data?.ok){
+        throw new Error(data?.message || "조회 실패");
+      }
+
+      document.getElementById("vault-balance").textContent = `${data.balance} USDT`;
+      document.getElementById("vault-in").textContent = `${data.inflow} USDT`;
+      document.getElementById("vault-out").textContent = `${data.outflow} USDT`;
+      document.getElementById("vault-net").textContent = `${data.net} USDT`;
+      document.getElementById("vault-count").textContent = `내역건수: ${data.count ?? "-"}건`;
+      document.getElementById("vault-updated").textContent = `조회시간: ${new Date().toLocaleString("ko-KR")}`;
+
+      renderLedger(data.transfers || []);
+    }
+
+    function renderDonors(list){
+      const tbody = document.getElementById("donors-body");
+      tbody.innerHTML = "";
+
+      if(!Array.isArray(list) || list.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="4" class="muted">등록된 기부자가 없습니다.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      list.forEach(d=>{
+        const last = d.lastTs ? new Date(d.lastTs).toLocaleString("ko-KR") : "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.name}</td>
+          <td class="right">${d.total} USDT</td>
+          <td class="right">${d.count}</td>
+          <td>${last}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    async function refreshVault(){
-      setVaultError("");
+    async function fetchDonations(){
+      setErr("don-error", "");
 
-      document.getElementById("vault-address").textContent = VAULT_TRON_ADDRESS;
-      document.getElementById("vault-link-address").href = buildTronscanAddressUrl(VAULT_TRON_ADDRESS);
-      document.getElementById("vault-link-usdt").href = buildTronscanTokenUrl(USDT_TRC20_CONTRACT);
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      const res = await fetch(api, { cache:"no-store" });
+      const text = await res.text();
+      let data = null;
+      try{ data = JSON.parse(text); }catch(e){}
 
-      const balanceEl = document.getElementById("vault-balance");
-      balanceEl.textContent = "불러오는 중…";
+      if(!res.ok || !data?.ok){
+        // KV 미설정이면 안내만
+        const msg = data?.message || `HTTP ${res.status}`;
+        setErr("don-error", msg);
+        document.getElementById("don-total").textContent = "-";
+        renderDonors([]);
+        return;
+      }
+
+      document.getElementById("don-total").textContent = data.total ?? "0";
+      renderDonors(data.donors || []);
+    }
+
+    async function openDonation(){
+      setErr("don-error", "");
+
+      const name = prompt("기부자 이름을 입력하세요 (최대 20자)");
+      if(!name) return;
+
+      const txid = prompt("TXID(트랜잭션 해시 64자리)를 입력하세요");
+      if(!txid) return;
+
+      const payload = {
+        address: VAULT_TRON_ADDRESS,
+        name,
+        txid
+      };
 
       try{
-        const api = `${VAULT_PROXY_BASE.replace(/\/$/,"")}/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
-        const res = await fetch(api, { cache:"no-store" });
+        const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/add`;
+        const res = await fetch(api, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
         const text = await res.text();
         let data = null;
         try{ data = JSON.parse(text); }catch(e){}
 
-        if(!res.ok){
-          const msg = data?.message ? data.message : `HTTP ${res.status}`;
+        if(!res.ok || !data?.ok){
+          const msg = data?.message || `HTTP ${res.status}`;
           throw new Error(msg);
         }
 
-        if(!data?.ok){
-          throw new Error(data?.message || "조회 실패");
-        }
-
-        document.getElementById("vault-balance").textContent = `${data.balance} USDT`;
-        document.getElementById("vault-in").textContent = `${data.inflow} USDT`;
-        document.getElementById("vault-out").textContent = `${data.outflow} USDT`;
-        document.getElementById("vault-net").textContent = `${data.net} USDT`;
-
-        const from = data?.range?.fromMs ? new Date(data.range.fromMs).toLocaleString("ko-KR") : "-";
-        const to = data?.range?.toMs ? new Date(data.range.toMs).toLocaleString("ko-KR") : "-";
-        document.getElementById("vault-range").textContent = `${from} ~ ${to}`;
-
-        document.getElementById("vault-updated").textContent = `조회시간: ${new Date().toLocaleString("ko-KR")}`;
-
-        renderLedger(data.transfers || []);
+        alert(`등록 완료! 도네이션: ${data.entry.amount} USDT`);
+        await fetchDonations();
 
       }catch(e){
-        balanceEl.textContent = "조회 실패";
-        setVaultError(String(e?.message || e));
-        renderLedger([]);
+        setErr("don-error", String(e?.message || e));
       }
     }
 
-    document.addEventListener("DOMContentLoaded", refreshVault);
+    async function refreshAll(){
+      try { await fetchVault(); }
+      catch(e){ setErr("vault-error", String(e?.message || e)); document.getElementById("vault-balance").textContent = "조회 실패"; }
+      await fetchDonations();
+    }
+
+    document.addEventListener("DOMContentLoaded", refreshAll);
   </script>
 </body>
 </html>
