@@ -233,6 +233,34 @@
     }
     .form textarea{ min-height:72px; resize: vertical; }
 
+    .tabbar{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+      padding:6px;
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,0.25);
+      background: rgba(2,6,23,0.35);
+    }
+    .tab{
+      flex:1;
+      padding:10px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:1000;
+      font-size:12px;
+      border:1px solid rgba(148,163,184,0.35);
+      background: rgba(15,23,42,0.45);
+      color:#e5e7eb;
+    }
+    .tab.active{
+      border-color: var(--gold);
+      background: rgba(245,158,11,0.10);
+      color: var(--gold2);
+      box-shadow: 0 0 14px rgba(245,158,11,0.22);
+    }
+    .hidden{ display:none !important; }
+
     .pill{
       display:inline-flex;
       align-items:center;
@@ -244,6 +272,7 @@
       color:#e5e7eb;
       font-size:12px;
       font-weight:900;
+      white-space:nowrap;
     }
     .pill.pending{ border-color: rgba(245,158,11,0.5); }
     .pill.done{ border-color: rgba(34,197,94,0.55); color:#86efac; }
@@ -328,7 +357,7 @@
             <div class="donation-total">누적 도네이션 합계: <b id="don-total">-</b> USDT</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn-gold" onclick="openDonation()">도네이션(기부)</button>
-              <button class="mini-btn gold-outline" onclick="toggleRequest()">상환</button>
+              <button class="mini-btn gold-outline" onclick="toggleRepayPanel()">상환</button>
             </div>
           </div>
 
@@ -351,35 +380,85 @@
             </div>
           </div>
 
-          <!-- 상환(사용) 신청 폼 -->
-          <div id="request-box" style="display:none; margin-top:14px;">
-            <div class="section-title" style="margin-top:0;">상환(사용) 신청</div>
-
-            <div class="form">
-              <input id="req-name" placeholder="신청자 이름" />
-              <input id="req-amount" placeholder="금액 (USDT)" />
-              <input id="req-repay" placeholder="상환 날짜 (YYYY-MM-DD)" />
-              <input id="req-to" placeholder="받을 USDT(TRC20) 주소" />
-              <textarea id="req-memo" class="full" placeholder="USDT TRC20"></textarea>
-              <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="mini-btn gold-outline" onclick="submitRequest()">신청</button>
-                <button class="mini-btn" onclick="toggleRequest()">닫기</button>
-              </div>
+          <!-- ✅ 상환 패널(신청/상환등록 2탭) -->
+          <div id="repay-panel" class="hidden" style="margin-top:14px;">
+            <div class="tabbar">
+              <button class="tab active" id="tab-req" onclick="switchRepayTab('req')">사용 신청</button>
+              <button class="tab" id="tab-repay" onclick="switchRepayTab('repay')">상환 등록</button>
             </div>
 
-            <div class="vault-error" id="req-error" style="display:none;"></div>
+            <!-- 신청 탭 -->
+            <div id="pane-req" style="margin-top:10px;">
+              <div class="section-title" style="margin-top:0;">사용 신청</div>
+
+              <div class="form">
+                <input id="req-name" placeholder="신청자 이름" />
+                <input id="req-amount" placeholder="금액 (USDT)" />
+
+                <input id="req-borrow" placeholder="빌린 날짜 (자동)" disabled />
+                <input id="req-repay" placeholder="상환 날짜 (YYYY-MM-DD)" />
+
+                <input id="req-to" class="full" placeholder="받을 USDT(TRC20) 주소" />
+                <textarea id="req-memo" class="full" placeholder="USDT TRC20"></textarea>
+
+                <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="mini-btn gold-outline" onclick="submitRequest()">신청</button>
+                  <button class="mini-btn" onclick="toggleRepayPanel()">닫기</button>
+                </div>
+              </div>
+
+              <div class="vault-sub muted" id="req-rule" style="margin-top:8px;">
+                ※ 상환 날짜는 빌린날로부터 최대 14일 이내
+              </div>
+
+              <div class="vault-error" id="req-error" style="display:none;"></div>
+            </div>
+
+            <!-- 상환등록 탭 -->
+            <div id="pane-repay" class="hidden" style="margin-top:10px;">
+              <div class="section-title" style="margin-top:0;">상환 등록</div>
+
+              <div class="form">
+                <input id="repay-name" placeholder="이름" />
+                <input id="repay-txid" placeholder="TXID (64자리 해시)" />
+                <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="mini-btn gold-outline" onclick="submitRepay()">상환 등록</button>
+                  <button class="mini-btn" onclick="toggleRepayPanel()">닫기</button>
+                </div>
+              </div>
+
+              <div class="vault-error" id="repay-error" style="display:none;"></div>
+
+              <div class="section-title">상환 기록</div>
+              <div class="ledger-wrap" style="margin-top:10px;">
+                <div class="ledger-scroll" style="max-height:220px;">
+                  <table class="ledger" aria-label="상환 기록">
+                    <thead>
+                      <tr>
+                        <th style="width:150px;">시간</th>
+                        <th style="width:160px;">이름</th>
+                        <th class="right" style="width:120px;">금액</th>
+                        <th>TXID</th>
+                      </tr>
+                    </thead>
+                    <tbody id="repay-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 신청 상황 -->
           <div class="section-title">신청 상황</div>
           <div class="ledger-wrap" style="margin-top:10px;">
             <div class="ledger-scroll" style="max-height:260px;">
-              <table class="ledger" aria-label="상환 신청 목록">
+              <table class="ledger" aria-label="신청 목록">
                 <thead>
                   <tr>
                     <th style="width:150px;">시간</th>
                     <th style="width:140px;">신청자</th>
                     <th class="right" style="width:110px;">금액</th>
+                    <th style="width:120px;">빌린날</th>
                     <th style="width:120px;">상환일</th>
                     <th style="width:180px;">받을 주소</th>
                     <th>메모</th>
@@ -392,7 +471,7 @@
           </div>
 
           <div class="vault-sub muted" style="margin-top:10px;">
-            ※ 도네이션(기부)는 “이름 + TXID” 등록 방식입니다. / 상환 신청은 아래 목록에 누적됩니다.
+            ※ 도네이션(기부): 이름 + TXID 등록 / 상환: 신청(빌리기) 또는 상환등록(TXID)
           </div>
         </div>
       </section>
@@ -427,6 +506,24 @@
       if(!addr) return;
       if(navigator.clipboard?.writeText) navigator.clipboard.writeText(addr).catch(()=>{});
       else alert("클립보드 권한이 필요합니다.");
+    }
+
+    // ---- 날짜 유틸 (KST 기준 YYYY-MM-DD)
+    function toKstYmd(d = new Date()){
+      const k = new Date(d.getTime() + (9*60*60*1000));
+      const y = k.getUTCFullYear();
+      const m = String(k.getUTCMonth()+1).padStart(2,"0");
+      const day = String(k.getUTCDate()).padStart(2,"0");
+      return `${y}-${m}-${day}`;
+    }
+    function addDaysYmd(ymd, days){
+      const [y,m,d] = ymd.split("-").map(Number);
+      const base = new Date(Date.UTC(y, m-1, d, 0,0,0));
+      const next = new Date(base.getTime() + days*24*60*60*1000);
+      const yy = next.getUTCFullYear();
+      const mm = String(next.getUTCMonth()+1).padStart(2,"0");
+      const dd = String(next.getUTCDate()).padStart(2,"0");
+      return `${yy}-${mm}-${dd}`;
     }
 
     function renderLedger(transfers){
@@ -549,25 +646,59 @@
       await fetchDonations();
     }
 
-    function toggleRequest(){
-      const box = document.getElementById("request-box");
-      box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
-      setErr("req-error", "");
+    // ---- 상환 패널
+    function toggleRepayPanel(){
+      const p = document.getElementById("repay-panel");
+      const open = p.classList.contains("hidden");
+      p.classList.toggle("hidden", !open ? true : false);
+
+      if (open) {
+        // 패널 열릴 때: 빌린날 자동 세팅 + 14일 제한 문구 업데이트
+        const borrow = toKstYmd(new Date());
+        const maxRepay = addDaysYmd(borrow, 14);
+        document.getElementById("req-borrow").value = borrow;
+        document.getElementById("req-rule").textContent = `※ 상환 날짜는 빌린날(${borrow})로부터 최대 14일 이내 (최대 ${maxRepay})`;
+        if (!document.getElementById("req-memo").value.trim()) {
+          document.getElementById("req-memo").value = "USDT TRC20";
+        }
+        // 상환탭 목록도 갱신
+        fetchRepays();
+      }
     }
 
+    function switchRepayTab(which){
+      const tabReq = document.getElementById("tab-req");
+      const tabRep = document.getElementById("tab-repay");
+      const paneReq = document.getElementById("pane-req");
+      const paneRep = document.getElementById("pane-repay");
+
+      const isReq = which === "req";
+      tabReq.classList.toggle("active", isReq);
+      tabRep.classList.toggle("active", !isReq);
+      paneReq.classList.toggle("hidden", !isReq);
+      paneRep.classList.toggle("hidden", isReq);
+
+      setErr("req-error", "");
+      setErr("repay-error", "");
+      if (!isReq) fetchRepays();
+    }
+
+    // ---- 신청(빌리기)
     function renderRequests(items){
       const tbody = document.getElementById("req-body");
       tbody.innerHTML = "";
 
       if(!Array.isArray(items) || items.length === 0){
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="7" class="muted">등록된 신청이 없습니다.</td>`;
+        tr.innerHTML = `<td colspan="8" class="muted">등록된 신청이 없습니다.</td>`;
         tbody.appendChild(tr);
         return;
       }
 
       items.forEach(x=>{
         const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
+        const borrow = x.borrowDate ? new Date(x.borrowDate).toLocaleDateString("ko-KR") : "-";
+
         const statusPill = x.status === "done"
           ? `<span class="pill done">처리됨</span>`
           : `<span class="pill pending">대기</span>`;
@@ -581,6 +712,7 @@
           <td>${dt}</td>
           <td>${x.name || "-"}</td>
           <td class="right">${x.amount || "-"} USDT</td>
+          <td>${borrow}</td>
           <td>${x.repayDate || "-"}</td>
           <td title="${x.receiveAddress || "-"}">${shortAddr(x.receiveAddress || "")}</td>
           <td>${(x.memo || "-")}</td>
@@ -607,7 +739,6 @@
         renderRequests([]);
         return;
       }
-
       renderRequests(data.items || []);
     }
 
@@ -616,9 +747,21 @@
 
       const name = document.getElementById("req-name").value.trim();
       const amount = document.getElementById("req-amount").value.trim();
+      const borrow = document.getElementById("req-borrow").value.trim(); // YYYY-MM-DD
       const repayDate = document.getElementById("req-repay").value.trim();
       const receiveAddress = document.getElementById("req-to").value.trim();
-      const memo = document.getElementById("req-memo").value.trim();
+      const memo = document.getElementById("req-memo").value.trim() || "USDT TRC20";
+
+      if(!name) { setErr("req-error", "신청자 이름을 입력하세요."); return; }
+      if(!amount) { setErr("req-error", "금액을 입력하세요."); return; }
+      if(!repayDate) { setErr("req-error", "상환 날짜를 입력하세요."); return; }
+
+      // ✅ 클라이언트에서도 14일 제한 안내(서버가 최종 검증)
+      const maxRepay = addDaysYmd(borrow, 14);
+      if (repayDate > maxRepay) {
+        setErr("req-error", `상환 날짜는 빌린날(${borrow})로부터 최대 14일 이내입니다. (최대 ${maxRepay})`);
+        return;
+      }
 
       const payload = { address: VAULT_TRON_ADDRESS, name, amount, repayDate, receiveAddress, memo };
 
@@ -658,19 +801,96 @@
         setErr("req-error", data?.message || `HTTP ${res.status}`);
         return;
       }
-
       await fetchRequests();
+    }
+
+    // ---- 상환(갚기) 등록/목록
+    function renderRepays(items){
+      const tbody = document.getElementById("repay-body");
+      tbody.innerHTML = "";
+
+      if(!Array.isArray(items) || items.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="4" class="muted">등록된 상환 기록이 없습니다.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      items.forEach(x=>{
+        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dt}</td>
+          <td>${x.name || "-"}</td>
+          <td class="right">${x.amount || "-"} USDT</td>
+          <td title="${x.txid || "-"}">${shortTx(x.txid || "")}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const sc = tbody.closest(".ledger-scroll");
+      if (sc) sc.scrollTop = sc.scrollHeight;
+    }
+
+    async function fetchRepays(){
+      setErr("repay-error", "");
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/repay/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      const res = await fetch(api, { cache:"no-store" });
+      const data = await res.json().catch(()=>null);
+
+      if(!res.ok || !data?.ok){
+        setErr("repay-error", data?.message || `HTTP ${res.status}`);
+        renderRepays([]);
+        return;
+      }
+      renderRepays(data.items || []);
+    }
+
+    async function submitRepay(){
+      setErr("repay-error", "");
+
+      const name = document.getElementById("repay-name").value.trim();
+      const txid = document.getElementById("repay-txid").value.trim();
+      if(!name){ setErr("repay-error", "이름을 입력하세요."); return; }
+      if(!txid){ setErr("repay-error", "TXID를 입력하세요."); return; }
+
+      const payload = { address: VAULT_TRON_ADDRESS, name, txid };
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/repay/add`;
+
+      const res = await fetch(api, {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(()=>null);
+
+      if(!res.ok || !data?.ok){
+        setErr("repay-error", data?.message || `HTTP ${res.status}`);
+        return;
+      }
+
+      alert(`상환 등록 완료! ${data.entry.amount} USDT`);
+      document.getElementById("repay-txid").value = "";
+      await fetchRepays();
     }
 
     async function refreshAll(){
       try { await fetchVault(); }
-      catch(e){ setErr("vault-error", String(e?.message || e)); document.getElementById("vault-balance-num").textContent = "조회 실패"; }
+      catch(e){
+        setErr("vault-error", String(e?.message || e));
+        document.getElementById("vault-balance-num").textContent = "조회 실패";
+      }
 
       await fetchDonations();
       await fetchRequests();
+      // 패널이 열려있을 때만 상환 목록 갱신
+      if (!document.getElementById("repay-panel").classList.contains("hidden")) {
+        await fetchRepays();
+      }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("req-borrow").value = toKstYmd(new Date());
       document.getElementById("req-memo").value = "USDT TRC20";
       refreshAll();
     });
