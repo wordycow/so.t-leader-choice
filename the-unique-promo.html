@@ -670,80 +670,263 @@
     }
 
     // ===== PRO1+ 기능 =====
-    const PRO_KEY_STORAGE = "pro1_key";
-    function getProKey(){
-      try { return localStorage.getItem(PRO_KEY_STORAGE) || ""; } catch { return ""; }
+    // ===== PRO1+ 기능 (이름 인증: rank-hall.json 확인) =====
+const PRO_NAME_STORAGE = "pro1_name";
+
+function getProName(){
+  try { return localStorage.getItem(PRO_NAME_STORAGE) || ""; } catch { return ""; }
+}
+function setProName(v){
+  try { localStorage.setItem(PRO_NAME_STORAGE, v); } catch {}
+}
+function clearProName(){
+  try { localStorage.removeItem(PRO_NAME_STORAGE); } catch {}
+}
+
+function setProNameFields(proName){
+  // 기존에 "신청자 이름" input이 있으면 자동으로 채우고 잠금
+  const useName = document.getElementById("use-name");
+  if (useName) {
+    useName.value = proName;
+    useName.disabled = true;
+  }
+  const wdName = document.getElementById("wd-name");
+  if (wdName) {
+    wdName.value = proName;
+    wdName.disabled = true;
+  }
+}
+function clearProNameFields(){
+  const useName = document.getElementById("use-name");
+  if (useName) {
+    useName.value = "";
+    useName.disabled = false;
+  }
+  const wdName = document.getElementById("wd-name");
+  if (wdName) {
+    wdName.value = "";
+    wdName.disabled = false;
+  }
+}
+
+async function unlockPro(){
+  const name = prompt("PRO1 인증: 이름을 입력하세요 (rank-hall.json 기준)");
+  if(!name) return;
+
+  try{
+    const api = `${WORKER_BASE.replace(/\/$/,"")}/rank/check?name=${encodeURIComponent(name.trim())}`;
+    const res = await fetch(api, { cache:"no-store" });
+    const data = await res.json().catch(() => null);
+
+    if(!res.ok || !data?.ok){
+      alert(data?.message || `인증 실패 (HTTP ${res.status})`);
+      return;
     }
-    function setProKey(v){
-      try { localStorage.setItem(PRO_KEY_STORAGE, v); } catch {}
-    }
-    function clearProKey(){
-      try { localStorage.removeItem(PRO_KEY_STORAGE); } catch {}
-    }
 
-    function renderProUI(){
-      const key = getProKey();
-      const gate = document.getElementById("pro-gate");
-      const panel = document.getElementById("pro-panel");
-
-      if (key) {
-        gate.classList.add("hidden");
-        panel.classList.remove("hidden");
-        refreshOps();
-      } else {
-        gate.classList.remove("hidden");
-        panel.classList.add("hidden");
-      }
+    if(!data.isPro1){
+      alert(`인증 실패: "${name}" 님은 PRO1 이상이 아닙니다.`);
+      return;
     }
 
-    function unlockPro(){
-      const key = prompt("PRO1+ 인증키를 입력하세요");
-      if(!key) return;
-      setProKey(key.trim());
-      renderProUI();
-    }
+    setProName(name.trim());
+    alert(`인증 성공: ${name} (PRO${data.proLevel})`);
+    renderProUI();
+  }catch(e){
+    alert(String(e?.message || e));
+  }
+}
 
-    function logoutPro(){
-      clearProKey();
-      setErr("ops-error", "");
-      renderProUI();
-    }
+function logoutPro(){
+  clearProName();
+  clearProNameFields();
+  setErr("ops-error", "");
+  renderProUI();
+}
 
-    function kstDateString(ms){
-      try { return new Date(ms).toLocaleString("ko-KR"); } catch { return "-"; }
-    }
+function renderProUI(){
+  const name = getProName();
+  const gate = document.getElementById("pro-gate");
+  const panel = document.getElementById("pro-panel");
 
-    function renderOps(list){
-      const tbody = document.getElementById("ops-body");
-      tbody.innerHTML = "";
+  if (name) {
+    gate.classList.add("hidden");
+    panel.classList.remove("hidden");
+    setProNameFields(name);
+    refreshOps();
+  } else {
+    gate.classList.remove("hidden");
+    panel.classList.add("hidden");
+  }
+}
 
-      if(!Array.isArray(list) || list.length === 0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="6" class="muted">기록이 없습니다.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
+function kstDateString(ms){
+  try { return new Date(ms).toLocaleString("ko-KR"); } catch { return "-"; }
+}
 
-      list.forEach(x=>{
-        const dt = x.ts ? kstDateString(x.ts) : "-";
-        const type = x.type === "use" ? "사용" : x.type === "withdraw" ? "출금" : "-";
-        const repay = x.repayDate || "-";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dt}</td>
-          <td>${type}</td>
-          <td class="right">${x.amount} USDT</td>
-          <td>${repay}</td>
-          <td>${x.name || "-"}</td>
-          <td>${x.memo || "-"}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+function renderOps(list){
+  const tbody = document.getElementById("ops-body");
+  tbody.innerHTML = "";
 
-      // 최신이 아래로 쌓이므로 맨 아래로
-      const sc = tbody.closest(".ledger-scroll");
-      if (sc) sc.scrollTop = sc.scrollHeight;
-    }
+  if(!Array.isArray(list) || list.length === 0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="6" class="muted">기록이 없습니다.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  list.forEach(x=>{
+    const dt = x.ts ? kstDateString(x.ts) : "-";
+    const type = x.type === "use" ? "사용" : x.type === "withdraw" ? "출금" : "-";
+    const repay = x.repayDate || "-";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${dt}</td>
+      <td>${type}</td>
+      <td class="right">${x.amount} USDT</td>
+      <td>${repay}</td>
+      <td>${x.name || "-"}</td>
+      <td>${x.memo || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const sc = tbody.closest(".ledger-scroll");
+  if (sc) sc.scrollTop = sc.scrollHeight;
+}
+
+async function refreshOps(){
+  setErr("ops-error", "");
+  const proName = getProName();
+  if(!proName) return;
+
+  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}&limit=500`;
+  const res = await fetch(api, {
+    cache:"no-store",
+    headers: { "X-PRO-NAME": proName }
+  });
+
+  const text = await res.text();
+  let data = null;
+  try{ data = JSON.parse(text); }catch(e){}
+
+  if(res.status === 403){
+    setErr("ops-error", "인증 실패: PRO1 이상만 접근 가능합니다.");
+    clearProName();
+    clearProNameFields();
+    renderProUI();
+    return;
+  }
+
+  if(!res.ok || !data?.ok){
+    const msg = data?.message || `HTTP ${res.status}`;
+    setErr("ops-error", msg);
+    renderOps([]);
+    return;
+  }
+
+  renderOps(data.items || []);
+}
+
+async function submitUse(){
+  setErr("ops-error", "");
+  const proName = getProName();
+  if(!proName){ alert("PRO1 인증이 필요합니다."); return; }
+
+  const amount = document.getElementById("use-amount").value.trim();
+  const repay = document.getElementById("use-repay").value.trim();
+  const memo = document.getElementById("use-memo").value.trim();
+
+  const payload = {
+    address: VAULT_TRON_ADDRESS,
+    type:"use",
+    amount,
+    repayDate: repay,
+    memo
+  };
+
+  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
+  const res = await fetch(api, {
+    method:"POST",
+    headers: {
+      "content-type":"application/json",
+      "X-PRO-NAME": proName
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await res.text();
+  let data = null;
+  try{ data = JSON.parse(text); }catch(e){}
+
+  if(res.status === 403){
+    setErr("ops-error", "인증 실패: PRO1 이상만 가능합니다.");
+    clearProName();
+    clearProNameFields();
+    renderProUI();
+    return;
+  }
+
+  if(!res.ok || !data?.ok){
+    const msg = data?.message || `HTTP ${res.status}`;
+    setErr("ops-error", msg);
+    return;
+  }
+
+  alert("사용 신청이 기록되었습니다.");
+  document.getElementById("use-amount").value = "";
+  document.getElementById("use-repay").value = "";
+  document.getElementById("use-memo").value = "";
+  await refreshOps();
+}
+
+async function submitWithdraw(){
+  setErr("ops-error", "");
+  const proName = getProName();
+  if(!proName){ alert("PRO1 인증이 필요합니다."); return; }
+
+  const amount = document.getElementById("wd-amount").value.trim();
+  const memo = document.getElementById("wd-memo").value.trim();
+
+  const payload = {
+    address: VAULT_TRON_ADDRESS,
+    type:"withdraw",
+    amount,
+    memo
+  };
+
+  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
+  const res = await fetch(api, {
+    method:"POST",
+    headers: {
+      "content-type":"application/json",
+      "X-PRO-NAME": proName
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await res.text();
+  let data = null;
+  try{ data = JSON.parse(text); }catch(e){}
+
+  if(res.status === 403){
+    setErr("ops-error", "인증 실패: PRO1 이상만 가능합니다.");
+    clearProName();
+    clearProNameFields();
+    renderProUI();
+    return;
+  }
+
+  if(!res.ok || !data?.ok){
+    const msg = data?.message || `HTTP ${res.status}`;
+    setErr("ops-error", msg);
+    return;
+  }
+
+  alert("출금 신청이 기록되었습니다.");
+  document.getElementById("wd-amount").value = "";
+  document.getElementById("wd-memo").value = "";
+  await refreshOps();
+}
 
     async function refreshOps(){
       setErr("ops-error", "");
