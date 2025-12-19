@@ -11,7 +11,6 @@
     :root{
       --gold: rgba(245,158,11,0.95);
       --gold2: #fbbf24;
-      --ink: #0b1220;
       --panel: rgba(15,23,42,0.96);
       --panel2: rgba(2,6,23,0.55);
       --line: rgba(148,163,184,0.35);
@@ -31,7 +30,7 @@
 
     .page-wrap{
       position:relative; z-index:10;
-      max-width:1180px; width:100%;
+      max-width:1100px; width:100%;
       margin:40px auto; padding:24px 16px 32px;
     }
 
@@ -79,15 +78,6 @@
       box-shadow:0 12px 28px rgba(0,0,0,0.9);
     }
 
-    .vault-layout{
-      display:grid;
-      grid-template-columns: 1fr 360px;
-      gap: 12px;
-    }
-    @media (max-width: 980px){
-      .vault-layout{ grid-template-columns: 1fr; }
-    }
-
     .vault-label{ font-size:12px; color:#cbd5e1; margin-bottom:8px; font-weight:800; }
 
     .vault-value{
@@ -104,8 +94,6 @@
     }
     .unit{ color:#e5e7eb; font-size:18px; font-weight:900; opacity:0.95; }
 
-    .vault-sub{ margin-top:10px; font-size:12px; color:#9CA3AF; line-height:1.4; }
-
     .vault-actions{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 
     .mini-btn{
@@ -118,16 +106,12 @@
       font-weight:900;
       font-size:12px;
     }
-
-    /* ✅ 체크된 버튼(복사/새로고침) = 골드 아웃라인 */
     .mini-btn.gold-outline{
       border-color: var(--gold);
       color: var(--gold2);
       background: rgba(245,158,11,0.08);
     }
-    .mini-btn.gold-outline:hover{ background: rgba(245,158,11,0.14); }
 
-    /* ✅ 도네이션 등록 버튼 = 골드 채움 */
     .btn-gold{
       border:1px solid var(--gold);
       background: linear-gradient(180deg, rgba(245,158,11,0.95), rgba(245,158,11,0.75));
@@ -138,7 +122,6 @@
       font-weight:1000;
       font-size:12px;
     }
-    .btn-gold:hover{ filter: brightness(1.04); }
 
     .vault-grid{
       margin-top:12px;
@@ -158,6 +141,8 @@
     }
     .vault-item .k{ font-size:12px; color:#cbd5e1; font-weight:900; margin-bottom:6px; }
     .vault-item .v{ font-size:16px; font-weight:900; color:#fff; }
+
+    .vault-sub{ margin-top:10px; font-size:12px; color:#9CA3AF; line-height:1.4; }
 
     .ledger-wrap{
       margin-top:12px;
@@ -228,60 +213,15 @@
       color:#cbd5e1;
       font-weight:900;
     }
-    .donation-total b{ font-size:14px; color:#fff; }
 
-    /* 우측 옆 창 */
-    .side-card{
-      background: rgba(2,6,23,0.55);
-      border: 1px solid rgba(148,163,184,0.35);
-      border-radius: 14px;
-      padding: 12px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.55);
-      margin-bottom: 12px;
-    }
-    .side-title{
-      font-size:13px;
-      font-weight:1000;
-      color:#fff;
-      margin-bottom: 8px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+    .form{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
       gap:10px;
     }
-    .side-badge{
-      font-size:11px;
-      font-weight:1000;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(245,158,11,0.55);
-      color: var(--gold2);
-      background: rgba(245,158,11,0.08);
-      white-space:nowrap;
-    }
-    .side-card ul{
-      margin: 0;
-      padding-left: 18px;
-      color:#e5e7eb;
-      font-size:12px;
-      line-height:1.45;
-    }
-    .side-card li{ margin: 6px 0; }
-    .side-note{
-      margin-top: 8px;
-      font-size: 11px;
-      color:#9CA3AF;
-    }
-
-    /* PRO1+ 패널 */
-    .hidden{ display:none !important; }
-    .pro-form{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      margin-top:10px;
-    }
-    .pro-form input, .pro-form textarea{
+    .form .full{ grid-column: 1 / -1; }
+    .form input, .form textarea{
       width:100%;
       padding:10px 10px;
       border-radius:10px;
@@ -291,9 +231,22 @@
       outline:none;
       font-size:12px;
     }
-    .pro-form textarea{ min-height:72px; resize: vertical; }
+    .form textarea{ min-height:72px; resize: vertical; }
 
-    .meta{ margin-top:10px; font-size:11px; color:#9CA3AF; text-align:right; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.35);
+      background: rgba(2,6,23,0.35);
+      color:#e5e7eb;
+      font-size:12px;
+      font-weight:900;
+    }
+    .pill.pending{ border-color: rgba(245,158,11,0.5); }
+    .pill.done{ border-color: rgba(34,197,94,0.55); color:#86efac; }
 
     @media (max-width:768px){
       .page-wrap{ margin:16px auto 24px; }
@@ -301,6 +254,7 @@
       .title{ font-size:20px; }
       .vault-value{ font-size:22px; }
       .ledger-scroll{ max-height: 320px; }
+      .form{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -321,184 +275,134 @@
       </div>
 
       <section class="vault-card">
-        <div class="vault-layout">
+        <div class="vault-label">공동기금 잔액 (USDT · TRC20)</div>
+        <div class="vault-value">
+          <span id="vault-balance-num" class="gold-text">불러오는 중…</span>
+          <span class="unit">USDT</span>
+        </div>
 
-          <!-- 왼쪽 메인 -->
-          <div>
-            <div class="vault-label">공동기금 잔액 (USDT · TRC20)</div>
-            <div class="vault-value">
-              <span id="vault-balance-num" class="gold-text">불러오는 중…</span>
-              <span class="unit">USDT</span>
-            </div>
+        <div class="vault-actions">
+          <button class="mini-btn gold-outline" onclick="copyVaultAddress()">금고주소 복사</button>
+          <button class="mini-btn gold-outline" onclick="refreshAll()">새로고침</button>
+        </div>
 
-            <div class="vault-actions">
-              <button class="mini-btn gold-outline" onclick="copyVaultAddress()">금고주소 복사</button>
-              <button class="mini-btn gold-outline" onclick="refreshAll()">새로고침</button>
-            </div>
+        <div class="vault-grid">
+          <div class="vault-item">
+            <div class="k">누적 들어온 돈</div>
+            <div class="v" id="vault-in">-</div>
+          </div>
+          <div class="vault-item">
+            <div class="k">누적 나간 돈</div>
+            <div class="v" id="vault-out">-</div>
+          </div>
+          <div class="vault-item">
+            <div class="k">누적 순증감</div>
+            <div class="v" id="vault-net">-</div>
+          </div>
+        </div>
 
-            <div class="vault-grid">
-              <div class="vault-item">
-                <div class="k">누적 들어온 돈</div>
-                <div class="v" id="vault-in">-</div>
-              </div>
-              <div class="vault-item">
-                <div class="k">누적 나간 돈</div>
-                <div class="v" id="vault-out">-</div>
-              </div>
-              <div class="vault-item">
-                <div class="k">누적 순증감</div>
-                <div class="v" id="vault-net">-</div>
-              </div>
-            </div>
+        <div class="vault-sub" id="vault-updated">조회시간: -</div>
+        <div class="vault-sub" id="vault-count" style="margin-top:6px;">내역건수: -</div>
+        <div class="vault-error" id="vault-error"></div>
 
-            <div class="vault-sub" id="vault-updated">조회시간: -</div>
-            <div class="vault-sub" id="vault-count" style="margin-top:6px;">내역건수: -</div>
-            <div class="vault-error" id="vault-error"></div>
+        <div class="ledger-wrap">
+          <div class="ledger-scroll" id="ledger-scroll">
+            <table class="ledger" aria-label="USDT 누적 내역">
+              <thead>
+                <tr>
+                  <th style="width:150px;">시간</th>
+                  <th style="width:70px;">구분</th>
+                  <th class="right" style="width:140px;">금액</th>
+                  <th style="width:170px;">상대</th>
+                  <th style="width:200px;">TXID</th>
+                </tr>
+              </thead>
+              <tbody id="vault-ledger"></tbody>
+            </table>
+          </div>
+        </div>
 
-            <div class="ledger-wrap">
-              <div class="ledger-scroll" id="ledger-scroll">
-                <table class="ledger" aria-label="USDT 누적 내역">
-                  <thead>
-                    <tr>
-                      <th style="width:150px;">시간</th>
-                      <th style="width:70px;">구분</th>
-                      <th class="right" style="width:140px;">금액</th>
-                      <th style="width:170px;">상대</th>
-                      <th style="width:200px;">TXID</th>
-                    </tr>
-                  </thead>
-                  <tbody id="vault-ledger"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="vault-sub muted" style="margin-top:10px;">
-              ※ 표는 개시일 이후 누적 내역이 시간순으로 아래로 쌓입니다.
-            </div>
-
-            <div class="section-title">도네이션</div>
-            <div class="donation-wrap">
-              <div class="donation-top">
-                <div class="donation-total">누적 도네이션 합계: <b id="don-total">-</b> USDT</div>
-                <button class="btn-gold" onclick="openDonation()">도네이션 등록</button>
-              </div>
-
-              <div class="vault-error" id="don-error" style="display:none; margin-top:10px;"></div>
-
-              <div class="ledger-wrap" style="margin-top:10px;">
-                <div class="ledger-scroll" style="max-height:260px;">
-                  <table class="ledger" aria-label="기부자 명단">
-                    <thead>
-                      <tr>
-                        <th style="width:220px;">이름</th>
-                        <th class="right" style="width:160px;">누적</th>
-                        <th class="right" style="width:80px;">횟수</th>
-                        <th style="width:160px;">최근</th>
-                      </tr>
-                    </thead>
-                    <tbody id="donors-body"></tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="vault-sub muted" style="margin-top:10px;">
-                ※ 도네이션은 “이름 + TXID” 등록 시 명단에 반영됩니다(USDT 입금 TX만 허용).
-              </div>
+        <div class="section-title">도네이션</div>
+        <div class="donation-wrap">
+          <div class="donation-top">
+            <div class="donation-total">누적 도네이션 합계: <b id="don-total">-</b> USDT</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-gold" onclick="openDonation()">도네이션(기부)</button>
+              <button class="mini-btn gold-outline" onclick="toggleRequest()">상환</button>
             </div>
           </div>
 
-          <!-- 오른쪽 옆 창 -->
-          <aside>
-            <div class="side-card">
-              <div class="side-title">도네이션 기준</div>
-              <ul>
-                <li><b>PRO 직급부터</b> 참여</li>
-                <li><b>한달 수익의 10% 좌5% 우%</b></li>
-                <li><b>1일 계산 → 30일 입금</b> (일 단위 누적 후 월 입금)</li>
-              </ul>
-              <div class="side-note">※ 본 금고 입금은 모두 “기부(도네이션)”로 집계됩니다.</div>
+          <div class="vault-error" id="don-error" style="display:none; margin-top:10px;"></div>
+
+          <!-- 기부자 명단 -->
+          <div class="ledger-wrap" style="margin-top:10px;">
+            <div class="ledger-scroll" style="max-height:220px;">
+              <table class="ledger" aria-label="기부자 명단">
+                <thead>
+                  <tr>
+                    <th style="width:220px;">이름</th>
+                    <th class="right" style="width:160px;">누적</th>
+                    <th class="right" style="width:80px;">횟수</th>
+                    <th style="width:160px;">최근</th>
+                  </tr>
+                </thead>
+                <tbody id="donors-body"></tbody>
+              </table>
             </div>
+          </div>
 
-            <div class="side-card">
-              <div class="side-title">사용 규칙</div>
-              <ul>
-                <li>사용 신청 시 <b>상환 날짜</b>를 정확히 기입</li>
-                <li><b>최대 14일</b> 이내 상환</li>
-              </ul>
-              <div class="side-note">※ 사용 신청/출금 신청 기록은 PRO1+ 전용으로 관리됩니다.</div>
-            </div>
+          <!-- 상환(사용) 신청 폼 -->
+          <div id="request-box" style="display:none; margin-top:14px;">
+            <div class="section-title" style="margin-top:0;">상환(사용) 신청</div>
 
-            <div class="side-card">
-              <div class="side-title">
-                PRO1+ 전용 기록
-                <span class="side-badge">PRO1+</span>
-              </div>
-
-              <div id="pro-gate">
-                <div class="side-note" style="margin:0 0 10px;">PRO1+ 인증키를 입력한 사용자만 기록/신청을 볼 수 있습니다.</div>
-                <button class="mini-btn gold-outline" onclick="unlockPro()">PRO1 인증</button>
-              </div>
-
-              <div id="pro-panel" class="hidden">
-                <div class="section-title" style="margin-top:0;">사용 신청</div>
-                <div class="pro-form">
-                  <input id="use-name" placeholder="신청자 이름" />
-                  <input id="use-amount" placeholder="사용 금액 (USDT)" />
-                  <input id="use-repay" placeholder="상환 날짜 (YYYY-MM-DD) / 최대 14일" />
-                  <textarea id="use-memo" placeholder="메모 (선택)"></textarea>
-                  <button class="mini-btn gold-outline" onclick="submitUse()">사용 신청 제출</button>
-                </div>
-
-                <div class="section-title">출금 신청</div>
-                <div class="pro-form">
-                  <input id="wd-name" placeholder="신청자 이름" />
-                  <input id="wd-amount" placeholder="출금 금액 (USDT)" />
-                  <textarea id="wd-memo" placeholder="메모 (선택)"></textarea>
-                  <button class="mini-btn gold-outline" onclick="submitWithdraw()">출금 신청 제출</button>
-                </div>
-
-                <div class="section-title">기록</div>
-                <div class="vault-error" id="ops-error" style="display:none;"></div>
-
-                <div class="ledger-wrap" style="margin-top:10px;">
-                  <div class="ledger-scroll" style="max-height:260px;">
-                    <table class="ledger" aria-label="PRO1 기록">
-                      <thead>
-                        <tr>
-                          <th style="width:150px;">시간</th>
-                          <th style="width:80px;">구분</th>
-                          <th class="right" style="width:120px;">금액</th>
-                          <th style="width:140px;">상환일</th>
-                          <th style="width:140px;">신청자</th>
-                          <th>메모</th>
-                        </tr>
-                      </thead>
-                      <tbody id="ops-body"></tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div class="vault-actions" style="margin-top:10px;">
-                  <button class="mini-btn gold-outline" onclick="refreshOps()">기록 새로고침</button>
-                  <button class="mini-btn" onclick="logoutPro()">PRO1 로그아웃</button>
-                </div>
+            <div class="form">
+              <input id="req-name" placeholder="신청자 이름" />
+              <input id="req-amount" placeholder="금액 (USDT)" />
+              <input id="req-repay" placeholder="상환 날짜 (YYYY-MM-DD)" />
+              <input id="req-to" placeholder="받을 USDT(TRC20) 주소" />
+              <textarea id="req-memo" class="full" placeholder="USDT TRC20"></textarea>
+              <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="mini-btn gold-outline" onclick="submitRequest()">신청</button>
+                <button class="mini-btn" onclick="toggleRequest()">닫기</button>
               </div>
             </div>
-          </aside>
 
+            <div class="vault-error" id="req-error" style="display:none;"></div>
+          </div>
+
+          <!-- 신청 상황 -->
+          <div class="section-title">신청 상황</div>
+          <div class="ledger-wrap" style="margin-top:10px;">
+            <div class="ledger-scroll" style="max-height:260px;">
+              <table class="ledger" aria-label="상환 신청 목록">
+                <thead>
+                  <tr>
+                    <th style="width:150px;">시간</th>
+                    <th style="width:140px;">신청자</th>
+                    <th class="right" style="width:110px;">금액</th>
+                    <th style="width:120px;">상환일</th>
+                    <th style="width:180px;">받을 주소</th>
+                    <th>메모</th>
+                    <th style="width:120px;">상태/처리</th>
+                  </tr>
+                </thead>
+                <tbody id="req-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="vault-sub muted" style="margin-top:10px;">
+            ※ 도네이션(기부)는 “이름 + TXID” 등록 방식입니다. / 상환 신청은 아래 목록에 누적됩니다.
+          </div>
         </div>
       </section>
-
-      <div class="meta">The Unique · Vault</div>
     </div>
   </div>
 
   <script>
     function closePage(){ window.close(); setTimeout(()=>{ try{ history.back(); }catch(e){} },120); }
 
-    // ===== 고정 지갑 주소 =====
     const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
-    // ✅ 네 Worker 주소
     const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
     function setErr(id, msg){
@@ -555,7 +459,6 @@
         tbody.appendChild(tr);
       });
 
-      // 자동 스크롤(쌓이는 느낌)
       const sc = document.getElementById("ledger-scroll");
       if (sc) sc.scrollTop = sc.scrollHeight;
     }
@@ -566,18 +469,9 @@
 
       const api = `${WORKER_BASE.replace(/\/$/,"")}/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
       const res = await fetch(api, { cache:"no-store" });
+      const data = await res.json().catch(()=>null);
 
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(e){}
-
-      if(!res.ok){
-        const msg = data?.message ? data.message : `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-      if(!data?.ok){
-        throw new Error(data?.message || "조회 실패");
-      }
+      if(!res.ok || !data?.ok) throw new Error(data?.message || `HTTP ${res.status}`);
 
       document.getElementById("vault-balance-num").textContent = data.balance ?? "-";
       document.getElementById("vault-in").textContent = `${data.inflow ?? "-"} USDT`;
@@ -592,14 +486,12 @@
     function renderDonors(list){
       const tbody = document.getElementById("donors-body");
       tbody.innerHTML = "";
-
-      if(!Array.isArray(list) || list.length === 0){
+      if(!Array.isArray(list) || list.length===0){
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="4" class="muted">등록된 기부자가 없습니다.</td>`;
         tbody.appendChild(tr);
         return;
       }
-
       list.forEach(d=>{
         const last = d.lastTs ? new Date(d.lastTs).toLocaleString("ko-KR") : "-";
         const tr = document.createElement("tr");
@@ -617,13 +509,10 @@
       setErr("don-error", "");
       const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
       const res = await fetch(api, { cache:"no-store" });
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(e){}
+      const data = await res.json().catch(()=>null);
 
       if(!res.ok || !data?.ok){
-        const msg = data?.message || `HTTP ${res.status}`;
-        setErr("don-error", msg);
+        setErr("don-error", data?.message || `HTTP ${res.status}`);
         document.getElementById("don-total").textContent = "-";
         renderDonors([]);
         return;
@@ -635,8 +524,7 @@
 
     async function openDonation(){
       setErr("don-error", "");
-
-      const name = prompt("기부자 이름을 입력하세요 (최대 20자)");
+      const name = prompt("도네이션(기부): 이름을 입력하세요");
       if(!name) return;
 
       const txid = prompt("TXID(트랜잭션 해시 64자리)를 입력하세요");
@@ -644,417 +532,148 @@
 
       const payload = { address: VAULT_TRON_ADDRESS, name, txid };
 
-      try{
-        const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/add`;
-        const res = await fetch(api, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const text = await res.text();
-        let data = null;
-        try{ data = JSON.parse(text); }catch(e){}
-
-        if(!res.ok || !data?.ok){
-          const msg = data?.message || `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-
-        alert(`등록 완료! 도네이션: ${data.entry.amount} USDT`);
-        await fetchDonations();
-
-      }catch(e){
-        setErr("don-error", String(e?.message || e));
-      }
-    }
-
-    // ===== PRO1+ 기능 =====
-    // ===== PRO1+ 기능 (이름 인증: rank-hall.json 확인) =====
-const PRO_NAME_STORAGE = "pro1_name";
-
-function getProName(){
-  try { return localStorage.getItem(PRO_NAME_STORAGE) || ""; } catch { return ""; }
-}
-function setProName(v){
-  try { localStorage.setItem(PRO_NAME_STORAGE, v); } catch {}
-}
-function clearProName(){
-  try { localStorage.removeItem(PRO_NAME_STORAGE); } catch {}
-}
-
-function setProNameFields(proName){
-  // 기존에 "신청자 이름" input이 있으면 자동으로 채우고 잠금
-  const useName = document.getElementById("use-name");
-  if (useName) {
-    useName.value = proName;
-    useName.disabled = true;
-  }
-  const wdName = document.getElementById("wd-name");
-  if (wdName) {
-    wdName.value = proName;
-    wdName.disabled = true;
-  }
-}
-function clearProNameFields(){
-  const useName = document.getElementById("use-name");
-  if (useName) {
-    useName.value = "";
-    useName.disabled = false;
-  }
-  const wdName = document.getElementById("wd-name");
-  if (wdName) {
-    wdName.value = "";
-    wdName.disabled = false;
-  }
-}
-
-async function unlockPro(){
-  const name = prompt("PRO1 인증: 이름을 입력하세요 (rank-hall.json 기준)");
-  if(!name) return;
-
-  try{
-    const api = `${WORKER_BASE.replace(/\/$/,"")}/rank/check?name=${encodeURIComponent(name.trim())}`;
-    const res = await fetch(api, { cache:"no-store" });
-    const data = await res.json().catch(() => null);
-
-    if(!res.ok || !data?.ok){
-      alert(data?.message || `인증 실패 (HTTP ${res.status})`);
-      return;
-    }
-
-    if(!data.isPro1){
-      alert(`인증 실패: "${name}" 님은 PRO1 이상이 아닙니다.`);
-      return;
-    }
-
-    setProName(name.trim());
-    alert(`인증 성공: ${name} (PRO${data.proLevel})`);
-    renderProUI();
-  }catch(e){
-    alert(String(e?.message || e));
-  }
-}
-
-function logoutPro(){
-  clearProName();
-  clearProNameFields();
-  setErr("ops-error", "");
-  renderProUI();
-}
-
-function renderProUI(){
-  const name = getProName();
-  const gate = document.getElementById("pro-gate");
-  const panel = document.getElementById("pro-panel");
-
-  if (name) {
-    gate.classList.add("hidden");
-    panel.classList.remove("hidden");
-    setProNameFields(name);
-    refreshOps();
-  } else {
-    gate.classList.remove("hidden");
-    panel.classList.add("hidden");
-  }
-}
-
-function kstDateString(ms){
-  try { return new Date(ms).toLocaleString("ko-KR"); } catch { return "-"; }
-}
-
-function renderOps(list){
-  const tbody = document.getElementById("ops-body");
-  tbody.innerHTML = "";
-
-  if(!Array.isArray(list) || list.length === 0){
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="6" class="muted">기록이 없습니다.</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-
-  list.forEach(x=>{
-    const dt = x.ts ? kstDateString(x.ts) : "-";
-    const type = x.type === "use" ? "사용" : x.type === "withdraw" ? "출금" : "-";
-    const repay = x.repayDate || "-";
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${dt}</td>
-      <td>${type}</td>
-      <td class="right">${x.amount} USDT</td>
-      <td>${repay}</td>
-      <td>${x.name || "-"}</td>
-      <td>${x.memo || "-"}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const sc = tbody.closest(".ledger-scroll");
-  if (sc) sc.scrollTop = sc.scrollHeight;
-}
-
-async function refreshOps(){
-  setErr("ops-error", "");
-  const proName = getProName();
-  if(!proName) return;
-
-  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}&limit=500`;
-  const res = await fetch(api, {
-    cache:"no-store",
-    headers: { "X-PRO-NAME": proName }
-  });
-
-  const text = await res.text();
-  let data = null;
-  try{ data = JSON.parse(text); }catch(e){}
-
-  if(res.status === 403){
-    setErr("ops-error", "인증 실패: PRO1 이상만 접근 가능합니다.");
-    clearProName();
-    clearProNameFields();
-    renderProUI();
-    return;
-  }
-
-  if(!res.ok || !data?.ok){
-    const msg = data?.message || `HTTP ${res.status}`;
-    setErr("ops-error", msg);
-    renderOps([]);
-    return;
-  }
-
-  renderOps(data.items || []);
-}
-
-async function submitUse(){
-  setErr("ops-error", "");
-  const proName = getProName();
-  if(!proName){ alert("PRO1 인증이 필요합니다."); return; }
-
-  const amount = document.getElementById("use-amount").value.trim();
-  const repay = document.getElementById("use-repay").value.trim();
-  const memo = document.getElementById("use-memo").value.trim();
-
-  const payload = {
-    address: VAULT_TRON_ADDRESS,
-    type:"use",
-    amount,
-    repayDate: repay,
-    memo
-  };
-
-  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
-  const res = await fetch(api, {
-    method:"POST",
-    headers: {
-      "content-type":"application/json",
-      "X-PRO-NAME": proName
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const text = await res.text();
-  let data = null;
-  try{ data = JSON.parse(text); }catch(e){}
-
-  if(res.status === 403){
-    setErr("ops-error", "인증 실패: PRO1 이상만 가능합니다.");
-    clearProName();
-    clearProNameFields();
-    renderProUI();
-    return;
-  }
-
-  if(!res.ok || !data?.ok){
-    const msg = data?.message || `HTTP ${res.status}`;
-    setErr("ops-error", msg);
-    return;
-  }
-
-  alert("사용 신청이 기록되었습니다.");
-  document.getElementById("use-amount").value = "";
-  document.getElementById("use-repay").value = "";
-  document.getElementById("use-memo").value = "";
-  await refreshOps();
-}
-
-async function submitWithdraw(){
-  setErr("ops-error", "");
-  const proName = getProName();
-  if(!proName){ alert("PRO1 인증이 필요합니다."); return; }
-
-  const amount = document.getElementById("wd-amount").value.trim();
-  const memo = document.getElementById("wd-memo").value.trim();
-
-  const payload = {
-    address: VAULT_TRON_ADDRESS,
-    type:"withdraw",
-    amount,
-    memo
-  };
-
-  const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
-  const res = await fetch(api, {
-    method:"POST",
-    headers: {
-      "content-type":"application/json",
-      "X-PRO-NAME": proName
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const text = await res.text();
-  let data = null;
-  try{ data = JSON.parse(text); }catch(e){}
-
-  if(res.status === 403){
-    setErr("ops-error", "인증 실패: PRO1 이상만 가능합니다.");
-    clearProName();
-    clearProNameFields();
-    renderProUI();
-    return;
-  }
-
-  if(!res.ok || !data?.ok){
-    const msg = data?.message || `HTTP ${res.status}`;
-    setErr("ops-error", msg);
-    return;
-  }
-
-  alert("출금 신청이 기록되었습니다.");
-  document.getElementById("wd-amount").value = "";
-  document.getElementById("wd-memo").value = "";
-  await refreshOps();
-}
-
-    async function refreshOps(){
-      setErr("ops-error", "");
-      const key = getProKey();
-      if(!key) return;
-
-      const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}&limit=500`;
-      const res = await fetch(api, {
-        cache:"no-store",
-        headers: { "X-PRO1-KEY": key }
-      });
-
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(e){}
-
-      if(res.status === 403){
-        setErr("ops-error", "인증 실패: PRO1+ 키가 맞지 않습니다.");
-        clearProKey();
-        renderProUI();
-        return;
-      }
-
-      if(!res.ok || !data?.ok){
-        const msg = data?.message || `HTTP ${res.status}`;
-        setErr("ops-error", msg);
-        renderOps([]);
-        return;
-      }
-
-      renderOps(data.items || []);
-    }
-
-    async function submitUse(){
-      setErr("ops-error", "");
-      const key = getProKey();
-      if(!key){ alert("PRO1 인증이 필요합니다."); return; }
-
-      const name = document.getElementById("use-name").value.trim();
-      const amount = document.getElementById("use-amount").value.trim();
-      const repay = document.getElementById("use-repay").value.trim();
-      const memo = document.getElementById("use-memo").value.trim();
-
-      const payload = { address: VAULT_TRON_ADDRESS, type:"use", name, amount, repayDate: repay, memo };
-
-      const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/add`;
       const res = await fetch(api, {
         method:"POST",
-        headers: { "content-type":"application/json", "X-PRO1-KEY": key },
+        headers:{ "content-type":"application/json" },
         body: JSON.stringify(payload)
       });
-
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(e){}
-
-      if(res.status === 403){
-        setErr("ops-error", "인증 실패: PRO1+ 키가 맞지 않습니다.");
-        clearProKey();
-        renderProUI();
-        return;
-      }
+      const data = await res.json().catch(()=>null);
 
       if(!res.ok || !data?.ok){
-        const msg = data?.message || `HTTP ${res.status}`;
-        setErr("ops-error", msg);
+        setErr("don-error", data?.message || `HTTP ${res.status}`);
         return;
       }
 
-      alert("사용 신청이 기록되었습니다.");
-      document.getElementById("use-amount").value = "";
-      document.getElementById("use-repay").value = "";
-      document.getElementById("use-memo").value = "";
-      await refreshOps();
+      alert(`등록 완료! 도네이션: ${data.entry.amount} USDT`);
+      await fetchDonations();
     }
 
-    async function submitWithdraw(){
-      setErr("ops-error", "");
-      const key = getProKey();
-      if(!key){ alert("PRO1 인증이 필요합니다."); return; }
+    function toggleRequest(){
+      const box = document.getElementById("request-box");
+      box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+      setErr("req-error", "");
+    }
 
-      const name = document.getElementById("wd-name").value.trim();
-      const amount = document.getElementById("wd-amount").value.trim();
-      const memo = document.getElementById("wd-memo").value.trim();
+    function renderRequests(items){
+      const tbody = document.getElementById("req-body");
+      tbody.innerHTML = "";
 
-      const payload = { address: VAULT_TRON_ADDRESS, type:"withdraw", name, amount, memo };
+      if(!Array.isArray(items) || items.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="7" class="muted">등록된 신청이 없습니다.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
 
-      const api = `${WORKER_BASE.replace(/\/$/,"")}/ops/add`;
-      const res = await fetch(api, {
-        method:"POST",
-        headers: { "content-type":"application/json", "X-PRO1-KEY": key },
-        body: JSON.stringify(payload)
+      items.forEach(x=>{
+        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
+        const statusPill = x.status === "done"
+          ? `<span class="pill done">처리됨</span>`
+          : `<span class="pill pending">대기</span>`;
+
+        const btn = x.status === "done"
+          ? `<button class="mini-btn" onclick='markRequest("${x.id}", ${x.ts}, "pending")'>되돌리기</button>`
+          : `<button class="mini-btn gold-outline" onclick='markRequest("${x.id}", ${x.ts}, "done")'>처리 완료</button>`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dt}</td>
+          <td>${x.name || "-"}</td>
+          <td class="right">${x.amount || "-"} USDT</td>
+          <td>${x.repayDate || "-"}</td>
+          <td title="${x.receiveAddress || "-"}">${shortAddr(x.receiveAddress || "")}</td>
+          <td>${(x.memo || "-")}</td>
+          <td style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            ${statusPill}
+            ${btn}
+          </td>
+        `;
+        tbody.appendChild(tr);
       });
 
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(e){}
+      const sc = tbody.closest(".ledger-scroll");
+      if (sc) sc.scrollTop = sc.scrollHeight;
+    }
 
-      if(res.status === 403){
-        setErr("ops-error", "인증 실패: PRO1+ 키가 맞지 않습니다.");
-        clearProKey();
-        renderProUI();
-        return;
-      }
+    async function fetchRequests(){
+      setErr("req-error", "");
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/requests/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      const res = await fetch(api, { cache:"no-store" });
+      const data = await res.json().catch(()=>null);
 
       if(!res.ok || !data?.ok){
-        const msg = data?.message || `HTTP ${res.status}`;
-        setErr("ops-error", msg);
+        setErr("req-error", data?.message || `HTTP ${res.status}`);
+        renderRequests([]);
         return;
       }
 
-      alert("출금 신청이 기록되었습니다.");
-      document.getElementById("wd-amount").value = "";
-      document.getElementById("wd-memo").value = "";
-      await refreshOps();
+      renderRequests(data.items || []);
+    }
+
+    async function submitRequest(){
+      setErr("req-error", "");
+
+      const name = document.getElementById("req-name").value.trim();
+      const amount = document.getElementById("req-amount").value.trim();
+      const repayDate = document.getElementById("req-repay").value.trim();
+      const receiveAddress = document.getElementById("req-to").value.trim();
+      const memo = document.getElementById("req-memo").value.trim();
+
+      const payload = { address: VAULT_TRON_ADDRESS, name, amount, repayDate, receiveAddress, memo };
+
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/requests/add`;
+      const res = await fetch(api, {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(()=>null);
+
+      if(!res.ok || !data?.ok){
+        setErr("req-error", data?.message || `HTTP ${res.status}`);
+        return;
+      }
+
+      alert("신청이 등록되었습니다.");
+      document.getElementById("req-amount").value = "";
+      document.getElementById("req-repay").value = "";
+      document.getElementById("req-to").value = "";
+      document.getElementById("req-memo").value = "USDT TRC20";
+      await fetchRequests();
+    }
+
+    async function markRequest(id, ts, status){
+      setErr("req-error", "");
+
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/requests/mark`;
+      const res = await fetch(api, {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ address: VAULT_TRON_ADDRESS, id, ts, status })
+      });
+      const data = await res.json().catch(()=>null);
+
+      if(!res.ok || !data?.ok){
+        setErr("req-error", data?.message || `HTTP ${res.status}`);
+        return;
+      }
+
+      await fetchRequests();
     }
 
     async function refreshAll(){
       try { await fetchVault(); }
-      catch(e){
-        setErr("vault-error", String(e?.message || e));
-        document.getElementById("vault-balance-num").textContent = "조회 실패";
-      }
+      catch(e){ setErr("vault-error", String(e?.message || e)); document.getElementById("vault-balance-num").textContent = "조회 실패"; }
+
       await fetchDonations();
-      renderProUI(); // pro키 있으면 ops도 갱신
+      await fetchRequests();
     }
 
-    document.addEventListener("DOMContentLoaded", refreshAll);
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("req-memo").value = "USDT TRC20";
+      refreshAll();
+    });
   </script>
 </body>
 </html>
