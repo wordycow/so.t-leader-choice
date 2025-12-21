@@ -211,67 +211,150 @@
       border:1px solid rgba(255,255,255,.14);
       background:rgba(0,0,0,.18);
     }
-    /* =========================
-   [PATCH] market-view.html
-   제품 페이지 + 게시글 수정 영역
-   반투명 → 불투명 주황(가독성)
+/* =========================
+   UNIQUE UI POLISH (v1)
+   - 버튼/폰트/입력창 가독성 + 안정감
+   - 배경(주황)은 유지
    ========================= */
+
 :root{
-  --mv-orange: #ff7a00;            /* 불투명 주황 */
-  --mv-text: #111827;              /* 텍스트(진한 먹색) */
-  --mv-sub: rgba(17,24,39,.72);    /* 보조 텍스트 */
-  --mv-border: rgba(0,0,0,.18);
+  --u-accent: #ff7a00;              /* UNIQUE 오렌지 */
+  --u-ink: #0b1220;                 /* 딥 네이비 */
+  --u-text: #111827;                /* 본문 텍스트 */
+  --u-muted: rgba(17,24,39,.72);    /* 보조 텍스트 */
+  --u-line: rgba(0,0,0,.18);        /* 경계선 */
+  --u-ring: rgba(255,122,0,.42);    /* 포커스 링 */
+  --u-radius: 16px;
+  --u-radius-sm: 12px;
 }
 
-/* 1) 제품 카드/게시글 카드/수정 패널/모달 등 “유리(반투명)”로 보이는 덩어리들 */
-.product, .product-view, .product-card, .product-box,
-.post, .post-view, .post-card, .post-item,
-.edit, .edit-wrap, .edit-panel, .edit-card, .editor, .editor-card,
-.comments, .comment-card, .comment-item,
-.modal-content, .dialog-content, .sheet,
-.glass, .glass-card, .blur, .frosted {
-  background: var(--mv-orange) !important;  /* ✅ 불투명 */
-  color: var(--mv-text) !important;
-  border: 1px solid var(--mv-border) !important;
-  box-shadow: 0 18px 50px rgba(0,0,0,.35) !important;
+html{ font-size: 16px; }
 
-  /* ✅ 반투명/블러 효과 제거 */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  opacity: 1 !important;
+body{
+  font-family: "Pretendard", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               "Noto Sans KR", Arial, sans-serif !important;
+  color: var(--u-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
 }
 
-/* 2) 카드 안의 보조 문구들 */
-.product p, .post p, .post-view p, .edit p, .edit-panel p, .comments p,
-.card p, .panel p, .sheet p, .modal-content p,
-.product .hint, .post .hint, .edit .hint, .help, .note, .desc {
-  color: var(--mv-sub) !important;
+/* 섹션 타이틀(등록/수정, 게시글 등) */
+h1, h2, h3, .title, .section-title{
+  letter-spacing: .01em;
+  font-weight: 900;
+}
+h2, .section-title{ font-size: 1.05rem; }
+h3{ font-size: 0.98rem; }
+
+/* 라벨/설명 텍스트 정돈 */
+label, .label{
+  font-size: .82rem !important;
+  font-weight: 800 !important;
+  color: rgba(17,24,39,.88) !important;
+}
+small, .help, .hint, .muted, .desc, .note{
+  font-size: .78rem !important;
+  color: var(--u-muted) !important;
+  line-height: 1.45;
 }
 
-/* 3) 입력창은 흰 바탕 유지(가독성/클릭감) */
-input, textarea, select {
-  background: rgba(255,255,255,.96) !important;
-  color: #111827 !important;
+/* 카드/패널 라운딩 통일(이미 주황 패널이어도 모서리만 예쁘게) */
+.card, .panel, .sheet, .modal-content, .dialog-content,
+.post-card, .post-item, .product-card, .editor-card{
+  border-radius: var(--u-radius) !important;
+}
+
+/* 입력창: 더 고급스럽고 선명하게 */
+input, textarea, select{
+  font: inherit;
+  font-size: .95rem !important;
+  line-height: 1.25 !important;
+  padding: 10px 12px !important;
+  border-radius: var(--u-radius-sm) !important;
+
+  background: rgba(255,255,255,.97) !important;
+  color: var(--u-text) !important;
   border: 1px solid rgba(0,0,0,.22) !important;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7) !important;
+  transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease;
 }
 
-input::placeholder, textarea::placeholder {
-  color: rgba(17,24,39,.55) !important;
+textarea{
+  min-height: 120px;
+  resize: vertical;
 }
 
-/* 4) 버튼은 대비 좋게 다크 */
-button, .btn {
-  background: #111827 !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255,255,255,.18) !important;
+input::placeholder, textarea::placeholder{
+  color: rgba(17,24,39,.52) !important;
 }
 
-/* 5) 링크는 먹색 + 밑줄 */
-a {
-  color: #111827 !important;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+input:focus, textarea:focus, select:focus{
+  outline: none !important;
+  border-color: rgba(255,122,0,.72) !important;
+  box-shadow: 0 0 0 3px var(--u-ring) !important;
 }
+
+/* 버튼: Unique 느낌(딥네이비) + 안정감 + 호버/포커스 */
+button, .btn, input[type="button"], input[type="submit"]{
+  font: inherit;
+  font-size: .92rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .01em;
+
+  padding: 10px 14px !important;
+  border-radius: var(--u-radius-sm) !important;
+  min-height: 38px;
+
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background: linear-gradient(180deg, #111827 0%, var(--u-ink) 100%) !important;
+  color: #fff !important;
+
+  box-shadow: 0 10px 24px rgba(0,0,0,.28) !important;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+button:hover, .btn:hover, input[type="button"]:hover, input[type="submit"]:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 14px 32px rgba(0,0,0,.34) !important;
+}
+
+button:active, .btn:active, input[type="button"]:active, input[type="submit"]:active{
+  transform: translateY(0);
+  filter: brightness(.98);
+}
+
+button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, input[type="submit"]:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--u-ring), 0 14px 32px rgba(0,0,0,.34) !important;
+}
+
+button[disabled], .btn[disabled], input[type="button"][disabled], input[type="submit"][disabled]{
+  opacity: .55 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* 작은 버튼(칩/뱃지)용: 있으면 자동으로 더 정갈하게 */
+.chip, .tag, .badge, button.chip, button.tag, button.badge{
+  padding: 6px 10px !important;
+  min-height: 30px !important;
+  font-size: .75rem !important;
+  border-radius: 999px !important;
+}
+
+/* 삭제/위험 버튼이 따로 클래스가 있으면(있을 때만 적용) */
+.btn-danger, .danger, .delete{
+  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%) !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+
+/* 링크는 깔끔하게 */
+a{ color: inherit; }
+a:hover{ text-decoration: underline; text-underline-offset: 2px; }
   </style>
 </head>
 
