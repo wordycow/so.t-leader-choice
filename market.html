@@ -8,240 +8,275 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,"Pretendard",sans-serif;
-      color:#e5e7eb;
-      background:#0b1220 url("img/bg-market.jpg") center/cover fixed no-repeat;
-      position:relative;
-    }
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      background: radial-gradient(circle at top, rgba(2,6,23,.10), rgba(2,6,23,.45) 65%, rgba(2,6,23,.55));
-      z-index:-1;
-    }
+   /* ================================
+   UNIQUE 마켓 (market.html) CLEAN THEME
+   - 블럭: 불투명 주황
+   - 버튼 글자: 라임
+   - 타이틀: 금색
+   ================================ */
 
-    .wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
-
-    .topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
-    .brand{font-weight:900;letter-spacing:.12em;font-size:18px}
-    .who{opacity:.9;font-size:12px;margin-top:4px}
-
-    .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    button{cursor:pointer}
-    .btn{
-      padding:10px 12px;border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.12);
-      color:#e5e7eb;font-weight:800
-    }
-    .btn.primary{background:rgba(255,255,255,.18)}
-    .btn.danger{border-color:rgba(248,113,113,.5);background:rgba(127,29,29,.45)}
-    .btn.bell{position:relative;padding-right:36px}
-    .badge{
-      position:absolute;top:-6px;right:-6px;
-      min-width:20px;height:20px;padding:0 6px;
-      border-radius:999px;
-      background:rgba(248,113,113,.95);
-      border:1px solid rgba(255,255,255,.25);
-      color:#fff;font-size:11px;line-height:18px;
-      display:flex;align-items:center;justify-content:center;
-    }
-
-    .pill{
-      padding:8px 12px;border-radius:14px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.18);
-      font-size:12px;
-      margin-bottom:12px;
-      display:none;
-      white-space:pre-line;
-    }
-
-    .stack{display:flex;flex-direction:column;gap:12px}
-    .card{
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.20);
-      padding:14px;
-      backdrop-filter: blur(6px);
-    }
-
-    .muted{opacity:.85;font-size:12px}
-    input,textarea{
-      width:100%;padding:10px 12px;border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.25);
-      color:#e5e7eb;outline:none
-    }
-    textarea{min-height:110px;resize:vertical}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:720px){.row{grid-template-columns:1fr}}
-
-    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#0a1020;position:relative}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .thumb .x{
-      position:absolute;top:6px;right:6px;
-      background:rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.18);
-      color:#fff;border-radius:10px;padding:2px 6px;font-size:11px
-    }
-
-    .feedWrap{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-    .feed{
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
-      gap:12px;
-      min-height:240px;
-    }
-    @media(max-width:1100px){.feed{grid-template-columns: repeat(3, minmax(0,1fr));}}
-    @media(max-width:900px){.feed{grid-template-columns: repeat(2, minmax(0,1fr));}}
-    @media(max-width:620px){.feed{grid-template-columns: 1fr;}}
-
-    .post{
-      border-radius:16px;border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-      cursor:pointer;
-      position:relative;
-    }
-    .postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-    .postTitle{font-weight:900}
-    .postMeta{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
-    .postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
-
-    .postActions{
-      position:absolute; top:10px; right:10px;
-      display:flex; gap:6px; flex-wrap:wrap;
-      z-index:2;
-    }
-    .miniBtn{
-      font-size:11px;
-      padding:6px 8px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
-      color:#e5e7eb;
-      cursor:pointer;
-    }
-    .miniBtn.danger{
-      border-color: rgba(248,113,113,.55);
-      background: rgba(127,29,29,.35);
-      color:#fee2e2;
-    }
-
-    .chip{
-      display:inline-block;padding:3px 8px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.08);margin-right:6px
-    }
-
-    /* 알림 패널 */
-    .notiPanel{
-      position:fixed;
-      top:88px;
-      right:16px;
-      width:360px;
-      max-height: calc(100vh - 110px);
-      overflow:auto;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.30);
-      backdrop-filter: blur(8px);
-      padding:12px;
-      z-index:100;
-      display:none;
-    }
-    .notiHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-    .notiItem{
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      padding:10px 10px;
-      margin-top:8px;
-      cursor:pointer;
-    }
-    .notiItem.unread{background:rgba(255,255,255,.10)}
-    .notiTitle{font-weight:900;font-size:13px}
-    .notiTime{font-size:11px;opacity:.75;margin-top:3px}
-    .notiBody{font-size:12px;opacity:.9;margin-top:6px;white-space:pre-line;line-height:1.45}
-
-    /* ✅ 링크 클릭용(댓글/설명/연락처/알림 snippet 공통) */
-    .rich-text{white-space:pre-wrap;word-break:break-word}
-    .rich-text a{
-  color: rgba(250, 204, 21, 0.95); /* 황금색 */
-  text-decoration: underline;
-}
-.rich-text a:hover{
-  color: rgba(250, 204, 21, 1);
-  text-decoration-thickness: 2px;
-}
-    .previewBox{
-      margin-top:8px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.18);
-    }
- /* =========================
-   UNIQUE: 버튼 라임 + 타이틀 골드
-   ========================= */
 :root{
-  --u-lime: #B9FF3B;   /* 밝은 연두(라임) */
-  --u-gold: #D4AF37;   /* 금색 */
+  --bg:#0b1220;
+
+  --gold1:#FFF3B0; --gold2:#F3D37A; --gold3:#D4AF37; --gold4:#B8860B;
+  --lime:#B9FF3B;
+
+  --card:#ff7a00;     /* 메인 주황(불투명) */
+  --card2:#ff8a1a;    /* 서브 주황(불투명) */
+
+  --ink:#111827;
+  --sub:rgba(17,24,39,.74);
+
+  --navy1:#111827;
+  --navy2:#0b1220;
+
+  --line:rgba(0,0,0,.18);
+  --shadow:0 18px 50px rgba(0,0,0,.35);
+
+  --r:18px;
+  --r2:12px;
 }
 
-/* 1) 모든 버튼 "안의 글자/아이콘"을 라임으로 */
-button,
-.btn,
-a.btn,
-input[type="button"],
-input[type="submit"]{
-  color: var(--u-lime) !important;
-  text-shadow: 0 1px 10px rgba(0,0,0,.35) !important;
+*{box-sizing:border-box}
+html,body{height:100%}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Pretendard","Noto Sans KR",sans-serif;
+  color:#e5e7eb;
+  background:var(--bg) url("img/bg-market.jpg") center/cover fixed no-repeat;
+  position:relative;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background: radial-gradient(circle at top, rgba(2,6,23,.10), rgba(2,6,23,.45) 65%, rgba(2,6,23,.55));
+  z-index:-1;
 }
 
-/* 버튼 안 아이콘(svg)도 같이 라임 */
-button svg, .btn svg, a.btn svg{
-  stroke: var(--u-lime) !important;
-  fill: var(--u-lime) !important;
-}
+.wrap{max-width:1200px;margin:0 auto;padding:16px;position:relative;z-index:1}
+.topbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
 
-/* 2) 'UNIQUE 마켓' 타이틀을 금색으로 (최대한 넓게 잡음) */
-h1,
-.page-title,
-.app-title,
-.site-title,
-.brand,
-.logo,
-header h1,
-.topbar h1{
-  color: var(--u-gold) !important;
-  font-weight: 900 !important;
-  letter-spacing: .06em !important;
-  text-shadow: 0 2px 14px rgba(0,0,0,.45) !important;
+/* 타이틀(금색) */
+.brand{
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:18px;
+  line-height:1.2;
+  color:var(--gold3);
+  text-shadow:0 2px 14px rgba(0,0,0,.45);
 }
-
-/* (선택) 크롬/엣지에서 더 “금속 느낌” 나는 골드 그라데이션 */
-@supports (-webkit-background-clip: text){
-  h1,
-  .page-title,
-  .app-title,
-  .site-title,
-  .brand,
-  .logo,
-  header h1,
-  .topbar h1{
-    background: linear-gradient(180deg, #FFF3B0 0%, #F3D37A 30%, #D4AF37 70%, #B8860B 100%) !important;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    color: transparent !important;
+@supports (-webkit-background-clip:text){
+  .brand{
+    background:linear-gradient(180deg,var(--gold1) 0%,var(--gold2) 30%,var(--gold3) 70%,var(--gold4) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
   }
 }
+.who{opacity:.9;font-size:12px;margin-top:4px}
+
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{cursor:pointer}
+
+/* 버튼: 딥네이비 + 글자 라임 */
+.btn{
+  padding:11px 14px;
+  border-radius:var(--r2);
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg,var(--navy1) 0%,var(--navy2) 100%);
+  color:var(--lime);
+  font-weight:900;
+  font-size:13px;
+  box-shadow:0 10px 24px rgba(0,0,0,.28);
+  transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 14px 32px rgba(0,0,0,.34)}
+.btn:active{transform:translateY(0);filter:brightness(.98)}
+.btn:focus-visible{outline:none; box-shadow:0 0 0 3px rgba(185,255,59,.28), 0 14px 32px rgba(0,0,0,.34)}
+
+.btn.primary{border-color:rgba(212,175,55,.55); box-shadow:0 0 0 1px rgba(212,175,55,.18) inset, 0 10px 24px rgba(0,0,0,.28)}
+.btn.danger{border-color:rgba(239,68,68,.55); box-shadow:0 0 0 1px rgba(239,68,68,.18) inset, 0 10px 24px rgba(0,0,0,.28)}
+
+.btn.bell{position:relative;padding-right:36px}
+
+.badge{
+  position:absolute;top:-6px;right:-6px;
+  min-width:20px;height:20px;padding:0 6px;
+  border-radius:999px;
+  background:rgba(248,113,113,.95);
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff;font-size:11px;line-height:18px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* 상태/안내 */
+.pill{
+  padding:10px 12px;
+  border-radius:var(--r);
+  border:1px solid var(--line);
+  background:var(--card2);
+  color:var(--ink);
+  font-size:12px;
+  margin-bottom:12px;
+  display:none;
+  white-space:pre-line;
+  box-shadow:var(--shadow);
+}
+
+.stack{display:flex;flex-direction:column;gap:12px}
+
+/* 카드: 불투명 주황 + 블러 제거 */
+.card{
+  border-radius:var(--r);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--ink);
+  padding:14px;
+  box-shadow:var(--shadow);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+
+.muted{color:var(--sub);font-size:12px}
+
+/* 입력: 흰 바탕 */
+input,textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:var(--r2);
+  border:1px solid rgba(0,0,0,.22);
+  background:rgba(255,255,255,.97);
+  color:var(--ink);
+  outline:none;
+}
+input::placeholder,textarea::placeholder{color:rgba(17,24,39,.55)}
+textarea{min-height:110px;resize:vertical}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:720px){.row{grid-template-columns:1fr}}
+
+/* 이미지 프리뷰(등록/수정): 96x96 유지 */
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.18);background:#0a1020;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .x{
+  position:absolute;top:6px;right:6px;
+  background:rgba(17,24,39,.88);
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--lime);
+  border-radius:10px;padding:2px 6px;font-size:11px
+}
+
+/* 게시글 영역 */
+.feedWrap{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.feed{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  min-height:240px;
+}
+@media(max-width:1100px){.feed{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:900px){.feed{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:620px){.feed{grid-template-columns:1fr;}}
+
+.post{
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  overflow:hidden;
+  cursor:pointer;
+  position:relative;
+  box-shadow:0 12px 28px rgba(0,0,0,.22);
+  color:var(--ink);
+}
+.postTop{padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.postTitle{font-weight:900}
+.postMeta{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.45}
+.postImg{width:100%;aspect-ratio:16/9;background:#0a1020;display:block;object-fit:cover}
+
+.postActions{
+  position:absolute; top:10px; right:10px;
+  display:flex; gap:6px; flex-wrap:wrap;
+  z-index:2;
+}
+
+/* 미니 버튼도 라임 */
+.miniBtn{
+  font-size:11px;
+  padding:6px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(17,24,39,.92);
+  color:var(--lime);
+  cursor:pointer;
+}
+.miniBtn.danger{
+  border-color:rgba(239,68,68,.55);
+  background:rgba(127,29,29,.88);
+  color:var(--lime);
+}
+
+.chip{
+  display:inline-block;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid rgba(17,24,39,.18);
+  background:rgba(17,24,39,.10);
+  margin-right:6px;
+  color:var(--ink);
+}
+
+/* 링크 클릭용 */
+.rich-text{white-space:pre-wrap;word-break:break-word}
+.rich-text a{
+  color:var(--navy2);
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.rich-text a:hover{filter:brightness(.85);text-decoration-thickness:2px}
+
+.previewBox{
+  margin-top:8px;
+  padding:10px 12px;
+  border-radius:var(--r2);
+  border:1px solid var(--line);
+  background:var(--card2);
+  color:var(--ink);
+}
+
+/* 알림 패널(불투명) */
+.notiPanel{
+  position:fixed;
+  top:88px;
+  right:16px;
+  width:360px;
+  max-height:calc(100vh - 110px);
+  overflow:auto;
+  border-radius:var(--r);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--ink);
+  padding:12px;
+  z-index:100;
+  display:none;
+  box-shadow:var(--shadow);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.notiHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.notiItem{
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  padding:10px 10px;
+  margin-top:8px;
+  cursor:pointer;
+}
+.notiItem.unread{outline:2px solid rgba(17,24,39,.18)}
+.notiTitle{font-weight:900;font-size:13px}
+.notiTime{font-size:11px;color:rgba(17,24,39,.62);margin-top:3px}
+.notiBody{font-size:12px;color:var(--sub);margin-top:6px;white-space:pre-line;line-height:1.45}
   </style>
 </head>
 
