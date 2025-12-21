@@ -212,59 +212,67 @@
       background:rgba(0,0,0,.18);
     }
 /* =========================
-   UNIQUE: 버튼 라임 + 타이틀 골드
+   [FINAL] 블럭(카드/패널) 반투명 → 불투명 강제
    ========================= */
 :root{
-  --u-lime: #B9FF3B;   /* 밝은 연두(라임) */
-  --u-gold: #D4AF37;   /* 금색 */
+  --u-block-bg: #ff7a00;          /* 불투명 주황(원하면 여기만 바꾸면 됨) */
+  --u-block-text: #111827;        /* 블럭 안 글자색 */
 }
 
-/* 1) 모든 버튼 "안의 글자/아이콘"을 라임으로 */
-button,
-.btn,
-a.btn,
-input[type="button"],
-input[type="submit"]{
-  color: var(--u-lime) !important;
-  text-shadow: 0 1px 10px rgba(0,0,0,.35) !important;
+/* 1) ID로 잡히는 “큰 블럭들” (있으면 무조건 적용) */
+:where(
+  #formCard,#editCard,#editorCard,#writeCard,#composeCard,
+  #postsCard,#listCard,#postCard,#postList,#postsWrap,#postWrap,
+  #viewCard,#productCard,#productView,#postView,
+  #editPanel,#editorPanel,#editWrap,#formWrap,#listWrap,#viewWrap,
+  #commentCard,#commentsCard,#commentsWrap
+){
+  background: var(--u-block-bg) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  color: var(--u-block-text) !important;
 }
 
-/* 버튼 안 아이콘(svg)도 같이 라임 */
-button svg, .btn svg, a.btn svg{
-  stroke: var(--u-lime) !important;
-  fill: var(--u-lime) !important;
+/* 2) class 이름에 glass/blur/frosted/card/panel 등이 들어간 블럭들(광범위 캐치) */
+:where(.page-wrap, main, body) :where(
+  .glass, .glass-card, .frosted, .blur,
+  .card, .panel, .sheet,
+  .post-card, .post-item, .product-card,
+  .editor-card, .form-card,
+  [class*="glass"], [class*="blur"], [class*="frost"], [class*="card"], [class*="panel"]
+){
+  background: var(--u-block-bg) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  color: var(--u-block-text) !important;
 }
 
-/* 2) 'UNIQUE 마켓' 타이틀을 금색으로 (최대한 넓게 잡음) */
-h1,
-.page-title,
-.app-title,
-.site-title,
-.brand,
-.logo,
-header h1,
-.topbar h1{
-  color: var(--u-gold) !important;
-  font-weight: 900 !important;
-  letter-spacing: .06em !important;
-  text-shadow: 0 2px 14px rgba(0,0,0,.45) !important;
+/* 3) 반투명 효과가 ::before/::after 오버레이로 들어가는 경우 제거 */
+:where(.page-wrap, main, body) :where(
+  .glass, .glass-card, .frosted, .blur,
+  .card, .panel, .sheet,
+  [class*="glass"], [class*="blur"], [class*="frost"]
+)::before,
+:where(.page-wrap, main, body) :where(
+  .glass, .glass-card, .frosted, .blur,
+  .card, .panel, .sheet,
+  [class*="glass"], [class*="blur"], [class*="frost"]
+)::after{
+  display: none !important;
+  content: "" !important;
 }
 
-/* (선택) 크롬/엣지에서 더 “금속 느낌” 나는 골드 그라데이션 */
-@supports (-webkit-background-clip: text){
-  h1,
-  .page-title,
-  .app-title,
-  .site-title,
-  .brand,
-  .logo,
-  header h1,
-  .topbar h1{
-    background: linear-gradient(180deg, #FFF3B0 0%, #F3D37A 30%, #D4AF37 70%, #B8860B 100%) !important;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    color: transparent !important;
-  }
+/* 4) (선택) 블럭 안 제목/라벨이 흐리게 남으면 또렷하게 */
+:where(.page-wrap, main, body) :where(h1,h2,h3,label,.label,.section-title,.title){
+  color: var(--u-block-text) !important;
 }
   </style>
 </head>
