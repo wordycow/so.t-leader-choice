@@ -8,11 +8,9 @@
     :root{
       --bg:#070b18;
       --card:#111a33;
-      --card2:#0f1730;
       --line:#263357;
       --text:#e7ecff;
       --muted:#aab4da;
-      --accent:#7c5cff;
       --ok:#2bd576;
       --warn:#ffb020;
       --bad:#ff4d6d;
@@ -43,8 +41,8 @@
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
     .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
-    input, select, textarea, button{ font:inherit; }
-    input, select, textarea{
+    input, select, button{ font:inherit; }
+    input, select{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
@@ -53,7 +51,6 @@
       color:var(--text);
       outline:none;
     }
-    textarea{ min-height:90px; resize:vertical; }
     .btn{
       cursor:pointer;
       padding:10px 12px;
@@ -144,10 +141,6 @@
     .pill.warn{ border-color: rgba(255,176,32,.45); color: rgba(255,176,32,.95); }
     .pill.bad{ border-color: rgba(255,77,109,.45); color: rgba(255,77,109,.95); }
 
-    .loginbox{
-      max-width:520px;
-      margin: 50px auto 0;
-    }
     .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
     .muted{ color:var(--muted); }
   </style>
@@ -163,94 +156,63 @@
         </div>
       </div>
       <div class="right">
-        <span class="muted" id="who"></span>
+        <span class="muted">관리자 전용(로그인 없음)</span>
         <button class="btn ghost" id="refreshBtn">새로고침</button>
-        <button class="btn ghost" id="signOutBtn" style="display:none;">로그아웃</button>
       </div>
     </header>
 
-    <div id="loginView" class="loginbox panel">
-      <div class="label">관리자 로그인 (Supabase Auth)</div>
+    <section class="panel">
       <div class="row">
         <div class="control">
-          <div class="label">이메일</div>
-          <input id="email" placeholder="admin@example.com" />
+          <div class="label">회차(Pro1 트리) 선택</div>
+          <select id="treeSelect"></select>
         </div>
         <div class="control">
-          <div class="label">비밀번호</div>
-          <input id="password" type="password" placeholder="••••••••" />
+          <div class="label">현재 오픈 주차</div>
+          <select id="weekSelect">
+            <option value="1">1주차</option>
+            <option value="2">2주차</option>
+            <option value="3">3주차</option>
+            <option value="4">4주차</option>
+          </select>
+        </div>
+        <div class="control">
+          <div class="label">주차 업데이트</div>
+          <button class="btn ok" id="updateWeekBtn">오픈 주차 반영</button>
         </div>
       </div>
-      <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end;">
-        <button class="btn" id="signInBtn">로그인</button>
+
+      <div class="grid" id="stats"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="reserved">예약(reserved)</button>
+        <button class="tab" data-tab="paid">입금확정(paid)</button>
+        <button class="tab" data-tab="available">판매가능(available)</button>
+        <button class="tab" data-tab="commissions">커미션(Star1)</button>
       </div>
-      <div class="sub" style="margin-top:10px;">
-        ⚠️ 이 페이지는 <b>admin_users</b> 테이블에 auth.uid가 등록된 사용자만 접근 가능합니다.
-      </div>
-    </div>
 
-    <div id="appView" style="display:none;">
-      <section class="panel">
-        <div class="row">
-          <div class="control">
-            <div class="label">회차(Pro1 트리) 선택</div>
-            <select id="treeSelect"></select>
-          </div>
-          <div class="control">
-            <div class="label">현재 오픈 주차</div>
-            <select id="weekSelect">
-              <option value="1">1주차</option>
-              <option value="2">2주차</option>
-              <option value="3">3주차</option>
-              <option value="4">4주차</option>
-            </select>
-          </div>
-          <div class="control">
-            <div class="label">주차 업데이트(관리자)</div>
-            <button class="btn ok" id="updateWeekBtn">오픈 주차 반영</button>
-          </div>
-        </div>
+      <div class="hr"></div>
 
-        <div class="grid" id="stats"></div>
-
-        <div class="tabs">
-          <button class="tab active" data-tab="reserved">예약(reserved)</button>
-          <button class="tab" data-tab="paid">입금확정(paid)</button>
-          <button class="tab" data-tab="available">판매가능(available)</button>
-          <button class="tab" data-tab="commissions">커미션(Star1)</button>
-        </div>
-
-        <div class="hr"></div>
-
-        <div id="tab_reserved"></div>
-        <div id="tab_paid" style="display:none;"></div>
-        <div id="tab_available" style="display:none;"></div>
-        <div id="tab_commissions" style="display:none;"></div>
-      </section>
-    </div>
+      <div id="tab_reserved"></div>
+      <div id="tab_paid" style="display:none;"></div>
+      <div id="tab_available" style="display:none;"></div>
+      <div id="tab_commissions" style="display:none;"></div>
+    </section>
   </div>
 
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    // ✅ 여기에 너 Supabase 정보 넣어
-    const SUPABASE_URL = "https://YOURPROJECT.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    // ✅ Supabase 설정(요청하신 값)
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const el = (id) => document.getElementById(id);
 
-    const loginView = el("loginView");
-    const appView = el("appView");
-    const signOutBtn = el("signOutBtn");
-    const who = el("who");
-
     const treeSelect = el("treeSelect");
     const weekSelect = el("weekSelect");
-
-    let me = null;
-    let isAdmin = false;
 
     let trees = [];
     let selectedTree = null;
@@ -275,24 +237,6 @@
       if (s === "reserved") return `<span class="pill warn">reserved</span>`;
       if (s === "available") return `<span class="pill">available</span>`;
       return `<span class="pill bad">${s}</span>`;
-    }
-
-    async function checkAdmin(){
-      const { data: userRes } = await supabase.auth.getUser();
-      me = userRes?.user ?? null;
-      if (!me) return false;
-
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("user_id,name")
-        .eq("user_id", me.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return false;
-
-      who.textContent = `관리자: ${data.name}`;
-      return true;
     }
 
     async function loadTrees(){
@@ -337,7 +281,6 @@
     }
 
     async function loadCommissions(){
-      // 관리자만 조회 가능(RLS)
       const { data, error } = await supabase
         .from("commissions")
         .select("id,slot_id,amount_krw,referrer_name,referrer_contact,status,created_at,paid_at")
@@ -357,33 +300,12 @@
       const available = counts.available || 0;
       const cancelled = counts.cancelled || 0;
 
-      const byTemplate = {};
-      for (const s of allSlots) {
-        const code = s.slot_templates?.code || "UNKNOWN";
-        byTemplate[code] = byTemplate[code] || { title: s.slot_templates?.title || code, paid:0, reserved:0, available:0, cancelled:0 };
-        byTemplate[code][s.status] = (byTemplate[code][s.status] || 0) + 1;
-      }
-
-      const top = `
+      el("stats").innerHTML = `
         <div class="stat"><div class="k">판매가능</div><div class="v">${available}</div></div>
         <div class="stat"><div class="k">예약</div><div class="v">${reserved}</div></div>
         <div class="stat"><div class="k">입금확정</div><div class="v">${paid}</div></div>
         <div class="stat"><div class="k">취소</div><div class="v">${cancelled}</div></div>
       `;
-
-      const detail = Object.values(byTemplate)
-        .sort((a,b)=> (b.paid+b.reserved+b.available) - (a.paid+a.reserved+a.available))
-        .slice(0, 8)
-        .map(x => `
-          <div class="stat">
-            <div class="k">${x.title}</div>
-            <div class="sub" style="margin:8px 0 0;">
-              available ${x.available||0} · reserved ${x.reserved||0} · paid ${x.paid||0} · cancelled ${x.cancelled||0}
-            </div>
-          </div>
-        `).join("");
-
-      el("stats").innerHTML = top + detail;
     }
 
     function renderReserved(){
@@ -638,7 +560,7 @@
 
     function setTab(name){
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
+      document.querySelector(\`.tab[data-tab="\${name}"]\`)?.classList.add("active");
 
       ["reserved","paid","available","commissions"].forEach(x => {
         el("tab_"+x).style.display = (x === name) ? "block" : "none";
@@ -648,7 +570,6 @@
     async function refreshAll(){
       await loadTrees();
       if (selectedTree) {
-        // 유지: treeSelect 바뀐 경우 갱신
         const selectedId = Number(treeSelect.value || selectedTree.id);
         selectedTree = trees.find(t => t.id === selectedId) || trees[0] || null;
         if (selectedTree) {
@@ -665,51 +586,10 @@
       renderCommissions();
     }
 
-    async function signIn(){
-      const email = el("email").value.trim();
-      const password = el("password").value;
-      if (!email || !password) { alert("이메일/비밀번호를 입력하세요."); return; }
-
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { alert("로그인 실패: " + (error.message || error)); return; }
-
-      await boot();
-    }
-
-    async function signOut(){
-      await supabase.auth.signOut();
-      location.reload();
-    }
-
-    async function boot(){
-      try{
-        isAdmin = await checkAdmin();
-        if (!isAdmin) {
-          loginView.style.display = "block";
-          appView.style.display = "none";
-          signOutBtn.style.display = "none";
-          who.textContent = "권한 없음 (admin_users 등록 필요)";
-          alert("이 계정은 관리자 권한이 없습니다. admin_users에 등록하세요.");
-          return;
-        }
-
-        loginView.style.display = "none";
-        appView.style.display = "block";
-        signOutBtn.style.display = "inline-block";
-
-        await refreshAll();
-
-      } catch(e){
-        console.error(e);
-        alert("초기화 오류: " + (e.message || e));
-      }
-    }
-
     async function updateWeek(){
       if (!selectedTree) return;
       const newWeek = Number(weekSelect.value || 1);
       try{
-        // 주차 업데이트는 RPC로 처리(권장)
         const { error } = await supabase.rpc("admin_set_tree_week", {
           p_tree_id: selectedTree.id,
           p_week: newWeek
@@ -720,13 +600,11 @@
         await refreshAll();
       } catch(e){
         console.error(e);
-        alert("주차 업데이트 실패: " + (e.message || e) + "\n\n(필요하면 RPC admin_set_tree_week SQL을 실행해야 합니다.)");
+        alert("주차 업데이트 실패: " + (e.message || e));
       }
     }
 
     function wire(){
-      el("signInBtn").addEventListener("click", signIn);
-      signOutBtn.addEventListener("click", signOut);
       el("refreshBtn").addEventListener("click", () => refreshAll());
 
       treeSelect.addEventListener("change", async () => {
@@ -744,7 +622,12 @@
     }
 
     wire();
-    boot();
+
+    // 바로 로딩
+    refreshAll().catch(e => {
+      console.error(e);
+      alert("데이터 로딩 실패: " + (e.message || e));
+    });
   </script>
 </body>
 </html>
