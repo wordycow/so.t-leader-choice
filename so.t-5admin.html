@@ -180,7 +180,30 @@
         <button class="btn ghost" id="refreshBtn">새로고침</button>
       </div>
     </header>
+    <div class="panel" style="margin-bottom:12px;">
+  <div class="row">
+    <div class="control">
+      <div class="label">새 팀 판매 생성(새 트리+슬롯 43개)</div>
+      <input id="newTreeName" placeholder="예: Pro1 - 팀A (리더명)" />
+    </div>
+    <div class="control">
+      <div class="label">시작일(선택)</div>
+      <input id="newTreeDate" type="date" />
+    </div>
+    <div class="control">
+      <div class="label">생성</div>
+      <button class="btn ok" id="createTreeBtn">팀 판매 생성</button>
+    </div>
+  </div>
 
+  <div style="margin-top:10px;">
+    <div class="label">팀 전용 판매 링크</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <input id="treeLinkOut" readonly placeholder="생성 후 자동 표시" />
+      <button class="btn ghost" id="copyTreeLinkBtn">복사</button>
+    </div>
+  </div>
+</div>
     <section class="panel">
       <div class="row">
         <div class="control">
@@ -657,25 +680,36 @@
     }
 
     function wire(){
-      el("refreshBtn").addEventListener("click", () => refreshAll());
+  el("refreshBtn").addEventListener("click", () => refreshAll());
 
-      treeSelect.addEventListener("change", async () => {
-        const id = Number(treeSelect.value);
-        selectedTree = trees.find(t => t.id === id) || null;
-        if (selectedTree) weekSelect.value = String(selectedTree.current_week || 1);
-        await refreshAll();
-      });
+  treeSelect.addEventListener("change", async () => {
+    const id = Number(treeSelect.value);
+    selectedTree = trees.find(t => t.id === id) || null;
+    if (selectedTree) weekSelect.value = String(selectedTree.current_week || 1);
+    await refreshAll();
+  });
 
-      el("updateWeekBtn").addEventListener("click", async () => {
-        try{
-          const w = Number(weekSelect.value || 1);
-          await updateWeek(w);
-          alert("오픈 주차 반영 완료");
-        }catch(e){
-          console.error(e);
-          alert("주차 업데이트 실패: " + (e.message || e));
-        }
-      });
+  el("updateWeekBtn").addEventListener("click", async () => {
+    try{
+      const w = Number(weekSelect.value || 1);
+      await updateWeek(w);
+      alert("오픈 주차 반영 완료");
+    }catch(e){
+      console.error(e);
+      alert("주차 업데이트 실패: " + (e.message || e));
+    }
+  });
+
+  // ✅ 여기부터 추가 (wire() 안쪽, 맨 아래쪽에)
+  el("createTreeBtn")?.addEventListener("click", createTeamTree);
+
+  el("copyTreeLinkBtn")?.addEventListener("click", async () => {
+    const v = (el("treeLinkOut")?.value || "").trim();
+    if (!v) return alert("먼저 팀 판매를 생성하세요.");
+    await navigator.clipboard.writeText(v);
+    alert("링크 복사 완료");
+  });
+  // ✅ 여기까지 추가
 
       el("nextWeekBtn").addEventListener("click", async () => {
         try{
