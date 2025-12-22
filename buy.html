@@ -352,6 +352,7 @@
   </div>
 
   <script type="module">
+    const FORCE_TREE_ID = new URLSearchParams(location.search).get("tree");
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
@@ -413,7 +414,10 @@
         return `<option value="${t.id}">${label}</option>`;
       }).join("");
 
-      selectedTree = trees[0] || null;
+      selectedTree =
+  (FORCE_TREE_ID ? trees.find(t => String(t.id) === String(FORCE_TREE_ID)) : null)
+  || trees[0]
+  || null;
       if (!selectedTree) {
         statusText.textContent = "활성화된 트리가 없습니다. 관리자에게 문의하세요.";
         return;
