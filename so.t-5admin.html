@@ -11,26 +11,48 @@
       --line:#263357;
       --text:#e7ecff;
       --muted:#aab4da;
+
+      /* ✅ 주차 색(그림 기준) */
+      --w1:#f7b500;   /* 1주차 노랑 */
+      --w2:#8a63ff;   /* 2주차 보라 */
+      --w3:#ff7a00;   /* 3주차 주황 */
+      --w4:#e5e7eb;   /* 4주차 흰/연회색 (4주차 이상 포함) */
+
+      /* ✅ 직급 색(그림 느낌) */
+      --pro1:#f7b500;
+      --star3:#fb923c;
+      --star2:#f7b500;
+      --s1top:#8a63ff;
+      --s1bot:#ff7a00;
+      --none:#e5e7eb;
+
       --ok:#2bd576;
       --warn:#ffb020;
       --bad:#ff4d6d;
+
+      --shadow: 0 14px 32px rgba(0,0,0,.55);
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
       color:var(--text);
-      background: radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.35), transparent 60%),
-                  radial-gradient(900px 500px at 90% 10%, rgba(43,213,118,.18), transparent 55%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.30), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(43,213,118,.14), transparent 55%),
+        var(--bg);
     }
+
     .wrap{ max-width:1200px; margin:0 auto; padding:26px 16px 80px; }
+
     header{
       display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
       margin-bottom:14px;
     }
     h1{ margin:0; font-size:20px; letter-spacing:-0.2px; }
-    .sub{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.4; }
+    .sub{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+
     .panel{
       background: linear-gradient(180deg, rgba(17,26,51,.88), rgba(15,23,48,.78));
       border:1px solid var(--line);
@@ -38,9 +60,11 @@
       padding:14px;
       box-shadow: 0 12px 35px rgba(0,0,0,.35);
     }
+
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
     .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
+
     select, button{ font:inherit; }
     select{
       width:100%;
@@ -51,6 +75,7 @@
       color:var(--text);
       outline:none;
     }
+
     .btn{
       cursor:pointer;
       padding:10px 12px;
@@ -68,11 +93,16 @@
       font-weight:650;
     }
     .btn.ghost:hover{ background: rgba(17,26,51,.55); color:var(--text); }
+
     .btn.ok{ border-color: rgba(43,213,118,.55); background: rgba(43,213,118,.14); }
     .btn.ok:hover{ background: rgba(43,213,118,.22); }
     .btn.bad{ border-color: rgba(255,77,109,.55); background: rgba(255,77,109,.12); }
     .btn.bad:hover{ background: rgba(255,77,109,.18); }
 
+    .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    .muted{ color:var(--muted); }
+
+    /* ✅ 통계 카드 */
     .grid{
       margin-top:12px;
       display:grid;
@@ -87,11 +117,14 @@
       border-radius:16px;
       background: rgba(17,26,51,.55);
       padding:12px;
+      box-shadow: var(--shadow);
     }
     .stat .k{ color:var(--muted); font-size:12px; }
     .stat .v{ font-size:22px; font-weight:900; margin-top:6px; }
+
     .hr{ height:1px; background:var(--line); opacity:.85; margin:12px 0; }
 
+    /* ✅ 탭(주차색 느낌으로 포커스) */
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
     .tab{
       padding:8px 10px;
@@ -101,14 +134,17 @@
       color:var(--muted);
       cursor:pointer;
       font-size:12px;
-      font-weight:700;
+      font-weight:800;
+      transition: transform .12s ease, background .15s ease, border-color .15s ease;
     }
+    .tab:hover{ transform: translateY(-1px); border-color: rgba(191,219,254,.35); }
     .tab.active{
       border-color: rgba(124,92,255,.55);
       background: rgba(124,92,255,.18);
       color: var(--text);
     }
 
+    /* ✅ 테이블 */
     table{
       width:100%;
       border-collapse:separate;
@@ -117,6 +153,7 @@
       border-radius:14px;
       border:1px solid var(--line);
       background: rgba(17,26,51,.35);
+      box-shadow: var(--shadow);
     }
     th, td{
       padding:10px 10px;
@@ -126,7 +163,10 @@
     }
     th{ text-align:left; color:var(--muted); background: rgba(15,23,48,.55); }
     tr:last-child td{ border-bottom:none; }
+
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    /* ✅ 상태 pill */
     .pill{
       display:inline-flex; align-items:center; gap:6px;
       padding:4px 8px;
@@ -136,16 +176,61 @@
       font-size:11px;
       background: rgba(9,13,28,.55);
       white-space:nowrap;
+      font-weight:800;
     }
     .pill.ok{ border-color: rgba(43,213,118,.45); color: rgba(43,213,118,.95); }
     .pill.warn{ border-color: rgba(255,176,32,.45); color: rgba(255,176,32,.95); }
     .pill.bad{ border-color: rgba(255,77,109,.45); color: rgba(255,77,109,.95); }
 
-    .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
-    .muted{ color:var(--muted); }
-    .note{ color:var(--muted); font-size:12px; margin-top:10px; }
+    /* ✅ 주차 badge(1~4 색 / 4주차 이상은 w4로 통일) */
+    .wbadge{
+      font-size:11px;
+      padding:5px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.15);
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      font-weight:900;
+      white-space:nowrap;
+      color: rgba(255,255,255,.92);
+      background: rgba(15,23,48,.6);
+    }
+    .wbadge .bdot{ width:8px; height:8px; border-radius:999px; display:inline-block; }
+
+    .wbadge.w1{ background: rgba(247,181,0,.16); border-color: rgba(247,181,0,.55); }
+    .wbadge.w1 .bdot{ background: var(--w1); }
+
+    .wbadge.w2{ background: rgba(138,99,255,.16); border-color: rgba(138,99,255,.55); }
+    .wbadge.w2 .bdot{ background: var(--w2); }
+
+    .wbadge.w3{ background: rgba(255,122,0,.16); border-color: rgba(255,122,0,.55); }
+    .wbadge.w3 .bdot{ background: var(--w3); }
+
+    .wbadge.w4{ background: rgba(229,231,235,.10); border-color: rgba(229,231,235,.35); }
+    .wbadge.w4 .bdot{ background: var(--w4); border:1px solid rgba(38,51,87,.55); }
+
+    /* ✅ 직급 dot + 라벨 */
+    .rank{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:900;
+      letter-spacing:-0.2px;
+    }
+    .r-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
+
+    .r-PRO1 .r-dot{ background: var(--pro1); }
+    .r-STAR3 .r-dot{ background: var(--star3); }
+    .r-STAR2 .r-dot{ background: var(--star2); }
+    .r-STAR1_TOP .r-dot{ background: var(--s1top); }
+    .r-STAR1_BOTTOM .r-dot{ background: var(--s1bot); }
+    .r-NONE .r-dot{ background: var(--none); border:1px solid rgba(38,51,87,.55); }
+
+    .note{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.45; }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
@@ -231,17 +316,35 @@
       return d.toISOString();
     }
     function pillStatus(s){
-      if (s === "paid") return `<span class="pill ok">paid</span>`;
-      if (s === "reserved") return `<span class="pill warn">reserved</span>`;
-      if (s === "available") return `<span class="pill">available</span>`;
-      return `<span class="pill bad">${s}</span>`;
+      if (s === "paid") return '<span class="pill ok">paid</span>';
+      if (s === "reserved") return '<span class="pill warn">reserved</span>';
+      if (s === "available") return '<span class="pill">available</span>';
+      return '<span class="pill bad">' + s + '</span>';
+    }
+
+    function safeRank(code){
+      const c = String(code || "NONE").toUpperCase().replace(/[^A-Z0-9_]/g, "");
+      return c || "NONE";
+    }
+
+    function weekClass(w){
+      const n = Number(w || 0);
+      if (n === 1) return "w1";
+      if (n === 2) return "w2";
+      if (n === 3) return "w3";
+      return "w4"; // 4주차 이상은 동일 색
+    }
+
+    function weekBadge(w){
+      const n = Number(w || 0);
+      const cls = weekClass(n);
+      return '<span class="wbadge '+cls+'"><span class="bdot"></span>'+n+'주차</span>';
     }
 
     function buildWeekOptions(){
-      // 1~12 주차
       weekSelect.innerHTML = Array.from({length: 12}, (_,i)=> {
         const w = i+1;
-        return `<option value="${w}">${w}주차</option>`;
+        return '<option value="'+w+'">'+w+'주차</option>';
       }).join("");
     }
 
@@ -256,8 +359,8 @@
 
       trees = data || [];
       treeSelect.innerHTML = trees.map(t => {
-        const label = `${t.name} (오픈 ${t.current_week}주차)`;
-        return `<option value="${t.id}">${label}</option>`;
+        const label = t.name + " (오픈 " + (t.current_week||1) + "주차)";
+        return '<option value="'+t.id+'">'+label+'</option>';
       }).join("");
 
       selectedTree = trees[0] || null;
@@ -292,7 +395,6 @@
         .select("id,slot_id,amount_krw,referrer_name,referrer_contact,status,created_at,paid_at")
         .order("id", { ascending: false });
 
-      // commissions 테이블이 아직 없으면 그냥 빈 배열로
       if (error) { commissions = []; return; }
       commissions = data || [];
     }
@@ -307,20 +409,20 @@
       const available = counts.available || 0;
       const cancelled = counts.cancelled || 0;
 
-      el("stats").innerHTML = `
-        <div class="stat"><div class="k">판매가능</div><div class="v">${available}</div></div>
-        <div class="stat"><div class="k">예약</div><div class="v">${reserved}</div></div>
-        <div class="stat"><div class="k">입금확정</div><div class="v">${paid}</div></div>
-        <div class="stat"><div class="k">취소</div><div class="v">${cancelled}</div></div>
-      `;
+      el("stats").innerHTML =
+        '<div class="stat"><div class="k">판매가능</div><div class="v">'+available+'</div></div>'+
+        '<div class="stat"><div class="k">예약</div><div class="v">'+reserved+'</div></div>'+
+        '<div class="stat"><div class="k">입금확정</div><div class="v">'+paid+'</div></div>'+
+        '<div class="stat"><div class="k">취소</div><div class="v">'+cancelled+'</div></div>';
     }
 
     function renderReserved(){
-      const list = allSlots.filter(s => s.status === "reserved")
+      const list = allSlots
+        .filter(s => s.status === "reserved")
         .sort((a,b)=> new Date(a.reserved_until||0) - new Date(b.reserved_until||0));
 
       if (!list.length) {
-        el("tab_reserved").innerHTML = `<div class="sub">예약된 항목이 없습니다.</div>`;
+        el("tab_reserved").innerHTML = '<div class="note">예약된 항목이 없습니다.</div>';
         return;
       }
 
@@ -329,7 +431,7 @@
           <thead>
             <tr>
               <th style="width:90px;">상태</th>
-              <th>직급/슬롯</th>
+              <th>직급/주차/슬롯</th>
               <th>구매자</th>
               <th>연결자</th>
               <th>예약만료</th>
@@ -339,19 +441,25 @@
           <tbody>
             ${list.map(s => {
               const t = s.slot_templates || {};
+              const code = safeRank(t.code);
               const defaultAmt = t.price_krw || 0;
               return `
                 <tr>
                   <td>${pillStatus(s.status)}</td>
                   <td>
-                    <b>${t.title || "-"}</b><br>
-                    <span class="mono">${s.position_key}</span><br>
-                    <span class="muted">가격 ${won(t.price_krw)} · 오픈 ${t.sale_week}주차 · 유지 ${t.maintain_accounts}계정</span>
+                    <div class="rank r-${code}">
+                      <span class="r-dot"></span>
+                      <span>${t.title || "-"}</span>
+                      ${weekBadge(t.sale_week || 0)}
+                    </div>
+                    <div class="note" style="margin-top:6px;">
+                      가격 <b>${won(t.price_krw)}</b> · 유지 <b>${t.maintain_accounts}계정</b> · 슬롯 <span class="mono">${s.position_key}</span>
+                    </div>
                   </td>
                   <td>
                     <b>${s.buyer_name || "-"}</b><br>
                     <span class="mono">${s.buyer_contact || "-"}</span><br>
-                    <span class="muted">${(s.memo||"").replaceAll("<","&lt;")}</span>
+                    <span class="note">${(s.memo||"").replaceAll("<","&lt;")}</span>
                   </td>
                   <td>
                     <b>${s.referrer_name || "-"}</b><br>
@@ -409,11 +517,12 @@
     }
 
     function renderPaid(){
-      const list = allSlots.filter(s => s.status === "paid")
+      const list = allSlots
+        .filter(s => s.status === "paid")
         .sort((a,b)=> new Date(b.paid_at||0) - new Date(a.paid_at||0));
 
       if (!list.length) {
-        el("tab_paid").innerHTML = `<div class="sub">입금확정(paid) 항목이 없습니다.</div>`;
+        el("tab_paid").innerHTML = '<div class="note">입금확정(paid) 항목이 없습니다.</div>';
         return;
       }
 
@@ -422,8 +531,8 @@
           <thead>
             <tr>
               <th style="width:90px;">상태</th>
-              <th>직급/슬롯</th>
-              <th>구매자(고정)</th>
+              <th>직급/주차/슬롯</th>
+              <th>구매자</th>
               <th>입금</th>
               <th>스케줄</th>
             </tr>
@@ -431,21 +540,27 @@
           <tbody>
             ${list.map(s => {
               const t = s.slot_templates || {};
+              const code = safeRank(t.code);
               const allowanceStart = addDays(s.paid_at, 40);
               const maintainDue = addDays(s.paid_at, 60);
               return `
                 <tr>
                   <td>${pillStatus(s.status)}</td>
                   <td>
-                    <b>${t.title || "-"}</b><br>
-                    <span class="mono">${s.position_key}</span><br>
-                    <span class="muted">가격 ${won(t.price_krw)} · 오픈 ${t.sale_week}주차 · 유지 ${t.maintain_accounts}계정</span>
+                    <div class="rank r-${code}">
+                      <span class="r-dot"></span>
+                      <span>${t.title || "-"}</span>
+                      ${weekBadge(t.sale_week || 0)}
+                    </div>
+                    <div class="note" style="margin-top:6px;">
+                      가격 <b>${won(t.price_krw)}</b> · 유지 <b>${t.maintain_accounts}계정</b> · 슬롯 <span class="mono">${s.position_key}</span>
+                    </div>
                   </td>
                   <td>
                     <b>${s.buyer_name || "-"}</b><br>
                     <span class="mono">${s.buyer_contact || "-"}</span><br>
-                    <span class="muted">${(s.memo||"").replaceAll("<","&lt;")}</span><br>
-                    <span class="muted">연결자: <b>${s.referrer_name || "-"}</b> <span class="mono">${s.referrer_contact || ""}</span></span>
+                    <span class="note">${(s.memo||"").replaceAll("<","&lt;")}</span><br>
+                    <span class="note">연결자: <b>${s.referrer_name || "-"}</b> <span class="mono">${s.referrer_contact || ""}</span></span>
                   </td>
                   <td>
                     확정일: <b>${fmt(s.paid_at)}</b><br>
@@ -454,7 +569,7 @@
                   <td>
                     수당 시작: <b>${allowanceStart ? fmt(allowanceStart) : "-"}</b><br>
                     유지 전환: <b>${maintainDue ? fmt(maintainDue) : "-"}</b><br>
-                    <span class="muted">유지: ${t.maintain_accounts}계정 × 400USDT / 60일 (구매자 본인)</span>
+                    <span class="note">유지: ${t.maintain_accounts}계정 × 400USDT / 60일 (구매자 본인)</span>
                   </td>
                 </tr>
               `;
@@ -476,29 +591,37 @@
         .filter(s => (s.slot_templates?.sale_week ?? 99) > openWeek);
 
       el("tab_available").innerHTML = `
-        <div class="sub" style="margin-bottom:10px;">
-          현재 오픈 주차(${openWeek}주차) 기준 판매가능: <b>${list.length}</b>개 / 오픈 전(숨김 대상): <b>${closed.length}</b>개
+        <div class="note" style="margin-bottom:10px;">
+          현재 오픈 주차(<b>${openWeek}주차</b>) 기준 판매가능: <b>${list.length}</b>개 / 오픈 전(숨김): <b>${closed.length}</b>개
         </div>
         <table>
           <thead>
             <tr>
               <th style="width:90px;">상태</th>
-              <th>직급/슬롯</th>
+              <th>직급</th>
+              <th>주차</th>
               <th>가격</th>
-              <th>오픈 주차</th>
               <th>유지</th>
+              <th>슬롯</th>
             </tr>
           </thead>
           <tbody>
             ${list.map(s => {
               const t = s.slot_templates || {};
+              const code = safeRank(t.code);
               return `
                 <tr>
                   <td>${pillStatus(s.status)}</td>
-                  <td><b>${t.title || "-"}</b><br><span class="mono">${s.position_key}</span></td>
+                  <td>
+                    <div class="rank r-${code}">
+                      <span class="r-dot"></span>
+                      <span>${t.title || "-"}</span>
+                    </div>
+                  </td>
+                  <td>${weekBadge(t.sale_week || 0)}</td>
                   <td><b>${won(t.price_krw)}</b></td>
-                  <td>${t.sale_week}주차</td>
                   <td>${t.maintain_accounts}계정</td>
+                  <td class="mono">${s.position_key}</td>
                 </tr>
               `;
             }).join("")}
@@ -509,7 +632,7 @@
 
     function renderCommissions(){
       if (!commissions.length) {
-        el("tab_commissions").innerHTML = `<div class="sub">커미션 데이터가 없습니다.</div>`;
+        el("tab_commissions").innerHTML = '<div class="note">커미션 데이터가 없습니다.</div>';
         return;
       }
 
@@ -528,7 +651,7 @@
           <tbody>
             ${commissions.map(c => `
               <tr>
-                <td>${c.status === "paid" ? `<span class="pill ok">paid</span>` : `<span class="pill warn">pending</span>`}</td>
+                <td>${c.status === "paid" ? '<span class="pill ok">paid</span>' : '<span class="pill warn">pending</span>'}</td>
                 <td><b>${c.referrer_name}</b><br><span class="mono">${c.referrer_contact || "-"}</span></td>
                 <td><b>${won(c.amount_krw)}</b></td>
                 <td>${fmt(c.created_at)}</td>
@@ -564,7 +687,7 @@
     function setTab(name){
       activeTab = name;
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      const active = document.querySelector(`.tab[data-tab="${name}"]`);
+      const active = document.querySelector('.tab[data-tab="'+name+'"]');
       if (active) active.classList.add("active");
 
       ["reserved","paid","available","commissions"].forEach(x => {
@@ -576,10 +699,9 @@
       statusNote.textContent = "";
       await loadTrees();
 
-      // 트리 없으면 끝
       if (!selectedTree) {
         statusNote.textContent = "활성 트리가 없습니다(trees.is_active=true 필요).";
-        renderStats();
+        el("stats").innerHTML = "";
         el("tab_reserved").innerHTML = "";
         el("tab_paid").innerHTML = "";
         el("tab_available").innerHTML = "";
