@@ -298,7 +298,7 @@
       <div class="top-bar">
         <div>
           <div class="title">THE UNIQUE 금고 - 공동기금</div>
-          <div class="subtitle">USDT 입금/출금 내역을 개시일 이후부터 누적 공개</div>
+          <div class="subtitle" id="subtitleText">불러오는 중…</div>
         </div>
         <button class="btn-close" onclick="closePage()">창 닫기 ✕</button>
       </div>
@@ -351,10 +351,13 @@
           </div>
         </div>
 
-        <div class="section-title">도네이션</div>
+        <div class="section-title">도네이션 (리더보드)</div>
         <div class="donation-wrap">
           <div class="donation-top">
-            <div class="donation-total">누적 도네이션 합계: <b id="don-total">-</b> USDT</div>
+            <div class="donation-total">
+              누적 도네이션 합계: <b id="don-total">-</b> USDT
+              <span class="muted" id="don-start" style="margin-left:8px;"></span>
+            </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn-gold" onclick="openDonation()">도네이션(기부)</button>
               <button class="mini-btn gold-outline" onclick="toggleRepayPanel()">상환</button>
@@ -363,12 +366,13 @@
 
           <div class="vault-error" id="don-error" style="display:none; margin-top:10px;"></div>
 
-          <!-- 기부자 명단 -->
+          <!-- 기부자 명단/순위 -->
           <div class="ledger-wrap" style="margin-top:10px;">
             <div class="ledger-scroll" style="max-height:220px;">
-              <table class="ledger" aria-label="기부자 명단">
+              <table class="ledger" aria-label="기부자 순위">
                 <thead>
                   <tr>
+                    <th style="width:90px;">순위</th>
                     <th style="width:220px;">이름</th>
                     <th class="right" style="width:160px;">누적</th>
                     <th class="right" style="width:80px;">횟수</th>
@@ -481,13 +485,35 @@
   <script>
     function closePage(){ window.close(); setTimeout(()=>{ try{ history.back(); }catch(e){} },120); }
 
+    // ✅ 프로그램 시작일(고정) : 2025-12-01부터 영원히
+    const PROGRAM_START_YMD = "2025-12-01";
+    const PROGRAM_START_TS  = Date.parse(`${PROGRAM_START_YMD}T00:00:00+09:00`);
+
     const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
     const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
     function setErr(id, msg){
       const el = document.getElementById(id);
+      if(!el) return;
       if(!msg){ el.style.display="none"; el.textContent=""; return; }
       el.style.display="block"; el.textContent=msg;
+    }
+
+    function num(x){
+      const n = Number(String(x ?? "").replaceAll(",","").trim());
+      return Number.isFinite(n) ? n : 0;
+    }
+    function toMs(ts){
+      if(!ts) return 0;
+      if(typeof ts === "number"){
+        return ts < 1e12 ? ts*1000 : ts; // seconds -> ms
+      }
+      const n = Date.parse(ts);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function normalizeName(name){
+      return String(name || "").trim().replace(/\s+/g, " ");
     }
 
     function shortAddr(a){
@@ -530,15 +556,19 @@
       const tbody = document.getElementById("vault-ledger");
       tbody.innerHTML = "";
 
-      if(!Array.isArray(transfers) || transfers.length===0){
+      const filtered = (Array.isArray(transfers) ? transfers : [])
+        .filter(t => toMs(t.ts) >= PROGRAM_START_TS);
+
+      if(filtered.length===0){
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" class="muted">개시일 이후 발생한 USDT 내역이 없습니다.</td>`;
+        tr.innerHTML = `<td colspan="5" class="muted">${PROGRAM_START_YMD} 이후 발생한 USDT 내역이 없습니다.</td>`;
         tbody.appendChild(tr);
         return;
       }
 
-      transfers.forEach(t=>{
-        const dt = t.ts ? new Date(t.ts).toLocaleString("ko-KR") : "-";
+      filtered.forEach(t=>{
+        const ms = toMs(t.ts);
+        const dt = ms ? new Date(ms).toLocaleString("ko-KR") : "-";
         const dir = t.direction==="IN" ? `<span class="tag-in">입금</span>`
                  : t.direction==="OUT" ? `<span class="tag-out">출금</span>`
                  : `<span class="muted">-</span>`;
@@ -564,7 +594,8 @@
       setErr("vault-error", "");
       document.getElementById("vault-balance-num").textContent = "불러오는 중…";
 
-      const api = `${WORKER_BASE.replace(/\/$/,"")}/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      // ✅ start 파라미터 전달(워커가 지원하면 그대로 반영)
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}&start=${encodeURIComponent(PROGRAM_START_YMD)}`;
       const res = await fetch(api, { cache:"no-store" });
       const data = await res.json().catch(()=>null);
 
@@ -580,31 +611,79 @@
       renderLedger(data.transfers || []);
     }
 
+    // ---------- 도네이션(순위)
+    function medal(rank){
+      if(rank===1) return "🥇";
+      if(rank===2) return "🥈";
+      if(rank===3) return "🥉";
+      return String(rank);
+    }
+
     function renderDonors(list){
       const tbody = document.getElementById("donors-body");
       tbody.innerHTML = "";
-      if(!Array.isArray(list) || list.length===0){
+
+      const donors = Array.isArray(list) ? list : [];
+
+      // ✅ 내림차순 정렬 + 동률이면 최근순
+      const sorted = donors.slice().sort((a,b)=>{
+        const d = num(b.total) - num(a.total);
+        if(d !== 0) return d;
+        return toMs(b.lastTs) - toMs(a.lastTs);
+      });
+
+      if(sorted.length===0){
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="4" class="muted">등록된 기부자가 없습니다.</td>`;
+        tr.innerHTML = `<td colspan="5" class="muted">등록된 기부자가 없습니다.</td>`;
         tbody.appendChild(tr);
         return;
       }
-      list.forEach(d=>{
-        const last = d.lastTs ? new Date(d.lastTs).toLocaleString("ko-KR") : "-";
+
+      sorted.forEach((d, idx)=>{
+        const r = idx + 1;
+        const last = d.lastTs ? new Date(toMs(d.lastTs)).toLocaleString("ko-KR") : "-";
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>${medal(r)}</td>
           <td>${d.name}</td>
-          <td class="right">${d.total} USDT</td>
-          <td class="right">${d.count}</td>
+          <td class="right">${num(d.total).toFixed(6)} USDT</td>
+          <td class="right">${d.count ?? "-"}</td>
           <td>${last}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
+    // (워커가 donors로 주면 그대로 사용, items로 주면 클라에서 합산)
+    function aggregateFromItems(items){
+      const map = new Map(); // key -> {name,total,count,lastTs}
+      (items || []).forEach(it=>{
+        const name = normalizeName(it.name);
+        if(!name) return;
+        const key = name.toLowerCase();
+        const amt = num(it.amount);
+        const ts = toMs(it.ts);
+
+        if(!map.has(key)){
+          map.set(key, { name, total: 0, count: 0, lastTs: 0 });
+        }
+        const cur = map.get(key);
+        cur.total += amt;
+        cur.count += 1;
+        if(ts > cur.lastTs) cur.lastTs = ts;
+      });
+
+      return Array.from(map.values()).map(x=>({
+        name: x.name,
+        total: x.total,
+        count: x.count,
+        lastTs: x.lastTs
+      }));
+    }
+
     async function fetchDonations(){
       setErr("don-error", "");
-      const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
+      const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}&start=${encodeURIComponent(PROGRAM_START_YMD)}`;
       const res = await fetch(api, { cache:"no-store" });
       const data = await res.json().catch(()=>null);
 
@@ -615,19 +694,41 @@
         return;
       }
 
-      document.getElementById("don-total").textContent = data.total ?? "0";
-      renderDonors(data.donors || []);
+      const donors = Array.isArray(data.donors)
+        ? data.donors
+        : Array.isArray(data.items)
+          ? aggregateFromItems(data.items)
+          : [];
+
+      const total = (data.total != null) ? num(data.total) : donors.reduce((s,d)=>s + num(d.total), 0);
+      document.getElementById("don-total").textContent = total.toFixed(6);
+
+      renderDonors(donors);
+    }
+
+    function validTxid(txid){
+      return /^[0-9a-fA-F]{64}$/.test(txid);
     }
 
     async function openDonation(){
       setErr("don-error", "");
-      const name = prompt("도네이션(기부): 이름을 입력하세요");
+
+      let name = prompt("도네이션(기부): 이름을 입력하세요");
+      if(!name) return;
+      name = normalizeName(name);
       if(!name) return;
 
-      const txid = prompt("TXID(트랜잭션 해시 64자리)를 입력하세요");
+      let txid = prompt("TXID(트랜잭션 해시 64자리)를 입력하세요");
       if(!txid) return;
+      txid = txid.trim();
 
-      const payload = { address: VAULT_TRON_ADDRESS, name, txid };
+      if(!validTxid(txid)){
+        setErr("don-error", "TXID 형식이 올바르지 않습니다. (64자리 해시)");
+        return;
+      }
+
+      // ✅ start도 같이 보냄(워커가 시작일 검증에 사용)
+      const payload = { address: VAULT_TRON_ADDRESS, name, txid, start: PROGRAM_START_YMD };
 
       const api = `${WORKER_BASE.replace(/\/$/,"")}/donations/add`;
       const res = await fetch(api, {
@@ -650,10 +751,9 @@
     function toggleRepayPanel(){
       const p = document.getElementById("repay-panel");
       const open = p.classList.contains("hidden");
-      p.classList.toggle("hidden", !open ? true : false);
+      p.classList.toggle("hidden", !open);
 
       if (open) {
-        // 패널 열릴 때: 빌린날 자동 세팅 + 14일 제한 문구 업데이트
         const borrow = toKstYmd(new Date());
         const maxRepay = addDaysYmd(borrow, 14);
         document.getElementById("req-borrow").value = borrow;
@@ -661,7 +761,6 @@
         if (!document.getElementById("req-memo").value.trim()) {
           document.getElementById("req-memo").value = "USDT TRC20";
         }
-        // 상환탭 목록도 갱신
         fetchRepays();
       }
     }
@@ -696,16 +795,16 @@
       }
 
       items.forEach(x=>{
-        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
-        const borrow = x.borrowDate ? new Date(x.borrowDate).toLocaleDateString("ko-KR") : "-";
+        const dt = x.ts ? new Date(toMs(x.ts)).toLocaleString("ko-KR") : "-";
+        const borrow = x.borrowDate ? String(x.borrowDate) : "-";
 
         const statusPill = x.status === "done"
           ? `<span class="pill done">처리됨</span>`
           : `<span class="pill pending">대기</span>`;
 
         const btn = x.status === "done"
-          ? `<button class="mini-btn" onclick='markRequest("${x.id}", ${x.ts}, "pending")'>되돌리기</button>`
-          : `<button class="mini-btn gold-outline" onclick='markRequest("${x.id}", ${x.ts}, "done")'>처리 완료</button>`;
+          ? `<button class="mini-btn" onclick='markRequest("${x.id}", "${x.ts}", "pending")'>되돌리기</button>`
+          : `<button class="mini-btn gold-outline" onclick='markRequest("${x.id}", "${x.ts}", "done")'>처리 완료</button>`;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -747,7 +846,7 @@
 
       const name = document.getElementById("req-name").value.trim();
       const amount = document.getElementById("req-amount").value.trim();
-      const borrow = document.getElementById("req-borrow").value.trim(); // YYYY-MM-DD
+      const borrow = document.getElementById("req-borrow").value.trim();
       const repayDate = document.getElementById("req-repay").value.trim();
       const receiveAddress = document.getElementById("req-to").value.trim();
       const memo = document.getElementById("req-memo").value.trim() || "USDT TRC20";
@@ -756,7 +855,6 @@
       if(!amount) { setErr("req-error", "금액을 입력하세요."); return; }
       if(!repayDate) { setErr("req-error", "상환 날짜를 입력하세요."); return; }
 
-      // ✅ 클라이언트에서도 14일 제한 안내(서버가 최종 검증)
       const maxRepay = addDaysYmd(borrow, 14);
       if (repayDate > maxRepay) {
         setErr("req-error", `상환 날짜는 빌린날(${borrow})로부터 최대 14일 이내입니다. (최대 ${maxRepay})`);
@@ -817,7 +915,7 @@
       }
 
       items.forEach(x=>{
-        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
+        const dt = x.ts ? new Date(toMs(x.ts)).toLocaleString("ko-KR") : "-";
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${dt}</td>
@@ -853,8 +951,9 @@
       const txid = document.getElementById("repay-txid").value.trim();
       if(!name){ setErr("repay-error", "이름을 입력하세요."); return; }
       if(!txid){ setErr("repay-error", "TXID를 입력하세요."); return; }
+      if(!validTxid(txid)){ setErr("repay-error", "TXID 형식이 올바르지 않습니다. (64자리 해시)"); return; }
 
-      const payload = { address: VAULT_TRON_ADDRESS, name, txid };
+      const payload = { address: VAULT_TRON_ADDRESS, name: normalizeName(name), txid };
       const api = `${WORKER_BASE.replace(/\/$/,"")}/repay/add`;
 
       const res = await fetch(api, {
@@ -883,7 +982,6 @@
 
       await fetchDonations();
       await fetchRequests();
-      // 패널이 열려있을 때만 상환 목록 갱신
       if (!document.getElementById("repay-panel").classList.contains("hidden")) {
         await fetchRepays();
       }
@@ -892,6 +990,13 @@
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("req-borrow").value = toKstYmd(new Date());
       document.getElementById("req-memo").value = "USDT TRC20";
+
+      // ✅ 상단 문구 고정(시작일)
+      document.getElementById("subtitleText").textContent =
+        `USDT 입금/출금 및 도네이션은 ${PROGRAM_START_YMD} 이후부터 누적 공개 (영구)`;
+      document.getElementById("don-start").textContent =
+        `(시작: ${PROGRAM_START_YMD})`;
+
       refreshAll();
     });
   </script>
