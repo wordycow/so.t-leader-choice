@@ -41,8 +41,8 @@
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
     .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
-    input, select, button{ font:inherit; }
-    input, select{
+    select, button{ font:inherit; }
+    select{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
@@ -143,6 +143,7 @@
 
     .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
     .muted{ color:var(--muted); }
+    .note{ color:var(--muted); font-size:12px; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -168,13 +169,8 @@
           <select id="treeSelect"></select>
         </div>
         <div class="control">
-          <div class="label">현재 오픈 주차</div>
-          <select id="weekSelect">
-            <option value="1">1주차</option>
-            <option value="2">2주차</option>
-            <option value="3">3주차</option>
-            <option value="4">4주차</option>
-          </select>
+          <div class="label">현재 오픈 주차 (1~12)</div>
+          <select id="weekSelect"></select>
         </div>
         <div class="control">
           <div class="label">주차 업데이트</div>
@@ -197,28 +193,29 @@
       <div id="tab_paid" style="display:none;"></div>
       <div id="tab_available" style="display:none;"></div>
       <div id="tab_commissions" style="display:none;"></div>
+
+      <div class="note" id="statusNote"></div>
     </section>
   </div>
 
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    // ✅ Supabase 설정(요청하신 값)
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-
-
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const el = (id) => document.getElementById(id);
 
     const treeSelect = el("treeSelect");
     const weekSelect = el("weekSelect");
+    const statusNote = el("statusNote");
 
     let trees = [];
     let selectedTree = null;
     let allSlots = [];
     let commissions = [];
+    let activeTab = "reserved";
 
     function won(n){
       try { return (n||0).toLocaleString("ko-KR") + "원"; } catch { return n + "원"; }
@@ -238,6 +235,14 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
       if (s === "reserved") return `<span class="pill warn">reserved</span>`;
       if (s === "available") return `<span class="pill">available</span>`;
       return `<span class="pill bad">${s}</span>`;
+    }
+
+    function buildWeekOptions(){
+      // 1~12 주차
+      weekSelect.innerHTML = Array.from({length: 12}, (_,i)=> {
+        const w = i+1;
+        return `<option value="${w}">${w}주차</option>`;
+      }).join("");
     }
 
     async function loadTrees(){
@@ -287,7 +292,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
         .select("id,slot_id,amount_krw,referrer_name,referrer_contact,status,created_at,paid_at")
         .order("id", { ascending: false });
 
-      if (error) throw error;
+      // commissions 테이블이 아직 없으면 그냥 빈 배열로
+      if (error) { commissions = []; return; }
       commissions = data || [];
     }
 
@@ -384,14 +390,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
               alert("입금확정 처리 완료");
             }
             if (act === "release") {
-              const ok = confirm("예약 해제하고 다시 판매가능으로 돌릴까요?");
-              if (!ok) return;
+              if (!confirm("예약 해제하고 다시 판매가능으로 돌릴까요?")) return;
               const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "available" });
               if (error) throw error;
             }
             if (act === "cancel") {
-              const ok = confirm("취소 처리할까요?");
-              if (!ok) return;
+              if (!confirm("취소 처리할까요?")) return;
               const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "cancelled" });
               if (error) throw error;
             }
@@ -504,13 +508,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     }
 
     function renderCommissions(){
-      const pend = commissions.filter(c => c.status === "pending");
-      const paid = commissions.filter(c => c.status === "paid");
+      if (!commissions.length) {
+        el("tab_commissions").innerHTML = `<div class="sub">커미션 데이터가 없습니다.</div>`;
+        return;
+      }
 
       el("tab_commissions").innerHTML = `
-        <div class="sub" style="margin-bottom:10px;">
-          pending: <b>${pend.length}</b>건 · paid: <b>${paid.length}</b>건
-        </div>
         <table>
           <thead>
             <tr>
@@ -545,8 +548,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
       el("tab_commissions").querySelectorAll("button[data-pay]").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = Number(btn.getAttribute("data-pay"));
-          const ok = confirm("커미션 지급완료 처리할까요?");
-          if (!ok) return;
+          if (!confirm("커미션 지급완료 처리할까요?")) return;
           try{
             const { error } = await supabase.rpc("admin_mark_commission_paid", { p_commission_id: id });
             if (error) throw error;
@@ -560,8 +562,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     }
 
     function setTab(name){
+      activeTab = name;
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      document.querySelector(\`.tab[data-tab="\${name}"]\`)?.classList.add("active");
+      const active = document.querySelector(`.tab[data-tab="${name}"]`);
+      if (active) active.classList.add("active");
 
       ["reserved","paid","available","commissions"].forEach(x => {
         el("tab_"+x).style.display = (x === name) ? "block" : "none";
@@ -569,22 +573,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     }
 
     async function refreshAll(){
+      statusNote.textContent = "";
       await loadTrees();
-      if (selectedTree) {
-        const selectedId = Number(treeSelect.value || selectedTree.id);
-        selectedTree = trees.find(t => t.id === selectedId) || trees[0] || null;
-        if (selectedTree) {
-          treeSelect.value = String(selectedTree.id);
-          weekSelect.value = String(selectedTree.current_week || 1);
-        }
+
+      // 트리 없으면 끝
+      if (!selectedTree) {
+        statusNote.textContent = "활성 트리가 없습니다(trees.is_active=true 필요).";
+        renderStats();
+        el("tab_reserved").innerHTML = "";
+        el("tab_paid").innerHTML = "";
+        el("tab_available").innerHTML = "";
+        el("tab_commissions").innerHTML = "";
+        return;
       }
+
       await loadSlots();
       await loadCommissions();
+
       renderStats();
       renderReserved();
       renderPaid();
       renderAvailable();
       renderCommissions();
+      setTab(activeTab);
     }
 
     async function updateWeek(){
@@ -596,7 +607,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
           p_week: newWeek
         });
         if (error) throw error;
-
         alert("오픈 주차 반영 완료");
         await refreshAll();
       } catch(e){
@@ -622,9 +632,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
       });
     }
 
+    // 시작
+    buildWeekOptions();
     wire();
-
-    // 바로 로딩
     refreshAll().catch(e => {
       console.error(e);
       alert("데이터 로딩 실패: " + (e.message || e));
