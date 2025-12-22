@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>so.t 5 Admin</title>
+  <style>
+    :root{
+      --bg:#070b18;
+      --card:#111a33;
+      --card2:#0f1730;
+      --line:#263357;
+      --text:#e7ecff;
+      --muted:#aab4da;
+      --accent:#7c5cff;
+      --ok:#2bd576;
+      --warn:#ffb020;
+      --bad:#ff4d6d;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      color:var(--text);
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.35), transparent 60%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(43,213,118,.18), transparent 55%),
+                  var(--bg);
+    }
+    .wrap{ max-width:1200px; margin:0 auto; padding:26px 16px 80px; }
+    header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      margin-bottom:14px;
+    }
+    h1{ margin:0; font-size:20px; letter-spacing:-0.2px; }
+    .sub{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.4; }
+    .panel{
+      background: linear-gradient(180deg, rgba(17,26,51,.88), rgba(15,23,48,.78));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.35);
+    }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+    .control{ flex:1; min-width:220px; }
+    .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
+    input, select, textarea, button{ font:inherit; }
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(9,13,28,.65);
+      color:var(--text);
+      outline:none;
+    }
+    textarea{ min-height:90px; resize:vertical; }
+    .btn{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(124,92,255,.55);
+      background: rgba(124,92,255,.18);
+      color:var(--text);
+      font-weight:800;
+    }
+    .btn:hover{ background: rgba(124,92,255,.28); }
+    .btn.ghost{
+      border:1px solid var(--line);
+      background: rgba(17,26,51,.35);
+      color:var(--muted);
+      font-weight:650;
+    }
+    .btn.ghost:hover{ background: rgba(17,26,51,.55); color:var(--text); }
+    .btn.ok{ border-color: rgba(43,213,118,.55); background: rgba(43,213,118,.14); }
+    .btn.ok:hover{ background: rgba(43,213,118,.22); }
+    .btn.bad{ border-color: rgba(255,77,109,.55); background: rgba(255,77,109,.12); }
+    .btn.bad:hover{ background: rgba(255,77,109,.18); }
+
+    .grid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 1100px){ .grid{ grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
+
+    .stat{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background: rgba(17,26,51,.55);
+      padding:12px;
+    }
+    .stat .k{ color:var(--muted); font-size:12px; }
+    .stat .v{ font-size:22px; font-weight:900; margin-top:6px; }
+    .hr{ height:1px; background:var(--line); opacity:.85; margin:12px 0; }
+
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .tab{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(17,26,51,.35);
+      color:var(--muted);
+      cursor:pointer;
+      font-size:12px;
+      font-weight:700;
+    }
+    .tab.active{
+      border-color: rgba(124,92,255,.55);
+      background: rgba(124,92,255,.18);
+      color: var(--text);
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(17,26,51,.35);
+    }
+    th, td{
+      padding:10px 10px;
+      font-size:12px;
+      border-bottom:1px solid rgba(38,51,87,.75);
+      vertical-align:top;
+    }
+    th{ text-align:left; color:var(--muted); background: rgba(15,23,48,.55); }
+    tr:last-child td{ border-bottom:none; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-size:11px;
+      background: rgba(9,13,28,.55);
+      white-space:nowrap;
+    }
+    .pill.ok{ border-color: rgba(43,213,118,.45); color: rgba(43,213,118,.95); }
+    .pill.warn{ border-color: rgba(255,176,32,.45); color: rgba(255,176,32,.95); }
+    .pill.bad{ border-color: rgba(255,77,109,.45); color: rgba(255,77,109,.95); }
+
+    .loginbox{
+      max-width:520px;
+      margin: 50px auto 0;
+    }
+    .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    .muted{ color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>so.t 관리자 페이지 (5 Admin)</h1>
+        <div class="sub">
+          원화 입금 확인 → <b>paid</b> 처리하면 이름이 레그에 고정됩니다. (수당 시작: paid + 40일 / 유지 전환: paid + 60일)<br>
+          Star1은 확정(paid) 시 연결자가 있으면 <b>30만원 커미션</b>이 자동 생성됩니다.
+        </div>
+      </div>
+      <div class="right">
+        <span class="muted" id="who"></span>
+        <button class="btn ghost" id="refreshBtn">새로고침</button>
+        <button class="btn ghost" id="signOutBtn" style="display:none;">로그아웃</button>
+      </div>
+    </header>
+
+    <div id="loginView" class="loginbox panel">
+      <div class="label">관리자 로그인 (Supabase Auth)</div>
+      <div class="row">
+        <div class="control">
+          <div class="label">이메일</div>
+          <input id="email" placeholder="admin@example.com" />
+        </div>
+        <div class="control">
+          <div class="label">비밀번호</div>
+          <input id="password" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end;">
+        <button class="btn" id="signInBtn">로그인</button>
+      </div>
+      <div class="sub" style="margin-top:10px;">
+        ⚠️ 이 페이지는 <b>admin_users</b> 테이블에 auth.uid가 등록된 사용자만 접근 가능합니다.
+      </div>
+    </div>
+
+    <div id="appView" style="display:none;">
+      <section class="panel">
+        <div class="row">
+          <div class="control">
+            <div class="label">회차(Pro1 트리) 선택</div>
+            <select id="treeSelect"></select>
+          </div>
+          <div class="control">
+            <div class="label">현재 오픈 주차</div>
+            <select id="weekSelect">
+              <option value="1">1주차</option>
+              <option value="2">2주차</option>
+              <option value="3">3주차</option>
+              <option value="4">4주차</option>
+            </select>
+          </div>
+          <div class="control">
+            <div class="label">주차 업데이트(관리자)</div>
+            <button class="btn ok" id="updateWeekBtn">오픈 주차 반영</button>
+          </div>
+        </div>
+
+        <div class="grid" id="stats"></div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="reserved">예약(reserved)</button>
+          <button class="tab" data-tab="paid">입금확정(paid)</button>
+          <button class="tab" data-tab="available">판매가능(available)</button>
+          <button class="tab" data-tab="commissions">커미션(Star1)</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div id="tab_reserved"></div>
+        <div id="tab_paid" style="display:none;"></div>
+        <div id="tab_available" style="display:none;"></div>
+        <div id="tab_commissions" style="display:none;"></div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    // ✅ 여기에 너 Supabase 정보 넣어
+    const SUPABASE_URL = "https://YOURPROJECT.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+
+    const loginView = el("loginView");
+    const appView = el("appView");
+    const signOutBtn = el("signOutBtn");
+    const who = el("who");
+
+    const treeSelect = el("treeSelect");
+    const weekSelect = el("weekSelect");
+
+    let me = null;
+    let isAdmin = false;
+
+    let trees = [];
+    let selectedTree = null;
+    let allSlots = [];
+    let commissions = [];
+
+    function won(n){
+      try { return (n||0).toLocaleString("ko-KR") + "원"; } catch { return n + "원"; }
+    }
+    function fmt(dt){
+      if (!dt) return "-";
+      return new Date(dt).toLocaleString("ko-KR");
+    }
+    function addDays(iso, days){
+      if (!iso) return null;
+      const d = new Date(iso);
+      d.setDate(d.getDate() + days);
+      return d.toISOString();
+    }
+    function pillStatus(s){
+      if (s === "paid") return `<span class="pill ok">paid</span>`;
+      if (s === "reserved") return `<span class="pill warn">reserved</span>`;
+      if (s === "available") return `<span class="pill">available</span>`;
+      return `<span class="pill bad">${s}</span>`;
+    }
+
+    async function checkAdmin(){
+      const { data: userRes } = await supabase.auth.getUser();
+      me = userRes?.user ?? null;
+      if (!me) return false;
+
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("user_id,name")
+        .eq("user_id", me.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return false;
+
+      who.textContent = `관리자: ${data.name}`;
+      return true;
+    }
+
+    async function loadTrees(){
+      const { data, error } = await supabase
+        .from("trees")
+        .select("id,name,start_date,current_week,is_active,created_at")
+        .eq("is_active", true)
+        .order("start_date", { ascending: false });
+
+      if (error) throw error;
+
+      trees = data || [];
+      treeSelect.innerHTML = trees.map(t => {
+        const label = `${t.name} (오픈 ${t.current_week}주차)`;
+        return `<option value="${t.id}">${label}</option>`;
+      }).join("");
+
+      selectedTree = trees[0] || null;
+      if (selectedTree) {
+        treeSelect.value = String(selectedTree.id);
+        weekSelect.value = String(selectedTree.current_week || 1);
+      }
+    }
+
+    async function loadSlots(){
+      if (!selectedTree) return;
+
+      const { data, error } = await supabase
+        .from("slots")
+        .select(`
+          id, tree_id, template_id, position_key, parent_position_key,
+          status, buyer_name, buyer_contact, memo,
+          referrer_name, referrer_contact,
+          deposit_amount_krw, paid_at, reserved_until, updated_at, created_at,
+          slot_templates:template_id (code,title,price_krw,maintain_accounts,sale_week,referral_commission_krw,sort_order)
+        `)
+        .eq("tree_id", selectedTree.id)
+        .order("id", { ascending: true });
+
+      if (error) throw error;
+      allSlots = data || [];
+    }
+
+    async function loadCommissions(){
+      // 관리자만 조회 가능(RLS)
+      const { data, error } = await supabase
+        .from("commissions")
+        .select("id,slot_id,amount_krw,referrer_name,referrer_contact,status,created_at,paid_at")
+        .order("id", { ascending: false });
+
+      if (error) throw error;
+      commissions = data || [];
+    }
+
+    function renderStats(){
+      const counts = allSlots.reduce((acc, s) => {
+        acc[s.status] = (acc[s.status] || 0) + 1;
+        return acc;
+      }, {});
+      const paid = counts.paid || 0;
+      const reserved = counts.reserved || 0;
+      const available = counts.available || 0;
+      const cancelled = counts.cancelled || 0;
+
+      const byTemplate = {};
+      for (const s of allSlots) {
+        const code = s.slot_templates?.code || "UNKNOWN";
+        byTemplate[code] = byTemplate[code] || { title: s.slot_templates?.title || code, paid:0, reserved:0, available:0, cancelled:0 };
+        byTemplate[code][s.status] = (byTemplate[code][s.status] || 0) + 1;
+      }
+
+      const top = `
+        <div class="stat"><div class="k">판매가능</div><div class="v">${available}</div></div>
+        <div class="stat"><div class="k">예약</div><div class="v">${reserved}</div></div>
+        <div class="stat"><div class="k">입금확정</div><div class="v">${paid}</div></div>
+        <div class="stat"><div class="k">취소</div><div class="v">${cancelled}</div></div>
+      `;
+
+      const detail = Object.values(byTemplate)
+        .sort((a,b)=> (b.paid+b.reserved+b.available) - (a.paid+a.reserved+a.available))
+        .slice(0, 8)
+        .map(x => `
+          <div class="stat">
+            <div class="k">${x.title}</div>
+            <div class="sub" style="margin:8px 0 0;">
+              available ${x.available||0} · reserved ${x.reserved||0} · paid ${x.paid||0} · cancelled ${x.cancelled||0}
+            </div>
+          </div>
+        `).join("");
+
+      el("stats").innerHTML = top + detail;
+    }
+
+    function renderReserved(){
+      const list = allSlots.filter(s => s.status === "reserved")
+        .sort((a,b)=> new Date(a.reserved_until||0) - new Date(b.reserved_until||0));
+
+      if (!list.length) {
+        el("tab_reserved").innerHTML = `<div class="sub">예약된 항목이 없습니다.</div>`;
+        return;
+      }
+
+      el("tab_reserved").innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">상태</th>
+              <th>직급/슬롯</th>
+              <th>구매자</th>
+              <th>연결자</th>
+              <th>예약만료</th>
+              <th style="width:260px;">처리</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(s => {
+              const t = s.slot_templates || {};
+              const defaultAmt = t.price_krw || 0;
+              return `
+                <tr>
+                  <td>${pillStatus(s.status)}</td>
+                  <td>
+                    <b>${t.title || "-"}</b><br>
+                    <span class="mono">${s.position_key}</span><br>
+                    <span class="muted">가격 ${won(t.price_krw)} · 오픈 ${t.sale_week}주차 · 유지 ${t.maintain_accounts}계정</span>
+                  </td>
+                  <td>
+                    <b>${s.buyer_name || "-"}</b><br>
+                    <span class="mono">${s.buyer_contact || "-"}</span><br>
+                    <span class="muted">${(s.memo||"").replaceAll("<","&lt;")}</span>
+                  </td>
+                  <td>
+                    <b>${s.referrer_name || "-"}</b><br>
+                    <span class="mono">${s.referrer_contact || "-"}</span>
+                  </td>
+                  <td>${fmt(s.reserved_until)}</td>
+                  <td>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button class="btn ok" data-act="paid" data-id="${s.id}" data-default="${defaultAmt}">입금확정</button>
+                      <button class="btn ghost" data-act="release" data-id="${s.id}">예약해제</button>
+                      <button class="btn bad" data-act="cancel" data-id="${s.id}">취소</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+
+      el("tab_reserved").querySelectorAll("button[data-act]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const act = btn.getAttribute("data-act");
+          const id = Number(btn.getAttribute("data-id"));
+
+          try{
+            if (act === "paid") {
+              const def = Number(btn.getAttribute("data-default") || 0);
+              const amtStr = prompt("입금확정 금액(원) 입력", String(def));
+              if (amtStr === null) return;
+              const amt = Number(String(amtStr).replaceAll(",","").trim());
+              if (!Number.isFinite(amt) || amt <= 0) { alert("금액이 올바르지 않습니다."); return; }
+
+              const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "paid", p_deposit_amount_krw: amt });
+              if (error) throw error;
+              alert("입금확정 처리 완료");
+            }
+            if (act === "release") {
+              const ok = confirm("예약 해제하고 다시 판매가능으로 돌릴까요?");
+              if (!ok) return;
+              const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "available" });
+              if (error) throw error;
+            }
+            if (act === "cancel") {
+              const ok = confirm("취소 처리할까요?");
+              if (!ok) return;
+              const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "cancelled" });
+              if (error) throw error;
+            }
+            await refreshAll();
+          } catch(e){
+            console.error(e);
+            alert("처리 오류: " + (e.message || e));
+          }
+        });
+      });
+    }
+
+    function renderPaid(){
+      const list = allSlots.filter(s => s.status === "paid")
+        .sort((a,b)=> new Date(b.paid_at||0) - new Date(a.paid_at||0));
+
+      if (!list.length) {
+        el("tab_paid").innerHTML = `<div class="sub">입금확정(paid) 항목이 없습니다.</div>`;
+        return;
+      }
+
+      el("tab_paid").innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">상태</th>
+              <th>직급/슬롯</th>
+              <th>구매자(고정)</th>
+              <th>입금</th>
+              <th>스케줄</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(s => {
+              const t = s.slot_templates || {};
+              const allowanceStart = addDays(s.paid_at, 40);
+              const maintainDue = addDays(s.paid_at, 60);
+              return `
+                <tr>
+                  <td>${pillStatus(s.status)}</td>
+                  <td>
+                    <b>${t.title || "-"}</b><br>
+                    <span class="mono">${s.position_key}</span><br>
+                    <span class="muted">가격 ${won(t.price_krw)} · 오픈 ${t.sale_week}주차 · 유지 ${t.maintain_accounts}계정</span>
+                  </td>
+                  <td>
+                    <b>${s.buyer_name || "-"}</b><br>
+                    <span class="mono">${s.buyer_contact || "-"}</span><br>
+                    <span class="muted">${(s.memo||"").replaceAll("<","&lt;")}</span><br>
+                    <span class="muted">연결자: <b>${s.referrer_name || "-"}</b> <span class="mono">${s.referrer_contact || ""}</span></span>
+                  </td>
+                  <td>
+                    확정일: <b>${fmt(s.paid_at)}</b><br>
+                    입금액: <b>${won(s.deposit_amount_krw || 0)}</b>
+                  </td>
+                  <td>
+                    수당 시작: <b>${allowanceStart ? fmt(allowanceStart) : "-"}</b><br>
+                    유지 전환: <b>${maintainDue ? fmt(maintainDue) : "-"}</b><br>
+                    <span class="muted">유지: ${t.maintain_accounts}계정 × 400USDT / 60일 (구매자 본인)</span>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderAvailable(){
+      const openWeek = Number(weekSelect.value || 1);
+      const list = allSlots
+        .filter(s => s.status === "available")
+        .filter(s => (s.slot_templates?.sale_week ?? 99) <= openWeek)
+        .sort((a,b)=> (a.slot_templates?.sort_order ?? 999) - (b.slot_templates?.sort_order ?? 999));
+
+      const closed = allSlots
+        .filter(s => s.status === "available")
+        .filter(s => (s.slot_templates?.sale_week ?? 99) > openWeek);
+
+      el("tab_available").innerHTML = `
+        <div class="sub" style="margin-bottom:10px;">
+          현재 오픈 주차(${openWeek}주차) 기준 판매가능: <b>${list.length}</b>개 / 오픈 전(숨김 대상): <b>${closed.length}</b>개
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">상태</th>
+              <th>직급/슬롯</th>
+              <th>가격</th>
+              <th>오픈 주차</th>
+              <th>유지</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(s => {
+              const t = s.slot_templates || {};
+              return `
+                <tr>
+                  <td>${pillStatus(s.status)}</td>
+                  <td><b>${t.title || "-"}</b><br><span class="mono">${s.position_key}</span></td>
+                  <td><b>${won(t.price_krw)}</b></td>
+                  <td>${t.sale_week}주차</td>
+                  <td>${t.maintain_accounts}계정</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderCommissions(){
+      const pend = commissions.filter(c => c.status === "pending");
+      const paid = commissions.filter(c => c.status === "paid");
+
+      el("tab_commissions").innerHTML = `
+        <div class="sub" style="margin-bottom:10px;">
+          pending: <b>${pend.length}</b>건 · paid: <b>${paid.length}</b>건
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">상태</th>
+              <th>연결자</th>
+              <th>금액</th>
+              <th>생성일</th>
+              <th>지급일</th>
+              <th style="width:160px;">처리</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${commissions.map(c => `
+              <tr>
+                <td>${c.status === "paid" ? `<span class="pill ok">paid</span>` : `<span class="pill warn">pending</span>`}</td>
+                <td><b>${c.referrer_name}</b><br><span class="mono">${c.referrer_contact || "-"}</span></td>
+                <td><b>${won(c.amount_krw)}</b></td>
+                <td>${fmt(c.created_at)}</td>
+                <td>${c.paid_at ? fmt(c.paid_at) : "-"}</td>
+                <td>
+                  ${c.status === "pending"
+                    ? `<button class="btn ok" data-pay="${c.id}">지급완료</button>`
+                    : `<button class="btn ghost" disabled>완료</button>`
+                  }
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      el("tab_commissions").querySelectorAll("button[data-pay]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = Number(btn.getAttribute("data-pay"));
+          const ok = confirm("커미션 지급완료 처리할까요?");
+          if (!ok) return;
+          try{
+            const { error } = await supabase.rpc("admin_mark_commission_paid", { p_commission_id: id });
+            if (error) throw error;
+            await refreshAll();
+          } catch(e){
+            console.error(e);
+            alert("처리 오류: " + (e.message || e));
+          }
+        });
+      });
+    }
+
+    function setTab(name){
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
+
+      ["reserved","paid","available","commissions"].forEach(x => {
+        el("tab_"+x).style.display = (x === name) ? "block" : "none";
+      });
+    }
+
+    async function refreshAll(){
+      await loadTrees();
+      if (selectedTree) {
+        // 유지: treeSelect 바뀐 경우 갱신
+        const selectedId = Number(treeSelect.value || selectedTree.id);
+        selectedTree = trees.find(t => t.id === selectedId) || trees[0] || null;
+        if (selectedTree) {
+          treeSelect.value = String(selectedTree.id);
+          weekSelect.value = String(selectedTree.current_week || 1);
+        }
+      }
+      await loadSlots();
+      await loadCommissions();
+      renderStats();
+      renderReserved();
+      renderPaid();
+      renderAvailable();
+      renderCommissions();
+    }
+
+    async function signIn(){
+      const email = el("email").value.trim();
+      const password = el("password").value;
+      if (!email || !password) { alert("이메일/비밀번호를 입력하세요."); return; }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { alert("로그인 실패: " + (error.message || error)); return; }
+
+      await boot();
+    }
+
+    async function signOut(){
+      await supabase.auth.signOut();
+      location.reload();
+    }
+
+    async function boot(){
+      try{
+        isAdmin = await checkAdmin();
+        if (!isAdmin) {
+          loginView.style.display = "block";
+          appView.style.display = "none";
+          signOutBtn.style.display = "none";
+          who.textContent = "권한 없음 (admin_users 등록 필요)";
+          alert("이 계정은 관리자 권한이 없습니다. admin_users에 등록하세요.");
+          return;
+        }
+
+        loginView.style.display = "none";
+        appView.style.display = "block";
+        signOutBtn.style.display = "inline-block";
+
+        await refreshAll();
+
+      } catch(e){
+        console.error(e);
+        alert("초기화 오류: " + (e.message || e));
+      }
+    }
+
+    async function updateWeek(){
+      if (!selectedTree) return;
+      const newWeek = Number(weekSelect.value || 1);
+      try{
+        // 주차 업데이트는 RPC로 처리(권장)
+        const { error } = await supabase.rpc("admin_set_tree_week", {
+          p_tree_id: selectedTree.id,
+          p_week: newWeek
+        });
+        if (error) throw error;
+
+        alert("오픈 주차 반영 완료");
+        await refreshAll();
+      } catch(e){
+        console.error(e);
+        alert("주차 업데이트 실패: " + (e.message || e) + "\n\n(필요하면 RPC admin_set_tree_week SQL을 실행해야 합니다.)");
+      }
+    }
+
+    function wire(){
+      el("signInBtn").addEventListener("click", signIn);
+      signOutBtn.addEventListener("click", signOut);
+      el("refreshBtn").addEventListener("click", () => refreshAll());
+
+      treeSelect.addEventListener("change", async () => {
+        const id = Number(treeSelect.value);
+        selectedTree = trees.find(t => t.id === id) || null;
+        if (selectedTree) weekSelect.value = String(selectedTree.current_week || 1);
+        await refreshAll();
+      });
+
+      el("updateWeekBtn").addEventListener("click", updateWeek);
+
+      document.querySelectorAll(".tab").forEach(btn => {
+        btn.addEventListener("click", () => setTab(btn.getAttribute("data-tab")));
+      });
+    }
+
+    wire();
+    boot();
+  </script>
+</body>
+</html>
