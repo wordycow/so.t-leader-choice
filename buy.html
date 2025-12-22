@@ -58,9 +58,7 @@
       box-shadow: 0 12px 35px rgba(0,0,0,.35);
     }
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-    select, input, textarea, button{
-      font:inherit;
-    }
+    select, input, textarea, button{ font:inherit; }
     select, input, textarea{
       width:100%;
       padding:10px 12px;
@@ -291,9 +289,9 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    // ✅ 여기에 너 Supabase 정보 넣어
-    const SUPABASE_URL = "https://YOURPROJECT.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    // ✅ Supabase 설정(요청하신 값으로 적용)
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
     // ✅ 원화 입금 안내 (필요시 수정)
     const DEPOSIT_INFO = {
@@ -324,12 +322,8 @@
     function weekBadgeClass(w){
       return w === 1 ? "week1" : w === 2 ? "week2" : w === 3 ? "week3" : "week4";
     }
-    function weekLabel(w){
-      return `${w}주차`;
-    }
-    function nowClock(){
-      el("clock").textContent = new Date().toLocaleString("ko-KR");
-    }
+    function weekLabel(w){ return `${w}주차`; }
+    function nowClock(){ el("clock").textContent = new Date().toLocaleString("ko-KR"); }
 
     function renderDepositInfo(){
       el("depositInfo").innerHTML = `
@@ -348,6 +342,7 @@
         .order("start_date", { ascending: false });
 
       if (error) throw error;
+
       trees = data || [];
       treeSelect.innerHTML = trees.map(t => {
         const label = `${t.name} (오픈 ${t.current_week}주차)`;
@@ -366,7 +361,6 @@
     async function loadSlots(){
       if (!selectedTree) return;
 
-      // 공개 페이지는 RLS로 available만 읽혀야 함
       const { data, error } = await supabase
         .from("slots")
         .select(`
@@ -381,10 +375,8 @@
       if (error) throw error;
 
       const raw = data || [];
-      // 오픈 주차 필터(템플릿 sale_week <= tree current_week)
       slots = raw.filter(s => (s.trees?.current_week ?? 1) >= (s.slot_templates?.sale_week ?? 99));
 
-      // 주차 필터 UI 적용
       const wf = weekFilter.value;
       let view = slots;
       if (wf !== "all") {
@@ -412,8 +404,10 @@
         const w = t.sale_week || 0;
         const keepN = t.maintain_accounts || 0;
         const commission = t.referral_commission_krw || 0;
+
         const badge = `<span class="badge ${weekBadgeClass(w)}"><span class="dot ${w===1?'w1':w===2?'w2':w===3?'w3':'w4'}"></span><strong>${weekLabel(w)}</strong></span>`;
         const commLine = (commission > 0) ? `<div class="meta">연결자 커미션: <b>${won(commission)}</b> (Star1 확정 시)</div>` : "";
+
         return `
           <div class="card">
             <div class="topline">
@@ -447,6 +441,7 @@
       const t = slot.slot_templates || {};
       el("modalTitle").textContent = `구매 신청(예약) — ${t.title ?? ""}`;
       el("modalSub").textContent = `가격 ${won(t.price_krw)} / 유지 ${t.maintain_accounts}계정 / ${t.sale_week}주차 오픈 / 슬롯 ${slot.position_key}`;
+
       const commission = t.referral_commission_krw || 0;
       el("modalHint").innerHTML = `
         <b>예약 후 안내</b><br>
@@ -455,7 +450,7 @@
         ${commission > 0 ? `• Star1은 연결자 입력 시 확정되면 연결자에게 <b>${won(commission)}</b> 지급됩니다.<br>` : ``}
         • 예약은 중복 방지를 위한 선착순 잠금이며, 미입금 시 예약이 해제될 수 있습니다.
       `;
-      // reset inputs
+
       el("buyerName").value = "";
       el("buyerContact").value = "";
       el("refName").value = "";
@@ -483,8 +478,7 @@
         return;
       }
 
-      // RPC: reserve_slot
-      const { data, error } = await supabase.rpc("reserve_slot", {
+      const { error } = await supabase.rpc("reserve_slot", {
         p_slot_id: selectedSlot.id,
         p_buyer_name: buyerName,
         p_buyer_contact: buyerContact,
