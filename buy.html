@@ -7,23 +7,26 @@
   <style>
     :root{
       --bg:#0b1020;
-      --line:#263357;
+      --panel:#0f1730;
       --text:#e7ecff;
       --muted:#aab4da;
 
-      /* ✅ 주차 색(그림 기준) */
-      --w1:#f7b500;   /* 1주차 노랑 */
-      --w2:#8a63ff;   /* 2주차 보라 */
-      --w3:#ff7a00;   /* 3주차 주황 */
-      --w4:#e5e7eb;   /* 4주차 흰/연회색 */
+      /* ✅ 그림 테두리(보라 라인) */
+      --outline:#8050F0;
 
-      /* ✅ 직급 색(그림 느낌) */
-      --pro1:#f7b500;
-      --star3:#fb923c;
-      --star2:#f7b500;
-      --s1top:#8a63ff;
-      --s1bot:#ff7a00;
-      --none:#e5e7eb;
+      /* ✅ 그림 채움색(직급) */
+      --pro1:#B08000;      /* pro1 금색 */
+      --star3:#F06020;     /* star3 주황 */
+      --star2:#F0F000;     /* star2 노랑 */
+      --s1top:#A090F0;     /* star1(상위) 보라 */
+      --s1bot:#F0B070;     /* star1(하위) 베이지/주황 */
+      --none:#FFFFFF;      /* 무직급 흰색 */
+
+      /* ✅ 주차 색(그림 좌측) */
+      --w1:#F0F000;
+      --w2:#A090F0;
+      --w3:#F0B070;
+      --w4:#FFFFFF;
 
       --shadow: 0 14px 32px rgba(0,0,0,.55);
     }
@@ -34,11 +37,11 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
       color:var(--text);
       background:
-        radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,.28), transparent 60%),
-        radial-gradient(900px 500px at 90% 10%, rgba(255,122,0,.16), transparent 55%),
+        radial-gradient(1200px 600px at 20% -10%, rgba(128,80,240,.22), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(240,176,112,.12), transparent 55%),
         var(--bg);
     }
-    a{ color:inherit; }
+
     .wrap{ max-width:1100px; margin:0 auto; padding:28px 16px 80px; }
 
     header{
@@ -48,12 +51,11 @@
     .title h1{ margin:0; font-size:22px; letter-spacing:-0.2px; }
     .title p{ margin:8px 0 0; color:var(--muted); font-size:13px; line-height:1.45; }
 
-    /* 주차 pills */
     .pillrow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
     .pill{
       display:inline-flex; align-items:center; gap:8px;
       padding:8px 10px;
-      border:1px solid var(--line);
+      border:1px solid rgba(38,51,87,.9);
       background: rgba(17,26,51,.55);
       border-radius:999px; font-size:12px; color:var(--muted);
     }
@@ -61,11 +63,11 @@
     .dot.w1{ background:var(--w1); }
     .dot.w2{ background:var(--w2); }
     .dot.w3{ background:var(--w3); }
-    .dot.w4{ background:var(--w4); border:1px solid rgba(38,51,87,.7); }
+    .dot.w4{ background:var(--w4); border:1px solid rgba(38,51,87,.65); }
 
     .panel{
       background: linear-gradient(180deg, rgba(17,26,51,.85), rgba(15,23,48,.75));
-      border:1px solid var(--line);
+      border:1px solid rgba(38,51,87,.9);
       border-radius:16px;
       padding:14px;
       box-shadow: 0 12px 35px rgba(0,0,0,.35);
@@ -76,12 +78,11 @@
       width:100%;
       padding:10px 12px;
       border-radius:12px;
-      border:1px solid var(--line);
+      border:1px solid rgba(38,51,87,.9);
       background: rgba(9,13,28,.65);
       color:var(--text);
       outline:none;
     }
-    textarea{ min-height:90px; resize:vertical; }
 
     .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
@@ -91,24 +92,19 @@
       cursor:pointer;
       padding:10px 12px;
       border-radius:12px;
-      border:1px solid rgba(124,92,255,.55);
-      background: rgba(124,92,255,.18);
+      border:1px solid rgba(128,80,240,.65);
+      background: rgba(128,80,240,.18);
       color:var(--text);
-      font-weight:700;
+      font-weight:800;
     }
-    .btn:hover{ background: rgba(124,92,255,.28); }
+    .btn:hover{ background: rgba(128,80,240,.28); }
     .btn.ghost{
-      border:1px solid var(--line);
+      border:1px solid rgba(38,51,87,.9);
       background: rgba(17,26,51,.35);
       color:var(--muted);
-      font-weight:600;
+      font-weight:700;
     }
     .btn.ghost:hover{ background: rgba(17,26,51,.55); color:var(--text); }
-    .btn.ok{
-      border:1px solid rgba(43,213,118,.55);
-      background: rgba(43,213,118,.14);
-    }
-    .btn.ok:hover{ background: rgba(43,213,118,.22); }
 
     .grid{
       margin-top:14px;
@@ -119,15 +115,16 @@
     @media (max-width: 980px){ .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
     @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
 
-    /* ✅ 카드 기본 */
+    /* ✅ 카드: “그림처럼” 보라 테두리 + 직급색 배경 */
     .card{
-      border:1px solid var(--line);
+      border:2px solid var(--outline);
       border-radius:16px;
       padding:12px;
       display:flex; flex-direction:column; gap:10px;
       min-height:140px;
       box-shadow: var(--shadow);
       background: rgba(17,26,51,.55);
+      color: #0b1020; /* 기본은 카드 안에서 검정 계열로 */
     }
 
     .topline{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -138,83 +135,68 @@
       display:flex;
       align-items:center;
       gap:8px;
+      color:#0b1020;
     }
-    .meta{ color:var(--muted); font-size:12px; line-height:1.4; }
-    .meta b{ color: var(--text); }
+    .r-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; border:1px solid rgba(0,0,0,.18); }
+
+    .meta{ color: rgba(11,16,32,.85); font-size:12px; line-height:1.4; }
+    .meta b{ color:#0b1020; }
 
     /* 주차 badge */
     .badge{
       font-size:11px;
       padding:6px 9px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.15);
-      color:rgba(255,255,255,.92);
-      background: rgba(15,23,48,.6);
+      border:1px solid rgba(0,0,0,.25);
+      color:#0b1020;
+      background: rgba(255,255,255,.35);
       display:inline-flex; align-items:center; gap:7px;
       white-space:nowrap;
-      font-weight:800;
+      font-weight:900;
     }
-    .badge .bdot{ width:8px; height:8px; border-radius:999px; display:inline-block; }
-    .badge.week1{ background: rgba(247,181,0,.16); border-color: rgba(247,181,0,.55); }
+    .badge .bdot{ width:8px; height:8px; border-radius:999px; display:inline-block; border:1px solid rgba(0,0,0,.18); }
+
+    .badge.week1{ background: rgba(240,240,0,.65); }
     .badge.week1 .bdot{ background: var(--w1); }
-    .badge.week2{ background: rgba(138,99,255,.16); border-color: rgba(138,99,255,.55); }
+    .badge.week2{ background: rgba(160,144,240,.65); }
     .badge.week2 .bdot{ background: var(--w2); }
-    .badge.week3{ background: rgba(255,122,0,.16); border-color: rgba(255,122,0,.55); }
+    .badge.week3{ background: rgba(240,176,112,.70); }
     .badge.week3 .bdot{ background: var(--w3); }
-    .badge.week4{ background: rgba(229,231,235,.10); border-color: rgba(229,231,235,.35); }
-    .badge.week4 .bdot{ background: var(--w4); border:1px solid rgba(38,51,87,.55); }
+    .badge.week4{ background: rgba(255,255,255,.65); }
+    .badge.week4 .bdot{ background: var(--w4); }
 
-    /* ✅ 직급 dot */
-    .r-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
-
-    /* ✅ 여기서 “블럭 배경색”이 들어감 (첫번째 그림 느낌으로) */
-    .rank-PRO1{
-      border-color: rgba(247,181,0,.65);
-      background: linear-gradient(180deg, rgba(247,181,0,.22), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(247,181,0,.18), var(--shadow);
+    /* 잠금(오픈전) 배지 */
+    .lock{
+      border-color: rgba(0,0,0,.25);
+      background: rgba(0,0,0,.10);
+      color: rgba(0,0,0,.75);
     }
-    .rank-PRO1 .name{ color: rgba(255,236,179,.98); }
+
+    /* 직급별 배경(그림 채움색) */
+    .rank-PRO1{ background: linear-gradient(180deg, rgba(176,128,0,.95), rgba(176,128,0,.55)); }
     .rank-PRO1 .r-dot{ background: var(--pro1); }
 
-    .rank-STAR3{
-      border-color: rgba(251,146,60,.65);
-      background: linear-gradient(180deg, rgba(251,146,60,.22), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(251,146,60,.16), var(--shadow);
-    }
-    .rank-STAR3 .name{ color: rgba(255,221,199,.98); }
+    .rank-STAR3{ background: linear-gradient(180deg, rgba(240,96,32,.92), rgba(240,96,32,.55)); }
     .rank-STAR3 .r-dot{ background: var(--star3); }
 
-    .rank-STAR2{
-      border-color: rgba(247,181,0,.55);
-      background: linear-gradient(180deg, rgba(247,181,0,.16), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(247,181,0,.14), var(--shadow);
-    }
-    .rank-STAR2 .name{ color: rgba(255,236,179,.98); }
+    .rank-STAR2{ background: linear-gradient(180deg, rgba(240,240,0,.82), rgba(240,240,0,.50)); }
     .rank-STAR2 .r-dot{ background: var(--star2); }
 
-    .rank-STAR1_TOP{
-      border-color: rgba(138,99,255,.60);
-      background: linear-gradient(180deg, rgba(138,99,255,.22), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(138,99,255,.14), var(--shadow);
-    }
-    .rank-STAR1_TOP .name{ color: rgba(226,219,255,.98); }
+    .rank-STAR1_TOP{ background: linear-gradient(180deg, rgba(160,144,240,.92), rgba(160,144,240,.55)); }
     .rank-STAR1_TOP .r-dot{ background: var(--s1top); }
 
-    .rank-STAR1_BOTTOM{
-      border-color: rgba(255,122,0,.55);
-      background: linear-gradient(180deg, rgba(255,122,0,.20), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(255,122,0,.12), var(--shadow);
-    }
-    .rank-STAR1_BOTTOM .name{ color: rgba(255,226,200,.98); }
+    .rank-STAR1_BOTTOM{ background: linear-gradient(180deg, rgba(240,176,112,.92), rgba(240,176,112,.55)); }
     .rank-STAR1_BOTTOM .r-dot{ background: var(--s1bot); }
 
-    .rank-NONE{
-      border-color: rgba(229,231,235,.35);
-      background: linear-gradient(180deg, rgba(229,231,235,.16), rgba(17,26,51,.55) 55%);
-      box-shadow: 0 0 0 1px rgba(229,231,235,.08), var(--shadow);
+    .rank-NONE{ background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.55)); }
+    .rank-NONE .r-dot{ background: var(--none); }
+
+    /* 오픈 전(잠김) 처리 */
+    .locked{
+      filter: grayscale(.15);
+      opacity: .75;
     }
-    .rank-NONE .name{ color: rgba(245,245,245,.96); }
-    .rank-NONE .r-dot{ background: var(--none); border:1px solid rgba(38,51,87,.55); }
+    .locked .btn{ opacity:.55; pointer-events:none; }
 
     .footnote{ margin-top:12px; color:var(--muted); font-size:12px; line-height:1.5; }
     .statusline{
@@ -235,10 +217,11 @@
     .modal{
       width:min(720px, 100%);
       border-radius:18px;
-      border:1px solid var(--line);
+      border:1px solid rgba(38,51,87,.9);
       background: linear-gradient(180deg, rgba(17,26,51,.96), rgba(15,23,48,.92));
       box-shadow: 0 18px 60px rgba(0,0,0,.55);
       padding:14px;
+      color: var(--text);
     }
     .modal h2{ margin:4px 0 0; font-size:16px; }
     .modal p{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
@@ -249,8 +232,8 @@
       margin-top:10px;
       padding:10px 12px;
       border-radius:14px;
-      border:1px dashed rgba(124,92,255,.45);
-      background: rgba(124,92,255,.10);
+      border:1px dashed rgba(128,80,240,.45);
+      background: rgba(128,80,240,.10);
       color:var(--muted);
       font-size:12px;
       line-height:1.5;
@@ -278,8 +261,8 @@
 
       <div class="panel" style="min-width:280px">
         <div class="label">안내(입금 정보)</div>
-        <div class="meta" id="depositInfo"></div>
-        <div style="height:1px; background:var(--line); opacity:.8; margin:6px 0;"></div>
+        <div class="meta" id="depositInfo" style="color:var(--muted)"></div>
+        <div style="height:1px; background:rgba(38,51,87,.9); opacity:.8; margin:6px 0;"></div>
         <button class="btn ghost" id="refreshBtn">새로고침</button>
       </div>
     </header>
@@ -297,7 +280,8 @@
         <div class="control">
           <div class="label">필터</div>
           <select id="weekFilter">
-            <option value="all">전체(오픈된 것만)</option>
+            <option value="all_all" selected>전체(1~4주차 전부 표시)</option>
+            <option value="all_open">전체(오픈된 것만)</option>
             <option value="1">1주차만</option>
             <option value="2">2주차만</option>
             <option value="3">3주차만</option>
@@ -314,7 +298,7 @@
       <div class="grid" id="slotGrid"></div>
 
       <div class="footnote">
-        • <b>선착순</b>이며, 예약(신청)이 들어가면 해당 슬롯은 목록에서 사라집니다(중복 구매 방지).<br>
+        • “전체(1~4주차 전부 표시)”에서는 2/3/4주차가 <b>오픈 전이면 잠금</b>으로 보입니다(예약 불가).<br>
         • Star1은 연결자(소개자)가 있으면 판매 확정 시 <b>30만원</b>이 연결자에게 지급됩니다(입금확정 기준).<br>
         • 무직급 50만원은 할인 정책이며, 유지 의무(1계정)는 동일합니다.
       </div>
@@ -362,7 +346,7 @@
 
       <div class="modal-actions">
         <button class="btn ghost" id="cancelReserve">취소</button>
-        <button class="btn ok" id="confirmReserve">예약 확정</button>
+        <button class="btn" id="confirmReserve">예약 확정</button>
       </div>
     </div>
   </div>
@@ -395,12 +379,8 @@
     let selectedTree = null;
     let selectedSlot = null;
 
-    function won(n){
-      try { return (n||0).toLocaleString("ko-KR") + "원"; } catch { return n + "원"; }
-    }
-    function weekClass(w){
-      return w === 1 ? "week1" : w === 2 ? "week2" : w === 3 ? "week3" : "week4";
-    }
+    function won(n){ try { return (n||0).toLocaleString("ko-KR") + "원"; } catch { return n + "원"; } }
+    function weekCls(w){ return w===1?"week1":w===2?"week2":w===3?"week3":"week4"; }
     function weekLabel(w){ return w + "주차"; }
     function nowClock(){ el("clock").textContent = new Date().toLocaleString("ko-KR"); }
 
@@ -411,9 +391,9 @@
 
     function renderDepositInfo(){
       el("depositInfo").innerHTML = `
-        <div><b>${DEPOSIT_INFO.bank}</b></div>
+        <div><b style="color:var(--text)">${DEPOSIT_INFO.bank}</b></div>
         <div class="mono">${DEPOSIT_INFO.account}</div>
-        <div>예금주: <b>${DEPOSIT_INFO.holder}</b></div>
+        <div>예금주: <b style="color:var(--text)">${DEPOSIT_INFO.holder}</b></div>
         <div style="margin-top:6px; color:var(--muted); font-size:12px;">${DEPOSIT_INFO.note}</div>
       `;
     }
@@ -440,11 +420,6 @@
       }
       treeSelect.value = String(selectedTree.id);
       currentWeek.value = `${selectedTree.current_week}주차 오픈`;
-
-      /* ✅ 기본 필터는 전체 */
-      if (!weekFilter.value || weekFilter.value === "1") {
-        weekFilter.value = "all";
-      }
     }
 
     async function loadSlots(){
@@ -464,27 +439,35 @@
       if (error) throw error;
 
       const raw = data || [];
+      slots = raw;
 
-      /* ✅ “오픈 주차” 기준으로 열어둔 것만 보여줌 */
-      slots = raw.filter(s => (s.trees?.current_week ?? 1) >= (s.slot_templates?.sale_week ?? 99));
+      const openWeek = (raw[0]?.trees?.current_week ?? selectedTree.current_week ?? 1);
 
+      // 필터 적용
       const wf = weekFilter.value;
       let view = slots;
-      if (wf !== "all") {
+
+      if (wf === "all_open") {
+        view = slots.filter(s => (openWeek >= (s.slot_templates?.sale_week ?? 99)));
+      } else if (wf === "all_all") {
+        view = slots; // 전체 표시(잠금 포함)
+      } else {
         const w = Number(wf);
         view = slots.filter(s => (s.slot_templates?.sale_week ?? 0) === w);
       }
 
-      renderSlots(view);
-      statusText.textContent = `판매 가능: ${view.length}개 (전체 오픈/판매가능: ${slots.length}개)`;
+      renderSlots(view, openWeek);
+
+      const openCount = slots.filter(s => openWeek >= (s.slot_templates?.sale_week ?? 99)).length;
+      statusText.textContent = `표시 ${view.length}개 / 오픈된 슬롯 ${openCount}개 / 전체(available) ${slots.length}개`;
     }
 
-    function renderSlots(list){
+    function renderSlots(list, openWeek){
       if (!list.length) {
         slotGrid.innerHTML = `
-          <div class="card" style="grid-column:1/-1;">
-            <div class="name"><span class="r-dot" style="background:#9ca3af;"></span>지금 살 수 있는 슬롯이 없습니다.</div>
-            <div class="meta">관리자에서 “오픈 주차”를 올리면 2/3/4주차도 자동으로 뜹니다.</div>
+          <div class="card" style="grid-column:1/-1; background:rgba(17,26,51,.55); color:var(--text);">
+            <div class="name" style="color:var(--text);"><span class="r-dot" style="background:#9ca3af;"></span>표시할 슬롯이 없습니다.</div>
+            <div class="meta" style="color:var(--muted);">필터/오픈 주차를 확인하세요.</div>
           </div>
         `;
         return;
@@ -495,21 +478,32 @@
         const w = t.sale_week || 0;
         const keepN = t.maintain_accounts || 0;
         const commission = t.referral_commission_krw || 0;
+        const isOpen = openWeek >= w;
 
-        const weekCls = weekClass(w);
-        const rankCls = safeRankClass(t.code);
+        const weekBadge = `
+          <span class="badge ${weekCls(w)}">
+            <span class="bdot"></span>${weekLabel(w)}
+          </span>
+        `;
+
+        const lockBadge = isOpen ? "" : `
+          <span class="badge lock"><span class="bdot" style="background:#111827;"></span>오픈전</span>
+        `;
 
         const commLine = (commission > 0)
           ? `<div class="meta">연결자 커미션: <b>${won(commission)}</b> (Star1 확정 시)</div>`
           : "";
 
+        const rankCls = safeRankClass(t.code);
+
         return `
-          <div class="card ${rankCls}">
+          <div class="card ${rankCls} ${isOpen ? "" : "locked"}">
             <div class="topline">
               <div class="name"><span class="r-dot"></span>${t.title ?? "직급"}</div>
-              <span class="badge ${weekCls}">
-                <span class="bdot"></span>${weekLabel(w)}
-              </span>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                ${weekBadge}
+                ${lockBadge}
+              </div>
             </div>
 
             <div class="meta">
@@ -521,7 +515,7 @@
             ${commLine}
 
             <div style="margin-top:auto; display:flex; gap:8px; justify-content:flex-end;">
-              <button class="btn" data-slot="${s.id}">예약하기</button>
+              <button class="btn" data-slot="${s.id}">${isOpen ? "예약하기" : "대기"}</button>
             </div>
           </div>
         `;
@@ -531,6 +525,8 @@
         btn.addEventListener("click", () => {
           const slotId = Number(btn.getAttribute("data-slot"));
           const slot = list.find(x => x.id === slotId);
+          const saleWeek = slot?.slot_templates?.sale_week ?? 99;
+          if (openWeek < saleWeek) return; // 잠금이면 클릭 무시
           openModal(slot);
         });
       });
@@ -548,7 +544,7 @@
         1) 이 페이지에서 예약(신청) → 2) 원화 입금 → 3) 관리자 입금확정 처리<br>
         <b>수당 시작</b>: 입금확정 + 40일 / <b>유지 전환</b>: 입금확정 + 60일<br>
         ${commission > 0 ? `• Star1은 연결자 입력 시 확정되면 연결자에게 <b>${won(commission)}</b> 지급됩니다.<br>` : ``}
-        • 예약은 중복 방지를 위한 선착순 잠금이며, 미입금 시 예약이 해제될 수 있습니다.
+        • 예약은 선착순 잠금이며, 미입금 시 예약이 해제될 수 있습니다.
       `;
 
       el("buyerName").value = "";
@@ -591,7 +587,7 @@
         if (String(error.message || "").includes("SLOT_NOT_AVAILABLE")) {
           alert("이미 다른 사람이 예약/구매한 슬롯입니다. 새로고침 후 다시 선택하세요.");
         } else {
-          alert("예약 처리 중 오류가 발생했습니다: " + (error.message || error));
+          alert("예약 처리 중 오류: " + (error.message || error));
         }
         return;
       }
@@ -615,7 +611,7 @@
         const id = Number(treeSelect.value);
         selectedTree = trees.find(t => t.id === id) || null;
         currentWeek.value = selectedTree ? `${selectedTree.current_week}주차 오픈` : "";
-        weekFilter.value = "all";   // ✅ 트리 바꾸면 항상 전체로
+        weekFilter.value = "all_all";
         await loadSlots();
       });
 
