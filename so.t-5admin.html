@@ -254,6 +254,24 @@
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ===== Google Sheet Webhook 설정 =====
+const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzNrCg1e9xTXippS0oruvgu81f8YBccgHthyyDcqG4zB12h542pEKPEXJZJYFx_mLc9/exec";   // Apps Script 배포 URL
+const SHEET_TOKEN = "CHANGE_THIS_TO_LONG_RANDOM_TOKEN"; // Apps Script TOKEN과 동일
+
+async function pushSaleToSheet(payload) {
+  // CORS 때문에 no-cors로 보냄(응답 확인은 못 하지만 기록은 됨)
+  try {
+    await fetch(SHEET_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: SHEET_TOKEN, ...payload }),
+    });
+  } catch (e) {
+    console.error("Sheet push failed:", e);
+    // 실패해도 판매처리는 유지(운영은 계속 돌아가야 함)
+  }
+}
 
     const el = (id) => document.getElementById(id);
 
