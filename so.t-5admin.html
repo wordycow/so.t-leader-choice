@@ -152,7 +152,9 @@
           <div style="display:flex; gap:10px;">
             <button class="btn ok" id="updateWeekBtn" style="flex:1;">오픈 주차 반영</button>
             <button class="btn ghost" id="nextWeekBtn" style="flex:1;">다음 주차(+1)</button>
-          </div>
+            <button class="btn ghost" id="archiveTreeBtn">완판 종료(숨김)</button>
+<button class="btn ok" id="rolloverTreeBtn">완판→새 페이지(1주차)</button>
+     </div>
         </div>
       </div>
 
@@ -599,7 +601,47 @@
           alert("주차 업데이트 실패: " + (e.message || e));
         }
       });
+        // ✅ 완판 종료(숨김)
+  el("archiveTreeBtn")?.addEventListener("click", async () => {
+    if (!selectedTree) return;
+    const ok = confirm("완판된 페이지를 종료(숨김) 처리할까요? (완판이 아니면 막힙니다)");
+    if (!ok) return;
 
+    try{
+      const { error } = await supabase.rpc("admin_archive_tree", {
+        p_tree_id: selectedTree.id,
+        p_force: false
+      });
+      if (error) throw error;
+      alert("종료(숨김) 완료");
+      await refreshAll();
+    }catch(e){
+      alert("종료 실패: " + (e.message || e));
+    }
+  });
+
+  // ✅ 완판 → 새 페이지(1주차) 생성
+  el("rolloverTreeBtn")?.addEventListener("click", async () => {
+    if (!selectedTree) return;
+    const newName = prompt("새 페이지(트리) 이름", (selectedTree.name || "") + " (NEW)");
+    if (!newName) return;
+
+    try{
+      const { data, error } = await supabase.rpc("admin_rollover_tree", {
+        p_old_tree_id: selectedTree.id,
+        p_new_name: newName
+      });
+      if (error) throw error;
+
+      const newTreeId = data;
+      const buyLink = location.href.replace(/so\.t-5admin\.html.*$/i, "buy.html") + "?tree=" + newTreeId;
+      alert("새 페이지 생성 완료!\n\n팀 전용 판매 링크:\n" + buyLink);
+
+      await refreshAll();
+    }catch(e){
+      alert("새 페이지 생성 실패: " + (e.message || e));
+    }
+  });
       el("nextWeekBtn").addEventListener("click", async () => {
         try{
           const cur = Number(weekSelect.value || 1);
