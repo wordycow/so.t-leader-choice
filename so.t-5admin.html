@@ -145,7 +145,6 @@
 
     <section class="panel">
 
-      <!-- 상단: 팀 판매 생성 / 계좌 관리 -->
       <div class="tool-grid">
         <div class="panel" style="padding:14px;">
           <div class="label" style="font-weight:900; color:var(--text); margin-bottom:8px;">새 팀 판매 생성(새 트리 + 슬롯 43개)</div>
@@ -205,13 +204,11 @@
         </div>
       </div>
 
-      <!-- 트리/주차/링크 -->
       <div class="row">
         <div class="control">
           <div class="label">회차(Pro1 트리) 선택</div>
           <select id="treeSelect"></select>
 
-          <!-- ✅ 여기 추가: 선택한 팀 링크 항상 복사 가능 -->
           <div style="margin-top:10px;">
             <div class="label">현재 팀 구매자용 링크</div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -364,7 +361,6 @@
       const { error } = await supabase.rpc("admin_set_deposit_config", {
         p_bank: bank, p_account: account, p_holder: holder, p_note: note
       });
-
       if (error) throw error;
       el("depositSavedHint").textContent = "저장 완료: " + new Date().toLocaleString("ko-KR");
     }
@@ -372,7 +368,7 @@
     async function loadTrees(){
       const { data, error } = await supabase
         .from("trees")
-        .select("id,name,start_date,current_week,is_active,is_archived")
+        .select("id,name,start_date,current_week,is_archived")
         .or("is_archived.is.null,is_archived.eq.false")
         .order("id", { ascending: false });
 
@@ -392,6 +388,8 @@
         treeSelect.value = String(selectedTree.id);
         weekSelect.value = String(selectedTree.current_week || 1);
         el("currentTeamLink").value = makeBuyLink(selectedTree.id);
+      } else {
+        el("currentTeamLink").value = "";
       }
     }
 
@@ -401,7 +399,7 @@
       const { data, error } = await supabase
         .from("slots")
         .select(`
-          id, tree_id, template_id, position_key,
+          id, tree_id, position_key,
           status, buyer_name, buyer_contact,
           referrer_name, referrer_contact,
           deposit_amount_krw, paid_at, reserved_until, updated_at,
@@ -616,7 +614,6 @@
       });
     }
 
-    // ✅ 여기: paid 탭에 “판매 취소” 버튼 추가
     function renderPaid(){
       const list = allSlots.filter(s => s.status === "paid")
         .sort((a,b)=> new Date(b.paid_at||0) - new Date(a.paid_at||0));
@@ -725,101 +722,6 @@
       await refreshAll();
     }
 
-    function renderStats(){
-      const counts = allSlots.reduce((acc, s) => {
-        acc[s.status] = (acc[s.status] || 0) + 1;
-        return acc;
-      }, {});
-      el("stats").innerHTML =
-        '<div class="stat"><div class="k">판매가능</div><div class="v">'+(counts.available||0)+'</div></div>'+
-        '<div class="stat"><div class="k">예약</div><div class="v">'+(counts.reserved||0)+'</div></div>'+
-        '<div class="stat"><div class="k">판매됨</div><div class="v">'+(counts.paid||0)+'</div></div>'+
-        '<div class="stat"><div class="k">취소</div><div class="v">'+(counts.cancelled||0)+'</div></div>';
-    }
-
-    function setTab(name){
-      activeTab = name;
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      const active = document.querySelector('.tab[data-tab="'+name+'"]');
-      if (active) active.classList.add("active");
-      ["available","reserved","paid"].forEach(x => {
-        el("tab_"+x).style.display = (x === name) ? "block" : "none";
-      });
-    }
-
-    async function loadDepositConfig(){
-      const { data } = await supabase
-        .from("deposit_config")
-        .select("bank, account, holder, note, updated_at")
-        .eq("id", 1)
-        .maybeSingle();
-
-      if (!data) return;
-
-      el("depBank").value = data.bank || "";
-      el("depAccount").value = data.account || "";
-      el("depHolder").value = data.holder || "";
-      el("depNote").value = data.note || "";
-      el("depositSavedHint").textContent = data.updated_at ? ("최근 저장: " + new Date(data.updated_at).toLocaleString("ko-KR")) : "";
-    }
-
-    async function saveDepositConfig(){
-      const bank = (el("depBank").value || "").trim();
-      const account = (el("depAccount").value || "").trim();
-      const holder = (el("depHolder").value || "").trim();
-      const note = (el("depNote").value || "").trim();
-
-      const { error } = await supabase.rpc("admin_set_deposit_config", {
-        p_bank: bank, p_account: account, p_holder: holder, p_note: note
-      });
-      if (error) throw error;
-      el("depositSavedHint").textContent = "저장 완료: " + new Date().toLocaleString("ko-KR");
-    }
-
-    async function loadTrees(){
-      const { data, error } = await supabase
-        .from("trees")
-        .select("id,name,start_date,current_week,is_active,is_archived")
-        .or("is_archived.is.null,is_archived.eq.false")
-        .order("id", { ascending: false });
-
-      if (error) throw error;
-
-      trees = data || [];
-      treeSelect.innerHTML = trees.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
-
-      if (selectedTree) {
-        const keep = trees.find(t => t.id === selectedTree.id);
-        selectedTree = keep || trees[0] || null;
-      } else {
-        selectedTree = trees[0] || null;
-      }
-
-      if (selectedTree) {
-        treeSelect.value = String(selectedTree.id);
-        weekSelect.value = String(selectedTree.current_week || 1);
-        el("currentTeamLink").value = makeBuyLink(selectedTree.id);
-      }
-    }
-
-    async function loadSlots(){
-      if (!selectedTree) return;
-      const { data, error } = await supabase
-        .from("slots")
-        .select(`
-          id, tree_id, template_id, position_key,
-          status, buyer_name, buyer_contact,
-          referrer_name, referrer_contact,
-          deposit_amount_krw, paid_at, reserved_until, updated_at,
-          slot_templates:template_id (code,title,price_krw,maintain_accounts,sale_week,sort_order)
-        `)
-        .eq("tree_id", selectedTree.id)
-        .order("id", { ascending: true });
-
-      if (error) throw error;
-      allSlots = data || [];
-    }
-
     function wire(){
       el("refreshBtn").addEventListener("click", () => refreshAll());
 
@@ -836,7 +738,6 @@
         alert("링크 복사 완료");
       });
 
-      // ✅ 현재 선택한 팀 링크 복사
       el("copyCurrentTeamLinkBtn").addEventListener("click", async () => {
         const v = (el("currentTeamLink").value || "").trim();
         if (!v) return alert("트리를 먼저 선택하세요.");
@@ -850,6 +751,8 @@
         if (selectedTree) {
           weekSelect.value = String(selectedTree.current_week || 1);
           el("currentTeamLink").value = makeBuyLink(selectedTree.id);
+        } else {
+          el("currentTeamLink").value = "";
         }
         await refreshAll();
       });
@@ -876,7 +779,6 @@
         }
       });
 
-      // 완판 종료(숨김)
       el("archiveTreeBtn").addEventListener("click", async () => {
         if (!selectedTree) return;
         if (!confirm("완판된 페이지를 종료(숨김) 처리할까요?")) return;
@@ -899,7 +801,6 @@
         }
       });
 
-      // 완판→새 페이지
       el("rolloverTreeBtn").addEventListener("click", async () => {
         if (!selectedTree) return;
         const newName = prompt("새 페이지(트리) 이름", (selectedTree.name || "") + " (NEW)");
