@@ -26,6 +26,7 @@
     header{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
     h1{ margin:0; font-size:20px; letter-spacing:-0.2px; }
     .sub{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+
     .panel{
       background: linear-gradient(180deg, rgba(17,26,51,.88), rgba(15,23,48,.78));
       border:1px solid var(--line);
@@ -33,11 +34,22 @@
       padding:14px;
       box-shadow: 0 12px 35px rgba(0,0,0,.35);
     }
+
+    .tool-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    @media (max-width: 960px){
+      .tool-grid{ grid-template-columns: 1fr; }
+    }
+
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
     .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
-    select, button{ font:inherit; }
-    select{
+    input, select, button{ font:inherit; }
+    input, select{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
@@ -46,11 +58,13 @@
       color:var(--text);
       outline:none;
     }
+
     .btn{
       cursor:pointer; padding:10px 12px; border-radius:12px;
       border:1px solid rgba(124,92,255,.55);
       background: rgba(124,92,255,.18);
       color:var(--text); font-weight:900;
+      white-space:nowrap;
     }
     .btn:hover{ background: rgba(124,92,255,.28); }
     .btn.ghost{ border:1px solid var(--line); background: rgba(17,26,51,.35); color:var(--muted); }
@@ -82,6 +96,7 @@
     tr:last-child td{ border-bottom:none; }
 
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .note{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.45; }
 
     .pill{
       display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px;
@@ -111,8 +126,6 @@
     .r-STAR1_TOP .r-dot{ background: var(--s1top); }
     .r-STAR1_BOTTOM .r-dot{ background: var(--s1bot); }
     .r-NONE .r-dot{ background: var(--none); border:1px solid rgba(38,51,87,.55); }
-
-    .note{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.45; }
   </style>
 </head>
 
@@ -133,6 +146,71 @@
     </header>
 
     <section class="panel">
+
+      <!-- ✅ 상단: 팀 판매 생성 / 계좌 관리 -->
+      <div class="tool-grid">
+
+        <!-- 팀 판매 생성(항상 가능) -->
+        <div class="panel" style="padding:14px;">
+          <div class="label" style="font-weight:900; color:var(--text); margin-bottom:8px;">새 팀 판매 생성(새 트리 + 슬롯 43개)</div>
+          <div class="row">
+            <div class="control">
+              <div class="label">팀/리더명(트리 이름)</div>
+              <input id="newTreeName" placeholder="예: Pro1 - 팀A (리더명)" />
+            </div>
+            <div class="control">
+              <div class="label">시작일(선택)</div>
+              <input id="newTreeDate" type="date" />
+            </div>
+            <div class="control">
+              <div class="label">생성</div>
+              <button class="btn ok" id="createTreeBtn" style="width:100%;">팀 판매 생성</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="label">팀 전용 판매 링크</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <input id="treeLinkOut" readonly placeholder="생성 후 자동 표시" />
+              <button class="btn ghost" id="copyTreeLinkBtn">복사</button>
+            </div>
+          </div>
+
+          <div class="note">※ 이 버튼은 “완판 여부” 상관없이 새 판매를 시작할 때 씁니다.</div>
+        </div>
+
+        <!-- 계좌 관리 -->
+        <div class="panel" style="padding:14px;">
+          <div class="label" style="font-weight:900; color:var(--text); margin-bottom:8px;">입금 계좌 관리(buy.html 표시값)</div>
+          <div class="row">
+            <div class="control">
+              <div class="label">은행명</div>
+              <input id="depBank" placeholder="예: 국민은행" />
+            </div>
+            <div class="control">
+              <div class="label">계좌번호</div>
+              <input id="depAccount" placeholder="예: 000-0000-0000" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div class="control">
+              <div class="label">예금주</div>
+              <input id="depHolder" placeholder="예: 홍길동" />
+            </div>
+            <div class="control">
+              <div class="label">메모(입금 안내 문구)</div>
+              <input id="depNote" placeholder="예: 예약 후 입금 → 관리자 입금확정 처리" />
+            </div>
+            <div class="control">
+              <div class="label">저장</div>
+              <button class="btn ok" id="saveDepositBtn" style="width:100%;">계좌 저장</button>
+            </div>
+          </div>
+          <div class="note" id="depositSavedHint"></div>
+        </div>
+      </div>
+
+      <!-- 기존: 트리/주차/버튼 -->
       <div class="row">
         <div class="control">
           <div class="label">회차(Pro1 트리) 선택</div>
@@ -148,13 +226,18 @@
           </select>
         </div>
         <div class="control">
-          <div class="label">주차 업데이트</div>
-          <div style="display:flex; gap:10px;">
+          <div class="label">주차/페이지 운영</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn ok" id="updateWeekBtn" style="flex:1;">오픈 주차 반영</button>
             <button class="btn ghost" id="nextWeekBtn" style="flex:1;">다음 주차(+1)</button>
-            <button class="btn ghost" id="archiveTreeBtn">완판 종료(숨김)</button>
-<button class="btn ok" id="rolloverTreeBtn">완판→새 페이지(1주차)</button>
-     </div>
+
+            <button class="btn ghost" id="archiveTreeBtn" style="flex:1;">완판 종료(숨김)</button>
+            <button class="btn ok" id="rolloverTreeBtn" style="flex:1;">완판→새 페이지</button>
+          </div>
+          <div class="note">
+            • “완판→새 페이지”는 <b>available/reserved가 0일 때만</b> 됩니다.<br>
+            • 완판이 아니면 “새 팀 판매 생성”을 쓰세요.
+          </div>
         </div>
       </div>
 
@@ -183,7 +266,6 @@
     const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ✅ 여기 2개만 채우면 됨
     const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzNrCg1e9xTXippS0oruvgu81f8YBccgHthyyDcqG4zB12h542pEKPEXJZJYFx_mLc9/exec";
     const SHEET_TOKEN = "sot_20251223_5admin";
 
@@ -199,23 +281,9 @@
 
     function won(n){ try { return (n||0).toLocaleString("ko-KR") + "원"; } catch { return n + "원"; } }
     function fmt(dt){ if (!dt) return "-"; return new Date(dt).toLocaleString("ko-KR"); }
-
-    function safeRank(code){
-      const c = String(code || "NONE").toUpperCase().replace(/[^A-Z0-9_]/g, "");
-      return c || "NONE";
-    }
-    function weekClass(w){
-      const n = Number(w || 0);
-      if (n === 1) return "w1";
-      if (n === 2) return "w2";
-      if (n === 3) return "w3";
-      return "w4";
-    }
-    function weekBadge(w){
-      const n = Number(w || 0);
-      const cls = weekClass(n);
-      return '<span class="wbadge '+cls+'"><span class="bdot"></span>'+n+'주차</span>';
-    }
+    function safeRank(code){ const c = String(code || "NONE").toUpperCase().replace(/[^A-Z0-9_]/g, ""); return c || "NONE"; }
+    function weekClass(w){ const n = Number(w||0); if (n===1) return "w1"; if (n===2) return "w2"; if (n===3) return "w3"; return "w4"; }
+    function weekBadge(w){ const n=Number(w||0); const cls=weekClass(n); return '<span class="wbadge '+cls+'"><span class="bdot"></span>'+n+'주차</span>'; }
     function pillStatus(s){
       if (s === "paid") return '<span class="pill ok">판매됨</span>';
       if (s === "reserved") return '<span class="pill warn">예약</span>';
@@ -223,12 +291,9 @@
       return '<span class="pill bad">'+s+'</span>';
     }
 
-    function getSlotById(id){
-      return allSlots.find(x => Number(x.id) === Number(id)) || null;
-    }
+    function getSlotById(id){ return allSlots.find(x => Number(x.id) === Number(id)) || null; }
 
     async function pushToSheet(payload){
-      if (!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.includes("PASTE_")) return;
       try {
         await fetch(SHEET_WEBHOOK_URL, {
           method: "POST",
@@ -263,19 +328,57 @@
       };
     }
 
+    async function loadDepositConfig(){
+      const { data } = await supabase
+        .from("deposit_config")
+        .select("bank, account, holder, note, updated_at")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (!data) return;
+
+      el("depBank").value = data.bank || "";
+      el("depAccount").value = data.account || "";
+      el("depHolder").value = data.holder || "";
+      el("depNote").value = data.note || "";
+      el("depositSavedHint").textContent = data.updated_at ? ("최근 저장: " + new Date(data.updated_at).toLocaleString("ko-KR")) : "";
+    }
+
+    async function saveDepositConfig(){
+      const bank = (el("depBank").value || "").trim();
+      const account = (el("depAccount").value || "").trim();
+      const holder = (el("depHolder").value || "").trim();
+      const note = (el("depNote").value || "").trim();
+
+      const { error } = await supabase.rpc("admin_set_deposit_config", {
+        p_bank: bank, p_account: account, p_holder: holder, p_note: note
+      });
+
+      if (error) throw error;
+      el("depositSavedHint").textContent = "저장 완료: " + new Date().toLocaleString("ko-KR");
+    }
+
     async function loadTrees(){
+      // 아카이브된 트리는 숨김
       const { data, error } = await supabase
         .from("trees")
-        .select("id,name,start_date,current_week,is_active,created_at")
-        .eq("is_active", true)
-        .order("start_date", { ascending: false });
+        .select("id,name,start_date,current_week,is_active,is_archived")
+        .or("is_archived.is.null,is_archived.eq.false")
+        .order("id", { ascending: false });
 
       if (error) throw error;
 
       trees = data || [];
       treeSelect.innerHTML = trees.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
 
-      selectedTree = trees[0] || null;
+      // 선택 유지
+      if (selectedTree) {
+        const keep = trees.find(t => t.id === selectedTree.id);
+        selectedTree = keep || trees[0] || null;
+      } else {
+        selectedTree = trees[0] || null;
+      }
+
       if (selectedTree) {
         treeSelect.value = String(selectedTree.id);
         weekSelect.value = String(selectedTree.current_week || 1);
@@ -288,11 +391,11 @@
       const { data, error } = await supabase
         .from("slots")
         .select(`
-          id, tree_id, template_id, position_key, parent_position_key,
-          status, buyer_name, buyer_contact, memo,
+          id, tree_id, template_id, position_key,
+          status, buyer_name, buyer_contact,
           referrer_name, referrer_contact,
-          deposit_amount_krw, paid_at, reserved_until, updated_at, created_at,
-          slot_templates:template_id (code,title,price_krw,maintain_accounts,sale_week,referral_commission_krw,sort_order)
+          deposit_amount_krw, paid_at, reserved_until, updated_at,
+          slot_templates:template_id (code,title,price_krw,maintain_accounts,sale_week,sort_order)
         `)
         .eq("tree_id", selectedTree.id)
         .order("id", { ascending: true });
@@ -325,16 +428,13 @@
     }
 
     function renderAvailable(){
-      const openWeek = Number(weekSelect.value || 1);
+      const openWeek = Number(weekSelect.value || (selectedTree?.current_week||1));
       const list = allSlots
         .filter(s => s.status === "available")
         .filter(s => (s.slot_templates?.sale_week ?? 99) <= openWeek)
         .sort((a,b)=> (a.slot_templates?.sort_order ?? 999) - (b.slot_templates?.sort_order ?? 999));
 
-      if (!list.length) {
-        el("tab_available").innerHTML = '<div class="note">판매가능(available) 슬롯이 없습니다.</div>';
-        return;
-      }
+      if (!list.length) { el("tab_available").innerHTML = '<div class="note">판매가능(available) 슬롯이 없습니다.</div>'; return; }
 
       el("tab_available").innerHTML = `
         <table>
@@ -400,10 +500,8 @@
               });
               if (error) throw error;
 
-              // ✅ 시트 기록(판매됨)
-              const slot = getSlotById(id) || { slot_templates: {} , position_key:"" };
-              slot.buyer_name = buyer;
-              slot.buyer_contact = contact;
+              const slot = getSlotById(id) || { slot_templates:{} , position_key:"" };
+              slot.buyer_name = buyer; slot.buyer_contact = contact;
               await pushToSheet(payloadFromSlot(slot, amt, "paid"));
 
               alert("판매됨 처리 완료 (시트 기록됨)");
@@ -425,14 +523,10 @@
     }
 
     function renderReserved(){
-      const list = allSlots
-        .filter(s => s.status === "reserved")
+      const list = allSlots.filter(s => s.status === "reserved")
         .sort((a,b)=> new Date(a.reserved_until||0) - new Date(b.reserved_until||0));
 
-      if (!list.length) {
-        el("tab_reserved").innerHTML = '<div class="note">예약된 항목이 없습니다.</div>';
-        return;
-      }
+      if (!list.length) { el("tab_reserved").innerHTML = '<div class="note">예약된 항목이 없습니다.</div>'; return; }
 
       el("tab_reserved").innerHTML = `
         <table>
@@ -491,7 +585,6 @@
               const { error } = await supabase.rpc("admin_set_status", { p_slot_id: id, p_status: "paid", p_deposit_amount_krw: amt });
               if (error) throw error;
 
-              // ✅ 시트 기록(입금확정=판매됨)
               const slot = getSlotById(id);
               if (slot) await pushToSheet(payloadFromSlot(slot, amt, "paid"));
 
@@ -514,14 +607,10 @@
     }
 
     function renderPaid(){
-      const list = allSlots
-        .filter(s => s.status === "paid")
+      const list = allSlots.filter(s => s.status === "paid")
         .sort((a,b)=> new Date(b.paid_at||0) - new Date(a.paid_at||0));
 
-      if (!list.length) {
-        el("tab_paid").innerHTML = '<div class="note">판매됨(paid) 항목이 없습니다.</div>';
-        return;
-      }
+      if (!list.length) { el("tab_paid").innerHTML = '<div class="note">판매됨(paid) 항목이 없습니다.</div>'; return; }
 
       el("tab_paid").innerHTML = `
         <table>
@@ -563,6 +652,7 @@
 
     async function refreshAll(){
       statusNote.textContent = "";
+      await loadDepositConfig();
       await loadTrees();
       if (!selectedTree) { statusNote.textContent = "활성 트리가 없습니다."; return; }
       await loadSlots();
@@ -581,8 +671,39 @@
       await refreshAll();
     }
 
+    async function createTeamTree(){
+      const name = (el("newTreeName").value || "").trim();
+      const dateVal = (el("newTreeDate").value || "").trim();
+      if (!name) return alert("팀 판매 이름을 입력하세요.");
+
+      const { data, error } = await supabase.rpc("admin_create_tree_with_slots", {
+        p_name: name,
+        p_start_date: dateVal ? dateVal : null
+      });
+      if (error) return alert("생성 실패: " + (error.message || error));
+
+      const newTreeId = data;
+      const buyLink = location.href.replace(/so\.t-5admin\.html.*$/i, "buy.html") + "?tree=" + newTreeId;
+      el("treeLinkOut").value = buyLink;
+      alert("팀 판매 생성 완료!\n\n링크:\n" + buyLink);
+
+      await refreshAll();
+    }
+
     function wire(){
       el("refreshBtn").addEventListener("click", () => refreshAll());
+      el("saveDepositBtn").addEventListener("click", async () => {
+        try{ await saveDepositConfig(); alert("계좌 저장 완료"); }
+        catch(e){ alert("계좌 저장 실패: " + (e.message || e)); }
+      });
+
+      el("createTreeBtn").addEventListener("click", createTeamTree);
+      el("copyTreeLinkBtn").addEventListener("click", async () => {
+        const v = (el("treeLinkOut").value || "").trim();
+        if (!v) return alert("먼저 팀 판매를 생성하세요.");
+        await navigator.clipboard.writeText(v);
+        alert("링크 복사 완료");
+      });
 
       treeSelect.addEventListener("change", async () => {
         const id = Number(treeSelect.value);
@@ -597,51 +718,10 @@
           await updateWeek(w);
           alert("오픈 주차 반영 완료");
         }catch(e){
-          console.error(e);
           alert("주차 업데이트 실패: " + (e.message || e));
         }
       });
-        // ✅ 완판 종료(숨김)
-  el("archiveTreeBtn")?.addEventListener("click", async () => {
-    if (!selectedTree) return;
-    const ok = confirm("완판된 페이지를 종료(숨김) 처리할까요? (완판이 아니면 막힙니다)");
-    if (!ok) return;
 
-    try{
-      const { error } = await supabase.rpc("admin_archive_tree", {
-        p_tree_id: selectedTree.id,
-        p_force: false
-      });
-      if (error) throw error;
-      alert("종료(숨김) 완료");
-      await refreshAll();
-    }catch(e){
-      alert("종료 실패: " + (e.message || e));
-    }
-  });
-
-  // ✅ 완판 → 새 페이지(1주차) 생성
-  el("rolloverTreeBtn")?.addEventListener("click", async () => {
-    if (!selectedTree) return;
-    const newName = prompt("새 페이지(트리) 이름", (selectedTree.name || "") + " (NEW)");
-    if (!newName) return;
-
-    try{
-      const { data, error } = await supabase.rpc("admin_rollover_tree", {
-        p_old_tree_id: selectedTree.id,
-        p_new_name: newName
-      });
-      if (error) throw error;
-
-      const newTreeId = data;
-      const buyLink = location.href.replace(/so\.t-5admin\.html.*$/i, "buy.html") + "?tree=" + newTreeId;
-      alert("새 페이지 생성 완료!\n\n팀 전용 판매 링크:\n" + buyLink);
-
-      await refreshAll();
-    }catch(e){
-      alert("새 페이지 생성 실패: " + (e.message || e));
-    }
-  });
       el("nextWeekBtn").addEventListener("click", async () => {
         try{
           const cur = Number(weekSelect.value || 1);
@@ -650,8 +730,52 @@
           await updateWeek(next);
           alert("다음 주차로 이동 완료");
         }catch(e){
-          console.error(e);
           alert("다음 주차 실패: " + (e.message || e));
+        }
+      });
+
+      // 완판 종료(숨김) - 완판 아니면 TREE_NOT_FINISHED
+      el("archiveTreeBtn").addEventListener("click", async () => {
+        if (!selectedTree) return;
+        if (!confirm("완판된 페이지를 종료(숨김) 처리할까요?")) return;
+        try{
+          const { error } = await supabase.rpc("admin_archive_tree", { p_tree_id: selectedTree.id, p_force: false });
+          if (error) throw error;
+          alert("종료(숨김) 완료");
+          await refreshAll();
+        }catch(e){
+          if (String(e.message||"").includes("TREE_NOT_FINISHED")) {
+            if (confirm("아직 판매가능/예약이 남아있습니다.\n강제로 종료(숨김)할까요?")) {
+              const { error } = await supabase.rpc("admin_archive_tree", { p_tree_id: selectedTree.id, p_force: true });
+              if (error) return alert("강제 종료 실패: " + (error.message||error));
+              alert("강제 종료 완료");
+              await refreshAll();
+            }
+            return;
+          }
+          alert("종료 실패: " + (e.message || e));
+        }
+      });
+
+      // 완판→새 페이지 (완판 아니면 안내만)
+      el("rolloverTreeBtn").addEventListener("click", async () => {
+        if (!selectedTree) return;
+        const newName = prompt("새 페이지(트리) 이름", (selectedTree.name || "") + " (NEW)");
+        if (!newName) return;
+
+        try{
+          const { data, error } = await supabase.rpc("admin_rollover_tree", { p_old_tree_id: selectedTree.id, p_new_name: newName });
+          if (error) throw error;
+          const newTreeId = data;
+          const buyLink = location.href.replace(/so\.t-5admin\.html.*$/i, "buy.html") + "?tree=" + newTreeId;
+          alert("새 페이지 생성 완료!\n\n팀 전용 판매 링크:\n" + buyLink);
+          await refreshAll();
+        }catch(e){
+          if (String(e.message||"").includes("TREE_NOT_FINISHED")) {
+            alert("아직 완판이 아닙니다.\n완판→새 페이지는 available/reserved 0일 때만 됩니다.\n지금은 상단의 ‘팀 판매 생성’을 사용하세요.");
+            return;
+          }
+          alert("새 페이지 생성 실패: " + (e.message || e));
         }
       });
 
