@@ -245,95 +245,108 @@
       border-top: 1px solid rgba(255,255,255,0.6);
     }
 
-    .banner-wrap {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .banner-block {
-      position: relative;
-      overflow: hidden;
-      border-radius: 18px;
-      border: 1px solid rgba(250,204,21,0.6);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.4) inset, 0 8px 18px rgba(0,0,0,0.30);
-      background: rgba(15,23,42,0.20);
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-      cursor: pointer;
-    }
-    .banner-block:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.6) inset, 0 16px 30px rgba(0,0,0,0.45);
-    }
-    .banner-block { 
-  aspect-ratio: 3 / 1;    /* ✅ 원하는 비율로 고정 */
+    /* ===== 광고 배너(상단/하단 공통) ===== */
+.banner-wrap {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-   .banner-image{
+
+.banner-block {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.6);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4) inset, 0 8px 18px rgba(0,0,0,0.30);
+  background: rgba(15,23,42,0.20);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+
+  /* ✅ 배너 비율 고정 (권장: 3:1) */
+  aspect-ratio: 3 / 1;
+}
+
+.banner-block:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.6) inset, 0 16px 30px rgba(0,0,0,0.45);
+}
+
+/* ✅ 핵심: a가 배너 높이를 100% 먹게 */
+.banner-block > a{
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;       /* cover여도 비율이 맞으면 잘릴 일이 거의 없음 */
-  display:block;
 }
-    .banner-marquee {
-      position: absolute;
-      bottom: 8px;
-      left: 0;
-      right: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .banner-text {
-      display: inline-block;
-      padding-left: 100%;
-      white-space: nowrap;
-      font-size: 24px;
-      font-weight: 700;
-      color: #fefce8;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-      animation: banner-marquee 15s linear infinite;
-    }
-    @keyframes banner-marquee {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
-    }
 
-    .notice {
-      margin-top: 12px;
-      text-align: center;
-      font-size: 10px;
-      color: #f9fafb;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
+.banner-image{
+  width: 100%;
+  height: 100%;
+  display: block;
 
-   @media (max-width: 600px) {
-  .banner-image { height: 170px; }
+  /* ✅ 안 잘리게 하려면 contain (추천) */
+  object-fit: contain;
+  object-position: center;
+
+  /* contain일 때 남는 여백 배경 */
+  background: rgba(2, 6, 23, 0.55);
 }
+
+/* 자막(마퀴) */
+.banner-marquee {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.banner-text {
+  display: inline-block;
+  padding-left: 100%;
+  white-space: nowrap;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fefce8;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+  animation: banner-marquee 15s linear infinite;
+}
+@keyframes banner-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ===== 모바일 레이아웃(중괄호 깨진 거 정리) ===== */
+@media (max-width: 600px) {
+  body {
     background-attachment: scroll;
     background-position: center top;
   }
+
   .page-wrap {
     max-width: 100%;
     margin: 12px auto 20px;
     padding: 0 8px 20px;
   }
+
   .glass-panel {
     padding: 14px 10px 16px;
     border-radius: 18px;
   }
+
   .page-title { font-size: 20px; }
   .page-subtitle { font-size: 11px; }
+
   .leader-grid {
     grid-template-columns: 1fr;
     gap: 14px;
   }
 
-  /* 🔸 모바일 카드 여백 조금 줄이기 */
   .leader-card {
     padding: 12px 10px 14px;
     border-radius: 18px;
   }
 
-  /* 🔸 모바일에서도 사진 크게 보이도록 */
   .leader-frame {
     padding: 4px;
     width: 100%;
@@ -344,22 +357,14 @@
 
   .leader-name { font-size: 14px; }
   .leader-role { font-size: 10px; }
-  .leader-intro {
-    font-size: 10px;
-    min-height: 32px;
-  }
-  .tag {
-    font-size: 9px;
-    padding: 2px 6px;
-  }
-  .sns-btn {
-    font-size: 9px;
-    padding: 3px 7px;
-  }
-  .banner-image { height: 170px; }
-  .banner-text { font-size: 24px; }
-}
+  .leader-intro { font-size: 10px; min-height: 32px; }
 
+  .tag { font-size: 9px; padding: 2px 6px; }
+  .sns-btn { font-size: 9px; padding: 3px 7px; }
+
+  /* ✅ 모바일에서 너무 얇으면 16:9로 바꿔도 됨(선택) */
+  /* .banner-block{ aspect-ratio: 16 / 9; } */
+}
   </style>
 </head>
 <body>
@@ -581,6 +586,7 @@
 
 </body>
 </html>
+
 
 
 
