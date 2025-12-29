@@ -669,7 +669,106 @@
   </div>
 
   <!-- ✅ 주간 스케쥴: 구글 시트에서 읽어오기 (연결 유지) -->
-  
+  <script>
+    // ✅ Google Sheet(gviz) 콜백 함수 (반드시 전역(window)으로 있어야 함)
+    window.handleScheduleSheet = function handleScheduleSheet(resp) {
+      try {
+        const rows = (resp && resp.table && resp.table.rows) ? resp.table.rows : [];
+        const byDay = {};
+        const dayLabelByCol = {};
+        let currentPeriod = "";
+
+        rows.forEach((row) => {
+          const cells = row.c || [];
+          const values = cells.map(c => (c && c.v != null) ? String(c.v).trim() : "");
+
+          // 요일 헤더 찾기
+          for (let j = 1; j < values.length; j++) {
+            const v = values[j];
+            if (v && v.includes("요일")) dayLabelByCol[j] = v;
+          }
+
+          const v0 = values[0];
+          if (!v0) return;
+
+          // 오전/오후 구분 라인
+          if (v0.includes("오전") || v0.includes("오후")) { currentPeriod = v0; return; }
+
+          // "몇 시" 라인만 처리
+          if (!v0.endsWith("시")) return;
+
+          const timeLabel = currentPeriod ? (currentPeriod + " " + v0) : v0;
+
+          // 각 요일 칸에 들어간 강의명 수집
+          for (let j = 1; j < values.length; j++) {
+            const title = values[j];
+            const dayLabel = dayLabelByCol[j];
+            if (!dayLabel) continue;
+            if (!byDay[dayLabel]) byDay[dayLabel] = [];
+            if (title) byDay[dayLabel].push({ time: timeLabel, title: title });
+          }
+        });
+
+        const gridEl  = document.getElementById("top-schedule-grid");
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (!gridEl || !emptyEl) return;
+
+        gridEl.innerHTML = "";
+        emptyEl.style.display = "none";
+
+        const dayOrder = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"];
+
+        // ✅ 항상 7일 보여주기(비어도 - 표시)
+        dayOrder.forEach(dayLabel => {
+          const dayDiv = document.createElement("div");
+          dayDiv.className = "top-schedule-day";
+
+          const nameDiv = document.createElement("div");
+          nameDiv.className = "top-schedule-day-name";
+          nameDiv.textContent = dayLabel;
+          dayDiv.appendChild(nameDiv);
+
+          const items = byDay[dayLabel] || [];
+          if (!items.length){
+            const none = document.createElement("div");
+            none.className = "top-schedule-empty-day";
+            none.textContent = "-";
+            dayDiv.appendChild(none);
+          } else {
+            items.forEach(item => {
+              const itemDiv = document.createElement("div");
+              itemDiv.className = "top-schedule-item";
+              itemDiv.innerHTML =
+                '<div class="top-schedule-time">'  + item.time  + '</div>' +
+                '<div class="top-schedule-title">' + item.title + '</div>';
+              dayDiv.appendChild(itemDiv);
+            });
+          }
+
+          gridEl.appendChild(dayDiv);
+        });
+
+      } catch (e) {
+        console.error("schedule sheet parse error:", e);
+        const emptyEl = document.getElementById("top-schedule-empty");
+        if (emptyEl) {
+          emptyEl.textContent = "스케쥴 정보를 불러오는 중 오류가 발생했습니다.";
+          emptyEl.style.display = "block";
+        }
+      }
+    };
+
+    // (선택) 5초가 지나도 못 불러오면 안내 문구 변경
+    setTimeout(() => {
+      const emptyEl = document.getElementById("top-schedule-empty");
+      const gridEl = document.getElementById("top-schedule-grid");
+      const hasItems = gridEl && gridEl.children && gridEl.children.length > 0;
+
+      if (emptyEl && emptyEl.style.display !== "none" && !hasItems) {
+        emptyEl.textContent = "주간 스케쥴을 불러오지 못했습니다. (브라우저에서 docs.google.com 차단/확장프로그램을 확인해주세요)";
+      }
+    }, 5000);
+  </script>
 
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
 
