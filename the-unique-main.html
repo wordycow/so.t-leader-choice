@@ -669,89 +669,7 @@
   </div>
 
   <!-- ✅ 주간 스케쥴: 구글 시트에서 읽어오기 (연결 유지) -->
-  <script>
-    function handleScheduleSheet(resp) {
-      try {
-        const rows = resp.table.rows || [];
-        const byDay = {};
-        const dayLabelByCol = {};
-        let currentPeriod = "";
-
-        rows.forEach((row) => {
-          const cells = row.c || [];
-          const values = cells.map(c => (c && c.v != null) ? String(c.v).trim() : "");
-
-          for (let j = 1; j < values.length; j++) {
-            const v = values[j];
-            if (v && v.includes("요일")) dayLabelByCol[j] = v;
-          }
-
-          const v0 = values[0];
-          if (!v0) return;
-
-          if (v0.includes("오전") || v0.includes("오후")) { currentPeriod = v0; return; }
-          if (!v0.endsWith("시")) return;
-
-          const timeLabel = currentPeriod ? (currentPeriod + " " + v0) : v0;
-
-          for (let j = 1; j < values.length; j++) {
-            const title = values[j];
-            const dayLabel = dayLabelByCol[j];
-            if (!dayLabel) continue;
-            if (!byDay[dayLabel]) byDay[dayLabel] = [];
-            if (title) byDay[dayLabel].push({ time: timeLabel, title: title });
-          }
-        });
-
-        const gridEl  = document.getElementById("top-schedule-grid");
-        const emptyEl = document.getElementById("top-schedule-empty");
-        if (!gridEl || !emptyEl) return;
-
-        gridEl.innerHTML = "";
-        emptyEl.style.display = "none";
-
-        const dayOrder = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"];
-
-        // ✅ 항상 7일 보여주기(비어도 - 표시)
-        dayOrder.forEach(dayLabel => {
-          const dayDiv = document.createElement("div");
-          dayDiv.className = "top-schedule-day";
-
-          const nameDiv = document.createElement("div");
-          nameDiv.className = "top-schedule-day-name";
-          nameDiv.textContent = dayLabel;
-          dayDiv.appendChild(nameDiv);
-
-          const items = byDay[dayLabel] || [];
-          if (!items.length){
-            const none = document.createElement("div");
-            none.className = "top-schedule-empty-day";
-            none.textContent = "-";
-            dayDiv.appendChild(none);
-          } else {
-            items.forEach(item => {
-              const itemDiv = document.createElement("div");
-              itemDiv.className = "top-schedule-item";
-              itemDiv.innerHTML =
-                '<div class="top-schedule-time">'  + item.time  + '</div>' +
-                '<div class="top-schedule-title">' + item.title + '</div>';
-              dayDiv.appendChild(itemDiv);
-            });
-          }
-
-          gridEl.appendChild(dayDiv);
-        });
-
-      } catch (e) {
-        console.error("schedule sheet parse error:", e);
-        const emptyEl = document.getElementById("top-schedule-empty");
-        if (emptyEl) {
-          emptyEl.textContent = "스케쥴 정보를 불러오는 중 오류가 발생했습니다.";
-          emptyEl.style.display = "block";
-        }
-      }
-    }
-  </script>
+  
 
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
 
@@ -1064,42 +982,56 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
         .catch(err => { console.error("ebook-config.json 로드 오류:", err); renderDefault(); });
     })();
 
-    (function setupButtons(){
-      const promoBtn = document.getElementById("promo-btn");
-      const travelBtn = document.getElementById("travel-btn");
-      const sotBtn = document.getElementById("sot-btn");
-      const promoBadge = document.getElementById("promo-badge");
-      if (!promoBtn) return;
+   (function setupButtons(){
+  const promoBtn = document.getElementById("promo-btn");
+  const travelBtn = document.getElementById("travel-btn");
+  const sotBtn = document.getElementById("sot-btn");
+  const promoBadge = document.getElementById("promo-badge");
+  const pptFormBtn = document.getElementById("ppt-form-btn");
 
-      const PROMO_VERSION = "2025-12-02-01";
-      const seenPromo = localStorage.getItem("uniquePromoSeen");
-      if (promoBadge && seenPromo !== PROMO_VERSION) promoBadge.classList.remove("hidden");
+  if (!promoBtn) return;
 
-      promoBtn.addEventListener("click", () => {
-        window.open("the-unique-promo.html", "_blank");
-        localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
-        if (promoBadge) promoBadge.classList.add("hidden");
-      });
+  // 프로모션 뱃지
+  const PROMO_VERSION = "2025-12-02-01";
+  const seenPromo = localStorage.getItem("uniquePromoSeen");
+  if (promoBadge && seenPromo !== PROMO_VERSION) {
+    promoBadge.classList.remove("hidden");
+  }
 
-      if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
-      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-     const pptFormBtn = document.getElementById("ppt-form-btn");
-
-// ✅ Linkon 공식 사이트
-const LINKON_URL = "https://linkon.gift/";
-
-if (pptFormBtn) {
-  pptFormBtn.addEventListener("click", () => {
-    window.open(LINKON_URL, "_blank", "noopener,noreferrer");
+  promoBtn.addEventListener("click", () => {
+    window.open("the-unique-promo.html", "_blank");
+    localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
+    if (promoBadge) promoBadge.classList.add("hidden");
   });
-}
 
-
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      localStorage.removeItem("uniqueCurrentUser");
-      window.location.href = "the-unique-gate.html";
+  // 여행 / so.t
+  if (travelBtn) {
+    travelBtn.addEventListener("click", () => {
+      window.open("index.html", "_blank");
     });
-  </script>
+  }
+
+  if (sotBtn) {
+    sotBtn.addEventListener("click", () => {
+      window.open("https://www.ssoti.com/", "_blank");
+    });
+  }
+
+  // ✅ Linkon 버튼 (최종)
+  const LINKON_URL = "https://linkon.gift/";
+  if (pptFormBtn) {
+    pptFormBtn.addEventListener("click", () => {
+      window.open(LINKON_URL, "_blank", "noopener,noreferrer");
+    });
+  }
+})(); // ✅ 이게 핵심! 반드시 있어야 함
+
+// 로그아웃은 함수 밖
+document.getElementById("logout-btn").addEventListener("click", () => {
+  localStorage.removeItem("uniqueCurrentUser");
+  window.location.href = "the-unique-gate.html";
+});
+</script>
 
   <!-- HQ 전용 버튼들 (원본 유지) -->
   <script>
