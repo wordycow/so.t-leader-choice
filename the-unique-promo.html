@@ -491,16 +491,49 @@
 
   async function sendP2P() {
     const receiver = document.getElementById('p2p-receiver').value.trim();
-    const amount = parseFloat(document.getElementById('p2p-amount').value);
-    if(!receiver || !amount || amount <= 0 || amount > myBalance) return alert("입력 확인 필요");
-    const { data: rUser } = await db.from('profiles').select('*').eq('username', receiver).single();
-    if(!rUser) return alert("존재하지 않는 닉네임");
-    if(confirm(`${receiver}님에게 ${amount} UT 송금?`)) {
+    let amountVal = document.getElementById('p2p-amount').value;
+
+    // 1. 입력값 검증
+    if(!receiver) return alert("받는 분의 닉네임을 입력해주세요.");
+    if(!amountVal) return alert("보낼 수량을 입력해주세요.");
+
+    // 2. 소수점 2자리로 제한 (문자열 처리)
+    if(amountVal.includes('.')) {
+        const parts = amountVal.split('.');
+        if(parts[1].length > 2) {
+            return alert("송금은 소수점 둘째 자리(0.01)까지만 가능합니다.");
+        }
+    }
+    
+    const amount = parseFloat(amountVal);
+    if(amount <= 0) return alert("0보다 큰 금액을 입력해주세요.");
+    if(amount > myBalance) return alert("잔액이 부족합니다. (현재: " + myBalance + " UT)");
+    if(receiver === myUsername) return alert("나 자신에게는 보낼 수 없습니다.");
+
+    // 3. [중요] 받는 사람이 진짜 존재하는지 DB 조회
+    // .single() 대신 .maybeSingle()을 쓰면 에러 없이 null을 반환해줘서 확인하기 좋습니다.
+    const { data: rUser, error } = await db.from('profiles').select('*').eq('username', receiver).maybeSingle();
+
+    if (!rUser) {
+        return alert(`❌ '${receiver}'님을 찾을 수 없습니다.\n닉네임을 다시 확인해주세요.`);
+    }
+
+    // 4. 송금 실행 (안전 장치 통과)
+    if(confirm(`${receiver}님에게 ${formatNum(amount)} UT를 송금하시겠습니까?\n(취소 불가능)`)) {
+      
+      // 내 돈 빼기
       await db.from('profiles').update({ balance: myBalance - amount }).eq('username', myUsername);
       await db.from('transactions').insert([{ username: myUsername, type: 'out', amount: amount, description: `송금 -> ${receiver}` }]);
+      
+      // 상대방 돈 넣기
       await db.from('profiles').update({ balance: rUser.balance + amount }).eq('username', receiver);
       await db.from('transactions').insert([{ username: receiver, type: 'in', amount: amount, description: `입금 <- ${myUsername}` }]);
-      myBalance -= amount; updateUI(); alert("송금 완료");
+      
+      // UI 갱신
+      myBalance -= amount; 
+      updateUI(); 
+      document.getElementById('p2p-amount').value = ""; // 입력창 비우기
+      alert("✅ 송금이 완료되었습니다.");
     }
   }
 
