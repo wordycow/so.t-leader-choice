@@ -2,15 +2,18 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>THE UNIQUE 금고 - 공동기금</title>
+  <title>THE UNIQUE 금고 & UT 포인트</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    /* --- [기본 스타일] --- */
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
 
     :root{
       --gold: rgba(245,158,11,0.95);
       --gold2: #fbbf24;
+      --purple: #8b5cf6;
+      --purple2: #ddd6fe;
       --panel: rgba(15,23,42,0.96);
       --panel2: rgba(2,6,23,0.55);
       --line: rgba(148,163,184,0.35);
@@ -26,7 +29,7 @@
     }
 
     .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
-    .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
 
     .page-wrap{
       position:relative; z-index:10;
@@ -34,18 +37,20 @@
       margin:40px auto; padding:24px 16px 32px;
     }
 
+    /* --- [메인 카드 디자인] --- */
     .card{
       background: var(--panel);
       border-radius:24px;
       border:1px solid var(--gold);
-      box-shadow:0 0 24px rgba(245,158,11,0.55), 0 30px 80px rgba(0,0,0,0.9);
+      box-shadow:0 0 24px rgba(245,158,11,0.25), 0 30px 80px rgba(0,0,0,0.9);
       padding:18px 20px 20px;
     }
 
     @media (min-width:1024px){
-      .card{ transform:scale(0.7); transform-origin:top center; }
+      .card{ transform:scale(0.8); transform-origin:top center; }
     }
 
+    /* 상단 바 */
     .top-bar{
       display:flex; justify-content:space-between; align-items:center; gap:12px;
       padding:14px 14px 12px;
@@ -69,6 +74,7 @@
       white-space:nowrap;
     }
 
+    /* --- [섹션 공통] --- */
     .vault-card{
       margin-top:14px;
       background: rgba(15,23,42,0.98);
@@ -77,25 +83,30 @@
       border:1px solid rgba(148,163,184,0.75);
       box-shadow:0 12px 28px rgba(0,0,0,0.9);
     }
+    
+    /* UT 섹션 (보라색 테마) */
+    .ut-section {
+      border-color: rgba(139, 92, 246, 0.5);
+      background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(88, 28, 135, 0.15));
+    }
+    .ut-header {
+      background: rgba(139, 92, 246, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
 
     .vault-label{ font-size:12px; color:#cbd5e1; margin-bottom:8px; font-weight:800; }
-
     .vault-value{
-      font-size:28px;
-      font-weight:900;
-      display:flex;
-      align-items:baseline;
-      gap:8px;
-      flex-wrap:wrap;
+      font-size:28px; font-weight:900; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
     }
-    .gold-text{
-      color: var(--gold2);
-      text-shadow: 0 0 18px rgba(245,158,11,0.35);
-    }
+    .gold-text{ color: var(--gold2); text-shadow: 0 0 18px rgba(245,158,11,0.35); }
+    .purple-text { color: var(--purple2); text-shadow: 0 0 18px rgba(139, 92, 246, 0.45); }
+    
     .unit{ color:#e5e7eb; font-size:18px; font-weight:900; opacity:0.95; }
 
-    .vault-actions{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-
+    /* 버튼류 */
     .mini-btn{
       border:1px solid rgba(148,163,184,0.45);
       background: rgba(2,6,23,0.55);
@@ -106,818 +117,396 @@
       font-weight:900;
       font-size:12px;
     }
-    .mini-btn.gold-outline{
-      border-color: var(--gold);
-      color: var(--gold2);
-      background: rgba(245,158,11,0.08);
+    .mini-btn.gold-outline{ border-color: var(--gold); color: var(--gold2); background: rgba(245,158,11,0.08); }
+    
+    /* 학습(채굴) 버튼 */
+    .btn-study {
+      border: 1px solid var(--purple);
+      background: #4c1d95;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 13px;
+      transition: all 0.2s;
     }
+    .btn-study:hover { background: #5b21b6; }
+    .btn-study:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn-gold{
-      border:1px solid var(--gold);
-      background: linear-gradient(180deg, rgba(245,158,11,0.95), rgba(245,158,11,0.75));
-      color: #0b1220;
-      padding:8px 12px;
-      border-radius:10px;
-      cursor:pointer;
-      font-weight:1000;
-      font-size:12px;
-    }
-
+    /* 그리드 레이아웃 */
     .vault-grid{
-      margin-top:12px;
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
+      margin-top:12px; display:grid; grid-template-columns:1fr; gap:10px;
     }
-    @media (min-width:900px){
-      .vault-grid{ grid-template-columns:1fr 1fr 1fr; }
-    }
-
+    @media (min-width:900px){ .vault-grid{ grid-template-columns:1fr 1fr 1fr; } }
+    
     .vault-item{
       background:rgba(2,6,23,0.55);
       border:1px solid rgba(148,163,184,0.35);
-      border-radius:14px;
-      padding:12px;
+      border-radius:14px; padding:12px;
     }
     .vault-item .k{ font-size:12px; color:#cbd5e1; font-weight:900; margin-bottom:6px; }
     .vault-item .v{ font-size:16px; font-weight:900; color:#fff; }
 
+    /* 기타 유틸 */
     .vault-sub{ margin-top:10px; font-size:12px; color:#9CA3AF; line-height:1.4; }
-
-    .ledger-wrap{
-      margin-top:12px;
-      background:rgba(2,6,23,0.55);
-      border:1px solid rgba(148,163,184,0.35);
-      border-radius:14px;
-      overflow:hidden;
-    }
+    .ledger-wrap{ margin-top:12px; background:rgba(2,6,23,0.55); border:1px solid rgba(148,163,184,0.35); border-radius:14px; overflow:hidden; }
     .ledger-scroll{ max-height: 360px; overflow:auto; }
     table.ledger{ width:100%; border-collapse:collapse; font-size:12px; }
-    .ledger th,.ledger td{
-      padding:10px 10px;
-      border-bottom:1px solid rgba(148,163,184,0.25);
-      text-align:left;
-      vertical-align:top;
-    }
-    .ledger th{
-      background:rgba(15,23,42,0.65);
-      color:#e5e7eb;
-      font-weight:900;
-      position: sticky;
-      top: 0;
-    }
+    .ledger th,.ledger td{ padding:10px 10px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left; vertical-align:top; }
+    .ledger th{ background:rgba(15,23,42,0.65); color:#e5e7eb; font-weight:900; position: sticky; top: 0; }
     .ledger td{ color:#e5e7eb; }
-    .ledger tr:last-child td{ border-bottom:none; }
     .right{ text-align:right; }
     .tag-in{ color:#86efac; font-weight:900; }
     .tag-out{ color:#fca5a5; font-weight:900; }
     .muted{ color:#9CA3AF; }
 
-    .vault-error{
-      margin-top:10px;
-      font-size:12px;
-      color:#fecaca;
-      background:rgba(127,29,29,0.25);
-      border:1px solid rgba(239,68,68,0.35);
-      border-radius:12px;
-      padding:10px;
-      display:none;
-      white-space:pre-wrap;
+    /* 도네이션 관련 */
+    .section-title{ margin-top:16px; font-size:13px; font-weight:900; color:#e5e7eb; }
+    .donation-wrap{ margin-top:10px; background:rgba(2,6,23,0.55); border:1px solid rgba(148,163,184,0.35); border-radius:14px; padding:12px; }
+    .donation-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .btn-gold{ border:1px solid var(--gold); background: linear-gradient(180deg, rgba(245,158,11,0.95), rgba(245,158,11,0.75)); color: #0b1220; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:1000; font-size:12px; }
+    
+    /* 프로그레스 바 */
+    .progress-track {
+      background: #1e293b;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
     }
-
-    .section-title{
-      margin-top:16px;
-      font-size:13px;
-      font-weight:900;
-      color:#e5e7eb;
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: var(--purple);
+      transition: width 0.3s linear;
     }
-
-    .donation-wrap{
-      margin-top:10px;
-      background:rgba(2,6,23,0.55);
-      border:1px solid rgba(148,163,184,0.35);
-      border-radius:14px;
-      padding:12px;
-    }
-
-    .donation-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .donation-total{
-      font-size:12px;
-      color:#cbd5e1;
-      font-weight:900;
-    }
-
-    .form{
-      margin-top:10px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .form .full{ grid-column: 1 / -1; }
-    .form input, .form textarea{
-      width:100%;
-      padding:10px 10px;
-      border-radius:10px;
-      border:1px solid rgba(148,163,184,0.35);
-      background: rgba(2,6,23,0.35);
-      color:#fff;
-      outline:none;
-      font-size:12px;
-    }
-    .form textarea{ min-height:72px; resize: vertical; }
-
-    .tabbar{
-      display:flex;
-      gap:8px;
-      margin-top:10px;
-      padding:6px;
-      border-radius:12px;
-      border:1px solid rgba(148,163,184,0.25);
-      background: rgba(2,6,23,0.35);
-    }
-    .tab{
-      flex:1;
-      padding:10px 10px;
-      border-radius:10px;
-      cursor:pointer;
-      font-weight:1000;
-      font-size:12px;
-      border:1px solid rgba(148,163,184,0.35);
-      background: rgba(15,23,42,0.45);
-      color:#e5e7eb;
-    }
-    .tab.active{
-      border-color: var(--gold);
-      background: rgba(245,158,11,0.10);
-      color: var(--gold2);
-      box-shadow: 0 0 14px rgba(245,158,11,0.22);
-    }
-    .hidden{ display:none !important; }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.35);
-      background: rgba(2,6,23,0.35);
-      color:#e5e7eb;
-      font-size:12px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-    .pill.pending{ border-color: rgba(245,158,11,0.5); }
-    .pill.done{ border-color: rgba(34,197,94,0.55); color:#86efac; }
 
     @media (max-width:768px){
       .page-wrap{ margin:16px auto 24px; }
       .card{ padding:16px 14px 18px; transform:none; }
       .title{ font-size:20px; }
       .vault-value{ font-size:22px; }
-      .ledger-scroll{ max-height: 320px; }
-      .form{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
   <div class="scene">
-    <img src="img/bg-unique-promo.jpg" class="scene-bg" alt="Background" />
+    <img src="img/bg-unique-promo.jpg" class="scene-bg" alt="Background" onerror="this.style.display='none'" />
   </div>
 
   <div class="page-wrap">
     <div class="card">
+      
       <div class="top-bar">
         <div>
-          <div class="title">THE UNIQUE 금고 - 공동기금</div>
-          <div class="subtitle" id="subtitleText">불러오는 중…</div>
+          <div class="title">THE UNIQUE 금고 & UT</div>
+          <div class="subtitle">공동기금(USDT) 및 내부 포인트(UT) 현황판</div>
         </div>
         <button class="btn-close" onclick="closePage()">창 닫기 ✕</button>
       </div>
 
       <section class="vault-card">
-        <div class="vault-label">공동기금 잔액 (USDT · TRC20)</div>
+        <div class="vault-label">공동기금 (REAL USDT · TRC20)</div>
         <div class="vault-value">
-          <span id="vault-balance-num" class="gold-text">불러오는 중…</span>
+          <span id="vault-balance-num" class="gold-text">로딩중…</span>
           <span class="unit">USDT</span>
         </div>
 
-        <div class="vault-actions">
+        <div style="margin-top:10px; display:flex; gap:8px;">
           <button class="mini-btn gold-outline" onclick="copyVaultAddress()">금고주소 복사</button>
           <button class="mini-btn gold-outline" onclick="refreshAll()">새로고침</button>
         </div>
 
         <div class="vault-grid">
           <div class="vault-item">
-            <div class="k">누적 들어온 돈</div>
+            <div class="k">총 입금</div>
             <div class="v" id="vault-in">-</div>
           </div>
           <div class="vault-item">
-            <div class="k">누적 나간 돈</div>
+            <div class="k">총 출금</div>
             <div class="v" id="vault-out">-</div>
           </div>
           <div class="vault-item">
-            <div class="k">누적 순증감</div>
+            <div class="k">순자산</div>
             <div class="v" id="vault-net">-</div>
           </div>
         </div>
+      </section>
 
-        <div class="vault-sub" id="vault-updated">조회시간: -</div>
-        <div class="vault-sub" id="vault-count" style="margin-top:6px;">내역건수: -</div>
-        <div class="vault-error" id="vault-error"></div>
-
-        <div class="ledger-wrap">
-          <div class="ledger-scroll" id="ledger-scroll">
-            <table class="ledger" aria-label="USDT 누적 내역">
-              <thead>
-                <tr>
-                  <th style="width:150px;">시간</th>
-                  <th style="width:70px;">구분</th>
-                  <th class="right" style="width:140px;">금액</th>
-                  <th style="width:170px;">상대</th>
-                  <th style="width:200px;">TXID</th>
-                </tr>
-              </thead>
-              <tbody id="vault-ledger"></tbody>
-            </table>
+      <section class="vault-card ut-section">
+        <div class="ut-header">
+          <div style="font-size:24px;">💎</div>
+          <div>
+            <div style="font-size:16px; font-weight:900; color:var(--purple2);">THE UNIQUE TOKEN (UT)</div>
+            <div style="font-size:11px; color:#a78bfa;">내부 전용 포인트 · 금고 30% 배당가치 연동</div>
           </div>
         </div>
 
-        <div class="section-title">도네이션 (리더보드)</div>
-        <div class="donation-wrap">
-          <div class="donation-top">
-            <div class="donation-total">
-              누적 도네이션 합계: <b id="don-total">-</b> USDT
-              <span class="muted" id="don-start" style="margin-left:8px;"></span>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn-gold" onclick="openDonation()">도네이션(기부)</button>
-              <button class="mini-btn gold-outline" onclick="toggleRepayPanel()">상환</button>
-            </div>
+        <div class="vault-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="vault-item" style="border-color: rgba(139, 92, 246, 0.4);">
+            <div class="k">1 UT 현재 가치 (실시간)</div>
+            <div class="v purple-text" id="ut-price">계산 중...</div>
+            <div class="vault-sub">≒ <span id="ut-krw">-</span> KRW</div>
           </div>
-
-          <div class="vault-error" id="don-error" style="display:none; margin-top:10px;"></div>
-
-          <div class="ledger-wrap" style="margin-top:10px;">
-            <div class="ledger-scroll" style="max-height:220px;">
-              <table class="ledger" aria-label="기부자 순위">
-                <thead>
-                  <tr>
-                    <th style="width:90px;">순위</th>
-                    <th style="width:220px;">이름</th>
-                    <th class="right" style="width:160px;">누적</th>
-                    <th class="right" style="width:80px;">횟수</th>
-                    <th style="width:160px;">최근</th>
-                  </tr>
-                </thead>
-                <tbody id="donors-body"></tbody>
-              </table>
-            </div>
+          <div class="vault-item" style="border-color: rgba(139, 92, 246, 0.4);">
+            <div class="k">내가 모은 포인트</div>
+            <div class="v" id="my-ut-balance">0 UT</div>
+            <div class="vault-sub">열심히 모아보세요!</div>
           </div>
+        </div>
 
-          <div id="repay-panel" class="hidden" style="margin-top:14px;">
-            <div class="tabbar">
-              <button class="tab active" id="tab-req" onclick="switchRepayTab('req')">사용 신청</button>
-              <button class="tab" id="tab-repay" onclick="switchRepayTab('repay')">상환 등록</button>
-            </div>
-
-            <div id="pane-req" style="margin-top:10px;">
-              <div class="section-title" style="margin-top:0;">사용 신청</div>
-
-              <div class="form">
-                <input id="req-name" placeholder="신청자 이름" />
-                <input id="req-amount" placeholder="금액 (USDT)" />
-
-                <input id="req-borrow" placeholder="빌린 날짜 (자동)" disabled />
-                <input id="req-repay" placeholder="상환 날짜 (YYYY-MM-DD)" />
-
-                <input id="req-to" class="full" placeholder="받을 USDT(TRC20) 주소" />
-                <textarea id="req-memo" class="full" placeholder="USDT TRC20"></textarea>
-
-                <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
-                  <button class="mini-btn gold-outline" onclick="submitRequest()">신청</button>
-                  <button class="mini-btn" onclick="toggleRepayPanel()">닫기</button>
-                </div>
+        <div class="donation-wrap" style="margin-top:14px; border-color: rgba(139, 92, 246, 0.3);">
+          <div class="section-title" style="margin-top:0; color:var(--purple2);">📚 오늘의 지식 채굴 (Ebook Mission)</div>
+          
+          <div style="margin-top:10px; display:flex; gap:12px; align-items:center;">
+            <div style="flex:1;">
+              <div style="font-size:12px; color:#cbd5e1; margin-bottom:4px;">
+                미션: <b style="color:#fff;">성공의 원리 Chapter 4 읽기/듣기</b>
               </div>
-
-              <div class="vault-sub muted" id="req-rule" style="margin-top:8px;">
-                ※ 상환 날짜는 빌린날로부터 최대 14일 이내
-              </div>
-
-              <div class="vault-error" id="req-error" style="display:none;"></div>
-            </div>
-
-            <div id="pane-repay" class="hidden" style="margin-top:10px;">
-              <div class="section-title" style="margin-top:0;">상환 등록</div>
-
-              <div class="form">
-                <input id="repay-name" placeholder="이름" />
-                <input id="repay-txid" placeholder="TXID (64자리 해시)" />
-                <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
-                  <button class="mini-btn gold-outline" onclick="submitRepay()">상환 등록</button>
-                  <button class="mini-btn" onclick="toggleRepayPanel()">닫기</button>
-                </div>
-              </div>
-
-              <div class="vault-error" id="repay-error" style="display:none;"></div>
-
-              <div class="section-title">상환 기록</div>
-              <div class="ledger-wrap" style="margin-top:10px;">
-                <div class="ledger-scroll" style="max-height:220px;">
-                  <table class="ledger" aria-label="상환 기록">
-                    <thead>
-                      <tr>
-                        <th style="width:150px;">시간</th>
-                        <th style="width:160px;">이름</th>
-                        <th class="right" style="width:120px;">금액</th>
-                        <th>TXID</th>
-                      </tr>
-                    </thead>
-                    <tbody id="repay-body"></tbody>
-                  </table>
-                </div>
+              <div class="progress-track">
+                <div id="study-progress" class="progress-fill"></div>
               </div>
             </div>
+            <button id="btn-study" class="btn-study" onclick="startStudy()">
+              재생 ▶
+            </button>
           </div>
-
-          <div class="section-title">신청 상황</div>
-          <div class="ledger-wrap" style="margin-top:10px;">
-            <div class="ledger-scroll" style="max-height:260px;">
-              <table class="ledger" aria-label="신청 목록">
-                <thead>
-                  <tr>
-                    <th style="width:150px;">시간</th>
-                    <th style="width:140px;">신청자</th>
-                    <th class="right" style="width:110px;">금액</th>
-                    <th style="width:120px;">빌린날</th>
-                    <th style="width:120px;">상환일</th>
-                    <th style="width:180px;">받을 주소</th>
-                    <th>메모</th>
-                    <th style="width:120px;">상태/처리</th>
-                  </tr>
-                </thead>
-                <tbody id="req-body"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="vault-sub muted" style="margin-top:10px;">
-            ※ 도네이션(기부): 이름 + TXID 등록 / 상환: 신청(빌리기) 또는 상환등록(TXID)
+          <div id="study-msg" class="vault-sub" style="margin-top:8px; color:#a78bfa;">
+            재생 버튼을 누르고 잠시 집중하면 UT가 채굴됩니다.
           </div>
         </div>
       </section>
+
+      <div class="vault-sub" id="vault-updated" style="margin-top:15px;">조회시간: -</div>
+
+      <div class="ledger-wrap">
+        <div class="ledger-scroll" id="ledger-scroll">
+          <table class="ledger">
+            <thead>
+              <tr>
+                <th style="width:140px;">시간</th>
+                <th style="width:60px;">구분</th>
+                <th class="right" style="width:120px;">금액</th>
+                <th>TXID / 내용</th>
+              </tr>
+            </thead>
+            <tbody id="vault-ledger"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">도네이션 랭킹</div>
+      <div class="donation-wrap">
+        <div class="donation-top">
+          <div class="donation-total">
+            누적 기부금: <b id="don-total">-</b> USDT
+          </div>
+          <button class="btn-gold" onclick="alert('관리자에게 문의하세요!')">도네이션 하기</button>
+        </div>
+        
+        <div class="ledger-wrap" style="margin-top:10px;">
+          <div class="ledger-scroll" style="max-height:200px;">
+            <table class="ledger">
+              <thead>
+                <tr>
+                  <th style="width:60px;">순위</th>
+                  <th>이름</th>
+                  <th class="right">기부금액</th>
+                </tr>
+              </thead>
+              <tbody id="donors-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
     function closePage(){ window.close(); setTimeout(()=>{ try{ history.back(); }catch(e){} },120); }
 
-    const PROGRAM_START_YMD = "2025-12-01";
-
-    const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
+    // --- 설정값 ---
+    const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt"; 
     const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-
-    // ✅ 더블슬래시/끝 슬래시 방지
     const API = (p) => WORKER_BASE.replace(/\/+$/,"") + "/" + String(p).replace(/^\/+/,"");
+    
+    // UT 포인트 설정
+    const TOTAL_UT_ISSUED = 1000; // 가상의 총 발행량 (임의 설정)
+    const KRW_RATE = 1450; // 1 USDT 환율
 
-    function setErr(id, msg){
+    // --- 유틸 함수 ---
+    function setContent(id, txt){
       const el = document.getElementById(id);
-      if(!el) return;
-      if(!msg){ el.style.display="none"; el.textContent=""; return; }
-      el.style.display="block"; el.textContent=msg;
-    }
-
-    function shortAddr(a){
-      if(!a) return "-";
-      if(a.length<=12) return a;
-      return a.slice(0,6)+"…"+a.slice(-4);
+      if(el) el.textContent = txt;
     }
     function shortTx(a){
       if(!a) return "-";
-      if(a.length<=16) return a;
-      return a.slice(0,10)+"…"+a.slice(-6);
+      return a.slice(0,6) + "..." + a.slice(-6);
     }
-
     function copyVaultAddress(){
       const addr = VAULT_TRON_ADDRESS.trim();
-      if(!addr) return;
-      if(navigator.clipboard?.writeText) navigator.clipboard.writeText(addr).catch(()=>{});
-      else alert("클립보드 권한이 필요합니다.");
+      navigator.clipboard.writeText(addr).then(()=>alert("주소 복사 완료!")).catch(()=>{});
     }
 
-    // ---- 날짜 유틸 (KST 기준 YYYY-MM-DD)
-    function toKstYmd(d = new Date()){
-      const k = new Date(d.getTime() + (9*60*60*1000));
-      const y = k.getUTCFullYear();
-      const m = String(k.getUTCMonth()+1).padStart(2,"0");
-      const day = String(k.getUTCDate()).padStart(2,"0");
-      return `${y}-${m}-${day}`;
-    }
-    function addDaysYmd(ymd, days){
-      const [y,m,d] = ymd.split("-").map(Number);
-      const base = new Date(Date.UTC(y, m-1, d, 0,0,0));
-      const next = new Date(base.getTime() + days*24*60*60*1000);
-      const yy = next.getUTCFullYear();
-      const mm = String(next.getUTCMonth()+1).padStart(2,"0");
-      const dd = String(next.getUTCDate()).padStart(2,"0");
-      return `${yy}-${mm}-${dd}`;
+    // --- [핵심 1] 금고 데이터 가져오기 & UT 가격 계산 ---
+    async function fetchVault(){
+      setContent("vault-balance-num", "로딩중…");
+      
+      try {
+        const api = API(`vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
+        const res = await fetch(api, { cache:"no-store" });
+        const data = await res.json();
+
+        if(!data.ok) throw new Error("API Error");
+
+        // 1. 금고 UI 업데이트
+        setContent("vault-balance-num", data.balance);
+        setContent("vault-in", (data.inflow || "0") + " USDT");
+        setContent("vault-out", (data.outflow || "0") + " USDT");
+        setContent("vault-net", (data.net || "0") + " USDT");
+        setContent("vault-updated", "최신 동기화: " + new Date().toLocaleString());
+
+        renderLedger(data.transfers || []);
+
+        // 2. [NEW] UT 가격 계산 (금고 잔액의 30% / 총 발행량)
+        // 쉼표 제거 후 숫자로 변환
+        const realBalance = parseFloat(String(data.balance).replace(/,/g,"")) || 0;
+        
+        // 가격 공식
+        const dividendPool = realBalance * 0.3; // 30% 배당금
+        const pricePerUt = dividendPool / TOTAL_UT_ISSUED;
+        
+        // UT UI 업데이트
+        setContent("ut-price", pricePerUt.toFixed(2) + " USDT");
+        
+        const krwPrice = Math.floor(pricePerUt * KRW_RATE);
+        setContent("ut-krw", krwPrice.toLocaleString());
+
+      } catch(e) {
+        console.error(e);
+        setContent("vault-balance-num", "조회 실패");
+      }
     }
 
-    function renderLedger(transfers){
+    function renderLedger(list){
       const tbody = document.getElementById("vault-ledger");
       tbody.innerHTML = "";
-
-      if(!Array.isArray(transfers) || transfers.length===0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" class="muted">${PROGRAM_START_YMD} 이후 발생한 USDT 내역이 없습니다.</td>`;
-        tbody.appendChild(tr);
+      if(!list.length){
+        tbody.innerHTML = "<tr><td colspan='4' class='muted'>내역 없음</td></tr>";
         return;
       }
-
-      transfers.forEach(t=>{
-        const dt = t.ts ? new Date(t.ts).toLocaleString("ko-KR") : "-";
-        const dir = t.direction==="IN" ? `<span class="tag-in">입금</span>`
-                 : t.direction==="OUT" ? `<span class="tag-out">출금</span>`
-                 : `<span class="muted">-</span>`;
-
-        const counterparty = (t.direction==="IN") ? t.from : (t.direction==="OUT") ? t.to : "-";
-
+      list.forEach(t => {
         const tr = document.createElement("tr");
+        const dir = t.direction==="IN" ? "<span class='tag-in'>입금</span>" : "<span class='tag-out'>출금</span>";
         tr.innerHTML = `
-          <td>${dt}</td>
+          <td>${new Date(t.ts).toLocaleString().slice(5, -3)}</td>
           <td>${dir}</td>
-          <td class="right">${t.amount} USDT</td>
-          <td title="${counterparty}">${shortAddr(counterparty)}</td>
-          <td title="${t.txid || "-"}">${shortTx(t.txid)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const sc = document.getElementById("ledger-scroll");
-      if (sc) sc.scrollTop = sc.scrollHeight;
-    }
-
-    async function fetchVault(){
-      setErr("vault-error", "");
-      document.getElementById("vault-balance-num").textContent = "불러오는 중…";
-
-      const api = API(`vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
-      const res = await fetch(api, { cache:"no-store" });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok) throw new Error(data?.message || `HTTP ${res.status}`);
-
-      document.getElementById("vault-balance-num").textContent = data.balance ?? "-";
-      document.getElementById("vault-in").textContent = `${data.inflow ?? "-"} USDT`;
-      document.getElementById("vault-out").textContent = `${data.outflow ?? "-"} USDT`;
-      document.getElementById("vault-net").textContent = `${data.net ?? "-"} USDT`;
-      document.getElementById("vault-count").textContent = `내역건수: ${data.count ?? "-"}건`;
-      document.getElementById("vault-updated").textContent = `조회시간: ${new Date().toLocaleString("ko-KR")}`;
-
-      renderLedger(data.transfers || []);
-    }
-
-    function medal(rank){
-      if(rank===1) return "🥇";
-      if(rank===2) return "🥈";
-      if(rank===3) return "🥉";
-      return String(rank);
-    }
-
-    function renderDonors(list){
-      const tbody = document.getElementById("donors-body");
-      tbody.innerHTML = "";
-
-      const donors = Array.isArray(list) ? list : [];
-      if(donors.length===0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" class="muted">등록된 기부자가 없습니다.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-
-      donors.forEach((d, idx)=>{
-        const r = d.rank ?? (idx+1);
-        const last = d.lastTs ? new Date(d.lastTs).toLocaleString("ko-KR") : "-";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${medal(r)}</td>
-          <td>${d.name}</td>
-          <td class="right">${d.total} USDT</td>
-          <td class="right">${d.count ?? "-"}</td>
-          <td>${last}</td>
+          <td class="right">${t.amount}</td>
+          <td>${shortTx(t.txid)}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    async function fetchDonations(){
-      setErr("don-error", "");
-      const api = API(`donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
-      const res = await fetch(api, { cache:"no-store" });
-      const data = await res.json().catch(()=>null);
+    // --- [핵심 2] Ebook 채굴 (스터디 미션) 로직 ---
+    let studyTimer = null;
+    let progress = 0;
 
-      if(!res.ok || !data?.ok){
-        setErr("don-error", data?.message || `HTTP ${res.status}`);
-        document.getElementById("don-total").textContent = "-";
-        renderDonors([]);
-        return;
-      }
+    // 브라우저에 임시로 내 포인트 저장 (새로고침해도 유지되게)
+    let myPoints = localStorage.getItem("myUtPoints") ? parseInt(localStorage.getItem("myUtPoints")) : 0;
+    setContent("my-ut-balance", myPoints + " UT");
 
-      document.getElementById("don-total").textContent = data.total ?? "0";
-      renderDonors(data.donors || []);
-    }
+    function startStudy() {
+      const btn = document.getElementById("btn-study");
+      const bar = document.getElementById("study-progress");
+      const msg = document.getElementById("study-msg");
+      
+      if(btn.disabled) return; 
 
-    function validTxid(txid){
-      return /^[0-9a-fA-F]{64}$/.test(String(txid || "").trim());
-    }
+      // UI 변경
+      btn.textContent = "학습 중...";
+      btn.disabled = true;
+      msg.textContent = "지식을 채굴하고 있습니다... (이 창을 유지하세요)";
+      
+      // 실제로는 여기서 Ebook 링크를 띄워줄 수 있음
+      // window.open("https://...", "_blank");
 
-    async function openDonation(){
-      setErr("don-error", "");
-      let name = prompt("도네이션(기부): 이름을 입력하세요");
-      if(!name) return;
-
-      let txid = prompt("TXID(트랜잭션 해시 64자리)를 입력하세요");
-      if(!txid) return;
-
-      name = String(name).trim();
-      txid = String(txid).trim();
-
-      if(!name){ setErr("don-error","이름(name)이 필요합니다."); return; }
-      if(!validTxid(txid)){ setErr("don-error","TXID는 64자리 해시(HEX)여야 합니다."); return; }
-
-      const payload = { address: VAULT_TRON_ADDRESS, name, txid };
-
-      const api = API("donations/add");
-      const res = await fetch(api, {
-        method:"POST",
-        headers:{ "content-type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("don-error", data?.message || `HTTP ${res.status}`);
-        return;
-      }
-
-      alert(`등록 완료! 도네이션: ${data.entry.amount} USDT`);
-      await fetchDonations();
-    }
-
-    function toggleRepayPanel(){
-      const p = document.getElementById("repay-panel");
-      const open = p.classList.contains("hidden");
-      p.classList.toggle("hidden", !open);
-
-      if (open) {
-        const borrow = toKstYmd(new Date());
-        const maxRepay = addDaysYmd(borrow, 14);
-        document.getElementById("req-borrow").value = borrow;
-        document.getElementById("req-rule").textContent = `※ 상환 날짜는 빌린날(${borrow})로부터 최대 14일 이내 (최대 ${maxRepay})`;
-        if (!document.getElementById("req-memo").value.trim()) {
-          document.getElementById("req-memo").value = "USDT TRC20";
+      // 타이머 시작 (테스트용 5초, 실제 운영시 늘리세요)
+      progress = 0;
+      clearInterval(studyTimer);
+      
+      studyTimer = setInterval(() => {
+        progress += 5; // 5%씩 증가
+        bar.style.width = progress + "%";
+        
+        if(progress >= 100) {
+          clearInterval(studyTimer);
+          completeMission();
         }
-        fetchRepays();
-      }
+      }, 200); // 0.2초마다 실행 (총 4~5초 소요)
     }
 
-    function switchRepayTab(which){
-      const tabReq = document.getElementById("tab-req");
-      const tabRep = document.getElementById("tab-repay");
-      const paneReq = document.getElementById("pane-req");
-      const paneRep = document.getElementById("pane-repay");
+    function completeMission() {
+      const btn = document.getElementById("btn-study");
+      const msg = document.getElementById("study-msg");
+      
+      btn.textContent = "보상 받기 🎁";
+      btn.disabled = false;
+      btn.style.background = "linear-gradient(45deg, #8b5cf6, #ec4899)";
+      btn.style.borderColor = "#fff";
+      
+      msg.textContent = "학습 완료! 버튼을 눌러 UT를 획득하세요.";
+      msg.style.color = "#86efac";
 
-      const isReq = which === "req";
-      tabReq.classList.toggle("active", isReq);
-      tabRep.classList.toggle("active", !isReq);
-      paneReq.classList.toggle("hidden", !isReq);
-      paneRep.classList.toggle("hidden", isReq);
+      // 보상 수령 클릭 이벤트로 변경
+      btn.onclick = function() {
+        alert("축하합니다! 5 UT가 지급되었습니다.");
+        
+        // 포인트 증가
+        myPoints += 5;
+        localStorage.setItem("myUtPoints", myPoints);
+        setContent("my-ut-balance", myPoints + " UT");
 
-      setErr("req-error", "");
-      setErr("repay-error", "");
-      if (!isReq) fetchRepays();
+        // 버튼 초기화
+        btn.textContent = "채굴 완료";
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.onclick = null; // 이벤트 제거
+      };
     }
 
-    function renderRequests(items){
-      const tbody = document.getElementById("req-body");
-      tbody.innerHTML = "";
-
-      if(!Array.isArray(items) || items.length === 0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="8" class="muted">등록된 신청이 없습니다.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-
-      items.forEach(x=>{
-        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
-        const borrow = x.borrowDate ? new Date(x.borrowDate).toLocaleDateString("ko-KR") : "-";
-
-        const statusPill = x.status === "done"
-          ? `<span class="pill done">처리됨</span>`
-          : `<span class="pill pending">대기</span>`;
-
-        const btn = x.status === "done"
-          ? `<button class="mini-btn" onclick='markRequest("${x.id}", ${x.ts}, "pending")'>되돌리기</button>`
-          : `<button class="mini-btn gold-outline" onclick='markRequest("${x.id}", ${x.ts}, "done")'>처리 완료</button>`;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dt}</td>
-          <td>${x.name || "-"}</td>
-          <td class="right">${x.amount || "-"} USDT</td>
-          <td>${borrow}</td>
-          <td>${x.repayDate || "-"}</td>
-          <td title="${x.receiveAddress || "-"}">${shortAddr(x.receiveAddress || "")}</td>
-          <td>${(x.memo || "-")}</td>
-          <td style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            ${statusPill}
-            ${btn}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const sc = tbody.closest(".ledger-scroll");
-      if (sc) sc.scrollTop = sc.scrollHeight;
-    }
-
-    async function fetchRequests(){
-      setErr("req-error", "");
-      const api = API(`requests/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
-      const res = await fetch(api, { cache:"no-store" });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("req-error", data?.message || `HTTP ${res.status}`);
-        renderRequests([]);
-        return;
-      }
-      renderRequests(data.items || []);
-    }
-
-    async function submitRequest(){
-      setErr("req-error", "");
-
-      const name = document.getElementById("req-name").value.trim();
-      const amount = document.getElementById("req-amount").value.trim();
-      const borrow = document.getElementById("req-borrow").value.trim();
-      const repayDate = document.getElementById("req-repay").value.trim();
-      const receiveAddress = document.getElementById("req-to").value.trim();
-      const memo = document.getElementById("req-memo").value.trim() || "USDT TRC20";
-
-      if(!name) { setErr("req-error", "신청자 이름을 입력하세요."); return; }
-      if(!amount) { setErr("req-error", "금액을 입력하세요."); return; }
-      if(!repayDate) { setErr("req-error", "상환 날짜를 입력하세요."); return; }
-
-      const maxRepay = addDaysYmd(borrow, 14);
-      if (repayDate > maxRepay) {
-        setErr("req-error", `상환 날짜는 빌린날(${borrow})로부터 최대 14일 이내입니다. (최대 ${maxRepay})`);
-        return;
-      }
-
-      const payload = { address: VAULT_TRON_ADDRESS, name, amount, repayDate, receiveAddress, memo };
-
-      const api = API("requests/add");
-      const res = await fetch(api, {
-        method:"POST",
-        headers:{ "content-type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("req-error", data?.message || `HTTP ${res.status}`);
-        return;
-      }
-
-      alert("신청이 등록되었습니다.");
-      document.getElementById("req-amount").value = "";
-      document.getElementById("req-repay").value = "";
-      document.getElementById("req-to").value = "";
-      document.getElementById("req-memo").value = "USDT TRC20";
-      await fetchRequests();
-    }
-
-    async function markRequest(id, ts, status){
-      setErr("req-error", "");
-
-      const api = API("requests/mark");
-      const res = await fetch(api, {
-        method:"POST",
-        headers:{ "content-type":"application/json" },
-        body: JSON.stringify({ address: VAULT_TRON_ADDRESS, id, ts, status })
-      });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("req-error", data?.message || `HTTP ${res.status}`);
-        return;
-      }
-      await fetchRequests();
-    }
-
-    function renderRepays(items){
-      const tbody = document.getElementById("repay-body");
-      tbody.innerHTML = "";
-
-      if(!Array.isArray(items) || items.length === 0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="4" class="muted">등록된 상환 기록이 없습니다.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-
-      items.forEach(x=>{
-        const dt = x.ts ? new Date(x.ts).toLocaleString("ko-KR") : "-";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dt}</td>
-          <td>${x.name || "-"}</td>
-          <td class="right">${x.amount || "-"} USDT</td>
-          <td title="${x.txid || "-"}">${shortTx(x.txid || "")}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const sc = tbody.closest(".ledger-scroll");
-      if (sc) sc.scrollTop = sc.scrollHeight;
-    }
-
-    async function fetchRepays(){
-      setErr("repay-error", "");
-      const api = API(`repay/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
-      const res = await fetch(api, { cache:"no-store" });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("repay-error", data?.message || `HTTP ${res.status}`);
-        renderRepays([]);
-        return;
-      }
-      renderRepays(data.items || []);
-    }
-
-    async function submitRepay(){
-      setErr("repay-error", "");
-
-      const name = document.getElementById("repay-name").value.trim();
-      const txid = document.getElementById("repay-txid").value.trim();
-      if(!name){ setErr("repay-error", "이름을 입력하세요."); return; }
-      if(!txid){ setErr("repay-error", "TXID를 입력하세요."); return; }
-      if(!validTxid(txid)){ setErr("repay-error", "TXID는 64자리 해시(HEX)여야 합니다."); return; }
-
-      const payload = { address: VAULT_TRON_ADDRESS, name, txid };
-
-      const api = API("repay/add");
-      const res = await fetch(api, {
-        method:"POST",
-        headers:{ "content-type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(()=>null);
-
-      if(!res.ok || !data?.ok){
-        setErr("repay-error", data?.message || `HTTP ${res.status}`);
-        return;
-      }
-
-      alert(`상환 등록 완료! ${data.entry.amount} USDT`);
-      document.getElementById("repay-txid").value = "";
-      await fetchRepays();
+    // --- 초기화 ---
+    async function fetchDonations(){
+      // 기존 도네이션 목록 불러오는 로직 (간소화)
+      try {
+        const api = API(`donations/list?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`);
+        const res = await fetch(api);
+        const data = await res.json();
+        setContent("don-total", data.total || "0");
+        
+        const tbody = document.getElementById("donors-body");
+        tbody.innerHTML = "";
+        (data.donors || []).forEach((d, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${i+1}</td><td>${d.name}</td><td class="right">${d.total}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch(e){}
     }
 
     async function refreshAll(){
-      try { await fetchVault(); }
-      catch(e){
-        setErr("vault-error", String(e?.message || e));
-        document.getElementById("vault-balance-num").textContent = "조회 실패";
-      }
-
+      await fetchVault();
       await fetchDonations();
-      await fetchRequests();
-      if (!document.getElementById("repay-panel").classList.contains("hidden")) {
-        await fetchRepays();
-      }
     }
 
+    // 페이지 로드시 시작
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("req-borrow").value = toKstYmd(new Date());
-      document.getElementById("req-memo").value = "USDT TRC20";
-      document.getElementById("subtitleText").textContent =
-        `USDT 입금/출금 및 도네이션은 ${PROGRAM_START_YMD} 이후부터 누적 공개 (영구)`;
-      document.getElementById("don-start").textContent = `(시작: ${PROGRAM_START_YMD})`;
       refreshAll();
     });
+
   </script>
 </body>
 </html>
