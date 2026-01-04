@@ -409,7 +409,14 @@
       player = new YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
-        videoId: 'Dn3JMfy6Nxg', // 변경된 영상 ID (Dn3JMfy6Nxg)
+        videoId: 'Dn3JMfy6Nxg',
+        // [수정] 아래 playerVars 부분이 추가되었습니다.
+        playerVars: {
+          'origin': window.location.origin, // 현재 도메인(github.io)을 명시하여 통신 보안 오류 해결
+          'enablejsapi': 1,                 // JS API 활성화
+          'rel': 0,                         // 추천 영상 안 뜨게
+          'playsinline': 1                  // 모바일에서 전체화면 되지 않고 인라인 재생
+        },
         events: {
           'onStateChange': onPlayerStateChange
         }
@@ -431,7 +438,6 @@
         statusText.className = "status-text done";
         
         // ★ 핵심: 보상 자격 부여 (LocalStorage에 기록)
-        // 이 키(unique_guide_mission_complete)를 지갑 페이지에서 확인합니다.
         localStorage.setItem("unique_guide_mission_complete", "Y");
         
         alert("🎉 가이드 영상 완전 정독 완료!\n\n보상 자격이 획득되었습니다.\n[지갑(Promo)] 페이지로 이동해서 20 UT를 수령하세요.");
