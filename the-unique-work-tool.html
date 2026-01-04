@@ -253,18 +253,6 @@
         <div class="intro-right">
           
           <div class="media-player-card">
-            <div style="font-size:12px; color:#fbbf24; font-weight:700;">▼ 오늘의 필수 학습 (UT 채굴)</div>
-            <video id="study-player" controls style="width:100%; border-radius:8px; display:block;">
-              <source src="media/today_lecture.mp4" type="video/mp4">
-              미디어를 지원하지 않는 브라우저입니다.
-            </video>
-            <div class="player-status">
-              <div id="status-text" class="status-text waiting">▶ 재생하여 끝까지 시청하세요</div>
-              <div class="progress-bar"><div id="play-progress" class="progress-fill" style="width:0%"></div></div>
-            </div>
-          </div>
-
-          <div class="media-player-card">
             <div style="font-size:12px; color:#fbbf24; font-weight:700;">▼ 사용 가이드 (완전정독 시 20 UT)</div>
             
             <div class="video-container">
@@ -406,26 +394,6 @@
     try { savedLevel = localStorage.getItem(STORAGE_LEVEL_KEY) || 'basic'; } catch(e) {}
     applyLevel(savedLevel);
     buildText();
-
-    // 1. MP4 플레이어 (기존)
-    (function setupLocalPlayer(){
-      const player = document.getElementById('study-player');
-      const statusText = document.getElementById('status-text');
-      const progressBar = document.getElementById('play-progress');
-      const STUDY_KEY = "unique_study_complete_date"; 
-
-      if(player) {
-        player.addEventListener('play', () => { statusText.textContent = "🔥 학습 중..."; statusText.className = "status-text playing"; });
-        player.addEventListener('timeupdate', () => { if(player.duration) progressBar.style.width = (player.currentTime / player.duration * 100) + "%"; });
-        player.addEventListener('ended', () => {
-          statusText.textContent = "✅ 학습 완료! (금고에서 보상 활성화)";
-          statusText.className = "status-text done";
-          if(progressBar) progressBar.style.width = "100%";
-          localStorage.setItem(STUDY_KEY, new Date().toISOString().split('T')[0]);
-          alert("학습을 완료했습니다!\n[UNIQUE 금고]로 가서 오늘의 보상을 받으세요.");
-        });
-      }
-    })();
   })();
   </script>
 
