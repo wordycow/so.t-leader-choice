@@ -6,40 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* --- 스타일 (프리미엄 다크 & 골드) --- */
+    /* --- 기존 스타일 유지 --- */
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
-    :root{ --gold: #fbbf24; --gold-dim: rgba(245,158,11,0.5); --purple: #8b5cf6; --panel: #0f172a; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; --red: #ef4444; }
+    :root{ --gold: #fbbf24; --gold-dim: rgba(245,158,11,0.5); --panel: #0f172a; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; --red: #ef4444; }
     body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; color: var(--text-main); background: #000; display:flex; justify-content:center; align-items:flex-start; }
     .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
     .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
-    
     .page-wrap{ position:relative; z-index:10; max-width:1100px; width:100%; margin:40px auto; padding:20px; }
     .card{ background: rgba(15, 23, 42, 0.95); border-radius: 24px; border: 1px solid var(--gold); box-shadow: 0 0 30px rgba(251, 191, 36, 0.15); padding: 24px; }
-    
     .top-bar{ display:flex; justify-content:space-between; align-items:center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
     .title{ font-size:24px; font-weight:900; color: #fff; }
     .subtitle{ font-size:13px; color: var(--text-sub); margin-top: 4px; }
     .btn-close{ background: var(--panel-light); border: 1px solid var(--text-sub); color: #fff; padding: 8px 16px; border-radius: 12px; cursor: pointer; }
-    
-    /* 탭 메뉴 */
     .tab-menu { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
     .tab-btn { flex: 0 0 auto; padding: 10px 16px; background: var(--panel-light); border: 1px solid rgba(255,255,255,0.1); color: var(--text-sub); border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
     .tab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
-    
     .section { display: none; animation: fadeIn 0.3s; }
     .section.active { display: block; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-    
-    /* 그리드 & 박스 */
     .vault-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
     .vault-box { background: var(--panel-light); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; position:relative; }
     .label { font-size: 12px; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; }
     .value { font-size: 26px; font-weight: 900; color: #fff; }
     .value.gold { color: var(--gold); text-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
     .sub-text { font-size: 11px; color: var(--text-sub); margin-top: 5px; }
-    
-    /* 버튼류 */
     .action-btn { width: 100%; padding: 14px; border-radius: 12px; font-weight: 900; cursor: pointer; border: none; font-size: 14px; margin-top: 10px; transition: transform 0.1s; }
     .action-btn:active { transform: scale(0.98); }
     .btn-mining { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; }
@@ -47,8 +38,6 @@
     .btn-repay { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
     .btn-send { background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; }
     .btn-copy { position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
-    
-    /* 폼 & 리스트 */
     .form-box { background: var(--panel-light); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
     .input-field { width: 100%; padding: 14px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 10px; font-size: 14px; margin-top:5px; }
     .history-list { max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; }
@@ -56,11 +45,8 @@
     .plus { color: #4ade80; } .minus { color: #f87171; }
     #login-modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; display:flex; align-items:center; justify-content:center; }
     .login-box { background:#1e293b; padding:30px; border-radius:20px; border:1px solid #fbbf24; width:320px; text-align:center; }
-    
-    /* 로또 애니메이션 효과 */
     @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
     .shake-btn { animation: shake 0.5s; animation-iteration-count: infinite; background: #e11d48 !important; color: #fff !important; }
-
     @media (max-width: 768px) { .vault-grid { grid-template-columns: 1fr; } .page-wrap { padding: 15px; margin-top: 20px; } }
   </style>
 </head>
@@ -104,10 +90,14 @@
             <div class="label">공동기금 (REAL USDT)</div>
             <div class="value" id="vault-balance-num">Loading...</div>
             <div class="sub-text" id="vault-updated">TRC20 Network</div>
+            
             <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
               <div class="label">💖 도네이션 (기금 후원)</div>
-              <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">위 주소로 USDT를 보내시면 공동기금에 적립됩니다.<br>후원 후 아래 버튼을 눌러주세요.</div>
-              <button onclick="alert('감사합니다! 블록체인 확인 후 명예의 전당에 등재됩니다.')" style="background:#334155; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer;">후원 참여 확인</button>
+              <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">위 주소로 USDT를 이체한 후,<br><b>TXID(이체확인증)</b>를 입력해주세요.</div>
+              <input id="donate-txid" class="input-field" placeholder="TXID (Transaction Hash) 입력" style="margin-bottom:8px; font-size:12px;" />
+              <button onclick="submitDonation()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; width:100%;">
+                후원 확인 제출
+              </button>
             </div>
           </div>
           <div class="vault-box" style="border-color: rgba(245,158,11,0.5);">
@@ -136,13 +126,18 @@
 
         <div class="form-box" style="border-color: #fbbf24; background: linear-gradient(180deg, #1e293b 0%, #171202 100%);">
           <div class="label" style="font-size:15px; color:#fbbf24;">💰 USDT 비즈니스 론 (Leader Only)</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">조직을 보유한 <b>고직급자 전용</b> 사업자금 융통 상품입니다.<br>- 상환 기한: 14일 이내<br>- 이자(수수료): <span style="color:#fbbf24;">+10 USDT</span> (고정)<br><span style="color:#f87171; font-weight:bold;">※ 연체 시 이자 +20 USDT 증가 및 신용도 하락</span></p>
-          <div class="input-group"><div class="label" style="font-size:12px; color:#94a3b8;">신청 원금 (USDT)</div><input id="usdt-loan-amount" type="number" class="input-field" placeholder="금액 입력" oninput="calcInterest()" /></div>
+          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">조직을 보유한 <b>고직급자 전용</b> 사업자금 융통 상품입니다.<br>- 상환 기한: 14일 이내 (수수료 +10 USDT)<br><span style="color:#f87171;">※ 수령할 지갑 주소(TRC20) 필수</span></p>
+          
+          <div class="input-group">
+            <input id="usdt-loan-address" type="text" class="input-field" placeholder="받으실 지갑 주소 (TRC20 - T로 시작)" style="border:1px solid #fbbf24;" />
+          </div>
+          <div class="input-group"><input id="usdt-loan-amount" type="number" class="input-field" placeholder="신청 금액 (USDT)" oninput="calcInterest()" /></div>
           <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span style="color:#94a3b8;">정상 상환액:</span><span style="color:#fbbf24; font-weight:bold;"><span id="usdt-repay-normal">0</span> USDT</span></div>
             <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#f87171;">연체 상환액:</span><span style="color:#f87171; font-weight:bold;"><span id="usdt-repay-late">0</span> USDT</span></div>
           </div>
-          <div class="input-group"><div class="label" style="font-size:12px; color:#94a3b8;">사용 목적 및 직급</div><input id="usdt-loan-reason" type="text" class="input-field" placeholder="예: Pro2 파트너 지원" /></div>
+          <div class="input-group"><input id="usdt-loan-reason" type="text" class="input-field" placeholder="사용 목적 및 직급" /></div>
+          
           <button class="action-btn" style="background: linear-gradient(135deg, #d97706, #b45309); color:#fff; border:1px solid #fbbf24;" onclick="requestUsdtLoan()">USDT 대출 심사 신청</button>
         </div>
       </div>
@@ -151,7 +146,15 @@
         <div class="form-box">
           <div class="label" style="font-size:14px; margin-bottom:10px;">⛏️ 오늘의 지식 채굴</div>
           <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px; color:#cbd5e1;"><span>참여자: <b id="active-miners">124</b>명</span><span>예상 수익: <b id="est-mining" style="color:#86efac;">-</b></span></div>
-          <button id="btn-claim" class="action-btn btn-mining" onclick="claimRewardN()">오늘의 Ebook 학습 인증하고 보상 받기</button>
+          
+          <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; margin-bottom:15px; font-size:12px; color:#cbd5e1; line-height:1.6;">
+            <b>[채굴 방법]</b><br>
+            1. '일하기 도구(Main)'로 이동하세요.<br>
+            2. 아무 Ebook이나 선택해서 학습하세요.<br>
+            3. <b>일정 시간(10초 이상) 학습 후</b> 돌아와서 보상을 받으세요.
+          </div>
+
+          <button id="btn-claim" class="action-btn btn-mining" onclick="claimRewardN()">학습 보상 받기 (Click)</button>
           
           <div style="margin-top:15px; text-align:center;">
              <button id="btn-lotto" onclick="playLotto()" style="background:transparent; border:1px solid #f472b6; color:#f472b6; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:12px; transition:all 0.3s;">🎰 데일리 럭키박스 (1일 1회)</button>
@@ -181,20 +184,18 @@
   </div>
 
 <script>
-  // ========================================================
-  // [키 설정 완료] 사용자님이 주신 키를 심어두었습니다.
-  // ========================================================
+  // [키 설정]
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
   const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-  // ========================================================
-
   const { createClient } = supabase;
   const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let myUsername = "", myBalance = 0, myLoan = 0, utPrice = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-  const KEY_STUDY_PROOF = "unique_study_complete_date";
+  // ✅ 학습 완료 체크용 키 (메인 페이지에서 저장해줘야 함)
+  const KEY_STUDY_SESSION = "unique_study_session_complete"; 
+
   const RANDOM_USERS = Math.floor(Math.random() * 150) + 50; 
   const DAILY_POOL = 1000;
   const TOTAL_UT_ISSUED = 10000; 
@@ -241,6 +242,26 @@
     else { document.getElementById("loan-actions").style.display = "block"; document.getElementById("repay-actions").style.display = "none"; }
   }
 
+  // ✅ [NEW] 도네이션 TXID 제출
+  async function submitDonation() {
+    const txid = document.getElementById("donate-txid").value.trim();
+    if(!txid) return alert("TXID를 입력해주세요.");
+    
+    // Supabase에 기록 (관리자 확인용)
+    const { error } = await db.from('transactions').insert([{
+      username: myUsername,
+      type: 'donation_verify', // 특수 타입
+      amount: 0, // 실제 금액은 확인 후 관리자가 수동 수정
+      description: `[후원확인요청] TXID: ${txid}`
+    }]);
+
+    if(error) alert("제출 실패: " + error.message);
+    else {
+      alert("✅ 후원 확인 요청이 접수되었습니다.\n관리자가 블록체인 확인 후 명예의 전당에 반영합니다.");
+      document.getElementById("donate-txid").value = "";
+    }
+  }
+
   // UT 급전
   async function borrowMoney() {
     const amount = parseFloat(document.getElementById("borrow-amount").value);
@@ -270,7 +291,7 @@
     }
   }
 
-  // USDT 계산기 & 신청
+  // USDT 계산기
   function calcInterest() {
     const amount = parseFloat(document.getElementById("usdt-loan-amount").value);
     const normalDisplay = document.getElementById("usdt-repay-normal");
@@ -283,55 +304,55 @@
     }
   }
 
+  // ✅ [NEW] USDT 대출 신청 (주소 검증 추가)
   async function requestUsdtLoan() {
+    const address = document.getElementById("usdt-loan-address").value.trim();
     const amount = parseFloat(document.getElementById("usdt-loan-amount").value);
     const reason = document.getElementById("usdt-loan-reason").value.trim();
+
+    // 1. 주소 검증 (TRC20은 T로 시작, 길이 34자)
+    if(!address.startsWith("T") || address.length < 30) return alert("올바른 TRC20 지갑 주소가 아닙니다. (T로 시작해야 함)");
     if(!amount || amount <= 0) return alert("신청할 금액을 입력하세요.");
     if(!reason) return alert("직급과 사용 목적을 입력해주세요.");
+
     const repayNormal = amount + 10;
     const repayLate = amount + 20;
-    const { error } = await db.from('transactions').insert([{ username: myUsername, type: 'out', amount: amount, description: `[USDT 론 신청] 원금 ${amount} / 상환 ${repayNormal} (연체시 ${repayLate}) / 사유: ${reason}` }]);
+
+    const { error } = await db.from('transactions').insert([{ 
+      username: myUsername, 
+      type: 'out', 
+      amount: amount, 
+      description: `[USDT 론 신청] ${amount}불 / 주소: ${address} / 사유: ${reason}` 
+    }]);
+
     if(error) alert("오류 발생: " + error.message);
     else {
-      alert(`✅ [심사 접수 완료]\n\n원금: ${amount} USDT\n정상 상환액: ${repayNormal} USDT\n\n관리자 확인 후 송금됩니다.`);
+      alert(`✅ [심사 접수 완료]\n\n신청금액: ${amount} USDT\n수령주소: ${address}\n\n관리자 확인 후 해당 주소로 송금됩니다.`);
       document.getElementById("usdt-loan-amount").value = "";
       document.getElementById("usdt-loan-reason").value = "";
       document.getElementById("usdt-repay-normal").textContent = "0";
-      document.getElementById("usdt-repay-late").textContent = "0";
       fetchHistory();
     }
   }
 
-  // 로또 기능 (애니메이션)
+  // 로또
   async function playLotto() {
     const btn = document.getElementById("btn-lotto");
     const { data: profile } = await db.from('profiles').select('last_lotto').eq('username', myUsername).single();
     if(profile.last_lotto === getTodayDate()) return alert("오늘은 이미 참여했습니다. 내일 또 오세요!");
-
-    btn.disabled = true;
-    btn.textContent = "🎰 추첨 중...";
-    btn.classList.add("shake-btn");
-
+    btn.disabled = true; btn.textContent = "🎰 추첨 중..."; btn.classList.add("shake-btn");
     setTimeout(async () => {
       const isWin = Math.random() < 0.01;
       let reward = isWin ? 500 : 0.1;
       let desc = isWin ? '럭키박스 잭팟!' : '럭키박스 참여 보상';
-
       await db.from('profiles').update({ balance: myBalance + reward, last_lotto: getTodayDate() }).eq('username', myUsername);
       await db.from('transactions').insert([{ username: myUsername, type: 'in', amount: reward, description: desc }]);
-
-      myBalance += reward;
-      updateUI();
-      btn.classList.remove("shake-btn");
-      btn.textContent = "✅ 참여 완료";
-      btn.style.opacity = "0.5";
-      
-      if(isWin) alert("🚨 [대박 사건] 500 UT 당첨을 축하합니다!!!");
-      else alert("아쉽게도 꽝입니다.. 😅\n(위로금 0.1 UT 지급됨)");
+      myBalance += reward; updateUI(); btn.classList.remove("shake-btn"); btn.textContent = "✅ 참여 완료"; btn.style.opacity = "0.5";
+      if(isWin) alert("🚨 [대박] 500 UT 당첨!"); else alert("꽝! (위로금 0.1 UT 지급)");
     }, 2000);
   }
 
-  // 정산 신청 (실제 로직)
+  // 정산
   async function requestExchange() {
     const amount = parseFloat(document.getElementById('ex-amount').value);
     if(!amount || amount < 10) return alert("최소 10 UT 이상");
@@ -356,15 +377,31 @@
       </div>`).join('');
   }
 
+  // ✅ [수정됨] 학습 보상 체크 로직 (시간 체크)
   async function claimRewardN() {
-    const proof = localStorage.getItem(KEY_STUDY_PROOF);
-    if(proof !== getTodayDate()) { if(confirm("학습 인증이 없습니다. '일하기 도구'로 이동할까요?")) window.open("the-unique-work-tool.html", "_blank"); return; }
+    // 1. 메인페이지에서 학습을 완료했는지 확인 (localStorage 키 확인)
+    const sessionProof = localStorage.getItem(KEY_STUDY_SESSION);
+    const today = getTodayDate();
+    
+    // 세션 증명이 없거나, 날짜가 오늘이 아니면 거절
+    if (!sessionProof || sessionProof !== today) {
+      if(confirm("⚠️ 학습 기록이 없습니다.\n\n메인 화면(Gate-Main)에서 Ebook을 열고\n10초 이상 학습해야 보상이 활성화됩니다.\n\n이동하시겠습니까?")) {
+        // 창 닫고 원래 창으로 돌아가게 유도 (또는 새창 열기)
+        try { window.close(); } catch(e){}
+      }
+      return; 
+    }
+
+    // 2. 이미 받았는지 DB 확인
     const { data: profile } = await db.from('profiles').select('last_mining').eq('username', myUsername).single();
-    if(profile.last_mining === getTodayDate()) return alert("오늘 이미 받았습니다.");
+    if(profile.last_mining === getTodayDate()) return alert("✅ 오늘 보상은 이미 받으셨습니다.");
+
+    // 3. 지급
     const reward = parseFloat(todayReward);
     await db.from('profiles').update({ balance: myBalance + reward, last_mining: getTodayDate() }).eq('username', myUsername);
-    await db.from('transactions').insert([{ username: myUsername, type: 'in', amount: reward, description: '지식 채굴 보상' }]);
-    myBalance += reward; updateUI(); checkMiningStatus(); alert(`🎉 ${reward} UT 지급 완료!`);
+    await db.from('transactions').insert([{ username: myUsername, type: 'in', amount: reward, description: '지식 채굴 보상 (시간인증)' }]);
+    myBalance += reward; updateUI(); checkMiningStatus(); 
+    alert(`🎉 학습 인증 완료!\n${reward} UT가 지급되었습니다.`);
   }
 
   async function sendP2P() {
@@ -387,7 +424,7 @@
     const btn = document.getElementById("btn-claim");
     if (profile && profile.last_mining === getTodayDate()) {
       btn.textContent = "✅ 오늘 보상 지급 완료"; btn.disabled = true; btn.style.opacity = "0.5"; btn.style.background = "#334155";
-    } else if (localStorage.getItem(KEY_STUDY_PROOF) === getTodayDate()) {
+    } else if (localStorage.getItem(KEY_STUDY_SESSION) === getTodayDate()) {
       btn.textContent = "🎁 인증됨! 클릭하여 받기"; btn.disabled = false; btn.style.background = "linear-gradient(45deg, #8b5cf6, #ec4899)";
     }
   }
