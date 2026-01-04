@@ -123,9 +123,36 @@
     
     .intro-left { flex: 1; }
     
-    /* 유튜브 링크 카드 스타일 */
+    /* 오른쪽 영역 (학습기 + 유튜브 링크) */
+    .intro-right {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* === [NEW] MP4 플레이어 스타일 === */
+    .media-player-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .status-text { font-size: 12px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .status-text.waiting { color: #94a3b8; }
+    .status-text.playing { color: #fbbf24; animation: pulse 1.5s infinite; }
+    .status-text.done { color: #4ade80; }
+    
+    .progress-bar { height: 6px; background: #334155; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #fbbf24; transition: width 0.2s; }
+    
+    @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.6;} 100% {opacity:1;} }
+
+    /* 유튜브 링크 카드 스타일 (기존 유지) */
     .youtube-link-card {
-      flex: 0 0 320px; /* 너비 고정 */
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -143,7 +170,8 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
       position: relative;
       overflow: hidden;
-      min-height: 180px;
+      min-height: 120px; /* 높이 약간 조정 */
+      flex-grow: 1;
     }
 
     .youtube-link-card:hover {
@@ -153,25 +181,25 @@
     }
 
     .play-icon {
-      width: 50px; height: 50px;
+      width: 40px; height: 40px;
       background: rgba(255,0,0,0.9);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .play-icon::after {
       content: "";
       border-style: solid;
-      border-width: 8px 0 8px 14px;
+      border-width: 6px 0 6px 10px;
       border-color: transparent transparent transparent white;
-      margin-left: 4px;
+      margin-left: 3px;
     }
     
     .yt-text {
       color: #fff;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       z-index: 1;
     }
@@ -179,7 +207,8 @@
     /* 반응형: 화면 작을 땐 유튜브 링크가 아래로 */
     @media (max-width: 768px) {
       .intro-layout { flex-direction: column; }
-      .youtube-link-card { flex: none; width: 100%; height: 200px; }
+      .intro-right { flex: none; width: 100%; }
+      .youtube-link-card { height: 160px; }
     }
 
     /* === Level Select Buttons === */
@@ -383,10 +412,29 @@
           </div>
         </div>
 
-        <a href="https://youtu.be/lW7dV1D3GaY?si=ndkEE3GzaCdlKygY" target="_blank" class="youtube-link-card">
-          <div class="play-icon"></div>
-          <div class="yt-text">가이드 영상 보기</div>
-        </a>
+        <div class="intro-right">
+          
+          <div class="media-player-card">
+            <div style="font-size:12px; color:#fbbf24; font-weight:700;">▼ 오늘의 필수 학습 (UT 채굴)</div>
+            <video id="study-player" controls style="width:100%; border-radius:8px; display:block;">
+              <source src="media/today_lecture.mp4" type="video/mp4">
+              미디어를 지원하지 않는 브라우저입니다.
+            </video>
+
+            <div class="player-status">
+              <div id="status-text" class="status-text waiting">▶ 재생하여 끝까지 시청하세요</div>
+              <div class="progress-bar">
+                <div id="play-progress" class="progress-fill" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <a href="https://youtu.be/lW7dV1D3GaY?si=ndkEE3GzaCdlKygY" target="_blank" class="youtube-link-card">
+            <div class="play-icon"></div>
+            <div class="yt-text">사용 가이드 영상 보기</div>
+          </a>
+
+        </div>
 
       </div>
     </section>
@@ -498,7 +546,7 @@
   <script>
   (function () {
     // ===== 설정 값 =====
-    const DEFAULT_DISCORD     = 'https://discord.gg/3cUN7QXMSY';
+    const DEFAULT_DISCORD       = 'https://discord.gg/3cUN7QXMSY';
     const DEFAULT_YOUTUBE_1 = 'https://www.youtube.com/@%EC%8F%98%EB%8B%BSo.T';
     const DEFAULT_YOUTUBE_2 = 'https://www.youtube.com/@%EC%96%B4%EC%8A%AC%EB%A0%81%EB%A1%9C%EB%93%9C';
     const DEFAULT_SITE        = 'https://wordycow.github.io/so.t-leader-choice/the-unique-main.html';
@@ -506,7 +554,7 @@
     const STORAGE_LEVEL_KEY = 'tu_work_level_v2';
     const LEVELS = {
       basic: { name:'정회원 ~ 스타3', subtitle:'습관 만드는 단계', leadsTarget:3, pitchesTarget:1, invitesTarget:3 },
-      mid:   { name:'Pro1 ~ Pro3',    subtitle:'성과가 나고 사람이 붙는 단계', leadsTarget:3, pitchesTarget:3, invitesTarget:6 },
+      mid:   { name:'Pro1 ~ Pro3',   subtitle:'성과가 나고 사람이 붙는 단계', leadsTarget:3, pitchesTarget:3, invitesTarget:6 },
       high:  { name:'Pro4 이상 도전자', subtitle:'리더십 단계, 깊이 들어간 사람들', leadsTarget:1, pitchesTarget:2, invitesTarget:10 }
     };
 
@@ -522,8 +570,8 @@
     const btnClearInputs = document.getElementById('btnClearInputs');
     const btnCopyResult  = document.getElementById('btnCopyResult');
     const btnClearResult = document.getElementById('btnClearResult');
-    const resultText   = document.getElementById('resultText');
-    const levelDesc    = document.getElementById('levelDesc');
+    const resultText     = document.getElementById('resultText');
+    const levelDesc      = document.getElementById('levelDesc');
     const levelButtons = Array.from(document.querySelectorAll('.level-btn'));
 
     // ===== Init Links =====
@@ -551,8 +599,8 @@
     // ===== Build Text Logic =====
     function buildText() {
       if (!resultText) return;
-      const name   = (inputName  && inputName.value.trim())  || 'OO';
-      const topic  = (inputTopic && inputTopic.value.trim()) || '관심사';
+      const name    = (inputName  && inputName.value.trim())  || 'OO';
+      const topic   = (inputTopic && inputTopic.value.trim()) || '관심사';
       const myName = (inputMyName && inputMyName.value.trim()) || '나';
 
       const lines = [
@@ -620,6 +668,42 @@
     
     // 예시 텍스트 생성
     buildText();
+
+
+    // ===== [NEW] 미디어 학습 감지 로직 =====
+    (function setupMediaPlayer(){
+      const player = document.getElementById('study-player');
+      const statusText = document.getElementById('status-text');
+      const progressBar = document.getElementById('play-progress');
+      
+      if(!player) return;
+
+      const STUDY_KEY = "unique_study_complete_date"; 
+
+      player.addEventListener('play', () => {
+        statusText.textContent = "🔥 학습 중입니다... (끝까지 시청하세요)";
+        statusText.className = "status-text playing";
+      });
+
+      player.addEventListener('timeupdate', () => {
+        if(player.duration) {
+          const percent = (player.currentTime / player.duration) * 100;
+          if(progressBar) progressBar.style.width = percent + "%";
+        }
+      });
+
+      player.addEventListener('ended', () => {
+        statusText.textContent = "✅ 학습 완료! (금고에서 보상이 활성화됩니다)";
+        statusText.className = "status-text done";
+        if(progressBar) progressBar.style.width = "100%";
+
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.setItem(STUDY_KEY, today);
+        
+        alert("학습을 완료했습니다!\n이제 [UNIQUE 금고]로 가서 오늘의 보상(UT)을 받으세요.");
+      });
+    })();
+
   })();
   </script>
 </body>
