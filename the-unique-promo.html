@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* --- 기존 스타일 유지 --- */
+    /* --- 스타일 (기존 유지) --- */
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
-    :root{ --gold: #fbbf24; --gold-dim: rgba(245,158,11,0.5); --panel: #0f172a; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; --red: #ef4444; }
+    :root{ --gold: #fbbf24; --gold-dim: rgba(245,158,11,0.5); --purple: #8b5cf6; --panel: #0f172a; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; --red: #ef4444; }
     body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; color: var(--text-main); background: #000; display:flex; justify-content:center; align-items:flex-start; }
     .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
     .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
@@ -45,8 +45,19 @@
     .plus { color: #4ade80; } .minus { color: #f87171; }
     #login-modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; display:flex; align-items:center; justify-content:center; }
     .login-box { background:#1e293b; padding:30px; border-radius:20px; border:1px solid #fbbf24; width:320px; text-align:center; }
+    
+    /* 랭킹 스타일 */
+    .ranking-list { margin-top:15px; background:rgba(0,0,0,0.3); border-radius:12px; padding:10px; min-height: 80px; }
+    .rank-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
+    .rank-item:last-child { border-bottom:none; }
+    .rank-badge { display:inline-block; width:20px; text-align:center; font-weight:bold; margin-right:5px; }
+    .rank-1 { color:#FFD700; text-shadow:0 0 5px #FFD700; }
+    .rank-2 { color:#C0C0C0; }
+    .rank-3 { color:#CD7F32; }
+
     @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
     .shake-btn { animation: shake 0.5s; animation-iteration-count: infinite; background: #e11d48 !important; color: #fff !important; }
+
     @media (max-width: 768px) { .vault-grid { grid-template-columns: 1fr; } .page-wrap { padding: 15px; margin-top: 20px; } }
   </style>
 </head>
@@ -55,7 +66,7 @@
   <div id="login-modal">
     <div class="login-box">
       <h2 style="color:#fbbf24; margin-top:0;">THE UNIQUE BANK</h2>
-      <p style="color:#94a3b8; font-size:13px; margin-bottom:20px;">접속할 닉네임을 입력하세요.<br>(서버에 안전하게 저장됩니다)</p>
+      <p style="color:#94a3b8; font-size:13px; margin-bottom:20px;">접속할 닉네임을 입력하세요.<br>(기존 데이터와 연동됩니다)</p>
       <input id="login-name" class="input-field" placeholder="닉네임 (예: 홍길동)" style="text-align:center; font-weight:bold; margin-bottom:15px;" />
       <button class="action-btn" style="background:#fbbf24; color:#000;" onclick="doLogin()">내 지갑 열기</button>
     </div>
@@ -92,19 +103,28 @@
             <div class="sub-text" id="vault-updated">TRC20 Network</div>
             
             <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
-              <div class="label">💖 도네이션 (기금 후원)</div>
-              <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">위 주소로 USDT를 이체한 후,<br><b>TXID(이체확인증)</b>를 입력해주세요.</div>
-              <input id="donate-txid" class="input-field" placeholder="TXID (Transaction Hash) 입력" style="margin-bottom:8px; font-size:12px;" />
-              <button onclick="submitDonation()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; width:100%;">
-                후원 확인 제출
-              </button>
+              <div class="label">💖 명예의 전당 (Top Donors)</div>
+              <div id="donation-ranking" class="ranking-list">
+                 <div style="text-align:center; color:#64748b; font-size:12px;">데이터 로딩 중...</div>
+              </div>
             </div>
           </div>
+
           <div class="vault-box" style="border-color: rgba(245,158,11,0.5);">
             <div class="label">나의 자산 (UT)</div>
             <div class="value gold" id="my-ut-balance">0 UT</div>
             <div class="sub-text">≒ <span id="my-krw-value">0</span> KRW 가치</div>
             <div style="margin-top:15px; font-size:12px; color:#fbbf24;">1 UT = <span id="ut-price">0</span> USDT</div>
+            
+            <div style="margin-top:20px; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
+              <div class="label" style="color:#fbbf24;">🏆 기금 후원하기</div>
+              <input id="donate-name" class="input-field" placeholder="후원자 성함 (랭킹 표시용)" style="margin-bottom:5px;" />
+              <input id="donate-amount" type="number" class="input-field" placeholder="후원 금액 (USDT)" style="margin-bottom:5px;" />
+              <input id="donate-txid" class="input-field" placeholder="TXID (이체 확인증)" style="margin-bottom:8px;" />
+              <button onclick="submitDonation()" style="width:100%; background:#fbbf24; color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">
+                후원 내역 제출 (랭킹 반영)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -137,7 +157,6 @@
             <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#f87171;">연체 상환액:</span><span style="color:#f87171; font-weight:bold;"><span id="usdt-repay-late">0</span> USDT</span></div>
           </div>
           <div class="input-group"><input id="usdt-loan-reason" type="text" class="input-field" placeholder="사용 목적 및 직급" /></div>
-          
           <button class="action-btn" style="background: linear-gradient(135deg, #d97706, #b45309); color:#fff; border:1px solid #fbbf24;" onclick="requestUsdtLoan()">USDT 대출 심사 신청</button>
         </div>
       </div>
@@ -193,7 +212,6 @@
   let myUsername = "", myBalance = 0, myLoan = 0, utPrice = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-  // ✅ 학습 완료 체크용 키 (메인 페이지에서 저장해줘야 함)
   const KEY_STUDY_SESSION = "unique_study_session_complete"; 
 
   const RANDOM_USERS = Math.floor(Math.random() * 150) + 50; 
@@ -215,7 +233,8 @@
     document.getElementById("login-modal").style.display = "none";
     let { data: profile } = await db.from('profiles').select('*').eq('username', myUsername).single();
     if(!profile) {
-      const { error } = await db.from('profiles').insert([{ username: myUsername, balance: 0, loan_amount: 0 }]);
+      // 신규 유저 생성 (기존 데이터 보존을 위해 insert 시 충돌 방지 로직 필요하나 여기선 단순 조회 실패 시 생성)
+      const { error } = await db.from('profiles').insert([{ username: myUsername, balance: 0, loan_amount: 0, donation_total: 0 }]);
       if(error) return alert("로그인 오류: " + error.message);
       myBalance = 0; myLoan = 0;
     } else {
@@ -223,7 +242,8 @@
       myLoan = profile.loan_amount || 0;
       updateLoanUI(profile.loan_due_date);
     }
-    updateUI(); fetchVault(); checkMiningStatus();
+    updateUI(); fetchVault(); checkMiningStatus(); 
+    fetchRanking(); // ★ 핵심: 로그인 시 랭킹 불러오기 실행
   }
 
   function updateUI() {
@@ -242,24 +262,65 @@
     else { document.getElementById("loan-actions").style.display = "block"; document.getElementById("repay-actions").style.display = "none"; }
   }
 
-  // ✅ [NEW] 도네이션 TXID 제출
+  // ✅ [복구됨] 명예의 전당 (DB에서 읽어오기)
+  async function fetchRanking() {
+    const container = document.getElementById("donation-ranking");
+    // donation_total 컬럼이 있는 profiles 테이블 조회 (기존 데이터 읽기)
+    const { data, error } = await db.from('profiles')
+      .select('username, donation_total')
+      .gt('donation_total', 0) // 기부금이 있는 사람만
+      .order('donation_total', { ascending: false })
+      .limit(5);
+
+    if (error || !data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px;">아직 표시할 데이터가 없습니다.</div>';
+      return;
+    }
+
+    container.innerHTML = data.map((user, index) => {
+      let rankClass = "rank-badge";
+      if(index === 0) rankClass += " rank-1";
+      if(index === 1) rankClass += " rank-2";
+      if(index === 2) rankClass += " rank-3";
+      
+      return `
+        <div class="rank-item">
+          <div><span class="${rankClass}">${index + 1}</span> ${user.username}</div>
+          <div style="color:#fbbf24; font-weight:bold;">${user.donation_total.toLocaleString()} USDT</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ✅ [복구됨] 도네이션 제출 및 랭킹 반영
   async function submitDonation() {
+    const name = document.getElementById("donate-name").value.trim();
+    const amount = parseFloat(document.getElementById("donate-amount").value);
     const txid = document.getElementById("donate-txid").value.trim();
-    if(!txid) return alert("TXID를 입력해주세요.");
-    
-    // Supabase에 기록 (관리자 확인용)
-    const { error } = await db.from('transactions').insert([{
+
+    if(!name || !amount || amount <= 0 || !txid) return alert("이름, 금액, TXID를 모두 입력해주세요.");
+
+    // 1. 내역 기록
+    await db.from('transactions').insert([{
       username: myUsername,
-      type: 'donation_verify', // 특수 타입
-      amount: 0, // 실제 금액은 확인 후 관리자가 수동 수정
-      description: `[후원확인요청] TXID: ${txid}`
+      type: 'donation_verify',
+      amount: amount,
+      description: `[후원확인] ${name} / ${amount} USDT / TXID: ${txid}`
     }]);
 
-    if(error) alert("제출 실패: " + error.message);
-    else {
-      alert("✅ 후원 확인 요청이 접수되었습니다.\n관리자가 블록체인 확인 후 명예의 전당에 반영합니다.");
-      document.getElementById("donate-txid").value = "";
-    }
+    // 2. 프로필 누적액 업데이트 (가반영)
+    const { data: profile } = await db.from('profiles').select('donation_total').eq('username', myUsername).single();
+    const currentTotal = profile ? (profile.donation_total || 0) : 0;
+    const newTotal = currentTotal + amount;
+
+    // 이름이 다르면 해당 이름으로 프로필 찾아서 업데이트 시도 (단순화: 로그인 유저 기준)
+    await db.from('profiles').update({ donation_total: newTotal }).eq('username', myUsername);
+
+    alert(`💖 감사합니다, ${name}님!\n\n후원금 ${amount} USDT가 접수되었습니다.\n명예의 전당에 곧 반영됩니다.`);
+    
+    document.getElementById("donate-amount").value = "";
+    document.getElementById("donate-txid").value = "";
+    fetchRanking(); // 랭킹 즉시 갱신
   }
 
   // UT 급전
@@ -304,38 +365,26 @@
     }
   }
 
-  // ✅ [NEW] USDT 대출 신청 (주소 검증 추가)
+  // USDT 대출 신청
   async function requestUsdtLoan() {
     const address = document.getElementById("usdt-loan-address").value.trim();
     const amount = parseFloat(document.getElementById("usdt-loan-amount").value);
     const reason = document.getElementById("usdt-loan-reason").value.trim();
-
-    // 1. 주소 검증 (TRC20은 T로 시작, 길이 34자)
-    if(!address.startsWith("T") || address.length < 30) return alert("올바른 TRC20 지갑 주소가 아닙니다. (T로 시작해야 함)");
+    if(!address.startsWith("T") || address.length < 30) return alert("올바른 TRC20 지갑 주소가 아닙니다.");
     if(!amount || amount <= 0) return alert("신청할 금액을 입력하세요.");
     if(!reason) return alert("직급과 사용 목적을 입력해주세요.");
-
     const repayNormal = amount + 10;
     const repayLate = amount + 20;
-
-    const { error } = await db.from('transactions').insert([{ 
-      username: myUsername, 
-      type: 'out', 
-      amount: amount, 
-      description: `[USDT 론 신청] ${amount}불 / 주소: ${address} / 사유: ${reason}` 
-    }]);
-
+    const { error } = await db.from('transactions').insert([{ username: myUsername, type: 'out', amount: amount, description: `[USDT 론 신청] ${amount}불 / 주소: ${address} / 사유: ${reason}` }]);
     if(error) alert("오류 발생: " + error.message);
     else {
-      alert(`✅ [심사 접수 완료]\n\n신청금액: ${amount} USDT\n수령주소: ${address}\n\n관리자 확인 후 해당 주소로 송금됩니다.`);
+      alert(`✅ [심사 접수 완료]\n\n신청금액: ${amount} USDT\n수령주소: ${address}\n\n관리자 확인 후 송금됩니다.`);
       document.getElementById("usdt-loan-amount").value = "";
       document.getElementById("usdt-loan-reason").value = "";
-      document.getElementById("usdt-repay-normal").textContent = "0";
       fetchHistory();
     }
   }
 
-  // 로또
   async function playLotto() {
     const btn = document.getElementById("btn-lotto");
     const { data: profile } = await db.from('profiles').select('last_lotto').eq('username', myUsername).single();
@@ -352,7 +401,6 @@
     }, 2000);
   }
 
-  // 정산
   async function requestExchange() {
     const amount = parseFloat(document.getElementById('ex-amount').value);
     if(!amount || amount < 10) return alert("최소 10 UT 이상");
@@ -364,7 +412,6 @@
     }
   }
 
-  // 내역
   async function fetchHistory() {
     const container = document.getElementById('history-container');
     container.innerHTML = '<div style="text-align:center;">로딩...</div>';
@@ -377,31 +424,19 @@
       </div>`).join('');
   }
 
-  // ✅ [수정됨] 학습 보상 체크 로직 (시간 체크)
   async function claimRewardN() {
-    // 1. 메인페이지에서 학습을 완료했는지 확인 (localStorage 키 확인)
     const sessionProof = localStorage.getItem(KEY_STUDY_SESSION);
     const today = getTodayDate();
-    
-    // 세션 증명이 없거나, 날짜가 오늘이 아니면 거절
     if (!sessionProof || sessionProof !== today) {
-      if(confirm("⚠️ 학습 기록이 없습니다.\n\n메인 화면(Gate-Main)에서 Ebook을 열고\n10초 이상 학습해야 보상이 활성화됩니다.\n\n이동하시겠습니까?")) {
-        // 창 닫고 원래 창으로 돌아가게 유도 (또는 새창 열기)
-        try { window.close(); } catch(e){}
-      }
+      if(confirm("⚠️ 학습 기록이 없습니다.\n\n메인 화면(Gate-Main)에서 Ebook을 열고\n10초 이상 학습해야 보상이 활성화됩니다.\n\n이동하시겠습니까?")) { try { window.close(); } catch(e){} }
       return; 
     }
-
-    // 2. 이미 받았는지 DB 확인
     const { data: profile } = await db.from('profiles').select('last_mining').eq('username', myUsername).single();
     if(profile.last_mining === getTodayDate()) return alert("✅ 오늘 보상은 이미 받으셨습니다.");
-
-    // 3. 지급
     const reward = parseFloat(todayReward);
     await db.from('profiles').update({ balance: myBalance + reward, last_mining: getTodayDate() }).eq('username', myUsername);
     await db.from('transactions').insert([{ username: myUsername, type: 'in', amount: reward, description: '지식 채굴 보상 (시간인증)' }]);
-    myBalance += reward; updateUI(); checkMiningStatus(); 
-    alert(`🎉 학습 인증 완료!\n${reward} UT가 지급되었습니다.`);
+    myBalance += reward; updateUI(); checkMiningStatus(); alert(`🎉 학습 인증 완료!\n${reward} UT가 지급되었습니다.`);
   }
 
   async function sendP2P() {
