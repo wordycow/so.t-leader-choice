@@ -998,19 +998,53 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
 
+      // [NEW] EBOOK 보상 지급 함수
+      function giveEbookReward(title) {
+        const KEY_LAST_EBOOK = "lastEbookRewardDate";
+        const today = new Date().toISOString().split('T')[0];
+        const last = localStorage.getItem(KEY_LAST_EBOOK);
+
+        // 1. 이미 오늘 받았는지 확인
+        if (last === today) {
+          // 이미 받았으면 조용히 넘어감 (또는 alert로 알려줄 수도 있음)
+          return; 
+        }
+
+        // 2. 보너스 포인트 지급 (예: 2 UT)
+        let myPoints = localStorage.getItem("myUtPoints") ? parseFloat(localStorage.getItem("myUtPoints")) : 0;
+        const BONUS = 2; // 보너스 점수
+        
+        myPoints += BONUS;
+        myPoints = Math.round(myPoints * 100) / 100; // 소수점 정리
+
+        // 3. 저장 및 알림
+        localStorage.setItem("myUtPoints", myPoints);
+        localStorage.setItem(KEY_LAST_EBOOK, today);
+
+        alert(`📖 [${title}] 학습을 시작합니다.\n\n🎉 일일 독서 보너스 +${BONUS} UT가 지급되었습니다!\n(현재 총 보유: ${myPoints} UT)`);
+      }
+
       function renderFromItems(books){
         listEl.innerHTML = "";
         books.forEach(book => {
+          // 카드 전체를 클릭 가능한 a 태그로 생성
           const card = document.createElement("a");
           card.className = "ebook-card";
 
           const href = book.link || "#";
           card.href = href;
+          
           if (href && href !== "#"){
             card.target = "_blank";
             card.rel = "noopener noreferrer";
+
+            // [NEW] 클릭 시 보상 지급 이벤트 연결
+            card.addEventListener("click", function() {
+              giveEbookReward(book.title || "EBOOK");
+            });
           }
 
+          // 썸네일
           const thumb = document.createElement("div");
           thumb.className = "ebook-thumb";
           const img = document.createElement("img");
@@ -1020,7 +1054,9 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
           img.style.objectPosition = "50% " + posY + "%";
           thumb.appendChild(img);
 
+          // 텍스트 내용
           const body = document.createElement("div");
+          
           const title = document.createElement("div");
           title.className = "ebook-meta-title";
           title.textContent = book.title || "";
@@ -1031,7 +1067,7 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
 
           const cta = document.createElement("div");
           cta.className = "ebook-meta-cta";
-          cta.textContent = "클릭하여 eBook 페이지로 이동";
+          cta.textContent = "클릭하여 eBook 열람 (+2 UT)"; // 텍스트 변경
 
           body.appendChild(title);
           body.appendChild(desc);
@@ -1043,6 +1079,7 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
         });
       }
 
+      // 기본 eBook 데이터 (설정 파일 없을 때 대비)
       function renderDefault(){
         renderFromItems([
           { id:"unique-basic", title:"협력을 배우고 협력을 만들어낸다.", subtitle:"누구나 언제든지 다시 볼 수 있는 THE UNIQUE 기본 매뉴얼입니다.", cover:"img/ebook-the-unique-system-book.jpg", link:"ebook.html", visible:true, order:1, posY:50 },
@@ -1050,6 +1087,7 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
         ]);
       }
 
+      // JSON 설정 불러오기
       fetch("ebook-config.json")
         .then(res => { if (!res.ok) throw new Error("status " + res.status); return res.json(); })
         .then(data => {
@@ -1057,6 +1095,7 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
           if (!items.length){ renderDefault(); return; }
           items = items.filter(item => item.visible !== false);
 
+          // 직급별 필터링 (기존 로직 유지)
           const myRank = currentRankCode;
           const myIdx = myRank ? RANK_ORDER.indexOf(myRank) : -1;
           if (myIdx >= 0){
@@ -1080,57 +1119,7 @@ const myRec = pickMyRankRecord(list, currentId, currentName, currentTeam, curren
         })
         .catch(err => { console.error("ebook-config.json 로드 오류:", err); renderDefault(); });
     })();
-
-   (function setupButtons(){
-  const promoBtn = document.getElementById("promo-btn");
-  const travelBtn = document.getElementById("travel-btn");
-  const sotBtn = document.getElementById("sot-btn");
-  const promoBadge = document.getElementById("promo-badge");
-  const pptFormBtn = document.getElementById("ppt-form-btn");
-
-  if (!promoBtn) return;
-
-  // 프로모션 뱃지
-  const PROMO_VERSION = "2025-12-02-01";
-  const seenPromo = localStorage.getItem("uniquePromoSeen");
-  if (promoBadge && seenPromo !== PROMO_VERSION) {
-    promoBadge.classList.remove("hidden");
-  }
-
-  promoBtn.addEventListener("click", () => {
-    window.open("the-unique-promo.html", "_blank");
-    localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
-    if (promoBadge) promoBadge.classList.add("hidden");
-  });
-
-  // 여행 / so.t
-  if (travelBtn) {
-    travelBtn.addEventListener("click", () => {
-      window.open("index.html", "_blank");
-    });
-  }
-
-  if (sotBtn) {
-    sotBtn.addEventListener("click", () => {
-      window.open("https://www.ssoti.com/", "_blank");
-    });
-  }
-
-  // ✅ Linkon 버튼 (최종)
-  const LINKON_URL = "https://linkon.gift/";
-  if (pptFormBtn) {
-    pptFormBtn.addEventListener("click", () => {
-      window.open(LINKON_URL, "_blank", "noopener,noreferrer");
-    });
-  }
-})(); // ✅ 이게 핵심! 반드시 있어야 함
-
-// 로그아웃은 함수 밖
-document.getElementById("logout-btn").addEventListener("click", () => {
-  localStorage.removeItem("uniqueCurrentUser");
-  window.location.href = "the-unique-gate.html";
-});
-</script>
+  </script>
 
   <!-- HQ 전용 버튼들 (원본 유지) -->
   <script>
