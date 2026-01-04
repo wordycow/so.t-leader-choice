@@ -161,6 +161,10 @@
 
           <button id="btn-claim" class="action-btn btn-mining" onclick="claimRewardN()">학습 보상 받기 (Click)</button>
           
+          <button id="btn-guide-claim" class="action-btn" style="background: linear-gradient(135deg, #10b981, #059669); margin-top:10px; color:#fff;" onclick="claimGuideReward()">
+            🔰 가이드 영상 보상 (20 UT)
+          </button>
+          
           <div style="margin-top:15px; text-align:center;">
              <button id="btn-lotto" onclick="playLotto()" style="background:transparent; border:1px solid #f472b6; color:#f472b6; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:12px; transition:all 0.3s;">🎰 데일리 럭키박스 (1일 1회)</button>
           </div>
@@ -489,6 +493,61 @@
     myBalance += reward; updateUI(); checkMiningStatus(); alert(`🎉 학습 인증 완료!\n${reward} UT가 지급되었습니다.`);
   }
 
+  // ★ [NEW] 가이드 영상 보상 지급 함수
+  async function claimGuideReward() {
+    // 1. 자격 확인 (로컬 스토리지)
+    const isDone = localStorage.getItem("unique_guide_mission_complete");
+    if(isDone !== "Y") {
+        if(confirm("아직 가이드 영상을 끝까지 시청하지 않으셨습니다.\n[일하기 도구]로 이동해서 영상을 정독하시겠습니까?")) {
+            window.location.href = 'the-unique-work-tool.html';
+        }
+        return;
+    }
+
+    // 2. 중복 수령 확인 (DB 조회)
+    // 오늘 하루 보상이 아니라 '평생 1번'이므로 트랜잭션 내역을 뒤져봅니다.
+    const { data: existing } = await db.from('transactions')
+        .select('id')
+        .eq('username', myUsername)
+        .eq('description', '가이드 영상 학습 보상 (1회 한정)')
+        .maybeSingle();
+
+    if(existing) {
+        return alert("✅ 이미 가이드 보상을 수령하셨습니다.");
+    }
+
+    // 3. 보상 지급 (20 UT)
+    const reward = 20;
+    
+    // 프로필 업데이트
+    const { error: updateError } = await db.from('profiles')
+        .update({ balance: myBalance + reward })
+        .eq('username', myUsername);
+
+    if(updateError) return alert("보상 지급 중 오류가 발생했습니다.");
+
+    // 내역 기록
+    await db.from('transactions').insert([{
+        username: myUsername,
+        type: 'in',
+        amount: reward,
+        description: '가이드 영상 학습 보상 (1회 한정)'
+    }]);
+
+    // UI 갱신
+    myBalance += reward;
+    updateUI();
+    alert(`🎉 축하합니다!\n\n가이드 영상 학습 보상 ${reward} UT가 지급되었습니다.`);
+    
+    // 버튼 비활성화 처리
+    const btn = document.getElementById("btn-guide-claim");
+    if(btn) {
+        btn.disabled = true;
+        btn.textContent = "✅ 보상 수령 완료";
+        btn.style.opacity = "0.5";
+    }
+  }
+
   async function sendP2P() {
     const receiver = document.getElementById('p2p-receiver').value.trim();
     let amountVal = document.getElementById('p2p-amount').value;
@@ -544,6 +603,14 @@
       btn.textContent = "✅ 오늘 보상 지급 완료"; btn.disabled = true; btn.style.opacity = "0.5"; btn.style.background = "#334155";
     } else if (localStorage.getItem(KEY_STUDY_SESSION) === getTodayDate()) {
       btn.textContent = "🎁 인증됨! 클릭하여 받기"; btn.disabled = false; btn.style.background = "linear-gradient(45deg, #8b5cf6, #ec4899)";
+    }
+
+    // [NEW] 가이드 영상 보상 버튼 상태 체크
+    const btnGuide = document.getElementById("btn-guide-claim");
+    if(btnGuide) {
+        // 이미 받았는지 체크 (API 호출 최소화를 위해 여기서는 버튼만 활성 상태로 두고, 클릭 시 체크함)
+        // 만약 UX를 더 좋게 하려면 여기서 DB 조회를 한 번 더 해야 하지만, 
+        // 성능을 위해 클릭 시 체크하는 방식으로 유지합니다.
     }
   }
 
