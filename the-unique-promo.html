@@ -54,10 +54,12 @@
     .history-list { max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; }
     .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .plus { color: #4ade80; } .minus { color: #f87171; }
-
-    /* 로그인 모달 */
     #login-modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; display:flex; align-items:center; justify-content:center; }
     .login-box { background:#1e293b; padding:30px; border-radius:20px; border:1px solid #fbbf24; width:320px; text-align:center; }
+    
+    /* 로또 애니메이션 효과 */
+    @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+    .shake-btn { animation: shake 0.5s; animation-iteration-count: infinite; background: #e11d48 !important; color: #fff !important; }
 
     @media (max-width: 768px) { .vault-grid { grid-template-columns: 1fr; } .page-wrap { padding: 15px; margin-top: 20px; } }
   </style>
@@ -102,110 +104,57 @@
             <div class="label">공동기금 (REAL USDT)</div>
             <div class="value" id="vault-balance-num">Loading...</div>
             <div class="sub-text" id="vault-updated">TRC20 Network</div>
-            
             <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
               <div class="label">💖 도네이션 (기금 후원)</div>
-              <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">
-                위 주소로 USDT를 보내시면 공동기금에 적립됩니다.<br>
-                후원 후 아래 버튼을 눌러주세요.
-              </div>
-              <button onclick="alert('감사합니다! 블록체인 확인 후 명예의 전당에 등재됩니다.')" style="background:#334155; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer;">
-                후원 참여 확인
-              </button>
+              <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">위 주소로 USDT를 보내시면 공동기금에 적립됩니다.<br>후원 후 아래 버튼을 눌러주세요.</div>
+              <button onclick="alert('감사합니다! 블록체인 확인 후 명예의 전당에 등재됩니다.')" style="background:#334155; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer;">후원 참여 확인</button>
             </div>
           </div>
-
           <div class="vault-box" style="border-color: rgba(245,158,11,0.5);">
             <div class="label">나의 자산 (UT)</div>
             <div class="value gold" id="my-ut-balance">0 UT</div>
             <div class="sub-text">≒ <span id="my-krw-value">0</span> KRW 가치</div>
-            <div style="margin-top:15px; font-size:12px; color:#fbbf24;">
-              1 UT = <span id="ut-price">0</span> USDT
-            </div>
+            <div style="margin-top:15px; font-size:12px; color:#fbbf24;">1 UT = <span id="ut-price">0</span> USDT</div>
           </div>
         </div>
       </div>
 
       <div id="tab-loan" class="section">
-        
         <div class="form-box">
           <div class="label" style="font-size:15px; color:#f87171;">⚡ UT 급전 (소액/즉시)</div>
-          <p style="font-size:11px; color:#94a3b8; margin-bottom:15px;">
-            활동에 필요한 포인트를 즉시 충전해드립니다.<br>
-            (한도: 50 UT / 이자: 없음 / 누구나 가능)
-          </p>
-
+          <p style="font-size:11px; color:#94a3b8; margin-bottom:15px;">활동에 필요한 포인트를 즉시 충전해드립니다.<br>(한도: 50 UT / 이자: 없음 / 누구나 가능)</p>
           <div style="background:#1e293b; padding:12px; border-radius:10px; margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px;">
-              <span style="color:#cbd5e1;">이용 중인 대출:</span>
-              <span style="color:#f87171; font-weight:bold;" id="loan-amount">0 UT</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:4px;">
-              <span style="color:#cbd5e1;">상환 만기일:</span>
-              <span style="color:#fff;" id="loan-date">-</span>
-            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px;"><span style="color:#cbd5e1;">이용 중인 대출:</span><span style="color:#f87171; font-weight:bold;" id="loan-amount">0 UT</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:4px;"><span style="color:#cbd5e1;">상환 만기일:</span><span style="color:#fff;" id="loan-date">-</span></div>
           </div>
-
           <div id="loan-actions">
-            <div class="input-group" style="margin-bottom:0;">
-               <input id="borrow-amount" type="number" class="input-field" placeholder="필요한 UT 입력" />
-            </div>
+            <div class="input-group" style="margin-bottom:0;"><input id="borrow-amount" type="number" class="input-field" placeholder="필요한 UT 입력" /></div>
             <button class="action-btn btn-loan" onclick="borrowMoney()">UT 빌리기</button>
           </div>
-          <div id="repay-actions" style="display:none;">
-            <button class="action-btn btn-repay" onclick="repayMoney()">UT 상환하기</button>
-          </div>
+          <div id="repay-actions" style="display:none;"><button class="action-btn btn-repay" onclick="repayMoney()">UT 상환하기</button></div>
         </div>
 
         <div class="form-box" style="border-color: #fbbf24; background: linear-gradient(180deg, #1e293b 0%, #171202 100%);">
           <div class="label" style="font-size:15px; color:#fbbf24;">💰 USDT 비즈니스 론 (Leader Only)</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">
-            조직을 보유한 <b>고직급자 전용</b> 사업자금 융통 상품입니다.<br>
-            - 상환 기한: 14일 이내<br>
-            - 이자(수수료): <span style="color:#fbbf24;">+10 USDT</span> (고정)<br>
-            <span style="color:#f87171; font-weight:bold;">※ 연체 시 이자 +20 USDT 증가 및 신용도 하락</span>
-          </p>
-          
-          <div class="input-group">
-            <div class="label" style="font-size:12px; color:#94a3b8;">신청 원금 (USDT)</div>
-            <input id="usdt-loan-amount" type="number" class="input-field" placeholder="금액 입력" oninput="calcInterest()" />
-          </div>
-
+          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">조직을 보유한 <b>고직급자 전용</b> 사업자금 융통 상품입니다.<br>- 상환 기한: 14일 이내<br>- 이자(수수료): <span style="color:#fbbf24;">+10 USDT</span> (고정)<br><span style="color:#f87171; font-weight:bold;">※ 연체 시 이자 +20 USDT 증가 및 신용도 하락</span></p>
+          <div class="input-group"><div class="label" style="font-size:12px; color:#94a3b8;">신청 원금 (USDT)</div><input id="usdt-loan-amount" type="number" class="input-field" placeholder="금액 입력" oninput="calcInterest()" /></div>
           <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-              <span style="color:#94a3b8;">정상 상환액:</span>
-              <span style="color:#fbbf24; font-weight:bold;"><span id="usdt-repay-normal">0</span> USDT</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px;">
-              <span style="color:#f87171;">연체 상환액:</span>
-              <span style="color:#f87171; font-weight:bold;"><span id="usdt-repay-late">0</span> USDT</span>
-            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span style="color:#94a3b8;">정상 상환액:</span><span style="color:#fbbf24; font-weight:bold;"><span id="usdt-repay-normal">0</span> USDT</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#f87171;">연체 상환액:</span><span style="color:#f87171; font-weight:bold;"><span id="usdt-repay-late">0</span> USDT</span></div>
           </div>
-
-          <div class="input-group">
-            <div class="label" style="font-size:12px; color:#94a3b8;">사용 목적 및 직급</div>
-            <input id="usdt-loan-reason" type="text" class="input-field" placeholder="예: Pro2 파트너 지원" />
-          </div>
-          
-          <button class="action-btn" style="background: linear-gradient(135deg, #d97706, #b45309); color:#fff; border:1px solid #fbbf24;" onclick="requestUsdtLoan()">
-            USDT 대출 심사 신청
-          </button>
+          <div class="input-group"><div class="label" style="font-size:12px; color:#94a3b8;">사용 목적 및 직급</div><input id="usdt-loan-reason" type="text" class="input-field" placeholder="예: Pro2 파트너 지원" /></div>
+          <button class="action-btn" style="background: linear-gradient(135deg, #d97706, #b45309); color:#fff; border:1px solid #fbbf24;" onclick="requestUsdtLoan()">USDT 대출 심사 신청</button>
         </div>
-
       </div>
 
       <div id="tab-mining" class="section">
         <div class="form-box">
           <div class="label" style="font-size:14px; margin-bottom:10px;">⛏️ 오늘의 지식 채굴</div>
-          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px; color:#cbd5e1;">
-            <span>참여자: <b id="active-miners">124</b>명</span>
-            <span>예상 수익: <b id="est-mining" style="color:#86efac;">-</b></span>
-          </div>
-          <button id="btn-claim" class="action-btn btn-mining" onclick="claimRewardN()">
-            오늘의 Ebook 학습 인증하고 보상 받기
-          </button>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px; color:#cbd5e1;"><span>참여자: <b id="active-miners">124</b>명</span><span>예상 수익: <b id="est-mining" style="color:#86efac;">-</b></span></div>
+          <button id="btn-claim" class="action-btn btn-mining" onclick="claimRewardN()">오늘의 Ebook 학습 인증하고 보상 받기</button>
+          
           <div style="margin-top:15px; text-align:center;">
-             <button onclick="playLotto()" style="background:transparent; border:1px solid #f472b6; color:#f472b6; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:12px;">🎰 데일리 럭키박스 (1일 1회)</button>
+             <button id="btn-lotto" onclick="playLotto()" style="background:transparent; border:1px solid #f472b6; color:#f472b6; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:12px; transition:all 0.3s;">🎰 데일리 럭키박스 (1일 1회)</button>
           </div>
         </div>
       </div>
@@ -220,25 +169,20 @@
         <div class="form-box" style="border-color:#fbbf24;">
           <div class="label" style="color:#fbbf24;">💸 정산 신청</div>
           <input id="ex-amount" type="number" class="input-field" placeholder="신청 수량 (최소 10 UT)" />
-          <button class="action-btn" style="background:#fbbf24; color:#000;" onclick="requestExchange()">정산 신청하기</button>
+          <button class="action-btn" style="background:#fbbf24; color:#000;" onclick="requestExchange()">정산 신청하기 (즉시차감)</button>
         </div>
       </div>
 
       <div id="tab-history" class="section">
-        <div class="history-list" id="history-container">
-          <div style="text-align:center; padding:20px; color:#64748b;">로딩 중...</div>
-        </div>
-        <div style="text-align:center; margin-top:10px;">
-          <button onclick="fetchHistory()" style="background:#334155; color:#cbd5e1; border:none; padding:6px 10px; border-radius:8px; font-size:11px; cursor:pointer;">내역 새로고침</button>
-        </div>
+        <div class="history-list" id="history-container"><div style="text-align:center; padding:20px; color:#64748b;">로딩 중...</div></div>
+        <div style="text-align:center; margin-top:10px;"><button onclick="fetchHistory()" style="background:#334155; color:#cbd5e1; border:none; padding:6px 10px; border-radius:8px; font-size:11px; cursor:pointer;">내역 새로고침</button></div>
       </div>
-
     </div>
   </div>
 
 <script>
   // ========================================================
-  // [필수] Supabase 설정 (본인의 URL과 Key를 꼭 넣으세요)
+  // [키 설정 완료] 사용자님이 주신 키를 심어두었습니다.
   // ========================================================
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
   const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
@@ -247,44 +191,28 @@
   const { createClient } = supabase;
   const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // 변수
-  let myUsername = "";
-  let myBalance = 0;
-  let myLoan = 0; 
-  let utPrice = 0;
-  
+  let myUsername = "", myBalance = 0, myLoan = 0, utPrice = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
   const KEY_STUDY_PROOF = "unique_study_complete_date";
-
   const RANDOM_USERS = Math.floor(Math.random() * 150) + 50; 
   const DAILY_POOL = 1000;
   const TOTAL_UT_ISSUED = 10000; 
   let todayReward = (DAILY_POOL / (RANDOM_USERS + 1)).toFixed(2);
 
-  // 유틸
   function getTodayDate() { return new Date().toISOString().split('T')[0]; }
-  function getFutureDate(days) { 
-    const d = new Date(); d.setDate(d.getDate() + days); 
-    return d.toISOString().split('T')[0]; 
-  }
+  function getFutureDate(days) { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0]; }
   function formatNum(n) { return n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2}); }
   function closePage(){ window.close(); }
-  function copyVaultAddress(){
-    navigator.clipboard.writeText(VAULT_TRON_ADDRESS).then(()=>alert("지갑 주소 복사 완료!")).catch(()=>{});
-  }
+  function copyVaultAddress(){ navigator.clipboard.writeText(VAULT_TRON_ADDRESS).then(()=>alert("지갑 주소 복사 완료!")).catch(()=>{}); }
 
-  // 1. 로그인
   async function doLogin() {
     const inputName = document.getElementById("login-name").value.trim();
     if(!inputName) return alert("닉네임을 입력하세요.");
-
     myUsername = inputName;
     document.getElementById("user-display").textContent = `[${myUsername}]`;
     document.getElementById("login-modal").style.display = "none";
-
     let { data: profile } = await db.from('profiles').select('*').eq('username', myUsername).single();
-    
     if(!profile) {
       const { error } = await db.from('profiles').insert([{ username: myUsername, balance: 0, loan_amount: 0 }]);
       if(error) return alert("로그인 오류: " + error.message);
@@ -294,12 +222,9 @@
       myLoan = profile.loan_amount || 0;
       updateLoanUI(profile.loan_due_date);
     }
-    updateUI();
-    fetchVault();
-    checkMiningStatus();
+    updateUI(); fetchVault(); checkMiningStatus();
   }
 
-  // 2. 화면 갱신
   function updateUI() {
     document.getElementById("my-ut-balance").textContent = formatNum(myBalance) + " UT";
     const krwVal = myBalance * utPrice * 1450;
@@ -312,21 +237,15 @@
   function updateLoanUI(dueDate) {
     document.getElementById("loan-amount").textContent = myLoan + " UT";
     document.getElementById("loan-date").textContent = myLoan > 0 ? dueDate : "-";
-    if(myLoan > 0) {
-      document.getElementById("loan-actions").style.display = "none";
-      document.getElementById("repay-actions").style.display = "block";
-    } else {
-      document.getElementById("loan-actions").style.display = "block";
-      document.getElementById("repay-actions").style.display = "none";
-    }
+    if(myLoan > 0) { document.getElementById("loan-actions").style.display = "none"; document.getElementById("repay-actions").style.display = "block"; } 
+    else { document.getElementById("loan-actions").style.display = "block"; document.getElementById("repay-actions").style.display = "none"; }
   }
 
-  // 3. UT 급전 (자동)
+  // UT 급전
   async function borrowMoney() {
     const amount = parseFloat(document.getElementById("borrow-amount").value);
     if(!amount || amount <= 0 || amount > 50) return alert("1 ~ 50 UT 사이로 입력하세요.");
-    if(myLoan > 0) return alert("이미 대출이 있습니다. 상환 후 이용하세요.");
-
+    if(myLoan > 0) return alert("이미 대출이 있습니다.");
     const dueDate = getFutureDate(14);
     if(confirm(`${amount} UT를 대출하시겠습니까?\n상환일: ${dueDate}`)) {
       const newBalance = myBalance + amount;
@@ -351,46 +270,30 @@
     }
   }
 
-  // 4. [NEW] USDT 이자 계산기
+  // USDT 계산기 & 신청
   function calcInterest() {
     const amount = parseFloat(document.getElementById("usdt-loan-amount").value);
     const normalDisplay = document.getElementById("usdt-repay-normal");
     const lateDisplay = document.getElementById("usdt-repay-late");
-    
     if(amount && amount > 0) {
-      // 정상: 원금 + 10, 연체: 원금 + 20
       normalDisplay.textContent = (amount + 10).toLocaleString();
       lateDisplay.textContent = (amount + 20).toLocaleString();
     } else {
-      normalDisplay.textContent = "0";
-      lateDisplay.textContent = "0";
+      normalDisplay.textContent = "0"; lateDisplay.textContent = "0";
     }
   }
 
-  // 5. [NEW] USDT 대출 신청 (규칙 적용)
   async function requestUsdtLoan() {
     const amount = parseFloat(document.getElementById("usdt-loan-amount").value);
     const reason = document.getElementById("usdt-loan-reason").value.trim();
-
     if(!amount || amount <= 0) return alert("신청할 금액을 입력하세요.");
     if(!reason) return alert("직급과 사용 목적을 입력해주세요.");
-
-    // 상환 정보
     const repayNormal = amount + 10;
     const repayLate = amount + 20;
-
-    // 장부 기록 (관리자용 상세 정보 포함)
-    const { error } = await db.from('transactions').insert([{ 
-      username: myUsername, 
-      type: 'out', 
-      amount: amount, 
-      description: `[USDT 론 신청] 원금 ${amount} / 상환 ${repayNormal} (연체시 ${repayLate}) / 사유: ${reason}` 
-    }]);
-
-    if(error) {
-      alert("오류 발생: " + error.message);
-    } else {
-      alert(`✅ [심사 접수 완료]\n\n신청 원금: ${amount} USDT\n\n정상 상환 시: ${repayNormal} USDT\n연체 시 벌금: ${repayLate} USDT\n\n관리자가 확인 후 송금합니다.`);
+    const { error } = await db.from('transactions').insert([{ username: myUsername, type: 'out', amount: amount, description: `[USDT 론 신청] 원금 ${amount} / 상환 ${repayNormal} (연체시 ${repayLate}) / 사유: ${reason}` }]);
+    if(error) alert("오류 발생: " + error.message);
+    else {
+      alert(`✅ [심사 접수 완료]\n\n원금: ${amount} USDT\n정상 상환액: ${repayNormal} USDT\n\n관리자 확인 후 송금됩니다.`);
       document.getElementById("usdt-loan-amount").value = "";
       document.getElementById("usdt-loan-reason").value = "";
       document.getElementById("usdt-repay-normal").textContent = "0";
@@ -399,7 +302,48 @@
     }
   }
 
-  // 내역, 채굴, 송금 (기존 로직 유지)
+  // 로또 기능 (애니메이션)
+  async function playLotto() {
+    const btn = document.getElementById("btn-lotto");
+    const { data: profile } = await db.from('profiles').select('last_lotto').eq('username', myUsername).single();
+    if(profile.last_lotto === getTodayDate()) return alert("오늘은 이미 참여했습니다. 내일 또 오세요!");
+
+    btn.disabled = true;
+    btn.textContent = "🎰 추첨 중...";
+    btn.classList.add("shake-btn");
+
+    setTimeout(async () => {
+      const isWin = Math.random() < 0.01;
+      let reward = isWin ? 500 : 0.1;
+      let desc = isWin ? '럭키박스 잭팟!' : '럭키박스 참여 보상';
+
+      await db.from('profiles').update({ balance: myBalance + reward, last_lotto: getTodayDate() }).eq('username', myUsername);
+      await db.from('transactions').insert([{ username: myUsername, type: 'in', amount: reward, description: desc }]);
+
+      myBalance += reward;
+      updateUI();
+      btn.classList.remove("shake-btn");
+      btn.textContent = "✅ 참여 완료";
+      btn.style.opacity = "0.5";
+      
+      if(isWin) alert("🚨 [대박 사건] 500 UT 당첨을 축하합니다!!!");
+      else alert("아쉽게도 꽝입니다.. 😅\n(위로금 0.1 UT 지급됨)");
+    }, 2000);
+  }
+
+  // 정산 신청 (실제 로직)
+  async function requestExchange() {
+    const amount = parseFloat(document.getElementById('ex-amount').value);
+    if(!amount || amount < 10) return alert("최소 10 UT 이상");
+    if(amount > myBalance) return alert("잔액 부족");
+    if(confirm(`정산 신청하시겠습니까? (즉시 차감)`)) {
+      await db.from('profiles').update({ balance: myBalance - amount }).eq('username', myUsername);
+      await db.from('transactions').insert([{ username: myUsername, type: 'out', amount: amount, description: '정산 신청 (대기중)' }]);
+      myBalance -= amount; updateUI(); alert("신청 완료"); fetchHistory();
+    }
+  }
+
+  // 내역
   async function fetchHistory() {
     const container = document.getElementById('history-container');
     container.innerHTML = '<div style="text-align:center;">로딩...</div>';
@@ -408,7 +352,7 @@
     container.innerHTML = data.map(item => `
       <div class="history-item">
         <div><div style="font-weight:bold; color:#fff; font-size:13px;">${item.description}</div><div style="font-size:11px; color:#94a3b8;">${new Date(item.created_at).toLocaleString()}</div></div>
-        <div class="${item.type==='in'?'plus':'minus'}" style="font-weight:900;">${item.type==='in'?'+':'-'}${item.amount}</div>
+        <div class="${item.type==='in'?'plus':'minus'}" style="font-weight:900;">${item.type==='in'?'+':'-'}${item.amount} UT</div>
       </div>`).join('');
   }
 
@@ -426,7 +370,7 @@
   async function sendP2P() {
     const receiver = document.getElementById('p2p-receiver').value.trim();
     const amount = parseFloat(document.getElementById('p2p-amount').value);
-    if(!receiver || !amount || amount > myBalance) return alert("입력 확인 필요");
+    if(!receiver || !amount || amount <= 0 || amount > myBalance) return alert("입력 확인 필요");
     const { data: rUser } = await db.from('profiles').select('*').eq('username', receiver).single();
     if(!rUser) return alert("존재하지 않는 닉네임");
     if(confirm(`${receiver}님에게 ${amount} UT 송금?`)) {
@@ -468,9 +412,6 @@
     event.target.classList.add('active');
     if(tabName === 'history') fetchHistory();
   }
-
-  async function requestExchange() { alert("준비 중입니다."); }
-  async function playLotto() { alert("준비 중입니다."); }
 </script>
 </body>
 </html>
