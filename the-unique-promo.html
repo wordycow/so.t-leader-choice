@@ -167,21 +167,6 @@
     .donation-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     .btn-gold{ border:1px solid var(--gold); background: linear-gradient(180deg, rgba(245,158,11,0.95), rgba(245,158,11,0.75)); color: #0b1220; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:1000; font-size:12px; }
     
-    /* 프로그레스 바 */
-    .progress-track {
-      background: #1e293b;
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-    .progress-fill {
-      width: 0%;
-      height: 100%;
-      background: var(--purple);
-      transition: width 0.3s linear;
-    }
-
     @media (max-width:768px){
       .page-wrap{ margin:16px auto 24px; }
       .card{ padding:16px 14px 18px; transform:none; }
@@ -274,7 +259,7 @@
             </div>
             
             <div style="font-size:11px; color:#94a3b8; margin-bottom:10px;">
-              ※ 참여자가 늘어나면 획득량은 줄어듭니다. (초기 선점 유리)
+              ※ '일하기 도구'에서 영상을 끝까지 시청해야 수령 가능
             </div>
 
             <button id="btn-claim" class="btn-study" onclick="claimRewardN()" style="width:100%;">
@@ -296,35 +281,42 @@
         </div>
       </section>
 
+      <div style="text-align:center; margin-top:30px; border-top:1px solid #334155; padding-top:20px;">
+        <button onclick="resetTestData()" style="background:#1e293b; color:#94a3b8; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:11px; cursor:pointer;">
+          [테스트용] 내 데이터 0으로 초기화
+        </button>
+      </div>
+
     </div>
   </div>
 
 <script>
   function closePage(){ window.close(); setTimeout(()=>{ try{ history.back(); }catch(e){} },120); }
 
-  // 1. [복구됨] 금고 API 설정
+  // 1. 금고 API 설정
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt"; 
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
   const API = (p) => WORKER_BASE.replace(/\/+$/,"") + "/" + String(p).replace(/^\/+/,"");
   
-  // 2. UT 채굴 설정
+  // 2. UT 설정 및 키값
   const KEY_MY_POINTS = "myUtPoints";
   const KEY_LAST_MINING = "lastMiningDate"; 
   const KEY_LAST_LOTTO = "lastLottoDate";
+  const KEY_STUDY_PROOF = "unique_study_complete_date"; // Work Tool이 찍어주는 도장 키
   
-  // 가상의 오늘 참여자 수 (실제로는 서버에서 가져옴)
+  // 가상 수치
   const RANDOM_USERS = Math.floor(Math.random() * 150) + 50; 
   const DAILY_POOL = 1000;
-  const TOTAL_UT_ISSUED = 10000; // 가상의 총 발행량 (UT 가격 계산용)
+  const TOTAL_UT_ISSUED = 10000; 
 
-  // 내 포인트 불러오기
-  let myPoints = localStorage.getItem(KEY_MY_POINTS) ? parseInt(localStorage.getItem(KEY_MY_POINTS)) : 0;
-  let todayReward = (DAILY_POOL / (RANDOM_USERS + 1)).toFixed(2); // 나 포함해서 계산
+  // 내 포인트 불러오기 (없으면 0)
+  let myPoints = localStorage.getItem(KEY_MY_POINTS) ? parseFloat(localStorage.getItem(KEY_MY_POINTS)) : 0;
+  let todayReward = (DAILY_POOL / (RANDOM_USERS + 1)).toFixed(2); 
 
   // 날짜 유틸
   function getTodayDate() { return new Date().toISOString().split('T')[0]; }
 
-  // --- [복구됨] 유틸 함수 ---
+  // 유틸 함수
   function setContent(id, txt){
     const el = document.getElementById(id);
     if(el) el.textContent = txt;
@@ -334,7 +326,7 @@
     navigator.clipboard.writeText(addr).then(()=>alert("주소 복사 완료!")).catch(()=>{});
   }
 
-  // --- [복구됨] 금고 데이터 가져오기 + UT 가격 계산 ---
+  // --- [금고 데이터 가져오기] ---
   async function fetchVault(){
     setContent("vault-balance-num", "로딩중…");
     
@@ -345,13 +337,12 @@
 
       if(!data.ok) throw new Error("API Error");
 
-      // 1. 금고 UI 업데이트
       setContent("vault-balance-num", data.balance);
       setContent("vault-in", (data.inflow || "0") + " USDT");
       setContent("vault-out", (data.outflow || "0") + " USDT");
       setContent("vault-net", (data.net || "0") + " USDT");
 
-      // 2. UT 가격 계산 (금고 잔액의 30% / 총 발행량)
+      // UT 가격 계산
       const realBalance = parseFloat(String(data.balance).replace(/,/g,"")) || 0;
       const dividendPool = realBalance * 0.3; 
       const pricePerUt = dividendPool / TOTAL_UT_ISSUED;
@@ -364,52 +355,82 @@
     }
   }
 
-  // --- [기능 1] 1/N 채굴 UI 및 로직 ---
+  // --- [UI 상태 체크] ---
   function checkMiningStatus() {
-    const lastDate = localStorage.getItem(KEY_LAST_MINING);
     const today = getTodayDate();
+    const proofDate = localStorage.getItem(KEY_STUDY_PROOF); 
+    const lastClaim = localStorage.getItem(KEY_LAST_MINING); 
+    
     const btn = document.getElementById("btn-claim");
-
-    // 화면에 숫자 표시
     const minerEl = document.getElementById("active-miners");
     const estEl = document.getElementById("est-mining");
+    const balEl = document.getElementById("my-ut-balance");
+
+    // 기본 정보 표시
     if(minerEl) minerEl.textContent = RANDOM_USERS;
     if(estEl) estEl.textContent = todayReward + " UT";
-
-    // 내 잔고 표시
-    const balEl = document.getElementById("my-ut-balance");
     if(balEl) balEl.textContent = myPoints + " UT";
 
-    // 버튼 상태
-    if (lastDate === today) {
-      btn.textContent = `✅ 오늘 보상 획득 완료 (${todayReward} UT)`;
+    // 버튼 상태 결정
+    // 1. 이미 받음
+    if (lastClaim === today) {
+      btn.textContent = `✅ 오늘 보상 지급 완료`;
       btn.disabled = true;
       btn.style.opacity = "0.5";
       btn.style.background = "#334155";
-    } else {
-      btn.textContent = `오늘의 Ebook 학습 인증하고 1/N 보상 받기`;
+      return;
+    }
+
+    // 2. 학습 도장 확인 (Work Tool에서 찍힘)
+    if (proofDate === today) {
+      btn.textContent = "🎁 인증 확인됨! 클릭하여 UT 받기";
       btn.disabled = false;
-      btn.style.background = "#4c1d95";
+      btn.style.background = "linear-gradient(45deg, #8b5cf6, #ec4899)";
+    } else {
+      // 3. 아직 안 함
+      btn.textContent = "🔒 아직 학습 전입니다 (Work Tool로 이동)";
+      btn.disabled = false; 
+      btn.style.background = "#475569";
     }
   }
 
+  // --- [보상 청구 로직 (검증 포함)] ---
   function claimRewardN() {
-    const isHonest = confirm("정말로 메인 화면에서 학습을 완료하셨나요?\n\n※ 참여자가 많을수록 개당 보상은 줄어듭니다.\n오늘의 배당: " + todayReward + " UT");
+    const today = getTodayDate();
+    const proofDate = localStorage.getItem(KEY_STUDY_PROOF);
+
+    // 1. 학습 여부 검증
+    if (proofDate !== today) {
+      alert("⚠️ 학습 인증이 확인되지 않습니다.\n\n'일하기 도구' 페이지에서 영상을 끝까지 시청해야\n보상 자격이 주어집니다.");
+      if(confirm("'일하기 도구'로 이동하여 학습하시겠습니까?")) {
+        window.open("the-unique-work-tool.html", "_blank");
+      }
+      return; 
+    }
+
+    // 2. 중복 수령 방지
+    const lastClaim = localStorage.getItem(KEY_LAST_MINING);
+    if (lastClaim === today) {
+      alert("✅ 이미 오늘의 보상을 수령하셨습니다.");
+      return;
+    }
+
+    // 3. 지급 실행
+    const isHonest = confirm(`[학습 인증 확인됨]\n\n오늘의 예상 수익: ${todayReward} UT\n지급 받으시겠습니까?`);
     
     if (isHonest) {
-      // 포인트 지급
       myPoints = myPoints + parseFloat(todayReward);
       myPoints = Math.round(myPoints * 100) / 100;
 
       localStorage.setItem(KEY_MY_POINTS, myPoints);
-      localStorage.setItem(KEY_LAST_MINING, getTodayDate());
+      localStorage.setItem(KEY_LAST_MINING, today);
       
-      alert(`🎉 채굴 성공!\n\n오늘의 N빵 보상: ${todayReward} UT가 지급되었습니다.`);
-      checkMiningStatus();
+      alert(`🎉 보상 지급 완료!\n\n${todayReward} UT가 지갑에 적립되었습니다.`);
+      checkMiningStatus(); 
     }
   }
 
-  // --- [기능 2] 럭키 박스 (잭팟) ---
+  // --- [럭키 박스] ---
   function playLotto() {
     const lastDate = localStorage.getItem(KEY_LAST_LOTTO);
     const today = getTodayDate();
@@ -419,9 +440,7 @@
       return;
     }
 
-    // 확률 설정: 1% 확률로 당첨
     const isWin = Math.random() < 0.01; 
-    
     localStorage.setItem(KEY_LAST_LOTTO, today);
 
     if (isWin) {
@@ -430,22 +449,32 @@
       localStorage.setItem(KEY_MY_POINTS, myPoints);
       alert(`🚨 대박 사건!! 🚨\n\n럭키 박스에 당첨되었습니다!\n상금: ${jackpot} UT`);
     } else {
-      // 꽝이어도 소소한 위로금 (0.1 UT)
       myPoints += 0.1;
       myPoints = Math.round(myPoints * 100) / 100;
       localStorage.setItem(KEY_MY_POINTS, myPoints);
-      alert("아쉽게도 꽝입니다.. 😅\n하지만 참여 보상으로 0.1 UT를 드립니다.\n꾸준히 도전하면 언젠가 터집니다!");
+      alert("아쉽게도 꽝입니다.. 😅\n하지만 참여 보상으로 0.1 UT를 드립니다.");
     }
     checkMiningStatus();
   }
 
-  // --- [복구됨] 통합 새로고침 함수 ---
-  async function refreshAll(){
-    await fetchVault(); // 금고 데이터 로딩
-    checkMiningStatus(); // 채굴 상태 확인
+  // --- [테스트용 초기화 함수] ---
+  function resetTestData() {
+    if(confirm("정말로 모든 UT 포인트와 학습 기록을 0으로 초기화하시겠습니까?")) {
+      localStorage.removeItem(KEY_MY_POINTS);
+      localStorage.removeItem(KEY_LAST_MINING);
+      localStorage.removeItem(KEY_LAST_LOTTO);
+      localStorage.removeItem(KEY_STUDY_PROOF);
+      alert("초기화되었습니다. 페이지를 새로고침합니다.");
+      location.reload();
+    }
   }
 
-  // 초기화 시 실행
+  // --- [통합 실행] ---
+  async function refreshAll(){
+    await fetchVault(); 
+    checkMiningStatus();
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     refreshAll();
   });
