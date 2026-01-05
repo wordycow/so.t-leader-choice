@@ -841,8 +841,8 @@
   </script>
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
   <script>
-    // [중요] 구글 Apps Script URL (새로 변경된 주소)
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQI9plHSueweAM5zjgQAfv_YTFRp5uYxS4TkRWrIlnWX7vGEW-01vbg0L2cHPEyUnB/exec";
+    // [중요] 구글 Apps Script URL (새로 변경된 주소 확인됨)
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvV9BEYZQoL2LVL98yYW88ph7_OB5l7Sv0JckBKTfRiaTmKM-IH8RN3gPsmetAUgJ3/exec";
      
     // Supabase 설정
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
@@ -1162,7 +1162,7 @@
     // --- 지갑 UI 업데이트 함수 ---
     function updateWalletUI() {
       const myUtDisplay = document.getElementById("my-ut-display");
-      const myUsdtDisplay = document.getElementById("my-usdt-display"); // KRW -> USDT로 변경된 ID
+      const myUsdtDisplay = document.getElementById("my-usdt-display"); 
       if (!myUtDisplay) return;
        
       let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
@@ -1171,6 +1171,22 @@
       // [수정] 환산 가치를 USDT로 표시 (1 UT = 0.02 USDT)
       const usdtValue = (currentUT * 0.02).toFixed(2);
       if(myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
+    }
+
+    // [추가됨] 시트에 잔액 저장하는 공용 함수
+    async function syncBalanceToSheet(newBalance) {
+        if(!currentId) return;
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentId, balance: newBalance })
+            });
+            console.log("Sheet sync sent: " + newBalance);
+        } catch(e) {
+            console.error("Sheet sync fail:", e);
+        }
     }
      
     // 닉네임 등록 함수 (구글 시트 연동)
@@ -1231,6 +1247,10 @@
             myBal -= amount;
             localStorage.setItem('myUtPoints', myBal);
             updateWalletUI();
+
+            // [추가] 시트에 내 잔액 저장
+            syncBalanceToSheet(myBal);
+
             alert("송금 완료");
             document.getElementById("p2p-amount").value = "";
         }
@@ -1243,8 +1263,12 @@
       const { data: profile } = await db.from('profiles').select('balance').eq('username', currentId).single();
       if(profile) {
           // DB 값이 있으면 최신 동기화
-          localStorage.setItem('myUtPoints', profile.balance);
-          updateWalletUI();
+          // 하지만 로컬 스토리지에 시트에서 읽어온 값이 있다면, 그리고 DB 값이 0이라면 로컬을 우선시해야 함.
+          // 여기서는 간단히 DB가 0이 아니면 DB를 믿고, 아니면 로컬을 유지하도록 설정
+          if (profile.balance > 0) {
+             localStorage.setItem('myUtPoints', profile.balance);
+             updateWalletUI();
+          }
       }
  
       // --- 한국 시간 날짜 반환 ---
@@ -1262,13 +1286,11 @@
       var firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
        
-      // onYouTubeIframeAPIReady는 전역이어야 함
       window.onYouTubeIframeAPIReady = function() {
         const lastClaimDate = localStorage.getItem('mining_video_claim_date');
         const today = getTodayKST();
         const statusText = document.getElementById('yt-status-text');
         const rewardBtn = document.getElementById('btn-claim-video-reward');
-        // (1) 로드 시 상태 확인
         if (lastClaimDate === today) {
           if(statusText) {
             statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)";
@@ -1282,13 +1304,13 @@
         } else {
           if(rewardBtn) {
             rewardBtn.textContent = "학습 보상 받기 (대기중)";
-            rewardBtn.disabled = true; // 영상 다 볼 때까지 비활성
+            rewardBtn.disabled = true; 
           }
         }
         new YT.Player('youtube-player', {
           height: '100%',
           width: '100%',
-          videoId: 'Dn3JMfy6Nxg', // 20UT 영상 ID
+          videoId: 'Dn3JMfy6Nxg', 
           playerVars: { 'origin': window.location.origin, 'rel': 0, 'playsinline': 1 },
           events: { 
               'onStateChange': function(event) {
@@ -1296,7 +1318,6 @@
                   const rewardBtn = document.getElementById('btn-claim-video-reward');
                   const lastClaimDate = localStorage.getItem('mining_video_claim_date');
                   const today = getTodayKST();
-                  // 재생 중
                   if (event.data == YT.PlayerState.PLAYING) {
                     if (lastClaimDate !== today) {
                         if(statusText) {
@@ -1305,14 +1326,12 @@
                         }
                      }
                   }
-                  // 영상 종료 (보상 받을 준비 완료)
                   if (event.data == YT.PlayerState.ENDED) {
-                    if (lastClaimDate === today) return; // 이미 받았으면 무시
-                    // 버튼 활성화
+                    if (lastClaimDate === today) return; 
                     if (rewardBtn) {
                       rewardBtn.textContent = "보상을 받을 준비가 완료 됐습니다";
                       rewardBtn.disabled = false;
-                      rewardBtn.classList.add("ready"); // 펄스 애니메이션 추가
+                      rewardBtn.classList.add("ready"); 
                     }
                     if (statusText) {
                       statusText.textContent = "✅ 시청 완료! 왼쪽 버튼을 눌러 보상을 받으세요.";
@@ -1329,31 +1348,32 @@
       if(rewardBtn) {
         rewardBtn.addEventListener('click', function() {
           const today = getTodayKST();
-          // 지급 로직
           let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
           currentUT += 20; 
           currentUT = Math.round(currentUT * 100) / 100;
           localStorage.setItem('myUtPoints', currentUT);
           localStorage.setItem('mining_video_claim_date', today);
            
-          // DB 업데이트
           if(currentId) {
              db.from('profiles').update({ balance: currentUT }).eq('username', currentId).then(()=>{});
              db.from('transactions').insert([{ username: currentId, type: 'in', amount: 20, description: '지식채굴 보상' }]).then(()=>{});
           }
  
-          updateWalletUI(); // 지갑 반영
-          // UI 업데이트
+          updateWalletUI(); 
+
+          // [추가] 시트에 저장
+          syncBalanceToSheet(currentUT);
+
           this.textContent = "오늘 보상 완료";
           this.disabled = true;
           this.classList.remove("ready");
           alert("🎉 20 UT가 지급되었습니다!");
         });
       }
+
       // 2. 데일리 럭키박스 버튼
       const luckyBtn = document.getElementById('btn-lucky-box');
       if(luckyBtn) {
-        // 초기 상태 체크
         const lastLuckyDate = localStorage.getItem('lucky_box_claim_date');
         const today = getTodayKST();
         if (lastLuckyDate === today) {
@@ -1362,7 +1382,6 @@
         }
         luckyBtn.addEventListener('click', function() {
           const today = getTodayKST();
-          // 랜덤 보상 (1 ~ 5 UT)
           const randomReward = Math.floor(Math.random() * 5) + 1;
            
           let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
@@ -1371,103 +1390,21 @@
           localStorage.setItem('myUtPoints', currentUT);
           localStorage.setItem('lucky_box_claim_date', today);
  
-          // DB 업데이트
           if(currentId) {
              db.from('profiles').update({ balance: currentUT }).eq('username', currentId).then(()=>{});
              db.from('transactions').insert([{ username: currentId, type: 'in', amount: randomReward, description: '럭키박스 당첨' }]).then(()=>{});
           }
  
           updateWalletUI();
+
+          // [추가] 시트에 저장
+          syncBalanceToSheet(currentUT);
+
           this.disabled = true;
           this.textContent = "오늘의 행운 완료";
           alert(`🎁 럭키박스 당첨! +${randomReward} UT 지급되었습니다.`);
         });
       }
-    });
-  </script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // 보물상자 버튼 (Pro 1 이상 전용 로직 적용)
-      const promoBtn = document.getElementById("promo-btn");
-      const promoBadge = document.getElementById("promo-badge");
-      if (promoBtn) {
-        // 배지 처리 (N 표시)
-        const PROMO_VERSION = "2025-12-02-01";
-        const seenPromo = localStorage.getItem("uniquePromoSeen");
-        if (promoBadge && seenPromo !== PROMO_VERSION) {
-          promoBadge.classList.remove("hidden");
-        }
-        // 클릭 이벤트 (직급 체크)
-        promoBtn.addEventListener("click", () => {
-          // 전역 변수 currentRankCode 활용 (위쪽 랭킹 로직에서 설정됨)
-          // 랭킹 로직이 비동기(fetch)이므로, 버튼 클릭 시점엔 이미 로드되었을 것임.
-           
-          // Pro 1 이상인지 확인하는 헬퍼 함수
-          function isProOrHigher(rank) {
-            if (!rank) return false;
-            const r = rank.toUpperCase();
-            // PRO로 시작하고 뒤에 숫자가 있으면 통과
-            if (r.startsWith("PRO")) return true; 
-            return false;
-          }
-          if (isProOrHigher(currentRankCode)) {
-            // 통과: 페이지 이동
-            window.open("the-unique-promo.html", "_blank");
-            localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
-            if (promoBadge) promoBadge.classList.add("hidden");
-          } else {
-            // 실패: 경고창
-            alert("아직 충분한 조건을 얻지 못했습니다.");
-          }
-        });
-      } else { console.error("Treasure Box 버튼을 찾을 수 없습니다."); }
-      // 나머지 버튼들 (기존 유지)
-      const travelBtn = document.getElementById("travel-btn");
-      if(travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
-       
-      const sotBtn = document.getElementById("sot-btn");
-      if(sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-       
-      const linkonBtn = document.getElementById("ppt-form-btn");
-      if(linkonBtn) linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
-      const logoutBtn = document.getElementById("logout-btn");
-      if(logoutBtn) logoutBtn.addEventListener("click", () => {
-        if(confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("uniqueCurrentUser");
-          window.location.href = "the-unique-gate.html";
-        }
-      });
-      // 일하기 도구 버튼 동적 생성
-      try {
-        var candidates = Array.from(document.querySelectorAll('body *'));
-        var target = candidates.find(function (el) {
-           return (el.textContent || '').includes('소속:') && el.tagName === 'DIV' && el.className.includes('member-meta');
-        });
-         
-        if (target) {
-          var btnWorkTool = document.createElement('button');
-          btnWorkTool.textContent = '일하기 도구';
-          btnWorkTool.style.marginLeft = '8px';
-          btnWorkTool.style.padding = '4px 10px';
-          btnWorkTool.style.borderRadius = '999px';
-          btnWorkTool.style.border = '1px solid rgba(255,255,255,0.4)';
-          btnWorkTool.style.background = 'linear-gradient(135deg, #f97316, #ec4899)';
-          btnWorkTool.style.color = '#111827';
-          btnWorkTool.style.fontSize = '11px';
-          btnWorkTool.style.fontWeight = '700';
-          btnWorkTool.style.cursor = 'pointer';
-          btnWorkTool.style.verticalAlign = 'middle';
-          btnWorkTool.addEventListener('click', function () { window.open('the-unique-work-tool.html', '_blank', 'noopener'); });
-          target.appendChild(btnWorkTool);
-          if (window.uniqueIsHQ) {
-            var btnHandbook = document.createElement('button');
-            btnHandbook.textContent = '사업설명 도구';
-            btnHandbook.style.cssText = "margin-left:8px; padding:4px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.4); background:linear-gradient(135deg, #fbbf24, #f97316); color:#111827; font-size:11px; font-weight:700; cursor:pointer;";
-            btnHandbook.addEventListener('click', function () { window.open('stp.html', '_blank', 'noopener'); });
-            target.insertBefore(btnHandbook, btnWorkTool);
-          }
-        }
-      } catch (e) { console.error(e); }
     });
   </script>
 </body>
