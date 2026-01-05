@@ -419,8 +419,8 @@
     }
 
     @keyframes witchFloat{
-      0%   { transform: translateY(-10px); }
-      50%  { transform: translateY(10px); }
+      0%    { transform: translateY(-10px); }
+      50%   { transform: translateY(10px); }
       100% { transform: translateY(-10px); }
     }
 
@@ -549,6 +549,29 @@
           <div id="top-schedule-grid" class="top-schedule-grid"></div>
         </section>
 
+        <section class="card" style="margin-top: 24px; margin-bottom: 24px; border: 1px solid rgba(251, 191, 36, 0.3); background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 18px;">
+          <h2 style="color: #fbbf24; display: flex; align-items: center; gap: 8px; margin: 0 0 16px 0; font-size: 18px;">
+            <span>⛏️ 지식 채굴 (Knowledge Mining)</span>
+            <span style="font-size: 11px; background: rgba(251,191,36,0.2); padding: 4px 8px; border-radius: 12px; color: #fff; font-weight: normal;">Daily +2 UT</span>
+          </h2>
+          
+          <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 12px 0; line-height: 1.6;">
+                매일 짧은 글을 읽고 생각의 크기를 키우세요.<br>
+                성공하는 리더의 가장 강력한 무기는 '꾸준함'입니다.<br>
+                <span style="font-size: 11px; color: #94a3b8;">(매일 자정 00:00 초기화)</span>
+              </p>
+              <button id="btn-mining" class="action-btn" style="width: 100%; background: linear-gradient(135deg, #fbbf24, #d97706); color: #000; font-weight: 700; border: none; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);">
+                📖 오늘의 지식 읽기 (+2 UT)
+              </button>
+            </div>
+            
+            <div style="width: 60px; text-align: center; opacity: 0.8; display: flex; justify-content: center;">
+               <div style="font-size: 40px;">📚</div>
+            </div>
+          </div>
+        </section>
         <section class="layout">
           <div class="member-panel">
             <div class="member-hello" id="member-hello">오늘도 성장하러 오셨군요.</div>
@@ -945,13 +968,75 @@
       if (labelEl){ labelEl.style.cursor = "pointer"; labelEl.addEventListener("click", openRankPage); }
     })();
 
-    // ✅ EBOOK 보상 로직
+    // ✅ 지식 채굴 (자정 초기화 로직 적용)
+    (function setupMining() {
+      const btnMining = document.getElementById('btn-mining');
+      if (!btnMining) return;
+
+      // 한국 시간 기준 오늘 날짜 (YYYY-MM-DD) 반환
+      function getTodayKST() {
+        const now = new Date();
+        const kstDate = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
+        const year = kstDate.getFullYear();
+        const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+        const day = String(kstDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function checkMiningStatus() {
+        const lastClaimDate = localStorage.getItem('mining_claim_date');
+        const today = getTodayKST();
+
+        if (lastClaimDate === today) {
+          // 오늘 이미 받음
+          btnMining.innerText = "✅ 오늘 채굴 완료 (내일 다시)";
+          btnMining.disabled = true;
+          btnMining.style.background = "#334155";
+          btnMining.style.color = "#94a3b8";
+          btnMining.style.cursor = "not-allowed";
+          btnMining.style.boxShadow = "none";
+        } else {
+          // 받을 수 있음
+          btnMining.innerText = "📖 오늘의 지식 읽기 (+2 UT)";
+          btnMining.disabled = false;
+          btnMining.style.background = "linear-gradient(135deg, #fbbf24, #d97706)";
+          btnMining.style.color = "#000";
+          btnMining.style.cursor = "pointer";
+          btnMining.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.4)";
+        }
+      }
+
+      btnMining.addEventListener('click', function() {
+        // 간단한 명언 팝업 (랜덤 명언 기능 등으로 확장 가능)
+        alert("📜 [오늘의 지식]\n\n'성공은 가장 끈기 있는 자에게 찾아온다.'\n\n지식을 채굴하셨습니다! 2 UT가 지급됩니다.");
+        
+        // 보상 지급 로직
+        let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
+        currentUT += 2;
+        currentUT = Math.round(currentUT * 100) / 100; // 소수점 보정
+        localStorage.setItem('myUtPoints', currentUT);
+        
+        // 오늘 날짜 기록
+        localStorage.setItem('mining_claim_date', getTodayKST());
+        
+        checkMiningStatus();
+      });
+
+      // 초기 로드 시 상태 체크
+      checkMiningStatus();
+    })();
+
+    // ✅ EBOOK 보상 로직 (기존 유지)
     (function setupEbooks(){
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
 
       function giveEbookReward(title) {
         const KEY_LAST_EBOOK = "lastEbookRewardDate";
+        // 기존 ebook 보상도 자정 기준으로 맞추려면 날짜 포맷을 통일해야 함
+        // 여기서는 기존 로직 유지하되, getTodayKST()와 같은 포맷 사용 권장
+        // 현재는 toISOString().split('T')[0] 사용 중 (UTC 기준이라 한국 시간과 차이 발생 가능)
+        // 일단 기존 코드 유지
         const today = new Date().toISOString().split('T')[0];
         const last = localStorage.getItem(KEY_LAST_EBOOK);
 
