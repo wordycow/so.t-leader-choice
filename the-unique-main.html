@@ -179,14 +179,15 @@
     }
 
     /* =========================================================
-       [2] 새로 추가된 스타일 (지갑, 탭, 영상) - 기존 CSS 아래에 안전하게 추가
+       [2] MY UNIQUE WALLET 스타일 (수정됨)
        ========================================================= */
     .treasure-box-wrap {
       background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 20px;
       padding: 20px; margin: 24px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .tb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .tb-title { font-family: "Cinzel", serif; font-size: 18px; color: #fff; font-weight: 700; }
+    /* 타이틀 폰트 사이즈 약간 키움 */
+    .tb-title { font-family: "Cinzel", serif; font-size: 20px; color: #fff; font-weight: 700; letter-spacing: 0.05em; }
     .tb-user { font-size: 13px; color: #fbbf24; font-weight: 600; }
 
     /* 탭 메뉴 */
@@ -203,17 +204,14 @@
     .tb-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 탭 내부 카드 스타일 */
-    .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    /* 탭 내부 카드 스타일 (공동기금 삭제로 인해 grid 제거 및 block으로 변경) */
+    .fund-grid { display: block; }
     .fund-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); }
     .fund-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; display: block; }
     .fund-amount { font-size: 28px; font-weight: 700; color: #fff; }
     .fund-unit { font-size: 14px; color: #64748b; }
     .fund-gold { color: #fbbf24 !important; }
-    .fund-input-box { margin-top: 20px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; }
-    .fund-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; }
-    .fund-submit-btn { width: 100%; background: #fbbf24; color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: 700; cursor: pointer; }
-
+    
     /* 영상 플레이어 스타일 */
     .mining-card { background: #1e293b; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid rgba(251,191,36,0.2); }
     .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid #334155; }
@@ -226,8 +224,6 @@
     .transfer-btn { width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; margin-top: 20px; cursor: pointer; }
     .transfer-btn:hover { background: #2563eb; }
     
-    @media (max-width: 700px) { .fund-grid { grid-template-columns: 1fr; } }
-
     /* ───── 메인 레이아웃 ───── */
     .layout{
       display:grid;
@@ -604,13 +600,12 @@
 
         <section class="treasure-box-wrap">
           <div class="tb-header">
-            <div class="tb-title">THE UNIQUE Treasure Box</div>
+            <div class="tb-title">MY UNIQUE WALLET</div>
             <div class="tb-user" id="tb-user-name">User</div>
           </div>
 
           <div class="tb-tabs">
-            <button class="tb-tab-btn active" onclick="openTab(event, 'tab-home')">🏠 홈 & 기금</button>
-            <button class="tb-tab-btn" onclick="openTab(event, 'tab-loan')">🏦 대출 (Loan)</button>
+            <button class="tb-tab-btn active" onclick="openTab(event, 'tab-home')">🏠 홈 & 내 지갑</button>
             <button class="tb-tab-btn" onclick="openTab(event, 'tab-mining')">⛏ 지식 채굴</button>
             <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">🤝 송금 & 정산</button>
             <button class="tb-tab-btn" onclick="openTab(event, 'tab-history')">📊 내역</button>
@@ -618,19 +613,6 @@
 
           <div id="tab-home" class="tb-content active">
             <div class="fund-grid">
-              <div class="fund-card">
-                <span class="fund-label">공동기금 (REAL USDT)</span>
-                <div class="fund-amount">710 <span class="fund-unit">USDT</span></div>
-                <div style="font-size:12px; color:#64748b; margin-top:4px;">TRC20 Network</div>
-                
-                <div class="fund-input-box">
-                  <div style="font-size:12px; color:#fbbf24; margin-bottom:8px;">🏆 기금 후원하기</div>
-                  <input type="text" class="fund-input" placeholder="후원자 성함 (랭킹 표시용)">
-                  <input type="text" class="fund-input" placeholder="TXID (이체 확인증)">
-                  <button class="fund-submit-btn">후원 내역 제출 (랭킹 반영)</button>
-                </div>
-              </div>
-
               <div class="fund-card" style="border-color: #fbbf24;">
                 <span class="fund-label" style="color:#fbbf24;">나의 자산 (UT)</span>
                 <div class="fund-amount fund-gold"><span id="my-ut-display">0.00</span> <span class="fund-unit" style="color:#fbbf24;">UT</span></div>
@@ -639,12 +621,6 @@
                   1 UT = 0.02 USDT
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div id="tab-loan" class="tb-content">
-            <div style="padding:40px; text-align:center; color:#64748b;">
-              🚧 대출 시스템 준비 중입니다.
             </div>
           </div>
 
