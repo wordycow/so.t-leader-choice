@@ -11,7 +11,7 @@
 
   <style>
     /* =========================================================
-       [1] 기존 스타일 (100% 유지)
+       [1] 기존 스타일 (100% 유지 - 건드리지 않음)
        ========================================================= */
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;height:100%}
@@ -28,56 +28,158 @@
     .scene-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; mix-blend-mode:screen;}
 
     .page-wrap{
-      position:relative; z-index:10; max-width:1200px; margin:72px auto 40px; padding:0 16px; width:100%;
+      position:relative;
+      z-index:10;
+      max-width:1200px;
+      margin:72px auto 40px;
+      padding:0 16px;
+      width:100%;
     }
 
     .main-card{
-      position:relative; width:100%; max-width:960px; margin:0 auto;
-      border-radius:26px; padding:28px 32px 26px;
-      background:#1e2848; border:1px solid rgba(245,158,11,0.95);
-      box-shadow: 0 0 24px rgba(245,158,11,0.65), 0 35px 90px rgba(0,0,0,0.95);
-      backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+      position:relative;
+      width:100%;
+      max-width:960px;
+      margin:0 auto;
+      border-radius:26px;
+      padding:28px 32px 26px;
+
+      background:#1e2848;
+      border:1px solid rgba(245,158,11,0.95);
+      box-shadow:
+        0 0 24px rgba(245,158,11,0.65),
+        0 35px 90px rgba(0,0,0,0.95);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
     }
 
     .main-inner{position:relative; z-index:1;}
     .title-wrap{text-align:center; margin-bottom:22px;}
 
     .title-en{
-      font-family:"Cinzel","Times New Roman",serif; font-weight:700; font-size:32px; letter-spacing:.24em;
-      text-transform:uppercase; margin-bottom:6px; color:#FACC15;
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:700;
+      font-size:32px;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+      color:#FACC15;
       text-shadow: 0 0 16px rgba(245,158,11,0.9), 0 4px 18px rgba(0,0,0,0.95);
     }
-    .subtitle-en{font-size:11px; color:#94A3B8; letter-spacing:.12em;}
+    .subtitle-en{
+      font-size:11px;
+      color:#94A3B8;
+      letter-spacing:.12em;
+      text-transform:none;
+    }
 
-    /* 상단 아이콘 */
-    .top-sns-icons{position:absolute; top:68px; right:46px; display:flex; align-items:center; gap:6px; z-index:5;}
+    /* ───── 상단 Discord / YouTube 아이콘 ───── */
+    .top-sns-icons{
+      position:absolute;
+      top:68px;
+      right:46px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      z-index:5;
+      background:transparent;
+      border:none;
+      padding:0;
+      box-shadow:none;
+    }
+    .top-sns-icons a{display:block; line-height:0; text-decoration:none;}
     .top-sns-icons img{display:block; width:42px; height:42px;}
-    .top-market-btn{
-      position:absolute; top:68px; left:46px; z-index:6; display:inline-flex; align-items:center; justify-content:center;
-      padding:6px 12px; border-radius:999px; border:1px solid rgba(245,158,11,0.55);
-      background: rgba(30,40,72,0.85); backdrop-filter: blur(8px);
-      font-family:"Cinzel",serif; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#FACC15; text-decoration:none;
-      transition: transform .12s ease;
-    }
-    .top-market-btn:hover{transform: translateY(-1px); filter: brightness(1.08); background: rgba(245,158,11,0.10);}
 
-    /* 스케줄 패널 */
-    .top-schedule-panel{
-      margin:10px 0 24px; border-radius:18px; padding:10px 14px 12px;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.99));
-      box-shadow: 0 0 0 1px rgba(30,64,118,0.85), 0 12px 26px rgba(0,0,0,0.9);
+    /* ───── UNIQUE MARKET 버튼 ───── */
+    .top-market-btn{
+      position:absolute;
+      top:68px;
+      left:46px;
+      z-index:6;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid rgba(245,158,11,0.55);
+      background: rgba(30,40,72,0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:700;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      color:#FACC15;
+      text-decoration:none;
+      text-shadow: 0 0 10px rgba(245,158,11,0.75), 0 4px 14px rgba(0,0,0,0.85);
+      transition: transform .12s ease, filter .12s ease, background .12s ease;
     }
-    .top-schedule-header{font-size:13px; font-weight:600; color:#e5e7eb; margin-bottom:6px;}
-    .top-schedule-grid{display:grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap:8px; font-size:11px; min-height:110px;}
-    .top-schedule-day{background: rgba(15,23,42,0.98); border-radius:12px; border:1px solid rgba(51,65,85,0.9); padding:6px 7px;}
-    .top-schedule-day-name{font-weight:600; color:#facc15; margin-bottom:4px;}
+    .top-market-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+      background: rgba(245,158,11,0.10);
+    }
+
+    /* ───── 주간 강의 스케줄 ───── */
+    .top-schedule-panel{
+      margin:10px 0 24px;
+      border-radius:18px;
+      padding:10px 14px 12px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.99));
+      box-shadow:
+        0 0 0 1px rgba(30,64,118,0.85),
+        0 12px 26px rgba(0,0,0,0.9);
+    }
+    .top-schedule-header{
+      font-size:13px;
+      font-weight:600;
+      color:#e5e7eb;
+      margin-bottom:6px;
+    }
+    .top-schedule-grid{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0,1fr));
+      gap:8px;
+      font-size:11px;
+      min-height:110px; 
+    }
+    .top-schedule-day{
+      background: rgba(15,23,42,0.98);
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,0.9);
+      padding:6px 7px;
+    }
+    .top-schedule-day-name{
+      font-weight:600;
+      color:#facc15;
+      margin-bottom:4px;
+      word-break:keep-all;
+    }
     .top-schedule-item{margin-bottom:5px;}
-    .top-schedule-time{font-weight:600; color:#e5e7eb; line-height:1.25;}
-    .top-schedule-title{color:#c4b5fd; line-height:1.38;}
-    .top-schedule-empty, .top-schedule-empty-day{font-size:11px; color:#9ca3af;}
+    .top-schedule-time{
+      font-weight:600;
+      color:#e5e7eb;
+      word-break:keep-all;
+      line-height:1.25;
+    }
+    .top-schedule-title{
+      color:#c4b5fd;
+      word-break:keep-all;
+      line-height:1.38;
+    }
+    .top-schedule-empty{
+      font-size:11px;
+      color:#9ca3af;
+      margin-bottom:6px;
+    }
+    .top-schedule-empty-day{
+      font-size:11px;
+      color:#9ca3af;
+      margin-top:6px;
+    }
 
     /* =========================================================
-       [2] MY UNIQUE WALLET 스타일 (모두에게 공개)
+       [2] MY UNIQUE WALLET 스타일
        ========================================================= */
     .treasure-box-wrap {
       background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 20px;
@@ -126,7 +228,7 @@
     .mining-status { font-size: 13px; font-weight: 700; color: #94a3b8; margin-top: 10px; text-align: center; }
     .mining-status.done { color: #4ade80; }
 
-    /* 지갑 내부 버튼 그룹 (보상받기 & 럭키박스) */
+    /* 지갑 내부 버튼 그룹 */
     .wallet-btn-group { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
     
     .btn-reward-main {
@@ -406,8 +508,8 @@
     }
 
     @keyframes witchFloat{
-      0%    { transform: translateY(-10px); }
-      50%   { transform: translateY(10px); }
+      0%    { transform: translateY(-10px); }
+      50%   { transform: translateY(10px); }
       100% { transform: translateY(-10px); }
     }
 
@@ -554,7 +656,7 @@
                 <div>
                   <span class="fund-label">나의 자산 (UT)</span>
                   <div class="fund-amount fund-gold"><span id="my-ut-display">0.00</span> <span class="fund-unit" style="color:#fbbf24;">UT</span></div>
-                  <div class="fund-sub" id="my-krw-display">≈ 0 KRW 가치</div>
+                  <div class="fund-sub" id="my-usdt-display">≈ 0.00 USDT 가치</div>
                   <div class="fund-rate">1 UT = 0.02 USDT</div>
                 </div>
 
@@ -1134,15 +1236,15 @@
     // --- 지갑 UI 업데이트 함수 ---
     function updateWalletUI() {
       const myUtDisplay = document.getElementById("my-ut-display");
-      const myKrwDisplay = document.getElementById("my-krw-display");
+      const myUsdtDisplay = document.getElementById("my-usdt-display"); // KRW -> USDT로 변경된 ID
       if (!myUtDisplay) return;
 
       const currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
       myUtDisplay.textContent = currentUT.toFixed(2);
       
-      // 환율 가치 (1 UT = 약 30.9 KRW 가정)
-      const krwValue = Math.round(currentUT * 30.9);
-      if(myKrwDisplay) myKrwDisplay.textContent = `≈ ${krwValue.toLocaleString()} KRW 가치`;
+      // [수정] 환산 가치를 USDT로 표시 (1 UT = 0.02 USDT)
+      const usdtValue = (currentUT * 0.02).toFixed(2);
+      if(myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
     }
     document.addEventListener("DOMContentLoaded", updateWalletUI);
 
