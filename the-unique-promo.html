@@ -45,6 +45,9 @@
     
     .btn-copy { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
 
+    /* 잔액 표시 (NEW) */
+    .balance-badge { position:absolute; top:20px; right:20px; background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid var(--gold); }
+
     /* 입력 폼 */
     .input-group { margin-bottom: 12px; }
     .input-field { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; font-size: 13px; }
@@ -139,15 +142,24 @@
 
       <div id="tab-settle" class="section">
         <div class="info-box gold-box">
+          
+          <div class="balance-badge">현재 보유: <span id="my-balance-display">0</span> UT</div>
+
           <div class="label" style="color:#fbbf24;">💸 정산 신청 (Exchange)</div>
           <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px;">
             보유한 UT를 현금 또는 USDT로 정산 신청합니다.<br>
-            (최소 10 UT 이상 신청 가능)
+            (최소 10 UT 이상, <b>소수점 불가</b>)
           </p>
+          
           <div class="input-group">
-            <input id="ex-amount" type="number" class="input-field" placeholder="신청 수량 (UT)" />
+            <input id="ex-amount" type="number" step="1" class="input-field" placeholder="신청 수량 (정수만 입력)" oninput="this.value = this.value.replace(/[^0-9]/g, '');" />
           </div>
-          <button class="action-btn btn-gold" onclick="requestExchange()">정산 신청하기</button>
+          
+          <div class="input-group">
+            <input id="ex-address" type="text" class="input-field" placeholder="받으실 USDT 주소 (TRC20)" />
+          </div>
+
+          <button class="action-btn btn-gold" onclick="requestExchange()">정산 신청하기 (즉시차감)</button>
         </div>
       </div>
 
@@ -162,6 +174,7 @@
   const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let myUsername = "";
+  let myCurrentBalance = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
@@ -178,10 +191,11 @@
         const userObj = JSON.parse(rawUser);
         myUsername = userObj.id || userObj.name || "Unknown";
         document.getElementById("user-display").textContent = `[${myUsername}]`;
-        document.getElementById("donate-name").value = myUsername; // 이름 자동 입력
+        document.getElementById("donate-name").value = myUsername; 
         
         fetchVault();
         fetchRanking();
+        fetchMyBalance(); // 잔액 불러오기
     } catch(e) {
         console.error(e);
     }
@@ -193,9 +207,32 @@
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     event.target.classList.add('active');
+    
+    if (tabName === 'settle') {
+      fetchMyBalance(); // 정산 탭 열 때 잔액 갱신
+    }
   }
 
-  // 3. 공동기금 잔액 조회
+  // 3. 잔액 조회 (Main 페이지와 동기화)
+  async function fetchMyBalance() {
+    // 1차: 로컬 스토리지 값으로 즉시 표시
+    const localBal = localStorage.getItem('myUtPoints');
+    if(localBal) {
+      myCurrentBalance = parseFloat(localBal);
+      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
+    }
+
+    // 2차: DB에서 정확한 값 가져오기
+    const { data: profile } = await db.from('profiles').select('balance').eq('username', myUsername).single();
+    if (profile) {
+      myCurrentBalance = profile.balance;
+      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
+      // 로컬 스토리지도 업데이트 (메인 페이지 싱크를 위해)
+      localStorage.setItem('myUtPoints', myCurrentBalance);
+    }
+  }
+
+  // 4. 공동기금 잔액 조회
   async function fetchVault(){
     const api = WORKER_BASE + `/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
     try {
@@ -208,26 +245,22 @@
     }
   }
 
-  // 4. 주소 복사
+  // 5. 주소 복사
   function copyVaultAddress(){ 
       navigator.clipboard.writeText(VAULT_TRON_ADDRESS).then(()=>alert("기금 지갑 주소가 복사되었습니다.")).catch(()=>{}); 
   }
 
-  // 5. 후원 제출
+  // 6. 후원 제출
   async function submitDonation() {
     const name = document.getElementById("donate-name").value.trim();
     const txid = document.getElementById("donate-txid").value.trim();
 
     if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
 
-    // 중복 체크
     const { data: existing } = await db.from('transactions').select('txid').eq('txid', txid).single();
     if (existing) return alert("이미 제출된 TXID입니다.");
 
-    // (임시) 금액 추출 로직 - 실제로는 API 검증 필요
-    // 여기서는 일단 100 USDT로 가정하거나, 텍스트에서 추출하는 척 함.
-    let amount = 100; // 기본값
-    // 특수 케이스 (테스트용)
+    let amount = 100; 
     if(txid.startsWith("c9f6")) amount = 360;
     if(txid.startsWith("eece")) amount = 350;
 
@@ -240,17 +273,16 @@
       txid: txid
     }]);
 
-    // 프로필 누적 업데이트
     const { data: profile } = await db.from('profiles').select('donation_total').eq('username', myUsername).single();
     const current = profile ? (profile.donation_total || 0) : 0;
     await db.from('profiles').update({ donation_total: current + amount }).eq('username', myUsername);
 
-    alert(`감사합니다! 후원 내역이 접수되었습니다.\n(확인 후 랭킹에 반영됩니다)`);
+    alert(`감사합니다! 후원 내역이 접수되었습니다.`);
     document.getElementById("donate-txid").value = "";
     fetchRanking();
   }
 
-  // 6. 랭킹 불러오기
+  // 7. 랭킹 불러오기
   async function fetchRanking() {
     const container = document.getElementById("donation-ranking");
     const { data: list } = await db.from('transactions')
@@ -282,7 +314,7 @@
     }).join('');
   }
 
-  // 7. 대출 신청
+  // 8. 대출 신청
   async function requestUsdtLoan() {
     const amt = document.getElementById("usdt-loan-amount").value;
     const addr = document.getElementById("usdt-loan-address").value;
@@ -302,25 +334,43 @@
     document.getElementById("usdt-loan-reason").value = "";
   }
 
-  // 8. 정산 신청
+  // 9. [수정] 정산 신청 (정수 제한, 주소 필수)
   async function requestExchange() {
-    const amt = parseFloat(document.getElementById("ex-amount").value);
-    if(!amt || amt < 10) return alert("최소 10 UT 이상 신청 가능합니다.");
-    
-    // 잔액 체크 (DB 조회)
-    const { data: profile } = await db.from('profiles').select('balance').eq('username', myUsername).single();
-    if(!profile || profile.balance < amt) return alert("보유 UT가 부족합니다.");
+    const amtInput = document.getElementById("ex-amount").value;
+    const addrInput = document.getElementById("ex-address").value.trim();
 
-    if(confirm(`${amt} UT를 정산 신청하시겠습니까? (즉시 차감)`)) {
-        await db.from('profiles').update({ balance: profile.balance - amt }).eq('username', myUsername);
+    // 1. 주소 확인
+    if(!addrInput) {
+      return alert("정산받으실 USDT 지갑 주소를 입력해주세요.");
+    }
+    
+    // 2. 정수 확인
+    if(amtInput.includes('.')) {
+        return alert("정산은 소수점 단위로 할 수 없습니다.\n정수로 입력해주세요.");
+    }
+    const amt = parseInt(amtInput, 10);
+
+    // 3. 최소 수량 및 잔액 확인
+    if(!amt || amt < 10) return alert("최소 10 UT 이상 신청 가능합니다.");
+    if(amt > myCurrentBalance) return alert("보유 잔액이 부족합니다.");
+
+    if(confirm(`${amt} UT를 정산 신청하시겠습니까?\n(즉시 차감됩니다)`)) {
+        // 잔액 차감 업데이트
+        await db.from('profiles').update({ balance: myCurrentBalance - amt }).eq('username', myUsername);
+        
+        // 내역 기록 (주소 포함)
         await db.from('transactions').insert([{
             username: myUsername,
             type: 'out',
             amount: amt,
-            description: `[정산신청] ${amt} UT`
+            description: `[정산신청] ${amt} UT / 주소: ${addrInput}`
         }]);
-        alert("정산 신청이 완료되었습니다.");
+        
+        alert("정산 신청이 완료되었습니다.\n관리자 확인 후 입금됩니다.");
         document.getElementById("ex-amount").value = "";
+        
+        // UI 갱신
+        fetchMyBalance();
     }
   }
 </script>
