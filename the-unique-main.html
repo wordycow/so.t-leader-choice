@@ -11,7 +11,7 @@
 
   <style>
     /* =========================================================
-       [1] 기존 스타일 (건드리지 않음)
+       [1] 기존 스타일 (100% 유지 - 건드리지 않음)
        ========================================================= */
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;height:100%}
@@ -73,7 +73,7 @@
       text-transform:none;
     }
 
-    /* ───── 상단 Discord / YouTube 아이콘 (오른쪽) ───── */
+    /* ───── 상단 Discord / YouTube 아이콘 ───── */
     .top-sns-icons{
       position:absolute;
       top:68px;
@@ -90,7 +90,7 @@
     .top-sns-icons a{display:block; line-height:0; text-decoration:none;}
     .top-sns-icons img{display:block; width:42px; height:42px;}
 
-    /* ───── UNIQUE MARKET 버튼 (왼쪽 / 대칭 위치, PC만) ───── */
+    /* ───── UNIQUE MARKET 버튼 ───── */
     .top-market-btn{
       position:absolute;
       top:68px;
@@ -179,14 +179,13 @@
     }
 
     /* =========================================================
-       [2] MY UNIQUE WALLET 스타일 (수정됨)
+       [2] MY UNIQUE WALLET 스타일 (새로 추가됨)
        ========================================================= */
     .treasure-box-wrap {
       background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 20px;
       padding: 20px; margin: 24px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .tb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    /* 타이틀 폰트 사이즈 약간 키움 */
     .tb-title { font-family: "Cinzel", serif; font-size: 20px; color: #fff; font-weight: 700; letter-spacing: 0.05em; }
     .tb-user { font-size: 13px; color: #fbbf24; font-weight: 600; }
 
@@ -204,27 +203,42 @@
     .tb-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 탭 내부 카드 스타일 (공동기금 삭제로 인해 grid 제거 및 block으로 변경) */
-    .fund-grid { display: block; }
-    .fund-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); }
-    .fund-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; display: block; }
-    .fund-amount { font-size: 28px; font-weight: 700; color: #fff; }
-    .fund-unit { font-size: 14px; color: #64748b; }
-    .fund-gold { color: #fbbf24 !important; }
+    /* 그리드 레이아웃 (지갑 + 영상) */
+    .wallet-mining-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; align-items: stretch; }
     
-    /* 영상 플레이어 스타일 */
-    .mining-card { background: #1e293b; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid rgba(251,191,36,0.2); }
-    .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid #334155; }
+    /* 카드 공통 스타일 */
+    .wm-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    
+    /* 지갑 카드 */
+    .wm-card.wallet { border-color: #fbbf24; }
+    .fund-label { font-size: 13px; color: #fbbf24; margin-bottom: 8px; display: block; font-weight: 600; }
+    .fund-amount { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .fund-unit { font-size: 16px; color: #fbbf24; }
+    .fund-sub { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
+    .fund-rate { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #94a3b8; }
+
+    /* 영상 카드 */
+    .wm-card.mining { border: 1px solid rgba(251,191,36,0.2); justify-content: flex-start; }
+    .mining-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .mining-title { color: #fff; font-size: 14px; font-weight: 700; display:flex; align-items:center; gap:6px; }
+    .mining-badge { font-size: 11px; background: rgba(251,191,36,0.2); padding: 4px 8px; border-radius: 12px; color: #fff; }
+    
+    .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
     .video-frame iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-    .mining-status { font-size: 14px; font-weight: 700; color: #94a3b8; }
+    .mining-status { font-size: 13px; font-weight: 700; color: #94a3b8; margin-top: 10px; text-align: center; }
     .mining-status.done { color: #4ade80; }
 
     /* 송금 폼 */
     .transfer-form label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px; margin-top: 12px; }
+    .fund-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 6px; font-size: 13px; }
     .transfer-btn { width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; margin-top: 20px; cursor: pointer; }
-    .transfer-btn:hover { background: #2563eb; }
+    .history-list { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .history-title { font-size: 14px; color: #cbd5e1; font-weight: 600; margin-bottom: 10px; }
+    .history-empty { font-size: 12px; color: #64748b; text-align: center; padding: 20px 0; }
     
-    /* ───── 메인 레이아웃 ───── */
+    @media (max-width: 768px) { .wallet-mining-grid { grid-template-columns: 1fr; } }
+
+    /* ───── 메인 레이아웃 (기존) ───── */
     .layout{
       display:grid;
       grid-template-columns:minmax(0, 2.4fr) minmax(0, 3fr);
@@ -468,8 +482,8 @@
     }
 
     @keyframes witchFloat{
-      0%    { transform: translateY(-10px); }
-      50%   { transform: translateY(10px); }
+      0%    { transform: translateY(-10px); }
+      50%   { transform: translateY(10px); }
       100% { transform: translateY(-10px); }
     }
 
@@ -605,51 +619,50 @@
           </div>
 
           <div class="tb-tabs">
-            <button class="tb-tab-btn active" onclick="openTab(event, 'tab-home')">🏠 홈 & 내 지갑</button>
-            <button class="tb-tab-btn" onclick="openTab(event, 'tab-mining')">⛏ 지식 채굴</button>
-            <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">🤝 송금 & 정산</button>
-            <button class="tb-tab-btn" onclick="openTab(event, 'tab-history')">📊 내역</button>
+            <button class="tb-tab-btn active" onclick="openTab(event, 'tab-main')">내 지갑 & 지식 채굴</button>
+            <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">UT 송금</button>
           </div>
 
-          <div id="tab-home" class="tb-content active">
-            <div class="fund-grid">
-              <div class="fund-card" style="border-color: #fbbf24;">
-                <span class="fund-label" style="color:#fbbf24;">나의 자산 (UT)</span>
-                <div class="fund-amount fund-gold"><span id="my-ut-display">0.00</span> <span class="fund-unit" style="color:#fbbf24;">UT</span></div>
-                <div style="font-size:13px; color:#cbd5e1; margin-top:4px;" id="my-krw-display">≈ 0 KRW 가치</div>
-                <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8;">
-                  1 UT = 0.02 USDT
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="tab-mining" class="tb-content">
-            <div class="mining-card">
-              <h3 style="color:#fff; margin:0 0 10px;">오늘의 지식 채굴</h3>
-              <p style="font-size:13px; color:#94a3b8;">영상을 끝까지 시청하면 <span style="color:#fbbf24;">20 UT</span>가 지급됩니다. (매일 자정 초기화)</p>
+          <div id="tab-main" class="tb-content active">
+            <div class="wallet-mining-grid">
               
-              <div class="video-frame">
-                 <div id="youtube-player"></div>
+              <div class="wm-card wallet">
+                <span class="fund-label">나의 자산 (UT)</span>
+                <div class="fund-amount fund-gold"><span id="my-ut-display">0.00</span> <span class="fund-unit">UT</span></div>
+                <div class="fund-sub" id="my-krw-display">≈ 0 KRW 가치</div>
+                <div class="fund-rate">1 UT = 0.02 USDT</div>
               </div>
-              <div id="yt-status-text" class="mining-status">▶ 재생 버튼을 눌러 시청하세요</div>
+
+              <div class="wm-card mining">
+                <div class="mining-header">
+                  <span class="mining-title">⛏ 지식 채굴 (영상)</span>
+                  <span class="mining-badge">Daily +20 UT</span>
+                </div>
+                
+                <div class="video-frame">
+                   <div id="youtube-player"></div>
+                </div>
+                <div id="yt-status-text" class="mining-status">▶ 재생 버튼을 눌러 시청하세요 (매일 00:00 초기화)</div>
+              </div>
+
             </div>
           </div>
 
           <div id="tab-transfer" class="tb-content">
-            <div class="fund-card transfer-form">
-              <h3 style="color:#fff; margin:0 0 16px;">🤝 P2P 송금</h3>
-              <label>받는 분 닉네임</label>
-              <input type="text" class="fund-input" placeholder="닉네임 입력">
-              <label>보낼 수량 (UT)</label>
-              <input type="number" class="fund-input" placeholder="0">
-              <button class="transfer-btn">송금하기</button>
-            </div>
-          </div>
+            <div class="wm-card">
+              <div class="transfer-form">
+                <h3 style="color:#fff; margin:0 0 16px; font-size:16px;">🤝 P2P 송금</h3>
+                <label>받는 분 닉네임</label>
+                <input type="text" class="fund-input" placeholder="닉네임 입력">
+                <label>보낼 수량 (UT)</label>
+                <input type="number" class="fund-input" placeholder="0">
+                <button class="transfer-btn">송금하기</button>
+              </div>
 
-          <div id="tab-history" class="tb-content">
-            <div style="padding:40px; text-align:center; color:#64748b;">
-              거래 내역이 없습니다.
+              <div class="history-list">
+                <div class="history-title">📊 최근 내역</div>
+                <div class="history-empty">거래 내역이 없습니다.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -1333,16 +1346,7 @@
           if (window.uniqueIsHQ) {
             var btnHandbook = document.createElement('button');
             btnHandbook.textContent = '사업설명 도구';
-            btnHandbook.style.marginLeft = '8px';
-            btnHandbook.style.padding = '4px 10px';
-            btnHandbook.style.borderRadius = '999px';
-            btnHandbook.style.border = '1px solid rgba(255,255,255,0.4)';
-            btnHandbook.style.background = 'linear-gradient(135deg, #fbbf24, #f97316)';
-            btnHandbook.style.color = '#111827';
-            btnHandbook.style.fontSize = '11px';
-            btnHandbook.style.fontWeight = '700';
-            btnHandbook.style.cursor = 'pointer';
-            btnHandbook.style.verticalAlign = 'middle';
+            btnHandbook.style.cssText = "margin-left:8px; padding:4px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.4); background:linear-gradient(135deg, #fbbf24, #f97316); color:#111827; font-size:11px; font-weight:700; cursor:pointer;";
             btnHandbook.addEventListener('click', function () { window.open('stp.html', '_blank', 'noopener'); });
             target.insertBefore(btnHandbook, btnWorkTool);
           }
