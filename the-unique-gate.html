@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>The Unique – Gate</title>
 
-  <!-- 공유 썸네일 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="The Unique – 초대 전용 게이트">
   <meta property="og:description" content="Invitation-only access for action takers.">
@@ -18,7 +17,6 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- THE UNIQUE 타이틀용 폰트 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -36,7 +34,7 @@
     .scene {
       position: fixed;
       inset: 0;
-      overflow: hidden;          /* ✅ 박쥐가 오른쪽에서 잘려도 자연스럽게 */
+      overflow: hidden;           /* ✅ 박쥐가 오른쪽에서 잘려도 자연스럽게 */
       pointer-events: none;
       z-index: 0;
     }
@@ -343,7 +341,6 @@
 
           <div class="divider-amp">&amp;</div>
 
-          <!-- ✅ G 아이콘 + UNIQUE MARKET (링크, 무조건 동작) -->
           <div class="btn-row" style="margin-top:10px;">
             <a class="btn btn-market btn-with-icon" href="market.html?autologin=1">
               <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
@@ -360,7 +357,6 @@
     </main>
   </div>
 
-  <!-- 1) 시트 콜백 -->
   <script>
     let allowedIds = null;
     let memberInfoById = {};
@@ -373,10 +369,15 @@
 
         rows.forEach((row) => {
           const cells = row.c || [];
-          const tsCell   = cells[5] || cells[0];
+          // A:0, B:1(ID), C:2(Name), D:3(Nick), E:4, F:5, G:6(Team), ... I:8(UT)
+          
+          const tsCell   = cells[0];
           const idCell   = cells[1];
           const nameCell = cells[2];
-          const teamCell = cells[4];
+          const nickCell = cells[3]; // D열 (닉네임)
+          const teamCell = cells[6]; // G열 (소속) - 시트 구조에 맞게 수정됨
+          const utCell   = cells[8]; // I열 (보유 UT) - 추가됨
+
           if (!idCell || idCell.v == null) return;
 
           const rawId = String(idCell.v).trim();
@@ -386,10 +387,20 @@
           ids.push(idLower);
 
           const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
+          const nick = nickCell && nickCell.v ? String(nickCell.v).trim() : "";
           const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
           const joinedAt = tsCell && tsCell.v ? String(tsCell.v).trim() : "";
+          // UT 값 파싱 (없으면 0)
+          const balance = utCell && utCell.v != null ? parseFloat(utCell.v) : 0;
 
-          memberInfoById[idLower] = { id: rawId, name, team, joinedAt };
+          memberInfoById[idLower] = { 
+              id: rawId, 
+              name, 
+              nickname: nick, 
+              team, 
+              joinedAt, 
+              balance: balance 
+          };
         });
 
         allowedIds = new Set(ids);
@@ -400,10 +411,8 @@
     }
   </script>
 
-  <!-- 2) 시트 로드 -->
   <script src="https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse"></script>
 
-  <!-- 3) 아이디 로그인 -->
   <script>
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
@@ -423,9 +432,17 @@
       const normalized = id.toLowerCase();
       if (allowedIds.has(normalized)) {
         const info = memberInfoById[normalized] || {};
+        
+        // 로그인 성공 시 정보를 로컬 스토리지에 저장 (메인 페이지에서 사용)
         localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-          id: normalized, name: info.name || "", team: info.team || "", joinedAt: info.joinedAt || ""
+          id: normalized, 
+          name: info.name || "", 
+          nickname: info.nickname || "", // 시트에서 온 닉네임
+          team: info.team || "", 
+          joinedAt: info.joinedAt || "",
+          balance: info.balance || 0     // 시트에서 온 UT 잔액
         }));
+        
         window.location.href = "the-unique-main.html";
       } else {
         statusEl.textContent = "등록되지 않은 아이디입니다.";
