@@ -82,42 +82,10 @@
     /* === Intro Layout === */
     .intro-layout { display: flex; gap: 24px; align-items: stretch; }
     .intro-left { flex: 1; }
-    .intro-right { flex: 0 0 320px; display: flex; flex-direction: column; gap: 16px; }
-
-    /* === Media Player Style === */
-    .media-player-card {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 16px; padding: 12px;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .status-text { font-size: 12px; font-weight: 700; text-align: center; margin-bottom: 4px; }
-    .status-text.waiting { color: #94a3b8; }
-    .status-text.playing { color: #fbbf24; animation: pulse 1.5s infinite; }
-    .status-text.done { color: #4ade80; }
-    
-    .progress-bar { height: 6px; background: #334155; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #fbbf24; transition: width 0.2s; }
-    
-    @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.6;} 100% {opacity:1;} }
-
-    /* iframe 반응형 컨테이너 */
-    .video-container {
-      position: relative;
-      width: 100%;
-      padding-bottom: 56.25%; /* 16:9 비율 */
-      height: 0;
-      overflow: hidden;
-      border-radius: 8px;
-      background: #000;
-    }
-    .video-container iframe {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
-    }
+    /* 우측 영상 영역 스타일은 삭제됨 */
 
     @media (max-width: 768px) {
       .intro-layout { flex-direction: column; }
-      .intro-right { flex: none; width: 100%; }
     }
 
     /* === Level & Phase Styles === */
@@ -250,23 +218,7 @@
           </div>
         </div>
 
-        <div class="intro-right">
-          
-          <div class="media-player-card">
-            <div style="font-size:12px; color:#fbbf24; font-weight:700;">▼ 사용 가이드 (완전정독 시 20 UT)</div>
-            
-            <div class="video-container">
-               <div id="youtube-player"></div>
-            </div>
-
-            <div class="player-status" style="margin-top:8px;">
-              <div id="yt-status-text" class="status-text waiting">▶ 재생하여 끝까지 시청하세요</div>
-            </div>
-          </div>
-
         </div>
-
-      </div>
     </section>
 
     <section class="card">
@@ -395,54 +347,6 @@
     applyLevel(savedLevel);
     buildText();
   })();
-  </script>
-
-  <script>
-    // YouTube API 코드는 전역 범위에 있어야 함
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    var player;
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('youtube-player', {
-        height: '100%',
-        width: '100%',
-        videoId: 'Dn3JMfy6Nxg',
-        // [수정] 아래 playerVars 부분이 추가되었습니다.
-        playerVars: {
-          'origin': window.location.origin, // 현재 도메인(github.io)을 명시하여 통신 보안 오류 해결
-          'enablejsapi': 1,                 // JS API 활성화
-          'rel': 0,                         // 추천 영상 안 뜨게
-          'playsinline': 1                  // 모바일에서 전체화면 되지 않고 인라인 재생
-        },
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    function onPlayerStateChange(event) {
-      const statusText = document.getElementById('yt-status-text');
-      
-      // 재생 중 (1)
-      if (event.data == YT.PlayerState.PLAYING) {
-        statusText.textContent = "🔥 시청 중... 끝까지 보세요!";
-        statusText.className = "status-text playing";
-      }
-      
-      // 종료 됨 (0) -> 완전 정독 인정
-      if (event.data == YT.PlayerState.ENDED) {
-        statusText.textContent = "✅ 완전 정독 완료! (보상 20 UT 획득 가능)";
-        statusText.className = "status-text done";
-        
-        // ★ 핵심: 보상 자격 부여 (LocalStorage에 기록)
-        localStorage.setItem("unique_guide_mission_complete", "Y");
-        
-        alert("🎉 가이드 영상 완전 정독 완료!\n\n보상 자격이 획득되었습니다.\n[지갑(Promo)] 페이지로 이동해서 20 UT를 수령하세요.");
-      }
-    }
   </script>
 </body>
 </html>
