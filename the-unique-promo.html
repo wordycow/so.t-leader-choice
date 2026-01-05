@@ -45,7 +45,7 @@
     
     .btn-copy { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
 
-    /* 잔액 표시 (NEW) */
+    /* 잔액 표시 */
     .balance-badge { position:absolute; top:20px; right:20px; background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid var(--gold); }
 
     /* 입력 폼 */
@@ -63,6 +63,18 @@
     .rank-item { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
     .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; font-weight:bold; margin-right:8px; border-radius: 50%; font-size: 11px; background: #334155; color: #fff; }
     .rank-1 { background: #FFD700; color: #000; } .rank-2 { background: #C0C0C0; color: #000; } .rank-3 { background: #CD7F32; color: #000; }
+
+    /* 내역 리스트 (New) */
+    .history-list { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+    .history-title { font-size: 13px; color: #cbd5e1; font-weight: 700; margin-bottom: 10px; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+    .h-desc { color: #fff; font-weight: 600; margin-bottom: 2px; }
+    .h-date { color: #64748b; font-size: 10px; }
+    .h-amount { font-weight: 700; font-size: 13px; }
+    .h-minus { color: #f87171; } .h-plus { color: #4ade80; }
+
+    /* USDT 환산 미리보기 */
+    .usdt-preview { font-size: 12px; color: #fbbf24; margin-top: 4px; text-align: right; font-weight: bold; }
 
     @media (max-width: 480px) { .page-wrap { padding: 15px; margin-top: 20px; } .title { font-size: 18px; } }
   </style>
@@ -147,12 +159,14 @@
 
           <div class="label" style="color:#fbbf24;">💸 정산 신청 (Exchange)</div>
           <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px;">
-            보유한 UT를 현금 또는 USDT로 정산 신청합니다.<br>
-            (최소 10 UT 이상, <b>소수점 불가</b>)
+            보유한 UT를 USDT로 정산 신청합니다.<br>
+            (최소 10 UT 이상, <b>정수 단위만 가능</b>)
           </p>
           
           <div class="input-group">
-            <input id="ex-amount" type="number" step="1" class="input-field" placeholder="신청 수량 (정수만 입력)" oninput="this.value = this.value.replace(/[^0-9]/g, '');" />
+            <input id="ex-amount" type="number" step="1" class="input-field" placeholder="신청 수량 (정수만 입력)" 
+                   oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateUsdtPreview(this.value);" />
+            <div id="usdt-preview-text" class="usdt-preview">≈ 0.00 USDT</div>
           </div>
           
           <div class="input-group">
@@ -161,13 +175,20 @@
 
           <button class="action-btn btn-gold" onclick="requestExchange()">정산 신청하기 (즉시차감)</button>
         </div>
+
+        <div class="history-list">
+          <div class="history-title">📊 나의 내역 (후원 & 정산)</div>
+          <div id="my-history-container">
+            <div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>
+          </div>
+        </div>
+
       </div>
 
     </div>
   </div>
 
 <script>
-  // [Supabase 설정]
   const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
   const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
   const { createClient } = supabase;
@@ -177,8 +198,8 @@
   let myCurrentBalance = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+  const UT_RATE = 0.02; // 1 UT = 0.02 USDT
 
-  // 1. 초기화 (자동 로그인)
   document.addEventListener('DOMContentLoaded', async () => {
     const rawUser = localStorage.getItem('uniqueCurrentUser');
     if (!rawUser) {
@@ -186,22 +207,21 @@
         window.close();
         return;
     }
-    
     try {
         const userObj = JSON.parse(rawUser);
         myUsername = userObj.id || userObj.name || "Unknown";
         document.getElementById("user-display").textContent = `[${myUsername}]`;
-        document.getElementById("donate-name").value = myUsername; 
+        
+        // [수정] 후원자 이름 자동입력 제거됨 (빈칸 유지)
         
         fetchVault();
         fetchRanking();
-        fetchMyBalance(); // 잔액 불러오기
+        fetchMyBalance(); 
     } catch(e) {
         console.error(e);
     }
   });
 
-  // 2. 탭 전환
   function switchTab(tabName) {
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -209,30 +229,11 @@
     event.target.classList.add('active');
     
     if (tabName === 'settle') {
-      fetchMyBalance(); // 정산 탭 열 때 잔액 갱신
+      fetchMyBalance(); 
+      fetchMyHistory(); // 내역 불러오기
     }
   }
 
-  // 3. 잔액 조회 (Main 페이지와 동기화)
-  async function fetchMyBalance() {
-    // 1차: 로컬 스토리지 값으로 즉시 표시
-    const localBal = localStorage.getItem('myUtPoints');
-    if(localBal) {
-      myCurrentBalance = parseFloat(localBal);
-      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
-    }
-
-    // 2차: DB에서 정확한 값 가져오기
-    const { data: profile } = await db.from('profiles').select('balance').eq('username', myUsername).single();
-    if (profile) {
-      myCurrentBalance = profile.balance;
-      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
-      // 로컬 스토리지도 업데이트 (메인 페이지 싱크를 위해)
-      localStorage.setItem('myUtPoints', myCurrentBalance);
-    }
-  }
-
-  // 4. 공동기금 잔액 조회
   async function fetchVault(){
     const api = WORKER_BASE + `/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
     try {
@@ -245,12 +246,36 @@
     }
   }
 
-  // 5. 주소 복사
+  async function fetchMyBalance() {
+    const localBal = localStorage.getItem('myUtPoints');
+    if(localBal) {
+      myCurrentBalance = parseFloat(localBal);
+      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
+    }
+    const { data: profile } = await db.from('profiles').select('balance').eq('username', myUsername).single();
+    if (profile) {
+      myCurrentBalance = profile.balance;
+      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
+      localStorage.setItem('myUtPoints', myCurrentBalance);
+    }
+  }
+
   function copyVaultAddress(){ 
       navigator.clipboard.writeText(VAULT_TRON_ADDRESS).then(()=>alert("기금 지갑 주소가 복사되었습니다.")).catch(()=>{}); 
   }
 
-  // 6. 후원 제출
+  // [수정] USDT 환산 미리보기
+  function updateUsdtPreview(val) {
+    const amt = parseInt(val, 10);
+    const display = document.getElementById("usdt-preview-text");
+    if(!amt || amt < 0) {
+        display.textContent = "≈ 0.00 USDT";
+    } else {
+        const usdt = (amt * UT_RATE).toFixed(2);
+        display.textContent = `≈ ${usdt} USDT`;
+    }
+  }
+
   async function submitDonation() {
     const name = document.getElementById("donate-name").value.trim();
     const txid = document.getElementById("donate-txid").value.trim();
@@ -282,7 +307,6 @@
     fetchRanking();
   }
 
-  // 7. 랭킹 불러오기
   async function fetchRanking() {
     const container = document.getElementById("donation-ranking");
     const { data: list } = await db.from('transactions')
@@ -306,7 +330,7 @@
         <div class="rank-item">
           <div style="display:flex; align-items:center;">
             ${badge}
-            <span style="font-weight:bold; color:#fff;">${item.donor_name}</span>
+            <span style="font-weight:bold; color:#fff; font-size:12px;">${item.donor_name}</span>
           </div>
           <div style="color:#fbbf24; font-weight:bold;">${item.amount.toLocaleString()} USDT</div>
         </div>
@@ -314,7 +338,6 @@
     }).join('');
   }
 
-  // 8. 대출 신청
   async function requestUsdtLoan() {
     const amt = document.getElementById("usdt-loan-amount").value;
     const addr = document.getElementById("usdt-loan-address").value;
@@ -334,44 +357,72 @@
     document.getElementById("usdt-loan-reason").value = "";
   }
 
-  // 9. [수정] 정산 신청 (정수 제한, 주소 필수)
   async function requestExchange() {
     const amtInput = document.getElementById("ex-amount").value;
     const addrInput = document.getElementById("ex-address").value.trim();
 
-    // 1. 주소 확인
-    if(!addrInput) {
-      return alert("정산받으실 USDT 지갑 주소를 입력해주세요.");
-    }
+    if(!addrInput) return alert("정산받으실 USDT 지갑 주소를 입력해주세요.");
+    if(amtInput.includes('.')) return alert("정산은 소수점 단위로 할 수 없습니다.");
     
-    // 2. 정수 확인
-    if(amtInput.includes('.')) {
-        return alert("정산은 소수점 단위로 할 수 없습니다.\n정수로 입력해주세요.");
-    }
     const amt = parseInt(amtInput, 10);
-
-    // 3. 최소 수량 및 잔액 확인
     if(!amt || amt < 10) return alert("최소 10 UT 이상 신청 가능합니다.");
     if(amt > myCurrentBalance) return alert("보유 잔액이 부족합니다.");
 
-    if(confirm(`${amt} UT를 정산 신청하시겠습니까?\n(즉시 차감됩니다)`)) {
-        // 잔액 차감 업데이트
+    const usdtAmt = (amt * UT_RATE).toFixed(2); // USDT 환산
+
+    if(confirm(`${amt} UT (≈ ${usdtAmt} USDT)를 정산 신청하시겠습니까?`)) {
         await db.from('profiles').update({ balance: myCurrentBalance - amt }).eq('username', myUsername);
         
-        // 내역 기록 (주소 포함)
+        // [수정] 상세 내역 기록 (환율, USDT 금액 포함)
         await db.from('transactions').insert([{
             username: myUsername,
             type: 'out',
             amount: amt,
-            description: `[정산신청] ${amt} UT / 주소: ${addrInput}`
+            description: `[정산신청] ${amt} UT (Rate:${UT_RATE}) -> ${usdtAmt} USDT / 주소:${addrInput}`
         }]);
         
-        alert("정산 신청이 완료되었습니다.\n관리자 확인 후 입금됩니다.");
+        alert("정산 신청이 완료되었습니다.");
         document.getElementById("ex-amount").value = "";
-        
-        // UI 갱신
         fetchMyBalance();
+        fetchMyHistory(); // 내역 갱신
     }
+  }
+
+  // [추가] 나의 내역 불러오기 (후원 + 정산)
+  async function fetchMyHistory() {
+    const container = document.getElementById("my-history-container");
+    container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>';
+
+    // 내가 한 'donation_verify' 혹은 'out' (정산/대출/송금) 내역 조회
+    const { data: list } = await db.from('transactions')
+        .select('*')
+        .eq('username', myUsername)
+        .in('type', ['donation_verify', 'out']) 
+        .order('created_at', {ascending:false})
+        .limit(20);
+
+    if(!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">내역이 없습니다.</div>';
+        return;
+    }
+
+    container.innerHTML = list.map(item => {
+        const isDonation = item.type === 'donation_verify';
+        const dateStr = new Date(item.created_at).toLocaleDateString();
+        const amountClass = isDonation ? 'h-plus' : 'h-minus';
+        const amountSign = isDonation ? '' : '-'; // 기부는 표시는 그냥 금액, 지출은 -
+        const unit = isDonation ? 'USDT' : 'UT'; // 기부는 USDT, 정산은 UT 차감
+
+        return `
+            <div class="history-item">
+                <div style="flex:1;">
+                    <div class="h-desc">${item.description}</div>
+                    <div class="h-date">${dateStr}</div>
+                </div>
+                <div class="h-amount ${amountClass}">${amountSign}${item.amount.toLocaleString()} ${unit}</div>
+            </div>
+        `;
+    }).join('');
   }
 </script>
 </body>
