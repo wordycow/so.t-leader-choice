@@ -369,14 +369,14 @@
 
         rows.forEach((row) => {
           const cells = row.c || [];
-          // A:0, B:1(ID), C:2(Name), D:3(Nick), E:4(Token), F:5, G:6(Team), H:7, I:8(UT)
+          // A:0(Time), B:1(ID), C:2(Name), D:3(Nick), E:4(Token), F:5(Phone), G:6(Team)
           
           const tsCell   = cells[0];
           const idCell   = cells[1];
           const nameCell = cells[2];
           const nickCell = cells[3]; // D열: 닉네임
-          const teamCell = cells[6]; // G열: 소속 (이미지 기준)
-          const utCell   = cells[8]; // I열: 보유 UT (없으면 undefined)
+          const tokenCell= cells[4]; // ★ E열: 유니크 토큰 (여기 수정됨)
+          const teamCell = cells[6]; // G열: 소속
 
           if (!idCell || idCell.v == null) return;
 
@@ -391,16 +391,16 @@
           const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
           const joinedAt = tsCell && tsCell.v ? String(tsCell.v).trim() : "";
           
-          // UT가 없거나 비어있으면 0으로 처리
-          const balance = utCell && utCell.v != null ? parseFloat(utCell.v) : 0;
+          // UT 값 파싱 (E열 읽기)
+          const balance = tokenCell && tokenCell.v != null ? parseFloat(tokenCell.v) : 0;
 
           memberInfoById[idLower] = { 
             id: rawId, 
             name: name, 
-            nickname: nick, // 시트에서 읽은 닉네임
+            nickname: nick,
             team: team, 
             joinedAt: joinedAt,
-            balance: balance // 시트에서 읽은 잔액
+            balance: balance 
           };
         });
 
