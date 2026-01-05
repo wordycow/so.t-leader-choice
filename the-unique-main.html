@@ -77,7 +77,7 @@
     .top-schedule-empty, .top-schedule-empty-day{font-size:11px; color:#9ca3af;}
 
     /* =========================================================
-       [2] MY UNIQUE WALLET 스타일 (수정됨)
+       [2] MY UNIQUE WALLET 스타일 (모두에게 공개)
        ========================================================= */
     .treasure-box-wrap {
       background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 20px;
@@ -113,7 +113,7 @@
     .fund-amount { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 4px; }
     .fund-unit { font-size: 16px; color: #fbbf24; }
     .fund-sub { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
-    .fund-rate { margin-top: 8px; font-size: 11px; color: #64748b; margin-bottom: 16px;}
+    .fund-rate { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #94a3b8; }
 
     /* 영상 카드 */
     .wm-card.mining { border: 1px solid rgba(251,191,36,0.2); justify-content: flex-start; }
@@ -124,14 +124,15 @@
     .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
     .video-frame iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
     .mining-status { font-size: 13px; font-weight: 700; color: #94a3b8; margin-top: 10px; text-align: center; }
-    
+    .mining-status.done { color: #4ade80; }
+
     /* 지갑 내부 버튼 그룹 (보상받기 & 럭키박스) */
     .wallet-btn-group { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
     
     .btn-reward-main {
       width: 100%; padding: 12px; border: none; border-radius: 8px;
       font-size: 13px; font-weight: 700; cursor: pointer; color: #fff;
-      background: linear-gradient(135deg, #d946ef, #a855f7); /* 퍼플/핑크 계열 */
+      background: linear-gradient(135deg, #d946ef, #a855f7);
       transition: all 0.2s;
       text-transform: uppercase;
       box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
@@ -140,7 +141,7 @@
     .btn-reward-main.ready { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; animation: pulseBtn 1.5s infinite; }
 
     .btn-lucky {
-      width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; /* 둥근 모양 */
+      width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
       font-size: 12px; font-weight: 600; cursor: pointer; color: #e2e8f0;
       background: rgba(255,255,255,0.05);
       transition: all 0.2s;
@@ -1189,7 +1190,7 @@
       player = new YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
-        videoId: 'Dn3JMfy6Nxg',
+        videoId: 'Dn3JMfy6Nxg', // 20UT 영상 ID
         playerVars: { 'origin': window.location.origin, 'rel': 0, 'playsinline': 1 },
         events: { 'onStateChange': onPlayerStateChange }
       });
@@ -1287,21 +1288,45 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // 보물상자 버튼 (Pro 1 이상 전용 로직 적용)
       const promoBtn = document.getElementById("promo-btn");
       const promoBadge = document.getElementById("promo-badge");
+
       if (promoBtn) {
+        // 배지 처리 (N 표시)
         const PROMO_VERSION = "2025-12-02-01";
         const seenPromo = localStorage.getItem("uniquePromoSeen");
         if (promoBadge && seenPromo !== PROMO_VERSION) {
           promoBadge.classList.remove("hidden");
         }
+
+        // 클릭 이벤트 (직급 체크)
         promoBtn.addEventListener("click", () => {
-          window.open("the-unique-promo.html", "_blank");
-          localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
-          if (promoBadge) promoBadge.classList.add("hidden");
+          // 전역 변수 currentRankCode 활용 (위쪽 랭킹 로직에서 설정됨)
+          // 랭킹 로직이 비동기(fetch)이므로, 버튼 클릭 시점엔 이미 로드되었을 것임.
+          
+          // Pro 1 이상인지 확인하는 헬퍼 함수
+          function isProOrHigher(rank) {
+            if (!rank) return false;
+            const r = rank.toUpperCase();
+            // PRO로 시작하고 뒤에 숫자가 있으면 통과
+            if (r.startsWith("PRO")) return true; 
+            return false;
+          }
+
+          if (isProOrHigher(currentRankCode)) {
+            // 통과: 페이지 이동
+            window.open("the-unique-promo.html", "_blank");
+            localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
+            if (promoBadge) promoBadge.classList.add("hidden");
+          } else {
+            // 실패: 경고창
+            alert("아직 충분한 조건을 얻지 못했습니다.");
+          }
         });
       } else { console.error("Treasure Box 버튼을 찾을 수 없습니다."); }
 
+      // 나머지 버튼들 (기존 유지)
       const travelBtn = document.getElementById("travel-btn");
       if(travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
       
@@ -1319,6 +1344,7 @@
         }
       });
 
+      // 일하기 도구 버튼 동적 생성
       try {
         var candidates = Array.from(document.querySelectorAll('body *'));
         var target = candidates.find(function (el) {
