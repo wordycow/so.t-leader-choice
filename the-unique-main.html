@@ -895,9 +895,7 @@
         alert("Pro1 직급 이상 사용 하실 수 있습니다.");
         return;
       }
-      const w = window.open("the-unique-promo.html", "_blank");
-      if(!w) window.location.href = "the-unique-promo.html";
-    });
+          });
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
@@ -912,7 +910,6 @@
       wireTreasureBoxGate();
     }, 1200);
   });
-
 })();
 </script>
   <!-- ====== 스케줄 로딩(기존 유지) ====== -->
@@ -1466,6 +1463,45 @@
       updateWalletUI();
     }, 30000);
   });
+    // ✅ (최종) Treasure Box 클릭 강제 단일화 - 제일 마지막에 붙이기
+(function finalPromoBtnFix(){
+  function isPro1OrHigher(rankCode){
+    const r = String(rankCode || "").toUpperCase().trim();
+    if (!r.startsWith("PRO")) return false;
+    const n = parseInt(r.replace("PRO",""), 10);
+    return Number.isFinite(n) && n >= 1;
+  }
+
+  function patch(){
+    const oldBtn = document.getElementById("promo-btn");
+    if(!oldBtn) return;
+
+    // 기존 이벤트 싹 날리기: 버튼 교체
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+
+    newBtn.onclick = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rank = window.currentRankCode || "";
+      if(!isPro1OrHigher(rank)){
+        alert("Pro1 직급 이상 사용 하실 수 있습니다.");
+        return false;
+      }
+
+      const w = window.open("the-unique-promo.html", "_blank");
+      if(!w) window.location.href = "the-unique-promo.html";
+      return false;
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    patch();
+    setTimeout(patch, 1200); // 늦게 붙는 이벤트도 제거
+  });
+})();
+
 </script>
 </body>
 </html>
