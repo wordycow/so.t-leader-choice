@@ -358,25 +358,33 @@
   </div>
 
   <script>
-    // ✅ 1. Apps Script URL (배포된 최신 URL)
+    // ✅ 1. 배포된 최신 Apps Script URL (배포 후 주소가 바뀌면 여기 수정)
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
 
-    // ✅ 2. JSONP API 함수 (Main.html과 동일한 방식)
+    // ✅ 2. JSONP API 함수 (CORS 문제 없이 시트 데이터 로드)
     function api(action, params = {}) {
       return new Promise((resolve, reject) => {
-        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
         params.action = action;
         params.callback = cb;
-        params._t = Date.now(); // 캐시 방지
+        params._t = Date.now(); 
 
         const qs = new URLSearchParams(params).toString();
         const s = document.createElement("script");
-        s.src = GOOGLE_SCRIPT_URL + "?" + qs;
+        s.src = `${GOOGLE_SCRIPT_URL}?${qs}`;
 
-        s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
-        window[cb] = (data) => { cleanup(); resolve(data); };
+        window[cb] = (data) => {
+          delete window[cb];
+          s.remove();
+          resolve(data);
+        };
 
-        function cleanup() { try { delete window[cb]; } catch(_){} s.remove(); }
+        s.onerror = () => {
+          delete window[cb];
+          s.remove();
+          reject(new Error("API load failed"));
+        };
+
         document.body.appendChild(s);
       });
     }
@@ -388,21 +396,20 @@
       el.className = "status" + (isError ? " status-error" : "");
     }
 
-    // ✅ 3. 유저 정보를 로컬 스토리지에 저장 (Main에서 사용)
     function saveUserToLocal(u){
       const idLower = (u.id || "").toLowerCase();
-      
-      // 전체 정보 저장
+      // 유저 정보 전체 저장
       localStorage.setItem("uniqueCurrentUser", JSON.stringify({
         id: idLower,
         name: u.name || "",
-        nickname: u.nickname || "", // 시트 G열 값
+        phone: u.phone || "",
         team: u.team || "",
         joinedAt: u.joinedAt || "",
-        balance: Number(u.balance || 0) // 시트 H열 값
+        nickname: u.nickname || "", // G열 값
+        balance: Number(u.balance || 0) // H열 값
       }));
       
-      // 개별 정보 저장 (호환성)
+      // 메인 페이지 호환성을 위한 개별 키 저장
       localStorage.setItem("myUtPoints", Number(u.balance || 0));
       if ((u.nickname || "").trim()) {
         localStorage.setItem("myNickname_" + idLower, (u.nickname || "").trim());
@@ -411,7 +418,6 @@
       }
     }
 
-    // ✅ 4. 로그인 이벤트
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
     const loginBtn = document.getElementById("login-btn");
@@ -426,7 +432,7 @@
       if (loginBtn) loginBtn.disabled = true;
 
       try {
-        // API로 getUser 요청 -> 실시간 시트 조회
+        // API 서버(Code.gs)에 getUser 요청
         const r = await api("getUser", { id });
         
         if (!r || !r.ok || !r.user) {
@@ -435,26 +441,16 @@
           return;
         }
 
-        // 로그인 성공: 로컬 저장 후 이동
+        // 성공 시 로컬 저장 후 메인으로 이동
         saveUserToLocal(r.user);
         window.location.href = "the-unique-main.html";
         
       } catch (err) {
         console.error(err);
-        setStatus("서버 통신 중 오류가 발생했습니다.", true);
+        setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", true);
         if (loginBtn) loginBtn.disabled = false;
       }
     });
-
-    // (선택) 이미 로그인되어 있으면 자동 이동
-    (function autoGoMainIfLoggedIn(){
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return;
-      try {
-        const u = JSON.parse(raw);
-        if (u && u.id) window.location.href = "the-unique-main.html";
-      } catch(_) {}
-    })();
   </script>
 </body>
 </html>
