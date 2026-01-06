@@ -366,31 +366,45 @@
 
     // ✅ 2. JSONP API 함수 (CORS 문제 없이 시트 데이터 로드)
     function api(action, params = {}) {
-      return new Promise((resolve, reject) => {
-        const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-        params.action = action;
-        params.callback = cb;
-        params._t = Date.now(); 
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
-        const qs = new URLSearchParams(params).toString();
-        const s = document.createElement("script");
-        s.src = `${GOOGLE_SCRIPT_URL}?${qs}`;
+    params.action = action;
+    params.callback = cb;
+    params._t = Date.now();
 
-        window[cb] = (data) => {
-          delete window[cb];
-          s.remove();
-          resolve(data);
-        };
+    const qs = new URLSearchParams(params).toString();
+    const s = document.createElement("script");
 
-        s.onerror = () => {
-          delete window[cb];
-          s.remove();
-          reject(new Error("API load failed"));
-        };
+    // ✅ 여기 핵심: GOOGLE_SCRIPT_URL에 이미 "?"가 있으면 "&", 없으면 "?"
+    const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
+    s.src = GOOGLE_SCRIPT_URL + joiner + qs;
 
-        document.body.appendChild(s);
-      });
+    const t = setTimeout(() => {
+      cleanup();
+      reject(new Error("API timeout"));
+    }, 12000);
+
+    window[cb] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    s.onerror = () => {
+      cleanup();
+      reject(new Error("API load failed"));
+    };
+
+    function cleanup() {
+      clearTimeout(t);
+      try { delete window[cb]; } catch(e) {}
+      try { s.remove(); } catch(e) {}
     }
+
+    document.body.appendChild(s);
+  });
+}
+
 
     function setStatus(msg, isError=false){
       const el = document.getElementById("status");
