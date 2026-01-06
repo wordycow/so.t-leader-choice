@@ -188,7 +188,7 @@
     const qs = new URLSearchParams(params).toString();
     const s = document.createElement("script");
 
-    // ✅ echo URL은 이미 '?'가 있으니 '&'로 붙여야 함
+    // ✅ echo URL은 이미 ?가 있으므로 &로 붙여야 함
     const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
     s.src = GOOGLE_SCRIPT_URL + joiner + qs;
 
@@ -197,20 +197,13 @@
       reject(new Error("API timeout"));
     }, 12000);
 
-    window[cb] = (data) => {
-      cleanup();
-      resolve(data);
-    };
-
-    s.onerror = () => {
-      cleanup();
-      reject(new Error("API load failed"));
-    };
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
 
     function cleanup() {
       clearTimeout(t);
-      try { delete window[cb]; } catch(e) {}
-      try { s.remove(); } catch(e) {}
+      try { delete window[cb]; } catch(e){}
+      try { s.remove(); } catch(e){}
     }
 
     document.body.appendChild(s);
