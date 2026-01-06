@@ -933,6 +933,45 @@
   const usdtValue = (currentUT * rate).toFixed(2);
   if (myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
 }
+  async function sendP2P() {
+  const receiver = (document.getElementById("p2p-receiver").value || "").trim();
+  const amount = Number(document.getElementById("p2p-amount").value);
+
+  if (!currentId) return alert("로그인 정보가 없습니다. 다시 로그인해 주세요.");
+  if (!receiver) return alert("받는 분 닉네임을 입력하세요.");
+  if (!Number.isFinite(amount) || amount <= 0) return alert("보낼 수량(UT)을 올바르게 입력하세요.");
+
+  const myBal = Number(localStorage.getItem("myUtPoints") || 0);
+  if (amount > myBal) return alert("잔액 부족");
+
+  if (!confirm(`${receiver}님에게 ${amount} UT를 송금하시겠습니까?`)) return;
+
+  // 버튼 잠금(중복 클릭 방지)
+  const btn = document.querySelector(".transfer-btn");
+  const prev = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "처리 중..."; }
+
+  try {
+    // ✅ 시트 기반 송금(서버의 transfer 액션 사용)
+    const r = await api("transfer", { fromId: currentId, toNickname: receiver, amount });
+
+    if (!r || !r.ok) {
+      throw new Error(r?.error || "송금 실패");
+    }
+
+    // 보내는 사람 잔액 즉시 반영
+    if (r.fromUser) applyUserToLocal(r.fromUser);
+    await refreshFromSheet();
+
+    alert("송금 완료");
+    document.getElementById("p2p-amount").value = "";
+  } catch (e) {
+    console.error(e);
+    alert("송금 오류: " + (e.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev || "송금하기"; }
+  }
+}
 
     // ✅ 시트값을 주기적으로 다시 가져와서 반영
     async function refreshFromSheet(){
