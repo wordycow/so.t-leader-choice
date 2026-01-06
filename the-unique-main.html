@@ -766,20 +766,102 @@
       evt.currentTarget.classList.add("active");
     }
   </script>
-  <script>
-  // =========================
-  // ✅ Rank/버튼 동작 패치
-  // - 다음 직급 이미지 클릭 -> rank-hall.html 이동
-  // - Treasure Box: Pro1 이상만 열기, 아니면 경고
-  // =========================
+ <script>
+/* =========================================
+   ✅ Rank + Treasure Box Gate (완성본)
+   - rank-hall.json에서 내 직급 읽어서 window.currentRankCode 세팅
+   - 다음직급/현재직급 이미지 클릭 -> rank-hall.html
+   - Treasure Box: Pro1 이상만 열기, 아니면 경고
+========================================= */
+
+(function () {
+  // 전역에 항상 존재하게
+  window.currentRankCode = window.currentRankCode || "";
+
+  const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
+  const RANK_BADGES = {
+    Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
+    Pro1:"img/pro1.png", Pro2:"img/pro2.png", Pro3:"img/pro3.png",
+    Pro4:"img/pro4.png", Pro5:"img/pro5.png", Pro6:"img/pro6.png",
+    Pro7:"img/pro7.png", Pro8:"img/pro8.png", Pro9:"img/pro9.png", Pro10:"img/pro10.png",
+    Member:"img/member.png"
+  };
+
+  function normalizeRank(raw){
+    let t = String(raw || "").trim();
+    if (!t) return "Member";
+    // 한글 스타/프로 대응
+    if (t.startsWith("스타")) t = "Star" + t.replace("스타","").trim();
+    if (t.startsWith("프로")) t = "Pro" + t.replace("프로","").trim();
+
+    // 공백 제거
+    t = t.replace(/\s+/g, "");
+
+    // 대소문자 정리
+    if (/^star\d+$/i.test(t)) return "Star" + t.replace(/^\D+/,"");
+    if (/^pro\d+$/i.test(t)) return "Pro" + t.replace(/^\D+/,"");
+
+    // Member류
+    const u = t.toUpperCase();
+    if (u === "MEMBER" || u === "정회원" || u === "회원" || u === "일반") return "Member";
+
+    // 기본
+    return t;
+  }
 
   function isPro1OrHigher(rankCode){
-    if(!rankCode) return false;
-    const r = String(rankCode).toLowerCase().trim();
-    // Pro1 ~ Pro10
+    const r = String(rankCode || "").toLowerCase().trim();
     if(!r.startsWith("pro")) return false;
     const n = parseInt(r.replace("pro",""), 10);
     return Number.isFinite(n) && n >= 1;
+  }
+
+  async function loadMyRank(){
+    try{
+      // main.html 다른 스크립트에서 currentId가 이미 설정되어 있다는 전제
+      const myId = (window.currentId || "").toString().toLowerCase().trim();
+      if (!myId) return;
+
+      const res = await fetch("rank-hall.json", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.members || []);
+
+      // id 매칭 우선
+      let me = list.find(x => String(x?.id||"").toLowerCase().trim() === myId);
+      if (!me) {
+        // 혹시 구조가 name/team 기반이면 최소 fallback
+        const myName = (window.currentName || "").toString().trim();
+        me = list.find(x => String(x?.name||"").trim() === myName);
+      }
+
+      const rank = normalizeRank(me?.rank || me?.rankCode || me?.level || me?.title || "Member");
+      window.currentRankCode = rank;
+
+      // UI 반영(현재/다음)
+      const curImg  = document.getElementById("member-rank-img");
+      const curMini = document.getElementById("member-rank-mini");
+      const nextImg = document.getElementById("next-rank-img");
+      const nextMini= document.getElementById("next-rank-mini");
+      const goalTitle = document.getElementById("goal-next-rank-title");
+
+      const curCode = (rank && rank !== "-") ? rank : "Member";
+      if (curImg)  curImg.src = RANK_BADGES[curCode] || RANK_BADGES.Member;
+      if (curMini) curMini.textContent = "현재 직급: " + (curCode === "Member" ? "정회원" : curCode);
+
+      let nextCode = "Star1";
+      const idx = RANK_ORDER.indexOf(curCode);
+      if (curCode === "Member" || idx < 0) nextCode = "Star1";
+      else if (idx < RANK_ORDER.length - 1) nextCode = RANK_ORDER[idx + 1];
+      else nextCode = "-";
+
+      if (nextImg)  nextImg.src = (nextCode !== "-" ? (RANK_BADGES[nextCode] || RANK_BADGES.Member) : (RANK_BADGES.Member));
+      if (nextMini) nextMini.textContent = "다음 직급: " + (nextCode === "-" ? "-" : nextCode);
+      if (goalTitle) goalTitle.innerHTML = '다음 목표: <span>' + (nextCode === "-" ? "-" : nextCode) + '</span>';
+
+    } catch(e){
+      console.warn("loadMyRank fail:", e);
+    }
   }
 
   function wireRankHallClicks(){
@@ -788,15 +870,10 @@
     const curImg = document.getElementById("member-rank-img");
     const curLabel = document.getElementById("member-rank-mini");
 
-    function goRankHall(){
-      window.open("rank-hall.html", "_blank");
-    }
+    function goRankHall(){ window.open("rank-hall.html", "_blank"); }
 
-    // 기존에 이벤트가 꼬여도 무조건 동작하게 onclick도 걸어줌
     if(nextImg){ nextImg.style.cursor="pointer"; nextImg.onclick = goRankHall; }
     if(nextLabel){ nextLabel.style.cursor="pointer"; nextLabel.onclick = goRankHall; }
-
-    // 원하면 현재 직급도 눌렀을 때 열리게
     if(curImg){ curImg.style.cursor="pointer"; curImg.onclick = goRankHall; }
     if(curLabel){ curLabel.style.cursor="pointer"; curLabel.onclick = goRankHall; }
   }
@@ -805,36 +882,39 @@
     const oldBtn = document.getElementById("promo-btn");
     if(!oldBtn) return;
 
-    // ✅ 기존 리스너/onclick 꼬임 방지: 버튼을 통째로 교체
+    // 꼬임 방지: 버튼 통째 교체 후 단일 리스너만 부착
     const newBtn = oldBtn.cloneNode(true);
     oldBtn.replaceWith(newBtn);
 
-    newBtn.addEventListener("click", () => {
-      // currentRankCode는 rank-hall.json 로딩 로직에서 세팅되는 전제
-      // (너 코드에 이미 currentRankCode 전역으로 존재했음)
-      const rank = (window.currentRankCode || "").toString();
+    newBtn.addEventListener("click", async () => {
+      // rank가 아직 없으면 한번 로딩 시도
+      if (!window.currentRankCode) await loadMyRank();
+
+      const rank = window.currentRankCode || "";
       if(!isPro1OrHigher(rank)){
         alert("Pro1 직급 이상 사용 하실 수 있습니다.");
         return;
       }
-
-      // ✅ Pro1 이상이면 금고 페이지 열기
       const w = window.open("the-unique-promo.html", "_blank");
-      if(!w) window.location.href = "the-unique-promo.html"; // 모바일 팝업 차단 대비
+      if(!w) window.location.href = "the-unique-promo.html";
     });
   }
 
-  // rank-hall.json이 늦게 로드될 수도 있어서, DOMContentLoaded 후 한 번,
-  // 그리고 1초 뒤 한 번 더 보강
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadMyRank();
     wireRankHallClicks();
     wireTreasureBoxGate();
-    setTimeout(() => {
+
+    // 늦게 로딩되는 경우 한 번 더
+    setTimeout(async () => {
+      await loadMyRank();
       wireRankHallClicks();
       wireTreasureBoxGate();
-    }, 1000);
+    }, 1200);
   });
-</script> 
+
+})();
+</script>
   <!-- ====== 스케줄 로딩(기존 유지) ====== -->
   <script>
     window.handleScheduleSheet = function handleScheduleSheet(resp) {
@@ -1293,16 +1373,7 @@
     await refreshPricing();
     updateWalletUI();
 
-    // Treasure Box 버튼 클릭 확실히 (모바일 팝업 차단 대비)
-    const promoBtn = document.getElementById("promo-btn");
-    if (promoBtn) {
-      promoBtn.addEventListener("click", () => {
-        const w = window.open("the-unique-promo.html", "_blank");
-        if (!w) window.location.href = "the-unique-promo.html";
-      });
-    }
-
-    // 링크 버튼
+       // 링크 버튼
     const travelBtn = document.getElementById("travel-btn");
     if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
 
