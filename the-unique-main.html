@@ -652,7 +652,7 @@
               <div class="wm-card mining">
                 <div class="mining-header">
                   <span class="mining-title">⛏ 지식 채굴 (영상)</span>
-                  <span class="mining-badge">Daily +20 UT</span>
+                  <span class="mining-badge">Daily +22 UT</span>
                 </div>
                 
                 <div class="video-frame">
@@ -754,6 +754,7 @@
   <div class="footer-note">
     The Unique &copy; 2025 · internal use only
   </div>
+
   <script>
     function openTab(evt, tabName) {
       var i, content, tablinks;
@@ -765,6 +766,7 @@
       evt.currentTarget.classList.add("active");
     }
   </script>
+
   <script>
     window.handleScheduleSheet = function handleScheduleSheet(resp) {
       try {
@@ -840,69 +842,146 @@
     }, 5000);
   </script>
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
+
   <script>
-    // [중요] 구글 Apps Script URL (새로 변경된 주소 확인됨)
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
-     
-    // Supabase 설정
-    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
-    const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-     
+    // ✅ 네 배포 URL (배포 후 주소가 바뀌면 여기만 바꾸면 됨)
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvV9BEYZQoL2LVL98yYW88ph7_OB5l7Sv0JckBKTfRiaTmKM-IH8RN3gPsmetAUgJ3/exec";
+
+    // ✅ JSONP 호출 함수
+    function api(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        params.action = action;
+        params.callback = cb;
+        params._t = Date.now();
+
+        const qs = new URLSearchParams(params).toString();
+        const s = document.createElement("script");
+        s.src = GOOGLE_SCRIPT_URL + "?" + qs;
+
+        s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+        window[cb] = (data) => { cleanup(); resolve(data); };
+
+        function cleanup() { try { delete window[cb]; } catch(_){} s.remove(); }
+        document.body.appendChild(s);
+      });
+    }
+
+    // ✅ (시트 → 로컬) 단일 저장 함수
+    function applyUserToLocal(u){
+      const idLower = (u.id || "").toLowerCase();
+      localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+        id: idLower,
+        name: u.name || "",
+        nickname: u.nickname || "",
+        team: u.team || "",
+        joinedAt: u.joinedAt || "",
+        balance: Number(u.balance || 0)
+      }));
+      localStorage.setItem("myUtPoints", Number(u.balance || 0));
+
+      const nickKey = "myNickname_" + idLower;
+      if ((u.nickname || "").trim()) localStorage.setItem(nickKey, (u.nickname || "").trim());
+      else localStorage.removeItem(nickKey);
+    }
+
+    // ✅ UT 증감은 무조건 이 함수만 사용 (시트 기준)
+    async function addUt(delta){
+      const r = await api("addBalance", { id: currentId, delta: delta });
+      if(!r.ok) throw new Error(r.error || "UT update failed");
+      applyUserToLocal(r.user);
+      updateWalletUI();
+      return Number(r.user.balance || 0);
+    }
+
+    // ✅ 시트값을 주기적으로 다시 가져와서 반영
+    async function refreshFromSheet(){
+      if (!currentId) return;
+      try{
+        const r = await api("getUser", { id: currentId });
+        if (!r.ok || !r.user) return;
+
+        applyUserToLocal(r.user);
+        updateWalletUI();
+
+        // 닉네임 버튼 상태 갱신(시트값 기준)
+        const btn = document.getElementById("btn-nick-reg");
+        const nickKey = "myNickname_" + currentId;
+        const savedNick = localStorage.getItem(nickKey);
+
+        if (btn){
+          if (savedNick){
+            btn.textContent = "닉네임: " + savedNick;
+            btn.classList.add("done");
+            btn.onclick = null;
+          } else {
+            btn.textContent = "닉네임 등록";
+            btn.classList.remove("done");
+            btn.onclick = registerNickname;
+          }
+        }
+      } catch(e){
+        console.error("refreshFromSheet fail:", e);
+      }
+    }
+
+    // ✅ 로그인 유저 로딩
     const raw = localStorage.getItem("uniqueCurrentUser");
     if (!raw) window.location.href = "the-unique-gate.html";
-    
+
     let currentId = "", currentName = "", currentTeam = "", currentJoin = "", currentNick = "";
     let isHQ = false;
-    
+
     try {
       const user = JSON.parse(raw || "{}");
       currentId   = (user.id || "").toLowerCase();
       currentName = user.name || "";
       currentTeam = user.team || "";
       currentJoin = user.joinedAt || "";
-      currentNick = user.nickname || ""; 
-      
-      // 시트에서 가져온 잔액으로 초기화
+      currentNick = user.nickname || "";
+
       if (user.balance !== undefined) {
-          localStorage.setItem("myUtPoints", user.balance);
+        localStorage.setItem("myUtPoints", user.balance);
       }
     } catch (e) {
       console.error(e);
       window.location.href = "the-unique-gate.html";
     }
-     
-    // 닉네임 버튼 체크 (시트 값 우선 -> 로컬 값)
-    if (currentNick) {
-        localStorage.setItem('myNickname_' + currentId, currentNick);
-    }
-    const savedNick = localStorage.getItem('myNickname_' + currentId);
+
+    // 닉네임 로컬 동기화(시트값 우선)
+    if ((currentNick || "").trim()) localStorage.setItem("myNickname_" + currentId, currentNick.trim());
+    else localStorage.removeItem("myNickname_" + currentId);
+
+    const savedNick = localStorage.getItem("myNickname_" + currentId);
     if(savedNick) {
-        const btn = document.getElementById("btn-nick-reg");
-        if(btn) {
-           btn.textContent = "닉네임: " + savedNick;
-           btn.classList.add("done");
-           btn.onclick = null;
-        }
+      const btn = document.getElementById("btn-nick-reg");
+      if(btn) {
+        btn.textContent = "닉네임: " + savedNick;
+        btn.classList.add("done");
+        btn.onclick = null;
+      }
     }
-     
+
     isHQ = !!(currentName && currentTeam && currentName === currentTeam);
     window.uniqueIsHQ = isHQ;
+
     document.getElementById("member-hello").textContent = (currentName || currentId || "멤버") + "님, 오늘도 성장하러 오셨군요.";
-    document.getElementById("member-name").textContent = currentId || currentName || "Unknown";
+    document.getElementById("member-name").textContent = currentId || "Unknown";
     const teamText = isHQ ? "소속: HQ" : (currentTeam ? "소속: " + currentTeam : "소속: -");
     document.getElementById("member-team").textContent = teamText;
-     
-    // Treasure Box 유저 이름 표시 추가
+
     const tbUserEl = document.getElementById("tb-user-name");
     if(tbUserEl) tbUserEl.textContent = currentName || currentId;
+
     (function hideEbookAdminForNonHQ() {
       if (!isHQ) {
         const linkEl = document.getElementById("ebook-admin-link");
         if (linkEl) linkEl.style.display = "none";
       }
     })();
+  </script>
+
+  <script>
     const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
     const RANK_BADGES = {
       Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
@@ -1059,31 +1138,26 @@
       if (imgEl){ imgEl.style.cursor = "pointer"; imgEl.addEventListener("click", openRankPage); }
       if (labelEl){ labelEl.style.cursor = "pointer"; labelEl.addEventListener("click", openRankPage); }
     })();
-    // ✅ EBOOK 보상 로직 (기존 유지, 텍스트에서 +2UT 제거)
+
+    // ✅ EBOOK 보상 로직 (addUt 사용으로 변경)
     (function setupEbooks(){
       const listEl = document.getElementById("ebook-list");
       if (!listEl) return;
-      function giveEbookReward(title) {
-        // 기존 2 UT 로직은 유지하되, 버튼 텍스트만 제거했으므로 기능은 살려둠.
+      async function giveEbookReward(title) {
         const KEY_LAST_EBOOK = "lastEbookRewardDate";
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayKST();
         const last = localStorage.getItem(KEY_LAST_EBOOK);
         if (last === today) return; 
-        let myPoints = localStorage.getItem("myUtPoints") ? parseFloat(localStorage.getItem("myUtPoints")) : 0;
-        const BONUS = 2;
-         
-        myPoints += BONUS;
-        myPoints = Math.round(myPoints * 100) / 100;
-        localStorage.setItem("myUtPoints", myPoints);
-        localStorage.setItem(KEY_LAST_EBOOK, today);
-         
-        // 지갑 UI 업데이트 호출
-        updateWalletUI();
 
-        // [추가] 시트에 저장
-        syncBalanceToSheet(myPoints);
-
-        alert(`📖 [${title}] 학습 시작!\n(오늘의 독서 보너스 +2 UT 지급)`);
+        // 1. 시트에 추가
+        try {
+          await addUt(2); // (기존 로직 +2 유지)
+          // 2. 로컬 저장 (중복 방지)
+          localStorage.setItem(KEY_LAST_EBOOK, today);
+          alert(`📖 [${title}] 학습 시작!\n(오늘의 독서 보너스 +2 UT 지급)`);
+        } catch(e) {
+          alert("보상 지급 실패: " + e.message);
+        }
       }
       function renderFromItems(books){
         listEl.innerHTML = "";
@@ -1117,7 +1191,6 @@
           desc.textContent = book.description || book.subtitle || "";
           const cta = document.createElement("div");
           cta.className = "ebook-meta-cta";
-          // [수정됨] 텍스트에서 (+2 UT) 제거
           cta.textContent = "클릭하여 eBook 열람";
           body.appendChild(title);
           body.appendChild(desc);
@@ -1161,263 +1234,153 @@
         })
         .catch(err => { console.error("ebook-config.json 로드 오류:", err); renderDefault(); });
     })();
-  </script>
-  <script>
-    // --- 지갑 UI 업데이트 함수 ---
-    function updateWalletUI() {
-      const myUtDisplay = document.getElementById("my-ut-display");
-      const myUsdtDisplay = document.getElementById("my-usdt-display"); 
-      if (!myUtDisplay) return;
-       
-      let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
-      myUtDisplay.textContent = currentUT.toFixed(2);
-       
-      // [수정] 환산 가치를 USDT로 표시 (1 UT = 0.02 USDT)
-      const usdtValue = (currentUT * 0.02).toFixed(2);
-      if(myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
-    }
 
-    // [추가됨] 시트에 잔액 저장하는 공용 함수
-    async function syncBalanceToSheet(newBalance) {
-        if(!currentId) return;
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: currentId, balance: newBalance })
-            });
-            console.log("Sheet updated: " + newBalance);
-        } catch(e) {
-            console.error("Sheet sync fail:", e);
-        }
-    }
-     
-    // 닉네임 등록 함수 (구글 시트 연동)
-    async function registerNickname() {
-        if(localStorage.getItem('myNickname_' + currentId)) return alert("이미 등록된 닉네임입니다.");
-        const newNick = prompt("송금에 사용할 닉네임을 입력하세요.\n(변경 불가, 신중히 입력)");
-        if(!newNick) return;
-        if(confirm(`'${newNick}' (으)로 설정하시겠습니까?`)) {
-            // UI 선반영
-            const btn = document.getElementById("btn-nick-reg");
-            btn.textContent = "처리 중...";
+    // --- 유튜브 API & 보상 로직 (addUt 사용) ---
+    // ✅ 설정값(요청 반영)
+    const VIDEO_REWARD = 22; // 영상 보상 +22
 
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: currentId, nickname: newNick })
-                });
-                
-                // 성공 가정 후 저장
-                localStorage.setItem('myNickname_' + currentId, newNick);
-                btn.textContent = "닉네임: " + newNick;
-                btn.classList.add("done");
-                btn.onclick = null;
-                alert("닉네임이 저장되었습니다.");
-            } catch(e) { 
-                console.error("Sheet Error:", e); 
-                btn.textContent = "닉네임 등록"; // 실패 시 원복
-                alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."); 
-            }
-        }
-    }
- 
-    // P2P 송금 함수
-    async function sendP2P() {
-        const receiver = document.getElementById("p2p-receiver").value.trim();
-        const amount = parseFloat(document.getElementById("p2p-amount").value);
-        if(!receiver || amount <= 0) return alert("올바른 정보를 입력하세요.");
-         
-        let myBal = parseFloat(localStorage.getItem('myUtPoints') || '0');
-        if(amount > myBal) return alert("잔액 부족");
-         
-        // 받는 사람 확인 (Supabase)
-        const { data: rUser } = await db.from('profiles').select('balance').eq('username', receiver).single();
-        if(!rUser) return alert("받는 분을 찾을 수 없습니다.");
-         
-        if(confirm(`${receiver}님에게 ${amount} UT를 송금하시겠습니까?`)) {
-            // DB 업데이트 (나)
-            await db.from('profiles').update({ balance: myBal - amount }).eq('username', currentId);
-            // DB 업데이트 (상대)
-            await db.from('profiles').update({ balance: rUser.balance + amount }).eq('username', receiver);
-            // 거래내역
-            await db.from('transactions').insert([{ username: currentId, type: 'out', amount: amount, description: `송금 -> ${receiver}` }]);
-            await db.from('transactions').insert([{ username: receiver, type: 'in', amount: amount, description: `입금 <- ${currentId}` }]);
-             
-            // 로컬 반영
-            myBal -= amount;
-            localStorage.setItem('myUtPoints', myBal);
-            updateWalletUI();
-
-            // [추가] 시트에 저장
-            syncBalanceToSheet(myBal);
-
-            alert("송금 완료");
-            document.getElementById("p2p-amount").value = "";
-        }
-    }
- 
-    document.addEventListener("DOMContentLoaded", async () => {
-      // 초기 잔액 로드 (Supabase) - 시트 값이 이미 있으면 로컬스토리지 우선
-      updateWalletUI();
-
-      const { data: profile } = await db.from('profiles').select('balance').eq('username', currentId).single();
-      if(profile) {
-          // DB 값이 있으면 최신 동기화
-          localStorage.setItem('myUtPoints', profile.balance);
-          updateWalletUI();
-      }
- 
-      // --- 한국 시간 날짜 반환 ---
-      function getTodayKST() {
+    function getTodayKST() {
         const now = new Date();
         const kstDate = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
         const year = kstDate.getFullYear();
         const month = String(kstDate.getMonth() + 1).padStart(2, '0');
         const day = String(kstDate.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
-      }
-      // --- 유튜브 API & 보상 로직 ---
-      var tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      var firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-       
-      window.onYouTubeIframeAPIReady = function() {
-        const lastClaimDate = localStorage.getItem('mining_video_claim_date');
-        const today = getTodayKST();
-        const statusText = document.getElementById('yt-status-text');
-        const rewardBtn = document.getElementById('btn-claim-video-reward');
-        // (1) 로드 시 상태 확인
-        if (lastClaimDate === today) {
-          if(statusText) {
-            statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)";
-            statusText.className = "mining-status done";
-          }
-          if(rewardBtn) {
-            rewardBtn.textContent = "오늘 보상 완료";
-            rewardBtn.disabled = true;
-            rewardBtn.classList.remove("ready");
-          }
-        } else {
-          if(rewardBtn) {
-            rewardBtn.textContent = "학습 보상 받기 (대기중)";
-            rewardBtn.disabled = true; // 영상 다 볼 때까지 비활성
-          }
-        }
-        new YT.Player('youtube-player', {
-          height: '100%',
-          width: '100%',
-          videoId: 'Dn3JMfy6Nxg', // 20UT 영상 ID
-          playerVars: { 'origin': window.location.origin, 'rel': 0, 'playsinline': 1 },
-          events: { 
-              'onStateChange': function(event) {
-                  const statusText = document.getElementById('yt-status-text');
-                  const rewardBtn = document.getElementById('btn-claim-video-reward');
-                  const lastClaimDate = localStorage.getItem('mining_video_claim_date');
-                  const today = getTodayKST();
-                  // 재생 중
-                  if (event.data == YT.PlayerState.PLAYING) {
-                    if (lastClaimDate !== today) {
-                        if(statusText) {
-                          statusText.textContent = "🔥 시청 중... 끝까지 보세요!";
-                          statusText.className = "mining-status";
-                        }
-                     }
-                  }
-                  // 영상 종료 (보상 받을 준비 완료)
-                  if (event.data == YT.PlayerState.ENDED) {
-                    if (lastClaimDate === today) return; // 이미 받았으면 무시
-                    // 버튼 활성화
-                    if (rewardBtn) {
-                      rewardBtn.textContent = "보상을 받을 준비가 완료 됐습니다";
-                      rewardBtn.disabled = false;
-                      rewardBtn.classList.add("ready"); // 펄스 애니메이션 추가
-                    }
-                    if (statusText) {
-                      statusText.textContent = "✅ 시청 완료! 왼쪽 버튼을 눌러 보상을 받으세요.";
-                      statusText.className = "mining-status done";
-                    }
-                  }
-              } 
-          }
-        });
-      };
- 
-      // 1. 학습 보상 받기 버튼
+    }
+    
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      
+    window.onYouTubeIframeAPIReady = function() {
+      const lastClaimDate = localStorage.getItem('mining_video_claim_date');
+      const today = getTodayKST();
+      const statusText = document.getElementById('yt-status-text');
       const rewardBtn = document.getElementById('btn-claim-video-reward');
-      if(rewardBtn) {
-        rewardBtn.addEventListener('click', function() {
-          const today = getTodayKST();
-          // 지급 로직
-          let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
-          currentUT += 20; 
-          currentUT = Math.round(currentUT * 100) / 100;
-          localStorage.setItem('myUtPoints', currentUT);
-          localStorage.setItem('mining_video_claim_date', today);
-           
-          // DB 업데이트
-          if(currentId) {
-             db.from('profiles').update({ balance: currentUT }).eq('username', currentId).then(()=>{});
-             db.from('transactions').insert([{ username: currentId, type: 'in', amount: 20, description: '지식채굴 보상' }]).then(()=>{});
-          }
- 
-          updateWalletUI(); // 지갑 반영
-
-          // [추가] 시트에 저장
-          syncBalanceToSheet(currentUT);
-
-          // UI 업데이트
-          this.textContent = "오늘 보상 완료";
-          this.disabled = true;
-          this.classList.remove("ready");
-          alert("🎉 20 UT가 지급되었습니다!");
-        });
-      }
-      // 2. 데일리 럭키박스 버튼
-      const luckyBtn = document.getElementById('btn-lucky-box');
-      if(luckyBtn) {
-        // 초기 상태 체크
-        const lastLuckyDate = localStorage.getItem('lucky_box_claim_date');
-        const today = getTodayKST();
-        if (lastLuckyDate === today) {
-          luckyBtn.disabled = true;
-          luckyBtn.textContent = "오늘의 행운 완료 (내일 다시)";
+      if (lastClaimDate === today) {
+        if(statusText) {
+          statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)";
+          statusText.className = "mining-status done";
         }
-        luckyBtn.addEventListener('click', function() {
-          const today = getTodayKST();
-          // 랜덤 보상 (1 ~ 5 UT)
-          const randomReward = Math.floor(Math.random() * 5) + 1;
-           
-          let currentUT = parseFloat(localStorage.getItem('myUtPoints') || '0');
-          currentUT += randomReward;
-          currentUT = Math.round(currentUT * 100) / 100;
-          localStorage.setItem('myUtPoints', currentUT);
-          localStorage.setItem('lucky_box_claim_date', today);
- 
-          // DB 업데이트
-          if(currentId) {
-             db.from('profiles').update({ balance: currentUT }).eq('username', currentId).then(()=>{});
-             db.from('transactions').insert([{ username: currentId, type: 'in', amount: randomReward, description: '럭키박스 당첨' }]).then(()=>{});
+        if(rewardBtn) {
+          rewardBtn.textContent = "오늘 보상 완료";
+          rewardBtn.disabled = true;
+          rewardBtn.classList.remove("ready");
+        }
+      } else {
+        if(rewardBtn) {
+          rewardBtn.textContent = "학습 보상 받기 (대기중)";
+          rewardBtn.disabled = true; 
+        }
+      }
+      new YT.Player('youtube-player', {
+        height: '100%',
+        width: '100%',
+        videoId: 'Dn3JMfy6Nxg', 
+        playerVars: { 'origin': window.location.origin, 'rel': 0, 'playsinline': 1 },
+        events: { 
+            'onStateChange': function(event) {
+                const statusText = document.getElementById('yt-status-text');
+                const rewardBtn = document.getElementById('btn-claim-video-reward');
+                const lastClaimDate = localStorage.getItem('mining_video_claim_date');
+                const today = getTodayKST();
+                if (event.data == YT.PlayerState.PLAYING) {
+                  if (lastClaimDate !== today) {
+                      if(statusText) {
+                        statusText.textContent = "🔥 시청 중... 끝까지 보세요!";
+                        statusText.className = "mining-status";
+                      }
+                    }
+                }
+                if (event.data == YT.PlayerState.ENDED) {
+                  if (lastClaimDate === today) return; 
+                  if (rewardBtn) {
+                    rewardBtn.textContent = "보상을 받을 준비가 완료 됐습니다";
+                    rewardBtn.disabled = false;
+                    rewardBtn.classList.add("ready"); 
+                  }
+                  if (statusText) {
+                    statusText.textContent = "✅ 시청 완료! 왼쪽 버튼을 눌러 보상을 받으세요.";
+                    statusText.className = "mining-status done";
+                  }
+                }
+            } 
+        }
+      });
+    };
+
+    // 1. 학습 보상 받기 버튼
+    const rewardBtn = document.getElementById('btn-claim-video-reward');
+    if(rewardBtn) {
+      rewardBtn.addEventListener('click', async function() {
+        const today = getTodayKST();
+        if(localStorage.getItem('mining_video_claim_date') === today) return;
+
+        this.textContent = "처리 중...";
+        this.disabled = true;
+
+        try {
+          // 시트에 +22 추가
+          await addUt(VIDEO_REWARD);
+          localStorage.setItem('mining_video_claim_date', today);
+
+          this.textContent = "오늘 보상 완료";
+          this.classList.remove("ready");
+          
+          const statusText = document.getElementById('yt-status-text');
+          if (statusText) {
+              statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)";
+              statusText.className = "mining-status done";
           }
- 
-          updateWalletUI();
+          
+          alert(`🎉 ${VIDEO_REWARD} UT가 지급되었습니다!`);
+        } catch(e) {
+          alert("보상 지급 오류: " + e.message);
+          this.textContent = "보상 받기";
+          this.disabled = false;
+        }
+      });
+    }
+    // 2. 데일리 럭키박스 버튼 (1~100 랜덤)
+    const luckyBtn = document.getElementById('btn-lucky-box');
+    if(luckyBtn) {
+      const today = getTodayKST();
+      if (localStorage.getItem('lucky_box_claim_date') === today) {
+        luckyBtn.disabled = true;
+        luckyBtn.textContent = "오늘의 행운 완료 (내일 다시)";
+      }
+      luckyBtn.addEventListener('click', async function() {
+        const today = getTodayKST();
+        if (localStorage.getItem('lucky_box_claim_date') === today) return;
 
-          // [추가] 시트에 저장
-          syncBalanceToSheet(currentUT);
+        // 랜덤 1~100
+        const randomReward = Math.floor(Math.random() * 100) + 1;
+        this.textContent = "추첨 중...";
+        this.disabled = true;
 
-          this.disabled = true;
+        try {
+          await addUt(randomReward);
+          localStorage.setItem('lucky_box_claim_date', today);
+
           this.textContent = "오늘의 행운 완료";
           alert(`🎁 럭키박스 당첨! +${randomReward} UT 지급되었습니다.`);
-        });
-      }
-    });
-  </script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
+        } catch(e) {
+           alert("럭키박스 오류: " + e.message);
+           this.textContent = "🎁 데일리 럭키박스";
+           this.disabled = false;
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 배지 텍스트 갱신
+      const badge = document.getElementById("mining-badge");
+      if (badge) badge.textContent = `Daily +${VIDEO_REWARD} UT`;
+
+      // 시트 값 강제 동기화 (새로고침 시)
+      await refreshFromSheet();
+
       // 보물상자 버튼 (Pro 1 이상 전용 로직 적용)
       const promoBtn = document.getElementById("promo-btn");
       const promoBadge = document.getElementById("promo-badge");
@@ -1430,14 +1393,10 @@
         }
         // 클릭 이벤트 (직급 체크)
         promoBtn.addEventListener("click", () => {
-          // 전역 변수 currentRankCode 활용 (위쪽 랭킹 로직에서 설정됨)
-          // 랭킹 로직이 비동기(fetch)이므로, 버튼 클릭 시점엔 이미 로드되었을 것임.
-           
           // Pro 1 이상인지 확인하는 헬퍼 함수
           function isProOrHigher(rank) {
             if (!rank) return false;
             const r = rank.toUpperCase();
-            // PRO로 시작하고 뒤에 숫자가 있으면 통과
             if (r.startsWith("PRO")) return true; 
             return false;
           }
@@ -1447,7 +1406,6 @@
             localStorage.setItem("uniquePromoSeen", PROMO_VERSION);
             if (promoBadge) promoBadge.classList.add("hidden");
           } else {
-            // 실패: 경고창
             alert("아직 충분한 조건을 얻지 못했습니다.");
           }
         });
