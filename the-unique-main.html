@@ -766,7 +766,75 @@
       evt.currentTarget.classList.add("active");
     }
   </script>
+  <script>
+  // =========================
+  // ✅ Rank/버튼 동작 패치
+  // - 다음 직급 이미지 클릭 -> rank-hall.html 이동
+  // - Treasure Box: Pro1 이상만 열기, 아니면 경고
+  // =========================
 
+  function isPro1OrHigher(rankCode){
+    if(!rankCode) return false;
+    const r = String(rankCode).toLowerCase().trim();
+    // Pro1 ~ Pro10
+    if(!r.startsWith("pro")) return false;
+    const n = parseInt(r.replace("pro",""), 10);
+    return Number.isFinite(n) && n >= 1;
+  }
+
+  function wireRankHallClicks(){
+    const nextImg = document.getElementById("next-rank-img");
+    const nextLabel = document.getElementById("next-rank-mini");
+    const curImg = document.getElementById("member-rank-img");
+    const curLabel = document.getElementById("member-rank-mini");
+
+    function goRankHall(){
+      window.open("rank-hall.html", "_blank");
+    }
+
+    // 기존에 이벤트가 꼬여도 무조건 동작하게 onclick도 걸어줌
+    if(nextImg){ nextImg.style.cursor="pointer"; nextImg.onclick = goRankHall; }
+    if(nextLabel){ nextLabel.style.cursor="pointer"; nextLabel.onclick = goRankHall; }
+
+    // 원하면 현재 직급도 눌렀을 때 열리게
+    if(curImg){ curImg.style.cursor="pointer"; curImg.onclick = goRankHall; }
+    if(curLabel){ curLabel.style.cursor="pointer"; curLabel.onclick = goRankHall; }
+  }
+
+  function wireTreasureBoxGate(){
+    const oldBtn = document.getElementById("promo-btn");
+    if(!oldBtn) return;
+
+    // ✅ 기존 리스너/onclick 꼬임 방지: 버튼을 통째로 교체
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.replaceWith(newBtn);
+
+    newBtn.addEventListener("click", () => {
+      // currentRankCode는 rank-hall.json 로딩 로직에서 세팅되는 전제
+      // (너 코드에 이미 currentRankCode 전역으로 존재했음)
+      const rank = (window.currentRankCode || "").toString();
+      if(!isPro1OrHigher(rank)){
+        alert("Pro1 직급 이상 사용 하실 수 있습니다.");
+        return;
+      }
+
+      // ✅ Pro1 이상이면 금고 페이지 열기
+      const w = window.open("the-unique-promo.html", "_blank");
+      if(!w) window.location.href = "the-unique-promo.html"; // 모바일 팝업 차단 대비
+    });
+  }
+
+  // rank-hall.json이 늦게 로드될 수도 있어서, DOMContentLoaded 후 한 번,
+  // 그리고 1초 뒤 한 번 더 보강
+  document.addEventListener("DOMContentLoaded", () => {
+    wireRankHallClicks();
+    wireTreasureBoxGate();
+    setTimeout(() => {
+      wireRankHallClicks();
+      wireTreasureBoxGate();
+    }, 1000);
+  });
+</script> 
   <!-- ====== 스케줄 로딩(기존 유지) ====== -->
   <script>
     window.handleScheduleSheet = function handleScheduleSheet(resp) {
