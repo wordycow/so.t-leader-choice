@@ -358,69 +358,14 @@
   </div>
 
   
-    let allowedIds = null;
-    let memberInfoById = {};
-    let sheetError = false;
-
-    function handleSheetResponse(resp) {
-      try {
-        const rows = resp.table.rows || [];
-        const ids = [];
-
-        rows.forEach((row) => {
-          const cells = row.c || [];
-          // A:0(Time), B:1(ID), C:2(Name), D:3(Nick), E:4(Token), F:5(Phone), G:6(Team)
-          
-          const tsCell   = cells[0];
-          const idCell   = cells[1];
-          const nameCell = cells[2];
-          const nickCell = cells[3]; // D열: 닉네임
-          const tokenCell= cells[4]; // ★ E열: 유니크 토큰 (여기 수정됨)
-          const teamCell = cells[6]; // G열: 소속
-
-          if (!idCell || idCell.v == null) return;
-
-          const rawId = String(idCell.v).trim();
-          if (!rawId || rawId === "아이디") return;
-
-          const idLower = rawId.toLowerCase();
-          ids.push(idLower);
-
-          const name = nameCell && nameCell.v ? String(nameCell.v).trim() : "";
-          const nick = nickCell && nickCell.v ? String(nickCell.v).trim() : "";
-          const team = teamCell && teamCell.v ? String(teamCell.v).trim() : "";
-          const joinedAt = tsCell && tsCell.v ? String(tsCell.v).trim() : "";
-          
-          // UT 값 파싱 (E열 읽기)
-          const balance = tokenCell && tokenCell.v != null ? parseFloat(tokenCell.v) : 0;
-
-          memberInfoById[idLower] = { 
-            id: rawId, 
-            name: name, 
-            nickname: nick,
-            team: team, 
-            joinedAt: joinedAt,
-            balance: balance 
-          };
-        });
-
-        allowedIds = new Set(ids);
-      } catch (e) {
-        console.error("시트 파싱 오류:", e);
-        sheetError = true;
-      }
-    }
+  
   </script>
 
   <script>
     (function() {
       const timestamp = new Date().getTime(); // 현재 시간 (캐시 방지용)
       const script = document.createElement('script');
-      // 끝에 &t=... 를 붙여서 구글이 매번 새로운 요청으로 인식하게 함
-      script.src = "https://docs.google.com/spreadsheets/d/1SUXCiLg7sbZ_2OxanCEgVwgk3dJhZLhyX0-lltTxBnM/gviz/tq?sheet=Form_Responses&tqx=responseHandler:handleSheetResponse&_t=" + timestamp;
-      document.body.appendChild(script);
-    })();
-  </script>
+       </script>
 
   <script>
     const form = document.getElementById("gate-form");
@@ -464,7 +409,7 @@
     });
   </script>
   <script>
-  const GOOGLE_SCRIPT_URL = "여기에_배포URL/exec_붙여넣기";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
 
   function api(action, params = {}) {
     return new Promise((resolve, reject) => {
@@ -480,14 +425,60 @@
       s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
       window[cb] = (data) => { cleanup(); resolve(data); };
 
-      function cleanup() {
-        delete window[cb];
-        s.remove();
-      }
-
+      function cleanup() { delete window[cb]; s.remove(); }
       document.body.appendChild(s);
     });
   }
+
+  const form = document.getElementById("gate-form");
+  const idInput = document.getElementById("login-id");
+  const statusEl = document.getElementById("status");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const id = (idInput.value || "").trim();
+    statusEl.textContent = "";
+    statusEl.className = "status";
+
+    if (!id) {
+      statusEl.textContent = "아이디를 입력해 주세요.";
+      statusEl.classList.add("status-error");
+      return;
+    }
+
+    statusEl.textContent = "회원 확인 중...";
+
+    try {
+      const r = await api("getUser", { id });
+      if (!r.ok || !r.user) {
+        statusEl.textContent = "등록되지 않은 아이디입니다.";
+        statusEl.classList.add("status-error");
+        return;
+      }
+
+      const u = r.user;
+
+      // ✅ 시트값을 로컬에 저장(메인에서 그대로 사용)
+      localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+        id: (u.id || "").toLowerCase(),
+        name: u.name || "",
+        nickname: u.nickname || "",
+        team: u.team || "",
+        joinedAt: u.joinedAt || "",
+        balance: Number(u.balance || 0)
+      }));
+
+      localStorage.setItem("myUtPoints", Number(u.balance || 0));
+      if (u.nickname) localStorage.setItem("myNickname_" + (u.id || "").toLowerCase(), u.nickname);
+
+      window.location.href = "the-unique-main.html";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "회원 확인 중 오류가 발생했습니다.";
+      statusEl.classList.add("status-error");
+    }
+  });
 </script>
 </body>
 </html>
