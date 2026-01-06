@@ -845,12 +845,13 @@
 
   <script>
     // ✅ 네 배포 URL (배포 후 주소가 바뀌면 여기만 바꾸면 됨)
-    const GOOGLE_SCRIPT_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhke6TzHiDPupzI__yXWWvQkrYgO74Mxc0deIzaKGwCkUZ9ORtLktwK8L8dQF0NRD9nbXDw4x48OppjoIuEMiaxlb6rLwbATrEoYZnHgG4-PX5r9W5IQwMKYTrOrnTh7i4-qlO-gXwLjqVkfEfcvhqjyxpB7uWgEhdFr6wLomtl0wWEbK8WPCfAb0r1Vxe3Nzamd2x-AOhWvaIdKSqiDGyDgLWzJc2fwN1-THVzEbYKLm0Ly4zv4jpwwFJ1X4uUp78TlU900r8hKvfxJ7QwT3-1af1DAA&lib=MGjJ_Fcm4L5xBeCzKtje4eE-_7EGZWvvr";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+
 
 
 
     // ✅ JSONP 호출 함수
-    function api(action, params = {}) {
+   function api(action, params = {}) {
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
@@ -861,9 +862,15 @@
     const qs = new URLSearchParams(params).toString();
     const s = document.createElement("script");
 
-    // ✅ 핵심: echo URL은 이미 "?"가 들어있으므로 "&"로 붙여야 함
+    // ✅ echo URL이면 이미 ?가 있으니 &로, /exec면 ?로 붙인다
     const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
     s.src = GOOGLE_SCRIPT_URL + joiner + qs;
+
+    // ✅ 타임아웃 (로딩이 멈추는 케이스 대비)
+    const t = setTimeout(() => {
+      cleanup();
+      reject(new Error("API timeout"));
+    }, 12000);
 
     window[cb] = (data) => {
       cleanup();
@@ -875,21 +882,16 @@
       reject(new Error("API load failed"));
     };
 
-    // 10초 타임아웃 (네트워크/확장프로그램 간헐 대비)
-    const t = setTimeout(() => {
-      cleanup();
-      reject(new Error("API timeout"));
-    }, 10000);
-
     function cleanup() {
       clearTimeout(t);
-      try { delete window[cb]; } catch(e) {}
-      try { s.remove(); } catch(e) {}
+      try { delete window[cb]; } catch(e){}
+      try { s.remove(); } catch(e){}
     }
 
     document.body.appendChild(s);
   });
 }
+
 
     // ✅ (시트 → 로컬) 단일 저장 함수
     function applyUserToLocal(u){
