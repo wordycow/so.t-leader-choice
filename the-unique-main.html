@@ -624,6 +624,29 @@
              
             <div class="tb-header-right">
                 <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
+              async function registerNickname() {
+  const already = localStorage.getItem("myNickname_" + currentId);
+  if (already) return alert("이미 등록된 닉네임입니다.");
+
+  const newNick = prompt("송금에 사용할 닉네임을 입력하세요.\n(변경 불가, 신중히 입력)");
+  if(!newNick) return;
+
+  if(!confirm(`'${newNick}' (으)로 설정하시겠습니까?`)) return;
+
+  const btn = document.getElementById("btn-nick-reg");
+  if(btn) btn.textContent = "처리 중...";
+
+  const r = await api("setNickname", { id: currentId, nickname: newNick });
+
+  if(!r.ok){
+    if(btn) btn.textContent = "닉네임 등록";
+    return alert("저장 실패: " + (r.error || "unknown"));
+  }
+
+  await refreshFromSheet();
+  alert("닉네임이 저장되었습니다.");
+}
+
             </div>
           </div>
           <div class="tb-tabs">
@@ -843,7 +866,72 @@
   <script>
     // [중요] 구글 Apps Script URL (새로 변경된 주소 확인됨)
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
-     
+     function api(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    params.action = action;
+    params.callback = cb;
+    params._t = Date.now();
+
+    const qs = new URLSearchParams(params).toString();
+    const s = document.createElement("script");
+    s.src = GOOGLE_SCRIPT_URL + "?" + qs;
+
+    s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+    window[cb] = (data) => { cleanup(); resolve(data); };
+
+    function cleanup() { delete window[cb]; s.remove(); }
+    document.body.appendChild(s);
+  });
+}
+    function applyUserToLocal(u){
+  localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+    id: (u.id || "").toLowerCase(),
+    name: u.name || "",
+    nickname: u.nickname || "",
+    team: u.team || "",
+    joinedAt: u.joinedAt || "",
+    balance: Number(u.balance || 0)
+  }));
+  localStorage.setItem("myUtPoints", Number(u.balance || 0));
+  if (u.nickname) localStorage.setItem("myNickname_" + (u.id || "").toLowerCase(), u.nickname);
+}
+async function addUt(delta){
+  const r = await api("addBalance", { id: currentId, delta: delta });
+  if(!r.ok) throw new Error(r.error || "UT update failed");
+  applyUserToLocal(r.user);
+  updateWalletUI();
+  return Number(r.user.balance || 0);
+}
+
+async function refreshFromSheet(){
+  if (!currentId) return;
+  try{
+    const r = await api("getUser", { id: currentId });
+    if (!r.ok || !r.user) return;
+
+    applyUserToLocal(r.user);
+    updateWalletUI();
+
+    // 닉네임 버튼 상태 갱신
+    const btn = document.getElementById("btn-nick-reg");
+    const savedNick = localStorage.getItem("myNickname_" + currentId);
+    if (btn){
+      if (savedNick){
+        btn.textContent = "닉네임: " + savedNick;
+        btn.classList.add("done");
+        btn.onclick = null;
+      } else {
+        btn.textContent = "닉네임 등록";
+        btn.classList.remove("done");
+        btn.onclick = registerNickname;
+      }
+    }
+  } catch(e){
+    console.error("refreshFromSheet fail:", e);
+  }
+}
+
     // Supabase 설정
     const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
@@ -1259,6 +1347,9 @@
     document.addEventListener("DOMContentLoaded", async () => {
       // 초기 잔액 로드 (Supabase) - 시트 값이 이미 있으면 로컬스토리지 우선
       updateWalletUI();
+
+      await refreshFromSheet();
+setInterval(refreshFromSheet, 30000);
 
       const { data: profile } = await db.from('profiles').select('balance').eq('username', currentId).single();
       if(profile) {
