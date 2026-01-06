@@ -921,6 +921,18 @@
       updateWalletUI();
       return Number(r.user.balance || 0);
     }
+     function updateWalletUI() {
+  const myUtDisplay = document.getElementById("my-ut-display");
+  const myUsdtDisplay = document.getElementById("my-usdt-display");
+  if (!myUtDisplay) return;
+
+  const currentUT = parseFloat(localStorage.getItem("myUtPoints") || "0");
+  myUtDisplay.textContent = currentUT.toFixed(2);
+
+  const rate = 0.02; // 우선 고정. (원하면 Config에서 읽도록도 가능)
+  const usdtValue = (currentUT * rate).toFixed(2);
+  if (myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
+}
 
     // ✅ 시트값을 주기적으로 다시 가져와서 반영
     async function refreshFromSheet(){
