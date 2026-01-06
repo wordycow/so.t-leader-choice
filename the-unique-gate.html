@@ -34,7 +34,7 @@
     .scene {
       position: fixed;
       inset: 0;
-      overflow: hidden;
+      overflow: hidden;           /* ✅ 박쥐가 오른쪽에서 잘려도 자연스럽게 */
       pointer-events: none;
       z-index: 0;
     }
@@ -199,6 +199,7 @@
     }
     .status-error { color: #fecaca; }
 
+    /* ✅ & (PC/모바일 공통, 이제 media 밖이라 안 꼬임) */
     .divider-amp{
       margin: 10px 0 10px;
       text-align:center;
@@ -217,12 +218,18 @@
       user-select:none;
     }
 
-    :root{
+    /* =====================================================
+       ✅ 박쥐/마녀 (그림자 없음 / 위아래만 / 변수로 조절)
+       ===================================================== */
+   :root{
+      /* 박쥐: 더 넓게 = 여기 55vw를 더 키우면 됨 (예: 70vw) */
       --bat-top: -8vh;
-      --bat-right: 0vw;
-      --bat-width: clamp(320px, 55vw, 900px);
+      --bat-right: 0vw;                     /* 오른쪽에 붙어서 날개 잘리게 */
+      --bat-width: clamp(320px, 55vw, 900px); /* ✅ 넓이(윙스팬) 조절 */
+
       --bat-bob: 20px;
 
+      /* 마녀: 성 왼쪽 / 작게 */
       --witch-top: 28vh;
       --witch-right: 20vw;
       --witch-width: clamp(18px, 7vw, 44px);
@@ -237,7 +244,7 @@
       display:block;
       width:100%;
       height:auto;
-      filter:none;
+      filter:none; /* ✅ 그림자/글로우 제거 */
     }
 
     @keyframes floatY {
@@ -262,6 +269,7 @@
       animation: floatY 3.2s ease-in-out infinite alternate;
     }
 
+    /* ✅ 버튼(UNIQUE MARKET) */
     .btn-with-icon{ gap:10px; justify-content:center; }
     .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
     .btn-with-icon span{ line-height:1; }
@@ -325,7 +333,7 @@
           </div>
 
           <div class="btn-row">
-            <button id="login-btn" type="submit" class="btn btn-primary">로그인</button>
+            <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
             <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
           </div>
 
@@ -350,10 +358,10 @@
   </div>
 
   <script>
-    // ✅ Apps Script URL
+    // ✅ 1. Apps Script URL (배포된 최신 URL)
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
 
-    // ✅ JSONP API (GitHub Pages CORS 회피)
+    // ✅ 2. JSONP API 함수 (Main.html과 동일한 방식)
     function api(action, params = {}) {
       return new Promise((resolve, reject) => {
         const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
@@ -380,16 +388,21 @@
       el.className = "status" + (isError ? " status-error" : "");
     }
 
+    // ✅ 3. 유저 정보를 로컬 스토리지에 저장 (Main에서 사용)
     function saveUserToLocal(u){
       const idLower = (u.id || "").toLowerCase();
+      
+      // 전체 정보 저장
       localStorage.setItem("uniqueCurrentUser", JSON.stringify({
         id: idLower,
         name: u.name || "",
-        nickname: u.nickname || "",
+        nickname: u.nickname || "", // 시트 G열 값
         team: u.team || "",
         joinedAt: u.joinedAt || "",
-        balance: Number(u.balance || 0)
+        balance: Number(u.balance || 0) // 시트 H열 값
       }));
+      
+      // 개별 정보 저장 (호환성)
       localStorage.setItem("myUtPoints", Number(u.balance || 0));
       if ((u.nickname || "").trim()) {
         localStorage.setItem("myNickname_" + idLower, (u.nickname || "").trim());
@@ -398,16 +411,7 @@
       }
     }
 
-    // ✅ 이미 로그인되어 있으면 메인으로 (원치 않으면 이 블록 지워도 됨)
-    (function autoGoMainIfLoggedIn(){
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return;
-      try {
-        const u = JSON.parse(raw);
-        if (u && u.id) window.location.href = "the-unique-main.html";
-      } catch(_) {}
-    })();
-
+    // ✅ 4. 로그인 이벤트
     const form = document.getElementById("gate-form");
     const idInput = document.getElementById("login-id");
     const loginBtn = document.getElementById("login-btn");
@@ -422,21 +426,35 @@
       if (loginBtn) loginBtn.disabled = true;
 
       try {
+        // API로 getUser 요청 -> 실시간 시트 조회
         const r = await api("getUser", { id });
+        
         if (!r || !r.ok || !r.user) {
           setStatus("등록되지 않은 아이디입니다.", true);
           if (loginBtn) loginBtn.disabled = false;
           return;
         }
 
+        // 로그인 성공: 로컬 저장 후 이동
         saveUserToLocal(r.user);
         window.location.href = "the-unique-main.html";
+        
       } catch (err) {
         console.error(err);
-        setStatus("회원 확인 중 오류가 발생했습니다.", true);
+        setStatus("서버 통신 중 오류가 발생했습니다.", true);
         if (loginBtn) loginBtn.disabled = false;
       }
     });
+
+    // (선택) 이미 로그인되어 있으면 자동 이동
+    (function autoGoMainIfLoggedIn(){
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (!raw) return;
+      try {
+        const u = JSON.parse(raw);
+        if (u && u.id) window.location.href = "the-unique-main.html";
+      } catch(_) {}
+    })();
   </script>
 </body>
 </html>
