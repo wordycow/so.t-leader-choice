@@ -34,7 +34,7 @@
     .scene {
       position: fixed;
       inset: 0;
-      overflow: hidden;           /* ✅ 박쥐가 오른쪽에서 잘려도 자연스럽게 */
+      overflow: hidden;
       pointer-events: none;
       z-index: 0;
     }
@@ -199,7 +199,6 @@
     }
     .status-error { color: #fecaca; }
 
-    /* ✅ & (PC/모바일 공통, 이제 media 밖이라 안 꼬임) */
     .divider-amp{
       margin: 10px 0 10px;
       text-align:center;
@@ -218,18 +217,12 @@
       user-select:none;
     }
 
-    /* =====================================================
-       ✅ 박쥐/마녀 (그림자 없음 / 위아래만 / 변수로 조절)
-       ===================================================== */
-   :root{
-      /* 박쥐: 더 넓게 = 여기 55vw를 더 키우면 됨 (예: 70vw) */
+    :root{
       --bat-top: -8vh;
-      --bat-right: 0vw;                     /* 오른쪽에 붙어서 날개 잘리게 */
-      --bat-width: clamp(320px, 55vw, 900px); /* ✅ 넓이(윙스팬) 조절 */
-
+      --bat-right: 0vw;
+      --bat-width: clamp(320px, 55vw, 900px);
       --bat-bob: 20px;
 
-      /* 마녀: 성 왼쪽 / 작게 */
       --witch-top: 28vh;
       --witch-right: 20vw;
       --witch-width: clamp(18px, 7vw, 44px);
@@ -244,7 +237,7 @@
       display:block;
       width:100%;
       height:auto;
-      filter:none; /* ✅ 그림자/글로우 제거 */
+      filter:none;
     }
 
     @keyframes floatY {
@@ -269,7 +262,6 @@
       animation: floatY 3.2s ease-in-out infinite alternate;
     }
 
-    /* ✅ 버튼(UNIQUE MARKET) */
     .btn-with-icon{ gap:10px; justify-content:center; }
     .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
     .btn-with-icon span{ line-height:1; }
@@ -333,7 +325,7 @@
           </div>
 
           <div class="btn-row">
-            <button type="submit" class="btn btn-primary">로그인</button>
+            <button id="login-btn" type="submit" class="btn btn-primary">로그인</button>
             <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
           </div>
 
@@ -357,128 +349,94 @@
     </main>
   </div>
 
-  
-  
-  </script>
-
   <script>
-    (function() {
-      const timestamp = new Date().getTime(); // 현재 시간 (캐시 방지용)
-      const script = document.createElement('script');
-       </script>
+    // ✅ Apps Script URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
 
-  <script>
-    const form = document.getElementById("gate-form");
-    const idInput = document.getElementById("login-id");
-    const statusEl = document.getElementById("status");
+    // ✅ JSONP API (GitHub Pages CORS 회피)
+    function api(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        params.action = action;
+        params.callback = cb;
+        params._t = Date.now(); // 캐시 방지
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+        const qs = new URLSearchParams(params).toString();
+        const s = document.createElement("script");
+        s.src = GOOGLE_SCRIPT_URL + "?" + qs;
 
-      const id = (idInput.value || "").trim();
-      statusEl.textContent = "";
-      statusEl.className = "status";
+        s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+        window[cb] = (data) => { cleanup(); resolve(data); };
 
-      if (!id) { statusEl.textContent = "아이디를 입력해 주세요."; statusEl.classList.add("status-error"); return; }
-      if (sheetError) { statusEl.textContent = "회원 확인 중 오류가 발생했습니다."; statusEl.classList.add("status-error"); return; }
-      if (!allowedIds) { statusEl.textContent = "회원 정보 불러오는 중입니다. 잠시 후 다시 시도해 주세요."; return; }
-
-      const normalized = id.toLowerCase();
-      if (allowedIds.has(normalized)) {
-        const info = memberInfoById[normalized] || {};
-        
-        // 로그인 성공 시 정보를 로컬 스토리지에 저장 (메인 페이지에서 사용)
-        localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-          id: normalized, 
-          name: info.name || "", 
-          nickname: info.nickname || "", // 시트에서 가져온 닉네임
-          team: info.team || "", 
-          joinedAt: info.joinedAt || "",
-          balance: info.balance || 0     // 시트에서 가져온 UT 잔액
-        }));
-        
-        // 닉네임과 포인트 정보도 별도 로컬스토리지 키에 동기화
-        if (info.nickname) localStorage.setItem('myNickname_' + normalized, info.nickname);
-        if (info.balance !== undefined) localStorage.setItem('myUtPoints', info.balance);
-
-        window.location.href = "the-unique-main.html";
-      } else {
-        statusEl.textContent = "등록되지 않은 아이디입니다.";
-        statusEl.classList.add("status-error");
-      }
-    });
-  </script>
-  <script>
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxWfbTszWMXI-OdtQ9dAIsixh7X8w_1v8VAwseaQfvGFzO2yr56CrS1sra_AdKoYe_/exec";
-
-  function api(action, params = {}) {
-    return new Promise((resolve, reject) => {
-      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-      params.action = action;
-      params.callback = cb;
-      params._t = Date.now(); // 캐시 방지
-
-      const qs = new URLSearchParams(params).toString();
-      const s = document.createElement("script");
-      s.src = GOOGLE_SCRIPT_URL + "?" + qs;
-
-      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
-      window[cb] = (data) => { cleanup(); resolve(data); };
-
-      function cleanup() { delete window[cb]; s.remove(); }
-      document.body.appendChild(s);
-    });
-  }
-
-  const form = document.getElementById("gate-form");
-  const idInput = document.getElementById("login-id");
-  const statusEl = document.getElementById("status");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const id = (idInput.value || "").trim();
-    statusEl.textContent = "";
-    statusEl.className = "status";
-
-    if (!id) {
-      statusEl.textContent = "아이디를 입력해 주세요.";
-      statusEl.classList.add("status-error");
-      return;
+        function cleanup() { try { delete window[cb]; } catch(_){} s.remove(); }
+        document.body.appendChild(s);
+      });
     }
 
-    statusEl.textContent = "회원 확인 중...";
+    function setStatus(msg, isError=false){
+      const el = document.getElementById("status");
+      if (!el) return;
+      el.textContent = msg || "";
+      el.className = "status" + (isError ? " status-error" : "");
+    }
 
-    try {
-      const r = await api("getUser", { id });
-      if (!r.ok || !r.user) {
-        statusEl.textContent = "등록되지 않은 아이디입니다.";
-        statusEl.classList.add("status-error");
-        return;
-      }
-
-      const u = r.user;
-
-      // ✅ 시트값을 로컬에 저장(메인에서 그대로 사용)
+    function saveUserToLocal(u){
+      const idLower = (u.id || "").toLowerCase();
       localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-        id: (u.id || "").toLowerCase(),
+        id: idLower,
         name: u.name || "",
         nickname: u.nickname || "",
         team: u.team || "",
         joinedAt: u.joinedAt || "",
         balance: Number(u.balance || 0)
       }));
-
       localStorage.setItem("myUtPoints", Number(u.balance || 0));
-      if (u.nickname) localStorage.setItem("myNickname_" + (u.id || "").toLowerCase(), u.nickname);
-
-      window.location.href = "the-unique-main.html";
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = "회원 확인 중 오류가 발생했습니다.";
-      statusEl.classList.add("status-error");
+      if ((u.nickname || "").trim()) {
+        localStorage.setItem("myNickname_" + idLower, (u.nickname || "").trim());
+      } else {
+        localStorage.removeItem("myNickname_" + idLower);
+      }
     }
-  });
-</script>
+
+    // ✅ 이미 로그인되어 있으면 메인으로 (원치 않으면 이 블록 지워도 됨)
+    (function autoGoMainIfLoggedIn(){
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (!raw) return;
+      try {
+        const u = JSON.parse(raw);
+        if (u && u.id) window.location.href = "the-unique-main.html";
+      } catch(_) {}
+    })();
+
+    const form = document.getElementById("gate-form");
+    const idInput = document.getElementById("login-id");
+    const loginBtn = document.getElementById("login-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const id = (idInput.value || "").trim();
+      if (!id) { setStatus("아이디를 입력해 주세요.", true); return; }
+
+      setStatus("회원 확인 중...");
+      if (loginBtn) loginBtn.disabled = true;
+
+      try {
+        const r = await api("getUser", { id });
+        if (!r || !r.ok || !r.user) {
+          setStatus("등록되지 않은 아이디입니다.", true);
+          if (loginBtn) loginBtn.disabled = false;
+          return;
+        }
+
+        saveUserToLocal(r.user);
+        window.location.href = "the-unique-main.html";
+      } catch (err) {
+        console.error(err);
+        setStatus("회원 확인 중 오류가 발생했습니다.", true);
+        if (loginBtn) loginBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
