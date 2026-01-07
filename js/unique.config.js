@@ -21,7 +21,7 @@
     // 스케줄(기존 유지했던 gviz 시트 URL)
     SCHEDULE_GVIZ_URL: "https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet",
 
-    YT_VIDEO_ID: "Dn3JMfy6Nxg",
+    YT_VIDEO_ID: "DBcSLPRz0HI",
 
     REFRESH_MS: 30000
   };
