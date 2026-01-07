@@ -71,14 +71,17 @@
     },
 
     bindBasicButtons() {
+      const sotBtn = document.getElementById("sot-btn");
+      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
+      
       const travelBtn = document.getElementById("travel-btn");
       if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
 
-      const sotBtn = document.getElementById("sot-btn");
-      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-
       const linkonBtn = document.getElementById("ppt-form-btn");
       if (linkonBtn) linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+
+      const marketBtn = document.getElementById("market-btn");
+      if (marketBtn) marketBtn.addEventListener("click", () => window.open("market.html", "_blank"));
 
       const logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn) logoutBtn.addEventListener("click", () => {
