@@ -3,8 +3,9 @@
   const U = window.UNIQUE;
 
   U.api = {
-    jsonp(action, params={}) {
+    jsonp(action, params = {}) {
       const { GOOGLE_SCRIPT_URL } = U.CONFIG;
+
       return new Promise((resolve, reject) => {
         const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
@@ -25,10 +26,10 @@
         window[cb] = (data) => { cleanup(); resolve(data); };
         s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
 
-        function cleanup(){
+        function cleanup() {
           clearTimeout(t);
-          try { delete window[cb]; } catch(_){}
-          try { s.remove(); } catch(_){}
+          try { delete window[cb]; } catch (_) {}
+          try { s.remove(); } catch (_) {}
         }
 
         document.body.appendChild(s);
