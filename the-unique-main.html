@@ -11,7 +11,7 @@
 
   <style>
     /* =========================================================
-       [1] 기존 스타일 (100% 유지 - 건드리지 않음)
+       [1] 기존 스타일 (유지)
        ========================================================= */
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;height:100%}
@@ -507,14 +507,7 @@
       .top-sns-icons .sns-discord{ right:0; }
       .top-sns-icons img{ width:48px !important; height:48px !important; }
     }
-    @media (min-width: 901px){
-      .main-card{ max-width:1120px; }
-      .top-schedule-panel{ padding:14px 18px 16px; }
-      .top-schedule-header{ font-size:14px; margin-bottom:10px; }
-      .top-schedule-grid{ gap:10px; font-size:12px; }
-      .top-schedule-day{ padding:10px 10px; }
-      .top-schedule-item{ margin-bottom:9px; }
-    }
+
     .action-btn.linkon-btn{
       padding: 6px 10px;
       gap: 10px;
@@ -755,8 +748,9 @@
     The Unique &copy; 2025 · internal use only
   </div>
 
+  <!-- 탭 전환(전역 필요) -->
   <script>
-    function openTab(evt, tabName) {
+    window.openTab = function openTab(evt, tabName) {
       var i, content, tablinks;
       content = document.getElementsByClassName("tb-content");
       for (i = 0; i < content.length; i++) { content[i].classList.remove("active"); }
@@ -764,178 +758,10 @@
       for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
       document.getElementById(tabName).classList.add("active");
       evt.currentTarget.classList.add("active");
-    }
+    };
   </script>
- <script>
-/* =========================================
-   ✅ Rank + Treasure Box Gate (이름우선 + 동명ID비교)
-   - 1순위: name === currentName
-   - 동명이인(2명 이상)이면: id === currentId 로 확정
-   - Treasure Box: Pro1 이상만 열기, 아니면 경고 후 "절대" 이동 안함
-========================================= */
 
-(function () {
-  // 전역 보장
-  window.currentRankCode = window.currentRankCode || "";
-
-  const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
-  const RANK_BADGES = {
-    Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
-    Pro1:"img/pro1.png", Pro2:"img/pro2.png", Pro3:"img/pro3.png",
-    Pro4:"img/pro4.png", Pro5:"img/pro5.png", Pro6:"img/pro6.png",
-    Pro7:"img/pro7.png", Pro8:"img/pro8.png", Pro9:"img/pro9.png", Pro10:"img/pro10.png",
-    Member:"img/member.png"
-  };
-
-  function normalizeRank(raw){
-    let t = String(raw || "").trim();
-    if (!t) return "Member";
-
-    // 한글 -> 영문
-    if (t.startsWith("스타")) t = "Star" + t.replace("스타","").trim();
-    if (t.startsWith("프로")) t = "Pro" + t.replace("프로","").trim();
-
-    // 공백 제거
-    t = t.replace(/\s+/g, "");
-
-    // star1 / pro1 형태 보정
-    if (/^star\d+$/i.test(t)) return "Star" + t.replace(/^\D+/,"");
-    if (/^pro\d+$/i.test(t))  return "Pro"  + t.replace(/^\D+/,"");
-
-    // Member류
-    const u = t.toUpperCase();
-    if (u === "MEMBER" || u === "정회원" || u === "회원" || u === "일반") return "Member";
-
-    return t;
-  }
-
-  function isPro1OrHigher(rankCode){
-    const r = String(rankCode || "").toLowerCase().trim();
-    if(!r.startsWith("pro")) return false;
-    const n = parseInt(r.replace("pro",""), 10);
-    return Number.isFinite(n) && n >= 1;
-  }
-
-  // ✅ 이름 우선, 동명일 때만 id로 확정
-  function pickMeByRule(list, myName, myId){
-    const name = String(myName || "").trim();
-    const id = String(myId || "").trim();
-
-    if (!name) return null;
-
-    const sameName = list.filter(x => String(x?.name || "").trim() === name);
-    if (sameName.length === 0) return null;
-    if (sameName.length === 1) return sameName[0];
-
-    // 동명이인 → id 비교(있을 때만)
-    if (id) {
-      const byId = sameName.find(x => String(x?.id || "").trim() === id);
-      if (byId) return byId;
-    }
-
-    // 동명이인인데 id 못맞추면 첫번째(원칙상 여기까지 오면 데이터가 부족)
-    return sameName[0];
-  }
-
-  async function loadMyRank(){
-    try{
-      const myName = (window.currentName || "").toString().trim();
-      const myId   = (window.currentId || "").toString().trim();
-
-      if (!myName) return;
-
-      const res = await fetch("rank-hall.json", { cache: "no-store" });
-      if (!res.ok) return;
-
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data.members || []);
-
-      const me = pickMeByRule(list, myName, myId);
-
-      const rank = normalizeRank(me?.rank || me?.rankCode || me?.level || me?.title || "Member");
-      window.currentRankCode = rank;
-
-      // UI 반영
-      const curImg  = document.getElementById("member-rank-img");
-      const curMini = document.getElementById("member-rank-mini");
-      const nextImg = document.getElementById("next-rank-img");
-      const nextMini= document.getElementById("next-rank-mini");
-      const goalTitle = document.getElementById("goal-next-rank-title");
-
-      const curCode = (rank && rank !== "-") ? rank : "Member";
-      if (curImg)  curImg.src = RANK_BADGES[curCode] || RANK_BADGES.Member;
-      if (curMini) curMini.textContent = "현재 직급: " + (curCode === "Member" ? "정회원" : curCode);
-
-      let nextCode = "Star1";
-      const idx = RANK_ORDER.indexOf(curCode);
-      if (curCode === "Member" || idx < 0) nextCode = "Star1";
-      else if (idx < RANK_ORDER.length - 1) nextCode = RANK_ORDER[idx + 1];
-      else nextCode = "-";
-
-      if (nextImg)  nextImg.src = (nextCode !== "-" ? (RANK_BADGES[nextCode] || RANK_BADGES.Member) : RANK_BADGES.Member);
-      if (nextMini) nextMini.textContent = "다음 직급: " + (nextCode === "-" ? "-" : nextCode);
-      if (goalTitle) goalTitle.innerHTML = '다음 목표: <span>' + (nextCode === "-" ? "-" : nextCode) + '</span>';
-
-    } catch(e){
-      console.warn("loadMyRank fail:", e);
-    }
-  }
-
-  function wireRankHallClicks(){
-    const nextImg = document.getElementById("next-rank-img");
-    const nextLabel = document.getElementById("next-rank-mini");
-    const curImg = document.getElementById("member-rank-img");
-    const curLabel = document.getElementById("member-rank-mini");
-
-    function goRankHall(){ window.open("rank-hall.html", "_blank"); }
-
-    if(nextImg){ nextImg.style.cursor="pointer"; nextImg.onclick = goRankHall; }
-    if(nextLabel){ nextLabel.style.cursor="pointer"; nextLabel.onclick = goRankHall; }
-    if(curImg){ curImg.style.cursor="pointer"; curImg.onclick = goRankHall; }
-    if(curLabel){ curLabel.style.cursor="pointer"; curLabel.onclick = goRankHall; }
-  }
-
-  function wireTreasureBoxGate(){
-    const oldBtn = document.getElementById("promo-btn");
-    if(!oldBtn) return;
-
-    // ✅ 기존 onclick/리스너 제거 확실히: 교체 후 새로 단일 리스너
-    const newBtn = oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-
-    newBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-
-      // rank가 아직 없으면 로딩
-      if (!window.currentRankCode) await loadMyRank();
-
-      const rank = window.currentRankCode || "";
-      if(!isPro1OrHigher(rank)){
-        alert("Pro1 직급 이상 사용 하실 수 있습니다.");
-        return; // ✅ 여기서 끝. 절대 이동 안함
-      }
-
-      const w = window.open("the-unique-promo.html", "_blank");
-      if(!w) window.location.href = "the-unique-promo.html"; // 모바일 팝업 차단 대비
-    }, { passive: false });
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    await loadMyRank();
-    wireRankHallClicks();
-    wireTreasureBoxGate();
-
-    // 로딩 타이밍 보강
-    setTimeout(async () => {
-      await loadMyRank();
-      wireRankHallClicks();
-      wireTreasureBoxGate();
-    }, 1200);
-  });
-
-})();
-</script>
-  <!-- ====== 스케줄 로딩(기존 유지) ====== -->
+  <!-- ====== 스케줄 로딩(유지) ====== -->
   <script>
     window.handleScheduleSheet = function handleScheduleSheet(resp) {
       try {
@@ -1001,751 +827,778 @@
         }
       }
     };
+    setTimeout(() => {
+      const emptyEl = document.getElementById("top-schedule-empty");
+      const gridEl = document.getElementById("top-schedule-grid");
+      const hasItems = gridEl && gridEl.children && gridEl.children.length > 0;
+      if (emptyEl && emptyEl.style.display !== "none" && !hasItems) {
+        emptyEl.textContent = "주간 스케쥴을 불러오지 못했습니다. (docs.google.com 차단/확장프로그램 확인)";
+      }
+    }, 5000);
   </script>
   <script src="https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet"></script>
 
   <!-- =======================================================
-       ✅ 핵심 로직: 시트(UT) + Supabase(총기부) => UT 가격 동적 계산
+       ✅ 메인 로직 (단일 스크립트)
        ======================================================= -->
   <script>
-  /*****************
-   * Supabase (promo.html과 동일)
-   *****************/
-  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  (function () {
+    /* ==========
+       설정
+    ========== */
+    const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-  /*****************
-   * Apps Script URL
-   * ✅ 여기만 “최신 /exec”로 맞추면 됨
-   *****************/
-  const GOOGLE_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+    // ✅ 너의 Apps Script Web App 배포 URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ JSONP (exec/echo 둘 다 대응)
-  function api(action, params = {}) {
-    return new Promise((resolve, reject) => {
-      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-      params.action = action;
-      params.callback = cb;
-      params._t = Date.now();
+    const UT_PRICE_FACTOR = 0.30; // 총기부USDT의 30% / 총UT
 
-      const qs = new URLSearchParams(params).toString();
-      const s = document.createElement("script");
-      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
-      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
+    const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
+    const RANK_BADGES = {
+      Member:"img/member.png",
+      Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
+      Pro1:"img/pro1.png", Pro2:"img/pro2.png", Pro3:"img/pro3.png",
+      Pro4:"img/pro4.png", Pro5:"img/pro5.png", Pro6:"img/pro6.png",
+      Pro7:"img/pro7.png", Pro8:"img/pro8.png", Pro9:"img/pro9.png", Pro10:"img/pro10.png"
+    };
+    const RANK_REQUIRED = {
+      Star1:{left:2,right:1},
+      Star2:{left:7,right:7},
+      Star3:{left:15,right:15},
+      Pro1:{left:40,right:40},
+      Pro2:{left:80,right:80},
+      Pro3:{left:150,right:150},
+      Pro4:{left:250,right:250},
+      Pro5:{left:400,right:400},
+      Pro6:{left:650,right:650},
+      Pro7:{left:1000,right:1000},
+      Pro8:{left:2000,right:2000},
+      Pro9:{left:3000,right:3000},
+      Pro10:{left:4000,right:4000},
+    };
 
-      const t = setTimeout(() => {
-        cleanup();
-        reject(new Error("API timeout"));
-      }, 12000);
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      window[cb] = (data) => { cleanup(); resolve(data); };
-      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+    const state = {
+      donationUSDT: 0,
+      totalUT: 0,
+      utPrice: 0.02,
+      videoReward: 22,
+      ebookReward: 1,
+      luckyMin: 1,
+      luckyMax: 100,
+      currentRankCode: "Member",
+      user: null,
+    };
 
-      function cleanup() {
-        clearTimeout(t);
-        try { delete window[cb]; } catch(e){}
-        try { s.remove(); } catch(e){}
-      }
-      document.body.appendChild(s);
-    });
-  }
-
-  /*****************
-   * 로그인 유저 로드
-   *****************/
-  const raw = localStorage.getItem("uniqueCurrentUser");
-  if (!raw) window.location.href = "the-unique-gate.html";
-
-  let currentId="", currentName="", currentTeam="", currentJoin="", currentNick="";
-  let isHQ = false;
-
-  try {
-    const user = JSON.parse(raw || "{}");
-    currentName = user.name || "";
-    window.currentId = currentId;
-    window.currentName = currentName;
-    
-     if (user.balance !== undefined) localStorage.setItem("myUtPoints", user.balance);
-  } catch(e) {
-    console.error(e);
-    window.location.href = "the-unique-gate.html";
-  }
-
-  /*****************
-   * 상태값 (가격/보상)
-   *****************/
-  const UT_PRICE_FACTOR = 0.30; // 30%
-  const state = {
-    donationUSDT: 0,
-    totalUT: 0,
-    utPrice: 0.02,
-    videoReward: 22,
-    ebookReward: 1,
-    luckyMin: 1,
-    luckyMax: 100
-  };
-
-  /*****************
-   * Supabase: 총 기부 USDT 합산
-   *****************/
-  async function fetchDonationUSDTFromSupabase() {
-    try {
-      const { data, error } = await db.from("profiles").select("donation_total");
-      if (error) throw error;
-      return (data || []).reduce((acc, r) => acc + (Number(r.donation_total) || 0), 0);
-    } catch (e) {
-      console.warn("donation_total sum failed:", e);
-      return 0;
+    /* ==========
+       공통 유틸
+    ========== */
+    function safeJsonParse(s, fallback=null){ try { return JSON.parse(s||""); } catch(_) { return fallback; } }
+    function getUser(){
+      return safeJsonParse(localStorage.getItem("uniqueCurrentUser"), null);
     }
-  }
-
-  /*****************
-   * Sheet: 총 UT 발행량(getStats)
-   *****************/
-  async function fetchTotalUTFromSheet() {
-    try {
-      const r = await api("getStats", {});
-      if (r && r.ok && r.stats) {
-        if (Number.isFinite(Number(r.stats.total_ut_supply))) return Number(r.stats.total_ut_supply);
-        if (Number.isFinite(Number(r.stats.total_ut))) return Number(r.stats.total_ut);
-      }
-    } catch(e) {
-      console.warn("getStats fail:", e);
+    function setUser(u){
+      localStorage.setItem("uniqueCurrentUser", JSON.stringify(u));
     }
-    return 0;
-  }
-
-  /*****************
-   * Sheet: 보상 설정(getConfig)
-   *****************/
-  async function refreshRewardConfigFromSheet() {
-    try {
-      const r = await api("getConfig", {});
-      if (r && r.ok && r.config) {
-        const cfg = r.config;
-        if (Number.isFinite(Number(cfg.VIDEO_REWARD))) state.videoReward = Math.floor(Number(cfg.VIDEO_REWARD));
-        if (Number.isFinite(Number(cfg.EBOOK_REWARD))) state.ebookReward = Math.floor(Number(cfg.EBOOK_REWARD));
-        if (Number.isFinite(Number(cfg.LUCKY_MIN))) state.luckyMin = Math.floor(Number(cfg.LUCKY_MIN));
-        if (Number.isFinite(Number(cfg.LUCKY_MAX))) state.luckyMax = Math.floor(Number(cfg.LUCKY_MAX));
-        if (state.luckyMax < state.luckyMin) state.luckyMax = state.luckyMin;
-      }
-    } catch(e){}
-
-    const badge = document.getElementById("mining-badge");
-    if (badge) badge.textContent = `Daily +${state.videoReward} UT`;
-  }
-
-  /*****************
-   * 가격 갱신: (총기부USDT * 0.30) / 총UT
-   *****************/
-  async function refreshPricing() {
-    state.donationUSDT = await fetchDonationUSDTFromSupabase();
-    state.totalUT = await fetchTotalUTFromSheet();
-    if (state.totalUT > 0) state.utPrice = (state.donationUSDT * UT_PRICE_FACTOR) / state.totalUT;
-    else state.utPrice = 0.02;
-
-    if (!Number.isFinite(state.utPrice) || state.utPrice <= 0) state.utPrice = 0.02;
-  }
-  function getUTPrice() { return state.utPrice; }
-
-  /*****************
-   * 로컬 저장 (시트 -> 로컬)
-   *****************/
-  function applyUserToLocal(u){
-    const idLower = (u.id || "").toLowerCase();
-    localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-      id: idLower,
-      name: u.name || "",
-      nickname: u.nickname || "",
-      team: u.team || "",
-      joinedAt: u.joinedAt || "",
-      balance: Number(u.balance || 0)
-    }));
-    localStorage.setItem("myUtPoints", Number(u.balance || 0));
-
-    const nickKey = "myNickname_" + idLower;
-    if ((u.nickname || "").trim()) localStorage.setItem(nickKey, (u.nickname || "").trim());
-    else localStorage.removeItem(nickKey);
-  }
-
-  async function refreshFromSheet(){
-    if (!currentId) return;
-    const r = await api("getUser", { id: currentId });
-    if (!r || !r.ok || !r.user) return;
-    applyUserToLocal(r.user);
-    updateNicknameButtonUI();
-  }
-
-  /*****************
-   * UI 업데이트
-   *****************/
-  function updateWalletUI() {
-    const myUtDisplay = document.getElementById("my-ut-display");
-    const myUsdtDisplay = document.getElementById("my-usdt-display");
-    const rateLine = document.getElementById("ut-rate-line");
-    if (!myUtDisplay) return;
-
-    const currentUT = parseFloat(localStorage.getItem("myUtPoints") || "0");
-    myUtDisplay.textContent = currentUT.toFixed(2);
-
-    const price = getUTPrice();
-    const usdtValue = (currentUT * price).toFixed(2);
-    if (myUsdtDisplay) myUsdtDisplay.textContent = `≈ ${usdtValue} USDT 가치`;
-    if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (기부합×0.3/총UT)`;
-  }
-
-  /*****************
-   * 닉네임 버튼/UI + 등록
-   * ✅ onclick에서 호출되므로 window에 걸어둠
-   *****************/
-  function updateNicknameButtonUI(){
-    const btn = document.getElementById("btn-nick-reg");
-    if (!btn) return;
-
-    const savedNick = localStorage.getItem("myNickname_" + currentId) || "";
-    if (savedNick) {
-      btn.textContent = "닉네임: " + savedNick;
-      btn.classList.add("done");
-      btn.onclick = null;
-    } else {
-      btn.textContent = "닉네임 등록";
-      btn.classList.remove("done");
-      btn.onclick = window.registerNickname;
+    function isHQ(){
+      const u = state.user || getUser() || {};
+      const team = String(u.team || "").trim();
+      const name = String(u.name || "").trim();
+      return team === "HQ" || (name && team && name === team);
     }
-  }
-
-  window.registerNickname = async function(){
-    if (!currentId) return alert("로그인 정보가 없습니다. 다시 로그인해 주세요.");
-
-    const already = localStorage.getItem("myNickname_" + currentId);
-    if (already) return alert("이미 등록된 닉네임입니다.");
-
-    const newNickRaw = prompt("송금에 사용할 닉네임을 입력하세요.\n(변경 불가, 신중히 입력)");
-    if (!newNickRaw) return;
-    const newNick = newNickRaw.trim();
-    if (!newNick) return;
-
-    if (!confirm(`'${newNick}' (으)로 설정하시겠습니까?`)) return;
-
-    const btn = document.getElementById("btn-nick-reg");
-    const prev = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.textContent = "처리 중..."; }
-
-    try {
-      const r = await api("setNickname", { id: currentId, nickname: newNick });
-      if (!r || !r.ok || !r.user) throw new Error(r?.error || "닉네임 저장 실패");
-
-      applyUserToLocal(r.user);
-      updateNicknameButtonUI();
-
-      // 시트 최신값으로 한번 더 확인
-      await refreshFromSheet();
-
-      alert("닉네임이 저장되었습니다.");
-    } catch (e) {
-      console.error(e);
-      alert("저장 실패: " + (e.message || e));
-    } finally {
-      if (btn) btn.disabled = false;
-      // 버튼 글씨 다시 정리
-      updateNicknameButtonUI();
-      if (!localStorage.getItem("myNickname_" + currentId) && btn) btn.textContent = prev || "닉네임 등록";
-    }
-  };
-
-  /*****************
-   * UT 증감 / 송금 (시트 기준)
-   *****************/
-  async function addUt(delta){
-    const r = await api("addBalance", { id: currentId, delta });
-    if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT update failed");
-    applyUserToLocal(r.user);
-
-    await refreshPricing();
-    updateWalletUI();
-    return Number(r.user.balance || 0);
-  }
-
-  window.sendP2P = async function(){
-    const receiver = (document.getElementById("p2p-receiver").value || "").trim();
-    const amount = Number(document.getElementById("p2p-amount").value);
-
-    if (!currentId) return alert("로그인 정보가 없습니다. 다시 로그인해 주세요.");
-    if (!receiver) return alert("받는 분 닉네임을 입력하세요.");
-    if (!Number.isFinite(amount) || amount <= 0) return alert("보낼 수량(UT)을 올바르게 입력하세요.");
-
-    const myBal = Number(localStorage.getItem("myUtPoints") || 0);
-    if (amount > myBal) return alert("잔액 부족");
-
-    if (!confirm(`${receiver}님에게 ${amount} UT를 송금하시겠습니까?`)) return;
-
-    const btn = document.querySelector(".transfer-btn");
-    const prev = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.textContent = "처리 중..."; }
-
-    try {
-      const r = await api("transfer", { fromId: currentId, toNickname: receiver, amount });
-      if (!r || !r.ok) throw new Error(r?.error || "송금 실패");
-
-      if (r.fromUser) applyUserToLocal(r.fromUser);
-
-      await refreshFromSheet();
-      await refreshPricing();
-      updateWalletUI();
-
-      alert("송금 완료");
-      document.getElementById("p2p-amount").value = "";
-    } catch (e) {
-      console.error(e);
-      alert("송금 오류: " + (e.message || e));
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = prev || "송금하기"; }
-    }
-  };
-
-  /*****************
-   * KST 날짜
-   *****************/
-  function getTodayKST() {
-    const now = new Date();
-    const kstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    const year = kstDate.getFullYear();
-    const month = String(kstDate.getMonth() + 1).padStart(2, "0");
-    const day = String(kstDate.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  /*****************
-   * YouTube API 로드 + 보상
-   *****************/
-  (function loadYouTubeApi(){
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    const first = document.getElementsByTagName("script")[0];
-    first.parentNode.insertBefore(tag, first);
-  })();
-
-  window.onYouTubeIframeAPIReady = function() {
-    const KEY = "mining_video_claim_date";
-    const today = getTodayKST();
-
-    const statusText = document.getElementById("yt-status-text");
-    const rewardBtn  = document.getElementById("btn-claim-video-reward");
-
-    const last = localStorage.getItem(KEY);
-    if (last === today) {
-      if (statusText) { statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)"; statusText.className="mining-status done"; }
-      if (rewardBtn)  { rewardBtn.textContent = "오늘 보상 완료"; rewardBtn.disabled = true; rewardBtn.classList.remove("ready"); }
-    } else {
-      if (rewardBtn)  { rewardBtn.textContent = "학습 보상 받기 (대기중)"; rewardBtn.disabled = true; }
+    function getTodayKST(){
+      const now = new Date();
+      const kst = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+      const y = kst.getFullYear();
+      const m = String(kst.getMonth()+1).padStart(2,"0");
+      const d = String(kst.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
     }
 
-    new YT.Player("youtube-player", {
-      height:"100%",
-      width:"100%",
-      videoId:"Dn3JMfy6Nxg",
-      playerVars: { origin: window.location.origin, rel: 0, playsinline: 1 },
-      events: {
-        onStateChange: function(ev){
-          const today = getTodayKST();
-          const last = localStorage.getItem(KEY);
+    function normNick(v){
+      return String(v||"")
+        .replace(/[\u200B-\u200D\uFEFF]/g,"")
+        .replace(/\s+/g," ")
+        .trim();
+    }
 
-          if (ev.data === YT.PlayerState.PLAYING && last !== today) {
-            if (statusText) { statusText.textContent = "🔥 시청 중... 끝까지 보세요!"; statusText.className="mining-status"; }
-          }
-          if (ev.data === YT.PlayerState.ENDED && last !== today) {
-            if (rewardBtn) { rewardBtn.textContent="보상을 받을 준비가 완료 됐습니다"; rewardBtn.disabled=false; rewardBtn.classList.add("ready"); }
-            if (statusText) { statusText.textContent="✅ 시청 완료! 왼쪽 버튼을 눌러 보상을 받으세요."; statusText.className="mining-status done"; }
-          }
+    function normalizeRank(raw){
+      let t = String(raw||"").trim();
+      if (!t) return "Member";
+      const u = t.toUpperCase().replace(/\s+/g,"");
+      if (u === "MEMBER" || u === "정회원" || u === "회원" || u === "일반") return "Member";
+      if (u.startsWith("STAR")) return "Star" + u.replace("STAR","").replace(/[^\d]/g,"");
+      if (u.startsWith("PRO"))  return "Pro"  + u.replace("PRO","").replace(/[^\d]/g,"");
+      if (t.startsWith("스타")) return "Star" + t.replace("스타","").trim().replace(/[^\d]/g,"");
+      if (t.startsWith("프로")) return "Pro"  + t.replace("프로","").trim().replace(/[^\d]/g,"");
+      return t.replace(/\s+/g,"");
+    }
+    function isPro1OrHigher(rankCode){
+      const r = String(rankCode||"").trim();
+      if (!/^Pro\d+$/i.test(r)) return false;
+      const n = parseInt(r.replace(/pro/i,""), 10);
+      return Number.isFinite(n) && n >= 1;
+    }
+
+    function jsonp(action, params={}){
+      return new Promise((resolve, reject) => {
+        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        params.action = action;
+        params.callback = cb;
+        params._t = Date.now();
+
+        const qs = new URLSearchParams(params).toString();
+        const s = document.createElement("script");
+        const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
+        s.src = GOOGLE_SCRIPT_URL + joiner + qs;
+
+        const t = setTimeout(() => {
+          cleanup();
+          reject(new Error("API timeout"));
+        }, 12000);
+
+        window[cb] = (data) => { cleanup(); resolve(data); };
+        s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(_){}
+          try{ s.remove(); }catch(_){}
         }
-      }
-    });
-  };
-
-  /*****************
-   * DOMContentLoaded 초기화
-   *****************/
-  document.addEventListener("DOMContentLoaded", async () => {
-    // 상단 정보 채우기
-    isHQ = !!(currentName && currentTeam && currentName === currentTeam);
-    const helloEl = document.getElementById("member-hello");
-    if (helloEl) helloEl.textContent = (currentName || currentId || "멤버") + "님, 오늘도 성장하러 오셨군요.";
-
-    const nameEl = document.getElementById("member-name");
-    if (nameEl) nameEl.textContent = currentId || "Unknown";
-
-    const teamEl = document.getElementById("member-team");
-    if (teamEl) teamEl.textContent = isHQ ? "소속: HQ" : (currentTeam ? "소속: " + currentTeam : "소속: -");
-
-    const tbUserEl = document.getElementById("tb-user-name");
-    if (tbUserEl) tbUserEl.textContent = currentName || currentId;
-
-    // 닉네임 초기 반영
-    if ((currentNick || "").trim()) localStorage.setItem("myNickname_" + currentId, currentNick.trim());
-    updateNicknameButtonUI();
-
-    // 초기: 시트/설정/가격/UI
-    await refreshFromSheet();
-    await refreshRewardConfigFromSheet();
-    await refreshPricing();
-    updateWalletUI();
-
-       // 링크 버튼
-    const travelBtn = document.getElementById("travel-btn");
-    if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
-
-    const sotBtn = document.getElementById("sot-btn");
-    if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-
-    const linkonBtn = document.getElementById("ppt-form-btn");
-    if (linkonBtn) linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
-
-    // 로그아웃
-    const logoutBtn = document.getElementById("logout-btn");
-    if (logoutBtn) logoutBtn.addEventListener("click", () => {
-      if (confirm("로그아웃 하시겠습니까?")) {
-        localStorage.removeItem("uniqueCurrentUser");
-        window.location.href = "the-unique-gate.html";
-      }
-    });
-
-    // 학습 보상 버튼
-    const rewardBtn = document.getElementById("btn-claim-video-reward");
-    if (rewardBtn) {
-      rewardBtn.addEventListener("click", async function(){
-        const KEY = "mining_video_claim_date";
-        const today = getTodayKST();
-        if (localStorage.getItem(KEY) === today) return;
-
-        this.disabled = true;
-        const prev = this.textContent;
-        this.textContent = "지급 중...";
-
-        try{
-          await addUt(state.videoReward);
-          localStorage.setItem(KEY, today);
-
-          this.textContent = "오늘 보상 완료";
-          this.classList.remove("ready");
-
-          const statusText = document.getElementById("yt-status-text");
-          if (statusText) { statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)"; statusText.className="mining-status done"; }
-
-          alert(`🎉 ${state.videoReward} UT가 지급되었습니다!`);
-        } catch(e){
-          console.error(e);
-          this.disabled = false;
-          this.textContent = prev || "학습 보상 받기";
-          alert("보상 지급 실패: " + (e.message || e));
-        }
+        document.body.appendChild(s);
       });
     }
 
-    // 럭키박스
-    const luckyBtn = document.getElementById("btn-lucky-box");
-    if (luckyBtn) {
-      const KEY = "lucky_box_claim_date";
-      const today = getTodayKST();
-      if (localStorage.getItem(KEY) === today) {
-        luckyBtn.disabled = true;
-        luckyBtn.textContent = "오늘의 행운 완료 (내일 다시)";
+    /* ==========
+       UI 바인딩
+    ========== */
+    function updateNicknameButton(){
+      const btn = document.getElementById("btn-nick-reg");
+      if (!btn) return;
+      const u = state.user || getUser() || {};
+      const id = String(u.id || "").toLowerCase().trim();
+      const savedNick = (id ? localStorage.getItem("myNickname_" + id) : "") || "";
+      if (savedNick) {
+        btn.textContent = "닉네임: " + savedNick;
+        btn.classList.add("done");
+        btn.onclick = null;
+      } else {
+        btn.textContent = "닉네임 등록";
+        btn.classList.remove("done");
+        btn.onclick = window.registerNickname;
       }
-
-      luckyBtn.addEventListener("click", async function(){
-        const today = getTodayKST();
-        if (localStorage.getItem(KEY) === today) return;
-
-        const reward = Math.floor(Math.random() * (state.luckyMax - state.luckyMin + 1)) + state.luckyMin;
-
-        this.disabled = true;
-        const prev = this.textContent;
-        this.textContent = "지급 중...";
-
-        try{
-          await addUt(reward);
-          localStorage.setItem(KEY, today);
-          this.textContent = "오늘의 행운 완료";
-          alert(`🎁 럭키박스 당첨! +${reward} UT 지급되었습니다.`);
-        } catch(e){
-          console.error(e);
-          this.disabled = false;
-          this.textContent = prev || "🎁 데일리 럭키박스 (1일 1회)";
-          alert("럭키박스 지급 실패: " + (e.message || e));
-        }
-      });
     }
 
-    // 30초마다 시트/보상설정/가격/UI 갱신
-    setInterval(async () => {
-      await refreshFromSheet();
-      await refreshRewardConfigFromSheet();
-      await refreshPricing();
+    function updateWalletUI(){
+      const myUtEl = document.getElementById("my-ut-display");
+      const myUsdtEl = document.getElementById("my-usdt-display");
+      const rateLine = document.getElementById("ut-rate-line");
+      if (!myUtEl) return;
+
+      const ut = parseFloat(localStorage.getItem("myUtPoints") || "0");
+      myUtEl.textContent = ut.toFixed(2);
+
+      const price = (Number.isFinite(state.utPrice) && state.utPrice > 0) ? state.utPrice : 0.02;
+      if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut*price).toFixed(2)} USDT 가치`;
+      if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (기부합×0.3/총UT)`;
+    }
+
+    function updateHeaderUI(){
+      const u = state.user || getUser() || {};
+      const id = String(u.id || "").trim();
+      const name = String(u.name || "").trim();
+      const team = String(u.team || "").trim();
+
+      const hello = document.getElementById("member-hello");
+      if (hello) hello.textContent = (name || id || "멤버") + "님, 오늘도 성장하러 오셨군요.";
+
+      const memberName = document.getElementById("member-name");
+      if (memberName) memberName.textContent = id || "Unknown";
+
+      const teamEl = document.getElementById("member-team");
+      if (teamEl) {
+        if (isHQ()) teamEl.textContent = "소속: HQ";
+        else teamEl.textContent = team ? "소속: " + team : "소속: -";
+      }
+
+      const tbUser = document.getElementById("tb-user-name");
+      if (tbUser) tbUser.textContent = name || id || "User";
+
+      // HQ 아니면 eBook 관리자 숨김
+      const adminLink = document.getElementById("ebook-admin-link");
+      if (adminLink && !isHQ()) adminLink.style.display = "none";
+    }
+
+    /* ==========
+       시트 ↔ 로컬 동기화
+    ========== */
+    function applyUserFromSheet(user){
+      const idLower = String(user.id || "").toLowerCase().trim();
+      const payload = {
+        id: idLower,
+        name: user.name || "",
+        nickname: user.nickname || "",
+        team: user.team || "",
+        joinedAt: user.joinedAt || "",
+        balance: Number(user.balance || 0)
+      };
+      state.user = payload;
+      setUser(payload);
+      localStorage.setItem("myUtPoints", String(payload.balance));
+
+      const nickKey = "myNickname_" + idLower;
+      if ((payload.nickname || "").trim()) localStorage.setItem(nickKey, payload.nickname.trim());
+      else localStorage.removeItem(nickKey);
+    }
+
+    async function refreshUserFromSheet(){
+      const u = state.user || getUser();
+      if (!u || !u.id) return;
+
+      const r = await jsonp("getUser", { id: u.id });
+      if (r && r.ok && r.user) {
+        applyUserFromSheet(r.user);
+        updateHeaderUI();
+        updateNicknameButton();
+        updateWalletUI();
+      }
+    }
+
+    /* ==========
+       가격/보상 설정
+    ========== */
+    async function refreshDonationFromSupabase(){
+      try{
+        const { data, error } = await db.from("profiles").select("donation_total");
+        if (error) throw error;
+        state.donationUSDT = (data || []).reduce((acc, r) => acc + (Number(r.donation_total) || 0), 0);
+      } catch(e){
+        console.warn("supabase donation_total sum fail:", e);
+        state.donationUSDT = 0;
+      }
+    }
+
+    async function refreshStatsFromSheet(){
+      try{
+        const r = await jsonp("getStats", {});
+        if (r && r.ok && r.stats) {
+          const total = Number(r.stats.total_ut_supply ?? r.stats.total_ut ?? 0);
+          const price = Number(r.stats.ut_price ?? 0);
+          state.totalUT = Number.isFinite(total) ? total : 0;
+          // 서버가 ut_price를 주면 우선 사용, 아니면 아래 계산으로
+          if (Number.isFinite(price) && price > 0) state.utPrice = price;
+        }
+      } catch(e){
+        console.warn("getStats fail:", e);
+        state.totalUT = 0;
+      }
+    }
+
+    async function refreshRewardConfig(){
+      try{
+        const r = await jsonp("getConfig", {});
+        if (r && r.ok && r.config) {
+          const cfg = r.config;
+          const vr = Number(cfg.VIDEO_REWARD);
+          const er = Number(cfg.EBOOK_REWARD);
+          const lm = Number(cfg.LUCKY_MIN);
+          const lx = Number(cfg.LUCKY_MAX);
+          if (Number.isFinite(vr)) state.videoReward = Math.floor(vr);
+          if (Number.isFinite(er)) state.ebookReward = Math.floor(er);
+          if (Number.isFinite(lm)) state.luckyMin = Math.floor(lm);
+          if (Number.isFinite(lx)) state.luckyMax = Math.floor(lx);
+          if (state.luckyMax < state.luckyMin) state.luckyMax = state.luckyMin;
+        }
+      } catch(_){}
+
+      const badge = document.getElementById("mining-badge");
+      if (badge) badge.textContent = `Daily +${state.videoReward} UT`;
+    }
+
+    async function refreshPricing(){
+      await refreshDonationFromSupabase();
+      await refreshStatsFromSheet();
+
+      // 서버가 ut_price를 안 주면 여기서 계산
+      if (!(Number.isFinite(state.utPrice) && state.utPrice > 0)) {
+        if (state.totalUT > 0) state.utPrice = (state.donationUSDT * UT_PRICE_FACTOR) / state.totalUT;
+        else state.utPrice = 0.02;
+      }
+      if (!Number.isFinite(state.utPrice) || state.utPrice <= 0) state.utPrice = 0.02;
+
       updateWalletUI();
-    }, 30000);
-  });
-  
-  // ✅ HQ는 무조건 통과
-  // 1) team이 'HQ'로 저장돼 있으면 통과
-  // 2) 또는 기존 로직처럼 (이름===소속) 이 HQ로 보는 규칙이면 통과
-  const rawUser = localStorage.getItem("uniqueCurrentUser") || "{}";
-  let u = {};
-  try { u = JSON.parse(rawUser); } catch(_) {}
+    }
 
-  const team = String(u.team || "").trim();
-  const name = String(u.name || "").trim();
-  const isHQ = (team === "HQ") || (name && team && name === team);
+    /* ==========
+       직급: rank-hall.json (이름우선, 동명이인만 id)
+    ========== */
+    function pickMeByNameThenId(list, myName, myId){
+      const name = String(myName||"").trim();
+      const id = String(myId||"").trim();
+      if (!name) return null;
 
-  if (isHQ) {
-    const w = window.open("the-unique-promo.html", "_blank");
-    if(!w) window.location.href = "the-unique-promo.html";
-    return false;
-  }
+      const sameName = list.filter(x => String(x?.name||"").trim() === name);
+      if (sameName.length === 0) return null;
+      if (sameName.length === 1) return sameName[0];
 
-  // ✅ HQ가 아니면 Pro1 이상만 통과
-  const rank = (window.currentRankCode || "").toString();
-  if(!isPro1OrHigher(rank)){
-    alert("Pro1 직급 이상 사용 하실 수 있습니다.");
-    return false; // ✅ 절대 이동 안함
-  }
+      if (id) {
+        const byId = sameName.find(x => String(x?.id||"").trim() === id);
+        if (byId) return byId;
+      }
+      return sameName[0];
+    }
 
-  const w = window.open("the-unique-promo.html", "_blank");
-  if(!w) window.location.href = "the-unique-promo.html";
-  return false;
-};
+    function applyRankToUI(rank){
+      const curImg = document.getElementById("member-rank-img");
+      const curMini = document.getElementById("member-rank-mini");
+      const nextImg = document.getElementById("next-rank-img");
+      const nextMini = document.getElementById("next-rank-mini");
+      const goalTitle = document.getElementById("goal-next-rank-title");
+      const leftEl = document.getElementById("goal-left-count");
+      const rightEl = document.getElementById("goal-right-count");
 
-  function patch(){
-    const oldBtn = document.getElementById("promo-btn");
-    if(!oldBtn) return;
+      const curCode = rank && rank !== "-" ? rank : "Member";
+      if (curImg) curImg.src = RANK_BADGES[curCode] || RANK_BADGES.Member;
+      if (curMini) curMini.textContent = "현재 직급: " + (curCode === "Member" ? "정회원" : curCode);
 
-    // 기존 이벤트 싹 날리기: 버튼 교체
-    const newBtn = oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+      let nextCode = "Star1";
+      const idx = RANK_ORDER.indexOf(curCode);
+      if (curCode === "Member" || idx < 0) nextCode = "Star1";
+      else if (idx < RANK_ORDER.length - 1) nextCode = RANK_ORDER[idx+1];
+      else nextCode = "-";
 
-    newBtn.onclick = function(e){
+      if (nextImg) nextImg.src = (nextCode !== "-" ? (RANK_BADGES[nextCode] || RANK_BADGES.Member) : RANK_BADGES.Member);
+      if (nextMini) nextMini.textContent = "다음 직급: " + (nextCode === "-" ? "-" : nextCode);
+      if (goalTitle) goalTitle.innerHTML = '다음 목표: <span>' + (nextCode === "-" ? "-" : nextCode) + '</span>';
+
+      const req = RANK_REQUIRED[nextCode];
+      if (req && leftEl && rightEl) {
+        leftEl.textContent = String(req.left);
+        rightEl.textContent = String(req.right);
+      } else if (leftEl && rightEl && nextCode === "Star1") {
+        leftEl.textContent = "2";
+        rightEl.textContent = "1";
+      }
+    }
+
+    async function loadMyRank(){
+      const u = state.user || getUser() || {};
+      const myName = String(u.name||"").trim();
+      const myId = String(u.id||"").trim(); // 동명이인일 때만 의미
+      if (!myName) {
+        state.currentRankCode = "Member";
+        applyRankToUI("Member");
+        return;
+      }
+      try{
+        const res = await fetch("rank-hall.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("rank-hall.json load fail");
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.members || []);
+        const me = pickMeByNameThenId(list, myName, myId);
+        const rank = normalizeRank(me?.rank || "Member");
+        state.currentRankCode = rank;
+        window.currentRankCode = rank; // 외부 확인용
+        applyRankToUI(rank);
+      } catch(e){
+        console.warn("loadMyRank error:", e);
+        state.currentRankCode = "Member";
+        window.currentRankCode = "Member";
+        applyRankToUI("Member");
+      }
+    }
+
+    /* ==========
+       금고/직급 클릭 (CAPTURE로 꼬임 방지)
+    ========== */
+    function onRankClickCapture(e){
+      const hit = e.target && e.target.closest && e.target.closest("#next-rank-img,#next-rank-mini,#member-rank-img,#member-rank-mini");
+      if (!hit) return;
       e.preventDefault();
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      window.open("rank-hall.html", "_blank");
+    }
+
+    async function onPromoClickCapture(e){
+      const btn = e.target && e.target.closest && e.target.closest("#promo-btn");
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
       e.stopPropagation();
 
-      const rank = window.currentRankCode || "";
-      if(!isPro1OrHigher(rank)){
+      // ✅ HQ는 무조건 통과
+      if (isHQ()){
+        const w = window.open("the-unique-promo.html", "_blank");
+        if (!w) window.location.href = "the-unique-promo.html";
+        return;
+      }
+
+      // rank 최신화
+      if (!state.currentRankCode) await loadMyRank();
+
+      if (!isPro1OrHigher(state.currentRankCode)){
         alert("Pro1 직급 이상 사용 하실 수 있습니다.");
-        return false;
+        return; // ✅ 절대 이동 안 함
       }
 
       const w = window.open("the-unique-promo.html", "_blank");
-      if(!w) window.location.href = "the-unique-promo.html";
-      return false;
+      if (!w) window.location.href = "the-unique-promo.html";
+    }
+
+    document.addEventListener("click", onRankClickCapture, true);
+    document.addEventListener("click", onPromoClickCapture, true);
+
+    /* ==========
+       닉네임 등록 / 송금 / UT 증감 (전역 노출)
+    ========== */
+    window.registerNickname = async function registerNickname(){
+      const u = state.user || getUser();
+      if (!u || !u.id) return alert("로그인 정보가 없습니다. 다시 로그인해 주세요.");
+
+      const idLower = String(u.id||"").toLowerCase().trim();
+      const already = localStorage.getItem("myNickname_" + idLower);
+      if (already) return alert("이미 등록된 닉네임입니다.");
+
+      const rawNick = prompt("송금에 사용할 닉네임을 입력하세요.\n(변경 불가, 신중히 입력)");
+      if (!rawNick) return;
+      const nickname = normNick(rawNick);
+      if (!nickname) return;
+
+      if (!confirm(`'${nickname}' (으)로 설정하시겠습니까?`)) return;
+
+      const btn = document.getElementById("btn-nick-reg");
+      const prev = btn ? btn.textContent : "";
+      if (btn) { btn.disabled = true; btn.textContent = "처리 중..."; }
+
+      try{
+        const r = await jsonp("setNickname", { id: idLower, nickname });
+        if (!r || !r.ok || !r.user) throw new Error(r?.error || "닉네임 저장 실패");
+
+        applyUserFromSheet(r.user);
+        updateHeaderUI();
+        updateNicknameButton();
+        alert("닉네임이 저장되었습니다.");
+      } catch(e){
+        console.error(e);
+        alert("저장 실패: " + (e.message || e));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = prev; }
+        updateNicknameButton();
+      }
     };
-  }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    patch();
-    setTimeout(patch, 1200); // 늦게 붙는 이벤트도 제거
-  });
-})();
-</script>
-  <script>
-/* =========================================
-   ✅ Rank + Treasure Box Gate (최종/단일 권한)
-   - 1순위: rank-hall.json에서 name === (uniqueCurrentUser.name)
-   - 동명 2인 이상일 때만 id 비교 (uniqueCurrentUser.id)
-   - HQ는 모든 제약 무시(무조건 통과)
-   - Treasure Box는 Pro1 이상만 통과, 아니면 경고 후 절대 이동 안함
-   - promo-btn 클릭에 붙은 "모든 기존 핸들러"를 캡처링 단계에서 차단
-========================================= */
-(function () {
-  // ---------- helpers ----------
-  function safeJsonParse(s, fallback={}) { try { return JSON.parse(s||""); } catch(_) { return fallback; } }
-  function getUser() { return safeJsonParse(localStorage.getItem("uniqueCurrentUser"), {}); }
-
-  function isHQ() {
-    const u = getUser();
-    const team = String(u.team || "").trim();
-    const name = String(u.name || "").trim();
-    // HQ 규칙 2개 모두 지원
-    return team === "HQ" || (name && team && name === team);
-  }
-
-  function normalizeRank(raw){
-    let t = String(raw || "").trim();
-    if (!t) return "Member";
-
-    // normalize casing like "PRO1" -> "Pro1", "STAR2" -> "Star2"
-    const u = t.toUpperCase().replace(/\s+/g, "");
-    if (u === "MEMBER" || u === "정회원" || u === "회원" || u === "일반") return "Member";
-    if (u.startsWith("STAR")) return "Star" + u.replace("STAR","").replace(/[^\d]/g,"");
-    if (u.startsWith("PRO"))  return "Pro"  + u.replace("PRO","").replace(/[^\d]/g,"");
-
-    // 한글 스타/프로
-    if (t.startsWith("스타")) return "Star" + t.replace("스타","").trim().replace(/[^\d]/g,"");
-    if (t.startsWith("프로")) return "Pro"  + t.replace("프로","").trim().replace(/[^\d]/g,"");
-
-    // fallback
-    return t.replace(/\s+/g,"");
-  }
-
-  function isPro1OrHigher(rankCode){
-    const r = String(rankCode || "").trim();
-    if (!/^Pro\d+$/i.test(r)) return false;
-    const n = parseInt(r.replace(/pro/i,""), 10);
-    return Number.isFinite(n) && n >= 1;
-  }
-
-  function pickMeByNameThenId(list, myName, myId){
-    const name = String(myName || "").trim();
-    const id   = String(myId || "").trim();
-
-    if (!name) return null;
-
-    const sameName = list.filter(x => String(x?.name || "").trim() === name);
-    if (sameName.length === 0) return null;
-    if (sameName.length === 1) return sameName[0];
-
-    // 동명이인만 id로 확정 (id가 "kr-xxxx" 같이 맞는 경우에만 의미 있음)
-    if (id) {
-      const byId = sameName.find(x => String(x?.id || "").trim() === id);
-      if (byId) return byId;
-    }
-    return sameName[0];
-  }
-
-  // ---------- rank state ----------
-  const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
-  const RANK_BADGES = {
-    Member:"img/member.png",
-    Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
-    Pro1:"img/pro1.png",   Pro2:"img/pro2.png",   Pro3:"img/pro3.png",
-    Pro4:"img/pro4.png",   Pro5:"img/pro5.png",   Pro6:"img/pro6.png",
-    Pro7:"img/pro7.png",   Pro8:"img/pro8.png",   Pro9:"img/pro9.png", Pro10:"img/pro10.png",
-  };
-
-  // (선택) 목표 카운트도 같이 업데이트
-  const RANK_REQUIRED = {
-    Star1:{left:2,right:1},   // Member -> Star1
-    Star2:{left:7,right:7},
-    Star3:{left:15,right:15},
-    Pro1:{left:40,right:40},
-    Pro2:{left:80,right:80},
-    Pro3:{left:150,right:150},
-    Pro4:{left:250,right:250},
-    Pro5:{left:400,right:400},
-    Pro6:{left:650,right:650},
-    Pro7:{left:1000,right:1000},
-    Pro8:{left:2000,right:2000},
-    Pro9:{left:3000,right:3000},
-    Pro10:{left:4000,right:4000},
-  };
-
-  async function loadMyRank(){
-    const u = getUser();
-    const myName = String(u.name || "").trim();
-    const myId   = String(u.id || "").trim(); // (동명이인일 때만 사용)
-    if (!myName) return "Member";
-
-    try {
-      const res = await fetch("rank-hall.json", { cache: "no-store" });
-      if (!res.ok) return "Member";
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data.members || []);
-
-      const me = pickMeByNameThenId(list, myName, myId);
-      const rank = normalizeRank(me?.rank || "Member");
-
-      window.currentRankCode = rank; // 전역 노출
-      applyRankToUI(rank);
-      return rank;
-    } catch (e) {
-      console.warn("loadMyRank error:", e);
-      return "Member";
-    }
-  }
-
-  function applyRankToUI(rank){
-    const curImg  = document.getElementById("member-rank-img");
-    const curMini = document.getElementById("member-rank-mini");
-    const nextImg = document.getElementById("next-rank-img");
-    const nextMini= document.getElementById("next-rank-mini");
-    const goalTitle = document.getElementById("goal-next-rank-title");
-    const leftEl = document.getElementById("goal-left-count");
-    const rightEl = document.getElementById("goal-right-count");
-
-    const curCode = rank && rank !== "-" ? rank : "Member";
-    if (curImg) curImg.src = RANK_BADGES[curCode] || RANK_BADGES.Member;
-    if (curMini) curMini.textContent = "현재 직급: " + (curCode === "Member" ? "정회원" : curCode);
-
-    let nextCode = "Star1";
-    const idx = RANK_ORDER.indexOf(curCode);
-    if (curCode === "Member" || idx < 0) nextCode = "Star1";
-    else if (idx < RANK_ORDER.length - 1) nextCode = RANK_ORDER[idx + 1];
-    else nextCode = "-";
-
-    if (nextImg) nextImg.src = (nextCode !== "-" ? (RANK_BADGES[nextCode] || RANK_BADGES.Member) : RANK_BADGES.Member);
-    if (nextMini) nextMini.textContent = "다음 직급: " + (nextCode === "-" ? "-" : nextCode);
-    if (goalTitle) goalTitle.innerHTML = '다음 목표: <span>' + (nextCode === "-" ? "-" : nextCode) + '</span>';
-
-    const req = RANK_REQUIRED[nextCode];
-    if (req && leftEl && rightEl) {
-      leftEl.textContent = String(req.left);
-      rightEl.textContent = String(req.right);
-    }
-  }
-
-  // ---------- click wiring (CAPTURE) ----------
-  // 1) 직급 이미지/텍스트 클릭 -> rank-hall.html
-  function onRankClickCapture(e){
-    const t = e.target;
-    if (!t) return;
-    const id = t.id || (t.closest && t.closest("[id]") ? t.closest("[id]").id : "");
-    const hit = (id === "next-rank-img" || id === "next-rank-mini" || id === "member-rank-img" || id === "member-rank-mini");
-    if (!hit) return;
-
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    e.stopPropagation();
-    window.open("rank-hall.html", "_blank");
-  }
-
-  // 2) Treasure Box 버튼 클릭 -> HQ 또는 Pro1+만 통과
-  async function onPromoClickCapture(e){
-    const btn = e.target && e.target.closest ? e.target.closest("#promo-btn") : null;
-    if (!btn) return;
-
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    e.stopPropagation();
-
-    // HQ는 무조건 통과
-    if (isHQ()) {
-      const w = window.open("the-unique-promo.html", "_blank");
-      if(!w) window.location.href = "the-unique-promo.html";
-      return;
+    async function addUt(delta){
+      const u = state.user || getUser();
+      if (!u || !u.id) throw new Error("로그인 정보가 없습니다.");
+      const r = await jsonp("addBalance", { id: String(u.id).toLowerCase().trim(), delta });
+      if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT update failed");
+      applyUserFromSheet(r.user);
+      await refreshPricing();
+      updateHeaderUI();
+      updateNicknameButton();
+      updateWalletUI();
+      return Number(r.user.balance || 0);
     }
 
-    // rank 없으면 로딩
-    const rank = window.currentRankCode || await loadMyRank();
-    if (!isPro1OrHigher(rank)) {
-      alert("Pro1 직급 이상 사용 하실 수 있습니다.");
-      return; // ✅ 여기서 끝 (절대 이동 안 함)
+    window.sendP2P = async function sendP2P(){
+      const receiver = normNick(document.getElementById("p2p-receiver")?.value || "");
+      const amount = Number(document.getElementById("p2p-amount")?.value);
+
+      const u = state.user || getUser();
+      if (!u || !u.id) return alert("로그인 정보가 없습니다. 다시 로그인해 주세요.");
+      if (!receiver) return alert("받는 분 닉네임을 입력하세요.");
+      if (!Number.isFinite(amount) || amount <= 0) return alert("보낼 수량(UT)을 올바르게 입력하세요.");
+
+      const myBal = Number(localStorage.getItem("myUtPoints") || 0);
+      if (amount > myBal) return alert("잔액 부족");
+
+      if (!confirm(`${receiver}님에게 ${amount} UT를 송금하시겠습니까?`)) return;
+
+      const btn = document.querySelector(".transfer-btn");
+      const prev = btn ? btn.textContent : "";
+      if (btn) { btn.disabled = true; btn.textContent = "처리 중..."; }
+
+      try{
+        const r = await jsonp("transfer", { fromId: String(u.id).toLowerCase().trim(), toNickname: receiver, amount });
+        if (!r || !r.ok) throw new Error(r?.error || "송금 실패");
+
+        if (r.fromUser) applyUserFromSheet(r.fromUser);
+        await refreshUserFromSheet();
+        await refreshPricing();
+
+        alert("송금 완료");
+        document.getElementById("p2p-amount").value = "";
+      } catch(e){
+        console.error(e);
+        alert("송금 오류: " + (e.message || e));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = prev || "송금하기"; }
+      }
+    };
+
+    /* ==========
+       YouTube 보상 + 럭키박스 + eBook 보상
+    ========== */
+    // YouTube API 로드
+    (function loadYouTubeApi(){
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const first = document.getElementsByTagName("script")[0];
+      first.parentNode.insertBefore(tag, first);
+    })();
+
+    window.onYouTubeIframeAPIReady = function () {
+      const KEY = "mining_video_claim_date";
+      const today = getTodayKST();
+
+      const statusText = document.getElementById("yt-status-text");
+      const rewardBtn = document.getElementById("btn-claim-video-reward");
+
+      const last = localStorage.getItem(KEY);
+      if (last === today) {
+        if (statusText) { statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)"; statusText.className="mining-status done"; }
+        if (rewardBtn)  { rewardBtn.textContent = "오늘 보상 완료"; rewardBtn.disabled = true; rewardBtn.classList.remove("ready"); }
+      } else {
+        if (rewardBtn)  { rewardBtn.textContent = "학습 보상 받기 (대기중)"; rewardBtn.disabled = true; }
+      }
+
+      new YT.Player("youtube-player", {
+        height:"100%",
+        width:"100%",
+        videoId:"Dn3JMfy6Nxg",
+        playerVars: { origin: window.location.origin, rel: 0, playsinline: 1 },
+        events: {
+          onStateChange: function(ev){
+            const today = getTodayKST();
+            const last = localStorage.getItem(KEY);
+
+            if (ev.data === YT.PlayerState.PLAYING && last !== today) {
+              if (statusText) { statusText.textContent = "🔥 시청 중... 끝까지 보세요!"; statusText.className="mining-status"; }
+            }
+            if (ev.data === YT.PlayerState.ENDED && last !== today) {
+              if (rewardBtn) {
+                rewardBtn.textContent = "보상을 받을 준비가 완료 됐습니다";
+                rewardBtn.disabled = false;
+                rewardBtn.classList.add("ready");
+              }
+              if (statusText) { statusText.textContent="✅ 시청 완료! 왼쪽 버튼을 눌러 보상을 받으세요."; statusText.className="mining-status done"; }
+            }
+          }
+        }
+      });
+    };
+
+    function bindRewardButtons(){
+      // 학습 보상
+      const rewardBtn = document.getElementById("btn-claim-video-reward");
+      if (rewardBtn){
+        rewardBtn.addEventListener("click", async function(){
+          const KEY = "mining_video_claim_date";
+          const today = getTodayKST();
+          if (localStorage.getItem(KEY) === today) return;
+
+          this.disabled = true;
+          const prev = this.textContent;
+          this.textContent = "지급 중...";
+
+          try{
+            await addUt(state.videoReward);
+            localStorage.setItem(KEY, today);
+
+            this.textContent = "오늘 보상 완료";
+            this.classList.remove("ready");
+
+            const statusText = document.getElementById("yt-status-text");
+            if (statusText) { statusText.textContent = "✅ 오늘 학습 완료 (내일 다시 도전!)"; statusText.className="mining-status done"; }
+            alert(`🎉 ${state.videoReward} UT가 지급되었습니다!`);
+          } catch(e){
+            console.error(e);
+            this.disabled = false;
+            this.textContent = prev || "학습 보상 받기";
+            alert("보상 지급 실패: " + (e.message || e));
+          }
+        }, { once: true }); // 중복 바인딩 방지
+      }
+
+      // 럭키박스
+      const luckyBtn = document.getElementById("btn-lucky-box");
+      if (luckyBtn){
+        const KEY = "lucky_box_claim_date";
+        const today = getTodayKST();
+        if (localStorage.getItem(KEY) === today) {
+          luckyBtn.disabled = true;
+          luckyBtn.textContent = "오늘의 행운 완료 (내일 다시)";
+        }
+
+        luckyBtn.addEventListener("click", async function(){
+          const today = getTodayKST();
+          if (localStorage.getItem(KEY) === today) return;
+
+          const reward = Math.floor(Math.random() * (state.luckyMax - state.luckyMin + 1)) + state.luckyMin;
+          this.disabled = true;
+          const prev = this.textContent;
+          this.textContent = "지급 중...";
+
+          try{
+            await addUt(reward);
+            localStorage.setItem(KEY, today);
+            this.textContent = "오늘의 행운 완료";
+            alert(`🎁 럭키박스 당첨! +${reward} UT 지급되었습니다.`);
+          } catch(e){
+            console.error(e);
+            this.disabled = false;
+            this.textContent = prev || "🎁 데일리 럭키박스 (1일 1회)";
+            alert("럭키박스 지급 실패: " + (e.message || e));
+          }
+        }, { once: true }); // 중복 바인딩 방지
+      }
     }
 
-    const w = window.open("the-unique-promo.html", "_blank");
-    if(!w) window.location.href = "the-unique-promo.html";
-  }
+    /* ==========
+       eBook 렌더링
+    ========== */
+    function renderEbooks(items){
+      const listEl = document.getElementById("ebook-list");
+      if (!listEl) return;
+      listEl.innerHTML = "";
 
-  // 캡처링으로 먼저 먹어서, 기존 addEventListener가 있어도 못 돌게 함
-  document.addEventListener("click", onRankClickCapture, true);
-  document.addEventListener("click", onPromoClickCapture, true);
+      const visible = (items || []).filter(x => x && x.visible !== false);
+      if (!visible.length){
+        listEl.innerHTML = '<div style="color:#64748b;font-size:12px;padding:8px;">eBook 목록이 없습니다.</div>';
+        return;
+      }
 
-  // ---------- init ----------
-  document.addEventListener("DOMContentLoaded", async () => {
-    // rank를 먼저 읽어서 UI에 반영
-    await loadMyRank();
+      visible.sort((a,b) => (a.order||0)-(b.order||0));
 
-    // 혹시 늦게 렌더/치환되는 경우를 대비해 1초 뒤 한 번 더
-    setTimeout(loadMyRank, 1000);
-  });
-})();
-</script>
+      visible.forEach(book => {
+        const card = document.createElement("a");
+        card.className = "ebook-card";
+        card.href = book.link || "#";
+        if (book.link && book.link !== "#"){
+          card.target = "_blank";
+          card.rel = "noopener noreferrer";
+          card.addEventListener("click", async () => {
+            const KEY = "lastEbookRewardDate";
+            const today = getTodayKST();
+            if (localStorage.getItem(KEY) === today) return;
+            localStorage.setItem(KEY, today);
+            try{
+              await addUt(state.ebookReward);
+              alert(`📖 [${book.title || "EBOOK"}] 학습 시작!\n(오늘의 독서 보너스 +${state.ebookReward} UT 지급)`);
+            } catch(e){
+              localStorage.removeItem(KEY);
+              alert("독서 보너스 지급 실패: " + (e.message || e));
+            }
+          });
+        }
+
+        const thumb = document.createElement("div");
+        thumb.className = "ebook-thumb";
+        const img = document.createElement("img");
+        img.src = book.cover || "img/ebook-the-unique-system-book.jpg";
+        img.alt = book.title || "";
+        const posY = (typeof book.posY === "number") ? book.posY : 50;
+        img.style.objectPosition = "50% " + posY + "%";
+        thumb.appendChild(img);
+
+        const body = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "ebook-meta-title";
+        title.textContent = book.title || "";
+        const desc = document.createElement("div");
+        desc.className = "ebook-meta-desc";
+        desc.textContent = book.description || book.subtitle || "";
+        const cta = document.createElement("div");
+        cta.className = "ebook-meta-cta";
+        cta.textContent = "클릭하여 eBook 열람";
+
+        body.appendChild(title);
+        body.appendChild(desc);
+        body.appendChild(cta);
+
+        card.appendChild(thumb);
+        card.appendChild(body);
+        listEl.appendChild(card);
+      });
+    }
+
+    async function loadEbooks(){
+      try{
+        const res = await fetch("ebook-config.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("ebook-config.json not found");
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        if (items && items.length) { renderEbooks(items); return; }
+      } catch(_){}
+
+      // fallback 기본
+      renderEbooks([
+        { id:"unique-basic", title:"협력을 배우고 협력을 만들어낸다.", description:"THE UNIQUE 기본 매뉴얼", cover:"img/ebook-the-unique-system-book.jpg", link:"ebook.html", visible:true, order:1, posY:50 },
+        { id:"unique-sot", title:"현대 사회에 맞는 여행도구 so.t", description:"so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.", cover:"img/ebook-network-marketing-cover.jpg", link:"ebook1.html", visible:true, order:2, posY:50 }
+      ]);
+    }
+
+    /* ==========
+       초기 부팅
+    ========== */
+    function requireLogin(){
+      const u = getUser();
+      if (!u || !u.id) {
+        window.location.href = "the-unique-gate.html";
+        return false;
+      }
+      state.user = u;
+      return true;
+    }
+
+    function bindOtherButtons(){
+      const travelBtn = document.getElementById("travel-btn");
+      if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+
+      const sotBtn = document.getElementById("sot-btn");
+      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
+
+      const linkonBtn = document.getElementById("ppt-form-btn");
+      if (linkonBtn) linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) logoutBtn.addEventListener("click", () => {
+        if (confirm("로그아웃 하시겠습니까?")) {
+          localStorage.removeItem("uniqueCurrentUser");
+          window.location.href = "the-unique-gate.html";
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!requireLogin()) return;
+
+      updateHeaderUI();
+      updateNicknameButton();
+
+      // 최초: 시트 값으로 user 동기화 -> 직급 -> 설정/가격 -> ebook -> 버튼 바인딩
+      await refreshUserFromSheet();
+      await loadMyRank();
+      await refreshRewardConfig();
+      await refreshPricing();
+      await loadEbooks();
+
+      bindOtherButtons();
+      bindRewardButtons();
+
+      // 30초마다 동기화
+      setInterval(async () => {
+        await refreshUserFromSheet();
+        await loadMyRank();
+        await refreshRewardConfig();
+        await refreshPricing();
+      }, 30000);
+    });
+  })();
+  </script>
 </body>
 </html>
