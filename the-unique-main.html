@@ -1485,18 +1485,7 @@
       updateWalletUI();
     }, 30000);
   });
-    // ✅ (최종) Treasure Box 클릭 강제 단일화 - 제일 마지막에 붙이기
-(function finalPromoBtnFix(){
-  function isPro1OrHigher(rankCode){
-    const r = String(rankCode || "").toUpperCase().trim();
-    if (!r.startsWith("PRO")) return false;
-    const n = parseInt(r.replace("PRO",""), 10);
-    return Number.isFinite(n) && n >= 1;
-  }
-newBtn.onclick = function(e){
-  e.preventDefault();
-  e.stopPropagation();
-
+  
   // ✅ HQ는 무조건 통과
   // 1) team이 'HQ'로 저장돼 있으면 통과
   // 2) 또는 기존 로직처럼 (이름===소속) 이 HQ로 보는 규칙이면 통과
@@ -1555,7 +1544,208 @@ newBtn.onclick = function(e){
     setTimeout(patch, 1200); // 늦게 붙는 이벤트도 제거
   });
 })();
+</script>
+  <script>
+/* =========================================
+   ✅ Rank + Treasure Box Gate (최종/단일 권한)
+   - 1순위: rank-hall.json에서 name === (uniqueCurrentUser.name)
+   - 동명 2인 이상일 때만 id 비교 (uniqueCurrentUser.id)
+   - HQ는 모든 제약 무시(무조건 통과)
+   - Treasure Box는 Pro1 이상만 통과, 아니면 경고 후 절대 이동 안함
+   - promo-btn 클릭에 붙은 "모든 기존 핸들러"를 캡처링 단계에서 차단
+========================================= */
+(function () {
+  // ---------- helpers ----------
+  function safeJsonParse(s, fallback={}) { try { return JSON.parse(s||""); } catch(_) { return fallback; } }
+  function getUser() { return safeJsonParse(localStorage.getItem("uniqueCurrentUser"), {}); }
 
+  function isHQ() {
+    const u = getUser();
+    const team = String(u.team || "").trim();
+    const name = String(u.name || "").trim();
+    // HQ 규칙 2개 모두 지원
+    return team === "HQ" || (name && team && name === team);
+  }
+
+  function normalizeRank(raw){
+    let t = String(raw || "").trim();
+    if (!t) return "Member";
+
+    // normalize casing like "PRO1" -> "Pro1", "STAR2" -> "Star2"
+    const u = t.toUpperCase().replace(/\s+/g, "");
+    if (u === "MEMBER" || u === "정회원" || u === "회원" || u === "일반") return "Member";
+    if (u.startsWith("STAR")) return "Star" + u.replace("STAR","").replace(/[^\d]/g,"");
+    if (u.startsWith("PRO"))  return "Pro"  + u.replace("PRO","").replace(/[^\d]/g,"");
+
+    // 한글 스타/프로
+    if (t.startsWith("스타")) return "Star" + t.replace("스타","").trim().replace(/[^\d]/g,"");
+    if (t.startsWith("프로")) return "Pro"  + t.replace("프로","").trim().replace(/[^\d]/g,"");
+
+    // fallback
+    return t.replace(/\s+/g,"");
+  }
+
+  function isPro1OrHigher(rankCode){
+    const r = String(rankCode || "").trim();
+    if (!/^Pro\d+$/i.test(r)) return false;
+    const n = parseInt(r.replace(/pro/i,""), 10);
+    return Number.isFinite(n) && n >= 1;
+  }
+
+  function pickMeByNameThenId(list, myName, myId){
+    const name = String(myName || "").trim();
+    const id   = String(myId || "").trim();
+
+    if (!name) return null;
+
+    const sameName = list.filter(x => String(x?.name || "").trim() === name);
+    if (sameName.length === 0) return null;
+    if (sameName.length === 1) return sameName[0];
+
+    // 동명이인만 id로 확정 (id가 "kr-xxxx" 같이 맞는 경우에만 의미 있음)
+    if (id) {
+      const byId = sameName.find(x => String(x?.id || "").trim() === id);
+      if (byId) return byId;
+    }
+    return sameName[0];
+  }
+
+  // ---------- rank state ----------
+  const RANK_ORDER = ["Star1","Star2","Star3","Pro1","Pro2","Pro3","Pro4","Pro5","Pro6","Pro7","Pro8","Pro9","Pro10"];
+  const RANK_BADGES = {
+    Member:"img/member.png",
+    Star1:"img/star1.png", Star2:"img/star2.png", Star3:"img/star3.png",
+    Pro1:"img/pro1.png",   Pro2:"img/pro2.png",   Pro3:"img/pro3.png",
+    Pro4:"img/pro4.png",   Pro5:"img/pro5.png",   Pro6:"img/pro6.png",
+    Pro7:"img/pro7.png",   Pro8:"img/pro8.png",   Pro9:"img/pro9.png", Pro10:"img/pro10.png",
+  };
+
+  // (선택) 목표 카운트도 같이 업데이트
+  const RANK_REQUIRED = {
+    Star1:{left:2,right:1},   // Member -> Star1
+    Star2:{left:7,right:7},
+    Star3:{left:15,right:15},
+    Pro1:{left:40,right:40},
+    Pro2:{left:80,right:80},
+    Pro3:{left:150,right:150},
+    Pro4:{left:250,right:250},
+    Pro5:{left:400,right:400},
+    Pro6:{left:650,right:650},
+    Pro7:{left:1000,right:1000},
+    Pro8:{left:2000,right:2000},
+    Pro9:{left:3000,right:3000},
+    Pro10:{left:4000,right:4000},
+  };
+
+  async function loadMyRank(){
+    const u = getUser();
+    const myName = String(u.name || "").trim();
+    const myId   = String(u.id || "").trim(); // (동명이인일 때만 사용)
+    if (!myName) return "Member";
+
+    try {
+      const res = await fetch("rank-hall.json", { cache: "no-store" });
+      if (!res.ok) return "Member";
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.members || []);
+
+      const me = pickMeByNameThenId(list, myName, myId);
+      const rank = normalizeRank(me?.rank || "Member");
+
+      window.currentRankCode = rank; // 전역 노출
+      applyRankToUI(rank);
+      return rank;
+    } catch (e) {
+      console.warn("loadMyRank error:", e);
+      return "Member";
+    }
+  }
+
+  function applyRankToUI(rank){
+    const curImg  = document.getElementById("member-rank-img");
+    const curMini = document.getElementById("member-rank-mini");
+    const nextImg = document.getElementById("next-rank-img");
+    const nextMini= document.getElementById("next-rank-mini");
+    const goalTitle = document.getElementById("goal-next-rank-title");
+    const leftEl = document.getElementById("goal-left-count");
+    const rightEl = document.getElementById("goal-right-count");
+
+    const curCode = rank && rank !== "-" ? rank : "Member";
+    if (curImg) curImg.src = RANK_BADGES[curCode] || RANK_BADGES.Member;
+    if (curMini) curMini.textContent = "현재 직급: " + (curCode === "Member" ? "정회원" : curCode);
+
+    let nextCode = "Star1";
+    const idx = RANK_ORDER.indexOf(curCode);
+    if (curCode === "Member" || idx < 0) nextCode = "Star1";
+    else if (idx < RANK_ORDER.length - 1) nextCode = RANK_ORDER[idx + 1];
+    else nextCode = "-";
+
+    if (nextImg) nextImg.src = (nextCode !== "-" ? (RANK_BADGES[nextCode] || RANK_BADGES.Member) : RANK_BADGES.Member);
+    if (nextMini) nextMini.textContent = "다음 직급: " + (nextCode === "-" ? "-" : nextCode);
+    if (goalTitle) goalTitle.innerHTML = '다음 목표: <span>' + (nextCode === "-" ? "-" : nextCode) + '</span>';
+
+    const req = RANK_REQUIRED[nextCode];
+    if (req && leftEl && rightEl) {
+      leftEl.textContent = String(req.left);
+      rightEl.textContent = String(req.right);
+    }
+  }
+
+  // ---------- click wiring (CAPTURE) ----------
+  // 1) 직급 이미지/텍스트 클릭 -> rank-hall.html
+  function onRankClickCapture(e){
+    const t = e.target;
+    if (!t) return;
+    const id = t.id || (t.closest && t.closest("[id]") ? t.closest("[id]").id : "");
+    const hit = (id === "next-rank-img" || id === "next-rank-mini" || id === "member-rank-img" || id === "member-rank-mini");
+    if (!hit) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    window.open("rank-hall.html", "_blank");
+  }
+
+  // 2) Treasure Box 버튼 클릭 -> HQ 또는 Pro1+만 통과
+  async function onPromoClickCapture(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#promo-btn") : null;
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+
+    // HQ는 무조건 통과
+    if (isHQ()) {
+      const w = window.open("the-unique-promo.html", "_blank");
+      if(!w) window.location.href = "the-unique-promo.html";
+      return;
+    }
+
+    // rank 없으면 로딩
+    const rank = window.currentRankCode || await loadMyRank();
+    if (!isPro1OrHigher(rank)) {
+      alert("Pro1 직급 이상 사용 하실 수 있습니다.");
+      return; // ✅ 여기서 끝 (절대 이동 안 함)
+    }
+
+    const w = window.open("the-unique-promo.html", "_blank");
+    if(!w) window.location.href = "the-unique-promo.html";
+  }
+
+  // 캡처링으로 먼저 먹어서, 기존 addEventListener가 있어도 못 돌게 함
+  document.addEventListener("click", onRankClickCapture, true);
+  document.addEventListener("click", onPromoClickCapture, true);
+
+  // ---------- init ----------
+  document.addEventListener("DOMContentLoaded", async () => {
+    // rank를 먼저 읽어서 UI에 반영
+    await loadMyRank();
+
+    // 혹시 늦게 렌더/치환되는 경우를 대비해 1초 뒤 한 번 더
+    setTimeout(loadMyRank, 1000);
+  });
+})();
 </script>
 </body>
 </html>
