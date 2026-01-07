@@ -2,6 +2,82 @@
   window.UNIQUE = window.UNIQUE || {};
   const U = window.UNIQUE;
 
+  // =========================
+  // ✅ UT 송금 "최근 내역" (로컬 저장 + 렌더)
+  // =========================
+  const HISTORY_KEY = "ut_recent_history_v1";
+
+  function loadHistory() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveHistory(arr) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, 30))); // 최대 30개
+    } catch (_) {}
+  }
+
+  function addHistory(item) {
+    const arr = loadHistory();
+    arr.unshift(item);
+    saveHistory(arr);
+  }
+
+  function renderHistory() {
+    const el = document.getElementById("history-container");
+    if (!el) return;
+
+    const arr = loadHistory();
+
+    if (!arr.length) {
+      el.textContent = "거래 내역이 없습니다.";
+      return;
+    }
+
+    el.innerHTML = arr.slice(0, 10).map(it => {
+      const amtColor = it.kind === "out" ? "#fbbf24" : "#4ade80";
+      const sign = it.kind === "out" ? "-" : "+";
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+          <div style="flex:1; min-width:0;">
+            <div style="color:#fff; font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${it.title}
+            </div>
+            <div style="color:#64748b; font-size:10px; margin-top:2px;">
+              ${it.date}
+            </div>
+          </div>
+          <div style="color:${amtColor}; font-weight:900; font-size:12px; white-space:nowrap;">
+            ${sign}${it.amount} UT
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ✅ 탭 전환 후에도 보이게: 송금 탭 열 때마다 렌더
+  function hookTabRenderOnce() {
+    if (window.__utHistoryHooked) return;
+    window.__utHistoryHooked = true;
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target && e.target.closest && e.target.closest(".tb-tab-btn");
+      if (!btn) return;
+
+      // UT 송금 탭은 openTab(event,'tab-transfer')로 열리므로,
+      // 클릭 후 약간 늦게 렌더해서 DOM active 반영 기다림
+      setTimeout(renderHistory, 50);
+    }, true);
+  }
+
+  // =========================
+  // Auth
+  // =========================
   U.auth = {
     getUser() {
       return U.utils.safeJsonParse(localStorage.getItem("uniqueCurrentUser"), null);
@@ -49,7 +125,7 @@
   // ✅ 정산가 저장 키
   const SETTLE_DATE_KEY  = "ut_settlement_date_kst";
   const SETTLE_PRICE_KEY = "ut_settlement_price";
-  const SETTLE_META_KEY  = "ut_settlement_meta"; // (선택) 기준값 저장
+  const SETTLE_META_KEY  = "ut_settlement_meta";
 
   function getSettlementPrice() {
     const p = Number(localStorage.getItem(SETTLE_PRICE_KEY));
@@ -89,9 +165,6 @@
         if (r && r.ok && r.stats) {
           const total = Number(r.stats.total_ut_supply ?? r.stats.total_ut ?? 0);
           U.STATE.totalUT = Number.isFinite(total) ? total : 0;
-
-          // ✅ 중요: 이제 "정산가" 정책이므로 ut_price가 와도 '정산 계산값'이 우선
-          // (필요하면 여기서 fallback 용으로만 쓰도록 남겨둘 수 있음)
         }
       } catch (e) {
         console.warn("getStats fail:", e);
@@ -118,7 +191,6 @@
       } catch (_) {}
     },
 
-    // ✅ 핵심: "정산가(매일 00:00 KST)" 적용
     async refreshPricing() {
       await this.refreshDonationUSDT();
       await this.refreshStatsFromSheet();
@@ -126,22 +198,14 @@
       const today = U.utils.getTodayKST();
       const lastSettleDate = localStorage.getItem(SETTLE_DATE_KEY);
 
-      // 계산 가능한 경우: (기부합×0.3)/총UT
       let calc = null;
       if (U.STATE.totalUT > 0) {
         calc = (Number(U.STATE.donationUSDT) * Number(U.CONFIG.UT_PRICE_FACTOR)) / Number(U.STATE.totalUT);
       }
+      if (!Number.isFinite(calc) || calc <= 0) calc = 0.02;
 
-      // 안전 fallback
-      if (!Number.isFinite(calc) || calc <= 0) {
-        // 총UT가 0이면 임시 기본값
-        calc = 0.02;
-      }
-
-      // 보기 좋게 소수 6자리 정리
       const settlePrice = Number(calc.toFixed(6));
 
-      // ✅ 오늘 정산이 아직이면 저장, 아니면 저장된 정산가 사용
       if (lastSettleDate !== today) {
         setSettlementPrice(today, settlePrice, {
           donationUSDT: Number(U.STATE.donationUSDT) || 0,
@@ -163,8 +227,6 @@
       if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT update failed");
 
       applyUserFromSheet(r.user);
-
-      // ✅ 정산가는 '오늘 고정'이므로 refreshPricing을 돌려도 가격이 즉시 변하지 않음(정산일 기준)
       await this.refreshPricing();
 
       if (U.ui) {
@@ -260,9 +322,20 @@
 
     try {
       await U.wallet.sendP2P(receiver, amount);
+
+      // ✅ 성공 즉시 "최근 내역" 추가 + 렌더
+      addHistory({
+        kind: "out",
+        title: `→ ${receiver} 송금`,
+        amount: amount,
+        date: new Date().toLocaleString("ko-KR")
+      });
+      renderHistory();
+
       alert("송금 완료");
       const amtEl = document.getElementById("p2p-amount");
       if (amtEl) amtEl.value = "";
+
     } catch (e) {
       console.error(e);
       alert("송금 오류: " + (e.message || e));
@@ -270,4 +343,11 @@
       if (btn) { btn.disabled = false; btn.textContent = prev || "송금하기"; }
     }
   };
+
+  // ✅ 페이지 로드 시: 탭 클릭 훅 + 초기 렌더(transfer 탭에서 바로 보이게)
+  hookTabRenderOnce();
+  document.addEventListener("DOMContentLoaded", () => {
+    try { renderHistory(); } catch(_) {}
+  });
+
 })();
