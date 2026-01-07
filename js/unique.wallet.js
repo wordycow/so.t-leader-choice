@@ -46,19 +46,33 @@
     else localStorage.removeItem(nickKey);
   }
 
+  // ✅ 정산가 저장 키
+  const SETTLE_DATE_KEY  = "ut_settlement_date_kst";
+  const SETTLE_PRICE_KEY = "ut_settlement_price";
+  const SETTLE_META_KEY  = "ut_settlement_meta"; // (선택) 기준값 저장
+
+  function getSettlementPrice() {
+    const p = Number(localStorage.getItem(SETTLE_PRICE_KEY));
+    return Number.isFinite(p) && p > 0 ? p : null;
+  }
+
+  function setSettlementPrice(todayKST, price, meta) {
+    localStorage.setItem(SETTLE_DATE_KEY, todayKST);
+    localStorage.setItem(SETTLE_PRICE_KEY, String(price));
+    if (meta) localStorage.setItem(SETTLE_META_KEY, JSON.stringify(meta));
+  }
+
   U.wallet = {
     async refreshUserFromSheet() {
       const u = U.STATE.user || U.auth.getUser();
       if (!u || !u.id) return;
 
       const r = await U.api.jsonp("getUser", { id: String(u.id).toLowerCase().trim() });
-      if (r && r.ok && r.user) {
-        applyUserFromSheet(r.user);
-      }
+      if (r && r.ok && r.user) applyUserFromSheet(r.user);
     },
 
     async refreshDonationUSDT() {
-      const db = U.supabase.init(); // ✅ unique.supabase.js에 init()이 있어야 함
+      const db = U.supabase.init();
       try {
         const { data, error } = await db.from("profiles").select("donation_total");
         if (error) throw error;
@@ -74,9 +88,10 @@
         const r = await U.api.jsonp("getStats", {});
         if (r && r.ok && r.stats) {
           const total = Number(r.stats.total_ut_supply ?? r.stats.total_ut ?? 0);
-          const price = Number(r.stats.ut_price ?? 0);
           U.STATE.totalUT = Number.isFinite(total) ? total : 0;
-          if (Number.isFinite(price) && price > 0) U.STATE.utPrice = price;
+
+          // ✅ 중요: 이제 "정산가" 정책이므로 ut_price가 와도 '정산 계산값'이 우선
+          // (필요하면 여기서 fallback 용으로만 쓰도록 남겨둘 수 있음)
         }
       } catch (e) {
         console.warn("getStats fail:", e);
@@ -103,15 +118,41 @@
       } catch (_) {}
     },
 
+    // ✅ 핵심: "정산가(매일 00:00 KST)" 적용
     async refreshPricing() {
       await this.refreshDonationUSDT();
       await this.refreshStatsFromSheet();
 
-      if (!(Number.isFinite(U.STATE.utPrice) && U.STATE.utPrice > 0)) {
-        if (U.STATE.totalUT > 0) U.STATE.utPrice = (U.STATE.donationUSDT * U.CONFIG.UT_PRICE_FACTOR) / U.STATE.totalUT;
-        else U.STATE.utPrice = 0.02;
+      const today = U.utils.getTodayKST();
+      const lastSettleDate = localStorage.getItem(SETTLE_DATE_KEY);
+
+      // 계산 가능한 경우: (기부합×0.3)/총UT
+      let calc = null;
+      if (U.STATE.totalUT > 0) {
+        calc = (Number(U.STATE.donationUSDT) * Number(U.CONFIG.UT_PRICE_FACTOR)) / Number(U.STATE.totalUT);
       }
-      if (!Number.isFinite(U.STATE.utPrice) || U.STATE.utPrice <= 0) U.STATE.utPrice = 0.02;
+
+      // 안전 fallback
+      if (!Number.isFinite(calc) || calc <= 0) {
+        // 총UT가 0이면 임시 기본값
+        calc = 0.02;
+      }
+
+      // 보기 좋게 소수 6자리 정리
+      const settlePrice = Number(calc.toFixed(6));
+
+      // ✅ 오늘 정산이 아직이면 저장, 아니면 저장된 정산가 사용
+      if (lastSettleDate !== today) {
+        setSettlementPrice(today, settlePrice, {
+          donationUSDT: Number(U.STATE.donationUSDT) || 0,
+          totalUT: Number(U.STATE.totalUT) || 0,
+          factor: Number(U.CONFIG.UT_PRICE_FACTOR),
+        });
+        U.STATE.utPrice = settlePrice;
+      } else {
+        const p = getSettlementPrice();
+        U.STATE.utPrice = p || settlePrice;
+      }
     },
 
     async addUt(delta) {
@@ -122,9 +163,10 @@
       if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT update failed");
 
       applyUserFromSheet(r.user);
+
+      // ✅ 정산가는 '오늘 고정'이므로 refreshPricing을 돌려도 가격이 즉시 변하지 않음(정산일 기준)
       await this.refreshPricing();
 
-      // ✅ 지급 후 UI 갱신(중요)
       if (U.ui) {
         U.ui.updateHeaderUI();
         U.ui.updateNicknameButton();
@@ -145,10 +187,10 @@
       if (!r || !r.ok) throw new Error(r?.error || "송금 실패");
 
       if (r.fromUser) applyUserFromSheet(r.fromUser);
+
       await this.refreshUserFromSheet();
       await this.refreshPricing();
 
-      // ✅ 송금 후 UI 갱신
       if (U.ui) {
         U.ui.updateHeaderUI();
         U.ui.updateNicknameButton();
