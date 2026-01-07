@@ -2,7 +2,7 @@
   window.UNIQUE = window.UNIQUE || {};
   const U = window.UNIQUE;
 
-  // gviz callback
+  // ✅ gviz callback (전역이어야 함)
   window.handleScheduleSheet = function handleScheduleSheet(resp) {
     try {
       const rows = (resp && resp.table && resp.table.rows) ? resp.table.rows : [];
@@ -84,18 +84,12 @@
 
   U.schedule = {
     init() {
-      // gviz script 동적 삽입 (중복 방지)
-      if (document.querySelector('script[data-schedule="1"]')) return;
-
-      const s = document.createElement("script");
-      s.setAttribute("data-schedule", "1");
-      s.src = U.CONFIG.SCHEDULE_GVIZ_URL;
-      document.body.appendChild(s);
-
+      // ✅ main.html에서 gviz script를 이미 로드하므로, 여기서는 실패 안내만
       setTimeout(() => {
         const emptyEl = document.getElementById("top-schedule-empty");
         const gridEl = document.getElementById("top-schedule-grid");
         const hasItems = gridEl && gridEl.children && gridEl.children.length > 0;
+
         if (emptyEl && emptyEl.style.display !== "none" && !hasItems) {
           emptyEl.textContent = "주간 스케쥴을 불러오지 못했습니다. (docs.google.com 차단/확장프로그램 확인)";
         }
