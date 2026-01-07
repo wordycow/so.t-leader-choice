@@ -30,9 +30,12 @@
   function pickMeByNameThenId(list, myName, myId){
     const name = String(myName||"").trim();
     const id = String(myId||"").trim();
+    if (!name) return null;
+
     const sameName = list.filter(x => String(x?.name||"").trim() === name);
     if (sameName.length === 0) return null;
     if (sameName.length === 1) return sameName[0];
+
     if (id) {
       const byId = sameName.find(x => String(x?.id||"").trim() === id);
       if (byId) return byId;
@@ -67,6 +70,9 @@
     if (req && leftEl && rightEl) {
       leftEl.textContent = String(req.left);
       rightEl.textContent = String(req.right);
+    } else if (leftEl && rightEl && nextCode === "Star1") {
+      leftEl.textContent = "2";
+      rightEl.textContent = "1";
     }
   }
 
@@ -102,6 +108,10 @@
     },
 
     bindCaptureClicks(){
+      // ✅ 중복 바인딩 방지
+      if (document.body && document.body.dataset.rankBound === "1") return;
+      if (document.body) document.body.dataset.rankBound = "1";
+
       // rank image/text -> rank page
       document.addEventListener("click", (e) => {
         const hit = e.target && e.target.closest && e.target.closest("#next-rank-img,#next-rank-mini,#member-rank-img,#member-rank-mini");
