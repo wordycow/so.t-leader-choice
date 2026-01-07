@@ -20,21 +20,32 @@
       card.className = "ebook-card";
       card.href = book.link || "#";
 
+      // ✅ 링크가 있는 경우만 인터셉트(보상 + 새탭 열기)
       if (book.link && book.link !== "#"){
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
-        card.addEventListener("click", async () => {
+        card.addEventListener("click", async (e) => {
+          e.preventDefault();
+
           const KEY = "lastEbookRewardDate";
           const today = U.utils.getTodayKST();
-          if (localStorage.getItem(KEY) === today) return;
+          const already = (localStorage.getItem(KEY) === today);
 
+          // 이미 오늘 받았으면 보상 없이 새탭만 열고 종료
+          if (already) {
+            window.open(book.link, "_blank", "noopener,noreferrer");
+            return;
+          }
+
+          // 오늘 첫 보상 시도
           localStorage.setItem(KEY, today);
           try{
             await U.wallet.addUt(U.STATE.ebookReward);
             alert(`📖 [${book.title || "EBOOK"}] 학습 시작!\n(오늘의 독서 보너스 +${U.STATE.ebookReward} UT 지급)`);
-          } catch(e){
+            window.open(book.link, "_blank", "noopener,noreferrer");
+          } catch(e2){
             localStorage.removeItem(KEY);
-            alert("독서 보너스 지급 실패: " + (e.message || e));
+            alert("독서 보너스 지급 실패: " + (e2.message || e2));
+            // 실패해도 ebook은 열어준다(원하면 이 줄 제거)
+            window.open(book.link, "_blank", "noopener,noreferrer");
           }
         });
       }
