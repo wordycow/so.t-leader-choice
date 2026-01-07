@@ -10,8 +10,9 @@
       const tablinks = document.getElementsByClassName("tb-tab-btn");
       for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
 
-      document.getElementById(tabName).classList.add("active");
-      evt.currentTarget.classList.add("active");
+      const target = document.getElementById(tabName);
+      if (target) target.classList.add("active");
+      if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
     },
 
     updateHeaderUI() {
@@ -65,37 +66,54 @@
       myUtEl.textContent = ut.toFixed(2);
 
       const price = (Number.isFinite(U.STATE.utPrice) && U.STATE.utPrice > 0) ? U.STATE.utPrice : 0.02;
-
       if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut * price).toFixed(2)} USDT 환산(정산가)`;
       if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (정산가 · 매일 00:00 KST 갱신)`;
     },
 
     bindBasicButtons() {
-      if (document.body.dataset.basicButtonsBound === "1") return;
-      document.body.dataset.basicButtonsBound = "1";
-      
+      // ✅ work-btn은 "무조건" 먼저 바인딩 (가드 때문에 빠지는 사고 방지)
+      const workBtn = document.getElementById("work-btn");
+      if (workBtn && workBtn.dataset.bound !== "1") {
+        workBtn.dataset.bound = "1";
+        workBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+      }
+
       const sotBtn = document.getElementById("sot-btn");
-      if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-      
+      if (sotBtn && sotBtn.dataset.bound !== "1") {
+        sotBtn.dataset.bound = "1";
+        sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
+      }
+
       const travelBtn = document.getElementById("travel-btn");
-      if (travelBtn) travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+      if (travelBtn && travelBtn.dataset.bound !== "1") {
+        travelBtn.dataset.bound = "1";
+        travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+      }
 
       const linkonBtn = document.getElementById("ppt-form-btn");
-      if (linkonBtn) linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+      if (linkonBtn && linkonBtn.dataset.bound !== "1") {
+        linkonBtn.dataset.bound = "1";
+        linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+      }
 
       const marketBtn = document.getElementById("market-btn");
-      if (marketBtn) marketBtn.addEventListener("click", () => window.open("market.html", "_blank"));
+      if (marketBtn && marketBtn.dataset.bound !== "1") {
+        marketBtn.dataset.bound = "1";
+        marketBtn.addEventListener("click", () => window.open("market.html", "_blank"));
+      }
 
       const logoutBtn = document.getElementById("logout-btn");
-      if (logoutBtn) logoutBtn.addEventListener("click", () => {
-        if (confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("uniqueCurrentUser");
-          window.location.href = "the-unique-gate.html";
-        }
-      });
+      if (logoutBtn && logoutBtn.dataset.bound !== "1") {
+        logoutBtn.dataset.bound = "1";
+        logoutBtn.addEventListener("click", () => {
+          if (confirm("로그아웃 하시겠습니까?")) {
+            localStorage.removeItem("uniqueCurrentUser");
+            window.location.href = "the-unique-gate.html";
+          }
+        });
+      }
     }
   };
 
-  // ✅ inline onclick들이 쓰니까 전역 노출
   window.openTab = U.ui.openTab;
 })();
