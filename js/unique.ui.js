@@ -75,7 +75,7 @@
       const workBtn = document.getElementById("work-btn");
       if (workBtn && workBtn.dataset.bound !== "1") {
         workBtn.dataset.bound = "1";
-        workBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+        workBtn.addEventListener("click", () => { window.location.href = "the-unique-work-tool.html"; });
       }
 
       const sotBtn = document.getElementById("sot-btn");
