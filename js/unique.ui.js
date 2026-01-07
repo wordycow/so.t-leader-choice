@@ -73,10 +73,10 @@
     bindBasicButtons() {
       // ✅ work-btn은 "무조건" 먼저 바인딩 (가드 때문에 빠지는 사고 방지)
       const workBtn = document.getElementById("work-btn");
-      if (workBtn && workBtn.dataset.bound !== "1") {
-        workBtn.dataset.bound = "1";
-        workBtn.addEventListener("click", () => { window.location.href = "the-unique-work-tool.html"; });
-      }
+if (workBtn && workBtn.dataset.bound !== "1") {
+  workBtn.dataset.bound = "1";
+  workBtn.addEventListener("click", () => window.open("the-unique-work-tool.html", "_blank"));
+}
 
       const sotBtn = document.getElementById("sot-btn");
       if (sotBtn && sotBtn.dataset.bound !== "1") {
