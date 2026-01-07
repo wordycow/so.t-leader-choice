@@ -71,6 +71,9 @@
     },
 
     bindBasicButtons() {
+      if (document.body.dataset.basicButtonsBound === "1") return;
+      document.body.dataset.basicButtonsBound = "1";
+      
       const sotBtn = document.getElementById("sot-btn");
       if (sotBtn) sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
       
