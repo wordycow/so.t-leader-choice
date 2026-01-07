@@ -6,10 +6,13 @@
     openTab(evt, tabName) {
       const content = document.getElementsByClassName("tb-content");
       for (let i = 0; i < content.length; i++) content[i].classList.remove("active");
+
       const tablinks = document.getElementsByClassName("tb-tab-btn");
       for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
-      document.getElementById(tabName).classList.add("active");
-      evt.currentTarget.classList.add("active");
+
+      const target = document.getElementById(tabName);
+      if (target) target.classList.add("active");
+      if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
     },
 
     updateHeaderUI() {
@@ -49,7 +52,7 @@
       } else {
         btn.textContent = "닉네임 등록";
         btn.classList.remove("done");
-        btn.onclick = window.registerNickname;
+        btn.onclick = window.registerNickname || null;
       }
     },
 
@@ -63,7 +66,7 @@
       myUtEl.textContent = ut.toFixed(2);
 
       const price = (Number.isFinite(U.STATE.utPrice) && U.STATE.utPrice > 0) ? U.STATE.utPrice : 0.02;
-      if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut*price).toFixed(2)} USDT 가치`;
+      if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut * price).toFixed(2)} USDT 가치`;
       if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (기부합×0.3/총UT)`;
     },
 
@@ -87,6 +90,8 @@
     }
   };
 
-  // ✅ inline onclick들이 쓰니까 전역 노출
-  window.openTab = U.ui.openTab;
+  // ✅ inline onclick이 쓰니까 전역 노출
+  window.openTab = function (evt, tabName) {
+    return U.ui.openTab(evt, tabName);
+  };
 })();
