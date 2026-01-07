@@ -198,7 +198,12 @@
   let myCurrentBalance = 0;
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-  const UT_RATE = 0.02; // 1 UT = 0.02 USDT
+  // ✅ UT 정산가는 메인에서 저장한 "오늘 정산가"를 사용 (자정 기준 1일 1회)
+// - 값이 없으면(아직 메인을 안 열었거나 첫날) fallback으로 계산/임시값을 사용
+const UT_RATE = (() => {
+  const p = Number(localStorage.getItem("ut_settlement_price"));
+  return (Number.isFinite(p) && p > 0) ? p : 0.02; // fallback
+})();
 
   document.addEventListener('DOMContentLoaded', async () => {
     const rawUser = localStorage.getItem('uniqueCurrentUser');
@@ -272,7 +277,7 @@
         display.textContent = "≈ 0.00 USDT";
     } else {
         const usdt = (amt * UT_RATE).toFixed(2);
-        display.textContent = `≈ ${usdt} USDT`;
+        display.textContent = `≈ ${usdt} USDT (정산가)`;
     }
   }
 
