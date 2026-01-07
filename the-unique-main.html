@@ -652,6 +652,52 @@
   display: inline-flex;
   align-items: center;
 }
+ /* ✅ 제목 아래로 버튼을 내리는 탭 라인 */
+.tb-tabs-under-title{
+  margin: 10px 0 16px;
+  padding-bottom: 0;
+  border-bottom: none;
+
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  flex-wrap:wrap; /* 화면 좁아지면 자동 줄바꿈 */
+}
+
+/* 탭 버튼 높이/정렬 통일 */
+.tb-tabs-under-title .tb-tab-btn{
+  height: 36px;
+  padding: 8px 14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* 닉네임 버튼도 같은 줄에 자연스럽게 */
+.tb-tabs-under-title #btn-nick-reg{
+  height: 36px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left: 4px;
+}
+
+/* 모바일에서는 버튼이 너무 커보이면 조금 줄임 */
+@media (max-width: 768px){
+  .tb-tabs-under-title{
+    gap:8px;
+  }
+  .tb-tabs-under-title .tb-tab-btn,
+  .tb-tabs-under-title #btn-nick-reg{
+    height: 34px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}  
   </style>
 </head>
 
@@ -685,20 +731,21 @@
         </section>
 
         <section class="treasure-box-wrap">
-          <div class="tb-header">
-            <div class="tb-header-left">
-              <div class="tb-title">MY UNIQUE WALLET</div>
-              <div class="tb-user" id="tb-user-name">User</div>
-            </div>
-            
-         <div class="tb-tabs">
+         <div class="tb-header">
+  <div class="tb-header-left">
+    <div class="tb-title">MY UNIQUE WALLET</div>
+    <div class="tb-user" id="tb-user-name">User</div>
+  </div>
+</div>
+
+<!-- ✅ 버튼들을 제목 바로 아래로 이동 -->
+<div class="tb-tabs tb-tabs-under-title">
   <button class="tb-tab-btn active" onclick="openTab(event, 'tab-main')">내 지갑 & 지식 채굴</button>
   <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">UT 송금</button>
 
-  <!-- ✅ 닉네임 버튼: UT 송금 옆 -->
+  <!-- 닉네임 버튼 -->
   <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
 </div>
-
           <div id="tab-main" class="tb-content active">
             <div class="wallet-mining-grid">
               <div class="wm-card wallet">
