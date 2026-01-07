@@ -10,9 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* =========================================================
-       [1] 기존 스타일 (유지)
-       ========================================================= */
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;height:100%}
     body{
@@ -22,8 +19,10 @@
       background-image:radial-gradient(circle at top, rgba(148,163,184,0.18), transparent 55%);
       background-attachment:fixed;
     }
+
     .scene{position:fixed; inset:0; overflow:hidden; pointer-events:none;}
     .scene-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; mix-blend-mode:screen;}
+
     .page-wrap{
       position:relative;
       z-index:10;
@@ -48,6 +47,7 @@
       -webkit-backdrop-filter:blur(14px);
     }
     .main-inner{position:relative; z-index:1;}
+
     .title-wrap{text-align:center; margin-bottom:22px;}
     .title-en{
       font-family:"Cinzel","Times New Roman",serif;
@@ -65,6 +65,7 @@
       letter-spacing:.12em;
       text-transform:none;
     }
+
     .top-sns-icons{
       position:absolute;
       top:68px;
@@ -80,6 +81,8 @@
     }
     .top-sns-icons a{display:block; line-height:0; text-decoration:none;}
     .top-sns-icons img{display:block; width:42px; height:42px;}
+
+    /* ====== schedule ====== */
     .top-schedule-panel{
       margin:10px 0 24px;
       border-radius:18px;
@@ -137,106 +140,152 @@
       margin-top:6px;
     }
 
+    /* ====== wallet box ====== */
     .treasure-box-wrap {
-      background: #0f172a; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 20px;
-      padding: 20px; margin: 24px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: #0f172a;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 20px;
+      padding: 20px;
+      margin: 24px 0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .tb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-    .tb-header-left { display: flex; align-items: baseline; gap: 12px; }
-    .tb-title { font-family: "Cinzel", serif; font-size: 20px; color: #fff; font-weight: 700; letter-spacing: 0.05em; }
-    .tb-user { font-size: 20px; color: #fbbf24; font-weight: 800; text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
-    .tb-header-right { display: flex; align-items: center; gap: 10px; }
-    .btn-nick-reg {
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.5);
-      color: #60a5fa;
-      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+
+    .tb-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .tb-header-left { display:flex; align-items:baseline; gap:12px; }
+    .tb-title { font-family:"Cinzel",serif; font-size:20px; color:#fff; font-weight:700; letter-spacing:0.05em; }
+    .tb-user  { font-size:20px; color:#fbbf24; font-weight:800; text-shadow:0 0 10px rgba(251,191,36,0.4); }
+
+    .btn-nick-reg{
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.5);
+      color:#60a5fa;
+      padding:8px 16px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+      transition: all .2s;
     }
-    .btn-nick-reg:hover { background: rgba(59, 130, 246, 0.3); color: #fff; }
-    .btn-nick-reg.done { border-color: #10b981; color: #34d399; background: transparent; cursor: default; }
+    .btn-nick-reg:hover{ background: rgba(59,130,246,0.3); color:#fff; }
+    .btn-nick-reg.done{ border-color:#10b981; color:#34d399; background: transparent; cursor: default; }
 
-    .tb-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-    .tb-tab-btn {
-      background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8;
-      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    /* 버튼을 제목 아래로 */
+    .tb-tabs-under-title{
+      margin: 10px 0 16px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      flex-wrap:wrap;
     }
-    .tb-tab-btn:hover { background: #334155; color: #fff; }
-    .tb-tab-btn.active { background: #fbbf24; color: #0f172a; border-color: #fbbf24; font-weight: 700; }
+    .tb-tab-btn{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.1);
+      color:#94a3b8;
+      padding:8px 16px;
+      border-radius:8px;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+      transition: all .2s;
+    }
+    .tb-tab-btn:hover{ background:#334155; color:#fff; }
+    .tb-tab-btn.active{ background:#fbbf24; color:#0f172a; border-color:#fbbf24; }
 
-    .tb-content { display: none; animation: fadeIn 0.3s; }
-    .tb-content.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .tb-content { display:none; animation: fadeIn .3s; }
+    .tb-content.active{ display:block; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
 
-    .wallet-mining-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; align-items: stretch; }
-    .wm-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    .wallet-mining-grid{
+      display:grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap:16px;
+      align-items:stretch;
+    }
 
-    .wm-card.wallet { border-color: #fbbf24; justify-content: space-between; }
-    .fund-label { font-size: 13px; color: #fbbf24; margin-bottom: 8px; display: block; font-weight: 600; }
-    .fund-amount { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-    .fund-unit { font-size: 16px; color: #fbbf24; }
-    .fund-sub { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
-    .fund-rate { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #94a3b8; }
+    .wm-card{
+      background:#1e293b;
+      border-radius:12px;
+      padding:20px;
+      border:1px solid rgba(255,255,255,0.05);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
 
-    .wm-card.mining { border: 1px solid rgba(251,191,36,0.2); justify-content: flex-start; }
-    .mining-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .mining-title { color: #fff; font-size: 14px; font-weight: 700; display:flex; align-items:center; gap:6px; }
-    .mining-badge { font-size: 11px; background: rgba(251,191,36,0.2); padding: 4px 8px; border-radius: 12px; color: #fff; }
+    .wm-card.wallet{ border-color:#fbbf24; justify-content:space-between; }
+    .fund-label{ font-size:13px; color:#fbbf24; margin-bottom:8px; display:block; font-weight:700; }
+    .fund-amount{ font-size:32px; font-weight:900; color:#fff; margin-bottom:4px; }
+    .fund-unit{ font-size:16px; color:#fbbf24; }
+    .fund-sub{ font-size:13px; color:#cbd5e1; margin-top:4px; }
+    .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
 
-    .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
-    .video-frame iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-    .mining-status { font-size: 13px; font-weight: 700; color: #94a3b8; margin-top: 10px; text-align: center; }
-    .mining-status.done { color: #4ade80; }
+    .wm-card.mining{ border:1px solid rgba(251,191,36,0.2); justify-content:flex-start; }
+    .mining-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .mining-title{ color:#fff; font-size:14px; font-weight:800; display:flex; align-items:center; gap:6px; }
+    .mining-badge{ font-size:11px; background: rgba(251,191,36,0.2); padding:4px 8px; border-radius:12px; color:#fff; }
 
-    .wallet-btn-group { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+    .video-frame{ position:relative; width:100%; padding-bottom:56.25%; height:0; background:#000; border-radius:12px; overflow:hidden; border:1px solid #334155; }
+    .video-frame iframe{ position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+    .mining-status{ font-size:13px; font-weight:700; color:#94a3b8; margin-top:10px; text-align:center; }
+    .mining-status.done{ color:#4ade80; }
 
-    .btn-reward-main {
-      width: 100%; padding: 12px; border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 700; cursor: pointer; color: #fff;
+    .wallet-btn-group{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+
+    .btn-reward-main{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:8px;
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      color:#fff;
       background: linear-gradient(135deg, #d946ef, #a855f7);
-      transition: all 0.2s;
-      text-transform: uppercase;
-      box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
+      transition: all .2s;
+      text-transform:uppercase;
+      box-shadow: 0 4px 12px rgba(217,70,239,0.3);
     }
-    .btn-reward-main:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
-    .btn-reward-main.ready { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; animation: pulseBtn 1.5s infinite; }
+    .btn-reward-main:disabled{ background:#334155; color:#94a3b8; cursor:not-allowed; box-shadow:none; }
+    .btn-reward-main.ready{ background: linear-gradient(135deg, #fbbf24, #f59e0b); color:#000; animation:pulseBtn 1.5s infinite; }
+    @keyframes pulseBtn { 0%{transform:scale(1);} 50%{transform:scale(1.02);} 100%{transform:scale(1);} }
 
-    .btn-lucky {
-      width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
-      font-size: 12px; font-weight: 600; cursor: pointer; color: #e2e8f0;
+    .btn-lucky{
+      width:100%;
+      padding:12px;
+      border:1px solid rgba(255,255,255,0.2);
+      border-radius:20px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      color:#e2e8f0;
       background: rgba(255,255,255,0.05);
-      transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .2s;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
     }
-    .btn-lucky:hover { background: rgba(255,255,255,0.1); }
-    .btn-lucky:disabled { color: #64748b; cursor: not-allowed; }
-    @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    .btn-lucky:hover{ background: rgba(255,255,255,0.1); }
+    .btn-lucky:disabled{ color:#64748b; cursor:not-allowed; }
 
-    .transfer-form label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px; margin-top: 12px; }
-    .fund-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 6px; font-size: 13px; }
-    .transfer-btn { width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; margin-top: 20px; cursor: pointer; }
-    .history-list { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-    .history-title { font-size: 14px; color: #cbd5e1; font-weight: 600; margin-bottom: 10px; }
-    .history-empty { font-size: 12px; color: #64748b; text-align: center; padding: 20px 0; }
+    .transfer-form label{ display:block; font-size:12px; color:#94a3b8; margin-bottom:6px; margin-top:12px; }
+    .fund-input{ width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:10px; border-radius:6px; font-size:13px; }
+    .transfer-btn{ width:100%; background:#3b82f6; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:900; margin-top:14px; cursor:pointer; }
+    .history-list{ margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1); }
+    .history-title{ font-size:14px; color:#cbd5e1; font-weight:800; margin-bottom:10px; }
+    .history-empty{ font-size:12px; color:#64748b; text-align:center; padding:20px 0; }
 
-    @media (max-width: 768px){
-  /* (기존 코드들 유지) */
-
-  .wallet-mining-grid { grid-template-columns: 1fr; }
-  .tb-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .tb-header-right { width: 100%; text-align: right; }
-}
+    /* ====== layout below ====== */
     .layout{
       display:grid;
       grid-template-columns:minmax(0, 2.4fr) minmax(0, 3fr);
       gap:24px;
       align-items:stretch;
     }
-    .member-panel,
-    .goal-panel{
-      height: 100%;
-      min-height: 0;
-    }
-    .next-goal-card{ flex: 1 1 auto; min-height: 0; }
 
     .member-panel{
       border-radius:22px;
@@ -248,10 +297,40 @@
       display:flex;
       flex-direction:column;
     }
-    .member-hello{font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;}
-    .member-name{font-size:20px;font-weight:700;margin-bottom:4px;color:#fff;}
+    .member-hello{font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;}
+    .member-name{font-size:20px;font-weight:900;margin-bottom:4px;color:#fff;}
     .member-id{display:none;}
     .member-meta{font-size:12px;color:#94A3B8;margin-bottom:6px;}
+
+    .member-top-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    /* ✅ 일하기 도구 버튼 (최종 1개만 정의) */
+    .work-pill{
+      background:#fbbf24;
+      border:1px solid #fbbf24;
+      color:#0b1120;
+      border-radius:12px;
+      height:52px;
+      min-width:140px;
+      padding:0 18px;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:0.02em;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+      cursor:pointer;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,0,0,0.25) inset;
+      transition: transform .12s ease, filter .12s ease;
+    }
+    .work-pill:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+    .work-pill:active{ transform: translateY(0); }
 
     .rank-badge-box{
       margin-top:16px;
@@ -268,19 +347,115 @@
     }
     .rank-road{display:flex;align-items:center;gap:12px;}
     .rank-slot{display:flex;flex-direction:column;align-items:center;gap:6px;}
-    .rank-slot-next{margin-top:-6px;}
+    .rank-slot-next{ margin-top:-6px; }
     .rank-icon{
       max-height:130px;height:auto;width:auto;border-radius:12px;object-fit:contain;background:transparent;
       --rank-scale:1;
       transform:scale(var(--rank-scale));
       transform-origin:center bottom;
     }
-    .rank-icon-next{opacity:1;}
+    .rank-icon-next{ --rank-scale:1.3; }
     .rank-arrow{
       font-size:22px;color:#F59E0B;text-shadow:0 0 10px rgba(245,158,11,0.7);
       margin:0 -4px;
     }
-    .rank-mini-label{font-size:11px;color:#E5E7EB;opacity:.95;}
+    .rank-mini-label{font-size:11px;color:#E5E7EB;opacity:.95; line-height:1.2;}
+    .rank-slot-next .rank-mini-label{ margin-top:-6px; }
+
+    .member-actions{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+    .action-btn{
+      width:100%;
+      padding:9px 10px;
+      border-radius:999px;
+      border:1px solid #F59E0B;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      background: radial-gradient(circle at top, #1D2953, #0B1120);
+      color:#fff;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.9), 0 0 0 1px rgba(15,23,42,0.9) inset;
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .action-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.06);
+      box-shadow: 0 14px 26px rgba(0,0,0,1), 0 0 0 1px rgba(245,158,11,0.85) inset;
+    }
+
+    .action-btn.linkon-btn{
+      padding: 6px 10px;
+      gap: 10px;
+      border: 1px solid rgba(164,212,186,0.55);
+      background: linear-gradient(180deg, #055430 0%, #024B2A 100%);
+      box-shadow:
+        0 10px 24px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(164,212,186,0.18) inset;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .action-btn.linkon-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      background: linear-gradient(180deg, #066038 0%, #024B2A 100%);
+      box-shadow:
+        0 16px 32px rgba(0,0,0,1),
+        0 0 0 1px rgba(164,212,186,0.35) inset;
+    }
+    .action-btn.linkon-btn .linkon-logo{ height:32px; width:auto; display:block; object-fit:contain; }
+
+    .action-btn.action-btn-unique{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:900;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      border: 1px solid rgba(245,158,11,0.95);
+      background:
+        radial-gradient(circle at top, rgba(255,215,120,0.20), rgba(30,40,72,0.92)),
+        linear-gradient(180deg, rgba(245,158,11,0.18), rgba(124,45,18,0.18));
+      color:#FACC15;
+      box-shadow:
+        0 10px 24px rgba(0,0,0,0.92),
+        0 0 0 1px rgba(245,158,11,0.45) inset,
+        0 0 18px rgba(245,158,11,0.25);
+    }
+
+    /* ✅ market 버튼 톤 */
+    .market-btn{
+      border: 1px solid rgba(164,212,186,0.55);
+      background: linear-gradient(180deg, #055430 0%, #024B2A 100%);
+      color:#EAFBF2;
+      font-weight:900;
+      letter-spacing:0.18em;
+    }
+
+    .logout-row{margin-top:10px;text-align:right;}
+    .logout-btn{
+      width:100%;
+      padding:10px 10px;
+      border-radius:999px;
+      border:none;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      cursor:pointer;
+      background: linear-gradient(180deg, #B91C1C, #7F1D1D);
+      color:#FEF2F2;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.9), 0 0 0 1px rgba(127,29,29,0.9) inset;
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .logout-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+      box-shadow: 0 16px 32px rgba(0,0,0,1), 0 0 0 1px rgba(248,250,252,0.8) inset;
+    }
 
     .goal-panel{
       border-radius:22px;
@@ -293,8 +468,8 @@
       flex-direction:column;
     }
     .goal-header{margin-bottom:6px;}
-    .goal-header-text{font-size:14px;font-weight:700;color:#E5E7EB;}
-    .goal-header-text span{color:#FACC15;font-weight:800;margin-left:4px;}
+    .goal-header-text{font-size:14px;font-weight:800;color:#E5E7EB;}
+    .goal-header-text span{color:#FACC15;font-weight:900;margin-left:4px;}
     .next-goal-card{
       flex:1 1 auto;
       border-radius:18px;
@@ -308,21 +483,13 @@
       flex-direction:column;
       justify-content:space-between;
     }
-    .next-goal-top{
-      display:flex;
-      justify-content:center;
-      margin-top:40px;
-      margin-bottom:32px;
-    }
+    .next-goal-top{display:flex; justify-content:center; margin-top:40px; margin-bottom:32px;}
     .goal-me-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
     .goal-witch{
       max-height:200px;height:auto;width:auto;display:block;
       animation: witchFloat 4s ease-in-out infinite alternate;
-      filter:
-        drop-shadow(0 0 10px rgba(245,158,11,0.9))
-        drop-shadow(0 6px 14px rgba(0,0,0,0.8));
+      filter: drop-shadow(0 0 10px rgba(245,158,11,0.9)) drop-shadow(0 6px 14px rgba(0,0,0,0.8));
     }
-    .goal-me-label{display:none;}
     .next-goal-bottom{display:flex;justify-content:space-between;align-items:flex-end;}
     .goal-side{display:flex;flex-direction:column;gap:4px;flex:1;}
     .goal-label{
@@ -330,7 +497,7 @@
       text-shadow:0 0 8px rgba(245,158,11,0.8), 0 2px 10px rgba(0,0,0,0.9);
     }
     .goal-count{
-      font-size:72px;font-weight:800;color:#FACC15;
+      font-size:72px;font-weight:900;color:#FACC15;
       text-shadow:0 0 12px rgba(245,158,11,0.9), 0 0 22px rgba(0,0,0,0.9);
       line-height:1;
     }
@@ -348,7 +515,7 @@
         0 0 0 1px rgba(30,64,118,0.85),
         0 10px 24px rgba(0,0,0,0.9);
     }
-    .ebook-panel .section-title{margin-bottom:8px;font-size:13px;font-weight:600;color:#E5E7EB;}
+    .ebook-panel .section-title{margin-bottom:8px;font-size:13px;font-weight:700;color:#E5E7EB;}
     .ebook-list{display:flex;flex-wrap:wrap;gap:10px;}
     .ebook-card{
       border-radius:16px;
@@ -376,72 +543,12 @@
     }
     .ebook-thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#020617;}
     .ebook-thumb img{width:100%;height:100%;object-fit:cover;}
-    .ebook-meta-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;}
+    .ebook-meta-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;}
     .ebook-meta-desc{font-size:11px;color:#CBD5F5;opacity:.9;}
     .ebook-meta-cta{margin-top:4px;font-size:11px;color:#FACC15;}
     .ebook-admin-link-wrap{margin-top:6px;text-align:right;}
     .ebook-admin-link{font-size:11px;color:#9CA3AF;text-decoration:none;opacity:.75;}
     .ebook-admin-link:hover{opacity:1;color:#FACC15;}
-
-    .member-actions{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
-    .action-btn{
-      width:100%;
-      padding:9px 10px;
-      border-radius:999px;
-      border:1px solid #F59E0B;
-      font-size:11px;
-      font-weight:600;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      background: radial-gradient(circle at top, #1D2953, #0B1120);
-      color:#fff;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.9), 0 0 0 1px rgba(15,23,42,0.9) inset;
-      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
-    }
-    .action-btn:hover{
-      transform:translateY(-1px);
-      filter:brightness(1.06);
-      box-shadow: 0 14px 26px rgba(0,0,0,1), 0 0 0 1px rgba(245,158,11,0.85) inset;
-    }
-    .action-badge{
-      min-width:16px;height:16px;border-radius:999px;
-      background:#EF4444;color:#FEF2F2;font-size:10px;
-      display:inline-flex;align-items:center;justify-content:center;padding:0 4px;
-    }
-    .action-badge.hidden{display:none;}
-    .action-btn-sot{padding:9px 10px;}
-    .sot-logo-text{
-      font-family:"Cinzel","Times New Roman",serif;
-      font-size:16px;
-      letter-spacing:.15em;
-      color:#FACC15;
-    }
-    .logout-row{margin-top:10px;text-align:right;}
-    .logout-btn{
-      width:100%;
-      padding:10px 10px;
-      border-radius:999px;
-      border:none;
-      font-size:13px;
-      font-weight:600;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      cursor:pointer;
-      background: linear-gradient(180deg, #B91C1C, #7F1D1D);
-      color:#FEF2F2;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.9), 0 0 0 1px rgba(127,29,29,0.9) inset;
-      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
-    }
-    .logout-btn:hover{
-      transform:translateY(-1px);
-      filter:brightness(1.05);
-      box-shadow: 0 16px 32px rgba(0,0,0,1), 0 0 0 1px rgba(248,250,252,0.8) inset;
-    }
 
     .promo-section{display:none;}
     .footer-note{
@@ -455,10 +562,12 @@
       opacity:.85;
     }
     @keyframes witchFloat{
-      0%    { transform: translateY(-10px); }
-      50%   { transform: translateY(10px); }
-      100% { transform: translateY(-10px); }
+      0%{ transform: translateY(-10px); }
+      50%{ transform: translateY(10px); }
+      100%{ transform: translateY(-10px); }
     }
+
+    /* ===== responsive ===== */
     @media (max-width: 900px){
       .top-schedule-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
@@ -468,7 +577,7 @@
       .layout{ grid-template-columns: minmax(0,1fr); gap:18px; }
       .ebook-list{ flex-direction:column; }
       .ebook-card{ flex:1 1 100%; }
-      .top-market-btn{ display:none; }
+
       .top-sns-icons{
         top:54px !important;
         left:24px !important;
@@ -479,225 +588,10 @@
       .top-sns-icons .sns-youtube{ left:0; display:block !important; }
       .top-sns-icons .sns-discord{ right:0; }
       .top-sns-icons img{ width:48px !important; height:48px !important; }
+
+      .wallet-mining-grid{ grid-template-columns: 1fr; }
+      .tb-header{ flex-direction:column; align-items:flex-start; gap:8px; }
     }
-
-    .action-btn.linkon-btn{
-      padding: 6px 10px;
-      gap: 10px;
-      border: 1px solid rgba(164,212,186,0.55);
-      background: linear-gradient(180deg, #055430 0%, #024B2A 100%);
-      box-shadow:
-        0 10px 24px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(164,212,186,0.18) inset;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .action-btn.linkon-btn:hover{
-      transform: translateY(-1px);
-      filter: brightness(1.06);
-      background: linear-gradient(180deg, #066038 0%, #024B2A 100%);
-      box-shadow:
-        0 16px 32px rgba(0,0,0,1),
-        0 0 0 1px rgba(164,212,186,0.35) inset;
-    }
-    .action-btn.linkon-btn .linkon-logo{
-      height: 32px;
-      width: auto;
-      display:block;
-      object-fit: contain;
-    }
-    .action-btn.action-btn-unique{
-      font-family:"Cinzel","Times New Roman",serif;
-      font-weight:800;
-      letter-spacing:0.18em;
-      text-transform:uppercase;
-      border: 1px solid rgba(245,158,11,0.95);
-      background:
-        radial-gradient(circle at top, rgba(255,215,120,0.20), rgba(30,40,72,0.92)),
-        linear-gradient(180deg, rgba(245,158,11,0.18), rgba(124,45,18,0.18));
-      color:#FACC15;
-      box-shadow:
-        0 10px 24px rgba(0,0,0,0.92),
-        0 0 0 1px rgba(245,158,11,0.45) inset,
-        0 0 18px rgba(245,158,11,0.25);
-    }
-    .action-btn.action-btn-unique:hover{
-      transform: translateY(-1px);
-      filter: brightness(1.06);
-      box-shadow:
-        0 16px 32px rgba(0,0,0,1),
-        0 0 0 1px rgba(245,158,11,0.75) inset,
-        0 0 24px rgba(245,158,11,0.35);
-    }
-    .action-btn.action-btn-unique .action-badge{
-      background: #EF4444;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.85);
-    }
-    /* 상단 이름 + 버튼 정렬 */
-.member-top-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-
-/* ✅ 일하기 도구 버튼: '내 지갑 & 지식 채굴' 탭과 동일 스타일로 강제 */
-.work-pill{
-  background: #fbbf24 !important;     /* 노란색 */
-  border: 1px solid #fbbf24 !important;
-  color: #0b1120 !important;          /* 검은 글씨 */
-
-  border-radius: 12px !important;
-  height: 52px !important;            /* 보기 좋게 (원하면 80으로) */
-  min-width: 140px !important;
-  padding: 0 18px !important;
-
-  /* ✅ 글씨 크기: wordycow(member-name)와 같은 급으로 */
-  font-size: 18px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.02em !important;
-
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
-
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-
-  box-shadow:
-    0 12px 26px rgba(0,0,0,0.75),
-    0 0 0 1px rgba(0,0,0,0.25) inset !important;
-
-  transition: transform .12s ease, filter .12s ease !important;
-}
-
-.work-pill:hover{
-  transform: translateY(-1px) !important;
-  filter: brightness(1.03) !important;
-}
-
-    /* 상단 이름 + 버튼 한 줄 정렬 */
-.member-top-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-
-/* ✅ 일하기 도구: 네모난 세련 버튼 */
-.work-pill{
-  border-radius: 12px;                 /* 캡슐 X */
-  padding: 8px 12px;
-  border: 1px solid rgba(148,163,184,0.35);
-  background: rgba(2,6,23,0.45);
-  color: #E5E7EB;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  cursor: pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  white-space: nowrap;
-
-  /* 더 세련된 느낌 */
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(255,255,255,0.06) inset;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: transform .12s ease, filter .12s ease, border-color .12s ease, background .12s ease;
-}
-
-.work-pill:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.06);
-  border-color: rgba(250,204,21,0.45);
-  background: rgba(15,23,42,0.60);
-}
-
-.work-pill:active{
-  transform: translateY(0px);
-}
-  .work-pill{
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-}
-/* ✅ 현재/다음 직급 라벨 높이(정렬) 통일 */
-.rank-slot .rank-mini-label{
-  line-height: 1.2;
-  min-height: 14px;        /* 라벨 영역 높이 통일 */
-  display: block;
-  margin-top: 2px;
-}
-
-/* ✅ 다음 직급 배지만 1.3배 크게 */
-.rank-icon{
-  --rank-scale: 1;         /* 기본(현재 직급) */
-}
-
-.rank-icon-next{
-  --rank-scale: 1.3;       /* 다음 직급만 1.3배 */
-}
- .rank-slot-next .rank-mini-label{
-  margin-top: 6px; /* 다음 직급 배지 커진 만큼 라벨 간격 보정 */
-} 
-    /* 닉네임 버튼을 탭 라인에 자연스럽게 */
-.tb-tabs #btn-nick-reg{
-  margin-left: 8px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 12px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-}
- /* ✅ 제목 아래로 버튼을 내리는 탭 라인 */
-.tb-tabs-under-title{
-  margin: 10px 0 16px;
-  padding-bottom: 0;
-  border-bottom: none;
-
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:10px;
-  flex-wrap:wrap; /* 화면 좁아지면 자동 줄바꿈 */
-}
-
-/* 탭 버튼 높이/정렬 통일 */
-.tb-tabs-under-title .tb-tab-btn{
-  height: 36px;
-  padding: 8px 14px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* 닉네임 버튼도 같은 줄에 자연스럽게 */
-.tb-tabs-under-title #btn-nick-reg{
-  height: 36px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 12px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  margin-left: 4px;
-}
-
-/* 모바일에서는 버튼이 너무 커보이면 조금 줄임 */
-@media (max-width: 768px){
-  .tb-tabs-under-title{
-    gap:8px;
-  }
-  .tb-tabs-under-title .tb-tab-btn,
-  .tb-tabs-under-title #btn-nick-reg{
-    height: 34px;
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-}  
   </style>
 </head>
 
@@ -708,7 +602,7 @@
 
   <div class="page-wrap">
     <main class="main-card">
-    
+
       <div class="top-sns-icons">
         <a class="sns-discord" href="https://discord.gg/3cUN7QXMSY" target="_blank" rel="noopener noreferrer">
           <img src="img/discord-round.png" alt="Discord" />
@@ -731,21 +625,21 @@
         </section>
 
         <section class="treasure-box-wrap">
-         <div class="tb-header">
-  <div class="tb-header-left">
-    <div class="tb-title">MY UNIQUE WALLET</div>
-    <div class="tb-user" id="tb-user-name">User</div>
-  </div>
-</div>
+          <div class="tb-header">
+            <div class="tb-header-left">
+              <div class="tb-title">MY UNIQUE WALLET</div>
+              <div class="tb-user" id="tb-user-name">User</div>
+            </div>
+          </div>
 
-<!-- ✅ 버튼들을 제목 바로 아래로 이동 -->
-<div class="tb-tabs tb-tabs-under-title">
-  <button class="tb-tab-btn active" onclick="openTab(event, 'tab-main')">내 지갑 & 지식 채굴</button>
-  <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">UT 송금</button>
+          <!-- 버튼들을 제목 바로 아래로 -->
+          <div class="tb-tabs-under-title">
+            <button class="tb-tab-btn active" onclick="openTab(event, 'tab-main')">내 지갑 & 지식 채굴</button>
+            <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">UT 송금</button>
+            <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
+          </div>
 
-  <!-- 닉네임 버튼 -->
-  <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
-</div>
+          <!-- ===== tab-main ===== -->
           <div id="tab-main" class="tb-content active">
             <div class="wallet-mining-grid">
               <div class="wm-card wallet">
@@ -755,8 +649,8 @@
                     <span id="my-ut-display">0.00</span>
                     <span class="fund-unit" style="color:#fbbf24;">UT</span>
                   </div>
-                  <div class="fund-sub" id="my-usdt-display">≈ 0.00 USDT 가치</div>
-                  <div class="fund-rate" id="ut-rate-line">1 UT = ... USDT</div>
+                  <div class="fund-sub" id="my-usdt-display">≈ 0.00 USDT 환산(정산가)</div>
+                  <div class="fund-rate" id="ut-rate-line">1 UT = ... USDT (정산가)</div>
                 </div>
 
                 <div class="wallet-btn-group">
@@ -783,77 +677,105 @@
             </div>
           </div>
 
+          <!-- ===== tab-transfer (유튜브 자리 대체) ===== -->
           <div id="tab-transfer" class="tb-content">
-            <div class="wm-card">
-              <div class="transfer-form">
-                <h3 style="color:#fff; margin:0 0 16px; font-size:16px;">🤝 P2P 송금</h3>
-                <label>받는 분 닉네임</label>
-                <input type="text" id="p2p-receiver" class="fund-input" placeholder="닉네임 입력">
-                <label>보낼 수량 (UT)</label>
-                <input type="number" id="p2p-amount" class="fund-input" placeholder="0">
-                <button class="transfer-btn" onclick="sendP2P()">송금하기</button>
+            <div class="wallet-mining-grid">
+              <!-- 좌측: 자산 -->
+              <div class="wm-card wallet">
+                <div>
+                  <span class="fund-label">나의 자산 (UT)</span>
+                  <div class="fund-amount fund-gold">
+                    <span id="my-ut-display-transfer">0.00</span>
+                    <span class="fund-unit" style="color:#fbbf24;">UT</span>
+                  </div>
+                  <div class="fund-sub" id="my-usdt-display-transfer">≈ 0.00 USDT 환산(정산가)</div>
+                  <div class="fund-rate" id="ut-rate-line-transfer">1 UT = ... USDT (정산가)</div>
+                </div>
+
+                <div class="wallet-btn-group">
+                  <button class="btn-lucky" disabled>💡 UT 송금 탭</button>
+                </div>
               </div>
-              <div class="history-list">
-                <div class="history-title">📊 최근 내역</div>
-                <div class="history-empty" id="history-container">거래 내역이 없습니다.</div>
+
+              <!-- 우측: P2P + 최근내역 -->
+              <div class="wm-card mining">
+                <div class="mining-header">
+                  <span class="mining-title">🤝 P2P 송금</span>
+                  <span class="mining-badge" id="my-ut-transfer-badge">보유: 0 UT</span>
+                </div>
+
+                <div class="transfer-form">
+                  <label>받는 분 닉네임</label>
+                  <input type="text" id="p2p-receiver" class="fund-input" placeholder="닉네임 입력">
+
+                  <label>보낼 수량 (UT)</label>
+                  <input type="number" id="p2p-amount" class="fund-input" placeholder="0">
+
+                  <button class="transfer-btn" onclick="sendP2P()">송금하기</button>
+                </div>
+
+                <div class="history-list">
+                  <div class="history-title">📊 최근 내역</div>
+                  <div class="history-empty" id="history-container">거래 내역이 없습니다.</div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
+        <!-- ===== below panels ===== -->
         <section class="layout">
           <div class="member-panel">
-  <div class="member-hello" id="member-hello">오늘도 성장하러 오셨군요.</div>
+            <div class="member-hello" id="member-hello">오늘도 성장하러 오셨군요.</div>
 
-  <!-- 이름 + 일하기도구 한 줄 -->
-  <div class="member-top-row">
-    <div id="member-name" class="member-name">회원 이름</div>
-    <button id="work-btn" class="work-pill" type="button">일하기 도구</button>
-  </div>
+            <div class="member-top-row">
+              <div id="member-name" class="member-name">회원 이름</div>
+              <button id="work-btn" class="work-pill" type="button">일하기 도구</button>
+            </div>
 
-  <div id="member-id" class="member-id">userid</div>
-  <div id="member-team" class="member-meta">소속: -</div>
+            <div id="member-id" class="member-id">userid</div>
+            <div id="member-team" class="member-meta">소속: -</div>
 
-  <div class="rank-badge-box">
-    <div class="rank-road">
-      <div class="rank-slot">
-        <img id="member-rank-img" class="rank-icon" src="img/member.png" alt="현재 직급 배지" />
-        <div id="member-rank-mini" class="rank-mini-label">현재 직급: 정회원</div>
-      </div>
-      <span class="rank-arrow">➜</span>
-      <div class="rank-slot rank-slot-next">
-        <img id="next-rank-img" class="rank-icon rank-icon-next" src="img/star1.png" alt="다음 직급 배지" />
-        <div id="next-rank-mini" class="rank-mini-label">다음 직급: 1스타</div>
-      </div>
-    </div>
-  </div>
+            <div class="rank-badge-box">
+              <div class="rank-road">
+                <div class="rank-slot">
+                  <img id="member-rank-img" class="rank-icon" src="img/member.png" alt="현재 직급 배지" />
+                  <div id="member-rank-mini" class="rank-mini-label">현재 직급: 정회원</div>
+                </div>
+                <span class="rank-arrow">➜</span>
+                <div class="rank-slot rank-slot-next">
+                  <img id="next-rank-img" class="rank-icon rank-icon-next" src="img/star1.png" alt="다음 직급 배지" />
+                  <div id="next-rank-mini" class="rank-mini-label">다음 직급: 1스타</div>
+                </div>
+              </div>
+            </div>
 
-  <!-- 버튼 순서 확정 -->
-  <div class="member-actions">
-    <button id="promo-btn" class="action-btn action-btn-unique">
-      UNIQUE Treasure Box
-      <span id="promo-badge" class="action-badge hidden">N</span>
-    </button>
+            <div class="member-actions">
+              <button id="promo-btn" class="action-btn action-btn-unique">
+                UNIQUE Treasure Box
+                <span id="promo-badge" class="action-badge hidden">N</span>
+              </button>
 
-    <button id="market-btn" class="action-btn market-btn">
-      UNIQUE MARKET
-    </button>
+              <button id="market-btn" class="action-btn market-btn">
+                UNIQUE MARKET
+              </button>
 
-    <button id="sot-btn" class="action-btn action-btn-sot">
-      <span class="sot-logo-text">So.T</span>
-    </button>
+              <button id="sot-btn" class="action-btn action-btn-sot">
+                <span class="sot-logo-text">So.T</span>
+              </button>
 
-    <button id="travel-btn" class="action-btn">여행신청/광고 문의</button>
+              <button id="travel-btn" class="action-btn">여행신청/광고 문의</button>
 
-    <button id="ppt-form-btn" class="action-btn action-btn-sot linkon-btn">
-      <img class="linkon-logo" src="https://wordycow.github.io/so.t-leader-choice/img/Linkon.png" alt="Linkon">
-    </button>
-  </div>
+              <button id="ppt-form-btn" class="action-btn action-btn-sot linkon-btn">
+                <img class="linkon-logo" src="https://wordycow.github.io/so.t-leader-choice/img/Linkon.png" alt="Linkon">
+              </button>
+            </div>
 
-  <div class="logout-row">
-    <button type="button" id="logout-btn" class="logout-btn">로그아웃</button>
-  </div>
-</div>
+            <div class="logout-row">
+              <button type="button" id="logout-btn" class="logout-btn">로그아웃</button>
+            </div>
+          </div>
+
           <div class="goal-panel">
             <div class="goal-header">
               <div id="goal-next-rank-title" class="goal-header-text">다음 목표: <span>1스타</span></div>
@@ -862,7 +784,6 @@
               <div class="next-goal-top">
                 <div class="goal-me-wrap">
                   <img src="img/witch-float.png" alt="나" class="goal-witch" />
-                  <div class="goal-me-label"></div>
                 </div>
               </div>
               <div class="next-goal-bottom">
@@ -886,20 +807,14 @@
             <a href="the-unique-ebook-admin.html" class="ebook-admin-link" id="ebook-admin-link">eBook 관리자 열기</a>
           </div>
         </section>
-
       </div>
     </main>
   </div>
 
   <div class="promo-section" id="promo-section"></div>
-  <div class="footer-note">
-    The Unique &copy; 2025 · internal use only
-  </div>
+  <div class="footer-note">The Unique &copy; 2025 · internal use only</div>
 
-  <!-- =======================================================
-       ✅ JS 12개 로딩 (순서 매우 중요)
-       - schedule 콜백(handleScheduleSheet)은 gviz보다 먼저 로드
-       ======================================================= -->
+  <!-- JS 로드 순서 -->
   <script src="js/unique.config.js"></script>
   <script src="js/unique.state.js"></script>
   <script src="js/unique.utils.js"></script>
@@ -911,8 +826,6 @@
   <script src="js/unique.ebooks.js"></script>
   <script src="js/unique.wallet.js"></script>
   <script src="js/unique.youtube.js"></script>
-
-  <!-- 마지막 부팅 -->
   <script src="js/unique.app.js"></script>
 </body>
 </html>
