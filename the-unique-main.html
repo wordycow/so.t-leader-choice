@@ -1063,12 +1063,11 @@
 
   try {
     const user = JSON.parse(raw || "{}");
-    currentId   = (user.id || "").toLowerCase();
     currentName = user.name || "";
-    currentTeam = user.team || "";
-    currentJoin = user.joinedAt || "";
-    currentNick = user.nickname || "";
-    if (user.balance !== undefined) localStorage.setItem("myUtPoints", user.balance);
+    window.currentId = currentId;
+    window.currentName = currentName;
+    
+     if (user.balance !== undefined) localStorage.setItem("myUtPoints", user.balance);
   } catch(e) {
     console.error(e);
     window.location.href = "the-unique-gate.html";
@@ -1494,6 +1493,38 @@
     const n = parseInt(r.replace("PRO",""), 10);
     return Number.isFinite(n) && n >= 1;
   }
+newBtn.onclick = function(e){
+  e.preventDefault();
+  e.stopPropagation();
+
+  // ✅ HQ는 무조건 통과
+  // 1) team이 'HQ'로 저장돼 있으면 통과
+  // 2) 또는 기존 로직처럼 (이름===소속) 이 HQ로 보는 규칙이면 통과
+  const rawUser = localStorage.getItem("uniqueCurrentUser") || "{}";
+  let u = {};
+  try { u = JSON.parse(rawUser); } catch(_) {}
+
+  const team = String(u.team || "").trim();
+  const name = String(u.name || "").trim();
+  const isHQ = (team === "HQ") || (name && team && name === team);
+
+  if (isHQ) {
+    const w = window.open("the-unique-promo.html", "_blank");
+    if(!w) window.location.href = "the-unique-promo.html";
+    return false;
+  }
+
+  // ✅ HQ가 아니면 Pro1 이상만 통과
+  const rank = (window.currentRankCode || "").toString();
+  if(!isPro1OrHigher(rank)){
+    alert("Pro1 직급 이상 사용 하실 수 있습니다.");
+    return false; // ✅ 절대 이동 안함
+  }
+
+  const w = window.open("the-unique-promo.html", "_blank");
+  if(!w) window.location.href = "the-unique-promo.html";
+  return false;
+};
 
   function patch(){
     const oldBtn = document.getElementById("promo-btn");
