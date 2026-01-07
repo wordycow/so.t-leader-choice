@@ -257,7 +257,13 @@ const UT_RATE = (() => {
       myCurrentBalance = parseFloat(localBal);
       document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
     }
-    const { data: profile } = await db.from('profiles').select('balance').eq('username', myUsername).single();
+    const { data: profile, error } = await db
+  .from('profiles')
+  .select('balance')
+  .eq('username', myUsername)
+  .maybeSingle();
+
+if (error) console.warn("fetchMyBalance error:", error);
     if (profile) {
       myCurrentBalance = profile.balance;
       document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
