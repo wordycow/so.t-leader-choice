@@ -1,898 +1,214 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>THE UNIQUE – SLOT</title>
+<meta charset="UTF-8">
+<title>THE UNIQUE – SLOT v1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
-  <script src="../js/unique.config.js"></script>
-  <style>
-    :root{
-      --bg:#020617;
-      --panel: rgba(15,23,42,0.85);
-      --panel2: rgba(2,6,23,0.45);
-      --border: rgba(255,255,255,0.10);
-      --gold:#fbbf24;
-      --gold2:#f59e0b;
-      --text:#e5e7eb;
-      --muted:#94a3b8;
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
-      --cellW: 108px;
-      --cellH: 86px;
-      --gap: 10px;
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 55%, #000 100%);
-      color:var(--text);
-      font-family:"Noto Sans KR",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-      overflow:hidden;
-    }
-
-    .wrap{
-      height:100%;
-      display:grid;
-      grid-template-columns: 320px 1fr 320px;
-      gap:12px;
-      padding:14px;
-    }
-
-    @media (max-width: 980px){
-      body{ overflow:auto; }
-      .wrap{
-        height:auto;
-        grid-template-columns: 1fr;
-        max-width: 980px;
-        margin:0 auto;
-      }
-    }
-
-    .card{
-      background: var(--panel);
-      border:1px solid rgba(251,191,36,0.25);
-      border-radius:18px;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.55);
-      overflow:hidden;
-      position:relative;
-    }
-
-    .top{
-      padding:14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-    }
-
-    .title{
-      font-family:"Cinzel",serif;
-      letter-spacing:.18em;
-      font-weight:700;
-      text-transform:uppercase;
-      color:var(--gold);
-      text-shadow: 0 0 14px rgba(251,191,36,0.25);
-    }
-
-    .btn{
-      border:1px solid var(--border);
-      background: rgba(2,6,23,0.35);
-      color: var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:900;
-      letter-spacing:.06em;
-      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      white-space:nowrap;
-    }
-    .btn:hover{ transform:translateY(-1px); filter:brightness(1.06); border-color:rgba(251,191,36,0.35); }
-    .btn.primary{ background:var(--gold); border-color:var(--gold); color:#0b1120; }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
-
-    .side{
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .panel{
-      background: rgba(2,6,23,0.35);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:16px;
-      padding:14px;
-    }
-
-    .panel h3{
-      margin:0 0 10px;
-      font-size:13px;
-      color:#fff;
-      font-weight:900;
-      letter-spacing:.06em;
-    }
-
-    .statRow{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .stat{
-      background: rgba(15,23,42,0.55);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:14px;
-      padding:12px;
-      min-height:72px;
-    }
-    .stat .k{ font-size:11px; color:var(--muted); font-weight:900; letter-spacing:.08em; }
-    .stat .v{ margin-top:6px; font-size:18px; font-weight:900; color:#fff; }
-    .stat .v.gold{ color: var(--gold); }
-
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .input{
-      width:100%;
-      padding:12px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(15,23,42,0.55);
-      color:#fff;
-      font-weight:900;
-      outline:none;
-    }
-
-    .hint{
-      color:#cbd5e1;
-      font-size:12px;
-      line-height:1.55;
-    }
-
-    .log{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:11px;
-      color:#94a3b8;
-      background: rgba(0,0,0,0.25);
-      border:1px solid rgba(255,255,255,0.08);
-      padding:10px;
-      border-radius:12px;
-      max-height: 220px;
-      overflow:auto;
-      white-space:pre-wrap;
-    }
-
-    /* ====== center machine ====== */
-    .center{
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .machine{
-      flex:1 1 auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-    }
-
-    .frame{
-      width:min(780px,100%);
-      background: rgba(2,6,23,0.35);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:20px;
-      padding:18px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.65);
-      position:relative;
-      overflow:hidden;
-    }
-    .frame::before{
-      content:"";
-      position:absolute;
-      inset:-40% -20%;
-      background: radial-gradient(circle at 50% 35%, rgba(251,191,36,0.18), transparent 55%);
-      transform: rotate(8deg);
-      pointer-events:none;
-    }
-
-    /* ✅ Free Spins 모드일 때 배경 분위기 업 */
-    .frame.fs-on::before{
-      background: radial-gradient(circle at 50% 35%, rgba(96,165,250,0.18), transparent 55%);
-    }
-    .frame.fs-on{
-      border-color: rgba(96,165,250,0.35);
-      box-shadow: 0 24px 70px rgba(0,0,0,0.7), 0 0 0 1px rgba(96,165,250,0.10) inset;
-    }
-
-    .reelGrid{
-      position:relative;
-      z-index:2;
-      display:grid;
-      grid-template-columns: repeat(5, var(--cellW));
-      grid-template-rows: repeat(4, var(--cellH));
-      gap: var(--gap);
-      justify-content:center;
-      padding:14px;
-      border-radius:18px;
-
-      background: rgba(15,23,42,0.65);
-      border:1px solid rgba(251,191,36,0.25);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
-    }
-    .frame.fs-on .reelGrid{
-      border-color: rgba(96,165,250,0.30);
-    }
-
-    .cell{
-      width: var(--cellW);
-      height: var(--cellH);
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.35);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size: 36px;
-      font-weight: 900;
-      color:#fff;
-      text-shadow: 0 10px 22px rgba(0,0,0,0.65);
-      user-select:none;
-      position:relative;
-      overflow:hidden;
-    }
-    .cell .txt{
-      font-family:"Cinzel", serif;
-      font-size: 30px;
-      letter-spacing:.02em;
-      color:#fff;
-      text-shadow: 0 10px 22px rgba(0,0,0,0.75);
-    }
-
-    .cell.win{
-      border-color: rgba(251,191,36,0.65);
-      box-shadow:
-        0 0 0 1px rgba(251,191,36,0.25) inset,
-        0 0 22px rgba(251,191,36,0.22);
-      background: rgba(251,191,36,0.06);
-    }
-
-    /* 당첨 플래시 */
-    .flash{
-      animation: flash 520ms ease-in-out 2;
-    }
-    @keyframes flash{
-      0%{ filter: brightness(1); }
-      50%{ filter: brightness(1.18); }
-      100%{ filter: brightness(1); }
-    }
-
-    .hud{
-      margin-top:12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-      z-index:2;
-      position:relative;
-    }
-    .hudBox{
-      flex:1 1 180px;
-      background: rgba(15,23,42,0.55);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:14px;
-      padding:12px;
-      min-width: 180px;
-    }
-    .hudBox .k{ font-size:11px; color:var(--muted); font-weight:900; letter-spacing:.08em; }
-    .hudBox .v{ margin-top:6px; font-size:20px; font-weight:900; color:#fff; }
-    .hudBox .v.gold{ color: var(--gold); }
-    .hudBox .v.blue{ color: #60a5fa; }
-
-    .spinBar{
-      flex: 0 0 auto;
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-    .spinBtn{
-      width: 150px;
-      height: 52px;
-      border-radius: 16px;
-      border:1px solid var(--gold);
-      background: linear-gradient(180deg, rgba(251,191,36,1), rgba(245,158,11,0.95));
-      color:#0b1120;
-      font-weight: 1000;
-      letter-spacing:.12em;
-      cursor:pointer;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.65);
-      transition: transform .12s ease, filter .12s ease;
-    }
-    .spinBtn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
-    .spinBtn:active{ transform: translateY(0px); }
-    .spinBtn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
-
-    /* 프리스핀 중 버튼 톤 변경 */
-    .spinBtn.fs{
-      border-color: rgba(96,165,250,0.85);
-      background: linear-gradient(180deg, rgba(96,165,250,1), rgba(59,130,246,0.95));
-      color:#0b1120;
-    }
-
-    .payTable{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:10px;
-    }
-    .line{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(15,23,42,0.55);
-      font-weight:900;
-      font-size:12px;
-      color:#cbd5e1;
-    }
-    .line b{ color: #fff; }
-    .line small{ color: var(--muted); font-weight:800; }
-
-    .warn{
-      font-size:11px;
-      color:#94a3b8;
-      line-height:1.5;
-      margin-top:8px;
-    }
-    /* ===== v3: Free Spins Banner + Auto Spin ===== */
-.fs-banner{
-  position:absolute;
-  left:14px;
-  right:14px;
-  top:14px;
-  z-index:3;
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid rgba(96,165,250,0.45);
-  background: rgba(2,6,23,0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.fs-banner strong{
-  color:#60a5fa;
-  font-weight:1000;
-  letter-spacing:.08em;
-}
-.fs-banner span{
-  color:#cbd5e1;
-  font-weight:900;
-}
-.frame.fs-on .fs-banner{ display:flex; }
-
-.auto-panel{
-  margin-top:10px;
-  display:none;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.auto-panel.active{ display:flex; }
-.auto-pill{
-  padding:8px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,0.12);
-  background: rgba(15,23,42,0.55);
+<style>
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#1e1b4b,#020617 60%,#000);
+  font-family:"Noto Sans KR",sans-serif;
   color:#e5e7eb;
+}
+.wrap{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.machine{
+  background:rgba(15,23,42,.85);
+  border:2px solid #fbbf24;
+  border-radius:20px;
+  padding:20px;
+  width:720px;
+  box-shadow:0 30px 80px rgba(0,0,0,.7);
+}
+.title{
+  text-align:center;
+  font-family:"Cinzel",serif;
+  letter-spacing:.2em;
+  color:#fbbf24;
+  margin-bottom:14px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  background:rgba(0,0,0,.4);
+  padding:14px;
+  border-radius:16px;
+}
+.cell{
+  height:80px;
+  border-radius:14px;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:36px;
   font-weight:900;
+}
+.cell.win{
+  box-shadow:0 0 20px rgba(251,191,36,.7);
+  background:rgba(251,191,36,.12);
+}
+.hud{
+  margin-top:14px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.box{
+  flex:1;
+  background:rgba(0,0,0,.35);
+  padding:10px;
+  border-radius:12px;
+  font-weight:900;
+}
+.btn{
+  margin-top:14px;
+  width:100%;
+  height:52px;
+  border-radius:16px;
+  border:none;
+  font-weight:1000;
+  letter-spacing:.15em;
   cursor:pointer;
+  background:linear-gradient(#fbbf24,#f59e0b);
+  color:#0b1120;
 }
-.auto-pill:hover{ filter:brightness(1.08); border-color:rgba(251,191,36,0.30); }
-.auto-pill.active{
-  background: rgba(251,191,36,0.22);
-  border-color: rgba(251,191,36,0.50);
-  color:#fff;
+.btn:disabled{opacity:.6}
+.log{
+  margin-top:10px;
+  font-size:12px;
+  color:#94a3b8;
 }
-  </style>
+.free{
+  color:#60a5fa;
+  font-weight:900;
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
+<div class="wrap">
+  <div class="machine">
+    <div class="title">THE UNIQUE SLOT</div>
 
-    <!-- LEFT -->
-    <div class="card">
-      <div class="top">
-        <div class="title">TREASURY</div>
-        <a class="btn" href="../the-unique-main.html">MAIN</a>
-      </div>
+    <div class="grid" id="grid"></div>
 
-      <div class="side">
-        <div class="panel">
-          <h3>ACCOUNT</h3>
-          <div class="statRow">
-            <div class="stat">
-              <div class="k">ID</div>
-              <div class="v" id="uid">-</div>
-            </div>
-            <div class="stat">
-              <div class="k">MY UT</div>
-              <div class="v gold" id="bal">-</div>
-            </div>
-          </div>
-          <div class="warn">
-            ※ 로그인(localStorage)이 없으면 메인으로 돌려보냅니다.<br>
-            ※ 베팅/확률/정산은 서버에서만 처리됩니다.
-          </div>
-        </div>
-
-        <div class="panel">
-          <h3>BET (UT)</h3>
-          <div class="row">
-            <input class="input" id="bet" type="number" min="1" step="1" value="10" />
-          </div>
-          <div class="warn">
-            - 5×4 / 10 라인 MVP<br>
-            - Wild: ⚔️ / Scatter: 🌙 / Jackpot: 중앙라인 ⚔️⚔️⚔️⚔️⚔️<br>
-            - ✅ v2: Scatter 3개 이상 → Free Spins
-          </div>
-        </div>
-
-        <div class="panel">
-          <h3>LOG</h3>
-          <div class="log" id="log"></div>
-        </div>
-      </div>
+    <div class="hud">
+      <div class="box">잔액<br><span id="balance">1000</span> UT</div>
+      <div class="box">베팅<br>10 UT</div>
+      <div class="box">Free Spin<br><span id="fs">0</span></div>
     </div>
 
-    <!-- CENTER -->
-    <div class="card">
-      <div class="top">
-        <div class="title">THE UNIQUE SLOT</div>
-        <div class="row">
-          <a class="btn" href="../game.html">GAME LIST</a>
-          <a class="btn" href="../the-unique-main.html">MAIN</a>
-        </div>
-      </div>
+    <button class="btn" id="spinBtn">SPIN</button>
 
-      <div class="center">
-        <div class="machine">
-          <div class="frame" id="frame">
-            <div class="reelGrid" id="grid"></div>
-
-            <div class="hud">
-              <div class="hudBox">
-                <div class="k">BET</div>
-                <div class="v" id="betV">10 UT</div>
-              </div>
-
-              <div class="hudBox">
-                <div class="k">LAST</div>
-                <div class="v gold" id="last">-</div>
-              </div>
-
-              <div class="hudBox">
-                <div class="k">JACKPOT POOL</div>
-                <div class="v" id="jp">-</div>
-              </div>
-
-              <div class="hudBox">
-                <div class="k">FREE SPINS</div>
-                <div class="v blue" id="fs">0 FS</div>
-              </div>
-
-              <div class="spinBar">
-  <button class="spinBtn" id="spinBtn">SPIN</button>
-  <button class="btn" id="autoBtn" type="button">AUTO</button>
-</div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT -->
-    <div class="card">
-      <div class="top">
-        <div class="title">PAYTABLE</div>
-        <button class="btn primary" id="refreshBtn">SYNC</button>
-      </div>
-
-      <div class="side">
-        <div class="panel">
-          <h3>SYMBOL</h3>
-          <div class="payTable">
-            <div class="line"><b>👑 여신</b><span><small>3=×4</small> · <small>4=×12</small> · <small>5=×30</small></span></div>
-            <div class="line"><b>🔥 신</b><span><small>3=×5</small> · <small>4=×15</small> · <small>5=×40</small></span></div>
-            <div class="line"><b>🧙 마녀</b><span><small>3=×3</small> · <small>4=×10</small> · <small>5=×25</small></span></div>
-            <div class="line"><b>🛡️ 기사</b><span><small>3=×2</small> · <small>4=×6</small> · <small>5=×15</small></span></div>
-            <div class="line"><b>A/K/Q/J/10</b><span><small>3=×0.5~0.8</small> · <small>4=×1.0~1.5</small> · <small>5=×2.5~4</small></span></div>
-            <div class="line"><b>⚔️ Wild</b><span><small>치환</small></span></div>
-            <div class="line"><b>🌙 Scatter</b><span><small>3+= Free Spins + 보너스(배수)</small></span></div>
-          </div>
-          <div class="warn">
-            ✅ v2: Free Spins 중에는 bet 차감이 0(무료 스핀)입니다.<br>
-            ✅ v2: Free Spins 중 Wild 확률이 증가합니다.
-          </div>
-        </div>
-
-        <div class="panel">
-          <h3>HOW IT FEELS</h3>
-          <div class="hint">
-            1) 릴이 순차로 멈춥니다 (1→5).<br>
-            2) 당첨 셀은 골드 글로우로 강조됩니다.<br>
-            3) 잭팟은 중앙라인 ⚔️×5로 터집니다.<br>
-            4) Scatter(🌙) 3개 이상이면 Free Spins.
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <div class="log" id="log">대기중…</div>
   </div>
+</div>
 
-  <script>
-    const GOOGLE_SCRIPT_URL =
-  (window.UNIQUE && window.UNIQUE.CONFIG && window.UNIQUE.CONFIG.GOOGLE_SCRIPT_URL)
-  ? window.UNIQUE.CONFIG.GOOGLE_SCRIPT_URL
-  : "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+<script>
+/* ===== 슬롯 설정 ===== */
+const SYMBOLS = ["⚔️","👑","🧙","🔥","💎"];
+const PAY = {
+  "⚔️":2,
+  "👑":4,
+  "🧙":6,
+  "🔥":8,
+  "💎":15
+};
 
-    function api(action, params = {}) {
-      return new Promise((resolve, reject) => {
-        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-        params.action = action;
-        params.callback = cb;
-        params._t = Date.now();
+/* 확률 – 일부러 후하게 */
+const WEIGHT = {
+  "⚔️":30,
+  "👑":25,
+  "🧙":20,
+  "🔥":15,
+  "💎":10
+};
 
-        const qs = new URLSearchParams(params).toString();
-        const s = document.createElement("script");
-        s.src = GOOGLE_SCRIPT_URL + (GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?") + qs;
+let balance = 1000;
+let bet = 10;
+let freeSpin = 0;
 
-        const t = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 20000);
-        window[cb] = (data) => { cleanup(); resolve(data); };
-        s.onerror = () => { cleanup(); reject(new Error("load failed")); };
+const grid = document.getElementById("grid");
+const log = document.getElementById("log");
 
-        function cleanup(){
-          clearTimeout(t);
-          try{ delete window[cb]; }catch(_){}
-          try{ s.remove(); }catch(_){}
-        }
-        document.body.appendChild(s);
-      });
-    }
-
-    const gridEl = document.getElementById("grid");
-    const frameEl = document.getElementById("frame");
-    const uidEl = document.getElementById("uid");
-    const balEl = document.getElementById("bal");
-    const betEl = document.getElementById("bet");
-    const betVEl = document.getElementById("betV");
-    const lastEl = document.getElementById("last");
-    const jpEl = document.getElementById("jp");
-    const fsEl = document.getElementById("fs");
-    const spinBtn = document.getElementById("spinBtn");
-    const refreshBtn = document.getElementById("refreshBtn");
-    const autoBtn = document.getElementById("autoBtn");
-    const logEl = document.getElementById("log");
-
-    const WILD = "⚔️";
-    const SCAT = "🌙";
-    const SYMBOLS = ["👑","🔥","🧙","🛡️","A","K","Q","J","10",WILD,SCAT];
-
-    const cells = [];
-    function makeGrid(){
-      gridEl.innerHTML = "";
-      cells.length = 0;
-      for(let r=0;r<4;r++){
-        for(let c=0;c<5;c++){
-          const cell = document.createElement("div");
-          cell.className = "cell";
-          cell.dataset.r = String(r);
-          cell.dataset.c = String(c);
-          cell.innerHTML = `<span class="txt"></span>`;
-          gridEl.appendChild(cell);
-          cells.push(cell);
-        }
-      }
-    }
-
-    function setCell(r,c, sym){
-      const cell = cells.find(x => x.dataset.r==r && x.dataset.c==c);
-      if(!cell) return;
-      const txt = cell.querySelector(".txt");
-      const isText = (sym === "A" || sym === "K" || sym === "Q" || sym === "J" || sym === "10");
-      if(isText){
-        txt.textContent = sym;
-        txt.style.fontFamily = '"Cinzel", serif';
-        txt.style.fontSize = (sym==="10") ? "26px" : "30px";
-      } else {
-        txt.textContent = sym;
-        txt.style.fontFamily = 'inherit';
-        txt.style.fontSize = "34px";
-      }
-    }
-
-    function clearWin(){ cells.forEach(c=>c.classList.remove("win")); }
-
-    function markWinCells(winLines, paylines){
-      clearWin();
-      if(!Array.isArray(winLines) || !winLines.length) return;
-      winLines.forEach(w=>{
-        const idx = (w.lineIndex||1)-1;
-        const line = paylines[idx];
-        if(!line) return;
-        const count = w.count || 0;
-        for(let col=0; col<Math.min(count,5); col++){
-          const row = line[col];
-          const cell = cells.find(x => x.dataset.r==row && x.dataset.c==col);
-          if(cell) cell.classList.add("win");
-        }
-      });
-    }
-
-    function log(msg){
-      const t = new Date().toLocaleTimeString("ko-KR");
-      logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
-    }
-
-    function getUser(){
-      try{ return JSON.parse(localStorage.getItem("uniqueCurrentUser")||"null"); }catch(_){ return null; }
-    }
-
-    function syncBalance(){
-      const ut = Number(localStorage.getItem("myUtPoints")||"0");
-      balEl.textContent = Math.floor(ut).toLocaleString() + " UT";
-    }
-
-    function syncBetUI(){
-      const bet = Math.max(1, Math.floor(Number(betEl.value||1)));
-      betEl.value = bet;
-      betVEl.textContent = bet + " UT";
-      return bet;
-    }
-
-    function randSym(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
-
-    async function animateToGrid(finalGrid){
-      clearWin();
-      lastEl.textContent = "-";
-      for(let i=0;i<10;i++){
-        for(let r=0;r<4;r++) for(let c=0;c<5;c++) setCell(r,c, randSym());
-        await new Promise(r=>setTimeout(r, 40));
-      }
-      for(let c=0;c<5;c++){
-        for(let t=0;t<12;t++){
-          for(let r=0;r<4;r++) setCell(r,c, randSym());
-          await new Promise(r=>setTimeout(r, 45));
-        }
-        for(let r=0;r<4;r++) setCell(r,c, finalGrid[r][c]);
-        await new Promise(r=>setTimeout(r, 120));
-      }
-    }
-
-    function applyFreeSpinUI(fsLeft){
-      const n = Number(fsLeft||0);
-      const b = document.getElementById("fsBannerText");
-      if (b) b.textContent = `${n} FS`;
-
-      if (n > 0){
-        frameEl.classList.add("fs-on");
-        spinBtn.classList.add("fs");
-        spinBtn.textContent = "SPIN (FREE)";
-      } else {
-        frameEl.classList.remove("fs-on");
-        spinBtn.classList.remove("fs");
-        spinBtn.textContent = "SPIN";
-      }
-    }
-
-    async function spin(){
-      const u = getUser();
-      if(!u || !u.id){
-        alert("로그인 정보가 없습니다. 메인에서 로그인 후 이용하세요.");
-        location.href = "../the-unique-gate.html";
-        return;
-      }
-
-      const id = String(u.id).toLowerCase().trim();
-      const bet = syncBetUI();
-
-      spinBtn.disabled = true;
-      refreshBtn.disabled = true;
-
-      try{
-        const r = await api("spinSlot", { id, bet });
-        if(!r || !r.ok) throw new Error(r?.error || "spinSlot failed");
-
-        const res = r.result || {};
-        const grid = res.grid;
-        const winLines = res.winLines || [];
-        const paylines = res.paylines || [];
-        const delta = Number(res.delta||0);
-        const newBal = Number(res.newBalance||0);
-
-        const fsLeft = Number(res.freeSpinsLeft || 0);
-        const fsAward = Number(res.freeSpinsAward || 0);
-        const betCharged = Number(res.betCharged || 0);
-        const inFS = !!res.inFreeSpins;
-
-        if(!Array.isArray(grid) || grid.length!==4){
-          throw new Error("invalid grid from server");
-        }
-
-        log(`SPIN 요청 bet=${bet} / charged=${betCharged}${inFS ? " (FREE)" : ""}`);
-
-        await animateToGrid(grid);
-
-        markWinCells(winLines, paylines);
-
-        if(delta !== 0){
-          frameEl.classList.add("flash");
-          setTimeout(()=>frameEl.classList.remove("flash"), 900);
-        }
-
-        // local sync
-        localStorage.setItem("myUtPoints", String(newBal));
-        try{
-          const raw = localStorage.getItem("uniqueCurrentUser");
-          if(raw){
-            const cur = JSON.parse(raw);
-            cur.balance = newBal;
-            localStorage.setItem("uniqueCurrentUser", JSON.stringify(cur));
-          }
-        }catch(_){}
-
-        syncBalance();
-
-        const sign = delta >= 0 ? "+" : "";
-        lastEl.textContent = `${sign}${delta} UT`;
-        jpEl.textContent = (Number(res.jpPoolAfter||0)).toFixed(2) + " UT";
-        applyFreeSpinUI(fsLeft);
-
-        if (fsAward > 0){
-          log(`🌙 FREE SPINS +${fsAward} (now ${fsLeft} FS)`);
-        }
-
-        log(`delta=${delta} / bal=${newBal}${res.jackpot ? " / JACKPOT!" : ""}`);
-
-      } catch(e){
-        console.error(e);
-        alert("SPIN 실패: " + (e.message || e));
-        log("ERROR: " + (e.message || e));
-      } finally{
-        spinBtn.disabled = false;
-        refreshBtn.disabled = false;
-      }
-    }
-
-    function init(){
-      const u = getUser();
-      if(!u || !u.id){
-        alert("로그인 정보가 없습니다. 메인에서 로그인 후 이용하세요.");
-        location.href = "../the-unique-gate.html";
-        return;
-      }
-      uidEl.textContent = String(u.id || "-");
-      syncBalance();
-      syncBetUI();
-
-      makeGrid();
-      // v3: FS 배너 삽입
-const banner = document.createElement("div");
-banner.className = "fs-banner";
-banner.id = "fsBanner";
-banner.innerHTML = `<strong>FREE SPINS MODE</strong><span id="fsBannerText">0 FS</span>`;
-frameEl.insertBefore(banner, gridEl);
-
-// v3: AUTO 패널 삽입(우측 SYNC 아래 말고, CENTER HUD 아래에 붙이기)
-const autoPanel = document.createElement("div");
-autoPanel.className = "auto-panel";
-autoPanel.id = "autoPanel";
-autoPanel.innerHTML = `
-  <button class="auto-pill" data-n="10" type="button">10</button>
-  <button class="auto-pill" data-n="25" type="button">25</button>
-  <button class="auto-pill" data-n="50" type="button">50</button>
-  <button class="auto-pill" data-n="999999" type="button">∞</button>
-  <button class="auto-pill" data-n="0" type="button">STOP</button>
-`;
-frameEl.appendChild(autoPanel);
-      const start = [
-        ["A","K","Q","J","10"],
-        ["🛡️","🧙","🔥","👑","🌙"],
-        ["10","J","Q","K","A"],
-        ["🌙","👑","🔥","🧙","🛡️"]
-      ];
-      for(let r=0;r<4;r++) for(let c=0;c<5;c++) setCell(r,c, start[r][c]);
-
-      jpEl.textContent = "-";
-      applyFreeSpinUI(0);
-      log("READY");
-    }
-
-    betEl.addEventListener("input", syncBetUI);
-    spinBtn.addEventListener("click", spin);
-    refreshBtn.addEventListener("click", ()=>{
-      syncBalance();
-      syncBetUI();
-      log("SYNC");
-    });
-
-    init();
-    // ===== v3: Auto Spin =====
-let autoLeft = 0;
-let autoTimer = null;
-
-function stopAuto(){
-  autoLeft = 0;
-  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
-  if (autoBtn) autoBtn.textContent = "AUTO";
-  const p = document.getElementById("autoPanel");
-  if (p) p.classList.remove("active");
+/* 초기 셀 */
+const cells=[];
+for(let i=0;i<5;i++){
+  const d=document.createElement("div");
+  d.className="cell";
+  d.textContent="❓";
+  grid.appendChild(d);
+  cells.push(d);
 }
 
-function scheduleNextAuto(){
-  if (autoLeft <= 0) return stopAuto();
-  autoTimer = setTimeout(async () => {
-    try{
-      await spin();
-    } finally {
-      if (autoLeft !== 999999) autoLeft -= 1;
-      scheduleNextAuto();
-    }
-  }, 550); // 속도 조절
+function weightedRandom(){
+  const pool=[];
+  for(const k in WEIGHT){
+    for(let i=0;i<WEIGHT[k];i++) pool.push(k);
+  }
+  return pool[Math.floor(Math.random()*pool.length)];
 }
 
-if (autoBtn){
-  autoBtn.addEventListener("click", () => {
-    const p = document.getElementById("autoPanel");
-    if (!p) return;
-    p.classList.toggle("active");
-  });
-}
+function spin(){
+  if(balance<bet && freeSpin===0) return;
 
-// panel buttons
-document.addEventListener("click", (e) => {
-  const btn = e.target && e.target.closest && e.target.closest(".auto-pill");
-  if (!btn) return;
-
-  const n = Number(btn.getAttribute("data-n") || "0");
-  const p = document.getElementById("autoPanel");
-
-  // active 표시
-  if (p) p.querySelectorAll(".auto-pill").forEach(x => x.classList.remove("active"));
-  btn.classList.add("active");
-
-  if (n === 0){
-    stopAuto();
-    return;
+  if(freeSpin>0){
+    freeSpin--;
+    log.innerHTML=`🎁 Free Spin 사용!`;
+  }else{
+    balance-=bet;
   }
 
-  autoLeft = n;
-  if (autoBtn) autoBtn.textContent = (n === 999999) ? "AUTO: ∞" : `AUTO: ${n}`;
-  if (p) p.classList.remove("active");
+  document.getElementById("balance").textContent=balance;
+  document.getElementById("fs").textContent=freeSpin;
 
-  if (!autoTimer) scheduleNextAuto();
-});
+  let result=[];
+  cells.forEach(c=>{
+    c.classList.remove("win");
+    const s=weightedRandom();
+    c.textContent=s;
+    result.push(s);
+  });
 
-// 안전: 페이지 벗어나면 오토 중지
-window.addEventListener("beforeunload", stopAuto);
-  </script>
+  let win=0;
+  const counts={};
+  result.forEach(s=>counts[s]=(counts[s]||0)+1);
+
+  for(const s in counts){
+    if(counts[s]>=3){
+      win+=counts[s]*PAY[s];
+      cells.forEach(c=>{
+        if(c.textContent===s) c.classList.add("win");
+      });
+    }
+    if(counts[s]===5 && s==="💎"){
+      freeSpin+=5;
+      log.innerHTML=`💎 JACKPOT! Free Spin +5`;
+    }
+  }
+
+  if(win>0){
+    balance+=win;
+    log.innerHTML=`✨ ${win} UT 획득!`;
+  }else{
+    log.innerHTML=`😈 꽝… 다시 도전`;
+  }
+
+  document.getElementById("balance").textContent=balance;
+  document.getElementById("fs").textContent=freeSpin;
+}
+
+document.getElementById("spinBtn").onclick=spin;
+</script>
 </body>
 </html>
