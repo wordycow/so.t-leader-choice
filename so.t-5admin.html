@@ -175,7 +175,11 @@
         </div>
 
         <div class="panel" style="padding:14px;">
-          <div class="label" style="font-weight:900; color:var(--text); margin-bottom:8px;">입금 계좌 관리(buy.html 표시값)</div>
+          <div class="label" style="font-weight:900; color:var(--text); margin-bottom:8px;">
+            입금 계좌 관리 (트리별 저장됨)
+          </div>
+          <div class="note" id="depositTreeHint" style="margin-top:-2px; margin-bottom:10px;"></div>
+
           <div class="row">
             <div class="control">
               <div class="label">은행명</div>
@@ -336,32 +340,55 @@
       };
     }
 
+    // ✅ 트리별 계좌 로드
     async function loadDepositConfig(){
-      const { data } = await supabase
-        .from("deposit_config")
-        .select("bank, account, holder, note, updated_at")
-        .eq("id", 1)
-        .maybeSingle();
+      el("depositSavedHint").textContent = "";
+      el("depositTreeHint").textContent = selectedTree
+        ? `현재 선택 트리: ${selectedTree.name} (ID: ${selectedTree.id})`
+        : "트리를 먼저 선택하세요.";
 
-      if (!data) return;
+      if (!selectedTree) {
+        el("depBank").value = "";
+        el("depAccount").value = "";
+        el("depHolder").value = "";
+        el("depNote").value = "";
+        return;
+      }
 
-      el("depBank").value = data.bank || "";
-      el("depAccount").value = data.account || "";
-      el("depHolder").value = data.holder || "";
-      el("depNote").value = data.note || "";
-      el("depositSavedHint").textContent = data.updated_at ? ("최근 저장: " + new Date(data.updated_at).toLocaleString("ko-KR")) : "";
+      const { data, error } = await supabase
+        .rpc("get_deposit_config_for_tree", { p_tree_id: selectedTree.id });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const row = (data && data[0]) ? data[0] : null;
+
+      el("depBank").value = row?.bank || "";
+      el("depAccount").value = row?.account || "";
+      el("depHolder").value = row?.holder || "";
+      el("depNote").value = row?.note || "";
+      el("depositSavedHint").textContent = row?.updated_at
+        ? ("최근 저장: " + new Date(row.updated_at).toLocaleString("ko-KR"))
+        : "아직 이 트리에는 저장된 계좌가 없습니다.";
     }
 
+    // ✅ 트리별 계좌 저장
     async function saveDepositConfig(){
+      if (!selectedTree) return alert("트리를 먼저 선택하세요.");
+
       const bank = (el("depBank").value || "").trim();
       const account = (el("depAccount").value || "").trim();
       const holder = (el("depHolder").value || "").trim();
       const note = (el("depNote").value || "").trim();
 
-      const { error } = await supabase.rpc("admin_set_deposit_config", {
+      const { error } = await supabase.rpc("admin_set_deposit_config_for_tree", {
+        p_tree_id: selectedTree.id,
         p_bank: bank, p_account: account, p_holder: holder, p_note: note
       });
       if (error) throw error;
+
       el("depositSavedHint").textContent = "저장 완료: " + new Date().toLocaleString("ko-KR");
     }
 
@@ -684,9 +711,12 @@
 
     async function refreshAll(){
       statusNote.textContent = "";
-      await loadDepositConfig();
       await loadTrees();
-      if (!selectedTree) { statusNote.textContent = "트리가 없습니다."; return; }
+      if (!selectedTree) { statusNote.textContent = "트리가 없습니다."; await loadDepositConfig(); return; }
+
+      // ✅ 트리 확정된 뒤에 계좌 로드
+      await loadDepositConfig();
+
       await loadSlots();
       renderStats();
       renderAvailable();
