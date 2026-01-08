@@ -360,6 +360,57 @@
       line-height:1.5;
       margin-top:8px;
     }
+    /* ===== v3: Free Spins Banner + Auto Spin ===== */
+.fs-banner{
+  position:absolute;
+  left:14px;
+  right:14px;
+  top:14px;
+  z-index:3;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(96,165,250,0.45);
+  background: rgba(2,6,23,0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.fs-banner strong{
+  color:#60a5fa;
+  font-weight:1000;
+  letter-spacing:.08em;
+}
+.fs-banner span{
+  color:#cbd5e1;
+  font-weight:900;
+}
+.frame.fs-on .fs-banner{ display:flex; }
+
+.auto-panel{
+  margin-top:10px;
+  display:none;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.auto-panel.active{ display:flex; }
+.auto-pill{
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(15,23,42,0.55);
+  color:#e5e7eb;
+  font-weight:900;
+  cursor:pointer;
+}
+.auto-pill:hover{ filter:brightness(1.08); border-color:rgba(251,191,36,0.30); }
+.auto-pill.active{
+  background: rgba(251,191,36,0.22);
+  border-color: rgba(251,191,36,0.50);
+  color:#fff;
+}
   </style>
 </head>
 
@@ -448,8 +499,9 @@
               </div>
 
               <div class="spinBar">
-                <button class="spinBtn" id="spinBtn">SPIN</button>
-              </div>
+  <button class="spinBtn" id="spinBtn">SPIN</button>
+  <button class="btn" id="autoBtn" type="button">AUTO</button>
+</div>
             </div>
 
           </div>
@@ -537,6 +589,7 @@
     const fsEl = document.getElementById("fs");
     const spinBtn = document.getElementById("spinBtn");
     const refreshBtn = document.getElementById("refreshBtn");
+    const autoBtn = document.getElementById("autoBtn");
     const logEl = document.getElementById("log");
 
     const WILD = "⚔️";
@@ -636,7 +689,9 @@
 
     function applyFreeSpinUI(fsLeft){
       const n = Number(fsLeft||0);
-      fsEl.textContent = `${n} FS`;
+      const b = document.getElementById("fsBannerText");
+      if (b) b.textContent = `${n} FS`;
+
       if (n > 0){
         frameEl.classList.add("fs-on");
         spinBtn.classList.add("fs");
@@ -739,6 +794,25 @@
       syncBetUI();
 
       makeGrid();
+      // v3: FS 배너 삽입
+const banner = document.createElement("div");
+banner.className = "fs-banner";
+banner.id = "fsBanner";
+banner.innerHTML = `<strong>FREE SPINS MODE</strong><span id="fsBannerText">0 FS</span>`;
+frameEl.insertBefore(banner, gridEl);
+
+// v3: AUTO 패널 삽입(우측 SYNC 아래 말고, CENTER HUD 아래에 붙이기)
+const autoPanel = document.createElement("div");
+autoPanel.className = "auto-panel";
+autoPanel.id = "autoPanel";
+autoPanel.innerHTML = `
+  <button class="auto-pill" data-n="10" type="button">10</button>
+  <button class="auto-pill" data-n="25" type="button">25</button>
+  <button class="auto-pill" data-n="50" type="button">50</button>
+  <button class="auto-pill" data-n="999999" type="button">∞</button>
+  <button class="auto-pill" data-n="0" type="button">STOP</button>
+`;
+frameEl.appendChild(autoPanel);
       const start = [
         ["A","K","Q","J","10"],
         ["🛡️","🧙","🔥","👑","🌙"],
@@ -761,6 +835,64 @@
     });
 
     init();
+    // ===== v3: Auto Spin =====
+let autoLeft = 0;
+let autoTimer = null;
+
+function stopAuto(){
+  autoLeft = 0;
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  if (autoBtn) autoBtn.textContent = "AUTO";
+  const p = document.getElementById("autoPanel");
+  if (p) p.classList.remove("active");
+}
+
+function scheduleNextAuto(){
+  if (autoLeft <= 0) return stopAuto();
+  autoTimer = setTimeout(async () => {
+    try{
+      await spin();
+    } finally {
+      if (autoLeft !== 999999) autoLeft -= 1;
+      scheduleNextAuto();
+    }
+  }, 550); // 속도 조절
+}
+
+if (autoBtn){
+  autoBtn.addEventListener("click", () => {
+    const p = document.getElementById("autoPanel");
+    if (!p) return;
+    p.classList.toggle("active");
+  });
+}
+
+// panel buttons
+document.addEventListener("click", (e) => {
+  const btn = e.target && e.target.closest && e.target.closest(".auto-pill");
+  if (!btn) return;
+
+  const n = Number(btn.getAttribute("data-n") || "0");
+  const p = document.getElementById("autoPanel");
+
+  // active 표시
+  if (p) p.querySelectorAll(".auto-pill").forEach(x => x.classList.remove("active"));
+  btn.classList.add("active");
+
+  if (n === 0){
+    stopAuto();
+    return;
+  }
+
+  autoLeft = n;
+  if (autoBtn) autoBtn.textContent = (n === 999999) ? "AUTO: ∞" : `AUTO: ${n}`;
+  if (p) p.classList.remove("active");
+
+  if (!autoTimer) scheduleNextAuto();
+});
+
+// 안전: 페이지 벗어나면 오토 중지
+window.addEventListener("beforeunload", stopAuto);
   </script>
 </body>
 </html>
