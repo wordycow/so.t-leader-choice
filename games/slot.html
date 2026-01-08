@@ -210,6 +210,15 @@
       pointer-events:none;
     }
 
+    /* ✅ Free Spins 모드일 때 배경 분위기 업 */
+    .frame.fs-on::before{
+      background: radial-gradient(circle at 50% 35%, rgba(96,165,250,0.18), transparent 55%);
+    }
+    .frame.fs-on{
+      border-color: rgba(96,165,250,0.35);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.7), 0 0 0 1px rgba(96,165,250,0.10) inset;
+    }
+
     .reelGrid{
       position:relative;
       z-index:2;
@@ -224,6 +233,9 @@
       background: rgba(15,23,42,0.65);
       border:1px solid rgba(251,191,36,0.25);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+    }
+    .frame.fs-on .reelGrid{
+      border-color: rgba(96,165,250,0.30);
     }
 
     .cell{
@@ -290,6 +302,7 @@
     .hudBox .k{ font-size:11px; color:var(--muted); font-weight:900; letter-spacing:.08em; }
     .hudBox .v{ margin-top:6px; font-size:20px; font-weight:900; color:#fff; }
     .hudBox .v.gold{ color: var(--gold); }
+    .hudBox .v.blue{ color: #60a5fa; }
 
     .spinBar{
       flex: 0 0 auto;
@@ -313,6 +326,13 @@
     .spinBtn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
     .spinBtn:active{ transform: translateY(0px); }
     .spinBtn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+    /* 프리스핀 중 버튼 톤 변경 */
+    .spinBtn.fs{
+      border-color: rgba(96,165,250,0.85);
+      background: linear-gradient(180deg, rgba(96,165,250,1), rgba(59,130,246,0.95));
+      color:#0b1120;
+    }
 
     .payTable{
       display:grid;
@@ -379,7 +399,8 @@
           </div>
           <div class="warn">
             - 5×4 / 10 라인 MVP<br>
-            - Wild: ⚔️ / Scatter: 🌙 / Jackpot: 중앙라인 ⚔️⚔️⚔️⚔️⚔️
+            - Wild: ⚔️ / Scatter: 🌙 / Jackpot: 중앙라인 ⚔️⚔️⚔️⚔️⚔️<br>
+            - ✅ v2: Scatter 3개 이상 → Free Spins
           </div>
         </div>
 
@@ -402,7 +423,7 @@
 
       <div class="center">
         <div class="machine">
-          <div class="frame">
+          <div class="frame" id="frame">
             <div class="reelGrid" id="grid"></div>
 
             <div class="hud">
@@ -410,13 +431,20 @@
                 <div class="k">BET</div>
                 <div class="v" id="betV">10 UT</div>
               </div>
+
               <div class="hudBox">
                 <div class="k">LAST</div>
                 <div class="v gold" id="last">-</div>
               </div>
+
               <div class="hudBox">
                 <div class="k">JACKPOT POOL</div>
                 <div class="v" id="jp">-</div>
+              </div>
+
+              <div class="hudBox">
+                <div class="k">FREE SPINS</div>
+                <div class="v blue" id="fs">0 FS</div>
               </div>
 
               <div class="spinBar">
@@ -446,11 +474,11 @@
             <div class="line"><b>🛡️ 기사</b><span><small>3=×2</small> · <small>4=×6</small> · <small>5=×15</small></span></div>
             <div class="line"><b>A/K/Q/J/10</b><span><small>3=×0.5~0.8</small> · <small>4=×1.0~1.5</small> · <small>5=×2.5~4</small></span></div>
             <div class="line"><b>⚔️ Wild</b><span><small>치환</small></span></div>
-            <div class="line"><b>🌙 Scatter</b><span><small>3+=보너스(배수)</small></span></div>
+            <div class="line"><b>🌙 Scatter</b><span><small>3+= Free Spins + 보너스(배수)</small></span></div>
           </div>
           <div class="warn">
-            MVP는 프리스핀 미구현(스캐터 배수만).<br>
-            다음 단계에서 프리스핀/보너스게임 추가 가능.
+            ✅ v2: Free Spins 중에는 bet 차감이 0(무료 스핀)입니다.<br>
+            ✅ v2: Free Spins 중 Wild 확률이 증가합니다.
           </div>
         </div>
 
@@ -459,7 +487,8 @@
           <div class="hint">
             1) 릴이 순차로 멈춥니다 (1→5).<br>
             2) 당첨 셀은 골드 글로우로 강조됩니다.<br>
-            3) 잭팟은 중앙라인 ⚔️×5로 터집니다.
+            3) 잭팟은 중앙라인 ⚔️×5로 터집니다.<br>
+            4) Scatter(🌙) 3개 이상이면 Free Spins.
           </div>
         </div>
       </div>
@@ -468,7 +497,6 @@
   </div>
 
   <script>
-    // ====== JSONP API ======
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
     function api(action, params = {}) {
@@ -495,29 +523,27 @@
       });
     }
 
-    // ====== DOM ======
     const gridEl = document.getElementById("grid");
+    const frameEl = document.getElementById("frame");
     const uidEl = document.getElementById("uid");
     const balEl = document.getElementById("bal");
     const betEl = document.getElementById("bet");
     const betVEl = document.getElementById("betV");
     const lastEl = document.getElementById("last");
     const jpEl = document.getElementById("jp");
+    const fsEl = document.getElementById("fs");
     const spinBtn = document.getElementById("spinBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const logEl = document.getElementById("log");
 
-    // ====== symbols (서버와 동일 테마) ======
     const WILD = "⚔️";
     const SCAT = "🌙";
     const SYMBOLS = ["👑","🔥","🧙","🛡️","A","K","Q","J","10",WILD,SCAT];
 
-    // cells (4x5)
     const cells = [];
     function makeGrid(){
       gridEl.innerHTML = "";
       cells.length = 0;
-
       for(let r=0;r<4;r++){
         for(let c=0;c<5;c++){
           const cell = document.createElement("div");
@@ -534,7 +560,6 @@
     function setCell(r,c, sym){
       const cell = cells.find(x => x.dataset.r==r && x.dataset.c==c);
       if(!cell) return;
-
       const txt = cell.querySelector(".txt");
       const isText = (sym === "A" || sym === "K" || sym === "Q" || sym === "J" || sym === "10");
       if(isText){
@@ -548,14 +573,11 @@
       }
     }
 
-    function clearWin(){
-      cells.forEach(c=>c.classList.remove("win"));
-    }
+    function clearWin(){ cells.forEach(c=>c.classList.remove("win")); }
 
     function markWinCells(winLines, paylines){
       clearWin();
       if(!Array.isArray(winLines) || !winLines.length) return;
-      // winLines: [{lineIndex, count, ...}]
       winLines.forEach(w=>{
         const idx = (w.lineIndex||1)-1;
         const line = paylines[idx];
@@ -590,30 +612,36 @@
       return bet;
     }
 
-    // ====== animation (sequential stop, 5 columns) ======
-    function randSym(){
-      return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
-    }
+    function randSym(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
 
     async function animateToGrid(finalGrid){
-      // finalGrid: 4x5
-      // 1) spin start: randomize all quickly
       clearWin();
       lastEl.textContent = "-";
       for(let i=0;i<10;i++){
         for(let r=0;r<4;r++) for(let c=0;c<5;c++) setCell(r,c, randSym());
         await new Promise(r=>setTimeout(r, 40));
       }
-
-      // 2) stop columns sequentially (0..4)
       for(let c=0;c<5;c++){
         for(let t=0;t<12;t++){
           for(let r=0;r<4;r++) setCell(r,c, randSym());
           await new Promise(r=>setTimeout(r, 45));
         }
-        // lock final symbols for this column
         for(let r=0;r<4;r++) setCell(r,c, finalGrid[r][c]);
         await new Promise(r=>setTimeout(r, 120));
+      }
+    }
+
+    function applyFreeSpinUI(fsLeft){
+      const n = Number(fsLeft||0);
+      fsEl.textContent = `${n} FS`;
+      if (n > 0){
+        frameEl.classList.add("fs-on");
+        spinBtn.classList.add("fs");
+        spinBtn.textContent = "SPIN (FREE)";
+      } else {
+        frameEl.classList.remove("fs-on");
+        spinBtn.classList.remove("fs");
+        spinBtn.textContent = "SPIN";
       }
     }
 
@@ -630,32 +658,36 @@
 
       spinBtn.disabled = true;
       refreshBtn.disabled = true;
-      log(`SPIN bet=${bet}`);
 
       try{
         const r = await api("spinSlot", { id, bet });
         if(!r || !r.ok) throw new Error(r?.error || "spinSlot failed");
 
         const res = r.result || {};
-        const grid = res.grid; // 4x5
+        const grid = res.grid;
         const winLines = res.winLines || [];
         const paylines = res.paylines || [];
         const delta = Number(res.delta||0);
         const newBal = Number(res.newBalance||0);
 
+        const fsLeft = Number(res.freeSpinsLeft || 0);
+        const fsAward = Number(res.freeSpinsAward || 0);
+        const betCharged = Number(res.betCharged || 0);
+        const inFS = !!res.inFreeSpins;
+
         if(!Array.isArray(grid) || grid.length!==4){
           throw new Error("invalid grid from server");
         }
 
+        log(`SPIN 요청 bet=${bet} / charged=${betCharged}${inFS ? " (FREE)" : ""}`);
+
         await animateToGrid(grid);
 
-        // highlight win cells
         markWinCells(winLines, paylines);
 
-        // flash on win
         if(delta !== 0){
-          document.querySelector(".frame")?.classList.add("flash");
-          setTimeout(()=>document.querySelector(".frame")?.classList.remove("flash"), 900);
+          frameEl.classList.add("flash");
+          setTimeout(()=>frameEl.classList.remove("flash"), 900);
         }
 
         // local sync
@@ -674,8 +706,13 @@
         const sign = delta >= 0 ? "+" : "";
         lastEl.textContent = `${sign}${delta} UT`;
         jpEl.textContent = (Number(res.jpPoolAfter||0)).toFixed(2) + " UT";
+        applyFreeSpinUI(fsLeft);
 
-        log(`reels=${JSON.stringify(grid)} / delta=${delta} / bal=${newBal}` + (res.jackpot ? " / JACKPOT!" : ""));
+        if (fsAward > 0){
+          log(`🌙 FREE SPINS +${fsAward} (now ${fsLeft} FS)`);
+        }
+
+        log(`delta=${delta} / bal=${newBal}${res.jackpot ? " / JACKPOT!" : ""}`);
 
       } catch(e){
         console.error(e);
@@ -698,7 +735,6 @@
       syncBalance();
       syncBetUI();
 
-      // initial grid
       makeGrid();
       const start = [
         ["A","K","Q","J","10"],
@@ -709,6 +745,7 @@
       for(let r=0;r<4;r++) for(let c=0;c<5;c++) setCell(r,c, start[r][c]);
 
       jpEl.textContent = "-";
+      applyFreeSpinUI(0);
       log("READY");
     }
 
