@@ -28,36 +28,52 @@
     saveHistory(arr);
   }
 
-  function renderHistory() {
+    function renderHistory() {
     const el = document.getElementById("history-container");
     if (!el) return;
 
     const arr = loadHistory();
 
+    // ✅ 비어있으면: empty 스타일 ON
     if (!arr.length) {
-      el.textContent = "거래 내역이 없습니다.";
+      el.classList.add("history-empty");
+      el.innerHTML = "거래 내역이 없습니다.";
       return;
     }
 
-    el.innerHTML = arr.slice(0, 10).map(it => {
+    // ✅ 내역 있으면: empty 스타일 OFF
+    el.classList.remove("history-empty");
+
+    el.innerHTML = arr.slice(0, 30).map(it => {
       const amtColor = it.kind === "out" ? "#fbbf24" : "#4ade80";
       const sign = it.kind === "out" ? "-" : "+";
+
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
           <div style="flex:1; min-width:0;">
             <div style="color:#fff; font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${it.title}
+              ${escapeHtml(it.title || "")}
             </div>
             <div style="color:#64748b; font-size:10px; margin-top:2px;">
-              ${it.date}
+              ${escapeHtml(it.date || "")}
             </div>
           </div>
           <div style="color:${amtColor}; font-weight:900; font-size:12px; white-space:nowrap;">
-            ${sign}${it.amount} UT
+            ${sign}${Number(it.amount || 0)} UT
           </div>
         </div>
       `;
     }).join("");
+  }
+
+  // ✅ XSS/깨짐 방지 (닉네임에 특수문자 들어가도 안전)
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   // ✅ 탭 전환 후에도 보이게: 송금 탭 열 때마다 렌더
