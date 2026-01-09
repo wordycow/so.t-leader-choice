@@ -70,81 +70,177 @@
 
   document.addEventListener("DOMContentLoaded", boot);
 })(); // ✅ 이게 빠져서 전체가 죽었던 거야
+/* =========================
+   MAIN ← SLOT (query sync)
+   - slot에서 돌아올 때 ?u= &uid= &ut=
+   - localStorage에 즉시 반영 (UT 동기화 핵심)
+========================= */
+(function () {
+  try {
+    const qs = new URLSearchParams(location.search);
+    const u   = (qs.get("u") || "").trim();
+    const uid = (qs.get("uid") || "").trim();
+    const ut  = (qs.get("ut") || "").trim();
 
+    if (u)   localStorage.setItem("slot_player", u);
+    if (u)   localStorage.setItem("unique_nickname", u);
+
+    if (uid) localStorage.setItem("unique_userid", uid);
+    if (uid) localStorage.setItem("uid", uid);
+
+    if (ut)  localStorage.setItem("unique_ut", ut);
+  } catch (e) {
+    console.warn("query sync error:", e);
+  }
+})();
 
 /* =========================
-   SLOT 버튼 닉네임 연동 브릿지
+   SLOT 버튼 닉네임/UID/UT 연동 브릿지 (강화판)
    - PC: #slotBtnPc
    - M : #slotBtnM
-   - (추가) 단일 CTA: #slotCta
-   - 슬롯: games/slot.html?u=닉네임
-   - localStorage.slot_player 저장
+   - CTA: #slotCta
+   - 슬롯: games/slot.html?u=닉네임&uid=회원UID&ut=표시용UT
+   - uid 없으면 이동 막고 안내 (missing_user 방지 핵심)
 ========================= */
 (function () {
   const SLOT_PATH = "games/slot.html";
 
-  function cleanName(v) {
+  function clean(v) {
     v = (v || "").trim();
     if (!v) return "";
     if (v === "User" || v === "회원 이름") return "";
     return v;
   }
 
-  function getNickname() {
-    // 1) localStorage 후보 키들
-    const keys = ["slot_player", "unique_nickname", "nickname", "userNickname", "the_unique_nickname"];
-    for (const k of keys) {
-      const v = cleanName(localStorage.getItem(k));
-      if (v) return v;
-    }
+  function textById(id) {
+    const el = document.getElementById(id);
+    return clean(el ? (el.textContent || el.value || "") : "");
+  }
 
-    // 2) DOM에서 추출
-    const ids = ["tb-user-name", "member-name"];
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      const v = cleanName(el ? el.textContent : "");
+  function fromLS(keys) {
+    for (const k of keys) {
+      const v = clean(localStorage.getItem(k));
       if (v) return v;
     }
+    return "";
+  }
+
+  function getNickname() {
+    // 1) localStorage
+    const v1 = fromLS(["slot_player", "unique_nickname", "nickname", "userNickname", "the_unique_nickname"]);
+    if (v1) return v1;
+
+    // 2) DOM
+    const v2 = textById("tb-user-name") || textById("member-name") || textById("nickname");
+    if (v2) return v2;
+
+    // 3) window.UNIQUE 상태값(있으면)
+    const U = window.UNIQUE || {};
+    const v3 = clean(U.STATE?.nickname) || clean(U.STATE?.user?.nickname) || clean(U.user?.nickname);
+    if (v3) return v3;
 
     return "";
   }
 
-  function applySlotLinks(){
-  const nick = getNickname();
+  function getUid() {
+    // 1) localStorage (가장 확실)
+    const v1 = fromLS(["unique_userid", "uid", "userId", "memberId"]);
+    if (v1) return v1;
 
-  // uid 후보: DOM 또는 localStorage
-  const uid =
-    (document.getElementById("member-id")?.textContent || "").trim() ||
-    (localStorage.getItem("unique_userid") || "").trim();
+    // 2) DOM 후보 확장
+    const v2 =
+      textById("member-id") ||
+      textById("tb-user-id") ||
+      textById("user-id") ||
+      textById("uid") ||
+      textById("my-uid");
+    if (v2) return v2;
 
-  // ut 후보: 화면 표시값
-  const ut =
-    (document.getElementById("my-ut-display")?.textContent || "").trim() ||
-    (localStorage.getItem("unique_ut") || "").trim();
+    // 3) window.UNIQUE 상태값(있으면)
+    const U = window.UNIQUE || {};
+    const v3 =
+      clean(U.STATE?.uid) ||
+      clean(U.STATE?.userId) ||
+      clean(U.STATE?.user?.uid) ||
+      clean(U.STATE?.user?.id) ||
+      clean(U.user?.uid);
+    if (v3) return v3;
 
-  const params = new URLSearchParams();
-  if(nick) params.set("u", nick);
-  if(uid)  params.set("uid", uid);
-  if(ut)   params.set("ut", ut);
+    return "";
+  }
 
-  const url = params.toString() ? `${SLOT_PATH}?${params.toString()}` : SLOT_PATH;
+  function getUt() {
+    // 1) localStorage
+    const v1 = fromLS(["unique_ut", "ut", "balanceUT"]);
+    if (v1) return v1;
 
-  const pc = document.getElementById("slotBtnPc");
-  const m  = document.getElementById("slotBtnM");
+    // 2) DOM 후보 확장
+    const v2 =
+      textById("my-ut-display") ||
+      textById("tb-user-ut") ||
+      textById("user-ut") ||
+      textById("ut");
+    if (v2) return v2;
 
-  if(pc) pc.href = url;
-  if(m)  m.href  = url;
+    // 3) window.UNIQUE 상태값(있으면)
+    const U = window.UNIQUE || {};
+    const v3 =
+      clean(U.STATE?.ut) ||
+      clean(U.STATE?.balanceUT) ||
+      clean(U.STATE?.user?.ut) ||
+      clean(U.user?.ut);
+    if (v3) return v3;
 
-  if(nick) localStorage.setItem("slot_player", nick);
-  if(uid)  localStorage.setItem("unique_userid", uid);
-  if(ut)   localStorage.setItem("unique_ut", ut);
-}
+    return "";
+  }
 
+  function buildSlotUrl(nick, uid, ut) {
+    const params = new URLSearchParams();
+    if (nick) params.set("u", nick);
+    if (uid)  params.set("uid", uid);
+    if (ut)   params.set("ut", ut);
+    return params.toString() ? `${SLOT_PATH}?${params.toString()}` : SLOT_PATH;
+  }
+
+  function applySlotLinks() {
+    const nick = getNickname();
+    const uid  = getUid();
+    const ut   = getUt();
+
+    // 저장 (다음 페이지에서도 유지)
+    if (nick) localStorage.setItem("slot_player", nick);
+    if (nick) localStorage.setItem("unique_nickname", nick);
+    if (uid)  localStorage.setItem("unique_userid", uid);
+    if (uid)  localStorage.setItem("uid", uid);
+    if (ut)   localStorage.setItem("unique_ut", ut);
+
+    const url = buildSlotUrl(nick, uid, ut);
+
+    const pc  = document.getElementById("slotBtnPc");
+    const m   = document.getElementById("slotBtnM");
+    const cta = document.getElementById("slotCta");
+
+    [pc, m, cta].forEach(a => {
+      if (!a) return;
+      a.href = url;
+
+      // ✅ uid 없으면 안내 + 시각적 힌트(완전 비활성은 클릭에서 막음)
+      if (!uid) {
+        a.setAttribute("data-slot-disabled", "1");
+        a.title = "슬롯은 로그인 후(회원 UID 필요) 이용 가능합니다.";
+      } else {
+        a.removeAttribute("data-slot-disabled");
+        a.title = "";
+      }
+    });
+
+    return { nick, uid, ut, url };
+  }
 
   function boot() {
     applySlotLinks();
 
-    // 닉네임이 늦게 렌더되는 케이스 대비 (약 10초만 재시도)
+    // 닉네임/uid 렌더가 늦는 케이스 대비 (10초 재시도)
     let tries = 0;
     const t = setInterval(() => {
       applySlotLinks();
@@ -152,11 +248,16 @@
       if (tries >= 20) clearInterval(t);
     }, 500);
 
-    // 클릭 순간에도 한번 더 보정
+    // 클릭 순간에도 한번 더 보정 + uid 없으면 이동 막기
     document.addEventListener("click", (e) => {
       const a = e.target.closest("#slotBtnPc, #slotBtnM, #slotCta");
       if (!a) return;
-      applySlotLinks();
+
+      const { uid } = applySlotLinks();
+      if (!uid) {
+        e.preventDefault();
+        alert("슬롯은 메인에서 로그인 후 이용 가능합니다. (회원 UID가 필요해요)");
+      }
     });
   }
 
