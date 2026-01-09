@@ -9,6 +9,7 @@
     /* =========================================
        THE "CYBERPUNK NEON VAULT" THEME
        Layout: Side Paytable (PC) / Bottom (Mobile)
+       Paytable Style: Small 3x Images + Multiplier
     ========================================= */
 
     :root {
@@ -110,7 +111,7 @@
     .layout {
       display: grid;
       /* Left Panel (Info+Paytable) | Right Panel (Game) */
-      grid-template-columns: 340px 1fr; 
+      grid-template-columns: 320px 1fr; 
       gap: 25px; align-items: start;
     }
 
@@ -139,7 +140,7 @@
       min-height: 100px; white-space: pre-line; margin-bottom: 20px;
     }
 
-    /* === PAYTABLE (JOKBO) STYLING === */
+    /* === PAYTABLE (JOKBO) STYLING - UPDATED === */
     .paytable-section {
       border-top: 1px solid rgba(255,255,255,0.1);
       padding-top: 15px;
@@ -151,20 +152,21 @@
     }
     .pay-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* 2 Columns */
+      /* PC: 1 Column for neat list */
+      grid-template-columns: 1fr; 
       gap: 8px;
-      max-height: 380px; overflow-y: auto; /* Scroll if too long */
-      padding-right: 4px; /* scrollbar space */
+      max-height: 400px; overflow-y: auto;
+      padding-right: 4px;
     }
-    /* Scrollbar styling */
     .pay-grid::-webkit-scrollbar { width: 4px; }
     .pay-grid::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 2px; }
 
     .pay-card {
       background: rgba(0,0,0,0.4);
       border: 1px solid rgba(188, 19, 254, 0.3);
-      border-radius: 10px; padding: 8px;
-      display: flex; align-items: center; gap: 8px;
+      border-radius: 10px; padding: 8px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
       transition: all 0.2s;
     }
     .pay-card:hover {
@@ -172,10 +174,17 @@
       border-color: var(--neon-purple);
       box-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
     }
-    .pay-card img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); }
-    .pay-info { display: flex; flex-direction: column; }
-    .pay-name { font-size: 9px; color: #aaa; margin-bottom: 2px; }
-    .pay-mul { font-size: 12px; color: var(--neon-gold); font-weight: bold; text-shadow: 0 0 3px var(--neon-gold); }
+    /* Image Group: 3 small images */
+    .pay-imgs { display: flex; gap: 4px; align-items: center; }
+    .pay-imgs img {
+      width: 24px; height: 24px; /* Much smaller images */
+      object-fit: contain; filter: drop-shadow(0 0 3px rgba(255,255,255,0.3));
+    }
+    /* Multiplier Info */
+    .pay-mul {
+      font-size: 14px; color: var(--neon-gold); font-weight: 800;
+      text-shadow: 0 0 5px var(--neon-gold);
+    }
 
 
     /* Right Panel (Game) */
@@ -272,13 +281,18 @@
         display: flex; 
         flex-direction: column; 
       }
-      /* 중요: 게임(.slot-stage)이 1번, 정보패널(.info-panel)이 2번 */
+      /* Game first, Info second */
       .slot-stage { order: 1; }
       .info-panel { order: 2; }
       
       .kpi { flex-direction: row; flex-wrap: wrap; }
       .kpi .box { flex: 1 1 30%; flex-direction: column; align-items: flex-start; gap: 5px; }
       .grid-wrap { padding: 15px 5px; }
+      
+      /* Mobile Paytable: 2 Columns */
+      .pay-grid { grid-template-columns: 1fr 1fr; max-height: 300px; }
+      .pay-imgs img { width: 20px; height: 20px; } /* Even smaller on mobile */
+      .pay-mul { font-size: 12px; }
     }
 
     @media (max-width: 640px) {
@@ -293,9 +307,6 @@
       .btn { height: 56px; font-size: 20px; }
       .reel-item img { width: 90%; height: 90%; }
       .mid3 { width: calc(var(--cell-w) * 3 + var(--gap) * 2 + 10px); height: calc(var(--cell-h) + 6px); }
-      
-      /* Mobile Paytable Adjustment */
-      .pay-grid { grid-template-columns: repeat(3, 1fr); } /* 3 cols on mobile */
     }
   </style>
 </head>
@@ -407,23 +418,21 @@ function renderPaytable(){
     const card = document.createElement("div");
     card.className = "pay-card";
     
-    const img = document.createElement("img");
-    img.src = IMG(p.id); img.alt = p.label;
+    // Image Group (3 small images)
+    const imgGroup = document.createElement("div");
+    imgGroup.className = "pay-imgs";
+    for(let i=0; i<3; i++){
+      const img = document.createElement("img");
+      img.src = IMG(p.id); img.alt = p.label;
+      imgGroup.appendChild(img);
+    }
 
-    const info = document.createElement("div");
-    info.className = "pay-info";
-
-    const name = document.createElement("div");
-    name.className = "pay-name"; name.textContent = p.label;
-    
+    // Multiplier Info
     const mul = document.createElement("div");
     mul.className = "pay-mul"; mul.textContent = p.mul;
 
-    info.appendChild(name);
-    info.appendChild(mul);
-
-    card.appendChild(img);
-    card.appendChild(info);
+    card.appendChild(imgGroup);
+    card.appendChild(mul);
     grid.appendChild(card);
   });
 }
