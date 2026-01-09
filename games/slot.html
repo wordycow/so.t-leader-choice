@@ -815,7 +815,7 @@ spinBtn.addEventListener("click", async () => {
   startSpinLoop();
 
   // 릴 먼저 확 돌리고
-  reels.forEach((reel, idx) => startReel(reel, 28 + idx*3));
+  reels.forEach((reel, idx) => startReel(reel, 45 + idx*3));
 
   setLog("SPIN 요청 중...");
   const result = await api("/slot/spin", { method:"POST", body:{ player: PLAYER } });
@@ -854,59 +854,77 @@ missing_user
   setApiStatus(true);
 
   const finalGrid = result.grid; // [3][5]
-  const stopDelays = [900, 1250, 1600, 1950, 2300];
+ // ✅ 원하는 타임라인: 총 10초 스핀, 7초부터 릴 1개씩 멈춤
+const TOTAL_SPIN_MS = 10000;
+const STOP_START_MS = 7000;   // 7초부터 멈추기 시작
+const STOP_STEP_MS  = 650;    // 릴 간 멈춤 간격(원하면 500~800 사이로 조절)
 
-  // 릴별 멈추면서 "stop" 사운드
-  stopDelays.forEach((ms, col) => {
-    setTimeout(() => {
-      stopReelToResult(reels[col], col, finalGrid);
-      playStop();
-    }, ms);
-  });
+// (선택) 멈추기 직전에 감속 느낌 주기
+const SLOW1_BEFORE = 700; // 멈추기 0.7초 전 1차 감속
+const SLOW2_BEFORE = 350; // 멈추기 0.35초 전 2차 감속
 
-  // 마무리
+const stopTimes = Array.from({length: COLS}, (_, i) => STOP_START_MS + i * STOP_STEP_MS);
+
+// ✅ 감속 → 정지(릴별)
+stopTimes.forEach((t, col) => {
+  // 1차 감속
   setTimeout(() => {
-    stageEl.classList.remove("spinning");
-    stopSpinLoop();
-    stopMarquee();
+    if(reels[col] && reels[col].running) reels[col].speed = 14; // 느려짐
+  }, Math.max(0, t - SLOW1_BEFORE));
 
-    if(result.bet != null) betVal.textContent = result.bet;
-    if(result.jackpot != null) jpVal.textContent = result.jackpot;
+  // 2차 감속
+  setTimeout(() => {
+    if(reels[col] && reels[col].running) reels[col].speed = 8; // 더 느려짐
+  }, Math.max(0, t - SLOW2_BEFORE));
 
-    const win = (result?.result?.win ?? "0");
-    const winType = (result?.result?.winType ?? "none");
-    const sym = (result?.result?.symbol ?? "-");
-    const mul = (result?.result?.multiplier ?? 0);
+  // 최종 정지 + 결과 적용
+  setTimeout(() => {
+    stopReelToResult(reels[col], col, finalGrid);
+    playStop();
+  }, t);
+});
 
-    winVal.textContent = win;
+// ✅ 마무리는 “무조건 10초”에 맞춰서 끝내기
+setTimeout(() => {
+  stageEl.classList.remove("spinning");
+  stopSpinLoop();
+  stopMarquee();
 
-    setLog(
+  if(result.bet != null) betVal.textContent = result.bet;
+  if(result.jackpot != null) jpVal.textContent = result.jackpot;
+
+  const win = (result?.result?.win ?? "0");
+  const winType = (result?.result?.winType ?? "none");
+  const sym = (result?.result?.symbol ?? "-");
+  const mul = (result?.result?.multiplier ?? 0);
+
+  winVal.textContent = win;
+
+  setLog(
 `RESULT
 - type: ${winType}
 - symbol: ${sym}
 - x${mul}
 - win: ${win} UT
 - jackpot: ${result.jackpot ?? jpVal.textContent} UT`
-    );
+  );
 
-    // ✅ 결과 사운드
-    const isJackpot = String(winType).toLowerCase().includes("jackpot");
-    const isWin = (String(win) !== "0" && winType !== "none");
+  const isJackpot = String(winType).toLowerCase().includes("jackpot");
+  const isWin = (String(win) !== "0" && winType !== "none");
 
-    if(isJackpot){
-      cardEl.classList.add("flash-win");
-      playOne(SFX.jackpot);
-    } else if(isWin){
-      cardEl.classList.add("flash-win");
-      playOne(SFX.win);
-    } else {
-      playOne(SFX.lose);
-    }
+  if(isJackpot){
+    cardEl.classList.add("flash-win");
+    playOne(SFX.jackpot);
+  } else if(isWin){
+    cardEl.classList.add("flash-win");
+    playOne(SFX.win);
+  } else {
+    playOne(SFX.lose);
+  }
 
-    spinning = false;
-    spinBtn.disabled = false;
-
-  }, Math.max(...stopDelays) + 260);
+  spinning = false;
+  spinBtn.disabled = false;
+}, TOTAL_SPIN_MS);
 });
 </script>
 </body>
