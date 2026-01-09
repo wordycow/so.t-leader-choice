@@ -155,56 +155,7 @@
     .tb-title { font-family:"Cinzel",serif; font-size:20px; color:#fff; font-weight:700; letter-spacing:0.05em; }
     .tb-user  { font-size:20px; color:#fbbf24; font-weight:800; text-shadow:0 0 10px rgba(251,191,36,0.4); }
 
-    /* ✅ GAME 버튼 (우측 상단) */
-    /* ✅ SLOT 버튼 이미지 (PC/모바일) */
-.slot-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  border-radius:14px;
-  overflow:hidden;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 12px 26px rgba(0,0,0,0.55);
-  transition: transform .12s ease, filter .12s ease, border-color .12s ease;
-  border: 1px solid rgba(251,191,36,0.35);
-  background: rgba(2,6,23,0.35);
-}
-.slot-btn:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.06);
-  border-color: rgba(251,191,36,0.6);
-}
-.slot-btn:active{ transform: translateY(0); }
-
-.slot-btn img{
-  display:block;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-/* PC: 우측 상단 작은 버튼 */
-.slot-btn--pc{
-  width: 180px;    /* 160~200 취향 */
-  height: 44px;    /* 40~52 취향 */
-}
-
-/* Mobile: 영상 아래 풀폭 CTA */
-.slot-btn--m{
-  width: 100%;
-  height: 64px;    /* 56~72 취향 */
-  margin-top: 12px;
-}
-
-/* 표시/숨김 (이 페이지 기준 breakpoint=768) */
-@media (min-width: 769px){
-  .slot-btn--m{ display:none; }
-}
-@media (max-width: 768px){
-  .slot-btn--pc{ display:none; }
-}
-
+    /* ✅ 우측 상단 GAME 버튼 (원래대로 유지) */
     .tb-header-right{ display:flex; align-items:center; gap:10px; }
     .game-btn{
       border-radius: 14px;
@@ -289,7 +240,7 @@
       display:flex;
       flex-direction:column;
       justify-content:center;
-      min-height:0; /* 내부 스크롤/오버플로 안정 */
+      min-height:0;
     }
 
     .wm-card.wallet{ border-color:#fbbf24; justify-content:space-between; }
@@ -299,15 +250,22 @@
     .fund-sub{ font-size:13px; color:#cbd5e1; margin-top:4px; }
     .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
 
-    .wm-card.mining{ border:1px solid rgba(251,191,36,0.2); justify-content:flex-start; }
+    /* ✅ 지식채굴 카드: 아래에 슬롯 버튼 붙일 거라 flex-column */
+    .wm-card.mining{
+      border:1px solid rgba(251,191,36,0.2);
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+    }
+
     .mining-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .mining-title{ color:#fff; font-size:14px; font-weight:800; display:flex; align-items:center; gap:6px; }
     .mining-badge{ font-size:11px; background: rgba(251,191,36,0.2); padding:4px 8px; border-radius:12px; color:#fff; }
 
-    /* ✅ (수정) 영상 프레임: 고정 높이로 */
+    /* 영상 프레임 */
     :root{
-      --wallet-tab-h: 520px; /* 두 탭 높이 동일하게 유지 */
-      --video-h: 260px;      /* 영상 프레임 높이 */
+      --wallet-tab-h: 520px;
+      --video-h: 260px;
     }
 
     #tab-main, #tab-transfer{ min-height: var(--wallet-tab-h); }
@@ -333,7 +291,6 @@
       overflow:hidden;
       border:1px solid #334155;
     }
-    /* 유튜브 플레이어/iframe 꽉 채우기 */
     #youtube-player,
     #youtube-player iframe,
     .video-frame iframe{
@@ -390,6 +347,36 @@
     .fund-input{ width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:10px; border-radius:6px; font-size:13px; }
     .transfer-btn{ width:100%; background:#3b82f6; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:900; margin-top:14px; cursor:pointer; }
 
+    /* ====== SLOT (CASINO FOR FUN) 버튼: 영상 카드 하단 고정 ====== */
+    .slot-banner{
+      margin-top:auto;           /* ✅ PC에서 하단으로 내려감 */
+      padding-top:14px;
+      display:block;
+      width:100%;
+      text-decoration:none;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid rgba(251,191,36,0.35);
+      background: rgba(2,6,23,0.30);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.55);
+      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .slot-banner:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      border-color: rgba(251,191,36,0.6);
+    }
+    .slot-banner:active{ transform: translateY(0); }
+
+    /* ✅ 안 잘리게: 높이 고정 X, 이미지 비율 그대로 */
+    .slot-banner img{
+      display:block;
+      width:100%;
+      height:auto;              /* 핵심 */
+      object-fit:contain;       /* 혹시라도 컨테이너가 좁아도 안전 */
+    }
+
     /* ====== history ====== */
     .history-list{
       margin-top:18px;
@@ -397,7 +384,7 @@
       border-top:1px solid rgba(255,255,255,0.1);
       display:flex;
       flex-direction:column;
-      min-height:0; /* 중요 */
+      min-height:0;
     }
 
     .history-title{
@@ -407,14 +394,12 @@
       margin-bottom:10px;
     }
 
-    /* ✅ 최근내역 스크롤 박스 */
     #history-container{
-      height:150px;       /* 요청: 150px */
+      height:150px;
       overflow:auto;
       padding-right:6px;
     }
 
-    /* 비어있을 때 문구 기본 스타일 */
     .history-empty{
       font-size:12px;
       color:#64748b;
@@ -422,7 +407,6 @@
       padding:20px 0;
     }
 
-    /* 스크롤바(선택) */
     #history-container::-webkit-scrollbar{ width:8px; }
     #history-container::-webkit-scrollbar-thumb{
       background: rgba(148,163,184,0.35);
@@ -734,6 +718,10 @@
       #tab-main .wallet-mining-grid,
       #tab-transfer .wallet-mining-grid{ height:auto; }
       .video-frame{ height:220px; }
+
+      /* ✅ 모바일에서 슬롯 버튼 여백/라운드 조금 더 */
+      .slot-banner{ padding-top:12px; border-radius:16px; }
+      .slot-banner img{ border-radius:0; }
     }
   </style>
 </head>
@@ -774,17 +762,12 @@
               <div class="tb-user" id="tb-user-name">User</div>
             </div>
 
-            <!-- ✅ 우측 상단 GAME 버튼 -->
-            <!-- ✅ 우측 상단 SLOT 버튼(PC) -->
-<div class="tb-header-right">
-  <a class="slot-btn slot-btn--pc" id="slotBtnPc" href="games/slot.html">
-    <img src="img/slot-btn.png" alt="SLOT GAME">
-  </a>
-</div>
-
+            <!-- ✅ 우측 상단 GAME 버튼 (그대로) -->
+            <div class="tb-header-right">
+              <button class="game-btn" type="button" onclick="window.open('game.html','_blank')">GAME</button>
+            </div>
           </div>
 
-          <!-- 버튼들을 제목 바로 아래로 -->
           <div class="tb-tabs-under-title">
             <button class="tb-tab-btn active" onclick="openTab(event, 'tab-main')">내 지갑 & 지식 채굴</button>
             <button class="tb-tab-btn" onclick="openTab(event, 'tab-transfer')">UT 송금</button>
@@ -825,10 +808,11 @@
                   <div id="youtube-player"></div>
                 </div>
                 <div id="yt-status-text" class="mining-status">▶ 재생 버튼을 눌러 시청하세요 (매일 00:00 초기화)</div>
-                <a class="slot-btn slot-btn--m" id="slotBtnM" href="games/slot.html">
-  <img src="img/slot-btn.png" alt="SLOT GAME">
-</a>
 
+                <!-- ✅ PC/모바일 공통: 영상 카드 하단 "표시한 위치"에 슬롯 버튼 -->
+                <a id="slotBanner" class="slot-banner" href="games/slot.html" target="_blank" rel="noopener noreferrer">
+                  <img src="img/slot-btn.png" alt="CASINO FOR FUN - SLOT GAME">
+                </a>
               </div>
             </div>
           </div>
