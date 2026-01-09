@@ -5,12 +5,12 @@ window.SLOT = window.SLOT || {};
   let enabled = true;
   let unlocked = false;
 
-  // ✅ stop 사운드가 3초짜리여도 "틱"처럼 쓰기 위해 잘라서 재생
-  const STOP_TICK_MS = 140; // 120~180 사이로 취향 조절 가능
+  // ✅ stop 사운드(긴 MP3)를 "틱"처럼 쓰기 위해 잘라서 재생
+  const STOP_TICK_MS = 110; // 90~180 사이 취향 조절
 
   function src(name) {
-    // games/slot.html 기준 sounds 폴더는 games/sounds/
-    // (= slot.html이 games/ 아래에 있으니 "sounds/..."가 맞음)
+    // slot.html이 games/ 아래 → sounds 폴더는 games/sounds/
+    // 파일 확장자는 전부 .MP3 (대문자)
     return `sounds/${name}.MP3`;
   }
 
@@ -24,7 +24,7 @@ window.SLOT = window.SLOT || {};
   }
 
   function init() {
-    // 실제 파일명에 맞춰 매핑
+    // ✅ 실제 파일명 매핑 (확장자/대소문자 주의: .MP3)
     audio.start = makeAudio("start-button-sound", { volume: 0.9 });
     audio.win = makeAudio("win-sound", { volume: 0.9 });
     audio.lose = makeAudio("lose-sound", { volume: 0.9 });
@@ -67,9 +67,7 @@ window.SLOT = window.SLOT || {};
 
   function setEnabled(on) {
     enabled = !!on;
-    if (!enabled) {
-      stopSpinSound();
-    }
+    if (!enabled) stopSpinSound();
   }
 
   function toggle() {
@@ -77,8 +75,11 @@ window.SLOT = window.SLOT || {};
     return enabled;
   }
 
+  // ✅ 어디서 playOne("stop") 호출하든 자동으로 틱 처리
   function playOne(key) {
     if (!enabled) return;
+    if (key === "stop") return playStopTick();
+
     const a = audio[key];
     if (!a) return;
 
@@ -110,7 +111,8 @@ window.SLOT = window.SLOT || {};
     if (!base) return;
 
     try {
-      const a = base.cloneNode(); // 겹쳐도 자연스럽게
+      // cloneNode로 겹쳐도 자연스럽게 (릴 5개 연속 멈춤 대응)
+      const a = base.cloneNode();
       a.volume = base.volume;
       a.currentTime = 0;
 
