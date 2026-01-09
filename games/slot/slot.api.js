@@ -1,11 +1,9 @@
 // games/slot/slot.api.js
 window.SLOT = window.SLOT || {};
 (function (S) {
-
   function getParam(name){
     return new URLSearchParams(location.search).get(name);
   }
-
   function clean(v){
     v = (v || "").trim();
     if(!v) return "";
@@ -16,27 +14,37 @@ window.SLOT = window.SLOT || {};
   // ✅ prompt 없음. 있으면 쓰고 없으면 Guest.
   function getPlayerContext(){
     const u   = clean(getParam("u"))   || clean(localStorage.getItem("slot_player")) || "Guest";
-    const uid = clean(getParam("uid")) || clean(localStorage.getItem("unique_userid")) || clean(localStorage.getItem("uid")) || "";
+    const uid = clean(getParam("uid")) || clean(localStorage.getItem("unique_userid")) || "";
 
-    // 표시용 UT 캐시
     const ut  = clean(getParam("ut"))  || clean(localStorage.getItem("unique_ut")) || "";
-
-    // ✅ 서버에서 user로 쓸 키 (우선 uid, 없으면 닉)
-    const userKey = uid || u;
 
     localStorage.setItem("slot_player", u);
     if(uid) localStorage.setItem("unique_userid", uid);
     if(ut)  localStorage.setItem("unique_ut", ut);
 
-    return { u, uid, ut, userKey };
+    return { u, uid, ut };
+  }
+
+  function normState(d){
+    if(!d) return null;
+
+    // state keys (worker가 어떤 키를 주든 방어)
+    const bet = d.bet ?? d.betUT ?? d.state?.bet ?? d.state?.betUT ?? d.config?.betUT;
+    const jackpot = d.jackpot ?? d.jackpotUT ?? d.state?.jackpot ?? d.state?.jackpotUT;
+    const ut = d.ut ?? d.balanceUT ?? d.user?.ut ?? d.player?.ut;
+
+    const displayName = d.displayName ?? d.userName ?? d.name ?? d.player?.name;
+
+    const totalIssuedUT = d.totalIssuedUT ?? d.econ?.totalIssuedUT;
+    const utPrice = d.utPrice ?? d.econ?.utPrice;
+    const winScale = d.winScale ?? d.econ?.winScale;
+
+    return { bet, jackpot, ut, displayName, totalIssuedUT, utPrice, winScale };
   }
 
   async function checkApi(ctx){
     try{
-      // ✅ Worker가 받는 파라미터는 user
       const url = new URL(`${S.API_BASE}/slot/state`);
-      url.searchParams.set("user", ctx.userKey);
-      // 참고용 (worker가 무시해도 됨)
       url.searchParams.set("u", ctx.u);
       if(ctx.uid) url.searchParams.set("uid", ctx.uid);
 
@@ -46,17 +54,17 @@ window.SLOT = window.SLOT || {};
       if(d && d.ok){
         S.ui.setOnline(true);
 
-        // ✅ Worker v3 키: betUT, jackpotUT, (ut 추가해줄 예정)
-        const bet = d.betUT ?? d.bet ?? d.state?.bet ?? 10;
-        const jackpot = d.jackpotUT ?? d.jackpot ?? d.state?.jackpot ?? 0;
-        const ut = d.ut ?? d.userUT ?? d.balanceUT ?? d.user?.ut;
-
-        S.ui.setKpi({ bet, jackpot });
-        if(ut !== undefined) S.ui.setPlayer({ u: ctx.u, uid: ctx.uid, ut });
+        const st = normState(d);
+        if(st){
+          S.ui.setKpi({ bet: st.bet, jackpot: st.jackpot, win: 0 });
+          if(st.ut !== undefined) S.ui.setPlayer({ u: ctx.u, displayName: st.displayName, ut: st.ut });
+          S.ui.setEconomy({ totalIssuedUT: st.totalIssuedUT, utPrice: st.utPrice, winScale: st.winScale });
+          if(st.ut !== undefined) localStorage.setItem("unique_ut", String(st.ut));
+          if(st.displayName) localStorage.setItem("slot_display_name", String(st.displayName));
+        }
 
         return d;
       }
-
       S.ui.setOnline(false);
       return null;
     }catch(e){
@@ -66,43 +74,44 @@ window.SLOT = window.SLOT || {};
   }
 
   async function spin(ctx){
-    // ✅ Worker는 body.user를 요구한다
     const url = new URL(`${S.API_BASE}/slot/spin`);
-    url.searchParams.set("user", ctx.userKey);
 
     const res = await fetch(url.toString(), {
       method: "POST",
       headers: { "Content-Type":"application/json" },
       body: JSON.stringify({
-        user: ctx.userKey, // ✅ 핵심
         u: ctx.u,
-        uid: ctx.uid
+        uid: ctx.uid,
+        // 서버 호환용(기존 worker가 user만 받는 경우 대비)
+        user: ctx.uid || ctx.u
       })
     });
 
     const data = await res.json();
 
-    if(!data || !data.ok) {
+    if(!data || !data.ok){
       const msg = (data && data.error) ? data.error : "Spin failed";
       throw new Error(msg);
     }
 
-    // normalize
     const grid = data.grid || data.result?.grid || null;
 
-    const win = data.winUT ?? data.win ?? (data.result?.win ?? 0);
-    const bet = data.betUT ?? data.bet ?? (data.state?.bet ?? 10);
-    const jackpot = data.jackpotUT ?? data.jackpot ?? (data.state?.jackpot ?? 0);
+    const win = data.win ?? data.winUT ?? data.result?.win ?? 0;
+    const winType = data.winType ?? data.result?.winType ?? (data.jackpotHit ? "JACKPOT" : "NORMAL");
 
-    // ✅ worker에서 ut 내려주면 표시/동기화
-    const ut = data.ut ?? data.userUT ?? data.balanceUT ?? data.user?.ut;
+    const bet = data.bet ?? data.betUT ?? data.state?.bet ?? data.state?.betUT ?? 10;
+    const jackpot = data.jackpot ?? data.jackpotUT ?? data.state?.jackpot ?? data.state?.jackpotUT ?? 0;
 
-    const winType =
-      data.winType ||
-      data.result?.winType ||
-      (Number(win) > 0 ? "WIN" : "LOSE");
+    const ut = data.ut ?? data.balanceUT ?? data.user?.ut ?? data.player?.ut;
+    const displayName = data.displayName ?? data.userName ?? data.name;
 
-    return { raw:data, grid, win, winType, bet, jackpot, ut };
+    const econ = {
+      totalIssuedUT: data.totalIssuedUT ?? data.econ?.totalIssuedUT,
+      utPrice: data.utPrice ?? data.econ?.utPrice,
+      winScale: data.winScale ?? data.econ?.winScale
+    };
+
+    return { raw:data, grid, win, winType, bet, jackpot, ut, displayName, econ };
   }
 
   S.api = { getPlayerContext, checkApi, spin };
