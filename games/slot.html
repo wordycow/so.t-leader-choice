@@ -30,7 +30,7 @@
       width: 100%;
       max-width: 1200px;
       height: 95vh;
-      max-height: 800px;
+      max-height: 850px; /* 높이 약간 증가 */
       padding: 10px;
       display: flex;
       align-items: center;
@@ -92,8 +92,10 @@
       gap: 6px;
       color: #cbd5e1;
       border: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer; /* 사운드 버튼 클릭 가능 표시 */
     }
     .dot, .s-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 5px #4ADE80; }
+    .s-dot.off { background: #ef4444; box-shadow: 0 0 5px #ef4444; } /* 사운드 OFF 스타일 */
     
     /* ================= MAIN CONTENT ================= */
     .layout {
@@ -152,9 +154,16 @@
       min-height: 32px;
       display: flex; align-items: center;
       border-left: 3px solid #38BDF8;
+      white-space: pre-wrap; /* 줄바꿈 지원 */
     }
 
-    /* Pay Grid (Table) */
+    /* Pay Grid (Table) - ✅ 크기 줄임 */
+    .pay-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* flex 자식 스크롤 필수 */
+    }
     .pay-head {
       display: flex; justify-content: space-between;
       font-size: 10px; color: #64748B; padding: 0 4px; margin-bottom: 4px; font-weight: 700;
@@ -169,10 +178,19 @@
       grid-template-columns: repeat(2, 1fr); /* 2열 배치 */
       gap: 6px;
       align-content: start;
+      max-height: 200px; /* PC에서도 너무 크지 않게 제한 */
     }
     /* 스크롤바 커스텀 */
     .pay-container::-webkit-scrollbar { width: 4px; }
     .pay-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    /* Pay Item Style */
+    .pay-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;
+      font-size: 11px; color: #cbd5e1;
+    }
+    .pay-img { width: 20px; height: 20px; object-fit: contain; }
 
     /* --- RIGHT: GAME STAGE --- */
     .slot-stage {
@@ -189,7 +207,7 @@
     .screen-bezel {
       width: 100%;
       max-width: 600px;
-      aspect-ratio: 5 / 3; /* 슬롯 비율 고정 */
+      aspect-ratio: 5 / 3; /* 슬롯 비율 고정 (5열 3행) */
       background: #000;
       border-radius: 16px;
       border: 2px solid #334155;
@@ -209,9 +227,11 @@
       border-top: 1px solid rgba(250, 204, 21, 0.5);
       border-bottom: 1px solid rgba(250, 204, 21, 0.5);
       pointer-events: none;
-      z-index: 5;
+      z-index: 10; /* 릴 위에 표시 */
       box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
+      display: none; /* 기본 숨김, 결과 나올 때 표시 */
     }
+    .payline-highlight.active { display: block; }
 
     /* Reels Grid */
     .reels {
@@ -219,27 +239,54 @@
       grid-template-columns: repeat(5, 1fr);
       height: 100%;
       width: 100%;
-    }
-    /* Reel Individual (JS에서 생성됨) */
-    .reel-col {
-      border-right: 1px solid rgba(255,255,255,0.1);
-      overflow: hidden;
       position: relative;
     }
+    
+    /* ✅ Reel Individual & Animation (핵심!) */
+    .reel-col {
+      border-right: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden; /* 넘치는 심볼 숨김 */
+      position: relative;
+      height: 100%;
+    }
     .reel-col:last-child { border-right: none; }
+
+    /* 실제 움직이는 긴 스트립 */
+    .reel-strip {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 0; left: 0; width: 100%;
+      /* 초기 위치: 결과 심볼 3개가 정확히 보이도록 설정 (JS에서 계산) */
+    }
+
+    /* 회전 애니메이션 키프레임 */
+    @keyframes spin {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(calc(-100% + (100% / 3 * 3))); } /* 전체 높이 - 3칸 높이 만큼 이동 */
+    }
+    
+    /* 애니메이션 적용 클래스 */
+    .reel-strip.spinning {
+      animation: spin 0.3s linear infinite; /* 빠르게 반복 회전 */
+    }
     
     /* Symbol Image */
     .symbol {
       width: 100%;
-      height: 33.33%; /* 3칸이 보이도록 */
+      /* 부모(.screen-bezel) 높이의 1/3 */
+      height: calc(100% / 3); 
       display: flex; 
       align-items: center; justify-content: center;
-      padding: 8px; /* 이미지 패딩 */
+      padding: 10%; /* 이미지 패딩 */
     }
     .symbol img {
       width: 100%; height: 100%; object-fit: contain;
       filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
     }
+    /* 회전 중 흐림 효과 */
+    .reel-strip.spinning .symbol img { filter: blur(2px); }
+
 
     /* Controls */
     .controls { width: 100%; max-width: 600px; text-align: center; }
@@ -268,6 +315,7 @@
     }
     .spin-btn:disabled {
       background: #334155; color: #64748B; box-shadow: none; transform: translateY(6px); cursor: not-allowed;
+      filter: grayscale(0.5);
     }
 
     .hint { margin-top: 12px; font-size: 11px; color: #64748B; letter-spacing: 1px; }
@@ -293,8 +341,9 @@
       /* KPI 박스 모바일에서 강조 */
       .kpi { margin-bottom: 10px; }
       
-      /* 페이테이블은 모바일에서 작게 */
-      .pay-container { max-height: 200px; }
+      /* ✅ 페이테이블 모바일에서 크기 제한 (핵심) */
+      .pay-wrapper { height: 150px; min-height: 150px; } /* 고정 높이 부여 */
+      .pay-container { max-height: none; /* wrapper 높이 따름 */ }
     }
   </style>
 </head>
@@ -311,10 +360,12 @@
         <div class="status-wrap">
           <div class="status-pill">
             <span id="apiDot" class="dot"></span>
-            <span id="apiText" style="display:none">Ready</span> </div>
-          <div class="status-pill" id="soundBtn">
-            <span class="s-dot"></span>
-            <span id="soundText" style="display:none">ON</span> 🔊
+            <span id="apiText" style="display:none">Ready</span>
+          </div>
+          <div class="status-pill" id="soundBtn" onclick="toggleSound()">
+            <span class="s-dot" id="soundDot"></span>
+            <span id="soundText" style="display:none">ON</span>
+            <span id="soundIcon">🔊</span>
           </div>
         </div>
       </div>
@@ -351,10 +402,10 @@
           
           <div class="log-box" id="log">Press SPIN to start.</div>
 
-          <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+          <div class="pay-wrapper">
             <div class="pay-head">
               <span>SYMBOL</span>
-              <span>PAYOUT</span>
+              <span>PAYOUT (MATCH 3)</span>
             </div>
             <div class="pay-container" id="payGrid">
               </div>
@@ -363,13 +414,18 @@
 
         <div class="panel slot-stage">
           <div class="screen-bezel">
-            <div class="payline-highlight"></div>
+            <div class="payline-highlight" id="paylineHighlight"></div>
             <div class="reels" id="reels">
-              </div>
+              <div class="reel-col"><div class="reel-strip" id="reel1"></div></div>
+              <div class="reel-col"><div class="reel-strip" id="reel2"></div></div>
+              <div class="reel-col"><div class="reel-strip" id="reel3"></div></div>
+              <div class="reel-col"><div class="reel-strip" id="reel4"></div></div>
+              <div class="reel-col"><div class="reel-strip" id="reel5"></div></div>
+            </div>
           </div>
 
           <div class="controls">
-            <button class="spin-btn" id="spinBtn">SPIN</button>
+            <button class="spin-btn" id="spinBtn" onclick="spin()">SPIN</button>
             <div class="hint" id="hintText">Match 3 symbols on the center line!</div>
           </div>
         </div>
@@ -378,11 +434,271 @@
     </div>
   </div>
 
-  <script defer src="slot/slot.config.js"></script>
-  <script defer src="slot/slot.audio.js"></script>
-  <script defer src="slot/slot.ui.js"></script>
-  <script defer src="slot/slot.api.js"></script>
-  <script defer src="slot/slot.game.js"></script>
-  <script defer src="slot/slot.app.js"></script>
+  <audio id="audioSpin" src="slot/spin.mp3" preload="auto"></audio>
+  <audio id="audioWin" src="slot/win.mp3" preload="auto"></audio>
+
+  <script>
+    // ================= CONFIG & DATA =================
+    const CONFIG = {
+      bet: 10,
+      symbols: [
+        { id: 1, name: "Grand Star", img: "../img/star1.png", payout: 500 },
+        { id: 2, name: "Gold Shield", img: "../img/shield-gold.png", payout: 200 },
+        { id: 3, name: "Silver Shield", img: "../img/shield-silver.png", payout: 100 },
+        { id: 4, name: "Bronze Shield", img: "../img/shield-bronze.png", payout: 50 },
+        { id: 5, name: "Blue Badge", img: "../img/badge-blue.png", payout: 20 },
+        { id: 6, name: "Red Badge", img: "../img/badge-red.png", payout: 10 },
+        { id: 7, name: "Green Badge", img: "../img/badge-green.png", payout: 5 }
+      ],
+      reelDelay: 300, // 각 릴 멈추는 간격 (ms)
+      spinDuration: 1500 // 기본 회전 시간 (ms)
+    };
+
+    let gameState = {
+      ut: 202.00,
+      jackpot: 285,
+      win: 0,
+      isSpinning: false,
+      soundOn: true
+    };
+
+    // DOM Elements
+    const els = {
+      ut: document.getElementById('playerUt'),
+      bet: document.getElementById('betVal'),
+      win: document.getElementById('winVal'),
+      jp: document.getElementById('jpVal'),
+      log: document.getElementById('log'),
+      payGrid: document.getElementById('payGrid'),
+      spinBtn: document.getElementById('spinBtn'),
+      payline: document.getElementById('paylineHighlight'),
+      soundDot: document.getElementById('soundDot'),
+      soundIcon: document.getElementById('soundIcon'),
+      reels: [
+        document.getElementById('reel1'),
+        document.getElementById('reel2'),
+        document.getElementById('reel3'),
+        document.getElementById('reel4'),
+        document.getElementById('reel5')
+      ]
+    };
+
+    const audio = {
+      spin: document.getElementById('audioSpin'),
+      win: document.getElementById('audioWin')
+    };
+
+    // ================= INIT =================
+    function init() {
+      updateUI();
+      renderPayTable();
+      // 초기 릴 채우기 (랜덤)
+      els.reels.forEach(reel => {
+        const initialSymbols = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+        renderReel(reel, initialSymbols);
+      });
+      log("Welcome! Press SPIN to start.");
+    }
+
+    // ================= ACTION: SPIN =================
+    async function spin() {
+      if (gameState.isSpinning || gameState.ut < CONFIG.bet) return;
+
+      // 1. 상태 업데이트 및 UI 반영
+      gameState.isSpinning = true;
+      gameState.win = 0;
+      gameState.ut -= CONFIG.bet;
+      gameState.jackpot += CONFIG.bet * 0.1; // 잭팟 조금 증가
+      updateUI();
+      els.spinBtn.disabled = true;
+      els.payline.classList.remove('active');
+      log("Spinning...");
+
+      // 2. 사운드 재생 & 애니메이션 시작
+      playSound(audio.spin, true); // 반복 재생
+      startAnimation();
+
+      try {
+        // 3. API 호출 (결과 요청) - 실제 서버 통신 부분
+        // const result = await fakeApiCall(); // 실제로는 fetch() 사용
+        const result = generateRandomResult(); // 테스트용 랜덤 결과 생성
+
+        // 4. 결과 수신 후 릴 멈추기 (순차적)
+        await stopAnimation(result.grid);
+
+        // 5. 결과 처리 (승리/패배)
+        handleResult(result);
+
+      } catch (error) {
+        log("Error: " + error.message);
+        stopSound(audio.spin);
+        els.reels.forEach(reel => reel.classList.remove('spinning')); // 강제 정지
+      } finally {
+        // 6. 상태 복구
+        gameState.isSpinning = false;
+        els.spinBtn.disabled = false;
+      }
+    }
+
+    // ================= LOGIC: ANIMATION =================
+    function startAnimation() {
+      els.reels.forEach(reel => {
+        // 애니메이션용 긴 스트립 생성 (심볼 반복)
+        const animationSymbols = [];
+        for (let i = 0; i < 10; i++) animationSymbols.push(getRandomSymbol());
+        renderReel(reel, animationSymbols, true); // true: 애니메이션 모드
+        
+        // CSS 애니메이션 클래스 추가
+        reel.classList.add('spinning');
+      });
+    }
+
+    async function stopAnimation(resultGrid) {
+      const baseDuration = CONFIG.spinDuration;
+      const delay = CONFIG.reelDelay;
+
+      // 각 릴을 순서대로 멈춤
+      for (let i = 0; i < 5; i++) {
+        await sleep(baseDuration + (i * delay)); // 딜레이 대기
+        
+        const reel = els.reels[i];
+        const targetSymbols = [resultGrid[0][i], resultGrid[1][i], resultGrid[2][i]]; // 해당 릴의 결과 심볼 3개
+
+        // 애니메이션 중지 및 결과 심볼로 교체
+        reel.classList.remove('spinning');
+        renderReel(reel, targetSymbols);
+        
+        // 쿵! 하는 효과음 (선택 사항)
+        // if (gameState.soundOn) new Audio('slot/stop.mp3').play();
+      }
+      stopSound(audio.spin); // 스핀 사운드 정지
+    }
+
+    // 릴에 심볼 이미지 렌더링
+    function renderReel(reelContainer, symbols, isAnimating = false) {
+      reelContainer.innerHTML = '';
+      symbols.forEach(symbol => {
+        const el = document.createElement('div');
+        el.className = 'symbol';
+        el.innerHTML = `<img src="${symbol.img}" alt="${symbol.name}">`;
+        reelContainer.appendChild(el);
+      });
+
+      // 위치 조정 (애니메이션 아닐 때는 정확히 가운데 정렬)
+      if (!isAnimating) {
+        // 3개의 심볼이 정확히 보이도록 위치 설정 (전체 높이의 -1/3 지점부터 시작)
+        reelContainer.style.transform = `translateY(0)`; 
+        // 실제로는 CSS에서 .symbol 높이를 33.33%로 잡았으므로 
+        // 3개만 넣으면 딱 맞게 들어감. (스트립 방식이라 조정 불필요)
+      }
+    }
+
+    // ================= LOGIC: RESULT =================
+    function handleResult(result) {
+        gameState.win = result.winAmount;
+        gameState.ut += result.winAmount;
+        
+        if (result.winAmount > 0) {
+            log(`🎉 WIN! +${result.winAmount.toFixed(2)} UT`);
+            playSound(audio.win);
+            els.payline.classList.add('active'); // 페이라인 강조
+        } else {
+            log("Try again!");
+        }
+        updateUI();
+    }
+
+    // (테스트용) 랜덤 결과 생성기
+    function generateRandomResult() {
+        const grid = [[], [], []];
+        for(let i=0; i<5; i++) {
+            grid[0].push(getRandomSymbol());
+            grid[1].push(getRandomSymbol());
+            grid[2].push(getRandomSymbol());
+        }
+        
+        // 가운데 라인 승리 판별 (간단한 로직)
+        const centerLine = grid[1];
+        let winAmount = 0;
+        const first = centerLine[0];
+        let matchCount = 0;
+        for(const sym of centerLine) {
+            if(sym.id === first.id) matchCount++;
+        }
+        
+        if (matchCount >= 3) { // 3개 이상 일치 시 승리 (테스트)
+            winAmount = first.payout * (matchCount - 2); // 간단한 계산
+        }
+
+        return { grid, winAmount };
+    }
+
+
+    // ================= UI & UTIL =================
+    function updateUI() {
+      els.ut.textContent = gameState.ut.toFixed(2);
+      els.bet.textContent = CONFIG.bet;
+      els.win.textContent = gameState.win.toFixed(2);
+      els.jp.textContent = gameState.jackpot.toFixed(0);
+      
+      if (gameState.win > 0) els.win.classList.add('gold');
+      else els.win.classList.remove('gold');
+    }
+
+    function log(msg) {
+      els.log.textContent = msg;
+    }
+
+    function renderPayTable() {
+      els.payGrid.innerHTML = '';
+      CONFIG.symbols.forEach(sym => {
+        const item = document.createElement('div');
+        item.className = 'pay-item';
+        item.innerHTML = `
+          <div style="display:flex;align-items:center;gap:5px;">
+            <img src="${sym.img}" class="pay-img">
+            <span>${sym.name}</span>
+          </div>
+          <span style="color:#FACC15;font-weight:700;">${sym.payout}</span>
+        `;
+        els.payGrid.appendChild(item);
+      });
+    }
+
+    function toggleSound() {
+      gameState.soundOn = !gameState.soundOn;
+      els.soundDot.classList.toggle('off', !gameState.soundOn);
+      els.soundIcon.textContent = gameState.soundOn ? '🔊' : '🔇';
+      if (!gameState.soundOn) {
+        stopSound(audio.spin);
+        stopSound(audio.win);
+      }
+      log(`Sound: ${gameState.soundOn ? 'ON' : 'OFF'}`);
+    }
+
+    function playSound(audioEl, loop = false) {
+      if (!gameState.soundOn) return;
+      audioEl.currentTime = 0;
+      audioEl.loop = loop;
+      audioEl.play().catch(() => {}); // 자동재생 차단 방지
+    }
+
+    function stopSound(audioEl) {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    }
+
+    function getRandomSymbol() {
+      return CONFIG.symbols[Math.floor(Math.random() * CONFIG.symbols.length)];
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Start
+    init();
+
+  </script>
 </body>
 </html>
