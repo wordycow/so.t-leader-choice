@@ -12,10 +12,53 @@
       font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
       color:#e5e7eb;
       background:#020617;
-      background-image:
-        radial-gradient(circle at top, rgba(148,163,184,.16), transparent 55%),
-        radial-gradient(circle at 20% 90%, rgba(245,158,11,.12), transparent 45%);
       overflow-x:hidden;
+    }
+
+    :root{
+      --panel: rgba(15,23,42,.92);
+      --panel2: rgba(2,6,23,.45);
+      --line: rgba(148,163,184,.18);
+      --gold: rgba(245,158,11,.90);
+      --gold2:#fbbf24;
+
+      --cell-w:150px;
+      --cell-h:112px;
+      --gap:14px;
+
+      --reel-h: calc(var(--cell-h) * 3 + var(--gap) * 2);
+    }
+
+    .bg{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      background:
+        radial-gradient(circle at top, rgba(148,163,184,.12), transparent 55%),
+        radial-gradient(circle at 20% 90%, rgba(245,158,11,.10), transparent 45%),
+        #020617;
+      overflow:hidden;
+    }
+    .bg::before{
+      content:"";
+      position:absolute; inset:-20px;
+      background-image: var(--bgimg, none);
+      background-size: cover;
+      background-position: center;
+      filter: blur(10px) brightness(.65) saturate(1.15);
+      opacity: .55;
+      transform: scale(1.08);
+      transition: opacity .55s ease, filter .55s ease;
+    }
+    .bg.flash::before{
+      opacity:.72;
+      filter: blur(8px) brightness(.78) saturate(1.25);
+    }
+    .bg-vignette{
+      position:absolute; inset:0;
+      background: radial-gradient(circle at 50% 35%, rgba(0,0,0,.10), rgba(0,0,0,.70) 70%);
+      z-index:-1;
+      pointer-events:none;
     }
 
     .wrap{
@@ -26,9 +69,9 @@
 
     .card{
       border-radius: 26px;
-      background: rgba(15,23,42,.92);
+      background: var(--panel);
       border: 1px solid rgba(245,158,11,.85);
-      box-shadow: 0 0 26px rgba(245,158,11,.45), 0 30px 90px rgba(0,0,0,.92);
+      box-shadow: 0 0 26px rgba(245,158,11,.35), 0 30px 90px rgba(0,0,0,.92);
       padding: 22px 22px 18px;
       backdrop-filter: blur(12px);
       position:relative;
@@ -96,25 +139,25 @@
     }
     .sound-btn .s-dot{
       width:10px;height:10px;border-radius:50%;
-      background:#ef4444;
-      box-shadow:0 0 12px rgba(239,68,68,.25);
-    }
-    .sound-btn.on .s-dot{
       background:#22c55e;
       box-shadow:0 0 14px rgba(34,197,94,.35);
+    }
+    .sound-btn.off .s-dot{
+      background:#ef4444;
+      box-shadow:0 0 12px rgba(239,68,68,.25);
     }
 
     .layout{
       display:grid;
-      grid-template-columns: 1.15fr 1.85fr;
+      grid-template-columns: 1.10fr 1.90fr;
       gap: 18px;
       align-items: stretch;
     }
 
     .panel{
       border-radius: 18px;
-      border: 1px solid rgba(148,163,184,.18);
-      background: rgba(2,6,23,.45);
+      border: 1px solid var(--line);
+      background: var(--panel2);
       box-shadow: 0 14px 26px rgba(0,0,0,.6);
       padding: 14px;
       min-height: 260px;
@@ -128,7 +171,7 @@
     }
     .kpi .box{
       border-radius: 14px;
-      background: rgba(15,23,42,.7);
+      background: rgba(15,23,42,.70);
       border: 1px solid rgba(148,163,184,.16);
       padding: 10px 12px;
     }
@@ -143,7 +186,7 @@
       color:#fff;
       letter-spacing:.02em;
     }
-    .kpi .val.gold{ color:#fbbf24; text-shadow:0 0 12px rgba(251,191,36,.25); }
+    .kpi .val.gold{ color:var(--gold2); text-shadow:0 0 12px rgba(251,191,36,.25); }
 
     .log{
       margin-top: 10px;
@@ -154,7 +197,7 @@
       color:#cbd5e1;
       font-size: 12px;
       line-height: 1.45;
-      min-height: 110px;
+      min-height: 130px;
       white-space:pre-line;
     }
 
@@ -172,52 +215,85 @@
       justify-content:center;
       border-radius: 18px;
       background: rgba(15,23,42,.55);
-      border: 1px solid rgba(148,163,184,.18);
+      border: 1px solid var(--line);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
       padding: 16px;
-      min-height: 360px;
+      min-height: 390px;
       position:relative;
       overflow:hidden;
     }
 
-    .grid{
+    /* reels */
+    .reels{
       display:grid;
-      grid-template-columns: repeat(5, 150px);
-      grid-template-rows: repeat(3, 112px);
-      gap: 14px;
+      grid-template-columns: repeat(5, var(--cell-w));
+      gap: var(--gap);
+      align-items:center;
+      justify-content:center;
     }
 
-    .cell{
+    .reel-window{
+      width: var(--cell-w);
+      height: var(--reel-h);
+      overflow:hidden;
       border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(2,6,23,.35);
+      box-shadow: 0 14px 28px rgba(0,0,0,.55);
+      position:relative;
+    }
+
+    .reel-strip{
+      position:absolute;
+      left:0; top:0;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap: var(--gap);
+      will-change: transform;
+      transform: translateY(0px);
+    }
+
+    .reel-item{
+      height: var(--cell-h);
+      border-radius: 16px;
       background: rgba(2,6,23,.55);
       border: 1px solid rgba(148,163,184,.16);
-      box-shadow: 0 14px 28px rgba(0,0,0,.55);
       display:flex;
       align-items:center;
       justify-content:center;
-      position:relative;
       overflow:hidden;
+      position:relative;
     }
-    .cell::after{
+    .reel-item::after{
       content:"";
       position:absolute; inset:0;
       background: radial-gradient(circle at top, rgba(255,255,255,.09), transparent 55%);
       pointer-events:none;
     }
-
-    .cell img{
+    .reel-item img{
       width: 92px;
       height: 92px;
-      object-fit: contain;
+      object-fit:contain;
       filter: drop-shadow(0 10px 18px rgba(0,0,0,.70));
       transform: translateZ(0);
     }
 
+    .spinning .reel-item img{
+      filter: blur(2.4px) brightness(1.10) drop-shadow(0 14px 22px rgba(0,0,0,.75));
+      transform: translateY(2px) scale(1.02);
+    }
+
+    .snap .reel-strip{
+      transition: transform .14s ease-out;
+    }
+
+    /* 페이라인(가운데 줄) */
     .payline{
       position:absolute;
       left: 16px; right: 16px;
       top: 50%;
-      height: 124px;
+      height: calc(var(--cell-h) + 12px);
       transform: translateY(-50%);
       border-radius: 22px;
       border: 1px solid rgba(251,191,36,.40);
@@ -225,22 +301,18 @@
       pointer-events:none;
     }
 
+    /* 가운데 3릴 강조 (2~4번째) */
     .mid3{
       position:absolute;
       top: 50%;
       left: 50%;
-      width: calc(150px * 3 + 14px * 2 + 30px);
-      height: 124px;
+      width: calc(var(--cell-w) * 3 + var(--gap) * 2 + 34px);
+      height: calc(var(--cell-h) + 12px);
       transform: translate(-50%, -50%);
       border-radius: 22px;
       border: 1px solid rgba(34,197,94,.35);
       box-shadow: 0 0 32px rgba(34,197,94,.12);
       pointer-events:none;
-    }
-
-    .spinning .cell img{
-      filter: blur(2.2px) brightness(1.10) drop-shadow(0 12px 20px rgba(0,0,0,.75));
-      transform: translateY(1px) scale(1.02);
     }
 
     .controls{
@@ -268,33 +340,29 @@
       color:#0b1120;
       border-color: rgba(245,158,11,.75);
     }
-    .btn:disabled{
-      cursor:not-allowed;
-      opacity:.55;
-      transform:none;
-    }
+    .btn:disabled{ cursor:not-allowed; opacity:.55; transform:none; }
 
     @media (max-width: 980px){
+      :root{ --cell-w:120px; --cell-h:96px; --gap:14px; }
       .layout{ grid-template-columns: 1fr; }
-      .grid{ grid-template-columns: repeat(5, 120px); grid-template-rows: repeat(3, 96px); }
-      .cell img{ width:78px;height:78px; }
-      .mid3{ width: calc(120px * 3 + 14px * 2 + 30px); }
+      .reel-item img{ width:78px;height:78px; }
     }
     @media (max-width: 640px){
-      .grid{ grid-template-columns: repeat(5, 92px); grid-template-rows: repeat(3, 78px); gap:10px; }
-      .cell img{ width:62px;height:62px; }
-      .mid3{ width: calc(92px * 3 + 10px * 2 + 30px); }
+      :root{ --cell-w:92px; --cell-h:78px; --gap:10px; }
+      .reel-item img{ width:62px;height:62px; }
     }
   </style>
 </head>
 
 <body>
+  <div class="bg" id="bg"><div class="bg-vignette"></div></div>
+
   <div class="wrap">
     <div class="card" id="card">
       <div class="top">
         <div>
           <div class="title">THE UNIQUE SLOT</div>
-          <div class="sub">3행 × 5열 · 가운데 3개 맞추기 · 총 10초 스핀(7초부터 릴 정지)</div>
+          <div class="sub">3행 × 5릴 · 총 10초 스핀 · 7초부터 순차 정지</div>
         </div>
 
         <div class="status-wrap">
@@ -302,7 +370,7 @@
             <span id="dot" class="dot"></span>
             <span id="apiText">API: 대기</span>
           </div>
-          <button class="sound-btn on" id="soundBtn" type="button">
+          <button class="sound-btn" id="soundBtn" type="button">
             <span class="s-dot"></span>
             <span id="soundText">SOUND: ON</span>
           </button>
@@ -310,6 +378,7 @@
       </div>
 
       <div class="layout">
+        <!-- 좌측 -->
         <div class="panel">
           <div class="kpi">
             <div class="box">
@@ -326,14 +395,15 @@
             </div>
           </div>
 
-          <div class="log" id="log">준비 중...</div>
+          <div class="log" id="log">READY</div>
         </div>
 
+        <!-- 우측 -->
         <div class="panel slot-stage">
           <div class="grid-wrap" id="gridWrap">
             <div class="payline"></div>
             <div class="mid3"></div>
-            <div class="grid" id="grid"></div>
+            <div class="reels" id="reels"></div>
           </div>
 
           <div class="controls">
@@ -351,40 +421,153 @@
 const API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
 /** =========================
- *  MP3 (games/sounds/ 폴더)
- *  - GitHub Pages는 대소문자 엄격
- *  - .MP3가 없으면 .mp3로 fallback 시도
+ *  slides (games/img/slot/slide1.png ~ slide8.png)
  * ========================= */
-function mkAudio(file){
-  const a = new Audio();
+const SLIDES = Array.from({length:8}, (_,i)=> `img/slot/slide${i+1}.png`);
+const bgEl = document.getElementById("bg");
+function setRandomSlide(flash=true){
+  const pick = SLIDES[(Math.random()*SLIDES.length)|0];
+  bgEl.style.setProperty("--bgimg", `url("${pick}")`);
+  if(flash){
+    bgEl.classList.add("flash");
+    setTimeout(()=>bgEl.classList.remove("flash"), 450);
+  }
+}
+
+/** =========================
+ *  심볼/이미지 (games/img/slot/*.png)
+ * ========================= */
+const SYMBOLS = [
+  "star1","star2","star3",
+  "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
+];
+const IMG = (id) => `img/slot/${id}.png`;
+
+/** =========================
+ *  DOM
+ * ========================= */
+const $ = (id) => document.getElementById(id);
+const reelsEl = $("reels");
+const gridWrap = $("gridWrap");
+const spinBtn = $("spinBtn");
+
+const betVal = $("betVal");
+const jpVal = $("jpVal");
+const winVal = $("winVal");
+const logEl = $("log");
+const dot = $("dot");
+const apiText = $("apiText");
+
+const soundBtn = $("soundBtn");
+const soundText = $("soundText");
+
+function setLog(t){ logEl.textContent = t; }
+function setApiStatus(ok){
+  dot.classList.toggle("ok", !!ok);
+  apiText.textContent = ok ? "API: 연결됨" : "API: 미연결";
+}
+
+/** =========================
+ *  player 처리 (missing_user 방지)
+ *  - URL ?u=xxx 우선
+ *  - 없으면 localStorage
+ *  - 스핀 클릭 때만 prompt
+ * ========================= */
+function getPlayer(askIfMissing=false){
+  const qs = new URLSearchParams(location.search);
+  const u = (qs.get("u") || qs.get("user") || qs.get("player") || qs.get("nickname") || "").trim();
+  if(u){ localStorage.setItem("slot_player", u); return u; }
+
+  const saved = (localStorage.getItem("slot_player") || "").trim();
+  if(saved) return saved;
+
+  if(!askIfMissing) return "";
+  const p = prompt("닉네임(플레이어)을 입력하세요", "yusong");
+  if(p && p.trim()){
+    localStorage.setItem("slot_player", p.trim());
+    return p.trim();
+  }
+  return "";
+}
+
+/** =========================
+ *  API
+ * ========================= */
+async function api(path, opt){
+  try{
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: opt?.method || "GET",
+      headers: { "Content-Type":"application/json" },
+      body: opt?.body ? JSON.stringify(opt.body) : undefined
+    });
+    return await res.json().catch(()=>({ok:false,error:"bad_json"}));
+  }catch(e){
+    return { ok:false, error:String(e?.message || e) };
+  }
+}
+
+/** =========================
+ *  사운드 (games/sounds/)
+ *  - mp3 / MP3 둘 다 자동 시도 (404 대비)
+ * ========================= */
+function makeAudio(candidates, {loop=false, volume=1}={}){
+  let idx = 0;
+  const a = new Audio(candidates[idx]);
   a.preload = "auto";
-  a.src = `sounds/${file}`;
+  a.loop = loop;
+  a.volume = volume;
+
   a.addEventListener("error", () => {
-    const alt = file.replace(/\.MP3$/i, ".mp3");
-    if(alt !== file) a.src = `sounds/${alt}`;
-  }, { once:true });
+    if(idx < candidates.length - 1){
+      idx++;
+      a.src = candidates[idx];
+      a.load();
+    }
+  });
   return a;
 }
 
 const SFX = {
-  start: mkAudio("start-button-sound.MP3"),
-  spin: mkAudio("spining-sound.MP3"),
-  stop: mkAudio("stop-stop-stop-sound.MP3"),
-  win: mkAudio("win-sound.MP3"),
-  lose: mkAudio("lose-sound.MP3"),
-  jackpot: mkAudio("jackpot-sound.MP3"),
+  start: makeAudio(["sounds/start-button-sound.mp3","sounds/start-button-sound.MP3"], {volume:0.9}),
+  spin:  makeAudio(["sounds/spining-sound.mp3","sounds/spining-sound.MP3"], {loop:true, volume:0.9}),
+  stop:  makeAudio(["sounds/stop-stop-stop-sound.mp3","sounds/stop-stop-stop-sound.MP3"], {volume:0.9}),
+  win:   makeAudio(["sounds/win-sound.mp3","sounds/win-sound.MP3"], {volume:1.0}),
+  lose:  makeAudio(["sounds/lose-sound.mp3","sounds/lose-sound.MP3"], {volume:1.0}),
+  jackpot: makeAudio(["sounds/jackpot-sound.mp3","sounds/jackpot-sound.MP3"], {volume:1.0}),
 };
 
-SFX.spin.loop = true;
-SFX.spin.volume = 0.9;
-SFX.start.volume = 0.9;
-SFX.stop.volume = 0.9;
-SFX.win.volume = 1.0;
-SFX.lose.volume = 1.0;
-SFX.jackpot.volume = 1.0;
+let SOUND_ON = (localStorage.getItem("slot_sound") ?? "on") !== "off";
+function renderSound(){
+  soundBtn.classList.toggle("off", !SOUND_ON);
+  soundText.textContent = SOUND_ON ? "SOUND: ON" : "SOUND: OFF";
+  localStorage.setItem("slot_sound", SOUND_ON ? "on" : "off");
+  if(!SOUND_ON) stopSpinLoop();
+}
+renderSound();
 
-let SOUND_ON = true;
+soundBtn.addEventListener("click", () => {
+  SOUND_ON = !SOUND_ON;
+  renderSound();
+});
+
 let AUDIO_UNLOCKED = false;
+function unlockAudio(){
+  if(AUDIO_UNLOCKED) return;
+  AUDIO_UNLOCKED = true;
+
+  // 클릭 제스처 순간에 "무음 재생→정지"로 오디오 정책 우회
+  Object.values(SFX).forEach(a=>{
+    try{
+      const v = a.volume;
+      a.volume = 0.001;
+      a.play().then(()=>{
+        a.pause();
+        a.currentTime = 0;
+        a.volume = v;
+      }).catch(()=>{ a.volume = v; });
+    }catch(e){}
+  });
+}
 
 function playOne(aud){
   if(!SOUND_ON) return;
@@ -407,239 +590,213 @@ function stopSpinLoop(){
     SFX.spin.currentTime = 0;
   }catch(e){}
 }
-function stopAllSounds(){
-  try{
-    Object.values(SFX).forEach(a=>{
-      a.pause();
-      a.currentTime = 0;
-    });
-  }catch(e){}
+
+/** =========================
+ *  Reel UI 만들기 (5릴)
+ * ========================= */
+const REELS = 5;
+const VISIBLE = 3;
+const BUFFER = 14; // 스트립 아이템 개수(클수록 부드러움)
+
+function randSym(){
+  return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
+}
+function makeItem(sym){
+  const div = document.createElement("div");
+  div.className = "reel-item";
+  const img = document.createElement("img");
+  img.alt = sym;
+  img.src = IMG(sym);
+  div.appendChild(img);
+  return div;
 }
 
-function unlockAudio(){
-  if(AUDIO_UNLOCKED) return;
-  AUDIO_UNLOCKED = true;
+const reels = []; // {window, strip, raf, running, offset, speed, stepPx}
 
-  // 클릭 순간 "무음 재생"으로 오디오 권한 확보
-  Object.values(SFX).forEach(a=>{
-    try{
-      const v = a.volume;
-      a.volume = 0.001;
-      a.play().then(()=>{
-        a.pause();
-        a.currentTime = 0;
-        a.volume = v;
-      }).catch(()=>{ a.volume = v; });
-    }catch(e){}
+function buildReels(){
+  reelsEl.innerHTML = "";
+  reels.length = 0;
+
+  for(let i=0;i<REELS;i++){
+    const win = document.createElement("div");
+    win.className = "reel-window";
+
+    const strip = document.createElement("div");
+    strip.className = "reel-strip";
+
+    // 초기: 위에서 내려오는 느낌을 위해 랜덤 + 마지막 3개는 star1로 채우기
+    for(let k=0;k<BUFFER;k++){
+      strip.appendChild(makeItem(randSym()));
+    }
+    // 보이는 3개는 초기값(원하면 변경 가능)
+    strip.appendChild(makeItem("star1"));
+    strip.appendChild(makeItem("star1"));
+    strip.appendChild(makeItem("star1"));
+
+    win.appendChild(strip);
+    reelsEl.appendChild(win);
+
+    reels.push({
+      window: win,
+      strip,
+      raf: null,
+      running: false,
+      offset: 0,
+      speed: 0,
+      stepPx: null
+    });
+  }
+
+  // stepPx 측정 (아이템 높이 + gap)
+  requestAnimationFrame(() => {
+    const firstStrip = reels[0]?.strip;
+    const firstItem = firstStrip?.querySelector(".reel-item");
+    if(!firstItem) return;
+
+    const h = firstItem.getBoundingClientRect().height;
+    const gap = parseFloat(getComputedStyle(firstStrip).gap || "0") || 0;
+    const step = h + gap;
+
+    reels.forEach(r => r.stepPx = step);
+  });
+}
+buildReels();
+
+/** =========================
+ *  Reel 애니메이션 (아래로 휙휙)
+ * ========================= */
+function startReel(i, speed){
+  const r = reels[i];
+  if(!r || !r.stepPx) return;
+
+  r.running = true;
+  r.speed = speed;
+
+  const tick = () => {
+    if(!r.running) return;
+
+    r.offset += r.speed; // 아래로 이동
+    r.strip.style.transform = `translateY(${r.offset}px)`;
+
+    // offset이 step 이상이면 "맨 아래 아이템 제거 + 맨 위에 새로 추가"로 이어붙이기
+    while(r.offset >= r.stepPx){
+      r.offset -= r.stepPx;
+      r.strip.style.transform = `translateY(${r.offset}px)`;
+
+      // 아래로 흐르는 효과: 마지막 제거, 위에 추가
+      const last = r.strip.lastElementChild;
+      if(last) r.strip.removeChild(last);
+      r.strip.prepend(makeItem(randSym()));
+    }
+
+    r.raf = requestAnimationFrame(tick);
+  };
+
+  r.raf = requestAnimationFrame(tick);
+}
+
+function stopReel(i){
+  const r = reels[i];
+  if(!r) return;
+  r.running = false;
+  if(r.raf) cancelAnimationFrame(r.raf);
+  r.raf = null;
+}
+
+function snapReelToResult(i, topMidBot){
+  const r = reels[i];
+  if(!r) return;
+
+  stopReel(i);
+
+  // 스냅 애니메이션(톡)
+  gridWrap.classList.add("snap");
+  r.strip.innerHTML = "";
+
+  // 위쪽 buffer 몇 개
+  for(let k=0;k<6;k++) r.strip.appendChild(makeItem(randSym()));
+
+  // 실제 보이는 3개
+  r.strip.appendChild(makeItem(topMidBot[0]));
+  r.strip.appendChild(makeItem(topMidBot[1]));
+  r.strip.appendChild(makeItem(topMidBot[2]));
+
+  // 아래쪽 buffer 몇 개
+  for(let k=0;k<6;k++) r.strip.appendChild(makeItem(randSym()));
+
+  // 보이게 위치 조정:
+  // buffer(6개) 만큼 위로 올려서 3개가 창에 딱 보이게 만들고, 살짝 튕김
+  const step = r.stepPx || 0;
+  const baseY = -(step * 6);
+
+  r.offset = baseY + 18;
+  r.strip.style.transform = `translateY(${r.offset}px)`;
+
+  requestAnimationFrame(() => {
+    r.offset = baseY;
+    r.strip.style.transform = `translateY(${r.offset}px)`;
+    setTimeout(()=>gridWrap.classList.remove("snap"), 180);
   });
 }
 
 /** =========================
- *  심볼/이미지
+ *  Spin 시퀀스 (10초 고정 / 7초부터 1릴씩 정지)
  * ========================= */
-const SYMBOLS = [
-  "star1","star2","star3",
-  "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
-];
-const IMG = (id) => `img/slot/${id}.png`;
-
-/** =========================
- *  DOM
- * ========================= */
-const $ = (id) => document.getElementById(id);
-
-const gridEl = $("grid");
-const gridWrap = $("gridWrap");
-const spinBtn = $("spinBtn");
-
-const betVal = $("betVal");
-const jpVal = $("jpVal");
-const winVal = $("winVal");
-const logEl = $("log");
-const dot = $("dot");
-const apiText = $("apiText");
-
-const soundBtn = $("soundBtn");
-const soundText = $("soundText");
-
-function setLog(t){ logEl.textContent = t; }
-function setApiStatus(ok){
-  dot.classList.toggle("ok", !!ok);
-  apiText.textContent = ok ? "API: 연결됨" : "API: 미연결";
-}
-
-/** =========================
- *  사운드 토글
- * ========================= */
-soundBtn.addEventListener("click", () => {
-  unlockAudio();
-  SOUND_ON = !SOUND_ON;
-  soundBtn.classList.toggle("on", SOUND_ON);
-  soundText.textContent = SOUND_ON ? "SOUND: ON" : "SOUND: OFF";
-  if(!SOUND_ON){
-    stopSpinLoop();
-    stopAllSounds();
-  }
-});
-
-/** =========================
- *  player 처리 (missing_user 방지)
- * ========================= */
-function getPlayer(){
-  const qs = new URLSearchParams(location.search);
-  const u =
-    (qs.get("u") || qs.get("user") || qs.get("player") || qs.get("nickname") || "").trim();
-
-  if(u){
-    localStorage.setItem("slot_player", u);
-    return u;
-  }
-
-  const saved = (localStorage.getItem("slot_player") || "").trim();
-  if(saved) return saved;
-
-  const p = prompt("닉네임(플레이어)을 입력하세요", "yusong");
-  if(p && p.trim()){
-    localStorage.setItem("slot_player", p.trim());
-    return p.trim();
-  }
-  return "";
-}
-
-/** =========================
- *  API
- * ========================= */
-async function api(path, opt){
-  try{
-    const res = await fetch(`${API_BASE}${path}`, {
-      method: opt?.method || "GET",
-      headers: { "Content-Type":"application/json" },
-      body: opt?.body ? JSON.stringify(opt.body) : undefined
-    });
-    const js = await res.json().catch(()=>({ok:false,error:"bad_json"}));
-    return js;
-  }catch(e){
-    return { ok:false, error:String(e?.message || e) };
-  }
-}
-
-/** =========================
- *  그리드 (3x5)
- * ========================= */
-const ROWS = 3, COLS = 5;
-const cells = []; // [r][c]
-function makeGrid(){
-  gridEl.innerHTML = "";
-  for(let r=0;r<ROWS;r++){
-    cells[r] = [];
-    for(let c=0;c<COLS;c++){
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      const img = document.createElement("img");
-      img.alt = "symbol";
-      img.src = IMG("star1");
-      cell.appendChild(img);
-      gridEl.appendChild(cell);
-      cells[r][c] = { cell, img };
-    }
-  }
-}
-makeGrid();
-
-/** =========================
- *  릴 스핀 (아래로 “휙휙”)
- * ========================= */
-let perColRunning = [];
-let timers = [];
 let spinning = false;
+let timers = [];
 
 function clearTimers(){
   timers.forEach(t=>clearTimeout(t));
   timers = [];
-  for(let c=0;c<COLS;c++){
-    if(perColRunning[c]) clearTimeout(perColRunning[c]);
-    perColRunning[c] = null;
-  }
-}
-function randSym(){
-  return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
 }
 
-/**
- * ✅ 아래로 흐르는 릴
- *  - r0(위)에 새 이미지가 들어오고
- *  - r0 -> r1 -> r2 로 내려감
- */
-function startColSpin(col, speedMs){
-  const tick = () => {
-    const r0 = cells[0][col].img;
-    const r1 = cells[1][col].img;
-    const r2 = cells[2][col].img;
-
-    const newTop = IMG(randSym());
-    r2.src = r1.src;
-    r1.src = r0.src;
-    r0.src = newTop;
-
-    perColRunning[col] = setTimeout(tick, speedMs);
-  };
-  perColRunning[col] = setTimeout(tick, speedMs);
+function stopAllReels(){
+  for(let i=0;i<REELS;i++) stopReel(i);
 }
 
-function stopCol(col){
-  if(perColRunning[col]) clearTimeout(perColRunning[col]);
-  perColRunning[col] = null;
-}
-
-function setColToResult(col, grid){
-  for(let r=0;r<ROWS;r++){
-    const id = grid[r][col];
-    cells[r][col].img.src = IMG(id);
-  }
-}
-
-/** =========================
- *  초기 상태
- * ========================= */
 (async function boot(){
-  setLog("준비 중...");
+  setRandomSlide(false);
+
+  setLog("READY");
   const st = await api("/slot/state");
   if(!st?.ok){
     setApiStatus(false);
-    setLog(`API 연결 실패\n- ${st?.error || "unknown"}\n\n(Worker 도메인/API_BASE 확인)`);
+    setLog(`API 연결 실패\n${st?.error || "unknown"}\n\nAPI_BASE 확인 필요`);
     return;
   }
   setApiStatus(true);
   betVal.textContent = st.bet ?? 10;
   jpVal.textContent = st.jackpot ?? 0;
-  setLog(`READY\n- player: ${getPlayer() || "(없음)"}\n- bet: ${st.bet ?? 10} UT`);
+
+  const p = getPlayer(false);
+  setLog(
+`READY
+player: ${p ? p : "(없음)"}`
+  );
 })();
 
-/** =========================
- *  SPIN
- * ========================= */
 spinBtn.addEventListener("click", async () => {
+  unlockAudio();
   if(spinning) return;
 
-  unlockAudio();
-  playOne(SFX.start);
-
-  const player = getPlayer();
+  const player = getPlayer(true);
   if(!player){
-    setLog("SPIN 실패\nmissing_user\n\n닉네임이 필요합니다. URL에 ?u=닉네임 붙이거나 새로고침 후 입력하세요.");
+    setLog("닉네임이 필요합니다.\nURL: ?u=닉네임  또는 새로고침 후 입력");
     return;
   }
 
   spinning = true;
   spinBtn.disabled = true;
   winVal.textContent = "0";
+
+  setRandomSlide(true);
+  playOne(SFX.start);
+
   gridWrap.classList.add("spinning");
   clearTimers();
 
-  // ✅ 스핀 사운드: 스핀 진행 중 계속
-  startSpinLoop();
-
-  setLog("SPIN 요청 중...");
+  // 먼저 서버에서 결과 확보
+  setLog("SPIN...");
   const q = `?u=${encodeURIComponent(player)}&user=${encodeURIComponent(player)}&player=${encodeURIComponent(player)}&nickname=${encodeURIComponent(player)}`;
   const result = await api(`/slot/spin${q}`, {
     method:"POST",
@@ -648,48 +805,56 @@ spinBtn.addEventListener("click", async () => {
 
   if(!result?.ok){
     setApiStatus(false);
+    gridWrap.classList.remove("spinning");
+    stopAllReels();
     stopSpinLoop();
     setLog(`SPIN 실패\n${result?.error || "unknown"}`);
-    gridWrap.classList.remove("spinning");
     spinning = false;
     spinBtn.disabled = false;
     return;
   }
   setApiStatus(true);
 
-  const finalGrid = result.grid;
+  // 스핀 시작 (즉시)
+  startSpinLoop();
+  setLog("SPIN! (10s)\n7초부터 릴이 하나씩 멈춥니다.");
 
-  // ✅ 10초 스핀 / 7초부터 릴 하나씩 정지
+  // 빠르게 시작
+  for(let i=0;i<REELS;i++){
+    startReel(i, 22 + i*1.4);
+  }
+
+  // 타임라인
   const TOTAL_SPIN_MS = 10000;
   const STOP_START_MS = 7000;
   const STOP_STEP_MS  = 650;
 
-  setLog("SPIN! (10초)\n7초부터 릴이 하나씩 멈춥니다.");
+  // final grid: result.grid[rows][cols] (3x5)
+  const finalGrid = result.grid;
 
-  // 시작: 빠르게
-  for(let c=0;c<COLS;c++) startColSpin(c, 55);
-
-  const stopTimes = Array.from({length: COLS}, (_, i) => STOP_START_MS + i * STOP_STEP_MS);
-
-  stopTimes.forEach((t, col) => {
-    // 감속 2단 + 정지
-    timers.push(setTimeout(() => {
-      stopCol(col);
-      startColSpin(col, 85);
-    }, Math.max(0, t - 700)));
+  // 7초부터 각 릴 감속 → 정지 → 결과 스냅
+  for(let i=0;i<REELS;i++){
+    const stopAt = STOP_START_MS + i * STOP_STEP_MS;
 
     timers.push(setTimeout(() => {
-      stopCol(col);
-      startColSpin(col, 120);
-    }, Math.max(0, t - 350)));
+      // 감속1
+      reels[i].speed = Math.max(10, reels[i].speed * 0.60);
+    }, Math.max(0, stopAt - 650)));
 
     timers.push(setTimeout(() => {
-      stopCol(col);
-      setColToResult(col, finalGrid);
+      // 감속2
+      reels[i].speed = Math.max(6, reels[i].speed * 0.55);
+    }, Math.max(0, stopAt - 300)));
+
+    timers.push(setTimeout(() => {
+      // 스냅
+      // top/mid/bot = finalGrid[0..2][i]
+      snapReelToResult(i, [finalGrid[0][i], finalGrid[1][i], finalGrid[2][i]]);
       playOne(SFX.stop);
-    }, t));
-  });
+    }, stopAt));
+  }
 
+  // 끝 처리 (10초 고정)
   timers.push(setTimeout(() => {
     gridWrap.classList.remove("spinning");
     stopSpinLoop();
@@ -706,12 +871,12 @@ spinBtn.addEventListener("click", async () => {
 
     setLog(
 `RESULT
-- player: ${player}
-- type: ${winType}
-- symbol: ${sym}
-- x${mul}
-- win: ${win} UT
-- jackpot: ${result.jackpot ?? jpVal.textContent} UT`
+player: ${player}
+type: ${winType}
+symbol: ${sym}
+x${mul}
+win: ${win} UT
+jackpot: ${result.jackpot ?? jpVal.textContent} UT`
     );
 
     const isJackpot = String(winType).toLowerCase().includes("jackpot");
