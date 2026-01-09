@@ -4,244 +4,256 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>THE UNIQUE SLOT</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ================= RESET & BASIC ================= */
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-    body {
-      margin: 0; padding: 0;
-      background-color: #050505;
-      background-image: radial-gradient(circle at 50% 30%, #1a1f35 0%, #000000 70%);
-      font-family: 'Rajdhani', sans-serif;
-      color: #fff;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    *{box-sizing:border-box;outline:none;-webkit-tap-highlight-color:transparent}
+    body{
+      margin:0;padding:0;
+      font-family:'Rajdhani',system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+      color:#fff;
+      min-height:100vh;
+      overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+
+      background:
+        radial-gradient(circle at 50% 20%, rgba(250,204,21,0.14) 0%, rgba(0,0,0,0) 40%),
+        radial-gradient(circle at 50% 30%, #1a1f35 0%, #000000 70%);
+    }
+    body.flash{
+      animation: bgflash 280ms ease-out;
+    }
+    @keyframes bgflash{
+      0%{filter:brightness(1)}
+      50%{filter:brightness(1.35)}
+      100%{filter:brightness(1)}
     }
 
-    /* ================= LAYOUT ================= */
-    .wrap {
-      width: 100%;
-      max-width: 1200px;
-      height: 95vh;
-      max-height: 850px;
-      padding: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .wrap{width:100%;max-width:1200px;height:95vh;max-height:860px;padding:10px;display:flex}
+    .card{
+      width:100%;height:100%;
+      background: rgba(10, 12, 20, 0.92);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.9);
+      overflow:hidden;
+      display:flex;flex-direction:column;
+      position:relative;
     }
 
-    .card {
-      width: 100%;
-      height: 100%;
-      background: rgba(18, 22, 36, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
+    .top{
+      padding:14px 22px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0));
+    }
+    .title{
+      font-family:'Cinzel',serif;
+      font-size:22px;
+      letter-spacing:1px;
+      color:#FACC15;
+      text-shadow:0 0 12px rgba(250,204,21,0.55);
+      user-select:none;
+    }
+    .back-main{
+      font-size:12px;color:#cbd5e1;text-decoration:none;
+      border:1px solid rgba(203,213,225,0.22);
+      padding:6px 12px;border-radius:999px;
+      background:rgba(2,6,23,0.25);
+    }
+    .back-main:hover{border-color:rgba(250,204,21,0.35);color:#FACC15}
+
+    .layout{flex:1;display:flex;overflow:hidden}
+
+    /* LEFT */
+    .info-panel{
+      flex:1;
+      padding:18px;
+      border-right:1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+      display:flex;flex-direction:column;gap:14px;
+      overflow:auto;
+    }
+    .status-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .status-box{
+      background: rgba(15,23,42,0.95);
+      border:1px solid rgba(148,163,184,0.18);
+      border-radius:12px;
+      padding:12px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.55);
+      text-align:center;
+    }
+    .label{display:block;font-size:11px;color:#94A3B8;margin-bottom:4px;letter-spacing:0.4px}
+    .val{font-size:16px;font-weight:800;color:#fff}
+    .val.gold{color:#FACC15}
+
+    .bet-control{
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      padding:10px 12px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;
+    }
+    .bet-control .label{margin:0;min-width:46px}
+    .bet-btn{
+      width:34px;height:34px;border-radius:50%;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(51,65,85,0.75);
+      color:#fff;font-weight:900;cursor:pointer;
+      box-shadow:0 6px 14px rgba(0,0,0,0.35);
+      transition: transform 0.08s ease;
+    }
+    .bet-btn:active{transform:scale(0.92)}
+    .bet-amount{
+      font-size:20px;font-weight:900;color:#FACC15;
+      min-width:72px;text-align:center;
+      text-shadow:0 0 10px rgba(250,204,21,0.25);
     }
 
-    /* ================= HEADER ================= */
-    .top {
-      padding: 15px 25px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(0,0,0,0.3);
-    }
-    .title {
-      font-family: 'Cinzel', serif;
-      font-size: 24px;
-      color: #FACC15;
-      text-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
-    }
-    .back-main {
-      font-size: 12px; color: #94A3B8; text-decoration: none;
-      border: 1px solid rgba(148, 163, 184, 0.3); padding: 4px 10px; border-radius: 20px;
+    .hint{
+      font-size:12px;color:#cbd5e1;text-align:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(2,6,23,0.35);
+      border:1px solid rgba(255,255,255,0.06);
     }
 
-    .layout { flex: 1; display: flex; overflow: hidden; }
+    .pay-grid{
+      display:grid;grid-template-columns:repeat(2,1fr);
+      gap:8px;max-height:280px;overflow:auto;
+      padding-right:4px;
+    }
+    .pay-item{
+      background: rgba(0,0,0,0.28);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:10px;
+      padding:8px 10px;
+      display:flex;align-items:center;gap:10px;
+      font-size:12px;
+    }
+    .pay-img{width:26px;height:26px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,255,255,0.25))}
+    .pay-name{flex:1;color:#e2e8f0}
+    .pay-mul{color:#FACC15;font-weight:900}
 
-    /* ================= LEFT PANEL (INFO) ================= */
-    .info-panel {
-      flex: 1;
-      padding: 20px;
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      background: rgba(0,0,0,0.2);
-      overflow-y: auto;
+    /* RIGHT */
+    .slot-stage{
+      flex:1.55;
+      padding:18px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      position:relative;
     }
-    
-    .status-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .status-box {
-      background: #0f172a; padding: 10px; border-radius: 8px;
-      border: 1px solid rgba(56, 189, 248, 0.2); text-align: center;
-    }
-    .label { font-size: 11px; color: #94A3B8; display: block; margin-bottom: 4px; }
-    .val { font-size: 16px; font-weight: 700; color: #fff; }
-    .val.gold { color: #FACC15; }
-
-    /* Bet Control */
-    .bet-control {
-      background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .bet-btn {
-      width: 30px; height: 30px; border-radius: 50%; border: none;
-      background: #334155; color: #fff; font-weight: bold; cursor: pointer;
-    }
-    .bet-btn:active { transform: scale(0.9); }
-    .bet-amount { font-size: 18px; font-weight: 700; color: #FACC15; min-width: 60px; text-align: center; }
-
-    .pay-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
-      overflow-y: auto; max-height: 250px;
-    }
-    .pay-item {
-      background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px;
-      display: flex; align-items: center; gap: 8px; font-size: 12px;
-    }
-    .pay-img { width: 24px; height: 24px; object-fit: contain; }
-
-    /* ================= RIGHT PANEL (GAME) ================= */
-    .slot-stage {
-      flex: 1.5;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-    }
-
-    .screen-bezel {
-      width: 100%; max-width: 650px;
+    .screen-bezel{
+      width:100%;max-width:680px;
       aspect-ratio: 5 / 3.2;
-      background: #000;
-      border: 4px solid #1e293b;
-      border-radius: 16px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
-      margin-bottom: 20px;
+      border-radius:16px;
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(250,204,21,0.12), rgba(0,0,0,0) 45%),
+        linear-gradient(180deg, #070b12, #000);
+      border:1px solid rgba(250,204,21,0.14);
+      box-shadow:
+        inset 0 0 34px rgba(0,0,0,0.85),
+        0 0 24px rgba(250,204,21,0.08);
+      margin-bottom:16px;
+    }
+    .glass{
+      position:absolute;inset:0;
+      background: linear-gradient(115deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 30%, rgba(255,255,255,0.06));
+      pointer-events:none;
+      mix-blend-mode:screen;
+      opacity:0.65;
     }
 
-    .reels {
-      display: grid; grid-template-columns: repeat(5, 1fr);
-      width: 100%; height: 100%;
+    .reels{display:grid;grid-template-columns:repeat(5,1fr);width:100%;height:100%}
+    .reel-col{position:relative;overflow:hidden;border-right:1px solid rgba(255,255,255,0.10)}
+    .reel-col:last-child{border-right:none}
+    .reel-strip{position:absolute;top:0;left:0;width:100%;will-change:transform}
+    .symbol{
+      width:100%;height:33.333%;
+      display:flex;align-items:center;justify-content:center;
+      padding:10px;
     }
-    .reel-col {
-      border-right: 1px solid rgba(255,255,255,0.15);
-      position: relative; overflow: hidden;
-    }
-    .reel-col:last-child { border-right: none; }
-
-    /* 움직이는 영역 */
-    .reel-strip {
-      position: absolute; top: 0; left: 0; width: 100%;
-    }
-
-    .symbol {
-      width: 100%; height: 33.33%; /* 3칸 보이게 */
-      display: flex; align-items: center; justify-content: center;
-      padding: 10px;
-    }
-    .symbol img {
-      width: 100%; height: 100%; object-fit: contain;
-      filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+    .symbol img{
+      width:100%;height:100%;object-fit:contain;
+      filter: drop-shadow(0 0 8px rgba(255,255,255,0.18));
     }
 
-    /* 애니메이션 (무한 루프 느낌) */
-    @keyframes spinLoop {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-50%); } /* 심볼 패턴 절반만큼 이동해서 루프 */
+    @keyframes spinLoop{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
     }
-    .reel-strip.spinning {
-      /* 10초 동안 아주 빠르게 돔 */
-      animation: spinLoop 0.4s linear infinite; 
+    .reel-strip.spinning{
+      animation: spinLoop 0.35s linear infinite;
     }
-    /* 10초 후 멈춤을 위한 블러 처리 */
-    .reel-strip.spinning img { filter: blur(4px); }
+    .reel-strip.spinning img{filter: blur(4px) drop-shadow(0 0 8px rgba(255,255,255,0.10))}
 
-    /* Controls */
-    .controls-row {
-      width: 100%; max-width: 650px;
-      display: flex; gap: 10px; height: 60px;
+    .payline{
+      position:absolute;top:33.33%;height:33.33%;width:100%;
+      background: rgba(250,204,21,0.10);
+      border-top:2px solid rgba(250,204,21,0.9);
+      border-bottom:2px solid rgba(250,204,21,0.9);
+      display:none;z-index:10;pointer-events:none;
     }
-    
-    .spin-btn {
-      flex: 2;
+    .payline.show{display:block;animation:pulse 1s infinite}
+    @keyframes pulse{50%{opacity:0.55}}
+
+    .controls-row{width:100%;max-width:680px;display:flex;gap:10px;height:62px}
+    .spin-btn{
+      flex:2;
+      border:none;border-radius:14px;
+      font-size:24px;font-weight:900;color:#0b0b0b;
       background: linear-gradient(180deg, #FACC15 0%, #EAB308 100%);
-      border: none; border-radius: 12px;
-      font-size: 24px; font-weight: 800; color: #000;
-      box-shadow: 0 5px 0 #854D0E;
-      cursor: pointer; transition: 0.1s;
+      box-shadow: 0 6px 0 #854D0E, 0 18px 28px rgba(0,0,0,0.35);
+      cursor:pointer;
+      transition: transform 0.08s ease;
     }
-    .spin-btn:active { transform: translateY(5px); box-shadow: none; }
-    .spin-btn:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; }
+    .spin-btn:active{transform:translateY(5px);box-shadow:none}
+    .spin-btn:disabled{background:#475569;color:#94a3b8;box-shadow:none;cursor:not-allowed}
 
-    .auto-btn {
-      flex: 1;
-      background: #1e293b; border: 1px solid #475569;
-      border-radius: 12px; color: #94a3b8; font-weight: 700;
-      cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      font-size: 12px;
+    .auto-btn{
+      flex:1;
+      border-radius:14px;
+      border:1px solid rgba(148,163,184,0.25);
+      background: rgba(30,41,59,0.65);
+      color:#cbd5e1;font-weight:900;
+      cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-size:12px;
+      box-shadow: 0 14px 22px rgba(0,0,0,0.25);
     }
-    .auto-btn.active {
-      background: #dc2626; color: #fff; border-color: #ef4444;
-      box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+    .auto-btn.active{
+      background: rgba(220,38,38,0.85);
+      border-color: rgba(239,68,68,0.8);
+      color:#fff;
+      box-shadow: 0 0 14px rgba(239,68,68,0.35), 0 14px 22px rgba(0,0,0,0.25);
     }
-    .auto-spinner { font-size: 18px; margin-bottom: 2px; }
-    .auto-btn.active .auto-spinner { animation: rotate 1s linear infinite; }
-    @keyframes rotate { 100% { transform: rotate(360deg); } }
+    .auto-spinner{font-size:18px;margin-bottom:2px}
+    .auto-btn.active .auto-spinner{animation:rotate 1s linear infinite}
+    @keyframes rotate{100%{transform:rotate(360deg)}}
 
-    /* Payline (결과 강조) */
-    .payline {
-      position: absolute; top: 33.33%; height: 33.33%; width: 100%;
-      background: rgba(250, 204, 21, 0.15);
-      border-top: 2px solid #FACC15; border-bottom: 2px solid #FACC15;
-      display: none; z-index: 10; pointer-events: none;
-    }
-    .payline.show { display: block; animation: pulse 1s infinite; }
-    @keyframes pulse { 50% { opacity: 0.5; } }
-
-    /* ================= MOBILE ================= */
-    @media (max-width: 900px) {
-      body { height: auto; display: block; overflow-y: auto; }
-      .wrap { padding: 5px; height: auto; max-height: none; }
-      .card { height: auto; border-radius: 0; }
-      .layout { flex-direction: column; }
-      
-      /* 모바일 순서: 게임(위) -> 정보(아래) */
-      .slot-stage { order: 1; padding: 15px 10px; }
-      .info-panel { order: 2; border-right: none; border-top: 1px solid rgba(255,255,255,0.1); }
-      
-      .screen-bezel { margin-bottom: 15px; }
-      .controls-row { height: 55px; }
-      .spin-btn { font-size: 20px; }
+    @media (max-width: 900px){
+      body{height:auto;display:block;overflow-y:auto}
+      .wrap{padding:6px;height:auto;max-height:none}
+      .card{height:auto;border-radius:0}
+      .layout{flex-direction:column}
+      .slot-stage{order:1;padding:14px 10px}
+      .info-panel{order:2;border-right:none;border-top:1px solid rgba(255,255,255,0.1)}
+      .controls-row{height:56px}
+      .spin-btn{font-size:20px}
     }
   </style>
 </head>
 
-<body>
+<body id="bg">
   <div class="wrap">
     <div class="card">
       <div class="top">
-        <div class="title">UNIQUE SLOT</div>
+        <div class="title">THE UNIQUE SLOT</div>
         <a class="back-main" href="../the-unique-main.html">← MAIN</a>
       </div>
 
@@ -250,18 +262,18 @@
           <div class="status-row">
             <div class="status-box">
               <span class="label">PLAYER</span>
-              <span class="val" id="playerId">Guest</span>
+              <span class="val" id="playerName">-</span>
             </div>
             <div class="status-box">
               <span class="label">WALLET (UT)</span>
-              <span class="val gold" id="walletUt">202.00</span>
+              <span class="val gold" id="walletUt">0</span>
             </div>
           </div>
 
           <div class="status-row">
             <div class="status-box">
               <span class="label">JACKPOT</span>
-              <span class="val" id="jackpotVal">285</span>
+              <span class="val" id="jackpotVal">0</span>
             </div>
             <div class="status-box">
               <span class="label">LAST WIN</span>
@@ -270,273 +282,48 @@
           </div>
 
           <div class="bet-control">
-            <span class="label" style="margin:0; width:50px;">BET</span>
-            <button class="bet-btn" onclick="changeBet(-10)">-</button>
+            <span class="label">BET</span>
+            <button class="bet-btn" id="betMinus" type="button">-</button>
             <span class="bet-amount" id="betAmount">10</span>
-            <button class="bet-btn" onclick="changeBet(10)">+</button>
+            <button class="bet-btn" id="betPlus" type="button">+</button>
           </div>
 
+          <div class="hint" id="hintText">로딩중...</div>
+
           <div class="pay-grid" id="payTable"></div>
-          
-          <div style="font-size:11px; color:#64748b; text-align:center; margin-top:10px;">
-            Match 3 symbols on the center line!
+
+          <div style="font-size:11px;color:#64748b;text-align:center;margin-top:10px;">
+            가운데 줄(중앙 3칸) 3개 동일 = WIN
           </div>
         </div>
 
         <div class="slot-stage">
           <div class="screen-bezel">
             <div class="payline" id="payline"></div>
-            <div class="reels">
+            <div class="reels" id="reels">
               <div class="reel-col"><div class="reel-strip" id="reel0"></div></div>
               <div class="reel-col"><div class="reel-strip" id="reel1"></div></div>
               <div class="reel-col"><div class="reel-strip" id="reel2"></div></div>
               <div class="reel-col"><div class="reel-strip" id="reel3"></div></div>
               <div class="reel-col"><div class="reel-strip" id="reel4"></div></div>
             </div>
+            <div class="glass"></div>
           </div>
 
           <div class="controls-row">
-            <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">
+            <button class="auto-btn" id="autoBtn" type="button">
               <div class="auto-spinner">↻</div>
               <span id="autoText">AUTO OFF</span>
             </button>
-            <button class="spin-btn" id="spinBtn" onclick="trySpin()">SPIN</button>
+            <button class="spin-btn" id="spinBtn" type="button">SPIN</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    // ================= CONFIG (경로 수정됨) =================
-    // 이미지 경로: html 파일 위치 기준 (games/) -> img/slot/filename.png
-    // 사운드 경로: html 파일 위치 기준 (games/) -> sounds/filename.MP3
-    const CFG = {
-      symbols: [
-        { id: 'star1', img: 'img/slot/star1.png', pay: 500, name: 'Grand Star' },
-        { id: 'star2', img: 'img/slot/star2.png', pay: 300, name: 'Major Star' },
-        { id: 'pro1',  img: 'img/slot/pro1.png',  pay: 200, name: 'Pro Badge 1' },
-        { id: 'pro2',  img: 'img/slot/pro2.png',  pay: 100, name: 'Pro Badge 2' },
-        { id: 'pro3',  img: 'img/slot/pro3.png',  pay: 50,  name: 'Pro Badge 3' },
-        { id: 'slide1',img: 'img/slot/slide1.png',pay: 20,  name: 'Item 1' },
-        { id: 'slide2',img: 'img/slot/slide2.png',pay: 10,  name: 'Item 2' }
-      ],
-      sounds: {
-        spin: 'sounds/spining-sound.MP3',  // 파일명 스펠링, 대소문자 주의
-        win: 'sounds/win-sound.MP3',
-        jackpot: 'sounds/jackpot-sound.MP3',
-        btn: 'sounds/start-button-sound.MP3'
-      },
-      spinTime: 10000 // 10초
-    };
-
-    // ================= STATE =================
-    let state = {
-      ut: 202.00,
-      bet: 10,
-      jackpot: 285,
-      auto: false,
-      spinning: false,
-      soundObj: null
-    };
-
-    // ================= INIT =================
-    window.onload = () => {
-      initPayTable();
-      initReels();
-      updateUI();
-    };
-
-    function initPayTable() {
-      const container = document.getElementById('payTable');
-      CFG.symbols.forEach(s => {
-        container.innerHTML += `
-          <div class="pay-item">
-            <img src="${s.img}" class="pay-img" onerror="this.src='https://via.placeholder.com/30?text=?'">
-            <div style="flex:1">${s.name}</div>
-            <div style="color:#FACC15; font-weight:700;">${s.pay}</div>
-          </div>
-        `;
-      });
-    }
-
-    // 초기 릴 렌더링 (랜덤 심볼 채우기)
-    function initReels() {
-      for(let i=0; i<5; i++) {
-        const strip = document.getElementById(`reel${i}`);
-        strip.innerHTML = generateStripHtml(3); // 3개만 일단 표시
-        strip.style.transform = 'translateY(0)';
-      }
-    }
-
-    // 스트립에 들어갈 심볼 HTML 생성
-    function generateStripHtml(count, isLoop = false) {
-      let html = '';
-      for(let i=0; i<count; i++) {
-        const sym = CFG.symbols[Math.floor(Math.random() * CFG.symbols.length)];
-        html += `<div class="symbol"><img src="${sym.img}"></div>`;
-      }
-      // 루프 애니메이션을 위해 위아래 복사본 추가 (CSS 애니메이션용)
-      if(isLoop) {
-        // 실제로는 긴 스트립을 만듦
-        for(let i=0; i<20; i++) { // 많이 복사해서 회전감 줌
-            const sym = CFG.symbols[Math.floor(Math.random() * CFG.symbols.length)];
-            html += `<div class="symbol"><img src="${sym.img}"></div>`;
-        }
-      }
-      return html;
-    }
-
-    // ================= LOGIC =================
-    function changeBet(amount) {
-      if(state.spinning) return;
-      let newBet = state.bet + amount;
-      if(newBet < 10) newBet = 10;
-      if(newBet > 1000) newBet = 1000;
-      state.bet = newBet;
-      playSound(CFG.sounds.btn);
-      updateUI();
-    }
-
-    function toggleAuto() {
-      state.auto = !state.auto;
-      const btn = document.getElementById('autoBtn');
-      const txt = document.getElementById('autoText');
-      playSound(CFG.sounds.btn);
-      
-      if(state.auto) {
-        btn.classList.add('active');
-        txt.textContent = "AUTO ON";
-        if(!state.spinning) trySpin();
-      } else {
-        btn.classList.remove('active');
-        txt.textContent = "AUTO OFF";
-      }
-    }
-
-    function updateUI() {
-      document.getElementById('walletUt').innerText = state.ut.toFixed(2);
-      document.getElementById('betAmount').innerText = state.bet;
-      document.getElementById('jackpotVal').innerText = state.jackpot.toFixed(0);
-    }
-
-    async function trySpin() {
-      if(state.spinning) return;
-      if(state.ut < state.bet) {
-        alert("잔액이 부족합니다!");
-        state.auto = false;
-        toggleAuto(); // UI 끄기
-        return;
-      }
-
-      // 1. 차감 및 시작
-      state.spinning = true;
-      state.ut -= state.bet;
-      state.jackpot += (state.bet * 0.1); // 잭팟 누적
-      document.getElementById('payline').classList.remove('show');
-      updateUI();
-      document.getElementById('spinBtn').disabled = true;
-
-      // 2. 사운드 재생
-      if(state.soundObj) { state.soundObj.pause(); }
-      state.soundObj = new Audio(CFG.sounds.spin);
-      state.soundObj.loop = true;
-      state.soundObj.play().catch(e=>console.log("Audio Blocked"));
-
-      // 3. 애니메이션 시작
-      for(let i=0; i<5; i++) {
-        const strip = document.getElementById(`reel${i}`);
-        // 긴 스트립으로 교체하고 클래스 추가
-        strip.innerHTML = generateStripHtml(20, true); 
-        strip.classList.add('spinning');
-        // 각 릴마다 약간의 시차를 두고 돌기 시작
-        strip.style.animationDelay = `${i * 0.1}s`;
-      }
-
-      // 4. 결과 결정 (랜덤 로직)
-      const result = getResult();
-
-      // 5. 10초 대기 (CFG.spinTime)
-      await new Promise(r => setTimeout(r, CFG.spinTime));
-
-      // 6. 멈춤 처리
-      state.soundObj.pause();
-      
-      // 순차적으로 멈춤
-      for(let i=0; i<5; i++) {
-        const strip = document.getElementById(`reel${i}`);
-        strip.classList.remove('spinning');
-        
-        // 결과 심볼 심기 (위, 중간(결과), 아래)
-        // 중간에 result[i]가 와야 함.
-        const prev = CFG.symbols[Math.floor(Math.random()*CFG.symbols.length)];
-        const target = result.line[i]; 
-        const next = CFG.symbols[Math.floor(Math.random()*CFG.symbols.length)];
-
-        strip.innerHTML = `
-          <div class="symbol"><img src="${prev.img}"></div>
-          <div class="symbol"><img src="${target.img}"></div>
-          <div class="symbol"><img src="${next.img}"></div>
-        `;
-        // 가운데 정렬 (높이의 -1/3 지점)
-        strip.style.transform = 'translateY(0)'; 
-      }
-
-      // 7. 결과 처리
-      if(result.win > 0) {
-        state.ut += result.win;
-        document.getElementById('winVal').innerText = result.win;
-        document.getElementById('payline').classList.add('show');
-        
-        // 승리 사운드
-        let winSnd = new Audio(result.isJackpot ? CFG.sounds.jackpot : CFG.sounds.win);
-        winSnd.play();
-      }
-
-      state.spinning = false;
-      document.getElementById('spinBtn').disabled = false;
-      updateUI();
-
-      // 8. 오토 스핀 체크
-      if(state.auto) {
-        setTimeout(trySpin, 1500); // 1.5초 후 재시작
-      }
-    }
-
-    function getResult() {
-      // 5개 슬롯 결과 생성
-      let line = [];
-      for(let i=0; i<5; i++) {
-        line.push(CFG.symbols[Math.floor(Math.random() * CFG.symbols.length)]);
-      }
-
-      // 승리 판정 (가운데 줄 3개 이상)
-      // 간단하게: line[1], line[2], line[3] 가 line[0]과 같은지 체크 등등
-      // 여기선 line[1], line[2], line[3] (가운데 3개)만 같으면 승리로 처리해봄
-      
-      // 실제로는 왼쪽부터 연속 매칭 확인
-      let matchCnt = 1;
-      let first = line[0];
-      for(let i=1; i<5; i++) {
-        if(line[i].id === first.id) matchCnt++;
-        else break;
-      }
-
-      let win = 0;
-      let isJackpot = false;
-
-      if(matchCnt >= 3) {
-        win = first.pay * (state.bet / 10) * (matchCnt - 2); // 배율 적용
-        if(first.id === 'star1' && matchCnt === 5) isJackpot = true;
-      }
-
-      return { line, win, isJackpot };
-    }
-
-    function playSound(path) {
-      new Audio(path).play().catch(()=>{});
-    }
-
-  </script>
+  <!-- ✅ 외부 JS만 로드 -->
+  <script src="slot/slot.audio.js"></script>
+  <script src="slot/slot.page.js"></script>
 </body>
 </html>
