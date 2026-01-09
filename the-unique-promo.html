@@ -107,6 +107,7 @@
           <button class="btn-copy" onclick="copyVaultAddress()">주소 복사</button>
           <div class="label">공동기금 (REAL USDT)</div>
           <div class="value" id="vault-balance-num">Loading...</div>
+          <div class="sub-text" id="vault-sum-since">총 합산(12/21 이후): Loading...</div>
           <div class="sub-text">TRC20 Network</div>
         </div>
 
@@ -255,7 +256,8 @@
 
       fetchVault();
       fetchRanking();
-      fetchMyBalance(); // ✅ UT 잔액은 시트에서 최신화
+      fetchMyBalance();       // ✅ UT 잔액은 시트에서 최신화
+      fetchVaultSumSince();   // ✅ 12/21 이후 합산
     } catch(e) {
       console.error(e);
     }
@@ -282,10 +284,36 @@
         document.getElementById("vault-balance-num").textContent =
           parseFloat(String(data.balance).replace(/,/g,"")).toLocaleString() + " USDT";
       } else {
-        document.getElementById("vault-balance-num").textContent = "Error";
+        document.getElementById("vault-balance-num").textContent = (data.error || data.message || "Error");
       }
     } catch(e){
       document.getElementById("vault-balance-num").textContent = "Error";
+    }
+  }
+
+  // ✅ 12/21 이후 '처리(=donation_verify 기록)' 합산 USDT (Supabase)
+  async function fetchVaultSumSince() {
+    const el = document.getElementById("vault-sum-since");
+    if (!el) return;
+
+    // Supabase created_at는 UTC 기준
+    // 2025-12-21 00:00 KST = 2025-12-20 15:00:00Z
+    const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
+
+    try {
+      const { data, error } = await db
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("type", "donation_verify")
+        .gte("created_at", CUTOFF_UTC);
+
+      if (error) throw error;
+
+      const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+      el.textContent = `총 합산(12/21 이후): ${sum.toLocaleString()} USDT`;
+    } catch (e) {
+      console.warn("fetchVaultSumSince fail:", e);
+      el.textContent = "총 합산(12/21 이후): Error";
     }
   }
 
@@ -347,16 +375,15 @@
       txid: txid
     }]);
 
-    // donation_total 누적
     const { data: prof } = await db.from('profiles').select('donation_total').eq('username', myUsername).maybeSingle();
     const current = prof ? (prof.donation_total || 0) : 0;
 
-    // profiles row가 없으면 upsert가 안전
     await db.from('profiles').upsert({ username: myUsername, donation_total: current + amount }, { onConflict: 'username' });
 
     alert(`감사합니다! 후원 내역이 접수되었습니다.`);
     document.getElementById("donate-txid").value = "";
     fetchRanking();
+    fetchVaultSumSince(); // ✅ 새 후원 반영
   }
 
   async function fetchRanking() {
@@ -409,7 +436,6 @@
     document.getElementById("usdt-loan-reason").value = "";
   }
 
-  // ✅ 정산 신청: UT 차감은 "시트(addBalance -amt)"로 처리 + 기록은 Supabase transactions
   async function requestExchange() {
     const amtInput = document.getElementById("ex-amount").value;
     const addrInput = document.getElementById("ex-address").value.trim();
@@ -425,16 +451,13 @@
     if(!confirm(`${amt} UT (≈ ${usdtAmt} USDT, 정산가)을 정산 신청하시겠습니까?\n(즉시 UT 차감)`)) return;
 
     try{
-      // 1) 시트에서 UT 차감 (단일 진실)
       const r = await api("addBalance", { id: myUsername, delta: -amt });
       if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT 차감 실패");
 
-      // 2) 로컬/화면 반영
       myCurrentBalance = Number(r.user.balance || 0);
       localStorage.setItem('myUtPoints', String(myCurrentBalance));
       document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
 
-      // 3) Supabase에 기록 남김(정산 요청 로그)
       await db.from('transactions').insert([{
         username: myUsername,
         type: 'out',
