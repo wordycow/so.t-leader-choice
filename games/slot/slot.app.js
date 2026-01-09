@@ -1,4 +1,4 @@
-// games/slot/slot.app.js
+// games/slot/slot_app.js
 window.SLOT = window.SLOT || {};
 (function (S) {
 
@@ -7,15 +7,18 @@ window.SLOT = window.SLOT || {};
   const bg = document.getElementById("bg");
 
   function flashBg(){
+    if(!bg) return;
     bg.classList.add("flash");
     setTimeout(()=>bg.classList.remove("flash"), 280);
   }
 
   function setHint(text){
-    hintText.textContent = text;
+    if(hintText) hintText.textContent = text;
   }
 
   async function boot(){
+    S.audio?.preload?.();
+
     S.ui.buildPaytable();
 
     const ctx = S.api.getPlayerContext();
@@ -24,7 +27,6 @@ window.SLOT = window.SLOT || {};
     // API 상태 확인(가능하면 bet/jp/ut 갱신)
     await S.api.checkApi(ctx);
 
-    // 버튼 바인딩
     spinBtn.addEventListener("click", async () => {
       S.audio.unlockAudio();
 
@@ -40,14 +42,15 @@ window.SLOT = window.SLOT || {};
       try {
         const out = await S.api.spin(ctx);
 
+        // ✅ 여기서 먼저 grid 검증(중요: setTimeout 안에서 throw하면 catch에 안 잡힘)
+        const grid = out.grid;
+        if(!grid || !Array.isArray(grid) || grid.length < 3){
+          throw new Error("Invalid grid");
+        }
+
         // stop sequence
         setTimeout(() => {
           S.audio.stopSpinSound();
-
-          const grid = out.grid;
-          if(!grid || !Array.isArray(grid) || grid.length < 3){
-            throw new Error("Invalid grid");
-          }
 
           for(let i=0; i<S.NUM_REELS; i++){
             setTimeout(() => {
@@ -61,7 +64,7 @@ window.SLOT = window.SLOT || {};
 
                 S.ui.setKpi({ bet: out.bet, jackpot: out.jackpot, win: out.win });
 
-                // UT 업데이트(서버가 주면 표시)
+                // ✅ UT 업데이트(서버가 주면 표시 + localStorage 저장)
                 if(out.ut !== undefined && out.ut !== null){
                   S.ui.setPlayer({ u: ctx.u, uid: ctx.uid, ut: out.ut });
                   localStorage.setItem("unique_ut", String(out.ut));
