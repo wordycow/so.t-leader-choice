@@ -17,7 +17,6 @@ window.SLOT = window.SLOT || {};
     winVal: $("winVal"),
 
     log: $("log"),
-    ecoBox: $("ecoBox"),
     payGrid: $("payGrid"),
   };
 
@@ -39,11 +38,9 @@ window.SLOT = window.SLOT || {};
 
   function setPlayer(p){
     if(!p) return;
-    // ✅ displayName 우선, 없으면 u, 없으면 Guest
     const name = (p.displayName || p.u || "Guest").toString();
     if(els.playerName) els.playerName.textContent = name;
 
-    // ✅ UT
     if(els.playerUt && p.ut !== undefined && p.ut !== null){
       els.playerUt.textContent = fmtNum(p.ut, 2);
     }
@@ -53,20 +50,6 @@ window.SLOT = window.SLOT || {};
     if(els.betVal && bet !== undefined) els.betVal.textContent = fmtNum(bet, 0);
     if(els.jpVal && jackpot !== undefined) els.jpVal.textContent = fmtNum(jackpot, 0);
     if(els.winVal && win !== undefined) els.winVal.textContent = fmtNum(win, 0);
-  }
-
-  function setEconomy(info){
-    if(!els.ecoBox) return;
-    if(!info){
-      els.ecoBox.textContent = "ECON: -";
-      return;
-    }
-    const lines = [
-      `TOTAL ISSUED UT: ${fmtNum(info.totalIssuedUT ?? 0, 0)}`,
-      `UT PRICE: ${fmtNum(info.utPrice ?? 0, 4)}`,
-      `WIN SCALE: ${fmtNum(info.winScale ?? 1, 3)}`
-    ];
-    els.ecoBox.textContent = lines.join("\n");
   }
 
   function buildPaytable(){
@@ -94,7 +77,6 @@ window.SLOT = window.SLOT || {};
 
       const right = document.createElement("div");
       right.className = "pay-right";
-      // 표시용 숫자만
       right.textContent = (row.pays || []).join("  ");
 
       wrap.appendChild(left);
@@ -103,7 +85,6 @@ window.SLOT = window.SLOT || {};
     });
   }
 
-  // sound toggle UI
   function bindSound(){
     if(!els.soundBtn) return;
     els.soundBtn.addEventListener("click", () => {
@@ -111,15 +92,7 @@ window.SLOT = window.SLOT || {};
       if(els.soundText) els.soundText.textContent = on ? "SOUND: ON" : "SOUND: OFF";
     });
   }
-
   bindSound();
 
-  S.ui = {
-    setOnline,
-    setLog,
-    setPlayer,
-    setKpi,
-    setEconomy,
-    buildPaytable
-  };
+  S.ui = { setOnline, setLog, setPlayer, setKpi, buildPaytable };
 })(window.SLOT);
