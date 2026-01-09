@@ -109,20 +109,37 @@
     return "";
   }
 
-  function applySlotLinks() {
-    const nick = getNickname();
-    const url = nick ? `${SLOT_PATH}?u=${encodeURIComponent(nick)}` : SLOT_PATH;
+  function applySlotLinks(){
+  const nick = getNickname();
 
-    const pc  = document.getElementById("slotBtnPc");
-    const m   = document.getElementById("slotBtnM");
-    const cta = document.getElementById("slotCta"); // ✅ 새 단일 버튼 대응
+  // uid 후보: DOM 또는 localStorage
+  const uid =
+    (document.getElementById("member-id")?.textContent || "").trim() ||
+    (localStorage.getItem("unique_userid") || "").trim();
 
-    if (pc) pc.href = url;
-    if (m)  m.href = url;
-    if (cta) cta.href = url;
+  // ut 후보: 화면 표시값
+  const ut =
+    (document.getElementById("my-ut-display")?.textContent || "").trim() ||
+    (localStorage.getItem("unique_ut") || "").trim();
 
-    if (nick) localStorage.setItem("slot_player", nick);
-  }
+  const params = new URLSearchParams();
+  if(nick) params.set("u", nick);
+  if(uid)  params.set("uid", uid);
+  if(ut)   params.set("ut", ut);
+
+  const url = params.toString() ? `${SLOT_PATH}?${params.toString()}` : SLOT_PATH;
+
+  const pc = document.getElementById("slotBtnPc");
+  const m  = document.getElementById("slotBtnM");
+
+  if(pc) pc.href = url;
+  if(m)  m.href  = url;
+
+  if(nick) localStorage.setItem("slot_player", nick);
+  if(uid)  localStorage.setItem("unique_userid", uid);
+  if(ut)   localStorage.setItem("unique_ut", ut);
+}
+
 
   function boot() {
     applySlotLinks();
