@@ -5,469 +5,337 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>THE UNIQUE SLOT</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
   <style>
-    :root{
-      --bg:#05070d;
-      --panel:#0b1220cc;
-      --panel2:#0b1220f2;
-      --line:rgba(255,255,255,.08);
-      --text:#e5e7eb;
-      --muted:#94a3b8;
-      --gold:#fbbf24;
-      --gold2:#f59e0b;
-      --good:#4ade80;
-      --bad:#f87171;
-
-      --reelW: 128px;
-      --reelH: 120px; /* 각 칸 높이 */
-      --radius: 20px;
-    }
-
     *{box-sizing:border-box}
-    html,body{height:100%}
+    html,body{height:100%;margin:0}
     body{
-      margin:0;
-      font-family:"Pretendard", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      color:var(--text);
-      background: radial-gradient(1200px 700px at 50% 10%, rgba(251,191,36,.16), transparent 60%),
-                  radial-gradient(900px 700px at 20% 80%, rgba(59,130,246,.12), transparent 55%),
-                  var(--bg);
-      min-height:100vh;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      color:#e5e7eb;
+      background:#020617;
+      background-image:
+        radial-gradient(circle at top, rgba(148,163,184,.16), transparent 55%),
+        radial-gradient(circle at 20% 90%, rgba(245,158,11,.12), transparent 45%);
       overflow-x:hidden;
     }
 
-    /* ===== Background Slide (img/slot/slide1..8.png) ===== */
-    .bg{
-      position:fixed; inset:0; z-index:-2;
-      background:#000;
-    }
-    .bg::after{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(1200px 700px at 50% 15%, rgba(0,0,0,.2), rgba(0,0,0,.85) 70%),
-                  linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.9));
-      z-index:2;
-      pointer-events:none;
-    }
-    .bg-layer{
-      position:absolute; inset:-20px;
-      background-size:cover;
-      background-position:center;
-      filter: blur(10px) saturate(1.1);
-      transform: scale(1.07);
-      opacity:0;
-      transition: opacity 900ms ease;
-      z-index:0;
-    }
-    .bg-layer.show{opacity:.85}
-
-    /* ===== Layout ===== */
     .wrap{
       max-width: 1100px;
-      margin: 38px auto;
-      padding: 0 18px 60px;
-    }
-    .shell{
-      border-radius: 28px;
-      border:1px solid rgba(251,191,36,.35);
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.05) inset,
-        0 30px 120px rgba(0,0,0,.65),
-        0 0 50px rgba(251,191,36,.08);
-      background: linear-gradient(180deg, rgba(17,24,39,.70), rgba(2,6,23,.75));
-      backdrop-filter: blur(10px);
-      overflow:hidden;
+      margin: 64px auto 40px;
+      padding: 0 16px;
     }
 
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      padding: 18px 18px 12px;
-      border-bottom:1px solid rgba(255,255,255,.06);
+    .card{
+      border-radius: 26px;
+      background: rgba(15,23,42,.92);
+      border: 1px solid rgba(245,158,11,.85);
+      box-shadow: 0 0 26px rgba(245,158,11,.45), 0 30px 90px rgba(0,0,0,.92);
+      padding: 22px 22px 18px;
+      backdrop-filter: blur(12px);
     }
-    .titlebox{
-      display:flex; flex-direction:column; gap:4px;
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom: 14px;
     }
     .title{
-      font-family:"Cinzel", serif;
-      letter-spacing:.06em;
-      font-size: 20px;
-      font-weight:700;
-      color:#fff;
+      font-family: "Times New Roman", serif;
+      letter-spacing:.16em;
+      font-weight:800;
+      text-transform:uppercase;
+      color:#f8fafc;
+      font-size: 22px;
+      line-height:1.1;
     }
-    .subtitle{
-      font-size:12px; color: rgba(226,232,240,.75);
+    .sub{
+      margin-top:6px;
+      font-size: 11px;
+      color:#94a3b8;
+      letter-spacing:.08em;
     }
-    .pill{
-      display:inline-flex; align-items:center; gap:10px;
-      padding: 8px 12px;
+
+    .status-pill{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      padding: 8px 10px;
       border-radius: 999px;
-      background: rgba(15,23,42,.7);
-      border:1px solid rgba(255,255,255,.09);
-      font-size:12px;
-      color: rgba(226,232,240,.85);
+      border:1px solid rgba(148,163,184,.24);
+      background: rgba(2,6,23,.45);
+      color:#cbd5e1;
+      font-size: 12px;
       white-space:nowrap;
     }
     .dot{
-      width:10px; height:10px; border-radius:999px;
-      background: rgba(148,163,184,.6);
-      box-shadow: 0 0 0 3px rgba(148,163,184,.14);
+      width:10px;height:10px;border-radius:50%;
+      background:#94a3b8;
+      box-shadow:0 0 10px rgba(148,163,184,.35);
     }
     .dot.ok{
-      background: var(--good);
-      box-shadow: 0 0 0 3px rgba(74,222,128,.14);
+      background:#22c55e;
+      box-shadow:0 0 14px rgba(34,197,94,.45);
     }
-    .dot.bad{
-      background: var(--bad);
-      box-shadow: 0 0 0 3px rgba(248,113,113,.14);
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.15fr 1.85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel{
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.45);
+      box-shadow: 0 14px 26px rgba(0,0,0,.6);
+      padding: 14px;
+      min-height: 260px;
+    }
+
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .kpi .box{
+      border-radius: 14px;
+      background: rgba(15,23,42,.7);
+      border: 1px solid rgba(148,163,184,.16);
+      padding: 10px 12px;
+    }
+    .kpi .label{
+      font-size: 11px;
+      color:#94a3b8;
+      margin-bottom:6px;
+    }
+    .kpi .val{
+      font-size: 18px;
+      font-weight: 900;
+      color:#fff;
+      letter-spacing:.02em;
+    }
+    .kpi .val.gold{ color:#fbbf24; text-shadow:0 0 12px rgba(251,191,36,.25); }
+
+    .log{
+      margin-top: 10px;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(2,6,23,.35);
+      border: 1px solid rgba(148,163,184,.14);
+      color:#cbd5e1;
+      font-size: 12px;
+      line-height: 1.45;
+      min-height: 92px;
+      white-space:pre-line;
+    }
+
+    /* 슬롯 그리드 */
+    .slot-stage{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      height:100%;
+    }
+
+    .grid-wrap{
+      flex: 1 1 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius: 18px;
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(148,163,184,.18);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+      padding: 14px;
+      min-height: 310px;
+      position:relative;
+      overflow:hidden;
     }
 
     .grid{
       display:grid;
-      grid-template-columns: 1.15fr 1.4fr;
-      gap: 14px;
-      padding: 16px 18px 18px;
-    }
-
-    .panel{
-      border-radius: 22px;
-      background: rgba(2,6,23,.45);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset;
-      padding: 14px;
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .stat{
-      border-radius: 16px;
-      padding: 12px 12px 11px;
-      background: rgba(15,23,42,.55);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
-      min-height:72px;
-    }
-    .stat .k{
-      font-size:11px;
-      color: rgba(148,163,184,.95);
-      margin-bottom:6px;
-    }
-    .stat .v{
-      font-size:18px;
-      font-weight:800;
-      color:#fff;
-      letter-spacing:.01em;
-    }
-    .stat .v.gold{ color: var(--gold); }
-    .stat .sub{
-      font-size:11px;
-      color: rgba(148,163,184,.75);
-      margin-top:4px;
-    }
-
-    .wide{
-      margin-top: 10px;
-      border-radius: 16px;
-      padding: 12px;
-      background: rgba(15,23,42,.45);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
-    }
-    .wideRow{
-      display:flex; justify-content:space-between; align-items:flex-end;
+      grid-template-columns: repeat(5, 132px);
+      grid-template-rows: repeat(3, 92px);
       gap: 12px;
-    }
-    .wide .k{ font-size:11px; color: rgba(148,163,184,.95); margin-bottom:6px; }
-    .wide .v{ font-size:18px; font-weight:900; color:#fff; }
-    .wide .v.gold{ color: var(--gold); }
-    .wide .mini{ font-size:12px; color: rgba(226,232,240,.85); text-align:right; }
-    .wide .mini b{ color: var(--gold); }
-
-    .log{
-      margin-top:10px;
-      border-radius: 16px;
-      padding: 12px;
-      min-height: 98px;
-      background: rgba(2,6,23,.35);
-      border:1px solid rgba(255,255,255,.05);
-      color: rgba(226,232,240,.86);
-      font-size:12px;
-      line-height:1.5;
-      white-space:pre-line;
-    }
-
-    /* ===== Slot Panel ===== */
-    .slotWrap{
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
-
-    .reelsBox{
-      border-radius: 22px;
-      background: rgba(2,6,23,.40);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.03) inset,
-        0 24px 80px rgba(0,0,0,.35);
-      padding: 14px;
-      position:relative;
-      overflow:hidden;
-    }
-
-    .reels{
-      display:grid;
-      grid-template-columns: repeat(5, var(--reelW));
-      gap: 12px;
-      justify-content:center;
-      align-items:center;
-      padding: 10px 0;
-    }
-
-    .reel{
-      width: var(--reelW);
-      border-radius: 18px;
-      background: rgba(15,23,42,.55);
-      border:1px solid rgba(255,255,255,.07);
-      box-shadow:
-        0 0 0 1px rgba(0,0,0,.35) inset,
-        0 14px 40px rgba(0,0,0,.25);
-      overflow:hidden;
-      position:relative;
-    }
-    .window{
-      height: calc(var(--reelH) * 3);
-      position:relative;
-    }
-    .strip{
-      position:absolute;
-      left:0; top:0;
-      width:100%;
-      will-change: transform;
     }
 
     .cell{
-      height: var(--reelH);
+      border-radius: 16px;
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(148,163,184,.16);
+      box-shadow: 0 10px 22px rgba(0,0,0,.55);
       display:flex;
       align-items:center;
       justify-content:center;
-      padding: 10px;
+      position:relative;
+      overflow:hidden;
     }
+    .cell::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(circle at top, rgba(255,255,255,.08), transparent 55%);
+      pointer-events:none;
+    }
+
     .cell img{
-      width: 86px;
-      height: 86px;
-      object-fit:contain;
-      filter: drop-shadow(0 10px 22px rgba(0,0,0,.55));
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,.65));
       transform: translateZ(0);
     }
 
-    /* 중앙 라인 강조 */
+    /* 페이라인(가운데 줄) 표시 */
     .payline{
       position:absolute;
-      left: 0; right:0;
-      top: calc(14px + (var(--reelH) * 1) + 10px); /* 대충 중앙줄 */
-      height: var(--reelH);
+      left: 16px; right: 16px;
+      top: 50%;
+      height: 104px;
+      transform: translateY(-50%);
+      border-radius: 18px;
+      border: 1px solid rgba(251,191,36,.35);
+      box-shadow: 0 0 24px rgba(251,191,36,.12);
       pointer-events:none;
-      border-top: 1px solid rgba(251,191,36,.12);
-      border-bottom: 1px solid rgba(251,191,36,.12);
-      background: linear-gradient(90deg, transparent, rgba(251,191,36,.07), transparent);
-      opacity:.9;
     }
 
-    .focus3{
+    /* 가운데 3칸(2~4번째 릴) 강조 */
+    .mid3{
       position:absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(132px * 3 + 12px * 2 + 24px);
+      height: 104px;
+      transform: translate(-50%, -50%);
+      border-radius: 18px;
+      border: 1px solid rgba(34,197,94,.35);
+      box-shadow: 0 0 28px rgba(34,197,94,.10);
       pointer-events:none;
-      top: calc(14px + (var(--reelH) * 1) + 10px);
-      height: var(--reelH);
-      left: calc(50% - ( (var(--reelW) * 5 + 12px * 4) / 2) + (var(--reelW) + 12px) * 1);
-      width: calc(var(--reelW) * 3 + 12px * 2);
-      border-radius: 14px;
-      outline: 1px solid rgba(251,191,36,.22);
-      box-shadow: 0 0 30px rgba(251,191,36,.12);
-      background: rgba(251,191,36,.03);
-      opacity: 0;
-      transition: opacity 250ms ease;
-    }
-    .focus3.show{ opacity: 1; }
-
-    .reel.spinning .cell img{
-      filter: blur(1.2px) drop-shadow(0 10px 22px rgba(0,0,0,.55));
-      opacity:.92;
     }
 
-    /* ===== Controls ===== */
+    /* 스핀 중 효과 */
+    .spinning .cell img{
+      filter: blur(1.6px) brightness(1.08) drop-shadow(0 8px 14px rgba(0,0,0,.7));
+    }
+
     .controls{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-
     .btn{
-      border:none;
-      cursor:pointer;
+      height: 48px;
       border-radius: 14px;
-      padding: 14px 12px;
-      font-weight: 800;
-      letter-spacing:.02em;
-      transition: transform .08s ease, filter .15s ease, opacity .15s ease;
-      user-select:none;
-    }
-    .btn:active{ transform: scale(.985); }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; }
-
-    .btnGold{
-      background: linear-gradient(180deg, #ffd24a, var(--gold));
-      color:#111827;
-      box-shadow: 0 12px 30px rgba(251,191,36,.18);
-    }
-    .btnDark{
-      background: rgba(15,23,42,.55);
-      border:1px solid rgba(255,255,255,.09);
-      color:#e2e8f0;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
-    }
-
-    .toggles{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .toggle{
+      border: 1px solid rgba(148,163,184,.20);
       background: rgba(2,6,23,.35);
-      border:1px solid rgba(255,255,255,.08);
-      color: rgba(226,232,240,.9);
-      border-radius: 14px;
-      padding: 12px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap: 8px;
-      font-weight:700;
-      font-size:12px;
+      color:#e5e7eb;
+      font-weight: 900;
+      letter-spacing:.08em;
       cursor:pointer;
+      box-shadow: 0 16px 30px rgba(0,0,0,.55);
+      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
       user-select:none;
     }
-    .toggle.on{
-      border-color: rgba(251,191,36,.35);
-      box-shadow: 0 0 0 1px rgba(251,191,36,.12) inset;
-      color: #fff;
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); border-color: rgba(248,250,252,.45); }
+    .btn:active{ transform: translateY(0); }
+    .btn.primary{
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color:#0b1120;
+      border-color: rgba(245,158,11,.75);
+    }
+    .btn:disabled{
+      cursor:not-allowed;
+      opacity:.55;
+      transform:none;
     }
 
     .tip{
-      margin-top: 8px;
-      font-size: 11px;
-      color: rgba(148,163,184,.85);
-      line-height:1.45;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(15,23,42,.35);
-      border:1px solid rgba(255,255,255,.06);
+      margin-top:10px;
+      font-size:11px;
+      color:#94a3b8;
+      line-height:1.4;
     }
 
-    /* ===== Responsive ===== */
     @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-      .reels{ transform: scale(.95); transform-origin:center; }
+      .layout{ grid-template-columns: 1fr; }
+      .grid{ grid-template-columns: repeat(5, 110px); grid-template-rows: repeat(3, 84px); }
+      .cell img{ width:60px;height:60px; }
+      .mid3{ width: calc(110px * 3 + 12px * 2 + 24px); }
     }
-    @media (max-width: 620px){
-      :root{ --reelW: 108px; --reelH: 105px; }
-      .reels{ gap: 10px; }
-      .stats{ grid-template-columns: 1fr; }
-      .controls{ grid-template-columns: 1fr; }
-      .toggles{ grid-template-columns: 1fr 1fr; }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns: repeat(5, 90px); grid-template-rows: repeat(3, 74px); gap:10px; }
+      .cell img{ width:54px;height:54px; }
+      .mid3{ width: calc(90px * 3 + 10px * 2 + 24px); }
     }
   </style>
 </head>
 
 <body>
-  <div class="bg">
-    <div id="bgA" class="bg-layer"></div>
-    <div id="bgB" class="bg-layer"></div>
-  </div>
-
   <div class="wrap">
-    <div class="shell">
-      <div class="topbar">
-        <div class="titlebox">
+    <div class="card">
+      <div class="top">
+        <div>
           <div class="title">THE UNIQUE SLOT</div>
-          <div class="subtitle">UT / USDT • Premium Game UI</div>
+          <div class="sub">3행 × 5열 · 가운데 3개 맞추기 · 1판 10초</div>
         </div>
-        <div class="pill">
-          <span id="apiDot" class="dot"></span>
-          <span id="apiText">API 상태: 확인중...</span>
-          <span style="opacity:.55">•</span>
-          <span id="verText" style="opacity:.9">v -</span>
+        <div class="status-pill">
+          <span id="dot" class="dot"></span>
+          <span id="apiText">API: 대기</span>
         </div>
       </div>
 
-      <div class="grid">
-        <!-- LEFT -->
+      <div class="layout">
+        <!-- 좌측 패널 -->
         <div class="panel">
-          <div class="stats">
-            <div class="stat">
-              <div class="k">잔액</div>
-              <div class="v" id="balUt">- UT</div>
-              <div class="sub" id="userTag">[guest]</div>
+          <div class="kpi">
+            <div class="box">
+              <div class="label">Bet (UT)</div>
+              <div class="val gold"><span id="betVal">10</span> UT</div>
             </div>
-            <div class="stat">
-              <div class="k">오늘 UT 정산가</div>
-              <div class="v gold" id="utRate">- USDT</div>
-              <div class="sub">자정 갱신</div>
+            <div class="box">
+              <div class="label">Jackpot (UT)</div>
+              <div class="val"><span id="jpVal">0</span></div>
             </div>
-            <div class="stat">
-              <div class="k">Free Spin</div>
-              <div class="v" id="fsCnt">0</div>
-              <div class="sub">보너스</div>
+            <div class="box">
+              <div class="label">House · 이유송 수익 (UT)</div>
+              <div class="val"><span id="houseVal">0</span></div>
             </div>
-          </div>
-
-          <div class="wide">
-            <div class="wideRow">
-              <div>
-                <div class="k">Jackpot Pool (USDT)</div>
-                <div class="v gold" id="jpPool">- USDT</div>
-              </div>
-              <div class="mini">
-                Bet<br><b id="betUt">10 UT</b>
-              </div>
+            <div class="box">
+              <div class="label">마지막 당첨</div>
+              <div class="val gold"><span id="winVal">0</span> UT</div>
             </div>
           </div>
 
           <div class="log" id="log">
-준비완료. SYNC로 최신 상태 반영 후 SPIN을 눌러주세요.
-          </div>
-        </div>
-
-        <!-- RIGHT -->
-        <div class="panel slotWrap">
-          <div class="reelsBox">
-            <div class="payline"></div>
-            <div id="focus3" class="focus3"></div>
-
-            <div class="reels" id="reels">
-              <!-- 5 reels injected -->
-            </div>
-          </div>
-
-          <div class="controls">
-            <button id="btnSpin" class="btn btnGold">SPIN</button>
-            <button id="btnSync" class="btn btnDark">SYNC</button>
-          </div>
-
-          <div class="toggles">
-            <div id="tgSound" class="toggle">🔊 SOUND (대기)</div>
-            <div id="tgFx" class="toggle on">✨ FX ON</div>
+불러오는 중...
           </div>
 
           <div class="tip">
-            Tip: 당첨 판정은 <b>가운데 줄(2행) + 2~4열</b> 3칸이 동일할 때만 적용됩니다. (연출은 5열 전체)
+            - 판정 라인: 가운데 줄(2번째 줄)의 <b>중간 3칸(2~4번째 릴)</b><br/>
+            - 패배 시: 베팅의 <b>50%</b>는 Jackpot, <b>50%</b>는 이유송 수익으로 누적<br/>
+            - Jackpot은 월 1회 정도 “수동 지급” 컨셉(자동 당첨 X)
+          </div>
+        </div>
+
+        <!-- 우측 슬롯 -->
+        <div class="panel slot-stage">
+          <div class="grid-wrap" id="gridWrap">
+            <div class="payline"></div>
+            <div class="mid3"></div>
+
+            <div class="grid" id="grid"></div>
+          </div>
+
+          <div class="controls">
+            <button class="btn primary" id="spinBtn">SPIN</button>
+            <button class="btn" id="syncBtn">SYNC</button>
+          </div>
+
+          <div class="tip">
+            이미지 파일 경로: <code>games/img/slot/star1.png ~ pro10.png</code><br/>
+            API는 코드 상단의 <code>API_BASE</code>만 맞추면 끝.
           </div>
         </div>
       </div>
@@ -475,565 +343,254 @@
   </div>
 
 <script>
-/* ===============================
-   CONFIG
-================================ */
-const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev"; // 너 Worker
-const IMG_BASE = "img/slot/"; // /games/img/slot/
-const SLIDES = Array.from({length:8}, (_,i)=> `${IMG_BASE}slide${i+1}.png`);
+/** =========================
+ *  설정 (여기만 바꿔)
+ * ========================= */
+const API_BASE = "https://YOUR-WORKER-DOMAIN"; // ✅ 네 Worker 주소로 바꿔
 
+/** =========================
+ *  심볼/이미지
+ * ========================= */
 const SYMBOLS = [
   "star1","star2","star3",
   "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
 ];
+const IMG = (id) => `img/slot/${id}.png`;
 
-// 프리스핀 자주: star 비중 높게
-const WEIGHTS = {
-  star1: 40, star2: 28, star3: 20,
-  pro1: 12, pro2: 9, pro3: 7, pro4: 6, pro5: 5,
-  pro6: 4, pro7: 3, pro8: 2, pro9: 1, pro10: 1
-};
+/** =========================
+ *  DOM
+ * ========================= */
+const $ = (id) => document.getElementById(id);
+const gridEl = $("grid");
+const gridWrap = $("gridWrap");
+const spinBtn = $("spinBtn");
+const syncBtn = $("syncBtn");
 
-// 족보(배수) + 프리스핀 보너스
-const PAYTABLE = {
-  star1: {mult:1, fs:1},
-  star2: {mult:2, fs:2},
-  star3: {mult:4, fs:3},
-  pro1:  {mult:6, fs:2},
-  pro2:  {mult:8, fs:2},
-  pro3:  {mult:10,fs:3},
-  pro4:  {mult:14,fs:3},
-  pro5:  {mult:18,fs:4},
-  pro6:  {mult:24,fs:4},
-  pro7:  {mult:32,fs:5},
-  pro8:  {mult:45,fs:6},
-  pro9:  {mult:70,fs:8},
-  pro10: {mult:120,fs:12}
-};
-
-const BET_UT = 10;
-
-// 1판 10초(대략)
-const SPIN_TIMELINE = {
-  accel: 700,
-  run: 5600,
-  stopGap: 700,   // 릴별 정지 간격
-  resultFx: 2200
-};
-
-// 릴 정지 시점(10초 감성)
-const REEL_STOP_MS = [
-  3500, 4200, 4900, 5600, 6300
-];
-
-/* ===============================
-   STATE
-================================ */
-let username = "guest";
-let balanceUT = 0;
-let freeSpins = 0;
-let utRate = 0.02;
-let jackpotUSDT = 0;
-let apiOk = false;
-let apiVersion = "-";
-let spinning = false;
-
-let fxOn = true;
-let soundOn = false; // 사운드는 나중에 첨부(현재는 요청 안함)
-
-/* ===============================
-   DOM
-================================ */
-const $ = (id)=>document.getElementById(id);
-const apiDot = $("apiDot");
-const apiText = $("apiText");
-const verText = $("verText");
-const userTag = $("userTag");
-const balUtEl = $("balUt");
-const fsCntEl = $("fsCnt");
-const rateEl = $("utRate");
-const jpEl = $("jpPool");
+const betVal = $("betVal");
+const jpVal = $("jpVal");
+const houseVal = $("houseVal");
+const winVal = $("winVal");
 const logEl = $("log");
-const reelsEl = $("reels");
-const btnSpin = $("btnSpin");
-const btnSync = $("btnSync");
-const focus3 = $("focus3");
-const tgSound = $("tgSound");
-const tgFx = $("tgFx");
+const dot = $("dot");
+const apiText = $("apiText");
 
-/* ===============================
-   BG SLIDES (crossfade)
-================================ */
-let bgIdx = 0;
-const bgA = $("bgA");
-const bgB = $("bgB");
-let bgFlip = false;
-
-function setBg(url){
-  const show = bgFlip ? bgA : bgB;
-  const hide = bgFlip ? bgB : bgA;
-  hide.classList.remove("show");
-  show.style.backgroundImage = `url("${url}")`;
-  requestAnimationFrame(()=> show.classList.add("show"));
-  bgFlip = !bgFlip;
-}
-function startBg(){
-  setBg(SLIDES[0]);
-  setInterval(()=>{
-    bgIdx = (bgIdx + 1) % SLIDES.length;
-    setBg(SLIDES[bgIdx]);
-  }, 5500);
-}
-
-/* ===============================
-   UTIL
-================================ */
-function nf(x, d=0){
-  const n = Number(x||0);
-  return n.toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d});
-}
-function log(msg, tone=""){
-  const prefix = tone==="good" ? "✅ " : tone==="bad" ? "⛔ " : "• ";
-  logEl.textContent = (prefix + msg);
-}
-function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
-
-function weightedPick(weights){
-  const entries = Object.entries(weights);
-  const total = entries.reduce((a,[,w])=>a+w,0);
-  let r = Math.random()*total;
-  for(const [k,w] of entries){
-    r -= w;
-    if(r<=0) return k;
-  }
-  return entries[entries.length-1][0];
-}
-
-function getUserFromStorage(){
-  try{
-    const raw = localStorage.getItem("uniqueCurrentUser");
-    if(!raw) return null;
-    const o = JSON.parse(raw);
-    const id = String(o.id || o.name || "guest").toLowerCase().trim();
-    return id || "guest";
-  }catch(_){ return null; }
-}
-
-/* ===============================
-   API
-================================ */
-async function apiHealth(){
-  try{
-    const r = await fetch(`${WORKER_BASE}/health`, {cache:"no-store"});
-    const j = await r.json();
-    if(j && j.ok){
-      apiOk = true;
-      apiVersion = j.version || "-";
-      apiDot.className = "dot ok";
-      apiText.textContent = "API 상태: 연결됨";
-      verText.textContent = `v ${apiVersion}`;
-      return true;
+/** =========================
+ *  그리드 만들기(3x5)
+ * ========================= */
+const ROWS = 3, COLS = 5;
+const cells = []; // [r][c] => {img}
+function makeGrid(){
+  gridEl.innerHTML = "";
+  for(let r=0;r<ROWS;r++){
+    cells[r] = [];
+    for(let c=0;c<COLS;c++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      const img = document.createElement("img");
+      img.alt = "symbol";
+      img.src = IMG("star1");
+      cell.appendChild(img);
+      gridEl.appendChild(cell);
+      cells[r][c] = { cell, img };
     }
-  }catch(_){}
-  apiOk = false;
-  apiDot.className = "dot bad";
-  apiText.textContent = "API 상태: 미연결(로컬 데모)";
-  verText.textContent = "v -";
-  return false;
+  }
+}
+makeGrid();
+
+/** =========================
+ *  API helpers
+ * ========================= */
+async function api(path, opt){
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: opt?.method || "GET",
+    headers: { "Content-Type":"application/json" },
+    body: opt?.body ? JSON.stringify(opt.body) : undefined
+  });
+  return await res.json().catch(()=>({ok:false,error:"bad_json"}));
 }
 
-async function apiState(){
-  // 서버 포맷이 다를 수 있으니 최대한 유연하게 파싱
-  try{
-    const r = await fetch(`${WORKER_BASE}/slot/state?user=${encodeURIComponent(username)}`, {cache:"no-store"});
-    const j = await r.json();
-    if(!j || j.ok===false) throw new Error(j?.error || "state fail");
+function setApiStatus(ok){
+  dot.classList.toggle("ok", !!ok);
+  apiText.textContent = ok ? "API: 연결됨" : "API: 미연결";
+}
 
-    // 다양한 키를 흡수
-    const b = j.balanceUT ?? j.balanceUt ?? j.ut ?? j.balance ?? j.user?.balance ?? j.user?.ut;
-    const fs = j.freeSpins ?? j.fs ?? j.user?.freeSpins ?? 0;
-    const rate = j.utRate ?? j.rate ?? j.price ?? Number(localStorage.getItem("ut_settlement_price")) || utRate;
-    const jp = j.jackpotUSDT ?? j.jackpotUsdt ?? j.jackpot ?? j.pool ?? 0;
+/** =========================
+ *  상태 SYNC
+ * ========================= */
+async function sync(){
+  logEl.textContent = "SYNC 중...";
+  const st = await api("/slot/state");
+  if(!st?.ok){
+    setApiStatus(false);
+    logEl.textContent = `SYNC 실패\n${st?.error || "unknown"}`;
+    return;
+  }
+  setApiStatus(true);
+  betVal.textContent = st.bet ?? 10;
+  jpVal.textContent = st.jackpot ?? "0";
+  houseVal.textContent = st.house ?? "0";
 
-    if(Number.isFinite(Number(b))) balanceUT = Number(b);
-    if(Number.isFinite(Number(fs))) freeSpins = Number(fs);
-    if(Number.isFinite(Number(rate))) utRate = Number(rate);
-    if(Number.isFinite(Number(jp))) jackpotUSDT = Number(jp);
+  logEl.textContent =
+`SYNC 완료
+- Bet: ${st.bet} UT
+- Jackpot: ${st.jackpot} UT
+- House(이유송): ${st.house} UT
+- Version: ${st.version}`;
+}
+syncBtn.addEventListener("click", sync);
+sync();
 
-    renderStats();
-    log("SYNC 완료. SPIN을 누르세요.", "good");
-    return true;
-  }catch(e){
-    // fallback: local only
-    log("SYNC 실패. (로컬 데모 모드 유지)", "bad");
-    renderStats();
-    return false;
+/** =========================
+ *  스핀 애니메이션(10초)
+ *  - 클릭 즉시 /slot/spin 호출해서 "최종 결과" 확보
+ *  - 5열을 빠르게 랜덤으로 돌리다가
+ *  - 뒤쪽 열부터 순차 정지
+ * ========================= */
+let spinning = false;
+let timers = [];
+let perColRunning = [];
+
+function clearTimers(){
+  timers.forEach(t=>clearTimeout(t));
+  timers = [];
+  for(let c=0;c<COLS;c++){
+    if(perColRunning[c]) clearTimeout(perColRunning[c]);
+    perColRunning[c] = null;
   }
 }
 
-async function apiSpin(){
-  // 서버 응답 형식이 불확실해서, 성공해도 파싱 못하면 로컬로 전환
-  try{
-    const body = { user: username, bet: BET_UT };
-    const r = await fetch(`${WORKER_BASE}/slot/spin`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-    const j = await r.json();
-    if(!j || j.ok===false) throw new Error(j?.error || "spin fail");
+function randSym(){
+  return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
+}
 
-    // 기대 포맷 후보:
-    // - j.grid: [[3],[3],[3],[3],[3]] (col->top/mid/bot)
-    // - j.reels: same
-    // - j.result: same
-    const grid = j.grid || j.reels || j.result;
-    if(!grid || !Array.isArray(grid) || grid.length !== 5) throw new Error("unknown result shape");
-
-    // normalize [5][3]
-    const norm = grid.map(col=>{
-      if(Array.isArray(col) && col.length>=3) return [String(col[0]),String(col[1]),String(col[2])];
-      return ["star1","star2","star3"];
-    });
-
-    // payouts / balances (optional)
-    const b = j.balanceUT ?? j.balanceUt ?? j.balance ?? j.user?.balance;
-    const fs = j.freeSpins ?? j.fs ?? j.user?.freeSpins;
-    const rate = j.utRate ?? j.rate ?? j.price;
-    const jp = j.jackpotUSDT ?? j.jackpotUsdt ?? j.jackpot;
-
-    if(Number.isFinite(Number(b))) balanceUT = Number(b);
-    if(Number.isFinite(Number(fs))) freeSpins = Number(fs);
-    if(Number.isFinite(Number(rate))) utRate = Number(rate);
-    if(Number.isFinite(Number(jp))) jackpotUSDT = Number(jp);
-
-    return { mode:"api", grid:norm, raw:j };
-
-  }catch(e){
-    return { mode:"local" };
+function setColToResult(col, grid){
+  // grid: 3x5
+  for(let r=0;r<ROWS;r++){
+    const id = grid[r][col];
+    cells[r][col].img.src = IMG(id);
   }
 }
 
-/* ===============================
-   SLOT REELS (DOM + ANIM)
-================================ */
-const reels = []; // {root, strip, window}
-const CELL_H = ()=> parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--reelH"));
-
-function makeReels(){
-  reelsEl.innerHTML = "";
-  reels.length = 0;
-
-  for(let i=0;i<5;i++){
-    const reel = document.createElement("div");
-    reel.className = "reel";
-    const win = document.createElement("div");
-    win.className = "window";
-    const strip = document.createElement("div");
-    strip.className = "strip";
-    win.appendChild(strip);
-    reel.appendChild(win);
-    reelsEl.appendChild(reel);
-    reels.push({root:reel, strip, win});
-  }
-
-  // 초기 표시
-  const initGrid = [
-    ["star1","star2","star3"],
-    ["star1","star2","star3"],
-    ["star1","star2","star3"],
-    ["star1","star2","star3"],
-    ["star1","star2","star3"],
-  ];
-  setGridInstant(initGrid);
-}
-
-function symbolSrc(sym){
-  // 파일명은 유송이 star1~pro10.png로 넣는다고 했으니 그대로 사용
-  return `${IMG_BASE}${sym}.png`;
-}
-
-function buildStripHTML(list){
-  return list.map(sym => `
-    <div class="cell"><img src="${symbolSrc(sym)}" alt="${sym}" loading="lazy"></div>
-  `).join("");
-}
-
-// 즉시 세팅(애니메이션 없이)
-function setGridInstant(grid5x3){
-  for(let c=0;c<5;c++){
-    const col = grid5x3[c];
-    const list = [...col]; // 3개만
-    reels[c].strip.style.transform = "translateY(0px)";
-    reels[c].strip.innerHTML = buildStripHTML(list);
-  }
-}
-
-function buildSpinStrip(stop3){
-  // filler 26개 + 마지막 3개(stop) = 29개
-  const fillerCount = 26;
-  const list = [];
-  for(let i=0;i<fillerCount;i++){
-    list.push(weightedPick(WEIGHTS));
-  }
-  list.push(stop3[0], stop3[1], stop3[2]);
-  return { list, fillerCount };
-}
-
-function animateReelToStop(reelIndex, stop3, durationMs, delayMs){
-  const { list, fillerCount } = buildSpinStrip(stop3);
-  const strip = reels[reelIndex].strip;
-  const reelRoot = reels[reelIndex].root;
-  const h = CELL_H();
-
-  strip.innerHTML = buildStripHTML(list);
-  strip.style.transform = "translateY(0px)";
-
-  const travel = -(h * fillerCount); // 마지막 3개가 딱 3행에 걸리게
-
-  reelRoot.classList.add("spinning");
-
-  // Web Animations API
-  const anim = strip.animate(
-    [
-      { transform: "translateY(0px)" },
-      { transform: `translateY(${travel}px)` }
-    ],
-    {
-      duration: durationMs,
-      delay: delayMs,
-      easing: "cubic-bezier(.12,.92,.12,1)",
-      fill: "forwards"
-    }
-  );
-
-  anim.onfinish = () => {
-    reelRoot.classList.remove("spinning");
+function startColSpin(col, speedMs){
+  // speedMs 간격으로 col의 3칸을 랜덤 갱신(위→아래 회전 느낌)
+  const tick = () => {
+    // 위->아래 굴러가는 느낌: r0<-r1<-r2<-new
+    const r0 = cells[0][col].img;
+    const r1 = cells[1][col].img;
+    const r2 = cells[2][col].img;
+    r0.src = r1.src;
+    r1.src = r2.src;
+    r2.src = IMG(randSym());
+    perColRunning[col] = setTimeout(tick, speedMs);
   };
-
-  return anim;
+  perColRunning[col] = setTimeout(tick, speedMs);
 }
 
-/* ===============================
-   RESULT / LOCAL DEMO SPIN
-================================ */
-function localSpinResult(){
-  // 프리스핀 "자주" 체감: 28% 확률로 가운데 3개 동일(2~4열)
-  const win = Math.random() < 0.28;
-
-  const grid = Array.from({length:5}, ()=> ["star1","star2","star3"]);
-  // top/bot 랜덤
-  for(let c=0;c<5;c++){
-    grid[c][0] = weightedPick(WEIGHTS);
-    grid[c][2] = weightedPick(WEIGHTS);
-  }
-
-  if(win){
-    // 당첨 심볼은 star에 조금 더 치우치게(체감상 FS 빈번)
-    const pick = weightedPick({
-      star1: 50, star2: 30, star3: 20,
-      pro1: 8, pro2: 7, pro3: 6, pro4: 5, pro5: 4,
-      pro6: 3, pro7: 2, pro8: 1, pro9: 1, pro10: 1
-    });
-
-    // 가운데 줄(2행), 2~4열 동일
-    grid[1][1] = pick;
-    grid[2][1] = pick;
-    grid[3][1] = pick;
-
-    // 1열/5열 가운데는 랜덤(연출)
-    grid[0][1] = weightedPick(WEIGHTS);
-    grid[4][1] = weightedPick(WEIGHTS);
-  }else{
-    // 일부러 가운데 2~4열이 다르게 나오도록
-    let a = weightedPick(WEIGHTS);
-    let b = weightedPick(WEIGHTS);
-    let c = weightedPick(WEIGHTS);
-    // 같아지면 다시
-    if(a===b) b = "pro1";
-    if(b===c) c = "pro2";
-    grid[1][1] = a;
-    grid[2][1] = b;
-    grid[3][1] = c;
-
-    grid[0][1] = weightedPick(WEIGHTS);
-    grid[4][1] = weightedPick(WEIGHTS);
-  }
-
-  // 로컬 정산(데모)
-  const mid = [grid[1][1], grid[2][1], grid[3][1]];
-  let payout = 0;
-  let addFs = 0;
-  if(mid[0]===mid[1] && mid[1]===mid[2]){
-    const sym = mid[0];
-    payout = BET_UT * (PAYTABLE[sym]?.mult || 0);
-    addFs = PAYTABLE[sym]?.fs || 0;
-  }
-
-  const cost = (freeSpins>0) ? 0 : BET_UT;
-  const newBal = Math.max(0, balanceUT - cost + payout);
-  balanceUT = newBal;
-  freeSpins = Math.max(0, freeSpins - (freeSpins>0 ? 1 : 0)) + addFs;
-
-  // 잭팟은 서버에서 쌓이니까 여기선 화면만 유지
-  return { grid, payout, addFs, cost, mode:"local" };
+function stopCol(col){
+  if(perColRunning[col]) clearTimeout(perColRunning[col]);
+  perColRunning[col] = null;
 }
 
-function evaluateWinFromGrid(grid){
-  // 가운데 줄(2행=idx 1), 2~4열(1~3)
-  const s1 = grid[1][1];
-  const s2 = grid[2][1];
-  const s3 = grid[3][1];
-  const win = (s1 === s2 && s2 === s3);
-  return { win, symbol: win ? s1 : null };
+function setLog(text){
+  logEl.textContent = text;
 }
 
-function renderStats(){
-  balUtEl.textContent = `${nf(Math.floor(balanceUT))} UT`;
-  fsCntEl.textContent = `${nf(Math.floor(freeSpins))}`;
-  rateEl.textContent = `${nf(utRate, 4)} USDT`;
-  jpEl.textContent = `${nf(jackpotUSDT, 0)} USDT`;
-}
-
-/* ===============================
-   SPIN FLOW (10s feel)
-================================ */
-async function doSpin(){
+spinBtn.addEventListener("click", async () => {
   if(spinning) return;
   spinning = true;
-  btnSpin.disabled = true;
-  btnSync.disabled = true;
-  focus3.classList.remove("show");
+  spinBtn.disabled = true;
+  syncBtn.disabled = true;
+  winVal.textContent = "0";
+  gridWrap.classList.add("spinning");
+  clearTimers();
 
-  const usingFS = freeSpins > 0;
-  const cost = usingFS ? 0 : BET_UT;
-
-  log(usingFS ? "Free Spin 사용! 릴 가속..." : `SPIN 시작! (-${cost} UT) 릴 가속...`);
-
-  // 먼저 서버 스핀 시도
-  const spinRes = await apiSpin();
-
-  let grid, payout=0, addFs=0;
-
-  if(spinRes.mode === "api"){
-    grid = spinRes.grid;
-
-    // 서버가 payout 등을 주면 활용
-    payout = Number(spinRes.raw?.payoutUT ?? spinRes.raw?.payoutUt ?? spinRes.raw?.winUT ?? spinRes.raw?.winUt ?? 0) || 0;
-    addFs  = Number(spinRes.raw?.addFreeSpins ?? spinRes.raw?.freeSpinAdd ?? spinRes.raw?.fsAdd ?? 0) || 0;
-
-    // 서버가 잔액 업데이트 안주면 로컬로 추정(임시)
-    if(!Number.isFinite(balanceUT) || balanceUT===0){
-      // 최소 표시용
-      balanceUT = Math.max(0, balanceUT - cost + payout);
-    }
-  }else{
-    const local = localSpinResult();
-    grid = local.grid;
-    payout = local.payout;
-    addFs = local.addFs;
-  }
-
-  // 릴 애니메이션 시작: stop 시점은 REEL_STOP_MS 맞춤
-  const startAt = performance.now();
-
-  // 각 릴의 최종 3개(위/중/아래)
-  const stopCols = grid.map(col => [col[0], col[1], col[2]]);
-
-  // 릴 애니메이션: duration은 stopTime에 맞춰 계산
-  const anims = [];
-  for(let i=0;i<5;i++){
-    const stopAtMs = REEL_STOP_MS[i];
-    const duration = clamp(stopAtMs, 1200, 7200);
-    anims.push(animateReelToStop(i, stopCols[i], duration, 0));
-  }
-
-  // “중간 3칸” 강조는 정지 직전부터
-  setTimeout(()=>{ if(fxOn) focus3.classList.add("show"); }, 4600);
-
-  // 마지막 릴 정지 이후 결과 표시
-  setTimeout(()=>{
-    const {win, symbol} = evaluateWinFromGrid(grid);
-
-    renderStats();
-
-    if(win){
-      const mult = PAYTABLE[symbol]?.mult || 0;
-      const fs = PAYTABLE[symbol]?.fs || 0;
-
-      // api 모드인데 payout 0으로 왔으면, 화면 메시지는 mult로 안내만(실정산은 서버 기준)
-      const msgPayout = payout ? `+${nf(payout)} UT` : `x${mult} (서버 정산 기준)`;
-      const msgFs = (addFs || fs) ? ` / FS +${(addFs||fs)}` : "";
-
-      log(`당첨! [${symbol}] 3매치 → ${msgPayout}${msgFs}`, "good");
-    }else{
-      log("꽝! 다음 판 가자.", "bad");
-    }
-
-  }, REEL_STOP_MS[4] + 150);
-
-  // 종료
-  setTimeout(()=>{
+  // 1) 서버에 결과 먼저 받기
+  setLog("SPIN 요청 중...");
+  const result = await api("/slot/spin", { method:"POST", body:{ player:"" }});
+  if(!result?.ok){
+    setApiStatus(false);
+    setLog(`SPIN 실패\n${result?.error || "unknown"}`);
     spinning = false;
-    btnSpin.disabled = false;
-    btnSync.disabled = false;
-  }, 10000);
-}
-
-/* ===============================
-   EVENTS
-================================ */
-btnSpin.addEventListener("click", doSpin);
-btnSync.addEventListener("click", async ()=>{
-  btnSync.disabled = true;
-  log("SYNC 중...");
-  await apiState();
-  btnSync.disabled = false;
-});
-
-tgFx.addEventListener("click", ()=>{
-  fxOn = !fxOn;
-  tgFx.classList.toggle("on", fxOn);
-  tgFx.textContent = fxOn ? "✨ FX ON" : "✨ FX OFF";
-});
-
-tgSound.addEventListener("click", ()=>{
-  // 사운드는 나중에 파일 넣고 연결할 거라 “대기” 토글만 제공
-  soundOn = !soundOn;
-  tgSound.classList.toggle("on", soundOn);
-  tgSound.textContent = soundOn ? "🔊 SOUND ON (대기)" : "🔇 SOUND OFF (대기)";
-});
-
-/* ===============================
-   INIT
-================================ */
-(async function init(){
-  startBg();
-  makeReels();
-
-  const u = getUserFromStorage();
-  if(u) username = u;
-  userTag.textContent = `[${username}]`;
-
-  // UT rate는 메인에서 저장된 값 우선
-  const savedRate = Number(localStorage.getItem("ut_settlement_price"));
-  if(Number.isFinite(savedRate) && savedRate>0) utRate = savedRate;
-
-  // health 체크
-  await apiHealth();
-
-  // 기본 표시값
-  renderStats();
-
-  // 첫 SYNC 자동 시도
-  await apiState();
-
-  // SYNC 실패 시에도 기본 잔액을 좀 보여주기(데모)
-  if(!apiOk){
-    if(!balanceUT) balanceUT = Number(localStorage.getItem("myUtPoints")||0) || 388;
-    renderStats();
+    spinBtn.disabled = false;
+    syncBtn.disabled = false;
+    gridWrap.classList.remove("spinning");
+    return;
   }
-})();
+  setApiStatus(true);
+
+  const finalGrid = result.grid;
+
+  // 2) 10초 타임라인
+  const TOTAL = 10000;
+  const ACCEL = 1500;   // 가속 구간
+  const STEADY = 5000;  // 안정 구간(대충)
+  // 남은 시간은 감속+정지(순차정지)
+
+  setLog("SPIN 시작! (10초)");
+
+  // 2-1) 초기 돌리기(모든 열)
+  for(let c=0;c<COLS;c++){
+    // 시작은 살짝 느리게(가속 느낌)
+    startColSpin(c, 110 - c*5);
+  }
+
+  // 2-2) 가속 후 더 빠르게
+  timers.push(setTimeout(() => {
+    for(let c=0;c<COLS;c++){
+      stopCol(c);
+      startColSpin(c, 55); // 빠르게
+    }
+  }, ACCEL));
+
+  // 2-3) 순차 정지 (뒤->앞 느낌)
+  const stopTimes = [7300, 8000, 8700, 9400, 9800]; // 5열 정지 타이밍(10초 안)
+  for(let i=0;i<COLS;i++){
+    const col = i; // 0~4
+    timers.push(setTimeout(() => {
+      stopCol(col);
+      setColToResult(col, finalGrid);
+    }, stopTimes[i]));
+  }
+
+  // 2-4) 마무리
+  timers.push(setTimeout(() => {
+    gridWrap.classList.remove("spinning");
+
+    // 결과 반영
+    jpVal.textContent = result.jackpot ?? jpVal.textContent;
+    houseVal.textContent = result.house ?? houseVal.textContent;
+
+    const win = result?.result?.win || "0";
+    winVal.textContent = win;
+
+    const winType = result?.result?.winType || "none";
+    const sym = result?.result?.symbol || "-";
+    const mul = result?.result?.multiplier || 0;
+
+    let msg =
+`결과 확정!
+- winType: ${winType}
+- symbol: ${sym}
+- multiplier: x${mul}
+- win: ${win} UT
+- jackpot: ${result.jackpot} UT
+- house(이유송): ${result.house} UT`;
+
+    if(winType === "none"){
+      msg += `\n\n패배금 분배: 베팅의 50%는 Jackpot, 50%는 이유송 수익으로 누적`;
+    } else {
+      msg += `\n\n당첨! (가운데 줄 기준)`;
+    }
+
+    setLog(msg);
+
+    // 버튼 복구
+    spinning = false;
+    spinBtn.disabled = false;
+    syncBtn.disabled = false;
+
+  }, TOTAL));
+});
 </script>
 </body>
 </html>
