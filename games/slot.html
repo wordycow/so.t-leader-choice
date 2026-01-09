@@ -6,352 +6,458 @@
   <title>THE UNIQUE SLOT</title>
 
   <style>
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
-    body{
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-      color:#e5e7eb;
-      background:#020617;
-      overflow-x:hidden;
+    /* =========================================
+       THE "CYBERPUNK NEON VAULT" THEME
+       CSS Overhaul by AI
+    ========================================= */
+
+    :root {
+        /* Core Theme Colors (Neon & Metallic) */
+        --neon-blue: #00f2ff;
+        --neon-purple: #bc13fe;
+        --neon-pink: #ff0055;
+        --neon-gold: #ffd700;
+        --metallic-dark: #1a1a2e;
+        --bg-dark-deep: #05050c;
+
+        /* Dimensions */
+        --cell-w: 150px;
+        --cell-h: 112px;
+        --gap: 14px;
+        --reel-h: calc(var(--cell-h) * 3 + var(--gap) * 2);
     }
 
-    :root{
-      --panel: rgba(15,23,42,.92);
-      --panel2: rgba(2,6,23,.45);
-      --line: rgba(148,163,184,.18);
-      --gold: rgba(245,158,11,.90);
-      --gold2:#fbbf24;
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
 
-      --cell-w:150px;
-      --cell-h:112px;
-      --gap:14px;
-
-      --reel-h: calc(var(--cell-h) * 3 + var(--gap) * 2);
+    /* Body Font & Color */
+    body {
+        font-family: "Montserrat", system-ui, -apple-system, sans-serif; /* 좀 더 모던한 폰트 권장 */
+        color: #e0e0ff;
+        background: var(--bg-dark-deep);
+        overflow-x: hidden;
     }
 
-    .bg{
-      position:fixed;
-      inset:0;
-      z-index:-2;
-      background:
-        radial-gradient(circle at top, rgba(148,163,184,.12), transparent 55%),
-        radial-gradient(circle at 20% 90%, rgba(245,158,11,.10), transparent 45%),
-        #020617;
-      overflow:hidden;
-    }
-    .bg::before{
-      content:"";
-      position:absolute; inset:-20px;
-      background-image: var(--bgimg, none);
-      background-size: cover;
-      background-position: center;
-      filter: blur(10px) brightness(.65) saturate(1.15);
-      opacity: .55;
-      transform: scale(1.08);
-      transition: opacity .55s ease, filter .55s ease;
-    }
-    .bg.flash::before{
-      opacity:.72;
-      filter: blur(8px) brightness(.78) saturate(1.25);
-    }
-    .bg-vignette{
-      position:absolute; inset:0;
-      background: radial-gradient(circle at 50% 35%, rgba(0,0,0,.10), rgba(0,0,0,.70) 70%);
-      z-index:-1;
-      pointer-events:none;
+    /* ================= Background ================= */
+    .bg {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        /* Deep Cyberpunk Gradient Background */
+        background:
+            radial-gradient(circle at 50% 20%, rgba(188, 19, 254, 0.2), transparent 60%), /* Purple top glow */
+            radial-gradient(circle at 20% 80%, rgba(0, 242, 255, 0.15), transparent 50%), /* Blue bottom-left glow */
+            linear-gradient(180deg, #0a0a16 0%, #020205 100%); /* Base dark */
+        overflow: hidden;
     }
 
-    .wrap{
-      max-width: 1100px;
-      margin: 64px auto 40px;
-      padding: 0 16px;
+    /* Background Image Overlay */
+    .bg::before {
+        content: "";
+        position: absolute; inset: 0;
+        background-image: var(--bgimg, none);
+        background-size: cover;
+        background-position: center;
+        /* More dramatic blending */
+        filter: blur(15px) brightness(0.4) saturate(1.5);
+        mix-blend-mode: overlay;
+        opacity: 0.6;
+        transform: scale(1.1);
+        transition: opacity .55s ease, filter .55s ease;
+    }
+    .bg.flash::before {
+        opacity: 0.9;
+        filter: blur(5px) brightness(1.2) saturate(2);
+        mix-blend-mode: screen;
+    }
+    .bg-vignette {
+        position: absolute; inset: 0;
+        background: radial-gradient(circle at center, transparent 10%, rgba(0,0,0,0.8) 90%);
+        z-index: -1;
+        pointer-events: none;
     }
 
-    .card{
-      border-radius: 26px;
-      background: var(--panel);
-      border: 1px solid rgba(245,158,11,.85);
-      box-shadow: 0 0 26px rgba(245,158,11,.35), 0 30px 90px rgba(0,0,0,.92);
-      padding: 22px 22px 18px;
-      backdrop-filter: blur(12px);
-      position:relative;
-      overflow:hidden;
+    .wrap {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px;
     }
 
-    .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom: 14px;
+    /* ================= Main Machine Card (The Frame) ================= */
+    .card {
+        border-radius: 36px;
+        /* Metallic body gradient */
+        background: linear-gradient(160deg, #3a3a5e, #131324 40%, #0a0a12);
+        position: relative;
+        overflow: visible; /* Allow glows to spill out */
+        padding: 30px;
+
+        /* THE NEON BEZEL EFFECT - Layered shadows for depth and glow */
+        border: none;
+        box-shadow:
+            /* Inner metallic rim */
+            inset 0 2px 3px rgba(255,255,255,0.3),
+            inset 0 -2px 5px rgba(0,0,0,0.8),
+            /* The glowing strip */
+            0 0 0 4px #000, /* Black insulator */
+            0 0 0 8px var(--neon-purple), /* Main neon color */
+            0 0 30px var(--neon-purple), /* Outer glow */
+            0 0 60px var(--neon-blue); /* Secondary outer glow */
+        transition: box-shadow 0.3s ease;
     }
-    .title{
-      font-family: "Times New Roman", serif;
-      letter-spacing:.16em;
-      font-weight:800;
-      text-transform:uppercase;
-      color:#f8fafc;
-      font-size: 22px;
-      line-height:1.1;
-    }
-    .sub{
-      margin-top:6px;
-      font-size: 11px;
-      color:#94a3b8;
-      letter-spacing:.08em;
+    /* Slight pulsing glow */
+    .card:hover {
+         box-shadow:
+            inset 0 2px 3px rgba(255,255,255,0.3),
+            inset 0 -2px 5px rgba(0,0,0,0.8),
+            0 0 0 4px #000,
+            0 0 0 8px var(--neon-pink), /* Color shift on hover */
+            0 0 40px var(--neon-pink),
+            0 0 80px var(--neon-purple);
     }
 
-    .status-wrap{display:flex; flex-direction:column; gap:8px; align-items:flex-end;}
-    .status-pill{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(148,163,184,.24);
-      background: rgba(2,6,23,.45);
-      color:#cbd5e1;
-      font-size: 12px;
-      white-space:nowrap;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:50%;
-      background:#94a3b8;
-      box-shadow:0 0 10px rgba(148,163,184,.35);
-    }
-    .dot.ok{
-      background:#22c55e;
-      box-shadow:0 0 14px rgba(34,197,94,.45);
+
+    /* ================= Top Section (Title & Status) ================= */
+    .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(0, 242, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 242, 255, 0.1);
     }
 
-    .sound-btn{
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,.24);
-      background: rgba(2,6,23,.45);
-      color:#cbd5e1;
-      padding: 8px 10px;
-      font-size:12px;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      user-select:none;
+    .title {
+        font-family: "Times New Roman", serif; /* Keep original as requested, or suggest changing */
+        letter-spacing: .1em;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 32px;
+        line-height: 1;
+        /* Gold/Neon text effect */
+        color: var(--neon-gold);
+        text-shadow:
+            0 0 5px var(--neon-gold),
+            0 0 20px var(--neon-pink),
+            2px 2px 2px rgba(0,0,0,0.8);
     }
-    .sound-btn .s-dot{
-      width:10px;height:10px;border-radius:50%;
-      background:#22c55e;
-      box-shadow:0 0 14px rgba(34,197,94,.35);
-    }
-    .sound-btn.off .s-dot{
-      background:#ef4444;
-      box-shadow:0 0 12px rgba(239,68,68,.25);
-    }
-
-    .layout{
-      display:grid;
-      grid-template-columns: 1.10fr 1.90fr;
-      gap: 18px;
-      align-items: stretch;
+    .sub {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--neon-blue);
+        letter-spacing: .08em;
+        opacity: 0.8;
+        text-shadow: 0 0 5px var(--neon-blue);
     }
 
-    .panel{
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: var(--panel2);
-      box-shadow: 0 14px 26px rgba(0,0,0,.6);
-      padding: 14px;
-      min-height: 260px;
+    .status-wrap { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+
+    /* Glowing Pills */
+    .status-pill, .sound-btn {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 14px;
+        border-radius: 999px;
+        /* Glassy neon look */
+        border: 1px solid var(--neon-blue);
+        background: rgba(0, 242, 255, 0.1);
+        box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.2), 0 0 10px rgba(0, 242, 255, 0.2);
+        color: #fff;
+        font-size: 11px;
+        white-space: nowrap;
+        text-shadow: 0 0 5px var(--neon-blue);
+        transition: all 0.3s ease;
+    }
+    .sound-btn { cursor: pointer; user-select: none; }
+    .sound-btn:hover { background: rgba(0, 242, 255, 0.2); box-shadow: 0 0 15px var(--neon-blue); }
+
+    .dot, .sound-btn .s-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #555;
+        box-shadow: 0 0 5px #555;
+        transition: all 0.3s ease;
+    }
+    .dot.ok, .sound-btn .s-dot {
+        background: #0f0;
+        box-shadow: 0 0 10px #0f0, 0 0 20px #0f0; /* Stronger green glow */
+    }
+    .sound-btn.off .s-dot {
+        background: #f00;
+        box-shadow: 0 0 10px #f00, 0 0 20px #f00; /* Stronger red glow */
+        border-color: var(--neon-pink);
+    }
+    .sound-btn.off {
+        border-color: var(--neon-pink);
+        color: var(--neon-pink);
+        text-shadow: 0 0 5px var(--neon-pink);
+        box-shadow: inset 0 0 10px rgba(255, 0, 85, 0.2), 0 0 10px rgba(255, 0, 85, 0.2);
     }
 
-    .kpi{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .kpi .box{
-      border-radius: 14px;
-      background: rgba(15,23,42,.70);
-      border: 1px solid rgba(148,163,184,.16);
-      padding: 10px 12px;
-    }
-    .kpi .label{
-      font-size: 11px;
-      color:#94a3b8;
-      margin-bottom:6px;
-    }
-    .kpi .val{
-      font-size: 18px;
-      font-weight: 900;
-      color:#fff;
-      letter-spacing:.02em;
-    }
-    .kpi .val.gold{ color:var(--gold2); text-shadow:0 0 12px rgba(251,191,36,.25); }
 
-    .log{
-      margin-top: 10px;
-      border-radius: 14px;
-      padding: 10px 12px;
-      background: rgba(2,6,23,.35);
-      border: 1px solid rgba(148,163,184,.14);
-      color:#cbd5e1;
-      font-size: 12px;
-      line-height: 1.45;
-      min-height: 130px;
-      white-space:pre-line;
+    /* ================= Layout & Panels ================= */
+    .layout {
+        display: grid;
+        grid-template-columns: 300px 1fr; /* Fixed width for left panel */
+        gap: 25px;
+        align-items: stretch;
     }
 
-    .slot-stage{
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-      height:100%;
+    .panel {
+        border-radius: 24px;
+        /* Darker, recessed panel look */
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid rgba(0, 242, 255, 0.15);
+        box-shadow:
+            inset 0 0 20px rgba(0,0,0,0.9), /* Deep inset shadow */
+            0 5px 15px rgba(0,0,0,0.5);
+        padding: 20px;
     }
 
-    .grid-wrap{
-      flex: 1 1 auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius: 18px;
-      background: rgba(15,23,42,.55);
-      border: 1px solid var(--line);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
-      padding: 16px;
-      min-height: 390px;
-      position:relative;
-      overflow:hidden;
+    /* ================= Left Panel (KPI & Log) ================= */
+    .kpi {
+        display: flex;
+        flex-direction: column; /* Stack vertically on the left */
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .kpi .box {
+        border-radius: 16px;
+        /* Glowing digital readout look */
+        background: linear-gradient(90deg, rgba(0, 242, 255, 0.05), transparent);
+        border: 1px solid var(--neon-blue);
+        box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.1);
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .kpi .label {
+        font-size: 11px;
+        color: var(--neon-blue);
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .kpi .val {
+        font-size: 20px;
+        font-weight: 900;
+        color: #fff;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    /* Gold value with strong glow */
+    .kpi .val.gold {
+        color: var(--neon-gold);
+        text-shadow:
+            0 0 10px var(--neon-gold),
+            0 0 20px var(--neon-gold);
     }
 
-    /* reels */
-    .reels{
-      display:grid;
-      grid-template-columns: repeat(5, var(--cell-w));
-      gap: var(--gap);
-      align-items:center;
-      justify-content:center;
+    .log {
+        border-radius: 16px;
+        padding: 15px;
+        /* Retro terminal look */
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid rgba(0, 242, 255, 0.3);
+        color: var(--neon-blue);
+        font-family: "Courier New", monospace; /* Terminal font */
+        font-size: 11px;
+        line-height: 1.5;
+        min-height: 150px;
+        white-space: pre-line;
+        box-shadow: inset 0 0 15px rgba(0,0,0,1);
+        text-shadow: 0 0 2px var(--neon-blue);
     }
 
-    .reel-window{
-      width: var(--cell-w);
-      height: var(--reel-h);
-      overflow:hidden;
-      border-radius: 18px;
-      border: 1px solid rgba(148,163,184,.14);
-      background: rgba(2,6,23,.35);
-      box-shadow: 0 14px 28px rgba(0,0,0,.55);
-      position:relative;
+
+    /* ================= Right Panel (Slot Stage) ================= */
+    .slot-stage {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100%;
+        background: rgba(0,0,0,0.4); /* Slightly lighter than left panel */
+        border-color: rgba(188, 19, 254, 0.3); /* Purple tint border */
     }
 
-    .reel-strip{
-      position:absolute;
-      left:0; top:0;
-      width:100%;
-      display:flex;
-      flex-direction:column;
-      gap: var(--gap);
-      will-change: transform;
-      transform: translateY(0px);
+    /* The Screen Area */
+    .grid-wrap {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 20px;
+        /* The main glowing screen */
+        background: #000;
+        border: 3px solid var(--neon-purple);
+        box-shadow:
+            inset 0 0 40px rgba(188, 19, 254, 0.5), /* Inner purple glow */
+            0 0 20px rgba(188, 19, 254, 0.3); /* Outer halo */
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    /* Scanline effect overlay */
+    .grid-wrap::after {
+        content: ""; position: absolute; inset:0;
+        background: repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 2px, transparent 2px, transparent 4px);
+        pointer-events: none; z-index: 10; opacity: 0.5;
     }
 
-    .reel-item{
-      height: var(--cell-h);
-      border-radius: 16px;
-      background: rgba(2,6,23,.55);
-      border: 1px solid rgba(148,163,184,.16);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      position:relative;
-    }
-    .reel-item::after{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(circle at top, rgba(255,255,255,.09), transparent 55%);
-      pointer-events:none;
-    }
-    .reel-item img{
-      width: 92px;
-      height: 92px;
-      object-fit:contain;
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.70));
-      transform: translateZ(0);
+    /* Reels */
+    .reels {
+        display: grid;
+        grid-template-columns: repeat(5, var(--cell-w));
+        gap: var(--gap);
+        align-items: center;
+        justify-content: center;
+        z-index: 2; /* Above paylines */
     }
 
-    .spinning .reel-item img{
-      filter: blur(2.4px) brightness(1.10) drop-shadow(0 14px 22px rgba(0,0,0,.75));
-      transform: translateY(2px) scale(1.02);
+    .reel-window {
+        width: var(--cell-w);
+        height: var(--reel-h);
+        overflow: hidden;
+        border-radius: 12px;
+        border: none;
+        /* Glassy dark window */
+        background: rgba(0,0,0,0.7);
+        box-shadow:
+            inset 0 10px 20px rgba(255,255,255,0.1), /* Top reflection */
+            inset 0 -10px 20px rgba(0,0,0,0.5); /* Bottom shadow */
+        position: relative;
+        /* Thin neon separator lines between reels */
+        border-right: 1px solid rgba(0, 242, 255, 0.2);
+        border-left: 1px solid rgba(0, 242, 255, 0.2);
     }
 
-    .snap .reel-strip{
-      transition: transform .14s ease-out;
+    .reel-strip {
+        position: absolute; left: 0; top: 0;
+        width: 100%; display: flex; flex-direction: column; gap: var(--gap);
+        will-change: transform; transform: translateY(0px);
     }
 
-    /* 페이라인(가운데 줄) */
-    .payline{
-      position:absolute;
-      left: 16px; right: 16px;
-      top: 50%;
-      height: calc(var(--cell-h) + 12px);
-      transform: translateY(-50%);
-      border-radius: 22px;
-      border: 1px solid rgba(251,191,36,.40);
-      box-shadow: 0 0 26px rgba(251,191,36,.14);
-      pointer-events:none;
+    .reel-item {
+        height: var(--cell-h);
+        border-radius: 8px;
+        background: transparent; /* Remove background specifically */
+        border: none;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; position: relative;
+    }
+    .reel-item::after { display: none; } /* Remove old highlight */
+
+    .reel-item img {
+        width: 110px; /* Slightly larger */
+        height: 110px;
+        object-fit: contain;
+        /* Glowing symbols */
+        filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+        transform: translateZ(0);
+        transition: filter 0.3s ease;
     }
 
-    /* 가운데 3릴 강조 (2~4번째) */
-    .mid3{
-      position:absolute;
-      top: 50%;
-      left: 50%;
-      width: calc(var(--cell-w) * 3 + var(--gap) * 2 + 34px);
-      height: calc(var(--cell-h) + 12px);
-      transform: translate(-50%, -50%);
-      border-radius: 22px;
-      border: 1px solid rgba(34,197,94,.35);
-      box-shadow: 0 0 32px rgba(34,197,94,.12);
-      pointer-events:none;
+    .spinning .reel-item img {
+        /* Motion blur with neon streaks */
+        filter: blur(3px) brightness(1.3) drop-shadow(0 5px 20px rgba(0, 242, 255, 0.8));
+        transform: scale(1.05);
     }
 
-    .controls{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    .btn{
-      height: 56px;
-      border-radius: 16px;
-      border: 1px solid rgba(148,163,184,.20);
-      background: rgba(2,6,23,.35);
-      color:#e5e7eb;
-      font-weight: 1000;
-      letter-spacing:.14em;
-      cursor:pointer;
-      box-shadow: 0 16px 30px rgba(0,0,0,.55);
-      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
-      user-select:none;
-    }
-    .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); border-color: rgba(248,250,252,.45); }
-    .btn:active{ transform: translateY(0); }
-    .btn.primary{
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color:#0b1120;
-      border-color: rgba(245,158,11,.75);
-    }
-    .btn:disabled{ cursor:not-allowed; opacity:.55; transform:none; }
+    .snap .reel-strip { transition: transform .14s cubic-bezier(0.175, 0.885, 0.32, 1.275); } /* Bouncier snap */
 
-    @media (max-width: 980px){
-      :root{ --cell-w:120px; --cell-h:96px; --gap:14px; }
-      .layout{ grid-template-columns: 1fr; }
-      .reel-item img{ width:78px;height:78px; }
+    /* Paylines & Highlight */
+    .payline {
+        /* Sharper, brighter laser line */
+        border: 2px solid var(--neon-gold);
+        box-shadow: 0 0 20px var(--neon-gold), inset 0 0 10px var(--neon-gold);
+        background: rgba(255, 215, 0, 0.1);
+        opacity: 0.6;
+        z-index: 1;
     }
-    @media (max-width: 640px){
-      :root{ --cell-w:92px; --cell-h:78px; --gap:10px; }
-      .reel-item img{ width:62px;height:62px; }
+
+    .mid3 {
+        /* Brighter central highlight area */
+        border: 2px solid var(--neon-blue);
+        box-shadow: 0 0 30px var(--neon-blue), inset 0 0 20px rgba(0, 242, 255, 0.3);
+        background: radial-gradient(ellipse at center, rgba(0, 242, 255, 0.2) 0%, transparent 70%);
+        z-index: 1;
     }
-  </style>
+
+    /* ================= Controls (The BIG Button) ================= */
+    .controls {
+        display: grid; grid-template-columns: 1fr; gap: 10px;
+        padding: 0 20px;
+    }
+    .btn {
+        height: 68px; /* Taller button */
+        border-radius: 18px;
+        color: #fff;
+        font-weight: 1000;
+        font-size: 24px; /* Larger font */
+        letter-spacing: .14em;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        border: none;
+    }
+
+    /* 3D Neon Spin Button */
+    .btn.primary {
+        /* Gold to Orange Gradient */
+        background: linear-gradient(to bottom, #ffec00 0%, #ffa600 100%);
+        color: #3a2300; /* Dark text for contrast */
+        text-shadow: 1px 1px 1px rgba(255,255,255,0.7);
+
+        /* 3D Depth and Glow */
+        box-shadow:
+            0 8px 0 #b37700, /* The dark 3D side */
+            0 15px 25px rgba(0,0,0,0.7), /* Drop shadow */
+            0 0 30px var(--neon-gold), /* Gold glow */
+            inset 0 2px 3px rgba(255,255,255,0.6); /* Top shine */
+    }
+    .btn.primary::before {
+        content:""; position: absolute; inset: 4px; border: 2px solid rgba(255,255,255,0.4); border-radius: 14px; pointer-events: none;
+    }
+
+    .btn:hover {
+        filter: brightness(1.15);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 0 #b37700, 0 20px 35px rgba(0,0,0,0.8), 0 0 50px var(--neon-gold);
+    }
+    .btn:active {
+        /* Press down effect */
+        transform: translateY(6px);
+        box-shadow: 0 2px 0 #b37700, 0 5px 10px rgba(0,0,0,0.9), 0 0 20px var(--neon-gold);
+    }
+    .btn:disabled {
+        filter: grayscale(0.8) brightness(0.6);
+        cursor: not-allowed;
+        transform: translateY(6px);
+        box-shadow: 0 2px 0 #333, 0 5px 10px rgba(0,0,0,0.9);
+        color: #777;
+    }
+
+    /* ================= Responsive ================= */
+    @media (max-width: 980px) {
+        :root { --cell-w: 120px; --cell-h: 96px; --gap: 12px; }
+        .layout { grid-template-columns: 1fr; /* Stack panels */ }
+        .kpi { flex-direction: row; /* Horizontal KPI on mobile */ }
+        .kpi .box { flex: 1; flex-direction: column; align-items: flex-start; gap: 5px; }
+        .kpi .val { font-size: 16px; }
+        .reel-item img { width: 90px; height: 90px; }
+        .card { padding: 20px; }
+        .btn { height: 60px; font-size: 20px; }
+    }
+    @media (max-width: 640px) {
+        :root { --cell-w: 90px; --cell-h: 78px; --gap: 8px; }
+        .reel-item img { width: 70px; height: 70px; }
+        .title { font-size: 24px; }
+        .kpi .label { font-size: 9px; }
+    }
+</style>
 </head>
 
 <body>
@@ -362,7 +468,7 @@
       <div class="top">
         <div>
           <div class="title">THE UNIQUE SLOT</div>
-          <div class="sub">3행 × 5릴 · 총 10초 스핀 · 7초부터 순차 정지</div>
+          <div class="sub">PC: 5릴×3행 · Mobile: 3열×5행 · 총 10초 스핀 · 7초부터 순차 정지</div>
         </div>
 
         <div class="status-wrap">
@@ -409,6 +515,15 @@
           <div class="controls">
             <button class="btn primary" id="spinBtn">SPIN</button>
           </div>
+
+          <!-- ✅ 하단 족보(페이테이블) -->
+          <div class="panel paytable" id="paytable">
+            <div class="pay-title">
+              <div class="h">PAYTABLE</div>
+              <div class="hint">3개 일치 기준(서버 룰에 따라 실제 배당은 변경 가능)</div>
+            </div>
+            <div class="pay-grid" id="payGrid"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -430,7 +545,7 @@ function setRandomSlide(flash=true){
   bgEl.style.setProperty("--bgimg", `url("${pick}")`);
   if(flash){
     bgEl.classList.add("flash");
-    setTimeout(()=>bgEl.classList.remove("flash"), 450);
+    setTimeout(()=>bgEl.classList.remove("flash"), 420);
   }
 }
 
@@ -442,6 +557,52 @@ const SYMBOLS = [
   "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
 ];
 const IMG = (id) => `img/slot/${id}.png`;
+
+/** =========================
+ *  페이테이블(족보) - “이미지처럼” 카드로 렌더
+ *  (실제 배당은 API 룰이 최종이니 여기 숫자는 연출용)
+ * ========================= */
+const PAYTABLE = [
+  { id:"star1", label:"STAR I",  mul:"x1" },
+  { id:"star2", label:"STAR II", mul:"x2" },
+  { id:"star3", label:"STAR III",mul:"x3" },
+  { id:"pro1",  label:"PRO I",   mul:"x4" },
+  { id:"pro2",  label:"PRO II",  mul:"x5" },
+  { id:"pro3",  label:"PRO III", mul:"x6" },
+  { id:"pro4",  label:"PRO IV",  mul:"x7" },
+  { id:"pro5",  label:"PRO V",   mul:"x8" },
+  { id:"pro6",  label:"PRO VI",  mul:"x9" },
+  { id:"pro7",  label:"PRO VII", mul:"x10" },
+  { id:"pro8",  label:"PRO VIII",mul:"x12" },
+  { id:"pro9",  label:"PRO IX",  mul:"x15" },
+  { id:"pro10", label:"PRO X",   mul:"x20" }
+];
+
+function renderPaytable(){
+  const grid = document.getElementById("payGrid");
+  grid.innerHTML = "";
+  PAYTABLE.forEach(p=>{
+    const card = document.createElement("div");
+    card.className = "pay-card";
+    const img = document.createElement("img");
+    img.src = IMG(p.id);
+    img.alt = p.label;
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = p.label;
+
+    const mul = document.createElement("div");
+    mul.className = "mul";
+    mul.textContent = p.mul;
+
+    card.appendChild(img);
+    card.appendChild(name);
+    card.appendChild(mul);
+    grid.appendChild(card);
+  });
+}
+renderPaytable();
 
 /** =========================
  *  DOM
@@ -468,23 +629,49 @@ function setApiStatus(ok){
 }
 
 /** =========================
- *  player 처리 (missing_user 방지)
- *  - URL ?u=xxx 우선
- *  - 없으면 localStorage
- *  - 스핀 클릭 때만 prompt
+ *  닉네임 연동 강화
+ *  - URL ?u= 우선
+ *  - 없으면 localStorage 여러 키 탐색
  * ========================= */
+const PLAYER_KEYS = [
+  "slot_player",
+  "nickname","user","player","guest","username",
+  "so_t_nickname","soTNickname","sot_nickname",
+  "so.t_nickname","the_unique_nickname","unique_nickname"
+];
+
+function readPlayerFromStorage(){
+  for(const k of PLAYER_KEYS){
+    const v = (localStorage.getItem(k) || "").trim();
+    if(v) return v;
+  }
+  return "";
+}
+function savePlayerAllKeys(v){
+  try{
+    localStorage.setItem("slot_player", v);
+    // 기존 시스템이 쓰는 키도 같이 채워주기 (연동 체감 ↑)
+    localStorage.setItem("nickname", v);
+    localStorage.setItem("user", v);
+    localStorage.setItem("player", v);
+  }catch(e){}
+}
+
 function getPlayer(askIfMissing=false){
   const qs = new URLSearchParams(location.search);
   const u = (qs.get("u") || qs.get("user") || qs.get("player") || qs.get("nickname") || "").trim();
-  if(u){ localStorage.setItem("slot_player", u); return u; }
+  if(u){
+    savePlayerAllKeys(u);
+    return u;
+  }
 
-  const saved = (localStorage.getItem("slot_player") || "").trim();
+  const saved = readPlayerFromStorage();
   if(saved) return saved;
 
   if(!askIfMissing) return "";
   const p = prompt("닉네임(플레이어)을 입력하세요", "yusong");
   if(p && p.trim()){
-    localStorage.setItem("slot_player", p.trim());
+    savePlayerAllKeys(p.trim());
     return p.trim();
   }
   return "";
@@ -507,8 +694,7 @@ async function api(path, opt){
 }
 
 /** =========================
- *  사운드 (games/sounds/)
- *  - mp3 / MP3 둘 다 자동 시도 (404 대비)
+ *  사운드 (mp3/MP3 fallback)
  * ========================= */
 function makeAudio(candidates, {loop=false, volume=1}={}){
   let idx = 0;
@@ -516,7 +702,6 @@ function makeAudio(candidates, {loop=false, volume=1}={}){
   a.preload = "auto";
   a.loop = loop;
   a.volume = volume;
-
   a.addEventListener("error", () => {
     if(idx < candidates.length - 1){
       idx++;
@@ -554,49 +739,35 @@ let AUDIO_UNLOCKED = false;
 function unlockAudio(){
   if(AUDIO_UNLOCKED) return;
   AUDIO_UNLOCKED = true;
-
-  // 클릭 제스처 순간에 "무음 재생→정지"로 오디오 정책 우회
   Object.values(SFX).forEach(a=>{
     try{
       const v = a.volume;
       a.volume = 0.001;
       a.play().then(()=>{
-        a.pause();
-        a.currentTime = 0;
-        a.volume = v;
+        a.pause(); a.currentTime = 0; a.volume = v;
       }).catch(()=>{ a.volume = v; });
     }catch(e){}
   });
 }
-
 function playOne(aud){
   if(!SOUND_ON) return;
-  try{
-    aud.pause();
-    aud.currentTime = 0;
-    aud.play();
-  }catch(e){}
+  try{ aud.pause(); aud.currentTime = 0; aud.play(); }catch(e){}
 }
 function startSpinLoop(){
   if(!SOUND_ON) return;
-  try{
-    SFX.spin.currentTime = 0;
-    SFX.spin.play();
-  }catch(e){}
+  try{ SFX.spin.currentTime = 0; SFX.spin.play(); }catch(e){}
 }
 function stopSpinLoop(){
-  try{
-    SFX.spin.pause();
-    SFX.spin.currentTime = 0;
-  }catch(e){}
+  try{ SFX.spin.pause(); SFX.spin.currentTime = 0; }catch(e){}
 }
 
 /** =========================
- *  Reel UI 만들기 (5릴)
+ *  Reel UI 만들기
+ *  - PC: 5개의 “세로 릴”
+ *  - Mobile: 5개의 “가로 릴”(= 3열×5행)
  * ========================= */
 const REELS = 5;
-const VISIBLE = 3;
-const BUFFER = 14; // 스트립 아이템 개수(클수록 부드러움)
+const BUFFER = 14;
 
 function randSym(){
   return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
@@ -611,11 +782,17 @@ function makeItem(sym){
   return div;
 }
 
-const reels = []; // {window, strip, raf, running, offset, speed, stepPx}
+const reels = []; // {window, strip, raf, running, offset, speed, stepPx, axis}
+
+function isMobileLayout(){
+  return window.matchMedia("(max-width: 640px)").matches;
+}
 
 function buildReels(){
   reelsEl.innerHTML = "";
   reels.length = 0;
+
+  const axis = isMobileLayout() ? "x" : "y"; // 모바일은 가로 스트립, PC는 세로 스트립
 
   for(let i=0;i<REELS;i++){
     const win = document.createElement("div");
@@ -624,11 +801,10 @@ function buildReels(){
     const strip = document.createElement("div");
     strip.className = "reel-strip";
 
-    // 초기: 위에서 내려오는 느낌을 위해 랜덤 + 마지막 3개는 star1로 채우기
     for(let k=0;k<BUFFER;k++){
       strip.appendChild(makeItem(randSym()));
     }
-    // 보이는 3개는 초기값(원하면 변경 가능)
+    // 보이는 3개 초기(연출)
     strip.appendChild(makeItem("star1"));
     strip.appendChild(makeItem("star1"));
     strip.appendChild(makeItem("star1"));
@@ -643,27 +819,38 @@ function buildReels(){
       running: false,
       offset: 0,
       speed: 0,
-      stepPx: null
+      stepPx: null,
+      axis
     });
   }
 
-  // stepPx 측정 (아이템 높이 + gap)
+  // stepPx 측정
   requestAnimationFrame(() => {
     const firstStrip = reels[0]?.strip;
     const firstItem = firstStrip?.querySelector(".reel-item");
     if(!firstItem) return;
 
-    const h = firstItem.getBoundingClientRect().height;
+    const rect = firstItem.getBoundingClientRect();
     const gap = parseFloat(getComputedStyle(firstStrip).gap || "0") || 0;
-    const step = h + gap;
 
+    const step = (axis === "y" ? rect.height : rect.width) + gap;
     reels.forEach(r => r.stepPx = step);
   });
 }
 buildReels();
 
+// 화면 크기 변화 시 재구성
+let lastMobile = isMobileLayout();
+window.addEventListener("resize", () => {
+  const now = isMobileLayout();
+  if(now !== lastMobile){
+    lastMobile = now;
+    buildReels();
+  }
+});
+
 /** =========================
- *  Reel 애니메이션 (아래로 휙휙)
+ *  Reel 애니메이션
  * ========================= */
 function startReel(i, speed){
   const r = reels[i];
@@ -675,15 +862,23 @@ function startReel(i, speed){
   const tick = () => {
     if(!r.running) return;
 
-    r.offset += r.speed; // 아래로 이동
-    r.strip.style.transform = `translateY(${r.offset}px)`;
+    r.offset += r.speed;
 
-    // offset이 step 이상이면 "맨 아래 아이템 제거 + 맨 위에 새로 추가"로 이어붙이기
+    if(r.axis === "y"){
+      r.strip.style.transform = `translateY(${r.offset}px)`;
+    }else{
+      r.strip.style.transform = `translateX(${r.offset}px)`;
+    }
+
     while(r.offset >= r.stepPx){
       r.offset -= r.stepPx;
-      r.strip.style.transform = `translateY(${r.offset}px)`;
 
-      // 아래로 흐르는 효과: 마지막 제거, 위에 추가
+      if(r.axis === "y"){
+        r.strip.style.transform = `translateY(${r.offset}px)`;
+      }else{
+        r.strip.style.transform = `translateX(${r.offset}px)`;
+      }
+
       const last = r.strip.lastElementChild;
       if(last) r.strip.removeChild(last);
       r.strip.prepend(makeItem(randSym()));
@@ -703,57 +898,46 @@ function stopReel(i){
   r.raf = null;
 }
 
-function snapReelToResult(i, topMidBot){
+function snapReelToResult(i, three){
   const r = reels[i];
   if(!r) return;
 
   stopReel(i);
 
-  // 스냅 애니메이션(톡)
   gridWrap.classList.add("snap");
   r.strip.innerHTML = "";
 
-  // 위쪽 buffer 몇 개
+  for(let k=0;k<6;k++) r.strip.appendChild(makeItem(randSym()));
+  // PC: top/mid/bot, Mobile: left/mid/right (같은 배열 사용)
+  r.strip.appendChild(makeItem(three[0]));
+  r.strip.appendChild(makeItem(three[1]));
+  r.strip.appendChild(makeItem(three[2]));
   for(let k=0;k<6;k++) r.strip.appendChild(makeItem(randSym()));
 
-  // 실제 보이는 3개
-  r.strip.appendChild(makeItem(topMidBot[0]));
-  r.strip.appendChild(makeItem(topMidBot[1]));
-  r.strip.appendChild(makeItem(topMidBot[2]));
-
-  // 아래쪽 buffer 몇 개
-  for(let k=0;k<6;k++) r.strip.appendChild(makeItem(randSym()));
-
-  // 보이게 위치 조정:
-  // buffer(6개) 만큼 위로 올려서 3개가 창에 딱 보이게 만들고, 살짝 튕김
   const step = r.stepPx || 0;
-  const baseY = -(step * 6);
+  const base = -(step * 6);
 
-  r.offset = baseY + 18;
-  r.strip.style.transform = `translateY(${r.offset}px)`;
+  r.offset = base + 18;
+  if(r.axis === "y"){
+    r.strip.style.transform = `translateY(${r.offset}px)`;
+  }else{
+    r.strip.style.transform = `translateX(${r.offset}px)`;
+  }
 
   requestAnimationFrame(() => {
-    r.offset = baseY;
-    r.strip.style.transform = `translateY(${r.offset}px)`;
+    r.offset = base;
+    if(r.axis === "y"){
+      r.strip.style.transform = `translateY(${r.offset}px)`;
+    }else{
+      r.strip.style.transform = `translateX(${r.offset}px)`;
+    }
     setTimeout(()=>gridWrap.classList.remove("snap"), 180);
   });
 }
 
 /** =========================
- *  Spin 시퀀스 (10초 고정 / 7초부터 1릴씩 정지)
+ *  BOOT
  * ========================= */
-let spinning = false;
-let timers = [];
-
-function clearTimers(){
-  timers.forEach(t=>clearTimeout(t));
-  timers = [];
-}
-
-function stopAllReels(){
-  for(let i=0;i<REELS;i++) stopReel(i);
-}
-
 (async function boot(){
   setRandomSlide(false);
 
@@ -764,6 +948,7 @@ function stopAllReels(){
     setLog(`API 연결 실패\n${st?.error || "unknown"}\n\nAPI_BASE 확인 필요`);
     return;
   }
+
   setApiStatus(true);
   betVal.textContent = st.bet ?? 10;
   jpVal.textContent = st.jackpot ?? 0;
@@ -771,9 +956,19 @@ function stopAllReels(){
   const p = getPlayer(false);
   setLog(
 `READY
-player: ${p ? p : "(없음)"}`
+player: ${p ? p : "(자동 연동 대기)"}`
   );
 })();
+
+/** =========================
+ *  SPIN (10초 고정 / 7초부터 릴 순차 정지)
+ * ========================= */
+let spinning = false;
+let timers = [];
+function clearTimers(){
+  timers.forEach(t=>clearTimeout(t));
+  timers = [];
+}
 
 spinBtn.addEventListener("click", async () => {
   unlockAudio();
@@ -781,7 +976,7 @@ spinBtn.addEventListener("click", async () => {
 
   const player = getPlayer(true);
   if(!player){
-    setLog("닉네임이 필요합니다.\nURL: ?u=닉네임  또는 새로고침 후 입력");
+    setLog("닉네임이 필요합니다.\nURL: ?u=닉네임  또는 저장된 닉네임 연동");
     return;
   }
 
@@ -795,7 +990,7 @@ spinBtn.addEventListener("click", async () => {
   gridWrap.classList.add("spinning");
   clearTimers();
 
-  // 먼저 서버에서 결과 확보
+  // 서버에서 결과 먼저 확보
   setLog("SPIN...");
   const q = `?u=${encodeURIComponent(player)}&user=${encodeURIComponent(player)}&player=${encodeURIComponent(player)}&nickname=${encodeURIComponent(player)}`;
   const result = await api(`/slot/spin${q}`, {
@@ -806,16 +1001,16 @@ spinBtn.addEventListener("click", async () => {
   if(!result?.ok){
     setApiStatus(false);
     gridWrap.classList.remove("spinning");
-    stopAllReels();
     stopSpinLoop();
     setLog(`SPIN 실패\n${result?.error || "unknown"}`);
     spinning = false;
     spinBtn.disabled = false;
     return;
   }
+
   setApiStatus(true);
 
-  // 스핀 시작 (즉시)
+  // 스핀 시작
   startSpinLoop();
   setLog("SPIN! (10s)\n7초부터 릴이 하나씩 멈춥니다.");
 
@@ -824,37 +1019,31 @@ spinBtn.addEventListener("click", async () => {
     startReel(i, 22 + i*1.4);
   }
 
-  // 타임라인
   const TOTAL_SPIN_MS = 10000;
   const STOP_START_MS = 7000;
   const STOP_STEP_MS  = 650;
 
-  // final grid: result.grid[rows][cols] (3x5)
-  const finalGrid = result.grid;
+  const finalGrid = result.grid; // [3][5]
 
-  // 7초부터 각 릴 감속 → 정지 → 결과 스냅
   for(let i=0;i<REELS;i++){
     const stopAt = STOP_START_MS + i * STOP_STEP_MS;
 
     timers.push(setTimeout(() => {
-      // 감속1
       reels[i].speed = Math.max(10, reels[i].speed * 0.60);
     }, Math.max(0, stopAt - 650)));
 
     timers.push(setTimeout(() => {
-      // 감속2
       reels[i].speed = Math.max(6, reels[i].speed * 0.55);
     }, Math.max(0, stopAt - 300)));
 
     timers.push(setTimeout(() => {
-      // 스냅
-      // top/mid/bot = finalGrid[0..2][i]
+      // ✅ PC: 릴 i = 열 i (top/mid/bot)
+      // ✅ Mobile: 릴 i = “행”처럼 보이지만, 데이터는 동일하게 열 i를 사용 (3열×5행으로 자연스럽게 transpose됨)
       snapReelToResult(i, [finalGrid[0][i], finalGrid[1][i], finalGrid[2][i]]);
       playOne(SFX.stop);
     }, stopAt));
   }
 
-  // 끝 처리 (10초 고정)
   timers.push(setTimeout(() => {
     gridWrap.classList.remove("spinning");
     stopSpinLoop();
