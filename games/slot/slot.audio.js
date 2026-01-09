@@ -1,106 +1,94 @@
-// games/slot/slot_audio.js
+// games/slot/slot.audio.js
 window.SLOT = window.SLOT || {};
 (function (S) {
+  const sounds = {};
+  let unlocked = false;
+  let spinLoop = null;
+  let enabled = true;
 
-  const BASE = "sounds/"; // /games/sounds/
-
-  // ✅ 너의 실제 파일명 그대로(대문자 .MP3 + 철자 포함)
-  const FILES = {
+  // ✅ 파일명/확장자 정확히: GitHub Pages는 대소문자 구분
+  const MAP = {
     start:   "start-button-sound.MP3",
-    spin:    "spining-sound.MP3",       // ⚠️ 파일명이 spining 이면 그대로 써야함
+    spin:    "spining-sound.MP3",
     stop:    "stop-stop-stop-sound.MP3",
     win:     "win-sound.MP3",
     lose:    "lose-sound.MP3",
     jackpot: "jackpot-sound.MP3",
   };
 
-  const audio = {};
-  let enabled = true;
-  let unlocked = false;
-  let spinLoop = null;
+  function urlOf(key){
+    return `sounds/${MAP[key]}`;
+  }
 
-  function loadOne(key) {
-    const a = new Audio(BASE + FILES[key]);
+  function loadOne(key){
+    const a = new Audio(urlOf(key));
     a.preload = "auto";
-    a.addEventListener("error", () => {
-      // 404여도 게임은 계속 돌게(사운드만 무시)
-      audio[key] = null;
-    });
-    audio[key] = a;
+    sounds[key] = a;
   }
 
-  function preload() {
-    Object.keys(FILES).forEach(loadOne);
-    // spin 루프는 별도(Audio loop)
-    const s = new Audio(BASE + FILES.spin);
-    s.preload = "auto";
-    s.loop = true;
-    spinLoop = s;
+  function init(){
+    Object.keys(MAP).forEach(loadOne);
+
+    const btn = document.getElementById("soundBtn");
+    if(btn){
+      btn.addEventListener("click", () => {
+        enabled = !enabled;
+        const t = document.getElementById("soundText");
+        if(t) t.textContent = enabled ? "SOUND: ON" : "SOUND: OFF";
+      });
+    }
   }
 
-  function play(key) {
-    if (!enabled || !unlocked) return;
-    const a = audio[key];
-    if (!a) return;
-    try {
-      a.currentTime = 0;
-      a.play().catch(() => {});
-    } catch (_) {}
-  }
-
-  function startSpinSound() {
-    if (!enabled || !unlocked || !spinLoop) return;
-    try {
-      spinLoop.currentTime = 0;
-      spinLoop.play().catch(() => {});
-    } catch (_) {}
-  }
-
-  function stopSpinSound() {
-    if (!spinLoop) return;
-    try {
-      spinLoop.pause();
-      spinLoop.currentTime = 0;
-    } catch (_) {}
-  }
-
-  function unlockAudio() {
-    if (unlocked) return;
+  function unlockAudio(){
+    if(unlocked) return;
     unlocked = true;
 
-    // iOS: 유저 제스처 이후에만 가능
-    try {
-      const a = new Audio(BASE + FILES.start);
+    // 모바일 정책: 최초 제스처에서 한 번 재생/정지로 unlock
+    try{
+      const a = sounds.start;
       a.muted = true;
-      a.play().then(() => {
+      a.play().then(()=>{
         a.pause();
         a.currentTime = 0;
         a.muted = false;
-      }).catch(() => {});
-    } catch (_) {}
+      }).catch(()=>{});
+    }catch(e){}
   }
 
-  function setEnabled(on) {
-    enabled = !!on;
-    localStorage.setItem("slot_sound_on", enabled ? "1" : "0");
-    if (!enabled) stopSpinSound();
+  function playOne(key){
+    if(!enabled) return;
+    const a = sounds[key];
+    if(!a) return;
+    try{
+      a.pause();
+      a.currentTime = 0;
+      a.play().catch(()=>{});
+    }catch(e){}
   }
 
-  function getEnabled() {
-    const saved = localStorage.getItem("slot_sound_on");
-    enabled = (saved === null) ? true : saved === "1";
-    return enabled;
+  function startSpinSound(){
+    if(!enabled) return;
+    const a = sounds.spin;
+    if(!a) return;
+    try{
+      a.loop = true;
+      a.currentTime = 0;
+      a.play().catch(()=>{});
+      spinLoop = a;
+    }catch(e){}
   }
 
-  // public API (slot_app.js가 쓰는 이름 유지)
-  S.audio = {
-    preload,
-    unlockAudio,
-    playOne: play,
-    startSpinSound,
-    stopSpinSound,
-    setEnabled,
-    getEnabled,
-  };
+  function stopSpinSound(){
+    if(spinLoop){
+      try{
+        spinLoop.pause();
+        spinLoop.currentTime = 0;
+      }catch(e){}
+    }
+    spinLoop = null;
+  }
 
+  init();
+
+  S.audio = { unlockAudio, playOne, startSpinSound, stopSpinSound };
 })(window.SLOT);
