@@ -240,6 +240,7 @@
       display:flex;
       flex-direction:column;
       justify-content:center;
+      min-height:0; /* 내부 스크롤/오버플로 안정 */
     }
 
     .wm-card.wallet{ border-color:#fbbf24; justify-content:space-between; }
@@ -254,8 +255,46 @@
     .mining-title{ color:#fff; font-size:14px; font-weight:800; display:flex; align-items:center; gap:6px; }
     .mining-badge{ font-size:11px; background: rgba(251,191,36,0.2); padding:4px 8px; border-radius:12px; color:#fff; }
 
-    .video-frame{ position:relative; width:100%; padding-bottom:56.25%; height:0; background:#000; border-radius:12px; overflow:hidden; border:1px solid #334155; }
-    .video-frame iframe{ position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+    /* ✅ (수정) 영상 프레임: 고정 높이로 */
+    :root{
+      --wallet-tab-h: 520px; /* 두 탭 높이 동일하게 유지 */
+      --video-h: 260px;      /* 영상 프레임 높이 */
+    }
+
+    #tab-main, #tab-transfer{ min-height: var(--wallet-tab-h); }
+
+    #tab-main .wallet-mining-grid,
+    #tab-transfer .wallet-mining-grid{
+      height: var(--wallet-tab-h);
+      align-items: stretch;
+    }
+
+    #tab-main .wm-card,
+    #tab-transfer .wm-card{
+      height: 100%;
+      min-height: 0;
+    }
+
+    .video-frame{
+      position:relative;
+      width:100%;
+      height: var(--video-h);
+      background:#000;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid #334155;
+    }
+    /* 유튜브 플레이어/iframe 꽉 채우기 */
+    #youtube-player,
+    #youtube-player iframe,
+    .video-frame iframe{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
     .mining-status{ font-size:13px; font-weight:700; color:#94a3b8; margin-top:10px; text-align:center; }
     .mining-status.done{ color:#4ade80; }
 
@@ -301,52 +340,49 @@
     .transfer-form label{ display:block; font-size:12px; color:#94a3b8; margin-bottom:6px; margin-top:12px; }
     .fund-input{ width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:10px; border-radius:6px; font-size:13px; }
     .transfer-btn{ width:100%; background:#3b82f6; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:900; margin-top:14px; cursor:pointer; }
+
     /* ====== history ====== */
-.history-list{
-  margin-top:18px;
-  padding-top:14px;
-  border-top:1px solid rgba(255,255,255,0.1);
+    .history-list{
+      margin-top:18px;
+      padding-top:14px;
+      border-top:1px solid rgba(255,255,255,0.1);
+      display:flex;
+      flex-direction:column;
+      min-height:0; /* 중요 */
+    }
 
-  display:flex;
-  flex-direction:column;
-  min-height:0; /* 중요 */
-}
+    .history-title{
+      font-size:14px;
+      color:#cbd5e1;
+      font-weight:800;
+      margin-bottom:10px;
+    }
 
-.history-title{
-  font-size:14px;
-  color:#cbd5e1;
-  font-weight:800;
-  margin-bottom:10px;
-}
+    /* ✅ 최근내역 스크롤 박스 */
+    #history-container{
+      height:150px;       /* 요청: 150px */
+      overflow:auto;
+      padding-right:6px;
+    }
 
-/* ✅ 최근내역 스크롤 박스 */
-#history-container{
-  height:150px;       /* 조절 가능 */
-  overflow:auto;
-  padding-right:6px;
-}
+    /* 비어있을 때 문구 기본 스타일 */
+    .history-empty{
+      font-size:12px;
+      color:#64748b;
+      text-align:center;
+      padding:20px 0;
+    }
 
-/* 비어있을 때 문구용(필요하면 JS에서 비어있을 때만 class 붙이기) */
-.history-empty{
-  font-size:12px;
-  color:#64748b;
-  text-align:center;
-  padding:20px 0;
-}
-
-/* 스크롤바(선택) */
-#history-container::-webkit-scrollbar{ width:8px; }
-#history-container::-webkit-scrollbar-thumb{
-  background: rgba(148,163,184,0.35);
-  border-radius:999px;
-}
-#history-container::-webkit-scrollbar-track{
-  background: rgba(2,6,23,0.2);
-  border-radius:999px;
-}
-
-    .history-title{ font-size:14px; color:#cbd5e1; font-weight:800; margin-bottom:10px; }
-    .history-empty{ font-size:12px; color:#64748b; text-align:center; padding:20px 0; }
+    /* 스크롤바(선택) */
+    #history-container::-webkit-scrollbar{ width:8px; }
+    #history-container::-webkit-scrollbar-thumb{
+      background: rgba(148,163,184,0.35);
+      border-radius:999px;
+    }
+    #history-container::-webkit-scrollbar-track{
+      background: rgba(2,6,23,0.2);
+      border-radius:999px;
+    }
 
     /* ====== layout below ====== */
     .layout{
@@ -643,6 +679,12 @@
       .wallet-mining-grid{ grid-template-columns: 1fr; }
       .tb-header{ flex-direction:column; align-items:flex-start; gap:8px; }
       .tb-header-right{ justify-content:flex-start; }
+
+      /* ✅ 모바일에서는 고정 높이 해제 */
+      #tab-main, #tab-transfer{ min-height:auto; }
+      #tab-main .wallet-mining-grid,
+      #tab-transfer .wallet-mining-grid{ height:auto; }
+      .video-frame{ height:220px; }
     }
   </style>
 </head>
