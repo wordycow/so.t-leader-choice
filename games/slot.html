@@ -158,7 +158,6 @@
       white-space:pre-line;
     }
 
-    /* 슬롯 */
     .slot-stage{
       display:flex;
       flex-direction:column;
@@ -214,7 +213,6 @@
       transform: translateZ(0);
     }
 
-    /* 페이라인(가운데 줄) */
     .payline{
       position:absolute;
       left: 16px; right: 16px;
@@ -227,7 +225,6 @@
       pointer-events:none;
     }
 
-    /* 가운데 3칸 강조 */
     .mid3{
       position:absolute;
       top: 50%;
@@ -241,7 +238,6 @@
       pointer-events:none;
     }
 
-    /* 스핀 중: 더 “휙휙” 느낌 */
     .spinning .cell img{
       filter: blur(2.2px) brightness(1.10) drop-shadow(0 12px 20px rgba(0,0,0,.75));
       transform: translateY(1px) scale(1.02);
@@ -314,7 +310,6 @@
       </div>
 
       <div class="layout">
-        <!-- 좌측 -->
         <div class="panel">
           <div class="kpi">
             <div class="box">
@@ -334,7 +329,6 @@
           <div class="log" id="log">준비 중...</div>
         </div>
 
-        <!-- 우측 슬롯 -->
         <div class="panel slot-stage">
           <div class="grid-wrap" id="gridWrap">
             <div class="payline"></div>
@@ -354,42 +348,50 @@
 /** =========================
  *  설정
  * ========================= */
-// ✅ 너의 Worker 도메인으로 바꿔!!
 const API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
 /** =========================
  *  MP3 (games/sounds/ 폴더)
+ *  - GitHub Pages는 대소문자 엄격
+ *  - .MP3가 없으면 .mp3로 fallback 시도
  * ========================= */
-const SFX = {
-  start:   new Audio("sounds/start-button-sound.MP3"),
-  spin:    new Audio("sounds/spining-sound.MP3"),
-  stop:    new Audio("sounds/stop-stop-stop-sound.MP3"),
-  win:     new Audio("sounds/win-sound.MP3"),
-  lose:    new Audio("sounds/lose-sound.MP3"),
-  jackpot: new Audio("sounds/jackpot-sound.MP3"),
-};
-SFX.spin.loop = true;
+function mkAudio(file){
+  const a = new Audio();
+  a.preload = "auto";
+  a.src = `sounds/${file}`;
+  a.addEventListener("error", () => {
+    const alt = file.replace(/\.MP3$/i, ".mp3");
+    if(alt !== file) a.src = `sounds/${alt}`;
+  }, { once:true });
+  return a;
+}
 
-// iOS/Chrome 정책: 첫 클릭 전 재생 막힘 방지(미리 준비)
-Object.values(SFX).forEach(a => { a.preload = "auto"; a.volume = 0.85; });
+const SFX = {
+  start: mkAudio("start-button-sound.MP3"),
+  spin: mkAudio("spining-sound.MP3"),
+  stop: mkAudio("stop-stop-stop-sound.MP3"),
+  win: mkAudio("win-sound.MP3"),
+  lose: mkAudio("lose-sound.MP3"),
+  jackpot: mkAudio("jackpot-sound.MP3"),
+};
+
+SFX.spin.loop = true;
+SFX.spin.volume = 0.9;
+SFX.start.volume = 0.9;
+SFX.stop.volume = 0.9;
+SFX.win.volume = 1.0;
+SFX.lose.volume = 1.0;
+SFX.jackpot.volume = 1.0;
 
 let SOUND_ON = true;
-const soundBtn = document.getElementById("soundBtn");
-const soundText = document.getElementById("soundText");
-soundBtn.addEventListener("click", () => {
-  SOUND_ON = !SOUND_ON;
-  soundBtn.classList.toggle("on", SOUND_ON);
-  soundText.textContent = SOUND_ON ? "SOUND: ON" : "SOUND: OFF";
-  if(!SOUND_ON){
-    try{ SFX.spin.pause(); SFX.spin.currentTime = 0; }catch(e){}
-  }
-});
-function playOne(a){
+let AUDIO_UNLOCKED = false;
+
+function playOne(aud){
   if(!SOUND_ON) return;
   try{
-    a.pause();
-    a.currentTime = 0;
-    a.play();
+    aud.pause();
+    aud.currentTime = 0;
+    aud.play();
   }catch(e){}
 }
 function startSpinLoop(){
@@ -400,7 +402,36 @@ function startSpinLoop(){
   }catch(e){}
 }
 function stopSpinLoop(){
-  try{ SFX.spin.pause(); SFX.spin.currentTime = 0; }catch(e){}
+  try{
+    SFX.spin.pause();
+    SFX.spin.currentTime = 0;
+  }catch(e){}
+}
+function stopAllSounds(){
+  try{
+    Object.values(SFX).forEach(a=>{
+      a.pause();
+      a.currentTime = 0;
+    });
+  }catch(e){}
+}
+
+function unlockAudio(){
+  if(AUDIO_UNLOCKED) return;
+  AUDIO_UNLOCKED = true;
+
+  // 클릭 순간 "무음 재생"으로 오디오 권한 확보
+  Object.values(SFX).forEach(a=>{
+    try{
+      const v = a.volume;
+      a.volume = 0.001;
+      a.play().then(()=>{
+        a.pause();
+        a.currentTime = 0;
+        a.volume = v;
+      }).catch(()=>{ a.volume = v; });
+    }catch(e){}
+  });
 }
 
 /** =========================
@@ -427,7 +458,9 @@ const winVal = $("winVal");
 const logEl = $("log");
 const dot = $("dot");
 const apiText = $("apiText");
-const cardEl = $("card");
+
+const soundBtn = $("soundBtn");
+const soundText = $("soundText");
 
 function setLog(t){ logEl.textContent = t; }
 function setApiStatus(ok){
@@ -436,18 +469,32 @@ function setApiStatus(ok){
 }
 
 /** =========================
+ *  사운드 토글
+ * ========================= */
+soundBtn.addEventListener("click", () => {
+  unlockAudio();
+  SOUND_ON = !SOUND_ON;
+  soundBtn.classList.toggle("on", SOUND_ON);
+  soundText.textContent = SOUND_ON ? "SOUND: ON" : "SOUND: OFF";
+  if(!SOUND_ON){
+    stopSpinLoop();
+    stopAllSounds();
+  }
+});
+
+/** =========================
  *  player 처리 (missing_user 방지)
- *  - URL ?u=yusong 우선
- *  - 없으면 localStorage
- *  - 둘 다 없으면 prompt
  * ========================= */
 function getPlayer(){
   const qs = new URLSearchParams(location.search);
-  const u = (qs.get("u") || "").trim();
+  const u =
+    (qs.get("u") || qs.get("user") || qs.get("player") || qs.get("nickname") || "").trim();
+
   if(u){
     localStorage.setItem("slot_player", u);
     return u;
   }
+
   const saved = (localStorage.getItem("slot_player") || "").trim();
   if(saved) return saved;
 
@@ -517,25 +564,33 @@ function clearTimers(){
 function randSym(){
   return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
 }
+
+/**
+ * ✅ 아래로 흐르는 릴
+ *  - r0(위)에 새 이미지가 들어오고
+ *  - r0 -> r1 -> r2 로 내려감
+ */
 function startColSpin(col, speedMs){
   const tick = () => {
     const r0 = cells[0][col].img;
     const r1 = cells[1][col].img;
     const r2 = cells[2][col].img;
 
-    // 아래로 굴러가는 느낌: r2 <- new, r1 <- r2, r0 <- r1
-    r0.src = r1.src;
-    r1.src = r2.src;
-    r2.src = IMG(randSym());
+    const newTop = IMG(randSym());
+    r2.src = r1.src;
+    r1.src = r0.src;
+    r0.src = newTop;
 
     perColRunning[col] = setTimeout(tick, speedMs);
   };
   perColRunning[col] = setTimeout(tick, speedMs);
 }
+
 function stopCol(col){
   if(perColRunning[col]) clearTimeout(perColRunning[col]);
   perColRunning[col] = null;
 }
+
 function setColToResult(col, grid){
   for(let r=0;r<ROWS;r++){
     const id = grid[r][col];
@@ -544,7 +599,7 @@ function setColToResult(col, grid){
 }
 
 /** =========================
- *  초기 상태(가벼운 ping)
+ *  초기 상태
  * ========================= */
 (async function boot(){
   setLog("준비 중...");
@@ -566,7 +621,7 @@ function setColToResult(col, grid){
 spinBtn.addEventListener("click", async () => {
   if(spinning) return;
 
-  // ✅ 사운드 정책 때문에 “클릭 순간”에 한번 실행해야 안정적
+  unlockAudio();
   playOne(SFX.start);
 
   const player = getPlayer();
@@ -580,10 +635,16 @@ spinBtn.addEventListener("click", async () => {
   winVal.textContent = "0";
   gridWrap.classList.add("spinning");
   clearTimers();
+
+  // ✅ 스핀 사운드: 스핀 진행 중 계속
   startSpinLoop();
 
   setLog("SPIN 요청 중...");
-  const result = await api("/slot/spin", { method:"POST", body:{ player } });
+  const q = `?u=${encodeURIComponent(player)}&user=${encodeURIComponent(player)}&player=${encodeURIComponent(player)}&nickname=${encodeURIComponent(player)}`;
+  const result = await api(`/slot/spin${q}`, {
+    method:"POST",
+    body:{ player, user:player, u:player, nickname:player }
+  });
 
   if(!result?.ok){
     setApiStatus(false);
@@ -611,7 +672,7 @@ spinBtn.addEventListener("click", async () => {
   const stopTimes = Array.from({length: COLS}, (_, i) => STOP_START_MS + i * STOP_STEP_MS);
 
   stopTimes.forEach((t, col) => {
-    // 감속 느낌: 2단
+    // 감속 2단 + 정지
     timers.push(setTimeout(() => {
       stopCol(col);
       startColSpin(col, 85);
