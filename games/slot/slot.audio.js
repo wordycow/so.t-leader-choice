@@ -5,12 +5,11 @@ window.SLOT = window.SLOT || {};
   let enabled = true;
   let unlocked = false;
 
-  // ✅ stop 사운드(긴 MP3)를 "틱"처럼 쓰기 위해 잘라서 재생
-  const STOP_TICK_MS = 110; // 90~180 사이 취향 조절
+  // ✅ stop 사운드가 3초짜리여도 "틱"처럼 쓰기 위해 잘라서 재생
+  const STOP_TICK_MS = 110; // 90~150 추천
 
   function src(name) {
-    // slot.html이 games/ 아래 → sounds 폴더는 games/sounds/
-    // 파일 확장자는 전부 .MP3 (대문자)
+    // games/slot.html 기준 sounds 폴더는 games/sounds/
     return `sounds/${name}.MP3`;
   }
 
@@ -24,7 +23,6 @@ window.SLOT = window.SLOT || {};
   }
 
   function init() {
-    // ✅ 실제 파일명 매핑 (확장자/대소문자 주의: .MP3)
     audio.start = makeAudio("start-button-sound", { volume: 0.9 });
     audio.win = makeAudio("win-sound", { volume: 0.9 });
     audio.lose = makeAudio("lose-sound", { volume: 0.9 });
@@ -41,7 +39,6 @@ window.SLOT = window.SLOT || {};
     if (unlocked) return;
     unlocked = true;
 
-    // iOS/모바일: 사용자 제스처 이후 한 번 play/pause로 언락
     const tryUnlock = (a) => {
       try {
         a.muted = true;
@@ -61,7 +58,6 @@ window.SLOT = window.SLOT || {};
         }
       } catch (_) {}
     };
-
     Object.values(audio).forEach(tryUnlock);
   }
 
@@ -75,11 +71,9 @@ window.SLOT = window.SLOT || {};
     return enabled;
   }
 
-  // ✅ 어디서 playOne("stop") 호출하든 자동으로 틱 처리
   function playOne(key) {
-    if (!enabled) return;
     if (key === "stop") return playStopTick();
-
+    if (!enabled) return;
     const a = audio[key];
     if (!a) return;
 
@@ -104,24 +98,19 @@ window.SLOT = window.SLOT || {};
     } catch (_) {}
   }
 
-  // ✅ 긴 STOP 파일을 "틱" 소리처럼 사용 (짧게 끊기)
   function playStopTick() {
     if (!enabled) return;
     const base = audio.stop;
     if (!base) return;
 
     try {
-      // cloneNode로 겹쳐도 자연스럽게 (릴 5개 연속 멈춤 대응)
       const a = base.cloneNode();
       a.volume = base.volume;
       a.currentTime = 0;
 
       a.play().catch(() => {});
       setTimeout(() => {
-        try {
-          a.pause();
-          a.currentTime = 0;
-        } catch (_) {}
+        try { a.pause(); a.currentTime = 0; } catch (_) {}
       }, STOP_TICK_MS);
     } catch (_) {}
   }
