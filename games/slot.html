@@ -12,24 +12,35 @@
       font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
       color:#e5e7eb;
       background:#020617;
-      background-image:
-        radial-gradient(circle at top, rgba(148,163,184,.16), transparent 55%),
-        radial-gradient(circle at 20% 90%, rgba(245,158,11,.12), transparent 45%),
-        radial-gradient(circle at 80% 10%, rgba(236,72,153,.10), transparent 55%);
       overflow-x:hidden;
     }
 
-    :root{
-      --cell-w: 158px;
-      --cell-h: 112px;
-      --gap: 14px;
-      --img: 92px;
-      --line-h: calc(var(--cell-h) + 22px);
+    /* --- 배경(슬라이드 이미지가 있으면 분위기 확 살아남) --- */
+    .bg{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:-1;
+      background:
+        radial-gradient(circle at top, rgba(148,163,184,.18), transparent 55%),
+        radial-gradient(circle at 20% 90%, rgba(245,158,11,.12), transparent 45%);
+    }
+    .bg::before{
+      content:"";
+      position:absolute; inset:-20px;
+      background: url("img/slot/slide1.png") center/cover no-repeat;
+      opacity:.18;
+      filter: blur(2px) saturate(1.15);
+      transform: scale(1.03);
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(2,6,23,.35), rgba(2,6,23,.95) 65%, rgba(2,6,23,1));
     }
 
     .wrap{
-      max-width: 1180px;
-      margin: 64px auto 40px;
+      max-width: 1140px;
+      margin: 54px auto 44px;
       padding: 0 16px;
     }
 
@@ -37,14 +48,23 @@
       border-radius: 26px;
       background: rgba(15,23,42,.92);
       border: 1px solid rgba(245,158,11,.85);
-      box-shadow:
-        0 0 26px rgba(245,158,11,.45),
-        0 0 40px rgba(236,72,153,.10),
-        0 30px 90px rgba(0,0,0,.92);
-      padding: 22px 22px 18px;
+      box-shadow: 0 0 26px rgba(245,158,11,.45), 0 30px 90px rgba(0,0,0,.92);
+      padding: 18px 18px 18px;
       backdrop-filter: blur(12px);
       position:relative;
+      overflow:hidden;
     }
+
+    /* --- “네온 프레임” 느낌(슬라이드 1~8 돌려서 빛나는 효과) --- */
+    .marquee{
+      position:absolute;
+      inset:0;
+      opacity:.20;
+      mix-blend-mode: screen;
+      filter: saturate(1.25) contrast(1.05);
+      pointer-events:none;
+    }
+    .marquee.hidden{display:none}
 
     .top{
       display:flex;
@@ -55,13 +75,12 @@
     }
     .title{
       font-family: "Times New Roman", serif;
-      letter-spacing:.16em;
+      letter-spacing:.18em;
       font-weight:900;
       text-transform:uppercase;
       color:#f8fafc;
       font-size: 22px;
       line-height:1.1;
-      text-shadow: 0 0 16px rgba(236,72,153,.22);
     }
     .sub{
       margin-top:6px;
@@ -72,12 +91,13 @@
 
     .right-tools{
       display:flex;
-      flex-direction:column;
-      gap:8px;
-      align-items:flex-end;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
 
-    .status-pill{
+    .pill{
       display:flex;
       gap:8px;
       align-items:center;
@@ -88,6 +108,7 @@
       color:#cbd5e1;
       font-size: 12px;
       white-space:nowrap;
+      user-select:none;
     }
     .dot{
       width:10px;height:10px;border-radius:50%;
@@ -99,40 +120,27 @@
       box-shadow:0 0 14px rgba(34,197,94,.45);
     }
 
-    .sound-pill{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(236,72,153,.25);
-      background: rgba(2,6,23,.45);
-      color:#fbcfe8;
-      font-size: 12px;
+    .pill-btn{
       cursor:pointer;
-      user-select:none;
-      box-shadow: 0 14px 26px rgba(0,0,0,.45);
       transition: transform .12s ease, filter .12s ease, border-color .12s ease;
     }
-    .sound-pill:hover{
-      transform: translateY(-1px);
-      filter: brightness(1.06);
-      border-color: rgba(236,72,153,.45);
-    }
-    .sound-pill .s-ico{
+    .pill-btn:hover{ transform: translateY(-1px); filter: brightness(1.06); border-color: rgba(248,250,252,.45); }
+    .pill-btn:active{ transform: translateY(0); }
+
+    .sound-dot{
       width:10px;height:10px;border-radius:50%;
-      background:#fb7185;
-      box-shadow: 0 0 14px rgba(251,113,133,.45);
-    }
-    .sound-pill.on .s-ico{
       background:#22c55e;
-      box-shadow: 0 0 14px rgba(34,197,94,.45);
+      box-shadow:0 0 14px rgba(34,197,94,.45);
+    }
+    .sound-off .sound-dot{
+      background:#ef4444;
+      box-shadow:0 0 14px rgba(239,68,68,.45);
     }
 
     .layout{
       display:grid;
-      grid-template-columns: 1.15fr 1.85fr;
-      gap: 18px;
+      grid-template-columns: 1.05fr 1.95fr;
+      gap: 16px;
       align-items: stretch;
     }
 
@@ -143,11 +151,14 @@
       box-shadow: 0 14px 26px rgba(0,0,0,.6);
       padding: 14px;
       min-height: 260px;
+      position:relative;
+      overflow:hidden;
     }
 
+    /* --- KPI --- */
     .kpi{
       display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
+      grid-template-columns: repeat(3, minmax(0,1fr));
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -168,137 +179,156 @@
       color:#fff;
       letter-spacing:.02em;
     }
-    .kpi .val.gold{ color:#fbbf24; text-shadow:0 0 12px rgba(251,191,36,.25); }
+    .kpi .val.gold{
+      color:#fbbf24;
+      text-shadow:0 0 12px rgba(251,191,36,.25);
+    }
 
     .log{
       margin-top: 10px;
       border-radius: 14px;
-      padding: 10px 12px;
+      padding: 12px 12px;
       background: rgba(2,6,23,.35);
       border: 1px solid rgba(148,163,184,.14);
       color:#cbd5e1;
       font-size: 12px;
       line-height: 1.45;
-      min-height: 92px;
+      min-height: 134px;
       white-space:pre-line;
     }
 
-    /* 슬롯 그리드 */
-    .slot-stage{
+    /* --- 슬롯 머신 영역 --- */
+    .machine{
+      height:100%;
       display:flex;
       flex-direction:column;
-      gap: 12px;
-      height:100%;
+      gap:12px;
     }
 
-    .grid-wrap{
+    .reel-stage{
       flex: 1 1 auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius: 18px;
+      border-radius: 20px;
       background: rgba(15,23,42,.55);
       border: 1px solid rgba(148,163,184,.18);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
       padding: 14px;
-      min-height: 360px;
+      min-height: 420px;
       position:relative;
       overflow:hidden;
     }
 
-    /* 네온 라이트 테두리(살짝) */
-    .grid-wrap::before{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius: 20px;
-      background:
-        radial-gradient(circle at 20% 30%, rgba(236,72,153,.18), transparent 40%),
-        radial-gradient(circle at 80% 20%, rgba(56,189,248,.12), transparent 45%),
-        radial-gradient(circle at 50% 90%, rgba(251,191,36,.10), transparent 50%);
-      pointer-events:none;
-      filter: blur(10px);
-      opacity:.9;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(5, var(--cell-w));
-      grid-template-rows: repeat(3, var(--cell-h));
-      gap: var(--gap);
-      position:relative;
-      z-index:1;
-    }
-
-    .cell{
-      border-radius: 18px;
-      background: rgba(2,6,23,.55);
-      border: 1px solid rgba(148,163,184,.16);
-      box-shadow: 0 10px 22px rgba(0,0,0,.55);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      overflow:hidden;
-    }
-    .cell::after{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(circle at top, rgba(255,255,255,.10), transparent 55%);
-      pointer-events:none;
-    }
-
-    /* ✅ 이미지 크게 */
-    .cell img{
-      width: var(--img);
-      height: var(--img);
-      object-fit: contain;
-      filter: drop-shadow(0 8px 16px rgba(0,0,0,.70));
-      transform: translateZ(0);
-      will-change: transform, filter;
-    }
-
-    /* ✅ 핑핑 도는 느낌(스핀 중) */
-    @keyframes spinPing {
-      0%   { transform: rotate(0deg)   scale(1.03); }
-      100% { transform: rotate(360deg) scale(1.03); }
-    }
-    .spinning .cell img{
-      animation: spinPing 0.20s linear infinite;
-      filter: blur(2.6px) brightness(1.12) drop-shadow(0 10px 18px rgba(0,0,0,.75));
-    }
-
-    /* 페이라인(가운데 줄) 표시 */
+    /* 가운데 페이라인/미들3 강조(보기 좋게만 남김) */
     .payline{
       position:absolute;
-      left: 16px; right: 16px;
+      left: 14px; right: 14px;
       top: 50%;
-      height: var(--line-h);
+      height: 150px;
       transform: translateY(-50%);
       border-radius: 18px;
-      border: 1px solid rgba(251,191,36,.40);
-      box-shadow: 0 0 26px rgba(251,191,36,.14);
+      border: 1px solid rgba(251,191,36,.30);
+      box-shadow: 0 0 26px rgba(251,191,36,.10);
       pointer-events:none;
-      z-index:2;
     }
-
-    /* 가운데 3칸(2~4번째 릴) 강조 */
     .mid3{
       position:absolute;
       top: 50%;
       left: 50%;
-      width: calc(var(--cell-w) * 3 + var(--gap) * 2 + 24px);
-      height: var(--line-h);
+      height: 150px;
       transform: translate(-50%, -50%);
       border-radius: 18px;
-      border: 1px solid rgba(34,197,94,.38);
-      box-shadow: 0 0 30px rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.30);
+      box-shadow: 0 0 30px rgba(34,197,94,.10);
       pointer-events:none;
-      z-index:2;
+    }
+
+    /* --- 릴 --- */
+    :root{
+      --cell: 132px;
+      --gap: 12px;
+      --sym: 112px; /* 이미지 크기 */
+      --rowH: 132px; /* 한 칸 높이 */
+    }
+
+    .reels{
+      height:100%;
+      display:grid;
+      grid-template-columns: repeat(5, var(--cell));
+      gap: var(--gap);
+      justify-content:center;
+      align-content:center;
+      padding: 6px;
+    }
+
+    .reel{
+      width: var(--cell);
+      height: calc(var(--rowH) * 3 + var(--gap) * 2);
+      border-radius: 18px;
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(148,163,184,.16);
+      box-shadow: 0 10px 22px rgba(0,0,0,.55);
+      overflow:hidden;
+      position:relative;
+    }
+    .reel::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(circle at top, rgba(255,255,255,.08), transparent 60%);
+      pointer-events:none;
+    }
+
+    .strip{
+      position:absolute;
+      top:0; left:0; right:0;
+      will-change: transform;
+    }
+
+    .sym{
+      height: var(--rowH);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-bottom: 1px solid rgba(148,163,184,.10);
+    }
+    .sym:last-child{border-bottom:0}
+
+    .sym img{
+      width: var(--sym);
+      height: var(--sym);
+      object-fit:contain;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.70));
+      transform: translateZ(0);
+    }
+
+    /* 스핀 중: 더 화려하게 */
+    .spinning .sym img{
+      filter: blur(1.4px) brightness(1.08) drop-shadow(0 12px 18px rgba(0,0,0,.75));
+    }
+
+    /* 릴 잠금(착 감기는 느낌) */
+    .reel.lock{
+      animation: lockPop .22s ease-out;
+      border-color: rgba(251,191,36,.45);
+      box-shadow: 0 0 28px rgba(251,191,36,.14), 0 10px 22px rgba(0,0,0,.55);
+    }
+    @keyframes lockPop{
+      0%{ transform: scale(1); }
+      60%{ transform: scale(1.02); }
+      100%{ transform: scale(1); }
+    }
+
+    /* 전체 결과 플래시 */
+    .flash-win{
+      animation: winFlash .7s ease-in-out;
+    }
+    @keyframes winFlash{
+      0%{ box-shadow: 0 0 0 rgba(34,197,94,0); }
+      40%{ box-shadow: 0 0 70px rgba(34,197,94,.22), 0 30px 90px rgba(0,0,0,.92); }
+      100%{ box-shadow: 0 0 0 rgba(34,197,94,0); }
     }
 
     .controls{
       display:grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
     }
     .btn{
@@ -307,12 +337,13 @@
       border: 1px solid rgba(148,163,184,.20);
       background: rgba(2,6,23,.35);
       color:#e5e7eb;
-      font-weight: 900;
-      letter-spacing:.10em;
+      font-weight: 950;
+      letter-spacing:.12em;
       cursor:pointer;
       box-shadow: 0 16px 30px rgba(0,0,0,.55);
       transition: transform .12s ease, filter .12s ease, border-color .12s ease;
       user-select:none;
+      text-transform:uppercase;
     }
     .btn:hover{ transform: translateY(-1px); filter: brightness(1.06); border-color: rgba(248,250,252,.45); }
     .btn:active{ transform: translateY(0); }
@@ -327,44 +358,53 @@
       transform:none;
     }
 
-    .tip{
-      margin-top:10px;
-      font-size:11px;
-      color:#94a3b8;
-      line-height:1.4;
-    }
-
-    @media (max-width: 1100px){
-      :root{ --cell-w: 142px; --cell-h: 104px; --gap: 12px; --img: 86px; }
+    /* 반응형 */
+    @media (max-width: 1020px){
+      :root{
+        --cell: 118px;
+        --sym: 102px;
+        --rowH: 118px;
+        --gap: 10px;
+      }
       .layout{ grid-template-columns: 1fr; }
-    }
-    @media (max-width: 820px){
-      :root{ --cell-w: 118px; --cell-h: 92px; --gap: 10px; --img: 76px; }
+      .kpi{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .mid3{ width: calc(var(--cell) * 3 + var(--gap) * 2 + 12px); }
     }
     @media (max-width: 640px){
-      :root{ --cell-w: 92px; --cell-h: 76px; --gap: 10px; --img: 60px; }
-      .btn{ height: 48px; }
+      :root{
+        --cell: 92px;
+        --sym: 78px;
+        --rowH: 92px;
+        --gap: 8px;
+      }
+      .kpi{ grid-template-columns: 1fr; }
+      .reel-stage{ min-height: 360px; }
+      .mid3{ width: calc(var(--cell) * 3 + var(--gap) * 2 + 12px); }
     }
   </style>
 </head>
 
 <body>
+  <div class="bg"></div>
+
   <div class="wrap">
-    <div class="card">
+    <div class="card" id="card">
+      <img id="marquee" class="marquee" src="img/slot/slide1.png" alt="" onerror="this.classList.add('hidden')">
+
       <div class="top">
         <div>
           <div class="title">THE UNIQUE SLOT</div>
-          <div class="sub">3행 × 5열 · 가운데 3개 맞추기 · 1판 10초</div>
+          <div class="sub">릴이 아래로 확 돌고, 딱 멈추는 “진짜 슬롯” 버전</div>
         </div>
 
         <div class="right-tools">
-          <div class="status-pill">
+          <div class="pill">
             <span id="dot" class="dot"></span>
             <span id="apiText">API: 대기</span>
           </div>
 
-          <div id="soundToggle" class="sound-pill on" role="button" tabindex="0">
-            <span class="s-ico"></span>
+          <div id="soundPill" class="pill pill-btn">
+            <span class="sound-dot"></span>
             <span id="soundText">SOUND: ON</span>
           </div>
         </div>
@@ -383,40 +423,25 @@
               <div class="val"><span id="jpVal">0</span></div>
             </div>
             <div class="box">
-              <div class="label">House · 이유송 수익 (UT)</div>
-              <div class="val"><span id="houseVal">0</span></div>
-            </div>
-            <div class="box">
-              <div class="label">마지막 당첨</div>
+              <div class="label">Last Win</div>
               <div class="val gold"><span id="winVal">0</span> UT</div>
             </div>
           </div>
 
           <div class="log" id="log">불러오는 중...</div>
-
-          <div class="tip">
-            - 판정 라인: 가운데 줄(2번째 줄)의 <b>중간 3칸(2~4번째 릴)</b><br/>
-            - 패배 시: 베팅의 <b>50%</b>는 Jackpot, <b>50%</b>는 이유송 수익으로 누적<br/>
-            - Jackpot은 월 1회 정도 “수동 지급” 컨셉(자동 당첨 X)
-          </div>
         </div>
 
         <!-- 우측 슬롯 -->
-        <div class="panel slot-stage">
-          <div class="grid-wrap" id="gridWrap">
+        <div class="panel machine">
+          <div class="reel-stage" id="stage">
             <div class="payline"></div>
-            <div class="mid3"></div>
-            <div class="grid" id="grid"></div>
+            <div class="mid3" id="mid3"></div>
+
+            <div class="reels" id="reels"></div>
           </div>
 
           <div class="controls">
             <button class="btn primary" id="spinBtn">SPIN</button>
-            <button class="btn" id="syncBtn">SYNC</button>
-          </div>
-
-          <div class="tip">
-            이미지 파일 경로: <code>games/img/slot/star1.png ~ pro10.png</code><br/>
-            API는 코드 상단의 <code>API_BASE</code>만 맞추면 끝.
           </div>
         </div>
       </div>
@@ -425,9 +450,9 @@
 
 <script>
 /** =========================
- *  설정 (여기만 바꿔)
+ *  설정 (여기만 바꾸면 됨)
  * ========================= */
-const API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev"; // ✅ 실도메인 박아둠
+const API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev"; // ✅ 유송 Worker 주소로 교체 가능
 
 /** =========================
  *  심볼/이미지
@@ -442,149 +467,38 @@ const IMG = (id) => `img/slot/${id}.png`;
  *  DOM
  * ========================= */
 const $ = (id) => document.getElementById(id);
-const gridEl = $("grid");
-const gridWrap = $("gridWrap");
+const reelsEl = $("reels");
+const stageEl = $("stage");
 const spinBtn = $("spinBtn");
-const syncBtn = $("syncBtn");
-
 const betVal = $("betVal");
 const jpVal = $("jpVal");
-const houseVal = $("houseVal");
 const winVal = $("winVal");
 const logEl = $("log");
 const dot = $("dot");
 const apiText = $("apiText");
+const cardEl = $("card");
 
-const soundToggle = $("soundToggle");
-const soundText = $("soundText");
-
-/** =========================
- *  SOUND (WebAudio - 파일 없이 즉시 소리)
- *  - 브라우저 정책상 "클릭 후"부터 소리 가능
- * ========================= */
-let SFX_ON = true;
-let audioCtx = null;
-let tickInterval = null;
-
-function ensureAudio(){
-  if(!SFX_ON) return false;
-  if(!audioCtx){
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-  }
-  if(audioCtx.state === "suspended"){
-    audioCtx.resume();
-  }
-  return true;
-}
-
-function tone(freq=440, dur=0.06, type="sine", vol=0.06){
-  if(!ensureAudio()) return;
-  const t0 = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, t0);
-
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start(t0);
-  o.stop(t0 + dur + 0.02);
-}
-
-function whoosh(){
-  if(!ensureAudio()) return;
-  const t0 = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-
-  o.type = "sawtooth";
-  o.frequency.setValueAtTime(140, t0);
-  o.frequency.exponentialRampToValueAtTime(900, t0 + 0.25);
-  o.frequency.exponentialRampToValueAtTime(220, t0 + 0.55);
-
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.03);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.60);
-
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start(t0);
-  o.stop(t0 + 0.62);
-}
-
-function startTicks(){
-  if(!ensureAudio()) return;
-  stopTicks();
-  tickInterval = setInterval(() => {
-    // 가벼운 슬롯 "딸깍" 소리
-    tone(950 + Math.random()*120, 0.018, "square", 0.03);
-  }, 110);
-}
-function stopTicks(){
-  if(tickInterval){
-    clearInterval(tickInterval);
-    tickInterval = null;
-  }
-}
-
-function clunk(){
-  tone(140, 0.08, "triangle", 0.07);
-}
-function winJingle(){
-  // 짧은 승리 멜로디
-  tone(659, 0.10, "sine", 0.07);
-  setTimeout(()=>tone(784, 0.10, "sine", 0.07), 120);
-  setTimeout(()=>tone(988, 0.12, "sine", 0.08), 240);
-}
-function loseBuzz(){
-  tone(180, 0.12, "sawtooth", 0.05);
-}
-
-/** 사운드 토글 */
-function renderSound(){
-  soundToggle.classList.toggle("on", SFX_ON);
-  soundText.textContent = SFX_ON ? "SOUND: ON" : "SOUND: OFF";
-}
-soundToggle.addEventListener("click", () => {
-  SFX_ON = !SFX_ON;
-  if(!SFX_ON) stopTicks();
-  renderSound();
-});
-soundToggle.addEventListener("keydown", (e)=>{
-  if(e.key === "Enter" || e.key === " "){
-    e.preventDefault();
-    soundToggle.click();
-  }
-});
-renderSound();
+const marquee = $("marquee");
+let marqueeIdx = 1;
+let marqueeTimer = null;
 
 /** =========================
- *  그리드 만들기(3x5)
+ *  Player (missing_user 방지용)
  * ========================= */
-const ROWS = 3, COLS = 5;
-const cells = []; // [r][c] => {img}
-function makeGrid(){
-  gridEl.innerHTML = "";
-  for(let r=0;r<ROWS;r++){
-    cells[r] = [];
-    for(let c=0;c<COLS;c++){
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      const img = document.createElement("img");
-      img.alt = "symbol";
-      img.src = IMG("star1");
-      cell.appendChild(img);
-      gridEl.appendChild(cell);
-      cells[r][c] = { cell, img };
-    }
-  }
+function getPlayer(){
+  // 1) URL ?u=xxx 우선
+  const u = new URLSearchParams(location.search).get("u");
+  if(u){ localStorage.setItem("unique_player", u); return u; }
+
+  // 2) localStorage
+  const saved = localStorage.getItem("unique_player");
+  if(saved) return saved;
+
+  // 3) 기본값
+  localStorage.setItem("unique_player", "guest");
+  return "guest";
 }
-makeGrid();
+const PLAYER = getPlayer();
 
 /** =========================
  *  API helpers
@@ -604,189 +518,395 @@ function setApiStatus(ok){
 }
 
 /** =========================
- *  상태 SYNC
+ *  WebAudio (외부 mp3 없이 사운드 구현)
+ * ========================= */
+let soundOn = (localStorage.getItem("slot_sound") ?? "on") === "on";
+const soundPill = $("soundPill");
+const soundText = $("soundText");
+
+function renderSoundUI(){
+  soundText.textContent = soundOn ? "SOUND: ON" : "SOUND: OFF";
+  soundPill.classList.toggle("sound-off", !soundOn);
+  localStorage.setItem("slot_sound", soundOn ? "on" : "off");
+}
+renderSoundUI();
+
+soundPill.addEventListener("click", async () => {
+  soundOn = !soundOn;
+  renderSoundUI();
+  // 첫 클릭에서 오디오 컨텍스트 unlock
+  if(soundOn) await ensureAudio();
+});
+
+let audioCtx = null;
+let masterGain = null;
+let spinLoopOsc = null;
+let spinLoopGain = null;
+
+async function ensureAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.45;
+  masterGain.connect(audioCtx.destination);
+
+  // iOS/Chrome 정책: 사용자 제스처로 resume 필요할 수 있음
+  if(audioCtx.state === "suspended"){
+    try{ await audioCtx.resume(); }catch(e){}
+  }
+}
+
+function beep({freq=440, dur=0.08, type="sine", gain=0.15} = {}){
+  if(!soundOn) return;
+  ensureAudio().then(() => {
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    o.connect(g);
+    g.connect(masterGain);
+
+    o.start(t0);
+    o.stop(t0 + dur + 0.02);
+  });
+}
+
+function clickStop(){
+  // 릴 멈출 때 “딱” 소리
+  beep({freq: 220 + Math.random()*60, dur:0.05, type:"square", gain:0.10});
+}
+
+function winJingle(){
+  // 당첨 “띵띵띵”
+  beep({freq: 523.25, dur:0.10, type:"sine", gain:0.16}); // C5
+  setTimeout(()=>beep({freq: 659.25, dur:0.10, type:"sine", gain:0.16}), 120); // E5
+  setTimeout(()=>beep({freq: 783.99, dur:0.12, type:"sine", gain:0.18}), 240); // G5
+}
+
+function loseThud(){
+  // 꽝 “둔”
+  beep({freq: 110, dur:0.12, type:"sawtooth", gain:0.12});
+}
+
+function startSpinLoop(){
+  if(!soundOn) return;
+  ensureAudio().then(() => {
+    stopSpinLoop();
+    spinLoopOsc = audioCtx.createOscillator();
+    spinLoopGain = audioCtx.createGain();
+    spinLoopOsc.type = "triangle";
+    const t = audioCtx.currentTime;
+
+    spinLoopOsc.frequency.setValueAtTime(42, t);
+    spinLoopOsc.frequency.exponentialRampToValueAtTime(62, t + 0.35);
+
+    spinLoopGain.gain.setValueAtTime(0.0001, t);
+    spinLoopGain.gain.exponentialRampToValueAtTime(0.11, t + 0.08);
+
+    spinLoopOsc.connect(spinLoopGain);
+    spinLoopGain.connect(masterGain);
+    spinLoopOsc.start();
+  });
+}
+
+function stopSpinLoop(){
+  if(!audioCtx) return;
+  const t = audioCtx.currentTime;
+  try{
+    if(spinLoopGain){
+      spinLoopGain.gain.cancelScheduledValues(t);
+      spinLoopGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    }
+    if(spinLoopOsc){
+      spinLoopOsc.stop(t + 0.14);
+    }
+  }catch(e){}
+  spinLoopOsc = null;
+  spinLoopGain = null;
+}
+
+/** =========================
+ *  Marquee(슬라이드 1~8 순환)
+ * ========================= */
+function startMarquee(){
+  if(!marquee || marquee.classList.contains("hidden")) return;
+  stopMarquee();
+  marqueeTimer = setInterval(() => {
+    marqueeIdx++;
+    if(marqueeIdx > 8) marqueeIdx = 1;
+    marquee.src = `img/slot/slide${marqueeIdx}.png`;
+  }, 90);
+}
+function stopMarquee(){
+  if(marqueeTimer) clearInterval(marqueeTimer);
+  marqueeTimer = null;
+  marqueeIdx = 1;
+  if(marquee && !marquee.classList.contains("hidden")){
+    marquee.src = "img/slot/slide1.png";
+  }
+}
+
+/** =========================
+ *  Reel Engine (진짜 릴처럼 아래로 굴러감)
+ * ========================= */
+const ROWS = 3, COLS = 5;
+const BUFFER = 10;
+
+const reels = []; // {reelEl, stripEl, items:[imgEl], offset, speed, timer}
+function randSym(){
+  return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
+}
+function setSym(imgEl, sym){
+  imgEl.src = IMG(sym);
+  imgEl.dataset.sym = sym;
+}
+
+function buildReels(){
+  reelsEl.innerHTML = "";
+  reels.length = 0;
+
+  // mid3 가로폭 맞추기
+  const mid3El = $("mid3");
+  if(mid3El){
+    // 3개 릴 + gap*2 + 패딩 약간
+    mid3El.style.width = "calc(var(--cell) * 3 + var(--gap) * 2 + 18px)";
+  }
+
+  for(let c=0;c<COLS;c++){
+    const reelEl = document.createElement("div");
+    reelEl.className = "reel";
+
+    const stripEl = document.createElement("div");
+    stripEl.className = "strip";
+    reelEl.appendChild(stripEl);
+
+    const items = [];
+    const totalItems = ROWS + BUFFER;
+
+    for(let i=0;i<totalItems;i++){
+      const sym = document.createElement("div");
+      sym.className = "sym";
+      const img = document.createElement("img");
+      img.alt = "symbol";
+      setSym(img, randSym());
+      sym.appendChild(img);
+      stripEl.appendChild(sym);
+      items.push(img);
+    }
+
+    reelsEl.appendChild(reelEl);
+
+    reels.push({
+      reelEl, stripEl, items,
+      offset: 0,
+      speed: 24 + c*2,
+      timer: null,
+      running: false
+    });
+  }
+}
+buildReels();
+
+function getRowH(){
+  // CSS 변수(--rowH)를 px로 읽기
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--rowH").trim();
+  const n = parseFloat(v.replace("px",""));
+  return isNaN(n) ? 132 : n;
+}
+
+function startReel(reel, baseSpeed){
+  reel.running = true;
+  reel.speed = baseSpeed;
+  const rowH = getRowH();
+
+  const tick = () => {
+    if(!reel.running) return;
+
+    reel.offset += reel.speed; // 아래로 이동(+) => 아래로 굴러가는 느낌
+    reel.stripEl.style.transform = `translateY(${reel.offset}px)`;
+
+    // 한 칸 이상 내려가면: 맨 아래 아이템을 맨 위로 올리고 새 심볼로 교체
+    while(reel.offset >= rowH){
+      reel.offset -= rowH;
+
+      // 맨 마지막 심볼을 맨 위로
+      const last = reel.stripEl.lastElementChild;
+      reel.stripEl.insertBefore(last, reel.stripEl.firstElementChild);
+
+      // 새로 위로 올라온 아이템의 img를 랜덤으로 교체
+      const img = last.querySelector("img");
+      setSym(img, randSym());
+
+      reel.stripEl.style.transform = `translateY(${reel.offset}px)`;
+    }
+
+    reel.timer = requestAnimationFrame(tick);
+  };
+
+  reel.timer = requestAnimationFrame(tick);
+}
+
+function stopReelToResult(reel, col, finalGrid){
+  // finalGrid: [ROWS][COLS]
+  reel.running = false;
+  if(reel.timer) cancelAnimationFrame(reel.timer);
+  reel.timer = null;
+
+  // strip을 "정확한 결과"로 세팅(보이는 3칸이 결과)
+  // strip의 맨 위 3개 심볼에 결과를 넣고 offset=0으로 스냅
+  reel.offset = 0;
+  reel.stripEl.style.transform = `translateY(0px)`;
+
+  // strip의 첫 ROWS개에 결과 심볼 넣기
+  const stripChildren = reel.stripEl.children;
+  for(let r=0;r<ROWS;r++){
+    const symDiv = stripChildren[r];
+    const img = symDiv.querySelector("img");
+    setSym(img, finalGrid[r][col]);
+  }
+  // 나머지는 랜덤(자연스러움)
+  for(let i=ROWS;i<stripChildren.length;i++){
+    const img = stripChildren[i].querySelector("img");
+    setSym(img, randSym());
+  }
+
+  // 잠금 애니메이션
+  reel.reelEl.classList.remove("lock");
+  void reel.reelEl.offsetWidth;
+  reel.reelEl.classList.add("lock");
+}
+
+/** =========================
+ *  상태 SYNC (자동)
  * ========================= */
 async function sync(){
   logEl.textContent = "SYNC 중...";
   const st = await api("/slot/state");
   if(!st?.ok){
     setApiStatus(false);
-    logEl.textContent = `SYNC 실패\n${st?.error || "unknown"}`;
+    logEl.textContent = `API 연결 실패\n${st?.error || "unknown"}`;
     return;
   }
   setApiStatus(true);
-  betVal.textContent = st.bet ?? 10;
-  jpVal.textContent = st.jackpot ?? "0";
-  houseVal.textContent = st.house ?? "0";
+
+  betVal.textContent = (st.bet ?? 10);
+  jpVal.textContent = (st.jackpot ?? 0);
 
   logEl.textContent =
-`SYNC 완료
-- Bet: ${st.bet} UT
-- Jackpot: ${st.jackpot} UT
-- House(이유송): ${st.house} UT
-- Version: ${st.version}`;
+`준비 완료
+- Player: ${PLAYER}
+- Jackpot: ${st.jackpot ?? 0} UT
+- Version: ${st.version ?? "-"}`;
 }
-syncBtn.addEventListener("click", sync);
 sync();
 
 /** =========================
- *  스핀 로직
- *  - 클릭 즉시 /slot/spin 호출 → 최종 결과 확보
- *  - 화면은 10초 동안 핑핑 돌다가
- *  - 열 단위로 순차 정지하면서 결과 고정
+ *  SPIN
  * ========================= */
 let spinning = false;
-let timers = [];
-let perColRunning = [];
 
-function clearTimers(){
-  timers.forEach(t=>clearTimeout(t));
-  timers = [];
-  for(let c=0;c<COLS;c++){
-    if(perColRunning[c]) clearTimeout(perColRunning[c]);
-    perColRunning[c] = null;
-  }
-  stopTicks();
-}
-
-function randSym(){
-  return SYMBOLS[(Math.random()*SYMBOLS.length)|0];
-}
-
-function setColToResult(col, grid){
-  for(let r=0;r<ROWS;r++){
-    const id = grid[r][col];
-    cells[r][col].img.src = IMG(id);
-  }
-}
-
-function startColSpin(col, speedMs){
-  const tick = () => {
-    const r0 = cells[0][col].img;
-    const r1 = cells[1][col].img;
-    const r2 = cells[2][col].img;
-    r0.src = r1.src;
-    r1.src = r2.src;
-    r2.src = IMG(randSym());
-    perColRunning[col] = setTimeout(tick, speedMs);
-  };
-  perColRunning[col] = setTimeout(tick, speedMs);
-}
-
-function stopCol(col){
-  if(perColRunning[col]) clearTimeout(perColRunning[col]);
-  perColRunning[col] = null;
-}
-
-function setLog(text){
-  logEl.textContent = text;
-}
+function setLog(t){ logEl.textContent = t; }
 
 spinBtn.addEventListener("click", async () => {
   if(spinning) return;
   spinning = true;
   spinBtn.disabled = true;
-  syncBtn.disabled = true;
   winVal.textContent = "0";
-  gridWrap.classList.add("spinning");
-  clearTimers();
+  cardEl.classList.remove("flash-win");
 
-  // 사운드 시작(클릭 후부터 가능)
-  whoosh();
-  startTicks();
+  stageEl.classList.add("spinning");
+  reels.forEach(r => r.reelEl.classList.remove("lock"));
 
-  // 1) 서버에 결과 먼저 받기
+  // 사운드/마퀴
+  startSpinLoop();
+  startMarquee();
+
+  // 먼저 릴을 돌리기 시작 (바로 “확” 도는 느낌)
+  reels.forEach((reel, idx) => startReel(reel, 28 + idx*3));
+
+  // API 결과 요청
   setLog("SPIN 요청 중...");
-  const result = await api("/slot/spin", { method:"POST", body:{ player:"" }});
+  const result = await api("/slot/spin", { method:"POST", body:{ player: PLAYER } });
 
   if(!result?.ok){
     setApiStatus(false);
-    setLog(`SPIN 실패\n${result?.error || "unknown"}`);
+    stageEl.classList.remove("spinning");
+    reels.forEach(reel => { reel.running=false; if(reel.timer) cancelAnimationFrame(reel.timer); reel.timer=null; });
+    stopSpinLoop();
+    stopMarquee();
+
+    const err = result?.error || "unknown";
+    setLog(`SPIN 실패\n${err}`);
+
+    // missing_user면 안내
+    if(String(err).toLowerCase().includes("missing_user")){
+      setLog(`SPIN 실패\nmissing_user\n\n해결: player 값이 필요해.\n지금은 localStorage에 "guest"로 저장되어 있어.\n원하면 ?u=닉네임 으로 접속하거나, 멤버홀 닉네임을 넘겨줄게.`);
+    }
+
     spinning = false;
     spinBtn.disabled = false;
-    syncBtn.disabled = false;
-    gridWrap.classList.remove("spinning");
-    stopTicks();
-    loseBuzz();
     return;
   }
+
   setApiStatus(true);
 
-  const finalGrid = result.grid;
+  const finalGrid = result.grid; // [3][5]
+  const stopDelays = [900, 1250, 1600, 1950, 2300]; // 좌->우 순서로 멈춤(릴 느낌)
 
-  // 2) 10초 타임라인
-  const TOTAL = 10000;
-  const ACCEL = 1200;
+  // 릴별 멈추면서 결과 고정
+  stopDelays.forEach((ms, col) => {
+    setTimeout(() => {
+      stopReelToResult(reels[col], col, finalGrid);
+      clickStop();
+    }, ms);
+  });
 
-  setLog("SPIN 시작! (10초)");
+  // 마무리
+  setTimeout(() => {
+    stageEl.classList.remove("spinning");
+    stopSpinLoop();
+    stopMarquee();
 
-  // 2-1) 초기 돌리기(모든 열)
-  for(let c=0;c<COLS;c++){
-    startColSpin(c, 95 - c*4);
-  }
+    // 수치 업데이트
+    if(result.bet != null) betVal.textContent = result.bet;
+    if(result.jackpot != null) jpVal.textContent = result.jackpot;
 
-  // 2-2) 가속 후 더 빠르게
-  timers.push(setTimeout(() => {
-    for(let c=0;c<COLS;c++){
-      stopCol(c);
-      startColSpin(c, 45); // 빠르게
-    }
-  }, ACCEL));
+    const win = (result?.result?.win ?? "0");
+    const winType = (result?.result?.winType ?? "none");
+    const sym = (result?.result?.symbol ?? "-");
+    const mul = (result?.result?.multiplier ?? 0);
 
-  // 2-3) 순차 정지 (왼쪽→오른쪽)
-  // 10초 안에서 멈추게 조정 + 멈출 때마다 '쿵' 사운드
-  const stopTimes = [7200, 7900, 8600, 9300, 9750];
-  for(let c=0;c<COLS;c++){
-    timers.push(setTimeout(() => {
-      stopCol(c);
-      setColToResult(c, finalGrid);
-      clunk();
-    }, stopTimes[c]));
-  }
-
-  // 마지막 1초쯤부터 틱 소리 끄면 더 “결정되는 느낌”남
-  timers.push(setTimeout(() => stopTicks(), 9000));
-
-  // 2-4) 마무리
-  timers.push(setTimeout(() => {
-    gridWrap.classList.remove("spinning");
-
-    // 결과 반영
-    jpVal.textContent = result.jackpot ?? jpVal.textContent;
-    houseVal.textContent = result.house ?? houseVal.textContent;
-
-    const win = result?.result?.win || "0";
     winVal.textContent = win;
 
-    const winType = result?.result?.winType || "none";
-    const sym = result?.result?.symbol || "-";
-    const mul = result?.result?.multiplier || 0;
-
+    // 로그는 “쓸데없는 설명 없이” 결과만
     let msg =
-`결과 확정!
-- winType: ${winType}
+`RESULT
+- type: ${winType}
 - symbol: ${sym}
-- multiplier: x${mul}
+- x${mul}
 - win: ${win} UT
-- jackpot: ${result.jackpot} UT
-- house(이유송): ${result.house} UT`;
-
-    if(winType === "none"){
-      msg += `\n\n패배금 분배: 베팅의 50%는 Jackpot, 50%는 이유송 수익으로 누적`;
-      loseBuzz();
-    } else {
-      msg += `\n\n당첨! (가운데 줄 기준)`;
-      winJingle();
-    }
+- jackpot: ${result.jackpot ?? jpVal.textContent} UT`;
 
     setLog(msg);
 
-    // 버튼 복구
+    // 사운드/플래시
+    if(String(win) !== "0" && winType !== "none"){
+      cardEl.classList.add("flash-win");
+      winJingle();
+    } else {
+      loseThud();
+    }
+
     spinning = false;
     spinBtn.disabled = false;
-    syncBtn.disabled = false;
 
-  }, TOTAL));
+  }, Math.max(...stopDelays) + 260);
 });
 </script>
 </body>
