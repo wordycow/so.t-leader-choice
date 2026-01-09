@@ -5,6 +5,7 @@ window.SLOT = window.SLOT || {};
   const spinBtn = document.getElementById("spinBtn");
   const hintText = document.getElementById("hintText");
   const bg = document.getElementById("bg");
+  const backMainBtn = document.getElementById("backMainBtn");
 
   function flashBg(){
     bg.classList.add("flash");
@@ -15,11 +16,31 @@ window.SLOT = window.SLOT || {};
     hintText.textContent = text;
   }
 
+  // ✅ MAIN 돌아가기 링크에 u/uid/ut 붙여서 동기화
+  function setBackLink(ctx, utOverride){
+    if(!backMainBtn) return;
+
+    const ut = (utOverride !== undefined && utOverride !== null)
+      ? String(utOverride)
+      : (localStorage.getItem("unique_ut") || ctx.ut || "");
+
+    const params = new URLSearchParams();
+    if(ctx.u) params.set("u", ctx.u);
+    if(ctx.uid) params.set("uid", ctx.uid);
+    if(ut) params.set("ut", ut);
+
+    const base = "../the-unique-main.html";
+    backMainBtn.href = params.toString() ? `${base}?${params.toString()}` : base;
+  }
+
   async function boot(){
     S.ui.buildPaytable();
 
     const ctx = S.api.getPlayerContext();
     S.ui.setPlayer(ctx);
+
+    // ✅ 최초 MAIN 링크 세팅
+    setBackLink(ctx);
 
     // API 상태 확인(가능하면 bet/jp/ut 갱신)
     await S.api.checkApi(ctx);
@@ -59,10 +80,14 @@ window.SLOT = window.SLOT || {};
 
                 S.ui.setKpi({ bet: out.bet, jackpot: out.jackpot, win: out.win });
 
-                // ✅ UT 업데이트(서버가 주면 표시 + MAIN 동기화용 캐시)
+                // ✅ UT 업데이트(서버가 주면 표시 + MAIN 동기화용 캐시 + MAIN 링크도 갱신)
                 if(out.ut !== undefined && out.ut !== null){
                   S.ui.setPlayer({ u: ctx.u, uid: ctx.uid, ut: out.ut });
                   localStorage.setItem("unique_ut", String(out.ut));
+                  setBackLink(ctx, out.ut);
+                } else {
+                  // ut가 안 오더라도 링크는 최신 localStorage 기준으로 유지
+                  setBackLink(ctx);
                 }
 
                 const wt = String(out.winType || "").trim();
