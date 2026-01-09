@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>THE UNIQUE – SLOT v1</title>
+<title>THE UNIQUE – SLOT v1 (with Vault API)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
 
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
@@ -19,13 +19,14 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
+  padding:16px;
 }
 .machine{
   background:rgba(15,23,42,.85);
   border:2px solid #fbbf24;
   border-radius:20px;
   padding:20px;
-  width:720px;
+  width:min(720px, 100%);
   box-shadow:0 30px 80px rgba(0,0,0,.7);
 }
 .title{
@@ -52,6 +53,7 @@ body{
   justify-content:center;
   font-size:36px;
   font-weight:900;
+  user-select:none;
 }
 .cell.win{
   box-shadow:0 0 20px rgba(251,191,36,.7);
@@ -62,9 +64,10 @@ body{
   display:flex;
   justify-content:space-between;
   gap:10px;
+  flex-wrap:wrap;
 }
 .box{
-  flex:1;
+  flex:1 1 180px;
   background:rgba(0,0,0,.35);
   padding:10px;
   border-radius:12px;
@@ -87,11 +90,46 @@ body{
   margin-top:10px;
   font-size:12px;
   color:#94a3b8;
+  line-height:1.45;
+  white-space:pre-wrap;
 }
 .free{
   color:#60a5fa;
   font-weight:900;
 }
+.small{
+  font-size:12px;
+  color:#cbd5e1;
+  opacity:.9;
+}
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.input{
+  flex:1 1 280px;
+  padding:12px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,.35);
+  color:#fff;
+  font-weight:900;
+  outline:none;
+}
+.pill{
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,.35);
+  color:#e5e7eb;
+  font-weight:900;
+  cursor:pointer;
+}
+.pill:hover{ filter:brightness(1.08); border-color:rgba(251,191,36,.35); }
+.ok{ color:#34d399; font-weight:900; }
+.bad{ color:#fb7185; font-weight:900; }
 </style>
 </head>
 
@@ -100,11 +138,22 @@ body{
   <div class="machine">
     <div class="title">THE UNIQUE SLOT</div>
 
+    <!-- ✅ (추가) Vault API 연결/상태 -->
+    <div class="row">
+      <input class="input" id="vaultAddress" placeholder="(선택) 금고 주소 입력 후 VAULT SYNC 눌러 잔액 동기화" />
+      <button class="pill" id="vaultSyncBtn" type="button">VAULT SYNC</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="small">
+        API: <span id="apiBaseText"></span> · 상태: <span id="apiStatus" class="bad">확인중…</span>
+      </div>
+    </div>
+
     <div class="grid" id="grid"></div>
 
     <div class="hud">
       <div class="box">잔액<br><span id="balance">1000</span> UT</div>
-      <div class="box">베팅<br>10 UT</div>
+      <div class="box">베팅<br><span id="betTxt">10</span> UT</div>
       <div class="box">Free Spin<br><span id="fs">0</span></div>
     </div>
 
@@ -115,7 +164,74 @@ body{
 </div>
 
 <script>
-/* ===== 슬롯 설정 ===== */
+/* =========================================================
+   ✅ 서버 연결(Cloudflare Workers: Vault API)
+   ========================================================= */
+
+// 유송이 준 URL(끝 슬래시 제거해서 쓰는게 안전)
+const API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+
+document.getElementById("apiBaseText").textContent = API_BASE;
+
+/* 헬스체크 */
+async function checkApiHealth(){
+  const el = document.getElementById("apiStatus");
+  try{
+    const r = await fetch(API_BASE + "/health", { cache: "no-store" });
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok){
+      el.textContent = "OK (" + (j.version || "no-version") + ")";
+      el.className = "ok";
+    } else {
+      el.textContent = "응답은 왔는데 ok 아님";
+      el.className = "bad";
+    }
+  }catch(e){
+    el.textContent = "접속 실패";
+    el.className = "bad";
+  }
+}
+
+/* vault 잔액 동기화: /vault?address=... 의 balance(net) 값을 가져와 잔액에 반영 */
+async function syncBalanceFromVault(){
+  const addrInput = document.getElementById("vaultAddress");
+  const address = String(addrInput.value || "").trim();
+  if (!address){
+    logLine("⚠️ 금고 주소를 입력해야 VAULT SYNC 가능");
+    return;
+  }
+  localStorage.setItem("uniqueVaultAddress", address);
+
+  try{
+    logLine("🔄 VAULT 조회중…");
+    const res = await fetch(API_BASE + "/vault?address=" + encodeURIComponent(address), { cache:"no-store" });
+    const j = await res.json();
+
+    if (!j || !j.ok){
+      logLine("❌ VAULT 실패: " + (j?.message || j?.error || "unknown"));
+      return;
+    }
+
+    // 워커가 주는 balance는 문자열(콤마 포함 가능)
+    // 여기선 UT 숫자로 쓰기 위해 정수화(소수점/콤마 제거)
+    const raw = String(j.balance || "0");
+    const num = Number(raw.replace(/,/g,""));
+    if (!Number.isFinite(num)){
+      logLine("⚠️ balance 파싱 실패: " + raw);
+      return;
+    }
+
+    balance = Math.floor(num); // UT 정수로
+    renderHud();
+    logLine("✅ VAULT SYNC 완료: balance=" + raw + " UT");
+  }catch(e){
+    logLine("❌ VAULT 오류: " + (e?.message || e));
+  }
+}
+
+/* =========================================================
+   슬롯 설정(v1 로컬)
+   ========================================================= */
 const SYMBOLS = ["⚔️","👑","🧙","🔥","💎"];
 const PAY = {
   "⚔️":2,
@@ -125,7 +241,7 @@ const PAY = {
   "💎":15
 };
 
-/* 확률 – 일부러 후하게 */
+// 확률 – 일부러 후하게
 const WEIGHT = {
   "⚔️":30,
   "👑":25,
@@ -139,7 +255,18 @@ let bet = 10;
 let freeSpin = 0;
 
 const grid = document.getElementById("grid");
-const log = document.getElementById("log");
+const logEl = document.getElementById("log");
+
+function logLine(msg){
+  const t = new Date().toLocaleTimeString("ko-KR");
+  logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
+}
+
+function renderHud(){
+  document.getElementById("balance").textContent = String(balance);
+  document.getElementById("betTxt").textContent = String(bet);
+  document.getElementById("fs").textContent = String(freeSpin);
+}
 
 /* 초기 셀 */
 const cells=[];
@@ -160,17 +287,17 @@ function weightedRandom(){
 }
 
 function spin(){
-  if(balance<bet && freeSpin===0) return;
+  if(balance<bet && freeSpin===0){
+    logLine("⛔ 잔액 부족");
+    return;
+  }
 
   if(freeSpin>0){
     freeSpin--;
-    log.innerHTML=`🎁 Free Spin 사용!`;
+    logLine("🎁 Free Spin 사용!");
   }else{
     balance-=bet;
   }
-
-  document.getElementById("balance").textContent=balance;
-  document.getElementById("fs").textContent=freeSpin;
 
   let result=[];
   cells.forEach(c=>{
@@ -184,31 +311,48 @@ function spin(){
   const counts={};
   result.forEach(s=>counts[s]=(counts[s]||0)+1);
 
+  let jackpotHit = false;
+
   for(const s in counts){
     if(counts[s]>=3){
-      win+=counts[s]*PAY[s];
+      win += counts[s] * PAY[s];
       cells.forEach(c=>{
         if(c.textContent===s) c.classList.add("win");
       });
     }
     if(counts[s]===5 && s==="💎"){
-      freeSpin+=5;
-      log.innerHTML=`💎 JACKPOT! Free Spin +5`;
+      freeSpin += 5;
+      jackpotHit = true;
     }
   }
 
   if(win>0){
     balance+=win;
-    log.innerHTML=`✨ ${win} UT 획득!`;
+    logLine(`✨ ${win} UT 획득!`);
   }else{
-    log.innerHTML=`😈 꽝… 다시 도전`;
+    logLine("😈 꽝… 다시 도전");
   }
 
-  document.getElementById("balance").textContent=balance;
-  document.getElementById("fs").textContent=freeSpin;
+  if(jackpotHit){
+    logLine("💎 JACKPOT! Free Spin +5");
+  }
+
+  renderHud();
 }
 
 document.getElementById("spinBtn").onclick=spin;
+document.getElementById("vaultSyncBtn").onclick=syncBalanceFromVault;
+
+/* 초기 로드 */
+(function init(){
+  // 저장된 금고 주소 있으면 채워줌
+  const saved = localStorage.getItem("uniqueVaultAddress");
+  if (saved) document.getElementById("vaultAddress").value = saved;
+
+  renderHud();
+  checkApiHealth();
+  logLine("READY");
+})();
 </script>
 </body>
 </html>
