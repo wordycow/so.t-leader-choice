@@ -107,7 +107,6 @@
           <button class="btn-copy" onclick="copyVaultAddress()">주소 복사</button>
           <div class="label">공동기금 (REAL USDT)</div>
           <div class="value" id="vault-balance-num">Loading...</div>
-          <div class="sub-text" id="vault-sum-since">총 합산(12/21 이후): Loading...</div>
           <div class="sub-text">TRC20 Network</div>
         </div>
 
@@ -254,7 +253,6 @@
       myUsername = String(userObj.id || userObj.name || "Unknown").toLowerCase().trim();
       document.getElementById("user-display").textContent = `[${myUsername}]`;
 
-      fetchVault();
       fetchRanking();
       fetchMyBalance();       // ✅ UT 잔액은 시트에서 최신화
       fetchVaultSumSince();   // ✅ 12/21 이후 합산
@@ -274,48 +272,35 @@
       fetchMyHistory();
     }
   }
+ 
+  // ✅ 공동기금(REAL USDT)에는 "12/21 이후 처리된 후원 합산"만 표시
+async function fetchVaultSumSince() {
+  // 2025-12-21 00:00 KST = 2025-12-20 15:00:00Z
+  const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
 
-  async function fetchVault(){
-    const apiUrl = WORKER_BASE + `/vault?address=${encodeURIComponent(VAULT_TRON_ADDRESS)}`;
-    try {
-      const res = await fetch(apiUrl);
-      const data = await res.json();
-      if (data.ok) {
-        document.getElementById("vault-balance-num").textContent =
-          parseFloat(String(data.balance).replace(/,/g,"")).toLocaleString() + " USDT";
-      } else {
-        document.getElementById("vault-balance-num").textContent = (data.error || data.message || "Error");
-      }
-    } catch(e){
-      document.getElementById("vault-balance-num").textContent = "Error";
-    }
+  const mainEl = document.getElementById("vault-balance-num");
+  if (!mainEl) return;
+
+  try {
+    const { data, error } = await db
+      .from("transactions")
+      .select("amount, created_at")
+      .eq("type", "donation_verify")
+      .gte("created_at", CUTOFF_UTC);
+
+    if (error) throw error;
+
+    const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+
+    // ✅ 큰 숫자(공동기금)에만 표시
+    mainEl.textContent = `${sum.toLocaleString()} USDT`;
+
+  } catch (e) {
+    console.warn("fetchVaultSumSince fail:", e);
+    mainEl.textContent = "Error";
   }
+}
 
-  // ✅ 12/21 이후 '처리(=donation_verify 기록)' 합산 USDT (Supabase)
-  async function fetchVaultSumSince() {
-    const el = document.getElementById("vault-sum-since");
-    if (!el) return;
-
-    // Supabase created_at는 UTC 기준
-    // 2025-12-21 00:00 KST = 2025-12-20 15:00:00Z
-    const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
-
-    try {
-      const { data, error } = await db
-        .from("transactions")
-        .select("amount, created_at")
-        .eq("type", "donation_verify")
-        .gte("created_at", CUTOFF_UTC);
-
-      if (error) throw error;
-
-      const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-      el.textContent = `총 합산(12/21 이후): ${sum.toLocaleString()} USDT`;
-    } catch (e) {
-      console.warn("fetchVaultSumSince fail:", e);
-      el.textContent = "총 합산(12/21 이후): Error";
-    }
-  }
 
   // ✅ UT 잔액: localStorage 즉시 표시 → Apps Script(getUser) 최신화
   async function fetchMyBalance() {
