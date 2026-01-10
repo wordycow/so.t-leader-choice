@@ -1,129 +1,39 @@
 /* games/slot.page.js
- * THE UNIQUE SLOT (final-ish)
- * - localStorage(uniqueCurrentUser / myUtPoints)로 즉시 UT 표시
- * - WORKER_BASE /slot/state, /slot/spin 동기화
- * - 세로 슬롯 롤링(컬럼별 빠른 랜덤 스왑) 연출
- * - 사운드 로딩(경로/파일명 불일치 대비 fallback) + 실패해도 게임 진행
- * - jackpot.png 없으면 자동으로 SVG만 표시
+ * THE UNIQUE SLOT - FINAL (UT fix + vertical spin + 404 cleanup + sounds)
+ * - main/gate에서 저장한 localStorage(uniqueCurrentUser, myUtPoints) 기반으로 UT 즉시 표시
+ * - worker /slot/state, /slot/spin 응답 키가 달라도 최대한 유연하게 UT 잡아오기
+ * - 이미지: games/img/slot/(pro1~10, star1~3)만 로드 → jackpot.png/slide*.png 같은 404 제거
+ * - 사운드: games/sounds/*.MP3 파일명(하이픈/대소문자) 기준으로 정확히 로드
+ * - 스핀 연출: 위→아래 “슬롯처럼” 랜덤 그리드가 빠르게 내려가는 느낌(클라 연출)
  */
 
 (() => {
   "use strict";
 
-  // ✅ 워커 주소 (여기만 바꾸면 됨)
+  // ======================
+  // ✅ CONFIG
+  // ======================
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  // ✅ 캐시 확인용 버전
-  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_final_vertical_fx_v1";
+  // GitHub Pages 캐시 확인용
+  const VERSION = "slot.page.js@2026-01-10_final_v3";
+  window.__UNIQUE_SLOT_PAGE__ = VERSION;
 
-  // ✅ games/slot.html 기준 상대 경로
+  // 이 페이지(/games/slot.html) 기준 상대경로
   const IMG_BASE = "./img/slot/";
   const SOUND_BASE = "./sounds/";
 
-  // ---------- utils ----------
+  // 네 폴더에 실제로 존재하는 심볼만 (slide1~8 제거 완료 전제)
+  const SYMBOLS = [
+    "star1","star2","star3",
+    "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
+  ];
+
+  // ======================
+  // ✅ DOM
+  // ======================
   const $id = (id) => document.getElementById(id);
 
-  function fmt(n) {
-    const x = Number(n);
-    if (!Number.isFinite(x)) return "0";
-    return String(Math.floor(x));
-  }
-
-  function setText(el, v) {
-    if (!el) return;
-    el.textContent = String(v ?? "");
-  }
-
-  // neon 글자가 "□"처럼 보이거나 안 보일 때 강제 가시성 확보
-  function forceVisibleNumber(el) {
-    if (!el) return;
-    el.style.webkitTextFillColor = "rgba(215,228,255,.95)";
-    el.style.color = "rgba(215,228,255,.95)";
-    el.style.background = "none";
-    el.style.textShadow = "0 0 18px rgba(33,246,255,.18)";
-  }
-
-  function setNote(msg, isError = false) {
-    if (!ui.note) return;
-    ui.note.textContent = msg || "";
-    ui.note.style.opacity = msg ? "1" : "0.75";
-    ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
-  }
-
-  function setResult(msg, isError = false) {
-    if (!ui.result) return;
-    ui.result.textContent = msg || "";
-    ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
-  }
-
-  function getLocalUser() {
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return null;
-      const u = JSON.parse(raw);
-      const id = String(u?.id || "").trim().toLowerCase();
-      if (!id) return null;
-      return {
-        id,
-        name: String(u?.name || "").trim(),
-        nickname: String(u?.nickname || "").trim(),
-        balance: Number(u?.balance || 0),
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  function getLocalUtFallback() {
-    // main에서 쓰는 값들 최대한 주워오기
-    const a = localStorage.getItem("myUtPoints");
-    if (a != null && a !== "") return Number(a) || 0;
-
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (raw) {
-        const u = JSON.parse(raw);
-        const b = Number(u?.balance);
-        if (Number.isFinite(b)) return b;
-      }
-    } catch {}
-    return 0;
-  }
-
-  function setLocalUt(ut) {
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (raw) {
-        const uu = JSON.parse(raw);
-        uu.balance = Number(ut || 0);
-        localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
-      }
-      localStorage.setItem("myUtPoints", String(Number(ut || 0)));
-    } catch {}
-  }
-
-  function redirectToGate() {
-    location.href = "../the-unique-gate.html";
-  }
-
-  async function fetchJSON(url, opt = {}, timeoutMs = 15000) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
-    try {
-      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
-      const text = await res.text();
-      let js = null;
-      try { js = JSON.parse(text); } catch { js = { ok: false, error: "bad_json", raw: text }; }
-      if (!res.ok && js && typeof js === "object" && !js.error) {
-        js.error = `http_${res.status}`;
-      }
-      return js;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  // ---------- DOM ----------
   const ui = {
     title:   $id("uiTitle"),
     player:  $id("uiPlayer"),
@@ -139,45 +49,154 @@
     btnAuto: $id("btnAuto"),
   };
 
-  // ---------- symbols ----------
-  // slide1~8은 빼자: 목록에서 아예 제외
-  const SYMBOL_POOL = [
-    "star1","star2","star3",
-    "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10",
-    "jackpot"
-  ];
-
-  // 서버에서 오는 심볼값 normalize
-  function normSym(sym) {
-    const s = String(sym || "").trim();
-    if (!s) return "";
-    const u = s.toUpperCase();
-
-    if (u === "SPECIAL" || u === "JACKPOT" || u === "JP" || u === "J") return "jackpot";
-    if (u.startsWith("STAR")) {
-      const n = u.replace("STAR", "").replace(/[^0-9]/g, "");
-      return n ? `star${n}` : "star1";
-    }
-    if (u.startsWith("PRO")) {
-      const n = u.replace("PRO", "").replace(/[^0-9]/g, "");
-      return n ? `pro${n}` : "pro1";
-    }
-
-    // 이미 star1/pro2 같은 케이스면 소문자로
-    const low = s.toLowerCase();
-    if (SYMBOL_POOL.includes(low)) return low;
-
-    // 모르면 그냥 빈칸
-    return "";
+  // ======================
+  // ✅ STYLE INJECT (spin FX)
+  // ======================
+  function injectStyleOnce() {
+    if (document.getElementById("unique-slot-style")) return;
+    const s = document.createElement("style");
+    s.id = "unique-slot-style";
+    s.textContent = `
+      /* spin 느낌: 위→아래로 흐르는 모션 + 블러 */
+      #uiReels.isSpinning { filter: blur(.55px) saturate(1.18) contrast(1.08); }
+      #uiReels.isSpinning .cell { overflow:hidden; }
+      #uiReels.isSpinning .sym { animation: symDrop .12s linear infinite; }
+      @keyframes symDrop {
+        0%   { transform: translateY(-8px); opacity:.78; }
+        100% { transform: translateY(8px);  opacity:.95; }
+      }
+      #uiReels.winFlash { animation: winFlash .55s ease-out 1; }
+      @keyframes winFlash{
+        0%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
+        45%{ box-shadow: 0 0 28px rgba(33,246,255,.22), 0 0 34px rgba(255,43,214,.16); }
+        100%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
+      }
+      #uiReelWrap.jackpotPulse { animation: jackpotPulse .85s ease-in-out 2; }
+      @keyframes jackpotPulse{
+        0%{ transform: scale(1); }
+        50%{ transform: scale(1.012); }
+        100%{ transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(s);
   }
 
-  // ---------- reels rendering ----------
+  // ======================
+  // ✅ UT/NUMBER utils
+  // ======================
+  const toNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  function fmtInt(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "0";
+    return String(Math.floor(n));
+  }
+
+  // 응답에서 UT를 최대한 잡아오기 (키가 바뀌어도 대응)
+  function pickUT(js) {
+    if (!js || typeof js !== "object") return null;
+
+    const candidates = [
+      js.ut,
+      js.UT,
+      js.balance,
+      js.wallet,
+      js.points,
+      js.utPoints,
+      js.myUtPoints,
+      js.user?.ut,
+      js.user?.balance,
+      js.data?.ut,
+      js.data?.balance,
+      js.state?.ut,
+    ];
+
+    for (const c of candidates) {
+      const n = toNum(c);
+      if (n !== null) return n;
+    }
+    return null;
+  }
+
+  function setText(el, v) {
+    if (!el) return;
+    el.textContent = String(v ?? "");
+  }
+
+  function setNote(msg, isError=false) {
+    if (!ui.note) return;
+    ui.note.textContent = msg || "";
+    ui.note.style.opacity = msg ? "1" : "0.75";
+    ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
+  }
+
+  function setResult(msg, isError=false) {
+    if (!ui.result) return;
+    ui.result.textContent = msg || "";
+    ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
+  }
+
+  // ======================
+  // ✅ LOCAL USER (main에서 저장된 값)
+  // ======================
+  function getLocalUser() {
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (!raw) return null;
+      const u = JSON.parse(raw);
+      const id = String(u?.id || "").trim().toLowerCase();
+      if (!id) return null;
+
+      const myUt = toNum(localStorage.getItem("myUtPoints"));
+      const bal = toNum(u?.balance);
+
+      return {
+        id,
+        name: String(u?.name || "").trim(),
+        nickname: String(u?.nickname || "").trim(),
+        balance: bal ?? myUt ?? 0,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function redirectToGate() {
+    location.href = "../the-unique-gate.html";
+  }
+
+  // ======================
+  // ✅ HTTP
+  // ======================
+  async function fetchJSON(url, opt = {}, timeoutMs = 20000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
+    try {
+      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
+      const text = await res.text();
+      let js;
+      try { js = JSON.parse(text); } catch { js = { ok:false, error:"bad_json", raw:text }; }
+      if (!res.ok && js && typeof js === "object" && !js.error) js.error = `http_${res.status}`;
+      return js;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  // ======================
+  // ✅ REELS RENDER
+  // ======================
   const ROWS = 3;
   const COLS = 5;
 
   function ensureCells() {
     if (!ui.reels) return [];
     const need = ROWS * COLS;
+
+    // 네 slot.html에서 .cell 구조가 이미 있을 수도 있으니 둘 다 대응
     let cells = ui.reels.querySelectorAll(".cell");
     if (!cells || cells.length !== need) {
       ui.reels.innerHTML = "";
@@ -196,54 +215,29 @@
     return Array.from(cells);
   }
 
-  // SVG 네온 기본 렌더 (PNG 없을 때도 멋있게)
-  function svgFor(sym) {
-    const s = String(sym || "").toUpperCase();
-    let g1 = "#21f6ff", g2 = "#ff2bd6";
-    if (s.includes("STAR")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
-    if (s.includes("PRO"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
-    if (s.includes("JACK")) { g1 = "#ffcc33"; g2 = "#ff2bd6"; }
-    return `
-      <svg viewBox="0 0 200 200" aria-hidden="true">
-        <defs>
-          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="${g1}"/>
-            <stop offset="1" stop-color="${g2}"/>
-          </linearGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="6" result="b"/>
-            <feMerge>
-              <feMergeNode in="b"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx="100" cy="100" r="70" fill="rgba(0,0,0,.15)" stroke="url(#g)" stroke-width="10" filter="url(#glow)"/>
-        <path d="M100 52 L118 92 L162 92 L126 118 L140 162 L100 136 L60 162 L74 118 L38 92 L82 92 Z"
-              fill="url(#g)" filter="url(#glow)" opacity="0.95"/>
-      </svg>
-    `;
+  function randomSym() {
+    return SYMBOLS[(Math.random() * SYMBOLS.length) | 0];
   }
 
-  function renderCell(box, sym) {
-    const n = normSym(sym);
-    box.innerHTML = n ? svgFor(n) : "";
+  function randomGrid() {
+    const g = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      for (let c = 0; c < COLS; c++) row.push(randomSym());
+      g.push(row);
+    }
+    return g;
+  }
 
-    if (!n) return;
-
-    // PNG overlay (있으면 얹기, 없으면 자동 삭제)
-    const img = document.createElement("img");
-    img.src = `${IMG_BASE}${n}.png`; // ✅ games/img/slot/
-    img.alt = n;
-    img.onerror = () => img.remove(); // jackpot.png 없으면 그냥 SVG만 남음
-    box.appendChild(img);
+  function isPngSymbol(sym) {
+    const s = String(sym || "").toLowerCase();
+    return /^pro\d+$/.test(s) || /^star\d+$/.test(s);
   }
 
   function renderGrid(grid) {
     const cells = ensureCells();
     if (!cells.length) return;
 
-    // grid: [[..5],[..5],[..5]] 가정
     const flat = [];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -253,130 +247,142 @@
 
     flat.forEach((sym, i) => {
       const cell = cells[i];
-      const box = cell?.querySelector(".sym");
+      const box = cell?.querySelector?.(".sym");
       if (!box) return;
-      renderCell(box, sym);
+
+      const s = String(sym || "");
+      box.innerHTML = "";
+
+      // 심볼이 비어있으면 빈칸
+      if (!s) return;
+
+      // PNG가 “존재하는 심볼(pro/star)”만 로드 → jackpot.png 같은 404 자체 차단
+      if (isPngSymbol(s)) {
+        const img = document.createElement("img");
+        img.src = `${IMG_BASE}${s.toLowerCase()}.png`; // 파일명이 소문자일 때 가장 안전
+        img.alt = s;
+        img.style.width = "88%";
+        img.style.height = "88%";
+        img.style.objectFit = "contain";
+        img.onerror = () => {
+          // 혹시 파일이 대소문자 섞였으면 원본 심볼로 한 번 더 시도
+          img.src = `${IMG_BASE}${s}.png`;
+          img.onerror = () => img.remove();
+        };
+        box.appendChild(img);
+      } else {
+        // 예외 심볼은 그냥 텍스트(혹은 나중에 SVG)
+        box.textContent = s;
+      }
     });
   }
 
-  // ---------- vertical spin FX (컬럼별 빠른 롤링) ----------
-  function getCellIndex(r, c) {
-    return r * COLS + c;
+  // ======================
+  // ✅ SPIN VISUAL (vertical 느낌)
+  // ======================
+  let spinFxTimer = null;
+
+  function startSpinVisual() {
+    if (!ui.reels) return;
+    ui.reels.classList.add("isSpinning");
+
+    // “위→아래로 빠르게 돌아가는 느낌” = 랜덤 그리드 고속 갱신
+    // (서버 응답 기다리는 동안 연출)
+    if (spinFxTimer) clearInterval(spinFxTimer);
+    spinFxTimer = setInterval(() => {
+      renderGrid(randomGrid());
+    }, 70);
   }
 
-  function randSym() {
-    return SYMBOL_POOL[Math.floor(Math.random() * SYMBOL_POOL.length)];
+  function stopSpinVisual() {
+    if (!ui.reels) return;
+    ui.reels.classList.remove("isSpinning");
+    if (spinFxTimer) clearInterval(spinFxTimer);
+    spinFxTimer = null;
   }
 
-  function startSpinFX(durationMs = 850) {
-    const cells = ensureCells();
-    if (!cells.length) return { stop: () => {} };
-
-    // 컬럼별로 약간씩 스톱 시간 다르게(슬롯 느낌)
-    const colTimers = [];
-    const colIntervals = [];
-
-    // 흔들림
-    ui.reelWrap?.classList?.add("shake");
-
-    for (let c = 0; c < COLS; c++) {
-      const interval = setInterval(() => {
-        for (let r = 0; r < ROWS; r++) {
-          const idx = getCellIndex(r, c);
-          const box = cells[idx]?.querySelector(".sym");
-          if (!box) continue;
-          renderCell(box, randSym());
-        }
-      }, 60);
-      colIntervals.push(interval);
-
-      const stopAt = durationMs + c * 110; // 뒤로 갈수록 조금 더 길게
-      const timer = setTimeout(() => {
-        clearInterval(interval);
-      }, stopAt);
-      colTimers.push(timer);
-    }
-
-    const stop = () => {
-      colIntervals.forEach((x) => clearInterval(x));
-      colTimers.forEach((t) => clearTimeout(t));
-      ui.reelWrap?.classList?.remove("shake");
-    };
-
-    return { stop };
-  }
-
-  // ---------- sounds ----------
-  // 파일명/대소문자 조금만 달라도 404 나서, “후보들”로 자동 탐색
-  const SOUND_CANDIDATES = {
-    click:   ["start-button-sound.MP3", "start_button_sound.MP3", "start.mp3"],
-    spin:    ["spining-sound.MP3", "spinning-sound.MP3", "spin.mp3"],
-    stop:    ["stop-stop-stop-sound.MP3", "stop.mp3"],
-    win:     ["win_sound.MP3", "win-sound.MP3", "win.mp3"],
-    lose:    ["lose_sound.MP3", "lose-sound.MP3", "lose.mp3"],
-    jackpot: ["jackpot-sound.MP3", "jackpot.mp3"],
+  // ======================
+  // ✅ SOUNDS (파일명 정확히)
+  // ======================
+  const sounds = {
+    start:   new Audio(`${SOUND_BASE}start-button-sound.MP3`),
+    spin:    new Audio(`${SOUND_BASE}spining-sound.MP3`),   // 네 폴더 파일명이 spining 임(중요)
+    stop:    new Audio(`${SOUND_BASE}stop-stop-stop-sound.MP3`),
+    win:     new Audio(`${SOUND_BASE}win-sound.MP3`),
+    lose:    new Audio(`${SOUND_BASE}lose-sound.MP3`),
+    jackpot: new Audio(`${SOUND_BASE}jackpot-sound.MP3`),
   };
 
-  const S = { click:null, spin:null, stop:null, win:null, lose:null, jackpot:null };
+  let audioUnlocked = false;
 
-  async function probeAudio(url) {
-    // HEAD가 막힐 수 있어서 실제로 Audio 로드 시도
-    return new Promise((resolve) => {
-      const a = new Audio();
-      a.preload = "auto";
-      a.src = url;
-      a.addEventListener("canplaythrough", () => resolve(a), { once:true });
-      a.addEventListener("error", () => resolve(null), { once:true });
-      // iOS 대응: load 호출
-      try { a.load(); } catch {}
-    });
+  function audioInit() {
+    // preload / 기본 설정
+    try {
+      Object.values(sounds).forEach(a => {
+        a.preload = "auto";
+        a.volume = 0.7;
+      });
+      sounds.spin.loop = true;
+      sounds.spin.volume = 0.45;
+    } catch (_) {}
   }
 
-  async function loadSound(key) {
-    const list = SOUND_CANDIDATES[key] || [];
-    for (const name of list) {
-      const url = `${SOUND_BASE}${name}`; // ✅ games/sounds/
-      const a = await probeAudio(url);
-      if (a) return a;
+  async function unlockAudioOnce() {
+    if (audioUnlocked) return true;
+    try {
+      // 사용자 제스처 안에서 호출되면 unlock 됨
+      const a = sounds.start;
+      a.currentTime = 0;
+      await a.play();
+      a.pause();
+      audioUnlocked = true;
+      return true;
+    } catch {
+      // autoplay 정책으로 실패해도 게임은 진행
+      audioUnlocked = false;
+      return false;
     }
-    return null;
   }
 
-  async function initSounds() {
-    // 실패해도 게임 진행
+  function playSound(key) {
+    const a = sounds[key];
+    if (!a) return;
     try {
-      const keys = Object.keys(SOUND_CANDIDATES);
-      for (const k of keys) {
-        S[k] = await loadSound(k);
-      }
-    } catch {}
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    } catch (_) {}
   }
 
-  function playSound(aud, { loop=false, volume=0.9, restart=true } = {}) {
-    if (!aud) return;
+  function startSpinSound() {
     try {
-      aud.loop = !!loop;
-      aud.volume = volume;
-      if (restart) aud.currentTime = 0;
-      // 사용자 제스처 없이 재생 차단될 수 있음(정상)
-      aud.play().catch(() => {});
-    } catch {}
+      sounds.spin.currentTime = 0;
+      sounds.spin.play().catch(() => {});
+    } catch (_) {}
   }
 
-  function stopSound(aud) {
-    if (!aud) return;
+  function stopSpinSound() {
     try {
-      aud.pause();
-      aud.currentTime = 0;
-      aud.loop = false;
-    } catch {}
+      sounds.spin.pause();
+      sounds.spin.currentTime = 0;
+    } catch (_) {}
   }
 
-  // ---------- state / actions ----------
+  // ======================
+  // ✅ GAME STATE / ACTIONS
+  // ======================
   let identity = null;
   let autoOn = false;
   let spinning = false;
   let autoTimer = null;
+
+  function setWalletNow(n, sourceLabel) {
+    if (n === null || n === undefined) return;
+    setText(ui.wallet, fmtInt(n));
+    if (sourceLabel) {
+      // 디버그 필요하면 잠깐 확인 가능
+      // console.log("[WALLET]", n, sourceLabel);
+    }
+  }
 
   function stopAuto() {
     autoOn = false;
@@ -391,7 +397,7 @@
     if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
     autoTimer = setInterval(() => {
       if (!spinning) spin();
-    }, 1300);
+    }, 1200);
   }
 
   function toggleAuto() {
@@ -399,132 +405,159 @@
     else startAuto();
   }
 
-  function showLocalUtNow() {
-    const ut = getLocalUtFallback();
-    setText(ui.wallet, fmt(ut));
-    forceVisibleNumber(ui.wallet);
-  }
-
   async function loadState() {
     const u = identity?.id;
     if (!u) return null;
 
     setNote("SYNC…");
-    const js = await fetchJSON(`${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}`, {}, 20000);
+    const url = `${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}&name=${encodeURIComponent(identity.name || "")}&nick=${encodeURIComponent(identity.nickname || "")}`;
+    const js = await fetchJSON(url);
 
     if (!js?.ok) {
-      // 서버 state 실패해도 로컬 UT는 유지해서 “안 보이는 병신짓” 방지
-      showLocalUtNow();
       setResult("STATE ERROR", true);
-      setNote(`state fail: ${js?.error || "unknown"}`, true);
 
-      // 유저가 시트에 없으면 스핀을 막는게 맞음(계속 에러 찍힘)
-      if (String(js?.error || "").includes("user_not_found")) {
-        if (ui.btnSpin) ui.btnSpin.disabled = true;
-      }
+      // ✅ UT라도 로컬에 있으면 보여줘야 함
+      setWalletNow(identity.balance ?? 0, "local_fallback");
+
+      setNote(`state fail: ${js?.error || "unknown"} (메인에서 등록/로그인 후 다시)`, true);
       return null;
     }
 
+    // 표시명
     const displayName = String(js?.userName || js?.name || "").trim() || identity.name || identity.id;
     setText(ui.player, displayName);
 
-    // ✅ UT 표시
-    setText(ui.wallet, fmt(js.ut));
-    forceVisibleNumber(ui.wallet);
+    // ✅ UT 우선: worker → 없으면 localStorage → 없으면 0
+    const ut = pickUT(js);
+    if (ut !== null) setWalletNow(ut, "worker_state");
+    else setWalletNow(identity.balance ?? 0, "local_balance");
 
-    setText(ui.jackpot, fmt(js.jackpot));
-    setText(ui.bet, fmt(js.bet ?? 10));
+    // 잭팟/베팅
+    const jackpot = toNum(js.jackpot ?? js.JACKPOT);
+    if (jackpot !== null) setText(ui.jackpot, fmtInt(jackpot));
 
-    // 로컬도 동기화
-    setLocalUt(js.ut);
+    const bet = toNum(js.bet ?? js.BET);
+    if (bet !== null) setText(ui.bet, fmtInt(bet));
+
+    // grid가 있으면 렌더
+    if (js.grid) renderGrid(js.grid);
+    else renderGrid(randomGrid()); // 빈 화면 방지용
 
     setResult("READY");
     setNote("");
 
-    if (js.grid) renderGrid(js.grid);
-
-    if (ui.btnSpin) ui.btnSpin.disabled = false;
     return js;
   }
 
   async function spin() {
     if (spinning) return;
+
     spinning = true;
     if (ui.btnSpin) ui.btnSpin.disabled = true;
 
-    // 클릭 사운드
-    playSound(S.click, { volume: 0.8 });
-
-    // 스핀 연출 시작
-    const fx = startSpinFX(780);
-    playSound(S.spin, { loop:true, volume: 0.55, restart:true });
-
     try {
+      await unlockAudioOnce();
+      playSound("start");
+
+      // ✅ 스핀 연출 시작
+      startSpinVisual();
+      startSpinSound();
+
       const u = identity?.id;
       if (!u) throw new Error("missing_user");
 
-      setNote("SPINNING…");
       const js = await fetchJSON(`${WORKER_BASE}/slot/spin`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ u })
-      }, 20000);
+        // worker가 u 말고 name/nick을 키로 쓰는 경우도 있어서 같이 보냄(무해)
+        body: JSON.stringify({
+          u,
+          name: identity.name || "",
+          nickname: identity.nickname || "",
+        })
+      });
 
-      // 스핀 사운드 정지 + 스톱 사운드
-      stopSound(S.spin);
-      playSound(S.stop, { volume: 0.7 });
+      // ✅ 스핀 연출 종료
+      stopSpinVisual();
+      stopSpinSound();
+      playSound("stop");
 
       if (!js?.ok) {
-        fx.stop();
         setResult("SPIN ERROR", true);
-        setNote(`spin fail: ${js?.error || "unknown"}`, true);
 
-        // 유저가 슬롯 시트에 없으면: 게이트에서 등록 유도 + 스핀 잠그기
-        if (String(js?.error || "").includes("user_not_found_in_sheet")) {
-          setNote("유저가 슬롯 시트에 없음 → 메인/게이트에서 등록 후 다시 오세요.", true);
-          if (ui.btnSpin) ui.btnSpin.disabled = true;
+        // 유저 미등록이면 이 메시지가 뜸
+        const err = String(js?.error || "unknown");
+        if (err.includes("user_not_found")) {
+          setNote("유저가 슬롯 시트에 없음 → 메인에서 등록/동기화 후 다시 오세요.", true);
+        } else {
+          setNote(`spin fail: ${err}`, true);
         }
 
-        if (String(js?.error || "").includes("insufficient")) stopAuto();
+        // UT는 로컬값이라도 유지
+        setWalletNow(identity.balance ?? 0, "local_keep");
+        if (err.includes("insufficient")) stopAuto();
         return;
       }
 
-      // 연출 멈추고 최종 그리드 렌더
-      fx.stop();
-      renderGrid(js.grid);
+      // ✅ 응답 반영
+      // UT
+      const ut = pickUT(js);
+      if (ut !== null) setWalletNow(ut, "worker_spin");
 
-      // 숫자 업데이트
-      setText(ui.wallet, fmt(js.ut));
-      forceVisibleNumber(ui.wallet);
-      setText(ui.jackpot, fmt(js.jackpot));
-      setText(ui.bet, fmt(js.bet ?? 10));
+      // 잭팟/베팅
+      const jackpot = toNum(js.jackpot ?? js.JACKPOT);
+      if (jackpot !== null) setText(ui.jackpot, fmtInt(jackpot));
+      const bet = toNum(js.bet ?? js.BET);
+      if (bet !== null) setText(ui.bet, fmtInt(bet));
 
-      setLocalUt(js.ut);
+      // 그리드
+      if (js.grid) renderGrid(js.grid);
 
-      const betCharged = Number(js.betCharged || 0);
-      const win = Number(js.win || 0);
-      const delta = win - betCharged;
+      // 결과 문구
+      const betCharged = toNum(js.betCharged) ?? (bet ?? 0);
+      const win = toNum(js.win) ?? 0;
+      const delta = (win ?? 0) - (betCharged ?? 0);
 
       if (delta > 0) {
-        setResult(`WIN +${fmt(delta)} UT`);
-        // 잭팟이면 jackpot 사운드 우선
-        if (String(js?.winType || "").toLowerCase().includes("jack") || normSym("jackpot") === "jackpot" && win >= 1000) {
-          playSound(S.jackpot, { volume: 0.95 });
-        } else {
-          playSound(S.win, { volume: 0.9 });
-        }
+        setResult(`WIN +${fmtInt(delta)} UT`);
+        ui.reels?.classList?.add("winFlash");
+        setTimeout(() => ui.reels?.classList?.remove("winFlash"), 650);
+        playSound("win");
       } else if (delta < 0) {
-        setResult(`LOSE ${fmt(delta)} UT`);
-        playSound(S.lose, { volume: 0.75 });
+        setResult(`LOSE ${fmtInt(delta)} UT`);
+        playSound("lose");
       } else {
-        setResult(`EVEN 0 UT`);
+        setResult("EVEN 0 UT");
+      }
+
+      // 잭팟 연출 (서버가 jackpotHit 같은 플래그를 주면 그걸 쓰는 게 베스트인데, 없으면 win이 큰 경우로 추정)
+      if (toNum(js.jackpotHit) === 1 || toNum(js.isJackpot) === 1) {
+        ui.reelWrap?.classList?.add("jackpotPulse");
+        setTimeout(() => ui.reelWrap?.classList?.remove("jackpotPulse"), 1800);
+        playSound("jackpot");
       }
 
       setNote("");
 
+      // ✅ localStorage 잔액 동기화 (다음 진입에서도 UT 뜨게)
+      if (ut !== null) {
+        identity.balance = ut;
+        try {
+          const raw = localStorage.getItem("uniqueCurrentUser");
+          if (raw) {
+            const uu = JSON.parse(raw);
+            uu.balance = ut;
+            localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
+          }
+          localStorage.setItem("myUtPoints", String(ut));
+        } catch (_) {}
+      }
+
     } catch (e) {
-      fx.stop();
-      stopSound(S.spin);
+      stopSpinVisual();
+      stopSpinSound();
+      playSound("stop");
+
       setResult("SPIN ERROR", true);
       setNote(String(e?.message || e), true);
       stopAuto();
@@ -534,35 +567,50 @@
     }
   }
 
-  // ---------- boot ----------
+  // ======================
+  // ✅ PAYTABLE (간단 표시: 404 없이)
+  // ======================
+  function renderPaytable() {
+    if (!ui.pay) return;
+    ui.pay.innerHTML = `
+      <div class="ptItem"><div class="ptLeft"><div class="badge">S</div>STAR</div><div class="ptMul">star1~3</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">P</div>PRO</div><div class="ptMul">pro1~10</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">JP</div>JACKPOT</div><div class="ptMul">SPECIAL</div></div>
+    `;
+  }
+
+  // ======================
+  // ✅ BOOT
+  // ======================
   async function boot() {
+    injectStyleOnce();
+    audioInit();
+    renderPaytable();
+
     identity = getLocalUser();
     if (!identity) return redirectToGate();
 
-    // player 먼저 표시
-    setText(ui.player, identity.name || identity.nickname || identity.id);
+    // 이름/닉네임 보조
+    const savedNick = localStorage.getItem("myNickname_" + identity.id);
+    if (savedNick && !identity.nickname) identity.nickname = String(savedNick).trim();
 
-    // ✅ 로컬 UT 즉시 표시 (main에서 보이는데 slot에서 안 보이는 문제 해결)
-    showLocalUtNow();
+    // ✅ 들어오자마자 “메인에서 저장된 UT”를 먼저 찍어준다 (가장 중요)
+    setText(ui.player, identity.name || identity.id);
+    setWalletNow(identity.balance ?? 0, "local_on_boot");
 
-    // 잭팟/베트 기본
-    if (ui.jackpot) setText(ui.jackpot, "0");
-    if (ui.bet) setText(ui.bet, "10");
+    // 버튼 바인딩
+    if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
+    if (ui.btnAuto) ui.btnAuto.addEventListener("click", toggleAuto);
 
-    // 버튼
-    if (ui.btnSpin) ui.btnSpin.addEventListener("click", () => spin());
-    if (ui.btnAuto) ui.btnAuto.addEventListener("click", () => toggleAuto());
+    // 빈 화면 방지
+    renderGrid(randomGrid());
+    setResult("READY");
+    setNote("");
 
-    // 빈 그리드라도 생성
-    renderGrid(null);
-
-    // 사운드 로딩 (백그라운드처럼 돌지만 await로 안전)
-    await initSounds();
-
-    // 서버 상태 로드
+    // worker 상태 동기화
     await loadState();
 
-    console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__ || "no_version");
+    console.log("SLOT UI LOADED ✅", VERSION);
   }
 
   if (document.readyState === "loading") {
