@@ -172,33 +172,87 @@
       </div>
     </main>
   </div>
-
-  <script>
+<script>
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
   const WORKER_BASE_URL = "https://the-unique-vault-api.wordycow0001.workers.dev";
-
 
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-  async function api(action, payload = {}, timeoutMs = 25000){
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  // ===== legacy JSONP =====
+  function apiOnceJSONP(action, params = {}, timeoutMs = 25000) {
+    return new Promise((resolve, reject) => {
+      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
-    try {
-      const res = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
+      params.action = action;
+      params.callback = cb;
+      params._t = Date.now();
+
+      const qs = new URLSearchParams(params).toString();
+      const s = document.createElement("script");
+      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
+      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
+
+      const t = setTimeout(() => { cleanup(); reject(new Error("API timeout")); }, timeoutMs);
+
+      window[cb] = (data) => { cleanup(); resolve(data); };
+      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+
+      function cleanup() {
+        clearTimeout(t);
+        try { delete window[cb]; } catch(e){}
+        try { s.remove(); } catch(e){}
+      }
+      document.body.appendChild(s);
+    });
+  }
+
+  async function apiJSONP(action, params = {}) {
+    let lastErr = null;
+    for (let i = 1; i <= 3; i++){
+      try{
+        const timeoutMs = (i === 1) ? 20000 : 30000;
+        return await apiOnceJSONP(action, params, timeoutMs);
+      }catch(e){
+        lastErr = e;
+        await sleep(450 * i);
+      }
+    }
+    throw lastErr || new Error("API failed");
+  }
+
+  // ===== worker =====
+  async function apiWorker(action, params = {}, timeoutMs = 12000){
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+
+    try{
+      const r = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
         method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify(payload || {}),
-        signal: ctrl.signal
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify(params || {}),
+        signal: controller.signal,
+        cache: "no-store",
+        credentials: "omit"
       });
-
-      const data = await res.json().catch(()=>null);
-      if (!data) throw new Error("bad_response");
-      return data;
-    } catch (e) {
-      const msg = String(e && e.name === "AbortError" ? "timeout" : (e?.message || e));
-      throw new Error(msg);
+      const js = await r.json().catch(()=>null);
+      if (!js) throw new Error("worker_bad_json");
+      return js;
     } finally {
       clearTimeout(t);
+    }
+  }
+
+  // ===== unified: worker first, fallback jsonp =====
+  async function api(action, params = {}) {
+    const force = new URLSearchParams(location.search).get("api");
+    if (force === "legacy") return apiJSONP(action, params);
+    if (force === "worker") return apiWorker(action, params, 20000);
+
+    try{
+      return await apiWorker(action, params, 9000);
+    } catch(e){
+      console.warn("Worker failed, fallback to JSONP:", e);
+      return await apiJSONP(action, params);
     }
   }
 
@@ -254,7 +308,7 @@
     btnSubmit.disabled = true;
 
     try {
-      // ✅ 중복 체크 (Worker 통해서만)
+      // ✅ 중복 체크: getUser
       const exists = await api("getUser", { id });
       if (exists && exists.ok && exists.user) {
         setStatus("이미 등록된 아이디입니다. 게이트에서 로그인해 주세요.", "error");
@@ -262,7 +316,7 @@
         return;
       }
 
-      // ✅ 가입 (Worker 통해서만)
+      // ✅ 가입: signup
       const r = await api("signup", { id, name, phone, team });
 
       if (!r || !r.ok || !r.user) {
@@ -278,17 +332,13 @@
     } catch (err) {
       console.error(err);
       const msg = String(err && err.message ? err.message : err);
-
-      if (msg.includes("timeout")) {
-        setStatus("네트워크 지연입니다. 다시 시도해 주세요.", "error");
-      } else if (msg.includes("forbidden_origin")) {
-        setStatus("보안 정책으로 차단되었습니다. (정상 경로로 접속했는지 확인)", "error");
-      } else if (msg.includes("rate_limited")) {
-        setStatus("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", "error");
+      if (msg.includes("timeout") || msg.includes("abort")) {
+        setStatus("네트워크 지연으로 가입이 지연되었습니다. 다시 시도해 주세요.", "error");
+      } else if (msg.includes("load failed")) {
+        setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", "error");
       } else {
         setStatus("가입 처리 중 오류가 발생했습니다.", "error");
       }
-
       btnSubmit.disabled = false;
     }
   });
