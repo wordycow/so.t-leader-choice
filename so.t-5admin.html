@@ -46,8 +46,9 @@
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
     .control{ flex:1; min-width:220px; }
     .label{ font-size:12px; color:var(--muted); margin:0 0 6px; }
-    input, select, button{ font:inherit; }
-    input, select{
+    input, select, button, textarea{ font:inherit; }
+
+    input, select, textarea{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
@@ -55,6 +56,18 @@
       background: rgba(9,13,28,.65);
       color:var(--text);
       outline:none;
+    }
+
+    /* ✅ 링크는 끝까지 보이게: 줄바꿈+전체 표시 */
+    .linkarea{
+      min-height:64px;
+      resize:none;
+      line-height:1.35;
+      font-size:12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space:pre-wrap;
+      word-break:break-all;
+      overflow:auto;
     }
 
     .btn{
@@ -165,8 +178,8 @@
 
           <div style="margin-top:10px;">
             <div class="label">팀 전용 판매 링크(생성 직후)</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <input id="treeLinkOut" readonly placeholder="생성 후 자동 표시" />
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:stretch;">
+              <textarea id="treeLinkOut" class="linkarea" readonly placeholder="생성 후 자동 표시"></textarea>
               <button class="btn ghost" id="copyTreeLinkBtn">복사</button>
             </div>
           </div>
@@ -215,8 +228,8 @@
 
           <div style="margin-top:10px;">
             <div class="label">현재 팀 구매자용 링크</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <input id="currentTeamLink" readonly placeholder="트리 선택 시 자동 생성" />
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:stretch;">
+              <textarea id="currentTeamLink" class="linkarea" readonly placeholder="트리 선택 시 자동 생성"></textarea>
               <button class="btn ghost" id="copyCurrentTeamLinkBtn">복사</button>
             </div>
           </div>
@@ -340,7 +353,6 @@
       };
     }
 
-    // ✅ 트리별 계좌 로드
     async function loadDepositConfig(){
       el("depositSavedHint").textContent = "";
       el("depositTreeHint").textContent = selectedTree
@@ -374,7 +386,6 @@
         : "아직 이 트리에는 저장된 계좌가 없습니다.";
     }
 
-    // ✅ 트리별 계좌 저장
     async function saveDepositConfig(){
       if (!selectedTree) return alert("트리를 먼저 선택하세요.");
 
@@ -714,9 +725,7 @@
       await loadTrees();
       if (!selectedTree) { statusNote.textContent = "트리가 없습니다."; await loadDepositConfig(); return; }
 
-      // ✅ 트리 확정된 뒤에 계좌 로드
       await loadDepositConfig();
-
       await loadSlots();
       renderStats();
       renderAvailable();
