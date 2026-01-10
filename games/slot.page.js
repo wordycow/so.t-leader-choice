@@ -1,22 +1,16 @@
 /* games/slot.page.js
- * THE UNIQUE SLOT (final-ish)
- * - localStorage(uniqueCurrentUser) 기반 자동 로그인
- * - WORKER_BASE /slot/state, /slot/spin
- * - UT 표시 필드(ut/totalUT/총UT 등) 다 흡수
- * - 사운드 ON/OFF + 베팅 -5/+5 (기본 10)
- * - pay table을 릴 아래로 이동(HTML 수정 없이 JS로 재배치)
- * - 이미지 요청은 repo에 실제 존재하는 pro1~pro10, star1~3만 로드(404 방지)
- * - 스핀 시 위→아래로 “떨어지는” 느낌의 수직 드롭 애니 + 랜덤 프리롤
+ * THE UNIQUE SLOT (fix paths + symbol normalize)
+ * - slot.html 위치: /games/slot.html
+ * - 이미지 실제 위치: /games/img/slot/*.png  → 경로는 "./img/slot/"
+ * - 사운드 실제 위치: /games/sounds/*.MP3    → 경로는 "./sounds/"
+ * - 서버 심볼이 pro09/star03 처럼 0이 붙어도 pro9/star3로 정규화
  */
 
 (() => {
   "use strict";
 
-  // ✅ 워커 주소(필요하면 여기만)
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-
-  // ✅ 버전 마커
-  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_final_v1";
+  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_pathfix_v2";
 
   // ---------- utils ----------
   const $id = (id) => document.getElementById(id);
@@ -48,7 +42,6 @@
   }
 
   function getLocalUser() {
-    // 메인/게이트에서 저장한 값 우선 사용
     try {
       const raw = localStorage.getItem("uniqueCurrentUser");
       if (!raw) return null;
@@ -59,7 +52,6 @@
         id,
         name: String(u?.name || "").trim(),
         nickname: String(u?.nickname || "").trim(),
-        // balance가 있을 수도 / myUtPoints가 있을 수도
         balance: Number(u?.balance ?? localStorage.getItem("myUtPoints") ?? 0),
       };
     } catch {
@@ -78,11 +70,7 @@
       const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
       const text = await res.text();
       let js = null;
-      try {
-        js = JSON.parse(text);
-      } catch {
-        js = { ok: false, error: "bad_json", raw: text };
-      }
+      try { js = JSON.parse(text); } catch { js = { ok: false, error: "bad_json", raw: text }; }
       if (!res.ok && js && typeof js === "object" && !js.error) js.error = `http_${res.status}`;
       return js;
     } finally {
@@ -91,22 +79,12 @@
   }
 
   function pickUT(obj) {
-    // ✅ 시트/워커가 필드명을 바꿔도 여기서 다 흡수
-    // 가능한 후보들을 다 뒤진다.
     const cands = [
-      obj?.ut,
-      obj?.UT,
-      obj?.totalUT,
-      obj?.total_ut,
-      obj?.totalPoints,
-      obj?.points,
-      obj?.myUT,
-      obj?.wallet,
-      obj?.balance,
-      obj?.총UT,
-      obj?.["총 UT"],
-      obj?.["total UT"],
-      obj?.["TOTAL_UT"],
+      obj?.ut, obj?.UT,
+      obj?.totalUT, obj?.total_ut,
+      obj?.totalPoints, obj?.points,
+      obj?.myUT, obj?.wallet, obj?.balance,
+      obj?.총UT, obj?.["총 UT"], obj?.["total UT"],
     ];
     for (const v of cands) {
       const n = Number(v);
@@ -115,9 +93,8 @@
     return null;
   }
 
-  // ---------- DOM binding (slot.html id 기준) ----------
+  // ---------- DOM binding ----------
   const ui = {
-    title: $id("uiTitle"),
     player: $id("uiPlayer"),
     wallet: $id("uiWallet"),
     jackpot: $id("uiJackpot"),
@@ -129,25 +106,20 @@
     reelWrap: $id("uiReelWrap"),
     btnSpin: $id("btnSpin"),
     btnAuto: $id("btnAuto"),
-    // (없으면 JS가 만들어줌)
     btnSound: $id("btnSound"),
-    btnBetMinus: $id("btnBetMinus"),
-    btnBetPlus: $id("btnBetPlus"),
     betHint: $id("uiBetHint"),
   };
 
-  // ---------- inject minimal CSS (애니/버튼/배치) ----------
+  // ---------- inject CSS ----------
   function injectStyleOnce() {
     if (document.getElementById("slotPageInjectedStyle")) return;
     const st = document.createElement("style");
     st.id = "slotPageInjectedStyle";
     st.textContent = `
-      /* 버튼 사이즈 강제 축소 */
       .btn.tu-compact { padding: 10px 12px !important; border-radius: 14px !important; font-size: 12px !important; }
       .btnAuto.tu-compact { width: 120px !important; }
-      .btnSound.tu-compact { width: 140px !important; }
+      .btnSound.tu-compact { width: 130px !important; }
 
-      /* 베팅 컨트롤 */
       .tu-betbar{ display:flex; align-items:center; gap:10px; margin-top:10px; }
       .tu-betbtn{
         width:44px; height:40px;
@@ -157,36 +129,27 @@
         color: rgba(215,228,255,.92);
         font-weight:900;
         cursor:pointer;
-        box-shadow: 0 0 0 1px rgba(255,43,214,.10) inset, 0 18px 50px rgba(0,0,0,.25);
       }
       .tu-betmeta{
-        font-family: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-family: "Share Tech Mono", ui-monospace, Menlo, monospace;
         font-size: 12px;
         color: rgba(215,228,255,.82);
         letter-spacing: .06em;
       }
 
-      /* 스핀 드롭 애니 (위→아래) */
-      .tu-spin-drop{
-        animation: tuDrop .35s ease-in forwards;
-      }
+      .tu-spin-drop{ animation: tuDrop .35s ease-in forwards; }
       @keyframes tuDrop{
         0%{ transform: translateY(-36px); filter: blur(1px) saturate(1.25); opacity:.0; }
         60%{ opacity:1; }
         100%{ transform: translateY(0); filter:none; opacity:1; }
       }
-      .tu-spin-blur{
-        animation: tuBlur .7s linear infinite;
-      }
+      .tu-spin-blur{ animation: tuBlur .7s linear infinite; }
       @keyframes tuBlur{
         0%{ transform: translateY(-18px); filter: blur(2px) saturate(1.3); }
         100%{ transform: translateY(18px); filter: blur(2px) saturate(1.3); }
       }
 
-      /* paytable을 릴 아래로 옮길 때 프레임 유지 */
-      .tu-paywrap{
-        margin-top: 12px;
-      }
+      .tu-paywrap{ margin-top: 12px; }
       .tu-paytitle{
         font-family:"Orbitron", system-ui, sans-serif;
         font-weight:900;
@@ -204,18 +167,26 @@
   const ROWS = 3;
   const COLS = 5;
 
-  // repo에 실제 있는 파일만 요청(404 방지)
+  // repo에 실제 존재하는 파일만
   const AVAILABLE_PNG = new Set([
     "star1", "star2", "star3",
     "pro1", "pro2", "pro3", "pro4", "pro5", "pro6", "pro7", "pro8", "pro9", "pro10",
   ]);
 
-  // 서버 심볼값 -> 파일키로 정규화
-  function toKey(sym) {
+  // ✅ 심볼 정규화: pro09 → pro9, star03 → star3
+  function normalizeKey(sym) {
     const s = String(sym || "").trim().toLowerCase();
-    // 예: "STAR1" / "star_1" / "star-1" / "pro10" / "PRO 10"
-    const cleaned = s.replace(/[^a-z0-9]/g, "");
-    return cleaned; // star1, pro10
+    const cleaned = s.replace(/[^a-z0-9]/g, ""); // pro09, star3, pro10...
+
+    if (cleaned.startsWith("pro")) {
+      const num = parseInt(cleaned.slice(3), 10);
+      if (Number.isFinite(num)) return `pro${num}`;
+    }
+    if (cleaned.startsWith("star")) {
+      const num = parseInt(cleaned.slice(4), 10);
+      if (Number.isFinite(num)) return `star${num}`;
+    }
+    return cleaned;
   }
 
   function ensureCells() {
@@ -239,9 +210,8 @@
     return Array.from(cells);
   }
 
-  // 네온 SVG(이미지 없어도 괜찮게)
   function svgFor(sym) {
-    const key = toKey(sym).toUpperCase();
+    const key = normalizeKey(sym).toUpperCase();
     let g1 = "#21f6ff", g2 = "#ff2bd6";
     if (key.includes("STAR")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
     if (key.includes("PRO"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
@@ -272,7 +242,6 @@
     const cells = ensureCells();
     if (!cells.length) return;
 
-    // grid: [[..5],[..5],[..5]]
     const flat = [];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) flat.push(grid?.[r]?.[c] ?? "");
@@ -283,20 +252,17 @@
       const box = cell?.querySelector(".sym");
       if (!cell || !box) return;
 
-      if (!sym) {
-        box.innerHTML = "";
-        return;
-      }
+      if (!sym) { box.innerHTML = ""; return; }
 
       box.innerHTML = svgFor(sym);
 
-      // ✅ 실제 존재하는 파일만 얹는다(404 방지)
-      const key = toKey(sym);
+      const key = normalizeKey(sym);
+
+      // ✅ 경로 FIX: slot.html이 /games/ 에 있으므로 "./img/slot/"
       if (AVAILABLE_PNG.has(key)) {
         const img = document.createElement("img");
-        img.src = `../img/slot/${key}.png`; // ✅ 실제 repo: games/img/slot/pro1.png ...
+        img.src = `./img/slot/${key}.png`;   // ✅ 정답 경로
         img.alt = key;
-        img.onload = () => {};
         img.onerror = () => img.remove();
         box.appendChild(img);
       }
@@ -304,11 +270,9 @@
   }
 
   function randomSymbolKey() {
-    // 프리롤용 랜덤
     const arr = Array.from(AVAILABLE_PNG);
     return arr[(Math.random() * arr.length) | 0];
   }
-
   function buildRandomGrid() {
     const g = [];
     for (let r = 0; r < ROWS; r++) {
@@ -323,11 +287,9 @@
     const cells = ensureCells();
     if (!cells.length) return;
 
-    // blur 애니 on
     cells.forEach((cell, i) => {
       cell.classList.remove("tu-spin-drop");
       cell.classList.add("tu-spin-blur");
-      // 열별 딜레이 느낌 주기
       const col = i % COLS;
       cell.style.animationDelay = `${col * 45}ms`;
     });
@@ -338,7 +300,6 @@
       await sleep(70);
     }
 
-    // blur off, drop on (최종 결과는 호출하는 쪽에서 renderGrid 후 drop)
     cells.forEach((cell) => {
       cell.classList.remove("tu-spin-blur");
       cell.style.animationDelay = "";
@@ -350,13 +311,10 @@
     cells.forEach((cell, i) => {
       const col = i % COLS;
       cell.classList.remove("tu-spin-drop");
-      // reflow
       void cell.offsetWidth;
       cell.classList.add("tu-spin-drop");
       cell.style.animationDelay = `${col * 55}ms`;
     });
-
-    // 애니 끝나면 딜레이 제거
     setTimeout(() => {
       cells.forEach((cell) => (cell.style.animationDelay = ""));
     }, 600);
@@ -364,19 +322,18 @@
 
   // ---------- sound ----------
   const SOUND_FILES = {
-    start: "../sounds/start-button-sound.MP3",
-    spin: "../sounds/spining-sound.MP3",           // ✅ repo 이름: spining-sound.MP3 (오타 그대로)
-    stop: "../sounds/stop-stop-stop-sound.MP3",
-    win:  "../sounds/win-sound.MP3",
-    lose: "../sounds/lose-sound.MP3",
-    jackpot: "../sounds/jackpot-sound.MP3",
+    start: "./sounds/start-button-sound.MP3",
+    spin: "./sounds/spining-sound.MP3",
+    stop: "./sounds/stop-stop-stop-sound.MP3",
+    win:  "./sounds/win-sound.MP3",
+    lose: "./sounds/lose-sound.MP3",
+    jackpot: "./sounds/jackpot-sound.MP3",
   };
 
   const sound = {
     enabled: true,
     unlocked: false,
     a: {},
-    spinLoop: null,
   };
 
   function loadSoundPref() {
@@ -384,7 +341,6 @@
     if (v === "0") sound.enabled = false;
     if (v === "1") sound.enabled = true;
   }
-
   function saveSoundPref() {
     localStorage.setItem("uniqueSlotSound", sound.enabled ? "1" : "0");
   }
@@ -405,7 +361,6 @@
     if (sound.unlocked) return true;
     try {
       ensureAudio();
-      // 아주 짧게 재생했다가 멈춤(브라우저 정책 해제)
       const au = sound.a.start;
       au.currentTime = 0;
       await au.play();
@@ -414,7 +369,6 @@
       sound.unlocked = true;
       return true;
     } catch {
-      // 사용자가 “직접” 클릭하면 다시 시도되게 둔다
       return false;
     }
   }
@@ -440,12 +394,8 @@
       au.currentTime = 0;
       return;
     }
-    if (on) {
-      au.play().catch(() => {});
-    } else {
-      au.pause();
-      au.currentTime = 0;
-    }
+    if (on) au.play().catch(() => {});
+    else { au.pause(); au.currentTime = 0; }
   }
 
   // ---------- state ----------
@@ -454,7 +404,6 @@
   let spinning = false;
   let autoTimer = null;
 
-  // bet local override (서버가 bet을 안 주거나 무시해도 UI 유지)
   let betValue = 10;
 
   function loadBetPref() {
@@ -471,19 +420,29 @@
     if (autoTimer) clearInterval(autoTimer);
     autoTimer = null;
   }
-
   function startAuto() {
     if (autoOn) return;
     autoOn = true;
     if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
-    autoTimer = setInterval(() => {
-      if (!spinning) spin();
-    }, 1250);
+    autoTimer = setInterval(() => { if (!spinning) spin(); }, 1250);
+  }
+  function toggleAuto() {
+    if (autoOn) stopAuto(); else startAuto();
   }
 
-  function toggleAuto() {
-    if (autoOn) stopAuto();
-    else startAuto();
+  function setWalletUI(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return;
+    setText(ui.wallet, fmt(v));
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (raw) {
+        const uu = JSON.parse(raw);
+        uu.balance = v;
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
+      }
+      localStorage.setItem("myUtPoints", String(v));
+    } catch {}
   }
 
   function applyCompactButtons() {
@@ -495,7 +454,6 @@
   function ensureSoundButton() {
     if (!ui.btnSpin || ui.btnSound) return;
 
-    // 버튼 줄에 SOUND 버튼 삽입 (AUTO | SOUND | SPIN)
     const row = ui.btnSpin.closest(".row") || ui.btnSpin.parentElement;
     if (!row) return;
 
@@ -503,7 +461,6 @@
     btn.className = "btn btnAuto btnSound tu-compact";
     btn.id = "btnSound";
     btn.textContent = sound.enabled ? "SOUND ON" : "SOUND OFF";
-    btn.style.width = "140px";
     btn.addEventListener("click", async () => {
       await unlockAudioOnce();
       sound.enabled = !sound.enabled;
@@ -513,23 +470,17 @@
       sfx("start");
     });
 
-    // AUTO 다음에 넣기
-    if (ui.btnAuto && row.contains(ui.btnAuto)) {
-      ui.btnAuto.insertAdjacentElement("afterend", btn);
-    } else {
-      row.insertBefore(btn, ui.btnSpin);
-    }
+    if (ui.btnAuto && row.contains(ui.btnAuto)) ui.btnAuto.insertAdjacentElement("afterend", btn);
+    else row.insertBefore(btn, ui.btnSpin);
 
     ui.btnSound = btn;
   }
 
   function ensureBetControls() {
-    // slot.html의 BET 영역(uiBet) 아래에 -5 / 메타 / +5 줄 생성
     if (!ui.bet) return;
     const statBox = ui.bet.closest(".stat") || ui.bet.parentElement;
     if (!statBox) return;
 
-    // 이미 있으면 패스
     if (document.getElementById("btnBetMinus")) return;
 
     const bar = document.createElement("div");
@@ -569,49 +520,25 @@
     bar.appendChild(minus);
     bar.appendChild(meta);
     bar.appendChild(plus);
-
-    // BET 숫자 아래에 삽입
     statBox.appendChild(bar);
 
-    ui.btnBetMinus = minus;
-    ui.btnBetPlus = plus;
     ui.betHint = meta;
   }
 
   function buildPayTable() {
-    // ✅ 쓸데없는 “느낌” 같은 문장 제거
-    // 지금은 “족보”만 딱 보여주고, 배당/확률은 서버 로직에서 결정
     if (!ui.pay) return;
-
     ui.pay.innerHTML = `
-      <div class="ptItem">
-        <div class="ptLeft"><div class="badge">2×</div><div>같은 심볼 2개</div></div>
-        <div class="ptMul">WIN</div>
-      </div>
-      <div class="ptItem">
-        <div class="ptLeft"><div class="badge">3×</div><div>같은 심볼 3개</div></div>
-        <div class="ptMul">WIN</div>
-      </div>
-      <div class="ptItem">
-        <div class="ptLeft"><div class="badge">4×</div><div>같은 심볼 4개</div></div>
-        <div class="ptMul">BIG WIN</div>
-      </div>
-      <div class="ptItem">
-        <div class="ptLeft"><div class="badge">5×</div><div>같은 심볼 5개</div></div>
-        <div class="ptMul">MEGA</div>
-      </div>
-      <div class="ptItem">
-        <div class="ptLeft"><div class="badge">JP</div><div><b>PRO10</b> 5개 = JACKPOT</div></div>
-        <div class="ptMul">SPECIAL</div>
-      </div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">2×</div><div>같은 심볼 2개</div></div><div class="ptMul">WIN</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">3×</div><div>같은 심볼 3개</div></div><div class="ptMul">WIN</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">4×</div><div>같은 심볼 4개</div></div><div class="ptMul">BIG WIN</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">5×</div><div>같은 심볼 5개</div></div><div class="ptMul">MEGA</div></div>
+      <div class="ptItem"><div class="ptLeft"><div class="badge">JP</div><div><b>PRO10</b> 5개 = JACKPOT</div></div><div class="ptMul">SPECIAL</div></div>
     `;
   }
 
   function movePayTableUnderReels() {
-    // ✅ pay table을 릴 아래로 이동 (HTML 수정 없이)
-    if (!ui.reelWrap || !ui.reels || !ui.pay) return;
-    const already = ui.reelWrap.querySelector(".tu-paywrap");
-    if (already) return;
+    if (!ui.reelWrap || !ui.pay) return;
+    if (ui.reelWrap.querySelector(".tu-paywrap")) return;
 
     const wrap = document.createElement("div");
     wrap.className = "tu-paywrap";
@@ -621,24 +548,8 @@
     title.textContent = "PAY TABLE";
 
     wrap.appendChild(title);
-    wrap.appendChild(ui.pay); // 기존 paytable 요소를 통째로 이동
+    wrap.appendChild(ui.pay);
     ui.reelWrap.appendChild(wrap);
-  }
-
-  function setWalletUI(n) {
-    const v = Number(n);
-    if (!Number.isFinite(v)) return;
-    setText(ui.wallet, fmt(v));
-    // localStorage 동기화
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (raw) {
-        const uu = JSON.parse(raw);
-        uu.balance = v;
-        localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
-      }
-      localStorage.setItem("myUtPoints", String(v));
-    } catch {}
   }
 
   async function loadState() {
@@ -650,27 +561,22 @@
 
     if (!js?.ok) {
       setResult("STATE ERROR", true);
-      // ✅ UT는 로컬값이라도 보여주고, 에러만 노트에 표시
       setWalletUI(identity.balance);
       setNote(`state fail: ${js?.error || "unknown"}`, true);
       return null;
     }
 
     const displayName = String(js?.userName || js?.name || "").trim() ||
-      identity.name ||
-      identity.nickname ||
-      identity.id;
+      identity.name || identity.nickname || identity.id;
 
     setText(ui.player, displayName);
 
-    // ✅ UT 필드 흡수
     const ut = pickUT(js);
     if (ut !== null) setWalletUI(ut);
     else setWalletUI(identity.balance);
 
     setText(ui.jackpot, fmt(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0));
 
-    // bet
     const srvBet = Number(js.bet);
     if (Number.isFinite(srvBet) && srvBet > 0) {
       betValue = clamp(Math.round(srvBet / 5) * 5, 10, 500);
@@ -690,7 +596,6 @@
   async function spin() {
     if (spinning) return;
     spinning = true;
-
     if (ui.btnSpin) ui.btnSpin.disabled = true;
 
     try {
@@ -703,13 +608,12 @@
       setNote("SPINNING…");
       spinLoop(true);
 
-      // ✅ 먼저 “도는 연출” (API 기다리는 동안)
       const visual = spinVisual(750);
 
       const js = await fetchJSON(`${WORKER_BASE}/slot/spin`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ u, bet: betValue }) // 서버가 bet 받으면 적용, 아니면 무시
+        body: JSON.stringify({ u, bet: betValue })
       }, 25000);
 
       await visual;
@@ -719,28 +623,23 @@
 
       if (!js?.ok) {
         setResult("SPIN ERROR", true);
-
         const err = String(js?.error || "unknown");
         if (err.includes("user_not_found_in_sheet")) {
           setNote("유저가 슬롯 시트에 없음 → 메인에서 등록/동기화 후 다시 오세요.", true);
-          // 로컬 UT는 유지 표시
           setWalletUI(Number(localStorage.getItem("myUtPoints") || identity.balance || 0));
           stopAuto();
           return;
         }
-
         setNote(`spin fail: ${err}`, true);
         if (err.includes("insufficient")) stopAuto();
         return;
       }
 
-      // ✅ UT 필드 흡수
       const ut = pickUT(js);
       if (ut !== null) setWalletUI(ut);
 
       setText(ui.jackpot, fmt(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0));
 
-      // bet 서버가 내려주면 동기화
       const srvBet = Number(js.bet);
       if (Number.isFinite(srvBet) && srvBet > 0) {
         betValue = clamp(Math.round(srvBet / 5) * 5, 10, 500);
@@ -756,22 +655,13 @@
       const win = Number(js.win ?? js.payout ?? 0);
       const delta = win - betCharged;
 
-      if (delta > 0) {
-        setResult(`WIN +${fmt(delta)} UT`);
-        sfx("win");
-      } else if (delta < 0) {
-        setResult(`LOSE ${fmt(delta)} UT`);
-        sfx("lose");
-      } else {
-        setResult(`EVEN 0 UT`);
-      }
+      if (delta > 0) { setResult(`WIN +${fmt(delta)} UT`); sfx("win"); }
+      else if (delta < 0) { setResult(`LOSE ${fmt(delta)} UT`); sfx("lose"); }
+      else setResult("EVEN 0 UT");
 
-      // jackpot 플래그(있으면)
       if (js.jackpotHit || js.isJackpot) {
         setResult(`JACKPOT!!! +${fmt(js.jackpotWin ?? win)} UT`);
         sfx("jackpot");
-        if (ui.reelWrap) ui.reelWrap.classList.add("jackpotPulse");
-        setTimeout(() => ui.reelWrap && ui.reelWrap.classList.remove("jackpotPulse"), 1400);
       }
 
       setNote("");
@@ -797,41 +687,31 @@
     loadSoundPref();
     loadBetPref();
 
-    // UI 초기 표시 (서버 전이라도 UT 먼저 띄우기)
     setText(ui.player, identity.name || identity.nickname || identity.id);
     setWalletUI(identity.balance || Number(localStorage.getItem("myUtPoints") || 0));
-
     setText(ui.bet, fmt(betValue));
 
-    // 버튼 바인딩
     if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
     if (ui.btnAuto) ui.btnAuto.addEventListener("click", () => {
       unlockAudioOnce();
       sfx("start");
-      toggleAuto();
+      if (autoOn) { autoOn = false; stopAuto(); }
+      else startAuto();
     });
 
-    // 동적 UI 생성
     ensureSoundButton();
     ensureBetControls();
     applyCompactButtons();
 
-    // paytable 처리
     buildPayTable();
     movePayTableUnderReels();
 
-    // 초기 빈 그리드
     renderGrid(null);
-
-    // 상태 로드
     await loadState();
 
     console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__ || "no_version");
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();
