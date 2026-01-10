@@ -357,9 +357,8 @@
     </main>
   </div>
   <script>
-  // ✅ 배포된 Apps Script URL
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-  console.log("Gate GOOGLE_SCRIPT_URL:", GOOGLE_SCRIPT_URL);
+ const WORKER_BASE_URL = "https://the-unique-vault-api.wordycow0001.workers.dev";
+
 
   // ✅ 인앱 브라우저 감지(카톡/텔레그램/인스타 등)
   function isInAppBrowser(){
@@ -369,53 +368,28 @@
 
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-  // ✅ JSONP 1회 호출
-  function apiOnce(action, params = {}, timeoutMs = 25000) {
-    return new Promise((resolve, reject) => {
-      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+  // ✅ Worker API 호출 (타임아웃 포함)
+  async function api(action, payload = {}, timeoutMs = 20000){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
 
-      params.action = action;
-      params.callback = cb;
-      params._t = Date.now();
+    try {
+      const res = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {}),
+        signal: ctrl.signal
+      });
 
-      const qs = new URLSearchParams(params).toString();
-      const s = document.createElement("script");
-      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
-      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
-
-      const t = setTimeout(() => {
-        cleanup();
-        reject(new Error("API timeout"));
-      }, timeoutMs);
-
-      window[cb] = (data) => { cleanup(); resolve(data); };
-      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
-
-      function cleanup() {
-        clearTimeout(t);
-        try { delete window[cb]; } catch(e){}
-        try { s.remove(); } catch(e){}
-      }
-
-      document.body.appendChild(s);
-    });
-  }
-
-  // ✅ JSONP 재시도(모바일/느린망 대비)
-  async function api(action, params = {}) {
-    let lastErr = null;
-    const tries = 3;
-
-    for (let i = 1; i <= tries; i++){
-      try{
-        const timeoutMs = (i === 1) ? 20000 : 30000;  // 1차 20초, 2~3차 30초
-        return await apiOnce(action, params, timeoutMs);
-      } catch(e){
-        lastErr = e;
-        await sleep(450 * i);
-      }
+      const data = await res.json().catch(() => null);
+      if (!data) throw new Error("bad_response");
+      return data;
+    } catch (e) {
+      const msg = String(e && e.name === "AbortError" ? "timeout" : (e?.message || e));
+      throw new Error(msg);
+    } finally {
+      clearTimeout(t);
     }
-    throw lastErr || new Error("API failed");
   }
 
   function setStatus(msg, isError=false){
@@ -451,16 +425,15 @@
   const idInput = document.getElementById("login-id");
   const loginBtn = document.getElementById("login-btn");
 
-  // ✅ 인앱브라우저 안내(로그인 실패 민원 감소)
   if (isInAppBrowser()){
-    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 접속 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
+    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const raw = (idInput.value || "").trim();
-    const id = raw.toLowerCase(); // ✅ 소문자 통일 (시트/서버도 소문자 기준으로 맞추기)
+    const id = raw.toLowerCase();
 
     if (!id) { setStatus("아이디를 입력해 주세요.", true); return; }
 
@@ -468,6 +441,7 @@
     if (loginBtn) loginBtn.disabled = true;
 
     try {
+      // ✅ Worker를 통해서만 조회
       const r = await api("getUser", { id });
 
       if (!r || !r.ok || !r.user) {
@@ -481,15 +455,16 @@
 
     } catch (err) {
       console.error(err);
-
-      // ✅ 에러 메시지 분기(사용자가 원인 이해 가능)
       const msg = String(err && err.message ? err.message : err);
+
       if (msg.includes("timeout")) {
-        setStatus("네트워크 지연으로 서버 응답이 늦습니다. (크롬/사파리로 열기 권장) 다시 시도해 주세요.", true);
-      } else if (msg.includes("load failed")) {
-        setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", true);
+        setStatus("네트워크 지연입니다. 다시 시도해 주세요.", true);
+      } else if (msg.includes("forbidden_origin")) {
+        setStatus("보안 정책으로 차단되었습니다. (정상 경로로 접속했는지 확인)", true);
+      } else if (msg.includes("rate_limited")) {
+        setStatus("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", true);
       } else {
-        setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", true);
+        setStatus("서버 통신 오류입니다. (잠시 후 다시 시도)", true);
       }
 
       if (loginBtn) loginBtn.disabled = false;
