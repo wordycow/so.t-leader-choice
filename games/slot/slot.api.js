@@ -1,97 +1,68 @@
-/* /games/slot/slot.api.js */
-(function () {
-  "use strict";
+// games/slot/slot.api.js
+(() => {
+  const S = (window.SLOT = window.SLOT || {});
 
-  function normBase(input) {
-    const raw = (input || "").trim();
-    if (!raw) return "";
-    return raw.replace(/\/+$/,qTH/, "");
+  function normalizeBase(v) {
+    const s = String(v || "").trim();
+    return s ? s.replace(/\/+$/, "") : "";
   }
 
-  function slotRoot() {
-    const base = normBase(window.SLOT_API_BASE || "");
-    if (!base) return "";
-    // base가 .../slot 로 끝나면 그대로, 아니면 /slot 붙임
-    return /\/slot$/i.test(base) ? base : (base + "/slot");
+  function getBase() {
+    // 1) window.SLOT_API_BASE (slot.html에서 박는 값)
+    const w = normalizeBase(window.SLOT_API_BASE);
+
+    // 2) localStorage (필요하면 수동 세팅 가능)
+    const ls = normalizeBase(localStorage.getItem("unique_slot_api"));
+
+    return w || ls || "";
   }
 
-  async function readJsonOrText(res) {
-    const ct = (res.headers.get("content-type") || "").toLowerCase();
-    if (ct.includes("application/json")) return await res.json();
+  function setBase(url) {
+    const b = normalizeBase(url);
+    localStorage.setItem("unique_slot_api", b);
+    return b;
+  }
+
+  function url(path) {
+    const base = getBase();
+    if (!base) return path; // (원래는 권장X) 상대경로 fallback
+    return base + path;
+  }
+
+  async function fetchJson(input, init) {
+    const res = await fetch(input, init);
     const text = await res.text();
-    try { return JSON.parse(text); } catch { return { ok: false, error: text || `HTTP_${res.status}` }; }
-  }
 
-  async function request(path, { method = "GET", qs = null, body = null } = {}) {
-    const root = slotRoot();
-    if (!root) throw new Error("SLOT_API_BASE_missing");
-
-    let url = root + path;
-    if (qs && typeof qs === "object") {
-      const sp = new URLSearchParams();
-      Object.keys(qs).forEach(k => {
-        if (qs[k] !== undefined && qs[k] !== null) sp.set(k, String(qs[k]));
-      });
-      const q = sp.toString();
-      if (q) url += (url.includes("?") ? "&" : "?") + q;
-    }
-
-    const headers = { "Accept": "application/json" };
-    const init = { method, headers, mode: "cors" };
-
-    if (body !== null) {
-      headers["Content-Type"] = "application/json";
-      init.body = JSON.stringify(body);
-    }
-
-    const res = await fetch(url, init);
-    const data = await readJsonOrText(res);
-
-    // 서버가 ok:false를 줘도 그대로 반환 (throw 하지 않음)
-    // 단, 네트워크/HTTP 자체 실패만 throw
-    if (!res.ok && !(data && typeof data === "object" && "ok" in data)) {
-      throw new Error(`HTTP_${res.status}`);
-    }
-    return data;
-  }
-
-  const api = {
-    getBase() {
-      return slotRoot();
-    },
-
-    // ✅ 유저 상태 읽기
-    async state(user) {
-      return await request("/state", { method: "GET", qs: { u: user } });
-    },
-
-    // ✅ 스핀 요청
-    async spin(user, bet) {
-      return await request("/spin", { method: "POST", body: { u: user, bet } });
-    },
-
-    // ✅ 유저 등록(서버에 /slot/register 가 있어야 함)
-    async register(user) {
-      return await request("/register", { method: "POST", body: { u: user } });
-    },
-
-    // ✅ user_not_found_in_sheet면 자동 등록 시도
-    async ensureUser(user) {
-      const st = await api.state(user);
-      if (st && st.ok) return st;
-
-      const err = (st && st.error) ? String(st.error) : "";
-      if (err === "user_not_found_in_sheet") {
-        const reg = await api.register(user);
-        if (reg && reg.ok) {
-          return await api.state(user);
-        }
-        return reg; // 등록 실패면 등록 응답 그대로
+    // JSON 파싱 시도
+    try {
+      const data = JSON.parse(text);
+      if (!res.ok) {
+        const msg = data?.error || data?.message || `${res.status} ${res.statusText}`;
+        throw new Error(msg);
       }
-      return st;
+      return data;
+    } catch (e) {
+      // JSON이 아니라 HTML/텍스트로 온 경우
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText} :: ${text.slice(0, 140)}`);
+      throw new Error(`NOT_JSON :: ${text.slice(0, 140)}`);
     }
-  };
+  }
 
-  window.SLOT = window.SLOT || {};
-  window.SLOT.api = api;
+  async function state(nickname) {
+    const u = (nickname || "").trim();
+    if (!u) return { ok: false, error: "missing_nickname" };
+    return fetchJson(url(`/slot/state?u=${encodeURIComponent(u)}`), { method: "GET" });
+  }
+
+  async function spin(nickname, bet) {
+    const u = (nickname || "").trim();
+    if (!u) return { ok: false, error: "missing_nickname" };
+    return fetchJson(url(`/slot/spin`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ u, bet })
+    });
+  }
+
+  S.api = { getBase, setBase, state, spin };
 })();
