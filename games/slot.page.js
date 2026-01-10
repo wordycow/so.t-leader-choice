@@ -1,21 +1,63 @@
 /* games/slot.page.js
- * THE UNIQUE SLOT (cyber + vertical spin)
- * - localStorage(uniqueCurrentUser)로 자동 로그인
- * - WORKER_BASE /slot/state, /slot/spin 호출
- * - 스핀 연출: 위->아래로 빠르게 롤링하다가 결과 착지
- * - 사운드: start/spin/stop/win/lose/jackpot
+ * THE UNIQUE SLOT (cyber + vertical rolling + sounds)
+ *
+ * ✅ SLIDE( slide1~8 ) 완전 제거
+ * ✅ 위→아래 롤링 연출(진짜 슬롯 느낌: 컬럼별 스태거 멈춤)
+ * ✅ 사운드: start / spinning(loop) / stop-per-reel / win / lose / jackpot
+ * ✅ 이미지 경로: /games/img/slot/*.png (pro1~10, star1~3)
+ * ✅ jackpot.png 없음 → img 로드 안 함(404 스팸 제거), SVG 네온으로만 표시
+ * ✅ user_not_found_in_sheet 등 오류는 한글로 안내
  */
+
 (() => {
   "use strict";
 
-  // ✅ 워커 주소(필요하면 여기만 바꾸면 됨)
-  const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+  // =========================
+  // 0) CONFIG
+  // =========================
+  const DEFAULT_WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  // ✅ 버전 마커 (캐시/적용 확인용)
-  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_vertical_spin_v1";
-  console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__ || "no_version");
+  // ✅ 버전 마커 (콘솔에서 적용 확인)
+  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_roll_v3";
 
-  // ---------- utils ----------
+  // URL 쿼리로 워커 바꾸기 가능: /games/slot.html?api=https://...
+  const WORKER_BASE = (() => {
+    try {
+      const u = new URL(location.href);
+      const api = u.searchParams.get("api");
+      if (api && /^https?:\/\//i.test(api)) return api.replace(/\/+$/, "");
+    } catch {}
+    return DEFAULT_WORKER_BASE;
+  })();
+
+  // ✅ 심볼 풀: SLIDE 제거
+  const SYMBOL_POOL = (() => {
+    const arr = [];
+    for (let i = 1; i <= 3; i++) arr.push(`star${i}`);
+    for (let i = 1; i <= 10; i++) arr.push(`pro${i}`);
+    arr.push("jackpot");
+    return arr;
+  })();
+
+  // ✅ 사운드 파일 경로 (/games 기준)
+  const SOUND = {
+    start:   "sounds/start-button-sound.MP3",
+    spin:    "sounds/spining-sound.MP3",
+    stop:    "sounds/stop-stop-stop-sound.MP3",
+    win:     "sounds/win-sound.MP3",
+    lose:    "sounds/lose-sound.MP3",
+    jackpot: "sounds/jackpot-sound.MP3",
+  };
+
+  // 롤링 속도/시간(감성 세팅)
+  const ROLL_TICK_MS = 70;        // 굴러가는 프레임 간격 (작을수록 빠름)
+  const ROLL_MIN_MS  = 900;       // 최소 스핀 연출 시간
+  const ROLL_MAX_MS  = 1400;      // 최대 스핀 연출 시간
+  const STOP_STAGGER = 160;       // 컬럼 멈추는 간격
+
+  // =========================
+  // 1) UTIL
+  // =========================
   const $id = (id) => document.getElementById(id);
 
   function fmt(n) {
@@ -24,22 +66,43 @@
     return String(Math.floor(x));
   }
 
+  function randPick(arr) {
+    return arr[(Math.random() * arr.length) | 0];
+  }
+
   function setText(el, v) {
     if (!el) return;
     el.textContent = String(v ?? "");
   }
 
-  function setNote(msg, isError = false) {
-    if (!ui.note) return;
-    ui.note.textContent = msg || "";
-    ui.note.style.opacity = msg ? "1" : "0.75";
-    ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
+  function humanizeError(err) {
+    const e = String(err || "");
+    if (!e) return "알 수 없는 오류";
+    if (e.includes("user_not_found_in_sheet")) return "유저가 슬롯 시트에 없음 → 게이트에서 등록 후 다시 오세요.";
+    if (e.includes("insufficient")) return "UT 잔액이 부족합니다.";
+    if (e.includes("timeout")) return "요청 시간이 초과됐습니다(네트워크/워커 확인).";
+    if (e.includes("bad_json")) return "서버 응답 형식이 깨졌습니다(JSON 오류).";
+    if (e.includes("http_")) return `서버 HTTP 오류(${e.replace("http_", "")})`;
+    return e;
   }
 
-  function setResult(msg, isError = false) {
-    if (!ui.result) return;
-    ui.result.textContent = msg || "";
-    ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
+  async function fetchJSON(url, opt = {}, timeoutMs = 20000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
+    try {
+      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
+      const text = await res.text();
+      let js = null;
+      try { js = JSON.parse(text); }
+      catch { js = { ok: false, error: "bad_json", raw: text }; }
+
+      if (!res.ok && js && typeof js === "object" && !js.error) {
+        js.error = `http_${res.status}`;
+      }
+      return js;
+    } finally {
+      clearTimeout(t);
+    }
   }
 
   function getLocalUser() {
@@ -61,26 +124,12 @@
   }
 
   function redirectToGate() {
-    // /games/slot.html -> 한 단계 위
     location.href = "../the-unique-gate.html";
   }
 
-  async function fetchJSON(url, opt = {}, timeoutMs = 15000) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
-    try {
-      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
-      const text = await res.text();
-      let js = null;
-      try { js = JSON.parse(text); } catch { js = { ok: false, error: "bad_json", raw: text }; }
-      if (!res.ok && js && typeof js === "object" && !js.error) js.error = `http_${res.status}`;
-      return js;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  // ---------- DOM binding ----------
+  // =========================
+  // 2) DOM BIND
+  // =========================
   const ui = {
     title:   $id("uiTitle"),
     player:  $id("uiPlayer"),
@@ -96,54 +145,128 @@
     btnAuto: $id("btnAuto"),
   };
 
-  // ---------- sounds (GitHub는 대소문자 구분!) ----------
-  const SND = {
-    start:   new Audio("./sounds/start-button-sound.MP3"),
-    spin:    new Audio("./sounds/spining-sound.MP3"),
-    stop:    new Audio("./sounds/stop-stop-stop-sound.MP3"),
-    win:     new Audio("./sounds/win-sound.MP3"),
-    lose:    new Audio("./sounds/lose-sound.MP3"),
-    jackpot: new Audio("./sounds/jackpot-sound.MP3"),
-  };
-  SND.spin.loop = true;
-  function play(a, vol = 0.9) {
-    try {
-      a.pause();
-      a.currentTime = 0;
-      a.volume = vol;
-      a.play().catch(() => {});
-    } catch {}
-  }
-  function startLoop(a, vol = 0.6) {
-    try {
-      a.volume = vol;
-      a.play().catch(() => {});
-    } catch {}
-  }
-  function stopLoop(a) {
-    try { a.pause(); a.currentTime = 0; } catch {}
+  function setNote(msg, isError = false) {
+    if (!ui.note) return;
+    ui.note.textContent = msg || "";
+    ui.note.style.opacity = msg ? "1" : "0.75";
+    ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
   }
 
-  // ---------- reels ----------
+  function setResult(msg, isError = false) {
+    if (!ui.result) return;
+    ui.result.textContent = msg || "";
+    ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
+  }
+
+  // =========================
+  // 3) PAYTABLE (SLIDE 제거)
+  // =========================
+  function buildPaytable() {
+    if (!ui.pay) return;
+    ui.pay.innerHTML = `
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">★</div><div>STAR</div></div>
+        <div class="ptMul">x ?</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">P</div><div>PRO</div></div>
+        <div class="ptMul">x ?</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">JP</div><div>JACKPOT</div></div>
+        <div class="ptMul">SPECIAL</div>
+      </div>
+    `;
+  }
+
+  // =========================
+  // 4) SYMBOL RENDER (PNG + SVG NEON)
+  // =========================
+  function svgFor(sym) {
+    const s = String(sym || "").toLowerCase();
+    let g1 = "#21f6ff", g2 = "#ff2bd6";
+    if (s.startsWith("star")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
+    if (s.startsWith("pro"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
+    if (s.includes("jack"))   { g1 = "#ffcc33"; g2 = "#ff2bd6"; }
+
+    return `
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="${g1}"/>
+            <stop offset="1" stop-color="${g2}"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge>
+              <feMergeNode in="b"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="100" cy="100" r="70" fill="rgba(0,0,0,.15)" stroke="url(#g)" stroke-width="10" filter="url(#glow)"/>
+        <path d="M100 52 L118 92 L162 92 L126 118 L140 162 L100 136 L60 162 L74 118 L38 92 L82 92 Z"
+              fill="url(#g)" filter="url(#glow)" opacity="0.95"/>
+      </svg>
+    `;
+  }
+
+  // ✅ png 파일명 결정 (slide 제거 + jackpot png 금지)
+  function pickPngFile(sym) {
+    const raw = String(sym || "");
+    const s = raw.trim().toLowerCase();
+
+    // ✅ slide 들어오면 강제 치환(서버가 혹시 보내도 화면 안 깨짐)
+    if (s === "slide" || s.startsWith("slide")) return "pro1.png";
+
+    const mPro  = s.match(/^pro(\d+)$/);
+    const mStar = s.match(/^star(\d+)$/);
+
+    if (mPro) {
+      let n = Math.max(1, Math.min(10, Number(mPro[1] || 1)));
+      return `pro${n}.png`;
+    }
+    if (mStar) {
+      let n = Math.max(1, Math.min(3, Number(mStar[1] || 1)));
+      return `star${n}.png`;
+    }
+
+    if (s === "pro") return "pro1.png";
+    if (s === "star") return "star1.png";
+
+    // ✅ jackpot은 png 없음 → null (이미지 로드 안 함)
+    if (s.includes("jack")) return null;
+
+    // 그 외는 파일이 있으면 로드, 없으면 onerror로 제거됨
+    return `${s}.png`;
+  }
+
+  function renderSymbolInto(box, sym) {
+    if (!box) return;
+    box.innerHTML = sym ? svgFor(sym) : "";
+
+    const png = pickPngFile(sym);
+    if (!png) return; // jackpot 등
+
+    const img = document.createElement("img");
+    // ✅ slot.html 기준: /games/img/slot/...
+    img.src = `img/slot/${png}`;
+    img.alt = sym;
+    img.onerror = () => img.remove();
+    box.appendChild(img);
+  }
+
+  // =========================
+  // 5) REELS (3x5 GRID + VERTICAL ROLLING)
+  // =========================
   const ROWS = 3;
   const COLS = 5;
-
-  // 실제 이미지 폴더에 있는 이름들 기준(소문자)
-  const SYMBOL_POOL = [
-    "star1","star2","star3",
-    "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10",
-    "slide1","slide2","slide3","slide4","slide5","slide6","slide7","slide8",
-    "jackpot"
-  ];
-
-  function pickSym() {
-    return SYMBOL_POOL[(Math.random() * SYMBOL_POOL.length) | 0];
-  }
 
   function ensureCells() {
     if (!ui.reels) return [];
     const need = ROWS * COLS;
     let cells = ui.reels.querySelectorAll(".cell");
+
     if (!cells || cells.length !== need) {
       ui.reels.innerHTML = "";
       const frag = document.createDocumentFragment();
@@ -161,134 +284,174 @@
     return Array.from(cells);
   }
 
-  // 네온 SVG(기본 광기 유지용) + PNG 오버레이(있으면 더 미침)
-  function svgFor(symLower) {
-    const s = String(symLower || "").toUpperCase();
-    let g1 = "#21f6ff", g2 = "#ff2bd6";
-    if (s.includes("STAR")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
-    if (s.includes("PRO"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
-    if (s.includes("JACK")) { g1 = "#ffcc33"; g2 = "#ff2bd6"; }
-
-    return `
-      <svg viewBox="0 0 200 200" aria-hidden="true">
-        <defs>
-          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="${g1}"/>
-            <stop offset="1" stop-color="${g2}"/>
-          </linearGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="7" result="b"/>
-            <feMerge>
-              <feMergeNode in="b"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx="100" cy="100" r="76" fill="rgba(0,0,0,.15)" stroke="url(#g)" stroke-width="10" filter «=« "url(#glow)"/>
-        <path d="M100 46 L122 92 L172 92 L132 122 L148 172 L100 142 L52 172 L68 122 L28 92 L78 92 Z"
-              fill="url(#g)" filter="url(#glow)" opacity="0.96"/>
-      </svg>
-    `.replace("filter «=«", "filter=");
-  }
-
-  function renderOneCell(box, symAny) {
-    const sym = String(symAny ?? "");
-    const symLower = sym ? sym.toLowerCase() : "";
-    box.innerHTML = symLower ? svgFor(symLower) : "";
-
-    if (symLower) {
-      const img = document.createElement("img");
-      // ✅ 폴더가 games/img/slot 이니까 ./img/slot 이 맞음
-      img.src = `./img/slot/${symLower}.png`;
-      img.alt = symLower;
-      img.onerror = () => img.remove();
-      box.appendChild(img);
-    }
+  function cellAt(r, c, cells) {
+    return cells[r * COLS + c];
   }
 
   function renderGrid(grid) {
     const cells = ensureCells();
     if (!cells.length) return;
 
-    const flat = [];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        flat.push(grid?.[r]?.[c] ?? "");
+        const sym = grid?.[r]?.[c] ?? "";
+        const cell = cellAt(r, c, cells);
+        const box = cell?.querySelector(".sym");
+        if (cell) cell.classList.remove("spinBlur");
+        renderSymbolInto(box, sym);
       }
     }
-
-    flat.forEach((sym, i) => {
-      const cell = cells[i];
-      if (!cell) return;
-      const box = cell.querySelector(".sym");
-      if (!box) return;
-      renderOneCell(box, sym);
-    });
   }
 
-  // ---------- vertical spin animation (위 -> 아래) ----------
-  let spinTimer = null;
-  let spinCols = null; // COLS 배열, 각 col은 ROWS 길이
+  // ✅ 롤링: 컬럼별로 "위→아래로" 계속 내려가는 느낌
+  let rollTimers = new Array(COLS).fill(null);
+  let rolling = false;
 
-  function initSpinState() {
-    spinCols = Array.from({ length: COLS }, () =>
-      Array.from({ length: ROWS }, () => pickSym())
-    );
-  }
+  function startRollingFX() {
+    if (rolling) return;
+    rolling = true;
 
-  function drawSpinState() {
     const cells = ensureCells();
-    if (!cells.length || !spinCols) return;
 
-    // cells index = r*COLS + c
-    for (let c = 0; c < COLS; c++) {
+    // 현재 화면을 기준으로 시작 심볼을 잡고(없으면 랜덤)
+    const colSyms = Array.from({ length: COLS }, (_, c) => {
+      const a = [];
       for (let r = 0; r < ROWS; r++) {
-        const i = r * COLS + c;
-        const cell = cells[i];
-        const box = cell?.querySelector?.(".sym");
-        if (!box) continue;
-        renderOneCell(box, spinCols[c][r]);
+        const cell = cellAt(r, c, cells);
+        const imgAlt = cell?.querySelector("img")?.alt;
+        a.push(imgAlt || randPick(SYMBOL_POOL));
+      }
+      return a; // [top, mid, bot]
+    });
+
+    // 컬럼별 타이머: top에 랜덤 넣고 아래로 밀어내기
+    for (let c = 0; c < COLS; c++) {
+      if (rollTimers[c]) clearInterval(rollTimers[c]);
+
+      rollTimers[c] = setInterval(() => {
+        // [t,m,b] -> [new, t, m]
+        const cur = colSyms[c];
+        const nextTop = randPick(SYMBOL_POOL);
+        colSyms[c] = [nextTop, cur[0], cur[1]];
+
+        // 렌더 + 블러
+        for (let r = 0; r < ROWS; r++) {
+          const cell = cellAt(r, c, cells);
+          const box = cell?.querySelector(".sym");
+          if (cell) cell.classList.add("spinBlur");
+          renderSymbolInto(box, colSyms[c][r]);
+        }
+      }, ROLL_TICK_MS);
+    }
+  }
+
+  async function stopRollingToFinal(finalGrid) {
+    // 컬럼별로 스태거 멈춤 (왼→오)
+    const cells = ensureCells();
+
+    for (let c = 0; c < COLS; c++) {
+      await new Promise((r) => setTimeout(r, STOP_STAGGER));
+
+      if (rollTimers[c]) {
+        clearInterval(rollTimers[c]);
+        rollTimers[c] = null;
+      }
+
+      // stop 사운드 (릴 멈출 때 “딱”)
+      Sound.play("stop");
+
+      // 최종 결과로 고정
+      for (let r = 0; r < ROWS; r++) {
+        const sym = finalGrid?.[r]?.[c] ?? "";
+        const cell = cellAt(r, c, cells);
+        const box = cell?.querySelector(".sym");
+        if (cell) cell.classList.remove("spinBlur");
+        renderSymbolInto(box, sym);
       }
     }
+
+    rolling = false;
   }
 
-  function tickSpinDown() {
-    // 위에서 아래로: r2 <- r1, r1 <- r0, r0 <- new
-    for (let c = 0; c < COLS; c++) {
-      const col = spinCols[c];
-      col[2] = col[1];
-      col[1] = col[0];
-      col[0] = pickSym();
+  // spinBlur 효과를 JS로 주입 (slot.html 건드리기 싫어서)
+  function injectFXCSS() {
+    const css = `
+      .cell.spinBlur .sym { filter: blur(1.2px) saturate(1.25); transform: translateY(1px); }
+      .cell.spinBlur { box-shadow: 0 0 28px rgba(33,246,255,.14), 0 0 30px rgba(255,43,214,.10); }
+    `;
+    const tag = document.createElement("style");
+    tag.textContent = css;
+    document.head.appendChild(tag);
+  }
+
+  // =========================
+  // 6) SOUND ENGINE
+  // =========================
+  const Sound = (() => {
+    const aud = {};
+    let unlocked = false;
+
+    function get(name) {
+      if (aud[name]) return aud[name];
+      const src = SOUND[name];
+      if (!src) return null;
+
+      const a = new Audio(src);
+      a.preload = "auto";
+      a.crossOrigin = "anonymous";
+      aud[name] = a;
+      return a;
     }
-    drawSpinState();
-  }
 
-  function startSpinFX() {
-    if (spinTimer) return;
-    initSpinState();
-    drawSpinState();
-
-    if (ui.reelWrap) ui.reelWrap.classList.add("shake");
-    setTimeout(() => ui.reelWrap && ui.reelWrap.classList.remove("shake"), 260);
-
-    // 빠르게 “굴러가는” 느낌
-    spinTimer = setInterval(tickSpinDown, 65);
-  }
-
-  function stopSpinFX(finalGrid) {
-    if (spinTimer) clearInterval(spinTimer);
-    spinTimer = null;
-
-    // 착지(결과)
-    renderGrid(finalGrid);
-
-    if (ui.reelWrap) {
-      ui.reelWrap.classList.add("winFlash");
-      setTimeout(() => ui.reelWrap && ui.reelWrap.classList.remove("winFlash"), 650);
+    async function unlock() {
+      if (unlocked) return;
+      // 사용자 제스처에서만 성공 가능
+      const a = get("start");
+      if (!a) { unlocked = true; return; }
+      try {
+        a.volume = 0.0001;
+        await a.play();
+        a.pause();
+        a.currentTime = 0;
+        a.volume = 1.0;
+        unlocked = true;
+      } catch {
+        // 실패해도 계속 진행(브라우저 정책)
+        unlocked = false;
+      }
     }
-  }
 
-  // ---------- state ----------
+    function play(name, opt = {}) {
+      const a = get(name);
+      if (!a) return;
+
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch {}
+
+      if (typeof opt.loop === "boolean") a.loop = opt.loop;
+      if (typeof opt.volume === "number") a.volume = opt.volume;
+
+      a.play().catch(() => {});
+    }
+
+    function stop(name) {
+      const a = aud[name];
+      if (!a) return;
+      try {
+        a.loop = false;
+        a.pause();
+        a.currentTime = 0;
+      } catch {}
+    }
+
+    return { get, play, stop, unlock };
+  })();
+
+  // =========================
+  // 7) GAME FLOW
+  // =========================
   let identity = null;
   let autoOn = false;
   let spinning = false;
@@ -307,7 +470,7 @@
     if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
     autoTimer = setInterval(() => {
       if (!spinning) spin();
-    }, 1300);
+    }, 1400);
   }
 
   function toggleAuto() {
@@ -323,12 +486,15 @@
     const js = await fetchJSON(`${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}`, {}, 20000);
 
     if (!js?.ok) {
-      setResult(`STATE ERROR`, true);
-      setNote(`state fail: ${js?.error || "unknown"}`, true);
+      setResult("STATE ERROR", true);
+      setNote(humanizeError(js?.error || "unknown"), true);
       return null;
     }
 
-    const displayName = String(js?.userName || js?.name || "").trim() || identity.name || identity.id;
+    const displayName = String(js?.userName || js?.name || "").trim()
+      || identity.name
+      || identity.nickname
+      || identity.id;
 
     setText(ui.player, displayName);
     setText(ui.wallet, fmt(js.ut));
@@ -338,94 +504,115 @@
     setResult("READY");
     setNote("");
 
+    // grid 있으면 초기 표시
     if (js.grid) renderGrid(js.grid);
+    else renderGrid(null);
+
     return js;
+  }
+
+  function updateLocalBalance(ut) {
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (raw) {
+        const uu = JSON.parse(raw);
+        uu.balance = Number(ut || 0);
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
+        localStorage.setItem("myUtPoints", String(Number(ut || 0)));
+      }
+    } catch {}
   }
 
   async function spin() {
     if (spinning) return;
     spinning = true;
+
     if (ui.btnSpin) ui.btnSpin.disabled = true;
 
-    // 사운드 + 연출 시작
-    play(SND.start, 0.9);
-    startSpinFX();
-    startLoop(SND.spin, 0.55);
-    setNote("SPINNING…");
-
     try {
+      await Sound.unlock(); // 클릭에서만 가능
+      Sound.play("start", { volume: 0.9 });
+
       const u = identity?.id;
       if (!u) throw new Error("missing_user");
 
-      const js = await fetchJSON(`${WORKER_BASE}/slot/spin`, {
+      // 1) 롤링 시작 + 스핀 사운드(루프)
+      setResult("SPINNING…");
+      setNote("");
+      startRollingFX();
+      Sound.play("spin", { loop: true, volume: 0.55 });
+
+      // 최소 연출 시간 확보(너가 말한 “위에서 아래로 빠르게 돌기만” 먼저 보여주기)
+      const rollWait = Math.floor(ROLL_MIN_MS + Math.random() * (ROLL_MAX_MS - ROLL_MIN_MS));
+
+      // 2) 서버 요청(동시에 날리고, 최소 연출시간 끝나면 결과 적용)
+      const p = fetchJSON(`${WORKER_BASE}/slot/spin`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ u })
-      }, 25000);
+      }, 20000);
 
-      stopLoop(SND.spin);
+      const [js] = await Promise.all([
+        p,
+        new Promise((r) => setTimeout(r, rollWait))
+      ]);
 
       if (!js?.ok) {
-        stopSpinFX(null);
-
+        // 스핀 사운드 stop
+        Sound.stop("spin");
         setResult("SPIN ERROR", true);
-        setNote(`spin fail: ${js?.error || "unknown"}`, true);
+        setNote(humanizeError(js?.error || "unknown"), true);
 
-        // ✅ 지금 네 화면에 뜬 케이스: 시트에 유저가 없음
-        if (String(js?.error || "") === "user_not_found_in_sheet") {
-          setNote("유저가 슬롯 시트에 없음 → 게이트에서 등록 후 다시 오세요.", true);
-          // 자동중단
-          stopAuto();
+        // 롤링 멈추기(그냥 정지)
+        for (let c = 0; c < COLS; c++) {
+          if (rollTimers[c]) clearInterval(rollTimers[c]);
+          rollTimers[c] = null;
         }
+        rolling = false;
+
+        if (String(js?.error || "").includes("insufficient")) stopAuto();
         return;
       }
 
-      // 착지
-      stopSpinFX(js.grid);
-      play(SND.stop, 0.85);
-
+      // 3) UI 수치 먼저 반영
       setText(ui.wallet, fmt(js.ut));
       setText(ui.jackpot, fmt(js.jackpot));
       setText(ui.bet, fmt(js.bet ?? 10));
+      updateLocalBalance(js.ut);
+
+      // 4) 롤링 → 최종 그리드로 컬럼별 멈춤(스태거)
+      await stopRollingToFinal(js.grid);
+
+      // 5) 결과 텍스트 + 사운드
+      Sound.stop("spin");
 
       const betCharged = Number(js.betCharged || 0);
       const win = Number(js.win || 0);
       const delta = win - betCharged;
 
-      if (js.jackpotHit || String(js.hit || "").toLowerCase().includes("jackpot")) {
-        setResult(`JACKPOT +${fmt(win)} UT`);
-        play(SND.jackpot, 0.9);
-        ui.reelWrap?.classList?.add("jackpotPulse");
-        setTimeout(() => ui.reelWrap?.classList?.remove("jackpotPulse"), 900);
+      const isJackpot = Array.isArray(js.grid)
+        && js.grid.flat().some(v => String(v || "").toLowerCase().includes("jack"));
+
+      if (isJackpot) {
+        setResult("JACKPOT!!");
+        Sound.play("jackpot", { volume: 0.9 });
+        if (ui.reelWrap) ui.reelWrap.classList.add("jackpotPulse");
+        setTimeout(() => ui.reelWrap && ui.reelWrap.classList.remove("jackpotPulse"), 900);
       } else if (delta > 0) {
         setResult(`WIN +${fmt(delta)} UT`);
-        play(SND.win, 0.85);
+        Sound.play("win", { volume: 0.8 });
       } else if (delta < 0) {
         setResult(`LOSE ${fmt(delta)} UT`);
-        play(SND.lose, 0.85);
+        Sound.play("lose", { volume: 0.7 });
       } else {
-        setResult(`EVEN 0 UT`);
+        setResult("EVEN 0 UT");
+        Sound.play("lose", { volume: 0.45 });
       }
 
-      // localStorage 잔액 동기화
-      try {
-        const raw = localStorage.getItem("uniqueCurrentUser");
-        if (raw) {
-          const uu = JSON.parse(raw);
-          uu.balance = Number(js.ut || 0);
-          localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
-          localStorage.setItem("myUtPoints", String(Number(js.ut || 0)));
-        }
-      } catch (_) {}
-
-      setNote("");
-
     } catch (e) {
-      stopLoop(SND.spin);
-      stopSpinFX(null);
-
+      Sound.stop("spin");
       setResult("SPIN ERROR", true);
-      setNote(String(e?.message || e), true);
+      setNote(humanizeError(e?.message || e), true);
       stopAuto();
     } finally {
       spinning = false;
@@ -433,21 +620,22 @@
     }
   }
 
-  // ---------- boot ----------
+  // =========================
+  // 8) BOOT
+  // =========================
   async function boot() {
+    injectFXCSS();
+    buildPaytable();
+    renderGrid(null);
+
     identity = getLocalUser();
     if (!identity) return redirectToGate();
 
-    // nickname 보조
     const savedNick = localStorage.getItem("myNickname_" + identity.id);
     if (savedNick && !identity.nickname) identity.nickname = String(savedNick).trim();
 
     if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
     if (ui.btnAuto) ui.btnAuto.addEventListener("click", toggleAuto);
-
-    // 첫 화면: 빈 그리드 + 네온 기본
-    initSpinState();
-    drawSpinState();
 
     await loadState();
   }
@@ -457,4 +645,6 @@
   } else {
     boot();
   }
+
+  console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__, "WORKER=", WORKER_BASE);
 })();
