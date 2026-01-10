@@ -23,10 +23,6 @@
       --neon-amber:#ffcc33;
       --neon-violet:#a98bff;
 
-      --panel:rgba(9,12,28,.62);
-      --panel2:rgba(4,6,16,.58);
-      --stroke:rgba(140,170,255,.18);
-
       --shadow: 0 30px 90px rgba(0,0,0,.75);
       --blur: blur(12px);
 
@@ -120,7 +116,6 @@
       overflow:hidden;
     }
 
-    /* outer neon frame */
     .wrap:before{
       content:"";
       position:absolute; inset:-2px;
@@ -226,12 +221,20 @@
       font-size:15px;
       letter-spacing:.06em;
     }
+
+    /* ✅ UT 안 보이는 상황 방지: 기본색을 먼저 주고, 클립 지원일 때만 투명+그라데이션 */
     .v.neon{
-      color:transparent;
-      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-amber));
-      -webkit-background-clip:text;
-      background-clip:text;
-      text-shadow: 0 0 18px rgba(33,246,255,.18);
+      color: var(--neon-cyan);
+      text-shadow: 0 0 16px rgba(33,246,255,.22);
+    }
+    @supports (-webkit-background-clip:text) {
+      .v.neon{
+        color:transparent;
+        background: linear-gradient(90deg, var(--neon-cyan), var(--neon-amber));
+        -webkit-background-clip:text;
+        background-clip:text;
+        text-shadow: 0 0 18px rgba(33,246,255,.18);
+      }
     }
 
     .row{
@@ -301,6 +304,7 @@
       letter-spacing:.06em;
       color: rgba(215,228,255,.82);
       min-height: 18px;
+      white-space: pre-wrap;
     }
 
     .paytable{
@@ -372,18 +376,23 @@
       padding:10px;
       border-radius: 18px;
       border:1px solid rgba(140,170,255,.14);
-      background:
-        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
-      min-height: 340px;
+      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
+      min-height: 360px;
     }
 
-    /* --- Cells: Neon capsule --- */
+    /* ✅ “위→아래” 흐르는 느낌용: 틱 애니메이션 */
+    @keyframes reelTick {
+      0%   { transform: translateY(-18px); filter: blur(1.4px) brightness(1.05); opacity: .85; }
+      100% { transform: translateY(0);      filter: blur(0px)  brightness(1);    opacity: 1; }
+    }
+    .tick { animation: reelTick .08s linear 1; }
+
     .cell{
       border-radius:16px;
       border:1px solid rgba(140,170,255,.14);
       background: linear-gradient(180deg, rgba(9,12,28,.72), rgba(4,6,16,.44));
       display:flex; align-items:center; justify-content:center;
-      min-height:100px;
+      min-height:110px;
       position:relative;
       overflow:hidden;
       box-shadow:
@@ -408,81 +417,33 @@
       position:relative;
     }
 
-    /* SVG base */
     .sym svg{
-      width: 100%;
-      height: 100%;
+      width: 92%;
+      height: 92%;
       display:block;
       filter: drop-shadow(0 12px 18px rgba(0,0,0,.55));
     }
-
-    /* optional PNG overlay (if exists) */
     .sym img{
       position:absolute;
       inset: 6%;
       width:88%;
       height:88%;
       object-fit:contain;
-      opacity:.65;
+      opacity:.62;
       filter:
-        drop-shadow(0 0 14px rgba(33,246,255,.25))
+        drop-shadow(0 0 16px rgba(33,246,255,.28))
         drop-shadow(0 0 18px rgba(255,43,214,.18));
       mix-blend-mode: screen;
       pointer-events:none;
     }
 
-    /* --- Spin / Win FX --- */
-    .shake { animation: shake .22s linear 2; }
-    @keyframes shake{
-      0%{ transform: translateX(0); }
-      25%{ transform: translateX(-2px); }
-      50%{ transform: translateX(2px); }
-      75%{ transform: translateX(-1px); }
-      100%{ transform: translateX(0); }
-    }
-
-    .glitch{
-      position:relative;
-    }
-    .glitch:after, .glitch:before{
-      content: attr(data-glitch);
-      position:absolute;
-      left:0; top:0;
-      width:100%;
-      opacity:.45;
-      pointer-events:none;
-      font-family:"Orbitron", system-ui, sans-serif;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      mix-blend-mode: screen;
-    }
-    .glitch:before{
-      transform: translate(1px,0);
-      color: var(--neon-cyan);
-      clip-path: inset(0 0 55% 0);
-      animation: g1 .9s steps(2) infinite;
-    }
-    .glitch:after{
-      transform: translate(-1px,0);
-      color: var(--neon-pink);
-      clip-path: inset(45% 0 0 0);
-      animation: g2 .85s steps(2) infinite;
-    }
-    @keyframes g1{ 0%{transform:translate(1px,0)} 50%{transform:translate(2px,-1px)} 100%{transform:translate(1px,0)} }
-    @keyframes g2{ 0%{transform:translate(-1px,0)} 50%{transform:translate(-2px,1px)} 100%{transform:translate(-1px,0)} }
-
-    .winFlash{
-      animation: winFlash .6s ease-out 1;
-    }
+    .winFlash{ animation: winFlash .6s ease-out 1; }
     @keyframes winFlash{
-      0%{ box-shadow: 0 0 0 1px rgba(33,246,255,.15) inset, 0 0 0 rgba(0,0,0,0); }
+      0%{ box-shadow: 0 0 0 1px rgba(33,246,255,.15) inset; }
       40%{ box-shadow: 0 0 28px rgba(33,246,255,.22), 0 0 34px rgba(255,43,214,.16); }
       100%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
     }
-
-    .jackpotPulse{
-      animation: jackpotPulse .8s ease-in-out 2;
-    }
+    .jackpotPulse{ animation: jackpotPulse .8s ease-in-out 2; }
     @keyframes jackpotPulse{
       0%{ filter:saturate(1) contrast(1); }
       50%{ filter:saturate(1.6) contrast(1.15); }
@@ -518,7 +479,7 @@
           </div>
           <div class="stat">
             <div class="k">LAST RESULT</div>
-            <div class="v" id="uiResult">0</div>
+            <div class="v" id="uiResult">READY</div>
           </div>
         </div>
 
@@ -542,6 +503,6 @@
     </div>
   </div>
 
-  <script src="./slot.page.js?v=20260110_cyber_1"></script>
+  <script src="./slot.page.js?v=20260110_vertical_spin_v2"></script>
 </body>
 </html>
