@@ -174,138 +174,124 @@
   </div>
 
   <script>
-    // ✅ Apps Script URL (gate와 동일)
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+  const WORKER_BASE_URL = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-    function apiOnce(action, params = {}, timeoutMs = 25000) {
-      return new Promise((resolve, reject) => {
-        const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-        params.action = action;
-        params.callback = cb;
-        params._t = Date.now();
+  async function api(action, payload = {}, timeoutMs = 25000){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
 
-        const qs = new URLSearchParams(params).toString();
-        const s = document.createElement("script");
-        const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
-        s.src = GOOGLE_SCRIPT_URL + joiner + qs;
-
-        const t = setTimeout(() => { cleanup(); reject(new Error("API timeout")); }, timeoutMs);
-
-        window[cb] = (data) => { cleanup(); resolve(data); };
-        s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
-
-        function cleanup() {
-          clearTimeout(t);
-          try { delete window[cb]; } catch(e){}
-          try { s.remove(); } catch(e){}
-        }
-        document.body.appendChild(s);
+    try {
+      const res = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(payload || {}),
+        signal: ctrl.signal
       });
+
+      const data = await res.json().catch(()=>null);
+      if (!data) throw new Error("bad_response");
+      return data;
+    } catch (e) {
+      const msg = String(e && e.name === "AbortError" ? "timeout" : (e?.message || e));
+      throw new Error(msg);
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById("status");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "status";
+    if (type === "error") el.classList.add("status-error");
+    if (type === "ok") el.classList.add("status-ok");
+  }
+
+  function normalizeId(v){ return String(v || "").trim().toLowerCase(); }
+  function normalizePhone(v){ return String(v || "").replace(/[^\d]/g, ""); }
+
+  function saveUserToLocal(u) {
+    const idLower = String(u.id || "").toLowerCase().trim();
+    localStorage.setItem("uniqueCurrentUser", JSON.stringify({
+      id: idLower,
+      name: u.name || "",
+      phone: u.phone || "",
+      nickname: u.nickname || "",
+      team: u.team || "",
+      joinedAt: u.joinedAt || "",
+      balance: Number(u.balance || 0)
+    }));
+    localStorage.setItem("myUtPoints", String(Number(u.balance || 0)));
+    if (String(u.nickname || "").trim()) localStorage.setItem("myNickname_" + idLower, String(u.nickname || "").trim());
+  }
+
+  const form = document.getElementById("uniqueSignupForm");
+  const btnSubmit = document.getElementById("btn-submit");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setStatus("");
+
+    const id = normalizeId(document.getElementById("signup-id").value);
+    const name = (document.getElementById("signup-name").value || "").trim();
+    const phone = normalizePhone(document.getElementById("signup-phone").value);
+    const team = (document.getElementById("signup-team").value || "").trim();
+
+    if (!id || !name || !phone || !team) {
+      setStatus("모든 항목을 입력/선택해 주세요.", "error");
+      return;
+    }
+    if (phone.length < 9) {
+      setStatus("전화번호를 확인해 주세요. (숫자만)", "error");
+      return;
     }
 
-    async function api(action, params = {}) {
-      let lastErr = null;
-      for (let i = 1; i <= 3; i++){
-        try{
-          const timeoutMs = (i === 1) ? 20000 : 30000;
-          return await apiOnce(action, params, timeoutMs);
-        }catch(e){
-          lastErr = e;
-          await sleep(450 * i);
-        }
-      }
-      throw lastErr || new Error("API failed");
-    }
+    setStatus("가입 처리 중...");
+    btnSubmit.disabled = true;
 
-    function setStatus(msg, type) {
-      const el = document.getElementById("status");
-      if (!el) return;
-      el.textContent = msg || "";
-      el.className = "status";
-      if (type === "error") el.classList.add("status-error");
-      if (type === "ok") el.classList.add("status-ok");
-    }
-
-    function normalizeId(v){ return String(v || "").trim().toLowerCase(); }
-    function normalizePhone(v){ return String(v || "").replace(/[^\d]/g, ""); }
-
-    function saveUserToLocal(u) {
-      const idLower = String(u.id || "").toLowerCase().trim();
-      localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-        id: idLower,
-        name: u.name || "",
-        phone: u.phone || "",
-        nickname: u.nickname || "",
-        team: u.team || "",
-        joinedAt: u.joinedAt || "",
-        balance: Number(u.balance || 0)
-      }));
-      localStorage.setItem("myUtPoints", String(Number(u.balance || 0)));
-      if (String(u.nickname || "").trim()) localStorage.setItem("myNickname_" + idLower, String(u.nickname || "").trim());
-    }
-
-    const form = document.getElementById("uniqueSignupForm");
-    const btnSubmit = document.getElementById("btn-submit");
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      setStatus("");
-
-      const id = normalizeId(document.getElementById("signup-id").value);
-      const name = (document.getElementById("signup-name").value || "").trim();
-      const phone = normalizePhone(document.getElementById("signup-phone").value);
-      const team = (document.getElementById("signup-team").value || "").trim();
-
-      if (!id || !name || !phone || !team) {
-        setStatus("모든 항목을 입력/선택해 주세요.", "error");
-        return;
-      }
-      if (phone.length < 9) {
-        setStatus("전화번호를 확인해 주세요. (숫자만)", "error");
-        return;
-      }
-
-      setStatus("가입 처리 중...");
-      btnSubmit.disabled = true;
-
-      try {
-        // ✅ 중복 체크
-        const exists = await api("getUser", { id });
-        if (exists && exists.ok && exists.user) {
-          setStatus("이미 등록된 아이디입니다. 게이트에서 로그인해 주세요.", "error");
-          btnSubmit.disabled = false;
-          return;
-        }
-
-        // ✅ 가입
-        const r = await api("signup", { id, name, phone, team });
-
-        if (!r || !r.ok || !r.user) {
-          setStatus("가입 실패: " + (r?.error || "unknown"), "error");
-          btnSubmit.disabled = false;
-          return;
-        }
-
-        saveUserToLocal(r.user);
-        setStatus("가입 완료! 메인으로 이동합니다.", "ok");
-        window.location.href = "the-unique-main.html";
-
-      } catch (err) {
-        console.error(err);
-        const msg = String(err && err.message ? err.message : err);
-        if (msg.includes("timeout")) {
-          setStatus("네트워크 지연으로 가입이 지연되었습니다. 크롬/사파리로 열어서 다시 시도해 주세요.", "error");
-        } else if (msg.includes("load failed")) {
-          setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", "error");
-        } else {
-          setStatus("가입 처리 중 오류가 발생했습니다.", "error");
-        }
+    try {
+      // ✅ 중복 체크 (Worker 통해서만)
+      const exists = await api("getUser", { id });
+      if (exists && exists.ok && exists.user) {
+        setStatus("이미 등록된 아이디입니다. 게이트에서 로그인해 주세요.", "error");
         btnSubmit.disabled = false;
+        return;
       }
-    });
-  </script>
+
+      // ✅ 가입 (Worker 통해서만)
+      const r = await api("signup", { id, name, phone, team });
+
+      if (!r || !r.ok || !r.user) {
+        setStatus("가입 실패: " + (r?.error || "unknown"), "error");
+        btnSubmit.disabled = false;
+        return;
+      }
+
+      saveUserToLocal(r.user);
+      setStatus("가입 완료! 메인으로 이동합니다.", "ok");
+      window.location.href = "the-unique-main.html";
+
+    } catch (err) {
+      console.error(err);
+      const msg = String(err && err.message ? err.message : err);
+
+      if (msg.includes("timeout")) {
+        setStatus("네트워크 지연입니다. 다시 시도해 주세요.", "error");
+      } else if (msg.includes("forbidden_origin")) {
+        setStatus("보안 정책으로 차단되었습니다. (정상 경로로 접속했는지 확인)", "error");
+      } else if (msg.includes("rate_limited")) {
+        setStatus("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", "error");
+      } else {
+        setStatus("가입 처리 중 오류가 발생했습니다.", "error");
+      }
+
+      btnSubmit.disabled = false;
+    }
+  });
+</script>
 </body>
 </html>
