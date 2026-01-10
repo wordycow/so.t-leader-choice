@@ -1,33 +1,44 @@
 /* games/slot.page.js
- * THE UNIQUE SLOT - page controller
+ * THE UNIQUE SLOT (cyber)
  * - gate/main에서 저장한 localStorage(uniqueCurrentUser)로 자동 로그인
- * - worker의 /slot/state, /slot/spin 호출로 UT/잭팟/로그 동기화
+ * - WORKER_BASE /slot/state, /slot/spin 호출
+ * - 안 되면 화면(uiNote/uiResult)에 이유를 “보이게” 찍음
  */
-
 (() => {
   "use strict";
 
-  // ✅ 네 워커 주소(스크린샷에 찍히던 도메인으로 우선 넣음)
-  // 필요하면 여기만 바꾸면 됨.
+  // ✅ 워커 주소(필요하면 여기만 바꾸면 됨)
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  // ------- utils -------
-  const $ = (sel) => document.querySelector(sel);
-  const byId = (...ids) => {
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) return el;
-    }
-    return null;
-  };
+  // ✅ 버전 마커 (캐시/적용 확인용)
+  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_cyber_fix1";
+
+  // ---------- utils ----------
+  const $id = (id) => document.getElementById(id);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  async function fetchJSON(url, opt) {
-    const res = await fetch(url, opt);
-    const text = await res.text();
-    let js;
-    try { js = JSON.parse(text); } catch { js = { ok:false, error:"bad_json", raw:text }; }
-    return js;
+  function fmt(n) {
+    const x = Number(n || 0);
+    if (!Number.isFinite(x)) return "0";
+    return String(Math.floor(x));
+  }
+
+  function setText(el, v) {
+    if (!el) return;
+    el.textContent = String(v ?? "");
+  }
+
+  function setNote(msg, isError = false) {
+    if (!ui.note) return;
+    ui.note.textContent = msg || "";
+    ui.note.style.opacity = msg ? "1" : "0.75";
+    ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
+  }
+
+  function setResult(msg, isError = false) {
+    if (!ui.result) return;
+    ui.result.textContent = msg || "";
+    ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
   }
 
   function getLocalUser() {
@@ -49,172 +60,223 @@
   }
 
   function redirectToGate() {
-    // slot.html이 /games/ 아래니까 한 단계 위로
+    // /games/slot.html -> 한 단계 위
     location.href = "../the-unique-gate.html";
   }
 
-  function fmt(n) {
-    const x = Number(n || 0);
-    if (!Number.isFinite(x)) return "0";
-    // UT는 정수처럼 쓰는 분위기라 일단 정수표시
-    return String(Math.floor(x));
+  async function fetchJSON(url, opt = {}, timeoutMs = 15000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
+    try {
+      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
+      const text = await res.text();
+      let js = null;
+      try { js = JSON.parse(text); } catch { js = { ok: false, error: "bad_json", raw: text }; }
+      if (!res.ok && js && typeof js === "object" && !js.error) {
+        js.error = `http_${res.status}`;
+      }
+      return js;
+    } finally {
+      clearTimeout(t);
+    }
   }
 
-  function setText(el, v) {
-    if (!el) return;
-    el.textContent = v;
-  }
+  // ---------- DOM binding (slot.html id 기준) ----------
+  const ui = {
+    title:  $id("uiTitle"),
+    player: $id("uiPlayer"),
+    wallet: $id("uiWallet"),
+    jackpot:$id("uiJackpot"),
+    result: $id("uiResult"),
+    bet:    $id("uiBet"),
+    note:   $id("uiNote"),
+    pay:    $id("uiPaytable"),
+    reels:  $id("uiReels"),
+    reelWrap: $id("uiReelWrap"),
+    btnSpin: $id("btnSpin"),
+    btnAuto: $id("btnAuto"),
+  };
 
-  // ------- DOM binding (여러 id에 대응: 안 깨지게) -------
-  const elPlayer   = byId("playerVal", "player", "slotPlayer", "playerName");
-  const elWallet   = byId("walletVal", "wallet", "slotWallet", "walletUt");
-  const elJackpot  = byId("jackpotVal", "jackpot", "slotJackpot");
-  const elBet      = byId("betVal", "bet", "slotBet");
-  const elLast     = byId("lastResultVal", "lastResult", "slotLast", "lastWin");
+  // ---------- reels ----------
+  const ROWS = 3;
+  const COLS = 5;
 
-  const btnSpin    = byId("btnSpin", "spinBtn", "spin");
-  const btnAuto    = byId("btnAuto", "autoBtn", "auto");
-
-  const btnPlus    = byId("betPlus", "btnBetPlus", "plus");
-  const btnMinus   = byId("betMinus", "btnBetMinus", "minus");
-
-  const gridWrap   = byId("slotGrid", "grid", "reels", "slotReels") || $(".slot-grid") || $(".reels");
-
-  // ------- state -------
-  let identity = null;
-  let serverBet = 10;
-  let autoOn = false;
-  let autoTimer = null;
-  let spinning = false;
-
-  // 심볼 이미지 매핑(기존 png 그대로 쓰되, 나중에 네온/사이버로 바꾸면 여기만 바꿔도 됨)
-  const SYMBOL_IMG = (id) => `../img/slot/${id}.png`; // 폴더 구조에 맞게 조정 가능
-
-  function renderGrid(grid) {
-    if (!gridWrap) return;
-
-    // grid가 [ [..5], [..5], [..5] ] 형태라고 가정
-    // 컨테이너가 비어있으면 3x5를 만들어주고, 있으면 업데이트
-    const rows = Array.isArray(grid) ? grid : [];
-    const needCells = 15;
-
-    // 셀 수집/생성
-    let cells = gridWrap.querySelectorAll?.("[data-cell='1']");
-    if (!cells || cells.length !== needCells) {
-      gridWrap.innerHTML = "";
+  function ensureCells() {
+    if (!ui.reels) return [];
+    const need = ROWS * COLS;
+    let cells = ui.reels.querySelectorAll(".cell");
+    if (!cells || cells.length !== need) {
+      ui.reels.innerHTML = "";
       const frag = document.createDocumentFragment();
-      for (let i = 0; i < needCells; i++) {
+      for (let i = 0; i < need; i++) {
         const d = document.createElement("div");
-        d.dataset.cell = "1";
-        d.style.width = "100%";
-        d.style.height = "100%";
-        d.style.display = "flex";
-        d.style.alignItems = "center";
-        d.style.justifyContent = "center";
-        d.style.borderRadius = "14px";
-        d.style.background = "rgba(2,6,23,0.35)";
-        d.style.border = "1px solid rgba(250,204,21,0.12)";
-        d.style.boxShadow = "inset 0 0 22px rgba(0,0,0,0.6)";
+        d.className = "cell";
+        const sym = document.createElement("div");
+        sym.className = "sym";
+        d.appendChild(sym);
         frag.appendChild(d);
       }
-      gridWrap.appendChild(frag);
-      cells = gridWrap.querySelectorAll("[data-cell='1']");
+      ui.reels.appendChild(frag);
+      cells = ui.reels.querySelectorAll(".cell");
     }
+    return Array.from(cells);
+  }
 
-    // 값 넣기
+  // 심볼을 SVG로 네온 렌더 (PNG 없어도 “광기” 유지)
+  function svgFor(sym) {
+    const s = String(sym || "").toUpperCase();
+    let g1 = "#21f6ff", g2 = "#ff2bd6";
+    if (s.includes("STAR")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
+    if (s.includes("PRO"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
+    if (s.includes("JACK")) { g1 = "#ffcc33"; g2 = "#ff2bd6"; }
+
+    // 단순하지만 강한 네온 “엠블럼”
+    return `
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="${g1}"/>
+            <stop offset="1" stop-color="${g2}"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge>
+              <feMergeNode in="b"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="100" cy="100" r="70" fill="rgba(0,0,0,.15)" stroke="url(#g)" stroke-width="10" filter="url(#glow)"/>
+        <path d="M100 52 L118 92 L162 92 L126 118 L140 162 L100 136 L60 162 L74 118 L38 92 L82 92 Z"
+              fill="url(#g)" filter="url(#glow)" opacity="0.95"/>
+      </svg>
+    `;
+  }
+
+  function renderGrid(grid) {
+    const cells = ensureCells();
+    if (!cells.length) return;
+
+    // grid: [[..5],[..5],[..5]] 가정
     const flat = [];
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 5; c++) {
-        flat.push(rows?.[r]?.[c] || "");
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        flat.push(grid?.[r]?.[c] ?? "");
       }
     }
 
     flat.forEach((sym, i) => {
       const cell = cells[i];
       if (!cell) return;
-      // 이미지가 없으면 텍스트로라도 보여줌
-      cell.innerHTML = "";
+      const box = cell.querySelector(".sym");
+      if (!box) return;
+
+      box.innerHTML = sym ? svgFor(sym) : "";
+      // PNG가 있으면 “위에 살짝” 얹힘(선택)
       if (sym) {
         const img = document.createElement("img");
-        img.src = SYMBOL_IMG(sym);
+        img.src = `../img/slot/${sym}.png`;
         img.alt = sym;
-        img.style.maxWidth = "86%";
-        img.style.maxHeight = "86%";
-        img.style.filter = "drop-shadow(0 0 8px rgba(250,204,21,0.25))";
-        img.onerror = () => { cell.textContent = sym; };
-        cell.appendChild(img);
+        img.onerror = () => img.remove();
+        box.appendChild(img);
       }
     });
   }
 
-  function setLastResult({ betCharged, win, utAfter }) {
-    const b = Number(betCharged || 0);
-    const w = Number(win || 0);
-    const delta = w - b;
+  // ---------- state ----------
+  let identity = null;
+  let autoOn = false;
+  let spinning = false;
+  let autoTimer = null;
 
-    let msg = "";
-    if (delta > 0) msg = `WIN +${fmt(delta)} UT (bet ${fmt(b)} / win ${fmt(w)})`;
-    else if (delta < 0) msg = `LOSE ${fmt(delta)} UT (bet ${fmt(b)} / win ${fmt(w)})`;
-    else msg = `EVEN 0 UT (bet ${fmt(b)} / win ${fmt(w)})`;
+  function stopAuto() {
+    autoOn = false;
+    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO OFF";
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+  }
 
-    setText(elLast, msg);
-    if (typeof utAfter !== "undefined") setText(elWallet, fmt(utAfter));
+  function startAuto() {
+    if (autoOn) return;
+    autoOn = true;
+    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
+    autoTimer = setInterval(() => {
+      if (!spinning) spin();
+    }, 1200);
+  }
+
+  function toggleAuto() {
+    if (autoOn) stopAuto();
+    else startAuto();
   }
 
   async function loadState() {
-    // ✅ identity.id를 canonical로 사용 (게이트/메인과 동일)
     const u = identity?.id;
-    const js = await fetchJSON(`${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}`, { cache: "no-store" });
+    if (!u) return null;
+
+    setNote("SYNC…");
+    const js = await fetchJSON(`${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}`, {}, 20000);
 
     if (!js?.ok) {
-      setText(elLast, `STATE ERROR: ${js?.error || "unknown"}`);
+      setResult(`STATE ERROR`, true);
+      setNote(`state fail: ${js?.error || "unknown"} (NETWORK 탭에서 /slot/state 응답 확인)`, true);
       return null;
     }
 
-    serverBet = Number(js.bet || serverBet) || serverBet;
-
-    // PLAYER는 “이름”이 있으면 이름, 없으면 id
     const displayName = String(js?.userName || js?.name || "").trim() || identity.name || identity.id;
-    setText(elPlayer, displayName);
 
-    setText(elWallet, fmt(js.ut));
-    setText(elJackpot, fmt(js.jackpot));
-    setText(elBet, fmt(serverBet));
+    setText(ui.player, displayName);
+    setText(ui.wallet, fmt(js.ut));
+    setText(ui.jackpot, fmt(js.jackpot));
+    setText(ui.bet, fmt(js.bet ?? 10));
 
-    // 첫 진입 메시지
-    if (elLast && !elLast.textContent) setText(elLast, "READY");
+    setResult("READY");
+    setNote("");
+
+    // 초기 그리드가 있으면 렌더
+    if (js.grid) renderGrid(js.grid);
 
     return js;
   }
 
-  async function doSpin() {
+  async function spin() {
     if (spinning) return;
     spinning = true;
 
+    if (ui.btnSpin) ui.btnSpin.disabled = true;
+
     try {
       const u = identity?.id;
+      if (!u) throw new Error("missing_user");
+
+      setNote("SPINNING…");
       const js = await fetchJSON(`${WORKER_BASE}/slot/spin`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ u })
-      });
+      }, 20000);
 
       if (!js?.ok) {
-        setText(elLast, `SPIN ERROR: ${js?.error || "unknown"}`);
-        // 잔액 부족이면 자동중단
+        setResult("SPIN ERROR", true);
+        setNote(`spin fail: ${js?.error || "unknown"}`, true);
         if (String(js?.error || "").includes("insufficient")) stopAuto();
         return;
       }
 
-      // UI 반영
-      setText(elWallet, fmt(js.ut));
-      setText(elJackpot, fmt(js.jackpot));
-      setText(elBet, fmt(js.bet));
-
+      setText(ui.wallet, fmt(js.ut));
+      setText(ui.jackpot, fmt(js.jackpot));
+      setText(ui.bet, fmt(js.bet ?? 10));
       renderGrid(js.grid);
-      setLastResult({ betCharged: js.betCharged, win: js.win, utAfter: js.ut });
 
-      // localStorage도 최신 잔액으로 업데이트(메인이랑 일치)
+      const betCharged = Number(js.betCharged || 0);
+      const win = Number(js.win || 0);
+      const delta = win - betCharged;
+
+      if (delta > 0) setResult(`WIN +${fmt(delta)} UT`);
+      else if (delta < 0) setResult(`LOSE ${fmt(delta)} UT`);
+      else setResult(`EVEN 0 UT`);
+
+      // localStorage 잔액 동기화(메인/게이트와 일치)
       try {
         const raw = localStorage.getItem("uniqueCurrentUser");
         if (raw) {
@@ -225,64 +287,39 @@
         }
       } catch (_) {}
 
+      setNote("");
+
+    } catch (e) {
+      setResult("SPIN ERROR", true);
+      setNote(String(e?.message || e), true);
+      stopAuto();
     } finally {
       spinning = false;
+      if (ui.btnSpin) ui.btnSpin.disabled = false;
     }
   }
 
-  function startAuto() {
-    if (autoOn) return;
-    autoOn = true;
-    if (btnAuto) btnAuto.textContent = "AUTO ON";
-    autoTimer = setInterval(() => {
-      if (!spinning) doSpin();
-    }, 1200);
-  }
-
-  function stopAuto() {
-    autoOn = false;
-    if (btnAuto) btnAuto.textContent = "AUTO OFF";
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = null;
-  }
-
-  function toggleAuto() {
-    if (autoOn) stopAuto();
-    else startAuto();
-  }
-
-  // bet +/-는 서버 bet이 config 기반이면(고정) 사실상 UI만 바꾸는 꼴이라
-  // 지금은 “표시만” 조절하고, 실제 정산은 서버 bet을 따르게 둠.
-  // (원하면 다음 단계에서 서버도 bet 선택 허용으로 확장)
-  function bumpBet(dir) {
-    serverBet = Math.max(1, serverBet + dir);
-    setText(elBet, fmt(serverBet));
-    setText(elLast, "BET CHANGE (UI only)");
-  }
-
-  // ------- boot -------
+  // ---------- boot ----------
   async function boot() {
+    // ✅ 게이트/메인에서 저장된 user 없으면 “바로 게이트로”
     identity = getLocalUser();
     if (!identity) return redirectToGate();
 
-    // 메인에서 nickname을 따로 저장해둔 경우도 읽어서 identity에 반영
+    // nickname 보조 저장값
     const savedNick = localStorage.getItem("myNickname_" + identity.id);
     if (savedNick && !identity.nickname) identity.nickname = String(savedNick).trim();
 
     // 버튼 바인딩
-    if (btnSpin) btnSpin.addEventListener("click", doSpin);
-    if (btnAuto) btnAuto.addEventListener("click", toggleAuto);
-    if (btnPlus) btnPlus.addEventListener("click", () => bumpBet(+1));
-    if (btnMinus) btnMinus.addEventListener("click", () => bumpBet(-1));
+    if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
+    if (ui.btnAuto) ui.btnAuto.addEventListener("click", toggleAuto);
 
-    // MAIN 버튼(있다면)
-    const mainBtn = byId("btnMain", "mainBtn") || $(".to-main");
-    if (mainBtn) mainBtn.addEventListener("click", () => location.href = "../the-unique-main.html");
+    // 초기에 빈 그리드라도 생성
+    renderGrid(null);
 
+    // 상태 로드
     await loadState();
   }
 
-  // DOM ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
