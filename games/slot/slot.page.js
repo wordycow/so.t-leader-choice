@@ -1,15 +1,7 @@
-const API_BASE = "https://the-unique.yourworker.workers.dev";
-
 // games/slot/slot.page.js
 (() => {
-  const S = window.SLOT = window.SLOT || {};
-
-  // ✅ 네 Worker URL로 바꿔라 (예: https://xxx.workers.dev)
-  // 지금 이미 슬롯이 돌아가고 있는 워커 도메인 쓰면 됨
-  const API_BASE = (localStorage.getItem("unique_slot_api") || "").trim() || ""; 
-  // API_BASE가 비어있으면 "상대경로"로 호출 (같은 도메인에 워커 프록시가 있을 때만)
-  // 보통은 아래처럼 강제로 박아두는 걸 추천:
-  // const API_BASE = "https://YOUR-WORKER.yourname.workers.dev";
+  const S = (window.SLOT = window.SLOT || {});
+  const api = S.api;
 
   const els = {
     bg: document.getElementById("bg"),
@@ -43,7 +35,6 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     { id:"star1", name:"STAR 1", payout:2 },
     { id:"star2", name:"STAR 2", payout:3 },
     { id:"star3", name:"STAR 3", payout:5 },
-
     { id:"pro1", name:"PRO 1", payout:8 },
     { id:"pro2", name:"PRO 2", payout:12 },
     { id:"pro3", name:"PRO 3", payout:16 },
@@ -56,16 +47,34 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     { id:"pro10", name:"PRO 10", payout:200 },
   ];
 
-  function imgOf(id){
-    // games/slot.html 기준: img/slot/<id>.png
-    return `img/slot/${id}.png`;
+  function imgOf(id){ return `img/slot/${id}.png`; }
+  function hint(t){ if(els.hint) els.hint.textContent = t; }
+
+  function flashBg(){
+    if(!els.bg) return;
+    els.bg.classList.add("flash");
+    setTimeout(()=>els.bg.classList.remove("flash"), 280);
+  }
+
+  function getNickname(){
+    // URL 파라미터도 지원 (필요시)
+    const qs = new URLSearchParams(location.search);
+    const q = (qs.get("u") || qs.get("nickname") || "").trim();
+    if(q) return q;
+
+    // localStorage 키 여러 개 대응
+    const keys = ["unique_nickname", "uniqueNickname", "nickname", "user"];
+    for(const k of keys){
+      const v = (localStorage.getItem(k) || "").trim();
+      if(v) return v;
+    }
+    return "";
   }
 
   const state = {
     spinning: false,
     auto: false,
 
-    // 서버에서 갱신됨
     ut: 0,
     jackpot: 0,
     bet: 10,
@@ -74,21 +83,10 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     betMax: 1000,
     betStep: 10,
 
-    // 유저 식별(닉네임 기준)
-    nickname: (localStorage.getItem("unique_nickname") || "").trim(), // 내부 키
+    nickname: "",
     displayName: "",
-
-    // 마지막 결과
     lastWin: 0
   };
-
-  // ---------- UI helpers ----------
-  function flashBg(){
-    if(!els.bg) return;
-    els.bg.classList.add("flash");
-    setTimeout(()=>els.bg.classList.remove("flash"), 280);
-  }
-  function hint(t){ els.hint.textContent = t; }
 
   function setAuto(on){
     state.auto = !!on;
@@ -111,7 +109,6 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
 
   function buildPayTable(){
     els.payTable.innerHTML = "";
-    // 위에서부터 고급이 보이게 역순
     [...SYMBOLS].reverse().forEach(s => {
       const div = document.createElement("div");
       div.className = "pay-item";
@@ -124,13 +121,11 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     });
   }
 
-  // ---------- Reel visuals ----------
   function randomSymbolId(){
     return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)].id;
   }
 
   function stripHtml(count, loop=false){
-    // 3 visible + extra for loop 느낌
     const n = loop ? Math.max(count, 22) : count;
     let html = "";
     for(let i=0;i<n;i++){
@@ -138,7 +133,6 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
       html += `<div class="symbol"><img src="${imgOf(id)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>`;
     }
     if(loop){
-      // 루프용 복제(절반 이동)
       for(let i=0;i<n;i++){
         const id = randomSymbolId();
         html += `<div class="symbol"><img src="${imgOf(id)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>`;
@@ -167,13 +161,12 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
   }
 
   function stopReel(i, final3){
-    // final3: [top, mid, bot]
     const strip = els.reels[i];
     strip.classList.remove("spinning");
 
-    const top = final3[0] || randomSymbolId();
-    const mid = final3[1] || randomSymbolId();
-    const bot = final3[2] || randomSymbolId();
+    const top = final3?.[0] || randomSymbolId();
+    const mid = final3?.[1] || randomSymbolId();
+    const bot = final3?.[2] || randomSymbolId();
 
     strip.innerHTML = `
       <div class="symbol"><img src="${imgOf(top)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>
@@ -183,39 +176,9 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     strip.style.transform = "translateY(0)";
   }
 
-  // ---------- API ----------
-  function apiUrl(path){
-    if(API_BASE) return API_BASE.replace(/\/+$/,"") + path;
-    return path; // fallback
-  }
-
-  async function apiState(){
-    if(!state.nickname){
-      // 닉네임이 없으면 최소한 "이유송"으로 임시 설정해도 되지만,
-      // 시트에서 닉네임 매칭이 안 될 수 있으니 안내
-      return { ok:false, error:"missing_nickname" };
-    }
-    const url = apiUrl(`/slot/state?u=${encodeURIComponent(state.nickname)}`);
-    const res = await fetch(url, { method:"GET" });
-    return await res.json();
-  }
-
-  async function apiSpin(){
-    const url = apiUrl(`/slot/spin`);
-    const body = { u: state.nickname, bet: state.bet };
-    const res = await fetch(url, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-    return await res.json();
-  }
-
-  // ---------- Controls ----------
   function changeBet(delta){
     if(state.spinning) return;
     const next = Math.max(state.betMin, Math.min(state.betMax, state.bet + delta));
-    // step 정렬
     const step = Math.max(1, state.betStep);
     const aligned = Math.round(next / step) * step;
     state.bet = Math.max(state.betMin, Math.min(state.betMax, aligned));
@@ -232,7 +195,6 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     state.lastWin = 0;
     updateUI();
 
-    // 오디오 언락 & 시작
     S.audio?.unlockAudio();
     S.audio?.playOne("start");
 
@@ -242,20 +204,29 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
 
     let out;
     try{
-      out = await apiSpin();
+      out = await api.spin(state.nickname, state.bet);
       if(!out || !out.ok) throw new Error(out?.error || "spin_failed");
     }catch(e){
+      // ✅ 소리 끊김 방지: 무조건 stop 처리
       S.audio?.stopSpinSound();
       initReels();
       state.spinning = false;
       els.spinBtn.disabled = false;
-      hint("에러났음. 닉네임/워커/시트 연결 확인 ㄱㄱ");
-      alert("Spin Error: " + (e?.message || e));
+
+      const msg = (e?.message || String(e));
+
+      if(msg.includes("user_not_found_in_sheet")){
+        hint("시트에 유저가 없음. MAIN에서 닉네임 등록(또는 시트에 닉네임 행 추가) 필요");
+      } else {
+        hint("스핀 실패. 워커 URL / CORS / 응답 확인 ㄱㄱ");
+      }
+
+      alert("Spin Error: " + msg);
       if(state.auto) setAuto(false);
       return;
     }
 
-    // 서버에서 UT/표시명/잭팟 갱신
+    // 서버 반영
     if(out.displayName) state.displayName = out.displayName;
     if(out.ut != null) state.ut = Number(out.ut);
     if(out.jackpot != null) state.jackpot = Number(out.jackpot);
@@ -264,36 +235,22 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     const win = Number(out.win || 0);
     state.lastWin = Math.floor(win);
 
-    // 최소 연출 시간
     await new Promise(r => setTimeout(r, 850));
 
-    // 릴 순차 정지 + 멈춤 틱
     for(let i=0;i<5;i++){
       await new Promise(r => setTimeout(r, 230 + i*160));
-
-      // grid는 3x5
-      const col3 = [
-        grid?.[0]?.[i],
-        grid?.[1]?.[i],
-        grid?.[2]?.[i],
-      ];
+      const col3 = [ grid?.[0]?.[i], grid?.[1]?.[i], grid?.[2]?.[i] ];
       stopReel(i, col3);
-
-      // ✅ 릴 멈춤 소리 = 틱
       S.audio?.playStopTick();
     }
 
-    // 스핀 사운드 종료
     S.audio?.stopSpinSound();
-
-    // 결과 처리
     updateUI();
 
     const wt = String(out.winType || "").toLowerCase();
     if(win > 0){
       flashBg();
       els.payline.classList.add("show");
-
       if(wt.includes("jackpot")){
         hint("잭팟! PRO10 터졌다 👑");
         S.audio?.playOne("jackpot");
@@ -309,12 +266,9 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
     state.spinning = false;
     els.spinBtn.disabled = false;
 
-    // AUTO
     if(state.auto){
-      // 잔액 부족 대비: 다음 state에서 ut 확인
-      setTimeout(async () => {
+      setTimeout(() => {
         if(!state.auto) return;
-        // 잔액 부족이면 auto off
         if(Number(state.ut || 0) < Number(state.bet || 0)){
           setAuto(false);
           hint("UT 부족. AUTO OFF");
@@ -326,10 +280,15 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
   }
 
   async function boot(){
+    if(!api){
+      hint("slot.api.js가 로드 안 됨 (경로 확인: /games/slot/slot.api.js)");
+      return;
+    }
+
+    state.nickname = getNickname();
     buildPayTable();
     initReels();
 
-    // 버튼 바인딩
     els.betMinus.addEventListener("click", () => changeBet(-state.betStep));
     els.betPlus.addEventListener("click", () => changeBet(+state.betStep));
 
@@ -344,27 +303,30 @@ const API_BASE = "https://the-unique.yourworker.workers.dev";
 
     // 상태 로드
     hint("서버 상태 불러오는 중...");
-    const st = await apiState();
+    const st = await api.state(state.nickname);
+
     if(!st || !st.ok){
-      hint(state.nickname ? "유저 상태를 못 불러옴(닉네임/시트 매칭 확인)" : "닉네임이 없음. MAIN에서 닉네임 등록 후 다시 들어와.");
-      // 그래도 UI는 기본값
+      if(!state.nickname){
+        hint("닉네임이 없음. MAIN에서 닉네임 등록 후 다시 들어와.");
+      } else if(String(st.error || "").includes("user_not_found_in_sheet")){
+        hint("시트에 유저가 없음. MAIN 등록 또는 시트에 닉네임 행 추가 필요");
+      } else {
+        hint("유저 상태를 못 불러옴(워커 URL/CORS/응답 확인)");
+      }
       updateUI();
       return;
     }
 
-    // state 반영
     state.displayName = st.displayName || "";
     state.ut = (st.ut != null) ? Number(st.ut) : 0;
     state.jackpot = Number(st.jackpot || 0);
 
-    // bet 범위(워커가 안 주면 기본값)
     const cfg = st.slot_config || {};
     state.bet = Number(st.bet || cfg.BET_UT || state.bet);
     state.betMin = Number(cfg.BET_MIN || state.betMin);
     state.betMax = Number(cfg.BET_MAX || state.betMax);
     state.betStep = Number(cfg.BET_STEP || state.betStep);
 
-    // bet을 범위에 맞게 정렬
     state.bet = Math.max(state.betMin, Math.min(state.betMax, state.bet));
     updateUI();
     hint("준비 완료. SPIN 눌러라 😈");
