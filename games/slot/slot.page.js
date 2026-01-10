@@ -363,4 +363,34 @@
     if (auto) {
       autoTimer = setInterval(() => {
         if (!spinning) spinOnce().catch(e => setNote(String(e.message || e)));
-      }
+      }, 1100);
+    }
+  }
+
+  async function boot() {
+    identity = readIdentity();
+    if (!identity) {
+      alert("로그인이 필요합니다. 게이트로 이동합니다.");
+      location.href = "../the-unique-gate.html";
+      return;
+    }
+
+    ui.btnSpin?.addEventListener("click", () => spinOnce().catch(e => setNote(String(e.message || e))));
+    ui.btnAuto?.addEventListener("click", () => setAuto(!auto));
+
+    await fetchState();
+
+    setInterval(() => { fetchState().catch(() => {}); }, 8000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") fetchState().catch(() => {});
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    boot().catch(e => {
+      console.error(e);
+      setNote(String(e.message || e));
+    });
+  });
+})();
