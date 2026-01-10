@@ -1,164 +1,32 @@
 /* games/slot.page.js
- * THE UNIQUE SLOT - FINAL v4
- * ✅ UT 즉시 표시 + worker 동기화
- * ✅ SOUND ON/OFF 버튼
- * ✅ BET -5 / +5 (기본 10, 5~200 범위)
- * ✅ 세로(위→아래) 슬롯 스핀 연출 + 컬럼별 멈춤
- * ✅ pay table: 2/3/4/5 매치 안내 + PRO10 5개 = JACKPOT(희귀)
- * ✅ 404 제거: 존재하는 이미지(pro1~10, star1~3)만 요청
+ * THE UNIQUE SLOT (final-ish)
+ * - localStorage(uniqueCurrentUser) 기반 자동 로그인
+ * - WORKER_BASE /slot/state, /slot/spin
+ * - UT 표시 필드(ut/totalUT/총UT 등) 다 흡수
+ * - 사운드 ON/OFF + 베팅 -5/+5 (기본 10)
+ * - pay table을 릴 아래로 이동(HTML 수정 없이 JS로 재배치)
+ * - 이미지 요청은 repo에 실제 존재하는 pro1~pro10, star1~3만 로드(404 방지)
+ * - 스핀 시 위→아래로 “떨어지는” 느낌의 수직 드롭 애니 + 랜덤 프리롤
  */
 
 (() => {
   "use strict";
 
-  // ======================
-  // CONFIG
-  // ======================
+  // ✅ 워커 주소(필요하면 여기만)
   const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
-  const VERSION = "slot.page.js@2026-01-10_final_v4";
-  window.__UNIQUE_SLOT_PAGE__ = VERSION;
 
-  // slot.html(= /games/slot.html) 기준 상대경로
-  const IMG_BASE = "./img/slot/";
-  const SOUND_BASE = "./sounds/";
+  // ✅ 버전 마커
+  window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_final_v1";
 
-  // 실제 존재하는 심볼만 (slide1~8 제거 반영)
-  const SYMBOLS = [
-    "star1","star2","star3",
-    "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
-  ];
-
-  // BET 규칙
-  const BET_STEP = 5;
-  const BET_MIN = 5;
-  const BET_MAX = 200;
-  const BET_DEFAULT = 10;
-
-  // ======================
-  // DOM
-  // ======================
+  // ---------- utils ----------
   const $id = (id) => document.getElementById(id);
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  const ui = {
-    player:  $id("uiPlayer"),
-    wallet:  $id("uiWallet"),
-    jackpot: $id("uiJackpot"),
-    result:  $id("uiResult"),
-    bet:     $id("uiBet"),
-    note:    $id("uiNote"),
-    pay:     $id("uiPaytable"),
-    reels:   $id("uiReels"),
-    reelWrap:$id("uiReelWrap"),
-    btnSpin: $id("btnSpin"),
-    btnAuto: $id("btnAuto"),
-  };
-
-  // ======================
-  // STYLE INJECT
-  // ======================
-  function injectStyleOnce() {
-    if (document.getElementById("unique-slot-style-v4")) return;
-    const s = document.createElement("style");
-    s.id = "unique-slot-style-v4";
-    s.textContent = `
-      /* 컨트롤 바 (BET +/- , SOUND) */
-      .slotCtlRow{ display:flex; gap:10px; align-items:center; margin-top:10px; }
-      .slotMiniBtn{
-        cursor:pointer;
-        border-radius:12px;
-        padding:8px 10px;
-        font-weight:900;
-        letter-spacing:.08em;
-        font-family: "Orbitron", system-ui, sans-serif;
-        border:1px solid rgba(33,246,255,.20);
-        background: rgba(4,6,16,.40);
-        color: rgba(215,228,255,.92);
-        box-shadow: 0 0 0 1px rgba(255,43,214,.10) inset, 0 12px 28px rgba(0,0,0,.35);
-        user-select:none;
-      }
-      .slotMiniBtn:active{ transform: translateY(1px); }
-      .slotMiniBtn[disabled]{ opacity:.55; cursor:not-allowed; }
-      .slotPill{
-        padding:7px 10px;
-        border-radius:999px;
-        border:1px solid rgba(140,170,255,.14);
-        background: rgba(4,6,16,.30);
-        font-family:"Share Tech Mono", ui-monospace, monospace;
-        font-size:12px;
-        color: rgba(215,228,255,.82);
-        white-space:nowrap;
-      }
-
-      /* 스핀 연출(위→아래) */
-      #uiReels.isSpinning { filter: blur(.6px) saturate(1.2) contrast(1.08); }
-      #uiReels.isSpinning .cell .sym{ animation: symDrop .10s linear infinite; }
-      @keyframes symDrop { 0%{transform:translateY(-10px); opacity:.75} 100%{transform:translateY(10px); opacity:.95} }
-
-      /* 컬럼 멈출 때 타격감 */
-      .colSnap { animation: colSnap .16s ease-out 1; }
-      @keyframes colSnap { 0%{transform:scale(.985)} 100%{transform:scale(1)} }
-
-      #uiReels.winFlash { animation: winFlash .55s ease-out 1; }
-      @keyframes winFlash{
-        0%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
-        45%{ box-shadow: 0 0 28px rgba(33,246,255,.22), 0 0 34px rgba(255,43,214,.16); }
-        100%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
-      }
-
-      #uiReelWrap.jackpotPulse { animation: jackpotPulse .9s ease-in-out 2; }
-      @keyframes jackpotPulse{
-        0%{ transform: scale(1); }
-        50%{ transform: scale(1.015); }
-        100%{ transform: scale(1); }
-      }
-
-      /* paytable 좀 더 읽기 좋게 */
-      .ptTitle{
-        font-family:"Orbitron", system-ui, sans-serif;
-        font-weight:900;
-        letter-spacing:.12em;
-        font-size:12px;
-        opacity:.85;
-        margin-bottom:8px;
-      }
-      .ptGrid{ display:grid; gap:8px; }
-      .ptRow{
-        display:flex; align-items:center; justify-content:space-between;
-        padding:9px 10px;
-        border-radius:14px;
-        border:1px solid rgba(140,170,255,.12);
-        background: rgba(4,6,16,.30);
-        box-shadow: 0 0 0 1px rgba(33,246,255,.07) inset;
-        font-size:12px;
-      }
-      .ptLeft{ display:flex; align-items:center; gap:10px; }
-      .ptBadge{
-        width:26px;height:26px;border-radius:10px;
-        border:1px solid rgba(33,246,255,.22);
-        display:flex;align-items:center;justify-content:center;
-        background: rgba(2,6,23,.35);
-        font-weight:900;
-        font-family:"Share Tech Mono", ui-monospace, monospace;
-        box-shadow: 0 0 18px rgba(33,246,255,.12);
-        flex:0 0 26px;
-      }
-      .ptHint{ opacity:.78; font-family:"Share Tech Mono", ui-monospace, monospace; }
-    `;
-    document.head.appendChild(s);
-  }
-
-  // ======================
-  // Utils
-  // ======================
-  const toNum = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-
-  function fmtInt(v) {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return "0";
-    return String(Math.floor(n));
+  function fmt(n) {
+    const x = Number(n ?? 0);
+    if (!Number.isFinite(x)) return "0";
+    return String(Math.floor(x));
   }
 
   function setText(el, v) {
@@ -166,66 +34,33 @@
     el.textContent = String(v ?? "");
   }
 
-  function setNote(msg, isError=false) {
+  function setNote(msg, isError = false) {
     if (!ui.note) return;
     ui.note.textContent = msg || "";
-    ui.note.style.opacity = msg ? "1" : "0.75";
+    ui.note.style.opacity = msg ? "1" : "0.8";
     ui.note.style.color = isError ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
   }
 
-  function setResult(msg, isError=false) {
+  function setResult(msg, isError = false) {
     if (!ui.result) return;
     ui.result.textContent = msg || "";
     ui.result.style.color = isError ? "rgba(255,120,160,.95)" : "";
   }
 
-  function pickUT(js) {
-    if (!js || typeof js !== "object") return null;
-    const candidates = [
-      js.ut, js.UT, js.balance, js.wallet, js.points, js.utPoints, js.myUtPoints,
-      js.user?.ut, js.user?.balance, js.data?.ut, js.data?.balance, js.state?.ut
-    ];
-    for (const c of candidates) {
-      const n = toNum(c);
-      if (n !== null) return n;
-    }
-    return null;
-  }
-
-  async function fetchJSON(url, opt = {}, timeoutMs = 20000) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
-    try {
-      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
-      const text = await res.text();
-      let js;
-      try { js = JSON.parse(text); } catch { js = { ok:false, error:"bad_json", raw:text }; }
-      if (!res.ok && js && typeof js === "object" && !js.error) js.error = `http_${res.status}`;
-      return js;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  // ======================
-  // Local User / State
-  // ======================
   function getLocalUser() {
+    // 메인/게이트에서 저장한 값 우선 사용
     try {
       const raw = localStorage.getItem("uniqueCurrentUser");
       if (!raw) return null;
       const u = JSON.parse(raw);
       const id = String(u?.id || "").trim().toLowerCase();
       if (!id) return null;
-
-      const myUt = toNum(localStorage.getItem("myUtPoints"));
-      const bal = toNum(u?.balance);
-
       return {
         id,
         name: String(u?.name || "").trim(),
         nickname: String(u?.nickname || "").trim(),
-        balance: bal ?? myUt ?? 0,
+        // balance가 있을 수도 / myUtPoints가 있을 수도
+        balance: Number(u?.balance ?? localStorage.getItem("myUtPoints") ?? 0),
       };
     } catch {
       return null;
@@ -236,42 +71,152 @@
     location.href = "../the-unique-gate.html";
   }
 
-  function betKey(uid){ return `slotBet_${uid}`; }
-  function soundKey(uid){ return `slotSound_${uid}`; }
-
-  function loadBet(uid) {
-    const v = toNum(localStorage.getItem(betKey(uid)));
-    if (v === null) return BET_DEFAULT;
-    return clampBet(v);
+  async function fetchJSON(url, opt = {}, timeoutMs = 15000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
+    try {
+      const res = await fetch(url, { ...opt, signal: ctrl.signal, cache: "no-store" });
+      const text = await res.text();
+      let js = null;
+      try {
+        js = JSON.parse(text);
+      } catch {
+        js = { ok: false, error: "bad_json", raw: text };
+      }
+      if (!res.ok && js && typeof js === "object" && !js.error) js.error = `http_${res.status}`;
+      return js;
+    } finally {
+      clearTimeout(t);
+    }
   }
 
-  function saveBet(uid, v) {
-    localStorage.setItem(betKey(uid), String(clampBet(v)));
+  function pickUT(obj) {
+    // ✅ 시트/워커가 필드명을 바꿔도 여기서 다 흡수
+    // 가능한 후보들을 다 뒤진다.
+    const cands = [
+      obj?.ut,
+      obj?.UT,
+      obj?.totalUT,
+      obj?.total_ut,
+      obj?.totalPoints,
+      obj?.points,
+      obj?.myUT,
+      obj?.wallet,
+      obj?.balance,
+      obj?.총UT,
+      obj?.["총 UT"],
+      obj?.["total UT"],
+      obj?.["TOTAL_UT"],
+    ];
+    for (const v of cands) {
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
   }
 
-  function clampBet(v) {
-    let n = Number(v);
-    if (!Number.isFinite(n)) n = BET_DEFAULT;
-    n = Math.round(n / BET_STEP) * BET_STEP;
-    if (n < BET_MIN) n = BET_MIN;
-    if (n > BET_MAX) n = BET_MAX;
-    return n;
+  // ---------- DOM binding (slot.html id 기준) ----------
+  const ui = {
+    title: $id("uiTitle"),
+    player: $id("uiPlayer"),
+    wallet: $id("uiWallet"),
+    jackpot: $id("uiJackpot"),
+    result: $id("uiResult"),
+    bet: $id("uiBet"),
+    note: $id("uiNote"),
+    pay: $id("uiPaytable"),
+    reels: $id("uiReels"),
+    reelWrap: $id("uiReelWrap"),
+    btnSpin: $id("btnSpin"),
+    btnAuto: $id("btnAuto"),
+    // (없으면 JS가 만들어줌)
+    btnSound: $id("btnSound"),
+    btnBetMinus: $id("btnBetMinus"),
+    btnBetPlus: $id("btnBetPlus"),
+    betHint: $id("uiBetHint"),
+  };
+
+  // ---------- inject minimal CSS (애니/버튼/배치) ----------
+  function injectStyleOnce() {
+    if (document.getElementById("slotPageInjectedStyle")) return;
+    const st = document.createElement("style");
+    st.id = "slotPageInjectedStyle";
+    st.textContent = `
+      /* 버튼 사이즈 강제 축소 */
+      .btn.tu-compact { padding: 10px 12px !important; border-radius: 14px !important; font-size: 12px !important; }
+      .btnAuto.tu-compact { width: 120px !important; }
+      .btnSound.tu-compact { width: 140px !important; }
+
+      /* 베팅 컨트롤 */
+      .tu-betbar{ display:flex; align-items:center; gap:10px; margin-top:10px; }
+      .tu-betbtn{
+        width:44px; height:40px;
+        border-radius:14px;
+        border:1px solid rgba(33,246,255,.22);
+        background: rgba(4,6,16,.40);
+        color: rgba(215,228,255,.92);
+        font-weight:900;
+        cursor:pointer;
+        box-shadow: 0 0 0 1px rgba(255,43,214,.10) inset, 0 18px 50px rgba(0,0,0,.25);
+      }
+      .tu-betmeta{
+        font-family: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: rgba(215,228,255,.82);
+        letter-spacing: .06em;
+      }
+
+      /* 스핀 드롭 애니 (위→아래) */
+      .tu-spin-drop{
+        animation: tuDrop .35s ease-in forwards;
+      }
+      @keyframes tuDrop{
+        0%{ transform: translateY(-36px); filter: blur(1px) saturate(1.25); opacity:.0; }
+        60%{ opacity:1; }
+        100%{ transform: translateY(0); filter:none; opacity:1; }
+      }
+      .tu-spin-blur{
+        animation: tuBlur .7s linear infinite;
+      }
+      @keyframes tuBlur{
+        0%{ transform: translateY(-18px); filter: blur(2px) saturate(1.3); }
+        100%{ transform: translateY(18px); filter: blur(2px) saturate(1.3); }
+      }
+
+      /* paytable을 릴 아래로 옮길 때 프레임 유지 */
+      .tu-paywrap{
+        margin-top: 12px;
+      }
+      .tu-paytitle{
+        font-family:"Orbitron", system-ui, sans-serif;
+        font-weight:900;
+        letter-spacing:.14em;
+        font-size:12px;
+        color: rgba(215,228,255,.88);
+        margin: 4px 0 8px;
+        text-transform: uppercase;
+      }
+    `;
+    document.head.appendChild(st);
   }
 
-  function loadSoundOn(uid) {
-    const raw = localStorage.getItem(soundKey(uid));
-    if (raw === null) return true; // 기본 ON
-    return raw === "1";
-  }
-  function saveSoundOn(uid, on) {
-    localStorage.setItem(soundKey(uid), on ? "1" : "0");
-  }
-
-  // ======================
-  // Reels Render (15 cells)
-  // ======================
+  // ---------- reels ----------
   const ROWS = 3;
   const COLS = 5;
+
+  // repo에 실제 있는 파일만 요청(404 방지)
+  const AVAILABLE_PNG = new Set([
+    "star1", "star2", "star3",
+    "pro1", "pro2", "pro3", "pro4", "pro5", "pro6", "pro7", "pro8", "pro9", "pro10",
+  ]);
+
+  // 서버 심볼값 -> 파일키로 정규화
+  function toKey(sym) {
+    const s = String(sym || "").trim().toLowerCase();
+    // 예: "STAR1" / "star_1" / "star-1" / "pro10" / "PRO 10"
+    const cleaned = s.replace(/[^a-z0-9]/g, "");
+    return cleaned; // star1, pro10
+  }
 
   function ensureCells() {
     if (!ui.reels) return [];
@@ -294,588 +239,594 @@
     return Array.from(cells);
   }
 
-  function isPngSymbol(sym) {
-    const s = String(sym || "").toLowerCase();
-    return /^pro\d+$/.test(s) || /^star\d+$/.test(s);
-  }
+  // 네온 SVG(이미지 없어도 괜찮게)
+  function svgFor(sym) {
+    const key = toKey(sym).toUpperCase();
+    let g1 = "#21f6ff", g2 = "#ff2bd6";
+    if (key.includes("STAR")) { g1 = "#21f6ff"; g2 = "#b7ff2a"; }
+    if (key.includes("PRO"))  { g1 = "#ff2bd6"; g2 = "#a98bff"; }
 
-  function setCellSymbol(cells, r, c, sym) {
-    const idx = r * COLS + c;
-    const cell = cells[idx];
-    const box = cell?.querySelector?.(".sym");
-    if (!box) return;
-
-    const s = String(sym || "");
-    box.innerHTML = "";
-    if (!s) return;
-
-    // 404 방지: pro/star만 png 요청
-    if (isPngSymbol(s)) {
-      const img = document.createElement("img");
-      img.src = `${IMG_BASE}${s.toLowerCase()}.png`;
-      img.alt = s;
-      img.style.width = "88%";
-      img.style.height = "88%";
-      img.style.objectFit = "contain";
-      img.onerror = () => {
-        // 혹시 대소문자 혼합이면 한 번 더
-        img.src = `${IMG_BASE}${s}.png`;
-        img.onerror = () => img.remove();
-      };
-      box.appendChild(img);
-    } else {
-      box.textContent = s;
-    }
+    return `
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="${g1}"/>
+            <stop offset="1" stop-color="${g2}"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge>
+              <feMergeNode in="b"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="100" cy="100" r="70" fill="rgba(0,0,0,.10)" stroke="url(#g)" stroke-width="10" filter="url(#glow)"/>
+        <path d="M100 52 L118 92 L162 92 L126 118 L140 162 L100 136 L60 162 L74 118 L38 92 L82 92 Z"
+              fill="url(#g)" filter="url(#glow)" opacity="0.95"/>
+      </svg>
+    `;
   }
 
   function renderGrid(grid) {
     const cells = ensureCells();
     if (!cells.length) return;
+
+    // grid: [[..5],[..5],[..5]]
+    const flat = [];
     for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        setCellSymbol(cells, r, c, grid?.[r]?.[c] ?? "");
+      for (let c = 0; c < COLS; c++) flat.push(grid?.[r]?.[c] ?? "");
+    }
+
+    flat.forEach((sym, i) => {
+      const cell = cells[i];
+      const box = cell?.querySelector(".sym");
+      if (!cell || !box) return;
+
+      if (!sym) {
+        box.innerHTML = "";
+        return;
       }
+
+      box.innerHTML = svgFor(sym);
+
+      // ✅ 실제 존재하는 파일만 얹는다(404 방지)
+      const key = toKey(sym);
+      if (AVAILABLE_PNG.has(key)) {
+        const img = document.createElement("img");
+        img.src = `../img/slot/${key}.png`; // ✅ 실제 repo: games/img/slot/pro1.png ...
+        img.alt = key;
+        img.onload = () => {};
+        img.onerror = () => img.remove();
+        box.appendChild(img);
+      }
+    });
+  }
+
+  function randomSymbolKey() {
+    // 프리롤용 랜덤
+    const arr = Array.from(AVAILABLE_PNG);
+    return arr[(Math.random() * arr.length) | 0];
+  }
+
+  function buildRandomGrid() {
+    const g = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      for (let c = 0; c < COLS; c++) row.push(randomSymbolKey());
+      g.push(row);
     }
+    return g;
   }
 
-  function randSym() {
-    return SYMBOLS[(Math.random() * SYMBOLS.length) | 0];
-  }
-
-  // ======================
-  // Spin Visual (vertical + column stop)
-  // ======================
-  let colTimers = [];
-  let spinningVisual = false;
-
-  function startSpinVisual() {
-    if (!ui.reels) return;
-    spinningVisual = true;
-    ui.reels.classList.add("isSpinning");
-
+  async function spinVisual(duration = 700) {
     const cells = ensureCells();
-    colTimers.forEach(t => clearInterval(t));
-    colTimers = [];
+    if (!cells.length) return;
 
-    // 각 컬럼별로 “위→아래”로 심볼이 밀려 내려오는 느낌
-    for (let c = 0; c < COLS; c++) {
-      // 초기 컬럼 상태
-      let col = [randSym(), randSym(), randSym()];
-      const timer = setInterval(() => {
-        // 위에서 하나 들어오고, 아래로 밀림
-        col = [randSym(), col[0], col[1]];
-        for (let r = 0; r < ROWS; r++) setCellSymbol(cells, r, c, col[r]);
-      }, 60 + c * 8); // 컬럼마다 약간 다른 속도(자연스러움)
-      colTimers.push(timer);
+    // blur 애니 on
+    cells.forEach((cell, i) => {
+      cell.classList.remove("tu-spin-drop");
+      cell.classList.add("tu-spin-blur");
+      // 열별 딜레이 느낌 주기
+      const col = i % COLS;
+      cell.style.animationDelay = `${col * 45}ms`;
+    });
+
+    const start = performance.now();
+    while (performance.now() - start < duration) {
+      renderGrid(buildRandomGrid());
+      await sleep(70);
     }
+
+    // blur off, drop on (최종 결과는 호출하는 쪽에서 renderGrid 후 drop)
+    cells.forEach((cell) => {
+      cell.classList.remove("tu-spin-blur");
+      cell.style.animationDelay = "";
+    });
   }
 
-  function stopSpinVisualWithFinal(finalGrid, onEachColStop) {
-    // 컬럼별로 순차 멈추기
+  function dropFinal() {
     const cells = ensureCells();
-    colTimers.forEach(t => clearInterval(t));
-    colTimers = [];
+    cells.forEach((cell, i) => {
+      const col = i % COLS;
+      cell.classList.remove("tu-spin-drop");
+      // reflow
+      void cell.offsetWidth;
+      cell.classList.add("tu-spin-drop");
+      cell.style.animationDelay = `${col * 55}ms`;
+    });
 
-    const baseDelay = 120; // 컬럼 간 딜레이
-    for (let c = 0; c < COLS; c++) {
-      setTimeout(() => {
-        for (let r = 0; r < ROWS; r++) setCellSymbol(cells, r, c, finalGrid?.[r]?.[c] ?? "");
-        // 스냅 느낌
-        for (let r = 0; r < ROWS; r++) {
-          const idx = r * COLS + c;
-          const cell = cells[idx];
-          cell?.classList?.add("colSnap");
-          setTimeout(() => cell?.classList?.remove("colSnap"), 180);
-        }
-        if (typeof onEachColStop === "function") onEachColStop(c);
-        if (c === COLS - 1) {
-          spinningVisual = false;
-          ui.reels?.classList?.remove("isSpinning");
-        }
-      }, c * baseDelay);
-    }
+    // 애니 끝나면 딜레이 제거
+    setTimeout(() => {
+      cells.forEach((cell) => (cell.style.animationDelay = ""));
+    }, 600);
   }
 
-  function forceStopVisual() {
-    colTimers.forEach(t => clearInterval(t));
-    colTimers = [];
-    spinningVisual = false;
-    ui.reels?.classList?.remove("isSpinning");
-  }
-
-  // ======================
-  // Sounds (ON/OFF)
-  // ======================
-  const sounds = {
-    start:   new Audio(`${SOUND_BASE}start-button-sound.MP3`),
-    spin:    new Audio(`${SOUND_BASE}spining-sound.MP3`), // 파일명 그대로(spining)
-    stop:    new Audio(`${SOUND_BASE}stop-stop-stop-sound.MP3`),
-    win:     new Audio(`${SOUND_BASE}win-sound.MP3`),
-    lose:    new Audio(`${SOUND_BASE}lose-sound.MP3`),
-    jackpot: new Audio(`${SOUND_BASE}jackpot-sound.MP3`),
+  // ---------- sound ----------
+  const SOUND_FILES = {
+    start: "../sounds/start-button-sound.MP3",
+    spin: "../sounds/spining-sound.MP3",           // ✅ repo 이름: spining-sound.MP3 (오타 그대로)
+    stop: "../sounds/stop-stop-stop-sound.MP3",
+    win:  "../sounds/win-sound.MP3",
+    lose: "../sounds/lose-sound.MP3",
+    jackpot: "../sounds/jackpot-sound.MP3",
   };
 
-  let audioUnlocked = false;
-  let soundOn = true;
+  const sound = {
+    enabled: true,
+    unlocked: false,
+    a: {},
+    spinLoop: null,
+  };
 
-  function audioInit() {
-    try {
-      Object.values(sounds).forEach(a => {
-        a.preload = "auto";
-        a.volume = 0.7;
-      });
-      sounds.spin.loop = true;
-      sounds.spin.volume = 0.45;
-    } catch (_) {}
+  function loadSoundPref() {
+    const v = localStorage.getItem("uniqueSlotSound");
+    if (v === "0") sound.enabled = false;
+    if (v === "1") sound.enabled = true;
+  }
+
+  function saveSoundPref() {
+    localStorage.setItem("uniqueSlotSound", sound.enabled ? "1" : "0");
+  }
+
+  function ensureAudio() {
+    if (sound.a.start) return;
+    for (const [k, src] of Object.entries(SOUND_FILES)) {
+      const au = new Audio(src);
+      au.preload = "auto";
+      au.volume = 0.9;
+      sound.a[k] = au;
+    }
+    sound.a.spin.loop = true;
+    sound.a.spin.volume = 0.55;
   }
 
   async function unlockAudioOnce() {
-    if (audioUnlocked) return true;
+    if (sound.unlocked) return true;
     try {
-      const a = sounds.start;
-      a.currentTime = 0;
-      await a.play();
-      a.pause();
-      audioUnlocked = true;
+      ensureAudio();
+      // 아주 짧게 재생했다가 멈춤(브라우저 정책 해제)
+      const au = sound.a.start;
+      au.currentTime = 0;
+      await au.play();
+      au.pause();
+      au.currentTime = 0;
+      sound.unlocked = true;
       return true;
     } catch {
-      audioUnlocked = false;
+      // 사용자가 “직접” 클릭하면 다시 시도되게 둔다
       return false;
     }
   }
 
-  function applySoundOnOff(on) {
-    soundOn = !!on;
-    if (!soundOn) {
-      try { sounds.spin.pause(); sounds.spin.currentTime = 0; } catch(_) {}
+  function sfx(name) {
+    if (!sound.enabled) return;
+    ensureAudio();
+    const au = sound.a[name];
+    if (!au) return;
+    try {
+      au.pause();
+      au.currentTime = 0;
+      au.play().catch(() => {});
+    } catch {}
+  }
+
+  function spinLoop(on) {
+    ensureAudio();
+    const au = sound.a.spin;
+    if (!au) return;
+    if (!sound.enabled) {
+      au.pause();
+      au.currentTime = 0;
+      return;
     }
-    // 음소거는 볼륨으로 처리
-    try {
-      Object.entries(sounds).forEach(([k, a]) => {
-        if (!a) return;
-        if (!soundOn) a.volume = 0;
-        else {
-          // 기본 볼륨 복구
-          if (k === "spin") a.volume = 0.45;
-          else a.volume = 0.7;
-        }
-      });
-    } catch (_) {}
-  }
-
-  function playSound(key) {
-    if (!soundOn) return;
-    const a = sounds[key];
-    if (!a) return;
-    try {
-      a.currentTime = 0;
-      a.play().catch(() => {});
-    } catch (_) {}
-  }
-
-  function startSpinSound() {
-    if (!soundOn) return;
-    try {
-      sounds.spin.currentTime = 0;
-      sounds.spin.play().catch(() => {});
-    } catch (_) {}
-  }
-
-  function stopSpinSound() {
-    try {
-      sounds.spin.pause();
-      sounds.spin.currentTime = 0;
-    } catch (_) {}
-  }
-
-  // ======================
-  // Controls: SOUND 버튼 + BET +/- 버튼
-  // ======================
-  function addControls(identity, state) {
-    // SOUND 버튼: 기존 row(오토/스핀 버튼 라인)에 삽입
-    const row = ui.btnSpin?.parentElement; // .row
-    if (row && !document.getElementById("btnSound")) {
-      const btn = document.createElement("button");
-      btn.id = "btnSound";
-      btn.className = ui.btnAuto ? ui.btnAuto.className : "slotMiniBtn";
-      btn.style.width = "140px";
-      btn.textContent = soundOn ? "SOUND ON" : "SOUND OFF";
-      btn.addEventListener("click", async () => {
-        await unlockAudioOnce();
-        const next = !soundOn;
-        applySoundOnOff(next);
-        saveSoundOn(identity.id, next);
-        btn.textContent = next ? "SOUND ON" : "SOUND OFF";
-        if (next) playSound("start");
-      });
-
-      // AUTO 버튼 옆에 끼워넣기
-      // [AUTO] [SOUND] [SPIN]
-      if (ui.btnAuto && ui.btnAuto.nextSibling) {
-        row.insertBefore(btn, ui.btnAuto.nextSibling);
-      } else {
-        row.insertBefore(btn, ui.btnSpin);
-      }
-    }
-
-    // BET 컨트롤: BET 카드 아래쪽에 삽입
-    const betEl = ui.bet;
-    const betCard = betEl?.closest?.(".stat");
-    if (betCard && !document.getElementById("betMinus")) {
-      const ctl = document.createElement("div");
-      ctl.className = "slotCtlRow";
-
-      const minus = document.createElement("button");
-      minus.id = "betMinus";
-      minus.className = "slotMiniBtn";
-      minus.textContent = "-5";
-      minus.addEventListener("click", () => {
-        state.bet = clampBet(state.bet - BET_STEP);
-        setText(ui.bet, fmtInt(state.bet));
-        saveBet(identity.id, state.bet);
-        refreshBetButtons(state);
-      });
-
-      const pill = document.createElement("div");
-      pill.id = "betHint";
-      pill.className = "slotPill";
-      pill.textContent = `BET: ${state.bet} UT (±${BET_STEP})`;
-
-      const plus = document.createElement("button");
-      plus.id = "betPlus";
-      plus.className = "slotMiniBtn";
-      plus.textContent = "+5";
-      plus.addEventListener("click", () => {
-        state.bet = clampBet(state.bet + BET_STEP);
-        setText(ui.bet, fmtInt(state.bet));
-        saveBet(identity.id, state.bet);
-        refreshBetButtons(state);
-      });
-
-      ctl.appendChild(minus);
-      ctl.appendChild(pill);
-      ctl.appendChild(plus);
-
-      betCard.appendChild(ctl);
-      refreshBetButtons(state);
+    if (on) {
+      au.play().catch(() => {});
+    } else {
+      au.pause();
+      au.currentTime = 0;
     }
   }
 
-  function refreshBetButtons(state) {
-    const minus = document.getElementById("betMinus");
-    const plus = document.getElementById("betPlus");
-    const pill = document.getElementById("betHint");
-    if (pill) pill.textContent = `BET: ${state.bet} UT (±${BET_STEP})`;
-    if (minus) minus.disabled = state.bet <= BET_MIN;
-    if (plus) plus.disabled = state.bet >= BET_MAX;
+  // ---------- state ----------
+  let identity = null;
+  let autoOn = false;
+  let spinning = false;
+  let autoTimer = null;
+
+  // bet local override (서버가 bet을 안 주거나 무시해도 UI 유지)
+  let betValue = 10;
+
+  function loadBetPref() {
+    const v = Number(localStorage.getItem("uniqueSlotBet") || 10);
+    if (Number.isFinite(v)) betValue = clamp(Math.round(v / 5) * 5, 10, 500);
+  }
+  function saveBetPref() {
+    localStorage.setItem("uniqueSlotBet", String(betValue));
   }
 
-  // ======================
-  // Paytable UI (안내용)
-  // ======================
-  function renderPaytable() {
+  function stopAuto() {
+    autoOn = false;
+    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO OFF";
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+  }
+
+  function startAuto() {
+    if (autoOn) return;
+    autoOn = true;
+    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
+    autoTimer = setInterval(() => {
+      if (!spinning) spin();
+    }, 1250);
+  }
+
+  function toggleAuto() {
+    if (autoOn) stopAuto();
+    else startAuto();
+  }
+
+  function applyCompactButtons() {
+    if (ui.btnAuto) ui.btnAuto.classList.add("tu-compact");
+    if (ui.btnSpin) ui.btnSpin.classList.add("tu-compact");
+    if (ui.btnSound) ui.btnSound.classList.add("btnSound", "tu-compact");
+  }
+
+  function ensureSoundButton() {
+    if (!ui.btnSpin || ui.btnSound) return;
+
+    // 버튼 줄에 SOUND 버튼 삽입 (AUTO | SOUND | SPIN)
+    const row = ui.btnSpin.closest(".row") || ui.btnSpin.parentElement;
+    if (!row) return;
+
+    const btn = document.createElement("button");
+    btn.className = "btn btnAuto btnSound tu-compact";
+    btn.id = "btnSound";
+    btn.textContent = sound.enabled ? "SOUND ON" : "SOUND OFF";
+    btn.style.width = "140px";
+    btn.addEventListener("click", async () => {
+      await unlockAudioOnce();
+      sound.enabled = !sound.enabled;
+      btn.textContent = sound.enabled ? "SOUND ON" : "SOUND OFF";
+      saveSoundPref();
+      if (!sound.enabled) spinLoop(false);
+      sfx("start");
+    });
+
+    // AUTO 다음에 넣기
+    if (ui.btnAuto && row.contains(ui.btnAuto)) {
+      ui.btnAuto.insertAdjacentElement("afterend", btn);
+    } else {
+      row.insertBefore(btn, ui.btnSpin);
+    }
+
+    ui.btnSound = btn;
+  }
+
+  function ensureBetControls() {
+    // slot.html의 BET 영역(uiBet) 아래에 -5 / 메타 / +5 줄 생성
+    if (!ui.bet) return;
+    const statBox = ui.bet.closest(".stat") || ui.bet.parentElement;
+    if (!statBox) return;
+
+    // 이미 있으면 패스
+    if (document.getElementById("btnBetMinus")) return;
+
+    const bar = document.createElement("div");
+    bar.className = "tu-betbar";
+
+    const minus = document.createElement("button");
+    minus.id = "btnBetMinus";
+    minus.className = "tu-betbtn";
+    minus.textContent = "-5";
+
+    const meta = document.createElement("div");
+    meta.id = "uiBetHint";
+    meta.className = "tu-betmeta";
+    meta.textContent = `BET: ${betValue} UT (±5)`;
+
+    const plus = document.createElement("button");
+    plus.id = "btnBetPlus";
+    plus.className = "tu-betbtn";
+    plus.textContent = "+5";
+
+    minus.addEventListener("click", () => {
+      betValue = clamp(betValue - 5, 10, 500);
+      saveBetPref();
+      setText(ui.bet, fmt(betValue));
+      meta.textContent = `BET: ${betValue} UT (±5)`;
+      sfx("start");
+    });
+
+    plus.addEventListener("click", () => {
+      betValue = clamp(betValue + 5, 10, 500);
+      saveBetPref();
+      setText(ui.bet, fmt(betValue));
+      meta.textContent = `BET: ${betValue} UT (±5)`;
+      sfx("start");
+    });
+
+    bar.appendChild(minus);
+    bar.appendChild(meta);
+    bar.appendChild(plus);
+
+    // BET 숫자 아래에 삽입
+    statBox.appendChild(bar);
+
+    ui.btnBetMinus = minus;
+    ui.btnBetPlus = plus;
+    ui.betHint = meta;
+  }
+
+  function buildPayTable() {
+    // ✅ 쓸데없는 “느낌” 같은 문장 제거
+    // 지금은 “족보”만 딱 보여주고, 배당/확률은 서버 로직에서 결정
     if (!ui.pay) return;
 
     ui.pay.innerHTML = `
-      <div class="ptTitle">PAY TABLE (느낌: 자주 작은 승리 + 가끔 큰 승리)</div>
-      <div class="ptGrid">
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">2x</div><div>전체 15칸 중 <b>같은 심볼 2개</b></div></div>
-          <div class="ptHint">작은 보상 / 재미 유지</div>
-        </div>
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">3x</div><div>전체 15칸 중 <b>같은 심볼 3개</b></div></div>
-          <div class="ptHint">체감 승리 시작</div>
-        </div>
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">4x</div><div>전체 15칸 중 <b>같은 심볼 4개</b></div></div>
-          <div class="ptHint">큰 승리(흥분 구간)</div>
-        </div>
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">5x</div><div>전체 15칸 중 <b>같은 심볼 5개</b></div></div>
-          <div class="ptHint">강한 보상(고조)</div>
-        </div>
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">JP</div><div><b>PRO10</b>이 <b>5개</b>면 JACKPOT</div></div>
-          <div class="ptHint">“진짜 희귀” (연 2회 체감 목표)</div>
-        </div>
-        <div class="ptRow">
-          <div class="ptLeft"><div class="ptBadge">S</div><div>심볼: STAR1~3 / PRO1~10</div></div>
-          <div class="ptHint">슬라이드/잭팟PNG 없음</div>
-        </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">2×</div><div>같은 심볼 2개</div></div>
+        <div class="ptMul">WIN</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">3×</div><div>같은 심볼 3개</div></div>
+        <div class="ptMul">WIN</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">4×</div><div>같은 심볼 4개</div></div>
+        <div class="ptMul">BIG WIN</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">5×</div><div>같은 심볼 5개</div></div>
+        <div class="ptMul">MEGA</div>
+      </div>
+      <div class="ptItem">
+        <div class="ptLeft"><div class="badge">JP</div><div><b>PRO10</b> 5개 = JACKPOT</div></div>
+        <div class="ptMul">SPECIAL</div>
       </div>
     `;
   }
 
-  // ======================
-  // Game State
-  // ======================
-  let identity = null;
-  const state = {
-    bet: BET_DEFAULT,
-    autoOn: false,
-    spinning: false,
-  };
+  function movePayTableUnderReels() {
+    // ✅ pay table을 릴 아래로 이동 (HTML 수정 없이)
+    if (!ui.reelWrap || !ui.reels || !ui.pay) return;
+    const already = ui.reelWrap.querySelector(".tu-paywrap");
+    if (already) return;
 
-  function setWalletNow(n) {
-    if (n === null || n === undefined) return;
-    setText(ui.wallet, fmtInt(n));
+    const wrap = document.createElement("div");
+    wrap.className = "tu-paywrap";
+
+    const title = document.createElement("div");
+    title.className = "tu-paytitle";
+    title.textContent = "PAY TABLE";
+
+    wrap.appendChild(title);
+    wrap.appendChild(ui.pay); // 기존 paytable 요소를 통째로 이동
+    ui.reelWrap.appendChild(wrap);
   }
 
-  function stopAuto() {
-    state.autoOn = false;
-    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO OFF";
-    if (state._autoTimer) clearInterval(state._autoTimer);
-    state._autoTimer = null;
+  function setWalletUI(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return;
+    setText(ui.wallet, fmt(v));
+    // localStorage 동기화
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (raw) {
+        const uu = JSON.parse(raw);
+        uu.balance = v;
+        localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
+      }
+      localStorage.setItem("myUtPoints", String(v));
+    } catch {}
   }
 
-  function startAuto() {
-    if (state.autoOn) return;
-    state.autoOn = true;
-    if (ui.btnAuto) ui.btnAuto.textContent = "AUTO ON";
-    state._autoTimer = setInterval(() => {
-      if (!state.spinning) spin();
-    }, 1200);
-  }
-
-  function toggleAuto() {
-    if (state.autoOn) stopAuto();
-    else startAuto();
-  }
-
-  async function loadStateFromWorker() {
+  async function loadState() {
     const u = identity?.id;
     if (!u) return null;
 
     setNote("SYNC…");
-    const url = `${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}&name=${encodeURIComponent(identity.name||"")}&nick=${encodeURIComponent(identity.nickname||"")}`;
-    const js = await fetchJSON(url);
+    const js = await fetchJSON(`${WORKER_BASE}/slot/state?u=${encodeURIComponent(u)}`, {}, 20000);
 
     if (!js?.ok) {
       setResult("STATE ERROR", true);
-      // UT는 로컬이라도 유지
-      setWalletNow(identity.balance ?? 0);
-      setNote(`state fail: ${js?.error || "unknown"} (메인 등록/동기화 후 다시)`, true);
+      // ✅ UT는 로컬값이라도 보여주고, 에러만 노트에 표시
+      setWalletUI(identity.balance);
+      setNote(`state fail: ${js?.error || "unknown"}`, true);
       return null;
     }
 
-    // UT 동기화
+    const displayName = String(js?.userName || js?.name || "").trim() ||
+      identity.name ||
+      identity.nickname ||
+      identity.id;
+
+    setText(ui.player, displayName);
+
+    // ✅ UT 필드 흡수
     const ut = pickUT(js);
-    if (ut !== null) {
-      setWalletNow(ut);
-      identity.balance = ut;
-      try {
-        const raw = localStorage.getItem("uniqueCurrentUser");
-        if (raw) {
-          const uu = JSON.parse(raw);
-          uu.balance = ut;
-          localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
-        }
-        localStorage.setItem("myUtPoints", String(ut));
-      } catch (_) {}
+    if (ut !== null) setWalletUI(ut);
+    else setWalletUI(identity.balance);
+
+    setText(ui.jackpot, fmt(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0));
+
+    // bet
+    const srvBet = Number(js.bet);
+    if (Number.isFinite(srvBet) && srvBet > 0) {
+      betValue = clamp(Math.round(srvBet / 5) * 5, 10, 500);
+      saveBetPref();
     }
-
-    // worker가 bet 주면 그걸 반영(없으면 로컬 bet 유지)
-    const wb = toNum(js.bet ?? js.BET);
-    if (wb !== null) {
-      state.bet = clampBet(wb);
-      saveBet(identity.id, state.bet);
-      setText(ui.bet, fmtInt(state.bet));
-      refreshBetButtons(state);
-    }
-
-    // jackpot 표시
-    const jp = toNum(js.jackpot ?? js.JACKPOT);
-    if (jp !== null) setText(ui.jackpot, fmtInt(jp));
-
-    // 그리드 렌더
-    if (js.grid) renderGrid(js.grid);
+    setText(ui.bet, fmt(betValue));
+    if (ui.betHint) ui.betHint.textContent = `BET: ${betValue} UT (±5)`;
 
     setResult("READY");
     setNote("");
+
+    if (js.grid) renderGrid(js.grid);
+
     return js;
   }
 
-  // ======================
-  // Spin
-  // ======================
   async function spin() {
-    if (state.spinning) return;
+    if (spinning) return;
+    spinning = true;
 
-    state.spinning = true;
     if (ui.btnSpin) ui.btnSpin.disabled = true;
 
     try {
       await unlockAudioOnce();
-      playSound("start");
-
-      // 연출 시작
-      startSpinVisual();
-      startSpinSound();
-      setNote("SPINNING…");
+      sfx("start");
 
       const u = identity?.id;
       if (!u) throw new Error("missing_user");
 
-      // ✅ bet 같이 보냄 (worker가 무시해도 OK / 지원하면 바로 반영됨)
+      setNote("SPINNING…");
+      spinLoop(true);
+
+      // ✅ 먼저 “도는 연출” (API 기다리는 동안)
+      const visual = spinVisual(750);
+
       const js = await fetchJSON(`${WORKER_BASE}/slot/spin`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          u,
-          name: identity.name || "",
-          nickname: identity.nickname || "",
-          bet: state.bet,
-        })
-      });
+        body: JSON.stringify({ u, bet: betValue }) // 서버가 bet 받으면 적용, 아니면 무시
+      }, 25000);
 
-      stopSpinSound();
+      await visual;
+
+      spinLoop(false);
+      sfx("stop");
 
       if (!js?.ok) {
-        forceStopVisual();
         setResult("SPIN ERROR", true);
 
         const err = String(js?.error || "unknown");
-        if (err.includes("user_not_found")) {
+        if (err.includes("user_not_found_in_sheet")) {
           setNote("유저가 슬롯 시트에 없음 → 메인에서 등록/동기화 후 다시 오세요.", true);
-        } else {
-          setNote(`spin fail: ${err}`, true);
+          // 로컬 UT는 유지 표시
+          setWalletUI(Number(localStorage.getItem("myUtPoints") || identity.balance || 0));
+          stopAuto();
+          return;
         }
 
+        setNote(`spin fail: ${err}`, true);
         if (err.includes("insufficient")) stopAuto();
         return;
       }
 
-      // worker 응답 반영(UT/잭팟/베팅/그리드)
+      // ✅ UT 필드 흡수
       const ut = pickUT(js);
-      if (ut !== null) {
-        setWalletNow(ut);
-        identity.balance = ut;
-        try {
-          const raw = localStorage.getItem("uniqueCurrentUser");
-          if (raw) {
-            const uu = JSON.parse(raw);
-            uu.balance = ut;
-            localStorage.setItem("uniqueCurrentUser", JSON.stringify(uu));
-          }
-          localStorage.setItem("myUtPoints", String(ut));
-        } catch (_) {}
+      if (ut !== null) setWalletUI(ut);
+
+      setText(ui.jackpot, fmt(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0));
+
+      // bet 서버가 내려주면 동기화
+      const srvBet = Number(js.bet);
+      if (Number.isFinite(srvBet) && srvBet > 0) {
+        betValue = clamp(Math.round(srvBet / 5) * 5, 10, 500);
+        saveBetPref();
       }
+      setText(ui.bet, fmt(betValue));
+      if (ui.betHint) ui.betHint.textContent = `BET: ${betValue} UT (±5)`;
 
-      const jp = toNum(js.jackpot ?? js.JACKPOT);
-      if (jp !== null) setText(ui.jackpot, fmtInt(jp));
+      renderGrid(js.grid);
+      dropFinal();
 
-      const wb = toNum(js.bet ?? js.BET);
-      if (wb !== null) {
-        state.bet = clampBet(wb);
-        saveBet(identity.id, state.bet);
-        setText(ui.bet, fmtInt(state.bet));
-        refreshBetButtons(state);
-      }
+      const betCharged = Number(js.betCharged ?? js.bet_cost ?? betValue);
+      const win = Number(js.win ?? js.payout ?? 0);
+      const delta = win - betCharged;
 
-      const finalGrid = js.grid || null;
-      if (!finalGrid) {
-        // grid가 없으면 그냥 스톱
-        forceStopVisual();
+      if (delta > 0) {
+        setResult(`WIN +${fmt(delta)} UT`);
+        sfx("win");
+      } else if (delta < 0) {
+        setResult(`LOSE ${fmt(delta)} UT`);
+        sfx("lose");
       } else {
-        // ✅ 컬럼별 멈춤 연출 + 컬럼마다 “딸깍” 사운드
-        stopSpinVisualWithFinal(finalGrid, (colIdx) => {
-          // 컬럼마다 stop 사운드를 짧게 쳐주면 슬롯 맛 남
-          playSound("stop");
-        });
+        setResult(`EVEN 0 UT`);
       }
 
-      // 결과 문구
-      const betCharged = toNum(js.betCharged) ?? state.bet;
-      const win = toNum(js.win) ?? 0;
-      const delta = (win ?? 0) - (betCharged ?? 0);
+      // jackpot 플래그(있으면)
+      if (js.jackpotHit || js.isJackpot) {
+        setResult(`JACKPOT!!! +${fmt(js.jackpotWin ?? win)} UT`);
+        sfx("jackpot");
+        if (ui.reelWrap) ui.reelWrap.classList.add("jackpotPulse");
+        setTimeout(() => ui.reelWrap && ui.reelWrap.classList.remove("jackpotPulse"), 1400);
+      }
 
-      // 조금 기다렸다가(컬럼 스톱 끝나고) 결과를 터트리는 느낌
-      setTimeout(() => {
-        if (delta > 0) {
-          setResult(`WIN +${fmtInt(delta)} UT`);
-          ui.reels?.classList?.add("winFlash");
-          setTimeout(() => ui.reels?.classList?.remove("winFlash"), 650);
-          playSound("win");
-        } else if (delta < 0) {
-          setResult(`LOSE ${fmtInt(delta)} UT`);
-          playSound("lose");
-        } else {
-          setResult("EVEN 0 UT");
-        }
-
-        // 잭팟 플래그(서버가 주면 사용)
-        if (toNum(js.jackpotHit) === 1 || toNum(js.isJackpot) === 1) {
-          ui.reelWrap?.classList?.add("jackpotPulse");
-          setTimeout(() => ui.reelWrap?.classList?.remove("jackpotPulse"), 1800);
-          playSound("jackpot");
-        }
-
-        setNote("");
-      }, 650);
+      setNote("");
 
     } catch (e) {
-      forceStopVisual();
-      stopSpinSound();
+      spinLoop(false);
       setResult("SPIN ERROR", true);
       setNote(String(e?.message || e), true);
       stopAuto();
     } finally {
-      // 컬럼 스톱 연출 중에도 스핀 버튼 연타 방지 위해 약간 늦게 해제
-      setTimeout(() => {
-        state.spinning = false;
-        if (ui.btnSpin) ui.btnSpin.disabled = false;
-      }, 900);
+      spinning = false;
+      if (ui.btnSpin) ui.btnSpin.disabled = false;
     }
   }
 
-  // ======================
-  // Boot
-  // ======================
+  // ---------- boot ----------
   async function boot() {
     injectStyleOnce();
-    audioInit();
-    renderPaytable();
 
     identity = getLocalUser();
     if (!identity) return redirectToGate();
 
-    // nickname 보조
-    const savedNick = localStorage.getItem("myNickname_" + identity.id);
-    if (savedNick && !identity.nickname) identity.nickname = String(savedNick).trim();
+    loadSoundPref();
+    loadBetPref();
 
-    // 로컬 UT 먼저 표시(즉시)
-    setText(ui.player, identity.name || identity.id);
-    setWalletNow(identity.balance ?? 0);
+    // UI 초기 표시 (서버 전이라도 UT 먼저 띄우기)
+    setText(ui.player, identity.name || identity.nickname || identity.id);
+    setWalletUI(identity.balance || Number(localStorage.getItem("myUtPoints") || 0));
 
-    // bet 로드(유저별 저장)
-    state.bet = loadBet(identity.id);
-    setText(ui.bet, fmtInt(state.bet));
-
-    // sound 로드(유저별 저장)
-    applySoundOnOff(loadSoundOn(identity.id));
+    setText(ui.bet, fmt(betValue));
 
     // 버튼 바인딩
     if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
-    if (ui.btnAuto) ui.btnAuto.addEventListener("click", toggleAuto);
+    if (ui.btnAuto) ui.btnAuto.addEventListener("click", () => {
+      unlockAudioOnce();
+      sfx("start");
+      toggleAuto();
+    });
 
-    // UI 컨트롤 삽입
-    addControls(identity, state);
+    // 동적 UI 생성
+    ensureSoundButton();
+    ensureBetControls();
+    applyCompactButtons();
 
-    // 빈 화면 방지: 초기 랜덤
-    renderGrid([
-      [randSym(),randSym(),randSym(),randSym(),randSym()],
-      [randSym(),randSym(),randSym(),randSym(),randSym()],
-      [randSym(),randSym(),randSym(),randSym(),randSym()],
-    ]);
+    // paytable 처리
+    buildPayTable();
+    movePayTableUnderReels();
 
-    setResult("READY");
-    setNote("");
+    // 초기 빈 그리드
+    renderGrid(null);
 
-    // worker 동기화
-    await loadStateFromWorker();
+    // 상태 로드
+    await loadState();
 
-    console.log("SLOT UI LOADED ✅", VERSION);
+    console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__ || "no_version");
   }
 
   if (document.readyState === "loading") {
