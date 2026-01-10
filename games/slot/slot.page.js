@@ -1,4 +1,4 @@
-// games/slot/slot.page.js
+/* games/slot/slot.page.js */
 (() => {
   const S = (window.SLOT = window.SLOT || {});
   const api = S.api;
@@ -32,43 +32,25 @@
   };
 
   const SYMBOLS = [
-    { id:"star1", name:"STAR 1", payout:2 },
-    { id:"star2", name:"STAR 2", payout:3 },
-    { id:"star3", name:"STAR 3", payout:5 },
-    { id:"pro1", name:"PRO 1", payout:8 },
-    { id:"pro2", name:"PRO 2", payout:12 },
-    { id:"pro3", name:"PRO 3", payout:16 },
-    { id:"pro4", name:"PRO 4", payout:24 },
-    { id:"pro5", name:"PRO 5", payout:32 },
-    { id:"pro6", name:"PRO 6", payout:48 },
-    { id:"pro7", name:"PRO 7", payout:64 },
-    { id:"pro8", name:"PRO 8", payout:96 },
-    { id:"pro9", name:"PRO 9", payout:128 },
-    { id:"pro10", name:"PRO 10", payout:200 },
+    { id: "star1", name: "STAR 1", payout: 2 },
+    { id: "star2", name: "STAR 2", payout: 3 },
+    { id: "star3", name: "STAR 3", payout: 5 },
+
+    { id: "pro1", name: "PRO 1", payout: 8 },
+    { id: "pro2", name: "PRO 2", payout: 12 },
+    { id: "pro3", name: "PRO 3", payout: 16 },
+    { id: "pro4", name: "PRO 4", payout: 24 },
+    { id: "pro5", name: "PRO 5", payout: 32 },
+    { id: "pro6", name: "PRO 6", payout: 48 },
+    { id: "pro7", name: "PRO 7", payout: 64 },
+    { id: "pro8", name: "PRO 8", payout: 96 },
+    { id: "pro9", name: "PRO 9", payout: 128 },
+    { id: "pro10", name: "PRO 10", payout: 200 },
   ];
 
-  function imgOf(id){ return `img/slot/${id}.png`; }
-  function hint(t){ if(els.hint) els.hint.textContent = t; }
-
-  function flashBg(){
-    if(!els.bg) return;
-    els.bg.classList.add("flash");
-    setTimeout(()=>els.bg.classList.remove("flash"), 280);
-  }
-
-  function getNickname(){
-    // URL 파라미터도 지원 (필요시)
-    const qs = new URLSearchParams(location.search);
-    const q = (qs.get("u") || qs.get("nickname") || "").trim();
-    if(q) return q;
-
-    // localStorage 키 여러 개 대응
-    const keys = ["unique_nickname", "uniqueNickname", "nickname", "user"];
-    for(const k of keys){
-      const v = (localStorage.getItem(k) || "").trim();
-      if(v) return v;
-    }
-    return "";
+  function imgOf(id) {
+    // slot.html(= games/slot.html) 기준으로 img/slot/<id>.png
+    return `img/slot/${id}.png`;
   }
 
   const state = {
@@ -83,14 +65,24 @@
     betMax: 1000,
     betStep: 10,
 
-    nickname: "",
     displayName: "",
-    lastWin: 0
+    lastWin: 0,
+    lastBet: 0,
   };
 
-  function setAuto(on){
+  // ---------- UI helpers ----------
+  function flashBg() {
+    if (!els.bg) return;
+    els.bg.classList.add("flash");
+    setTimeout(() => els.bg.classList.remove("flash"), 280);
+  }
+  function hint(t) {
+    if (els.hint) els.hint.textContent = t;
+  }
+
+  function setAuto(on) {
     state.auto = !!on;
-    if(state.auto){
+    if (state.auto) {
       els.autoBtn.classList.add("active");
       els.autoText.textContent = "AUTO ON";
     } else {
@@ -99,17 +91,27 @@
     }
   }
 
-  function updateUI(){
-    els.player.textContent = state.displayName || state.nickname || "Guest";
+  function updateUI() {
+    const ident = api?.getUserIdentity?.() || { display: "Guest" };
+    els.player.textContent = state.displayName || ident.display || "Guest";
     els.wallet.textContent = Number(state.ut || 0).toFixed(2);
     els.jackpot.textContent = String(Math.floor(Number(state.jackpot || 0)));
-    els.win.textContent = String(Math.floor(Number(state.lastWin || 0)));
+
+    // ✅ "얼마 따고/얼마 잃었다"
+    const w = Math.floor(Number(state.lastWin || 0));
+    const b = Math.floor(Number(state.lastBet || 0));
+    if (w === 0 && b === 0) {
+      els.win.textContent = "0";
+    } else {
+      els.win.textContent = `+${w} / -${b}`;
+    }
+
     els.betAmount.textContent = String(state.bet);
   }
 
-  function buildPayTable(){
+  function buildPayTable() {
     els.payTable.innerHTML = "";
-    [...SYMBOLS].reverse().forEach(s => {
+    [...SYMBOLS].reverse().forEach((s) => {
       const div = document.createElement("div");
       div.className = "pay-item";
       div.innerHTML = `
@@ -121,19 +123,20 @@
     });
   }
 
-  function randomSymbolId(){
-    return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)].id;
+  // ---------- Reel visuals ----------
+  function randomSymbolId() {
+    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)].id;
   }
 
-  function stripHtml(count, loop=false){
+  function stripHtml(count, loop = false) {
     const n = loop ? Math.max(count, 22) : count;
     let html = "";
-    for(let i=0;i<n;i++){
+    for (let i = 0; i < n; i++) {
       const id = randomSymbolId();
       html += `<div class="symbol"><img src="${imgOf(id)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>`;
     }
-    if(loop){
-      for(let i=0;i<n;i++){
+    if (loop) {
+      for (let i = 0; i < n; i++) {
         const id = randomSymbolId();
         html += `<div class="symbol"><img src="${imgOf(id)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>`;
       }
@@ -141,32 +144,32 @@
     return html;
   }
 
-  function initReels(){
-    for(let i=0;i<5;i++){
+  function initReels() {
+    for (let i = 0; i < 5; i++) {
       const strip = els.reels[i];
-      strip.innerHTML = stripHtml(3,false);
+      strip.innerHTML = stripHtml(3, false);
       strip.style.transform = "translateY(0)";
       strip.classList.remove("spinning");
     }
   }
 
-  function startSpinVisual(){
-    for(let i=0;i<5;i++){
+  function startSpinVisual() {
+    for (let i = 0; i < 5; i++) {
       const strip = els.reels[i];
-      strip.innerHTML = stripHtml(22,true);
+      strip.innerHTML = stripHtml(22, true);
       strip.classList.add("spinning");
-      strip.style.animationDelay = `${i*0.08}s`;
+      strip.style.animationDelay = `${i * 0.08}s`;
       strip.style.transform = "translateY(0)";
     }
   }
 
-  function stopReel(i, final3){
+  function stopReel(i, final3) {
     const strip = els.reels[i];
     strip.classList.remove("spinning");
 
-    const top = final3?.[0] || randomSymbolId();
-    const mid = final3?.[1] || randomSymbolId();
-    const bot = final3?.[2] || randomSymbolId();
+    const top = final3[0] || randomSymbolId();
+    const mid = final3[1] || randomSymbolId();
+    const bot = final3[2] || randomSymbolId();
 
     strip.innerHTML = `
       <div class="symbol"><img src="${imgOf(top)}" onerror="this.src='https://via.placeholder.com/120?text=?'"></div>
@@ -176,100 +179,96 @@
     strip.style.transform = "translateY(0)";
   }
 
-  function changeBet(delta){
-    if(state.spinning) return;
+  // ---------- Controls ----------
+  function changeBet(delta) {
+    if (state.spinning) return;
     const next = Math.max(state.betMin, Math.min(state.betMax, state.bet + delta));
     const step = Math.max(1, state.betStep);
     const aligned = Math.round(next / step) * step;
     state.bet = Math.max(state.betMin, Math.min(state.betMax, aligned));
-    S.audio?.playOne("start");
+    S.audio?.playOne?.("start");
     updateUI();
   }
 
-  async function spinOnce(){
-    if(state.spinning) return;
+  async function spinOnce() {
+    if (state.spinning) return;
     state.spinning = true;
 
     els.spinBtn.disabled = true;
     els.payline.classList.remove("show");
+
     state.lastWin = 0;
+    state.lastBet = Math.floor(Number(state.bet || 0));
     updateUI();
 
-    S.audio?.unlockAudio();
-    S.audio?.playOne("start");
+    S.audio?.unlockAudio?.();
+    S.audio?.playOne?.("start");
 
     hint("Spinning... 숨참기 😈");
     startSpinVisual();
-    S.audio?.startSpinSound();
+    S.audio?.startSpinSound?.();
 
     let out;
-    try{
-      out = await api.spin(state.nickname, state.bet);
-      if(!out || !out.ok) throw new Error(out?.error || "spin_failed");
-    }catch(e){
-      // ✅ 소리 끊김 방지: 무조건 stop 처리
-      S.audio?.stopSpinSound();
+    try {
+      out = await api.spin(state.bet);
+      if (!out || !out.ok) throw new Error(out?.error || "spin_failed");
+    } catch (e) {
+      S.audio?.stopSpinSound?.();
       initReels();
       state.spinning = false;
       els.spinBtn.disabled = false;
 
-      const msg = (e?.message || String(e));
-
-      if(msg.includes("user_not_found_in_sheet")){
-        hint("시트에 유저가 없음. MAIN에서 닉네임 등록(또는 시트에 닉네임 행 추가) 필요");
-      } else {
-        hint("스핀 실패. 워커 URL / CORS / 응답 확인 ㄱㄱ");
-      }
-
-      alert("Spin Error: " + msg);
-      if(state.auto) setAuto(false);
+      hint("에러났음. (이름/아이디/시트 매칭) 확인 ㄱㄱ");
+      alert("Spin Error: " + (e?.message || e));
+      if (state.auto) setAuto(false);
       return;
     }
 
     // 서버 반영
-    if(out.displayName) state.displayName = out.displayName;
-    if(out.ut != null) state.ut = Number(out.ut);
-    if(out.jackpot != null) state.jackpot = Number(out.jackpot);
+    if (out.displayName) state.displayName = out.displayName;
+    if (out.ut != null) state.ut = Number(out.ut);
+    if (out.jackpot != null) state.jackpot = Number(out.jackpot);
 
     const grid = out.grid;
-    const win = Number(out.win || 0);
-    state.lastWin = Math.floor(win);
+    const win = Math.floor(Number(out.win || 0));
+    state.lastWin = win;
 
-    await new Promise(r => setTimeout(r, 850));
+    await new Promise((r) => setTimeout(r, 850));
 
-    for(let i=0;i<5;i++){
-      await new Promise(r => setTimeout(r, 230 + i*160));
-      const col3 = [ grid?.[0]?.[i], grid?.[1]?.[i], grid?.[2]?.[i] ];
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r, 230 + i * 160));
+      const col3 = [grid?.[0]?.[i], grid?.[1]?.[i], grid?.[2]?.[i]];
       stopReel(i, col3);
-      S.audio?.playStopTick();
+      S.audio?.playStopTick?.();
     }
 
-    S.audio?.stopSpinSound();
+    S.audio?.stopSpinSound?.();
     updateUI();
 
     const wt = String(out.winType || "").toLowerCase();
-    if(win > 0){
+    if (win > 0) {
       flashBg();
       els.payline.classList.add("show");
-      if(wt.includes("jackpot")){
+
+      if (wt.includes("jackpot")) {
         hint("잭팟! PRO10 터졌다 👑");
-        S.audio?.playOne("jackpot");
+        S.audio?.playOne?.("jackpot");
       } else {
         hint("승리! UT 쌓이는 맛 🔥");
-        S.audio?.playOne("win");
+        S.audio?.playOne?.("win");
       }
     } else {
       hint("다음 판이 진짜다 😅");
-      S.audio?.playOne("lose");
+      S.audio?.playOne?.("lose");
     }
 
     state.spinning = false;
     els.spinBtn.disabled = false;
 
-    if(state.auto){
+    if (state.auto) {
       setTimeout(() => {
-        if(!state.auto) return;
-        if(Number(state.ut || 0) < Number(state.bet || 0)){
+        if (!state.auto) return;
+        if (Number(state.ut || 0) < Number(state.bet || 0)) {
           setAuto(false);
           hint("UT 부족. AUTO OFF");
           return;
@@ -279,13 +278,12 @@
     }
   }
 
-  async function boot(){
-    if(!api){
-      hint("slot.api.js가 로드 안 됨 (경로 확인: /games/slot/slot.api.js)");
+  async function boot() {
+    if (!api || !api.getState) {
+      hint("slot.api.js 로드가 먼저 필요함(스크립트 순서 확인)");
       return;
     }
 
-    state.nickname = getNickname();
     buildPayTable();
     initReels();
 
@@ -293,32 +291,30 @@
     els.betPlus.addEventListener("click", () => changeBet(+state.betStep));
 
     els.autoBtn.addEventListener("click", () => {
-      S.audio?.unlockAudio();
-      S.audio?.playOne("start");
+      S.audio?.unlockAudio?.();
+      S.audio?.playOne?.("start");
       setAuto(!state.auto);
-      if(state.auto && !state.spinning) spinOnce();
+      if (state.auto && !state.spinning) spinOnce();
     });
 
     els.spinBtn.addEventListener("click", () => spinOnce());
 
-    // 상태 로드
     hint("서버 상태 불러오는 중...");
-    const st = await api.state(state.nickname);
+    const st = await api.getState();
 
-    if(!st || !st.ok){
-      if(!state.nickname){
-        hint("닉네임이 없음. MAIN에서 닉네임 등록 후 다시 들어와.");
-      } else if(String(st.error || "").includes("user_not_found_in_sheet")){
-        hint("시트에 유저가 없음. MAIN 등록 또는 시트에 닉네임 행 추가 필요");
-      } else {
-        hint("유저 상태를 못 불러옴(워커 URL/CORS/응답 확인)");
-      }
+    if (!st || !st.ok) {
+      const ident = api.getUserIdentity();
+      hint(
+        !ident.name
+          ? "이름 정보가 없음. (회원가입 시 입력한 이름) 저장이 필요함."
+          : "유저 상태를 못 불러옴. (이름/아이디가 시트에 있는지) 확인"
+      );
       updateUI();
       return;
     }
 
     state.displayName = st.displayName || "";
-    state.ut = (st.ut != null) ? Number(st.ut) : 0;
+    state.ut = st.ut != null ? Number(st.ut) : 0;
     state.jackpot = Number(st.jackpot || 0);
 
     const cfg = st.slot_config || {};
@@ -326,8 +322,8 @@
     state.betMin = Number(cfg.BET_MIN || state.betMin);
     state.betMax = Number(cfg.BET_MAX || state.betMax);
     state.betStep = Number(cfg.BET_STEP || state.betStep);
-
     state.bet = Math.max(state.betMin, Math.min(state.betMax, state.bet));
+
     updateUI();
     hint("준비 완료. SPIN 눌러라 😈");
   }
