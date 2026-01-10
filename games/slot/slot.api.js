@@ -3,136 +3,141 @@
   const root = (window.SLOT = window.SLOT || {});
   const api = (root.api = root.api || {});
 
-  // -----------------------------
-  // Base URL (Worker)
-  // 우선순위:
-  // 1) window.SLOT_API_BASE (slot.html에서 주입)
-  // 2) localStorage unique_slot_api
-  // 3) "" (상대경로 - 보통 안씀)
-  // -----------------------------
-  function getBase() {
-    const w = (window.SLOT_API_BASE || "").trim();
-    if (w) return w.replace(/\/+$/, "");
-    const ls = (localStorage.getItem("unique_slot_api") || "").trim();
-    if (ls) return ls.replace(/\/+$/, "");
-    return "";
+  const LS_API = "unique_slot_api";
+
+  function stripSlash(s){ return String(s || "").replace(/\/+$/,""); }
+
+  function getBase(){
+    const fromWindow = (window.SLOT_API_BASE || "").trim();
+    if(fromWindow) return stripSlash(fromWindow);
+
+    const fromLS = (localStorage.getItem(LS_API) || "").trim();
+    if(fromLS) return stripSlash(fromLS);
+
+    return ""; // empty => 상대경로 호출(권장X)
   }
 
-  // -----------------------------
-  // User identity
-  // 너 요구사항: "회원가입 시트의 '이름' 기준"
-  // 동명이인일 때 '아이디'로 구분
-  //
-  // 그래서:
-  // - nameKeys에서 먼저 이름을 찾고
-  // - idKeys에서 아이디를 찾음
-  // - URL 파라미터로 들어오면(localStorage에 저장)
-  // -----------------------------
-  const nameKeys = [
-    "unique_user_name",
-    "unique_name",
-    "unique_realname",
-    "unique_display_name",
-    "unique_member_name",
-    "unique_player_name",
-    "unique_join_name",
-    "unique_form_name",
-    "unique_nickname", // 마지막 fallback (예전값 호환)
-  ];
-  const idKeys = [
-    "unique_user_id",
-    "unique_id",
-    "unique_member_id",
-    "unique_join_id",
-    "unique_form_id",
-    "unique_login_id",
-  ];
-
-  function readUrlParamsOnce() {
-    try {
-      const qs = new URLSearchParams(location.search);
-      const nm = (qs.get("name") || qs.get("user") || "").trim();
-      const id = (qs.get("id") || qs.get("uid") || "").trim();
-      if (nm) localStorage.setItem("unique_user_name", nm);
-      if (id) localStorage.setItem("unique_user_id", id);
-    } catch (_) {}
+  function setBase(url){
+    const v = String(url || "").trim();
+    if(!v) localStorage.removeItem(LS_API);
+    else localStorage.setItem(LS_API, v);
+    return getBase();
   }
 
-  function pickFirst(keys) {
-    for (const k of keys) {
-      const v = (localStorage.getItem(k) || "").trim();
-      if (v) return v;
-    }
-    return "";
+  function qp(name){
+    try{
+      const u = new URL(location.href);
+      return (u.searchParams.get(name) || "").trim();
+    }catch(_){ return ""; }
   }
 
-  function getUserIdentity() {
-    readUrlParamsOnce();
+  // ✅ 유저 식별: "이름" 우선, 동명이인일 때 "아이디" 추가
+  // - name: 구글시트 '이름'
+  // - id:   구글시트 '아이디'
+  // - fallback: 기존 닉네임/유저키(u)
+  function getUserIdentity(){
+    const name =
+      qp("name") ||
+      (localStorage.getItem("unique_name") || "").trim() ||
+      (localStorage.getItem("unique_realname") || "").trim() ||
+      (localStorage.getItem("unique_display_name") || "").trim() ||
+      (localStorage.getItem("unique_displayName") || "").trim() ||
+      "";
 
-    const name = pickFirst(nameKeys);
-    const id = pickFirst(idKeys);
+    const id =
+      qp("id") ||
+      (localStorage.getItem("unique_id") || "").trim() ||
+      (localStorage.getItem("unique_user_id") || "").trim() ||
+      (localStorage.getItem("unique_userid") || "").trim() ||
+      (localStorage.getItem("unique_login_id") || "").trim() ||
+      "";
 
-    // display는 UI에 보여줄 기본값
-    const display = name || id || "Guest";
+    const u =
+      qp("u") ||
+      qp("user") ||
+      (localStorage.getItem("unique_nickname") || "").trim() ||
+      (localStorage.getItem("unique_nick") || "").trim() ||
+      (localStorage.getItem("unique_user") || "").trim() ||
+      "";
 
-    return { name, id, display };
+    return { name, id, u };
   }
 
-  // -----------------------------
-  // helpers
-  // -----------------------------
-  function apiUrl(path) {
+  function buildStateUrl(){
     const base = getBase();
-    return base ? base + path : path;
+    const { name, id, u } = getUserIdentity();
+    const url = new URL((base ? base : location.origin) + "/slot/state");
+
+    // ✅ name/id 방식 우선
+    if(name) url.searchParams.set("name", name);
+    if(id) url.searchParams.set("id", id);
+
+    // ✅ worker가 아직 name/id를 안 받으면 u로도 같이 보내서 호환성 확보
+    if(u) url.searchParams.set("u", u);
+
+    // base가 비어있는 경우(상대경로)라면 origin 붙인 URL이 필요하니 그대로 반환
+    return (base ? (base + "/slot/state" + "?" + url.searchParams.toString()) : ("/slot/state?" + url.searchParams.toString()));
   }
 
-  async function fetchJson(url, opts) {
-    const res = await fetch(url, opts);
-    const ct = (res.headers.get("content-type") || "").toLowerCase();
+  function buildSpinUrl(){
+    const base = getBase();
+    return base ? (base + "/slot/spin") : "/slot/spin";
+  }
 
-    // 서버가 에러로 HTML을 뱉으면 여기서 잡아주기(예전 "Unexpected token <" 방지)
-    if (!ct.includes("application/json")) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`non_json_response (${res.status}): ${text.slice(0, 140)}`);
+  async function safeJson(res){
+    const text = await res.text();
+    try{
+      return JSON.parse(text);
+    }catch(e){
+      const head = text.slice(0, 180);
+      throw new Error(`non_json_response: ${res.status} ${head}`);
     }
-
-    const data = await res.json();
-    return data;
   }
 
-  // -----------------------------
-  // public API
-  // -----------------------------
+  function withTimeout(ms){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    return { ctrl, done: () => clearTimeout(t) };
+  }
+
+  async function state(){
+    const url = buildStateUrl();
+    const { ctrl, done } = withTimeout(12000);
+    try{
+      const res = await fetch(url, { method:"GET", signal: ctrl.signal });
+      return await safeJson(res);
+    } finally { done(); }
+  }
+
+  async function spin({ bet }){
+    const url = buildSpinUrl();
+    const { name, id, u } = getUserIdentity();
+
+    const body = {
+      bet: Number(bet || 0),
+      // ✅ name/id 기반
+      name: name || "",
+      id: id || "",
+      // ✅ 기존 호환
+      u: u || "",
+      user: u || ""
+    };
+
+    const { ctrl, done } = withTimeout(12000);
+    try{
+      const res = await fetch(url, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      });
+      return await safeJson(res);
+    } finally { done(); }
+  }
+
   api.getBase = getBase;
+  api.setBase = setBase;
   api.getUserIdentity = getUserIdentity;
-
-  // GET /slot/state?user=이름&id=아이디  (워커가 u도 받는다며 → 호환용으로 u도 같이 보냄)
-  api.getState = async () => {
-    const { name, id } = getUserIdentity();
-
-    // 이름이 없으면(=회원가입 기반 추적 불가) 즉시 에러
-    if (!name) return { ok: false, error: "missing_name" };
-
-    const url =
-      apiUrl(`/slot/state?user=${encodeURIComponent(name)}`) +
-      (id ? `&id=${encodeURIComponent(id)}` : "") +
-      `&u=${encodeURIComponent(name)}`; // 호환
-
-    return await fetchJson(url, { method: "GET" });
-  };
-
-  // POST /slot/spin  body: { user, id, u, bet }
-  api.spin = async (bet) => {
-    const { name, id } = getUserIdentity();
-    if (!name) return { ok: false, error: "missing_name" };
-
-    const url = apiUrl(`/slot/spin`);
-    const body = { user: name, id: id || "", u: name, bet: Number(bet || 0) };
-
-    return await fetchJson(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  };
+  api.state = state;
+  api.spin = spin;
 })();
