@@ -326,3 +326,4 @@
     boot();
   }
 })();
+  console.log("SLOT UI LOADED ✅", window.__UNIQUE_SLOT_PAGE__ || "no_version");
