@@ -1,143 +1,120 @@
-/* games/slot/slot.api.js */
+// games/slot/slot.api.js
 (() => {
-  const root = (window.SLOT = window.SLOT || {});
-  const api = (root.api = root.api || {});
+  // ✅ 고정: 기존 프로젝트 동일
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+  const WORKER_BASE_URL   = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  const LS_API = "unique_slot_api";
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-  function stripSlash(s){ return String(s || "").replace(/\/+$/,""); }
+  function apiOnceJSONP(action, params = {}, timeoutMs = 25000) {
+    return new Promise((resolve, reject) => {
+      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
-  function getBase(){
-    const fromWindow = (window.SLOT_API_BASE || "").trim();
-    if(fromWindow) return stripSlash(fromWindow);
+      params.action = action;
+      params.callback = cb;
+      params._t = Date.now();
 
-    const fromLS = (localStorage.getItem(LS_API) || "").trim();
-    if(fromLS) return stripSlash(fromLS);
+      const qs = new URLSearchParams(params).toString();
+      const s = document.createElement("script");
+      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
+      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
 
-    return ""; // empty => 상대경로 호출(권장X)
+      const t = setTimeout(() => { cleanup(); reject(new Error("API timeout")); }, timeoutMs);
+
+      window[cb] = (data) => { cleanup(); resolve(data); };
+      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
+
+      function cleanup() {
+        clearTimeout(t);
+        try { delete window[cb]; } catch(e){}
+        try { s.remove(); } catch(e){}
+      }
+      document.body.appendChild(s);
+    });
   }
 
-  function setBase(url){
-    const v = String(url || "").trim();
-    if(!v) localStorage.removeItem(LS_API);
-    else localStorage.setItem(LS_API, v);
-    return getBase();
+  async function apiJSONP(action, params = {}) {
+    let lastErr = null;
+    for (let i = 1; i <= 3; i++){
+      try{
+        const timeoutMs = (i === 1) ? 20000 : 30000;
+        return await apiOnceJSONP(action, params, timeoutMs);
+      }catch(e){
+        lastErr = e;
+        await sleep(450 * i);
+      }
+    }
+    throw lastErr || new Error("API failed");
   }
 
-  function qp(name){
+  async function apiWorker(action, params = {}, timeoutMs = 12000){
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+
     try{
-      const u = new URL(location.href);
-      return (u.searchParams.get(name) || "").trim();
-    }catch(_){ return ""; }
-  }
-
-  // ✅ 유저 식별: "이름" 우선, 동명이인일 때 "아이디" 추가
-  // - name: 구글시트 '이름'
-  // - id:   구글시트 '아이디'
-  // - fallback: 기존 닉네임/유저키(u)
-  function getUserIdentity(){
-    const name =
-      qp("name") ||
-      (localStorage.getItem("unique_name") || "").trim() ||
-      (localStorage.getItem("unique_realname") || "").trim() ||
-      (localStorage.getItem("unique_display_name") || "").trim() ||
-      (localStorage.getItem("unique_displayName") || "").trim() ||
-      "";
-
-    const id =
-      qp("id") ||
-      (localStorage.getItem("unique_id") || "").trim() ||
-      (localStorage.getItem("unique_user_id") || "").trim() ||
-      (localStorage.getItem("unique_userid") || "").trim() ||
-      (localStorage.getItem("unique_login_id") || "").trim() ||
-      "";
-
-    const u =
-      qp("u") ||
-      qp("user") ||
-      (localStorage.getItem("unique_nickname") || "").trim() ||
-      (localStorage.getItem("unique_nick") || "").trim() ||
-      (localStorage.getItem("unique_user") || "").trim() ||
-      "";
-
-    return { name, id, u };
-  }
-
-  function buildStateUrl(){
-    const base = getBase();
-    const { name, id, u } = getUserIdentity();
-    const url = new URL((base ? base : location.origin) + "/slot/state");
-
-    // ✅ name/id 방식 우선
-    if(name) url.searchParams.set("name", name);
-    if(id) url.searchParams.set("id", id);
-
-    // ✅ worker가 아직 name/id를 안 받으면 u로도 같이 보내서 호환성 확보
-    if(u) url.searchParams.set("u", u);
-
-    // base가 비어있는 경우(상대경로)라면 origin 붙인 URL이 필요하니 그대로 반환
-    return (base ? (base + "/slot/state" + "?" + url.searchParams.toString()) : ("/slot/state?" + url.searchParams.toString()));
-  }
-
-  function buildSpinUrl(){
-    const base = getBase();
-    return base ? (base + "/slot/spin") : "/slot/spin";
-  }
-
-  async function safeJson(res){
-    const text = await res.text();
-    try{
-      return JSON.parse(text);
-    }catch(e){
-      const head = text.slice(0, 180);
-      throw new Error(`non_json_response: ${res.status} ${head}`);
+      const r = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
+        method: "POST",
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify(params || {}),
+        signal: controller.signal,
+        cache: "no-store",
+        credentials: "omit"
+      });
+      const js = await r.json().catch(()=>null);
+      if (!js) throw new Error("worker_bad_json");
+      return js;
+    } finally {
+      clearTimeout(t);
     }
   }
 
-  function withTimeout(ms){
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), ms);
-    return { ctrl, done: () => clearTimeout(t) };
-  }
+  async function api(action, params = {}) {
+    const force = new URLSearchParams(location.search).get("api");
+    if (force === "legacy") return apiJSONP(action, params);
+    if (force === "worker") return apiWorker(action, params, 20000);
 
-  async function state(){
-    const url = buildStateUrl();
-    const { ctrl, done } = withTimeout(12000);
     try{
-      const res = await fetch(url, { method:"GET", signal: ctrl.signal });
-      return await safeJson(res);
-    } finally { done(); }
+      return await apiWorker(action, params, 9000);
+    } catch(e){
+      // worker에 slot 액션 없으면 여기로 떨어짐
+      return await apiJSONP(action, params);
+    }
   }
 
-  async function spin({ bet }){
-    const url = buildSpinUrl();
-    const { name, id, u } = getUserIdentity();
-
-    const body = {
-      bet: Number(bet || 0),
-      // ✅ name/id 기반
-      name: name || "",
-      id: id || "",
-      // ✅ 기존 호환
-      u: u || "",
-      user: u || ""
-    };
-
-    const { ctrl, done } = withTimeout(12000);
+  function getLocalUser(){
     try{
-      const res = await fetch(url, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(body),
-        signal: ctrl.signal
-      });
-      return await safeJson(res);
-    } finally { done(); }
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (!raw) return null;
+      const u = JSON.parse(raw);
+      if (!u || !u.id) return null;
+      return {
+        id: String(u.id||"").trim().toLowerCase(),
+        name: String(u.name||"").trim(),
+        balance: Number(u.balance||0)
+      };
+    }catch(e){
+      return null;
+    }
   }
 
-  api.getBase = getBase;
-  api.setBase = setBase;
-  api.getUserIdentity = getUserIdentity;
-  api.state = state;
-  api.spin = spin;
+  async function getSlotState(){
+    const u = getLocalUser();
+    if (!u) return { ok:false, error:"no_session" };
+    // ✅ Apps Script 액션명
+    return await api("getSlotState", { id: u.id });
+  }
+
+  async function commitSlotSpin({ netDelta = 0, lossAmount = 0 }){
+    const u = getLocalUser();
+    if (!u) return { ok:false, error:"no_session" };
+
+    // ✅ Apps Script 액션명
+    return await api("slotCommit", {
+      id: u.id,
+      netDelta: Number(netDelta || 0),
+      lossAmount: Number(lossAmount || 0)
+    });
+  }
+
+  window.SLOT_API = { getLocalUser, getSlotState, commitSlotSpin };
 })();
