@@ -1,464 +1,279 @@
-/* games/slot/slot.app.js
- * THE UNIQUE SLOT - App Entrypoint (no-approval, clean wiring)
- * - Depends on: slot.config.js, slot.api.js, slot.audio.js, slot.game.js, slot.ui.js
- * - Works with BOTH UI id sets:
- *   (A) cyberpunk slot.html ids: uiPlayer/uiWallet/uiBet/uiJackpot/uiResult/uiNote/uiPaytable/uiReels + btnSpin/btnAuto
- *   (B) module ui ids: playerName/playerUt/betVal/jpVal/winVal/log/payGrid + soundBtn/soundText
- */
-
+/* games/slot/slot.app.js */
 (() => {
-  "use strict";
-
   window.SLOT = window.SLOT || {};
   const S = window.SLOT;
 
-  // ---- version stamp
-  window.__SLOT_BUILD__ = "slot.app@2026-01-11";
-  console.log("RUNNING:", window.__SLOT_BUILD__);
-
-  // ---- helpers
   const $ = (id) => document.getElementById(id);
-  const pickEl = (...ids) => ids.map($).find(Boolean) || null;
-  const setText = (el, v) => { if (el) el.textContent = String(v ?? ""); };
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-  const fmtInt = (v) => {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return "0";
-    return String(Math.trunc(n));
+
+  // 버튼/표시 요소 (있으면 자동 연결)
+  const el = {
+    spinBtn:
+      $("spinBtn") ||
+      $("spinButton") ||
+      $("btnSpin") ||
+      $("spin"),
+
+    autoBtn:
+      $("autoBtn") ||
+      $("autoButton") ||
+      $("btnAuto"),
+
+    autoText:
+      $("autoText") ||
+      $("autoLabel"),
+
+    betMinus:
+      $("betMinus") ||
+      $("btnBetMinus") ||
+      $("minus5"),
+
+    betPlus:
+      $("betPlus") ||
+      $("btnBetPlus") ||
+      $("plus5"),
+
+    betVal:
+      $("betVal") || $("betValue"),
   };
 
-  // ---- bind UI (supports both html styles)
-  const ui = {
-    // cyberpunk
-    uiPlayer: $("uiPlayer"),
-    uiWallet: $("uiWallet"),
-    uiBet: $("uiBet"),
-    uiJackpot: $("uiJackpot"),
-    uiResult: $("uiResult"),
-    uiNote: $("uiNote"),
-    uiPaytable: $("uiPaytable"),
-    uiReels: $("uiReels"),
-    uiReelWrap: $("uiReelWrap"),
-    btnSpin: $("btnSpin"),
-    btnAuto: $("btnAuto"),
+  let booted = false;
+  let autoOn = false;
+  let spinning = false;
 
-    // module ui (optional)
-    apiDot: $("apiDot"),
-    apiText: $("apiText"),
-    soundBtn: $("soundBtn") || $("btnSound"),
-    soundText: $("soundText"),
-    playerName: $("playerName"),
-    playerUt: $("playerUt"),
-    betVal: $("betVal"),
-    jpVal: $("jpVal"),
-    winVal: $("winVal"),
-    log: $("log"),
-    payGrid: $("payGrid"),
-  };
+  // UI에서 조절되는 베팅값(서버가 아직 고정 bet이면 표시만 바뀜)
+  let betUi = 10;
+  let betMin = 10;
+  let betMax = 1000;
+  let betStep = 5;
 
-  // ---- ensure API base (this fixes your Not found / 404)
-  function ensureApiBase() {
-    // 1) unique.config.js에서 내려오는 값 우선
-    const fromUnique =
-      window.UNIQUE?.CONFIG?.SLOT_WORKER_BASE ||
-      window.UNIQUE?.CONFIG?.SLOT_API_BASE ||
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+  function asInt(v, def = 0) {
+    const n = Math.floor(Number(v));
+    return Number.isFinite(n) ? n : def;
+  }
+
+  function setAuto(on) {
+    autoOn = !!on;
+    if (el.autoText) el.autoText.textContent = autoOn ? "AUTO ON" : "AUTO OFF";
+  }
+
+  function setBetUi(v) {
+    betUi = clamp(asInt(v, betUi), betMin, betMax);
+    if (el.betVal) el.betVal.textContent = String(betUi);
+    // slot.ui.js의 KPI bet도 같이 갱신(있으면)
+    if (S.ui?.setKpi) S.ui.setKpi({ bet: betUi });
+  }
+
+  function derivePaytableFromSymbols(symbols) {
+    // ui.buildPaytable()가 기대하는 형태:
+    // [{ id, name, pays: ["2x ...", "3x ..."] }]
+    // 기존 slot.config.js에 PAYTABLE이 있으면 그걸 쓰고, 없을 때만 대체 생성
+    const nameMap = {
+      star1: "STAR1",
+      star2: "STAR2",
+      star3: "STAR3",
+      pro1: "PRO1",
+      pro2: "PRO2",
+      pro3: "PRO3",
+      pro4: "PRO4",
+      pro5: "PRO5",
+      pro6: "PRO6",
+      pro7: "PRO7",
+      pro8: "PRO8",
+      pro9: "PRO9",
+      pro10: "PRO10",
+    };
+
+    if (!Array.isArray(symbols) || !symbols.length) return [];
+
+    return symbols.map(s => {
+      const id = String(s.id || "");
+      const payout = Number(s.payout || 0);
+      // 지금 워커 로직은 "3개 맞으면 payout * bet" 구조라서 간단히 표기
+      return {
+        id,
+        name: nameMap[id] || id,
+        pays: payout ? [`3매치: x${payout}`] : ["-"],
+      };
+    });
+  }
+
+  async function syncState() {
+    if (!S.api?.state) throw new Error("SLOT.api.state missing");
+    if (!S.ui?.setOnline || !S.ui?.setPlayer) throw new Error("SLOT.ui missing");
+
+    S.ui.setLog?.("SYNC…");
+
+    const st = await S.api.state(); // ✅ /slot/state
+
+    // 온라인 표시
+    S.ui.setOnline(true);
+
+    // ✅ 이름/UT 매핑 핵심
+    const displayName =
+      st?.identity?.name ||
+      st?.identity?.nickname ||
+      st?.identity?.id ||
+      st?.identity?.u ||
+      st?.u ||
+      "Guest";
+
+    const nickname =
+      st?.identity?.nickname ||
+      st?.identity?.u ||
+      st?.u ||
       "";
 
-    // 2) 이미 세팅되어 있으면 유지
-    if (window.SLOT_API_BASE && String(window.SLOT_API_BASE).trim()) return;
-
-    // 3) unique.config 값이 있으면 SLOT_API_BASE로 주입
-    if (fromUnique && String(fromUnique).trim()) {
-      window.SLOT_API_BASE = String(fromUnique).trim().replace(/\/+$/,"");
-      return;
-    }
-
-    // 4) 마지막 fallback(너가 쓰던 워커)
-    window.SLOT_API_BASE = "https://the-unique-slot-api.wordycow0001.workers.dev";
-  }
-
-  // ---- local identity bridge (no approval)
-  // main/gate에서 쓰던 uniqueCurrentUser가 있으면 slot.api.js가 보는 localStorage 키들도 채워준다.
-  function bridgeIdentityFromUniqueCurrentUser() {
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return;
-      const u = JSON.parse(raw);
-
-      const id = String(u?.id || "").trim();
-      const name = String(u?.name || "").trim();
-      const nick = String(u?.nickname || "").trim();
-
-      if (id) localStorage.setItem("unique_id", id);
-      if (name) localStorage.setItem("unique_name", name);
-      if (nick) localStorage.setItem("unique_nickname", nick);
-
-      // UI 표시용
-      if (name) localStorage.setItem("unique_display_name", name);
-      else if (nick) localStorage.setItem("unique_display_name", nick);
-    } catch {}
-  }
-
-  // ---- bet (step=5, min=10)
-  const LS_BET = "uniqueSlotBet";
-  let bet = 10;
-
-  function loadBet() {
-    const v = Number(localStorage.getItem(LS_BET) || 10);
-    if (Number.isFinite(v)) bet = clamp(Math.round(v / 5) * 5, 10, 1000);
-  }
-  function saveBet() {
-    localStorage.setItem(LS_BET, String(bet));
-  }
-
-  // ---- inject bet controls (cyberpunk html has only uiBet text)
-  function ensureBetControls() {
-    if (!ui.uiBet) return;
-    const box = ui.uiBet.closest(".stat") || ui.uiBet.parentElement;
-    if (!box) return;
-
-    if (document.getElementById("btnBetMinus")) return;
-
-    const bar = document.createElement("div");
-    bar.style.display = "flex";
-    bar.style.alignItems = "center";
-    bar.style.gap = "10px";
-    bar.style.marginTop = "10px";
-
-    const mkBtn = (id, txt) => {
-      const b = document.createElement("button");
-      b.id = id;
-      b.textContent = txt;
-      b.style.width = "44px";
-      b.style.height = "40px";
-      b.style.borderRadius = "14px";
-      b.style.border = "1px solid rgba(33,246,255,.22)";
-      b.style.background = "rgba(4,6,16,.40)";
-      b.style.color = "rgba(215,228,255,.92)";
-      b.style.fontWeight = "900";
-      b.style.cursor = "pointer";
-      return b;
-    };
-
-    const minus = mkBtn("btnBetMinus", "-5");
-    const plus  = mkBtn("btnBetPlus", "+5");
-
-    const meta = document.createElement("div");
-    meta.id = "uiBetHint";
-    meta.style.fontFamily = '"Share Tech Mono", ui-monospace, Menlo, monospace';
-    meta.style.fontSize = "12px";
-    meta.style.color = "rgba(215,228,255,.82)";
-    meta.style.letterSpacing = ".06em";
-
-    const refresh = () => {
-      setText(ui.uiBet, fmtInt(bet));
-      meta.textContent = `BET: ${bet} UT (±5)`;
-      // module ui도 같이 갱신
-      if (ui.betVal) setText(ui.betVal, fmtInt(bet));
-      if (S.ui?.setKpi) S.ui.setKpi({ bet });
-    };
-
-    minus.addEventListener("click", () => {
-      bet = clamp(bet - 5, 10, 1000);
-      saveBet();
-      refresh();
-      S.audio?.sfx?.("start");
+    S.ui.setPlayer({
+      displayName,
+      u: nickname,
+      ut: st?.ut ?? 0,
     });
 
-    plus.addEventListener("click", () => {
-      bet = clamp(bet + 5, 10, 1000);
-      saveBet();
-      refresh();
-      S.audio?.sfx?.("start");
-    });
+    // 잭팟/베팅 KPI
+    // 서버 bet이 있으면 그걸 기본으로 UI bet를 맞춰주되,
+    // 유송이 원하는 "±5" UX를 위해 betStep은 5로 유지
+    const serverBet = asInt(st?.bet, betUi);
+    setBetUi(serverBet);
 
-    bar.appendChild(minus);
-    bar.appendChild(meta);
-    bar.appendChild(plus);
-    box.appendChild(bar);
-
-    refresh();
-  }
-
-  // ---- ensure sound button for cyberpunk layout (if slot.ui.js style ids not present)
-  function ensureSoundButton() {
-    if (ui.soundBtn) return; // already exists
-
-    const row = ui.btnSpin?.closest(".row") || ui.btnSpin?.parentElement;
-    if (!row) return;
-
-    const btn = document.createElement("button");
-    btn.id = "btnSound";
-    btn.className = "btn btnAuto"; // reuse cyberpunk styles
-    btn.style.width = "140px";
-    btn.textContent = (S.audio?.isOn?.() ?? true) ? "SOUND ON" : "SOUND OFF";
-
-    btn.addEventListener("click", async () => {
-      const on = S.audio?.toggle ? S.audio.toggle() : true;
-      btn.textContent = on ? "SOUND ON" : "SOUND OFF";
-    });
-
-    // AUTO 옆에 끼워넣기
-    if (ui.btnAuto && row.contains(ui.btnAuto)) ui.btnAuto.insertAdjacentElement("afterend", btn);
-    else row.insertBefore(btn, ui.btnSpin);
-
-    ui.soundBtn = btn;
-  }
-
-  // ---- paytable (cyberpunk paytable area)
-  function buildCyberPaytable() {
-    if (!ui.uiPaytable) return;
-    ui.uiPaytable.innerHTML = `
-      <div class="ptItem"><div class="ptLeft"><div class="badge">2×</div><div>같은 심볼 2개</div></div><div class="ptMul">WIN</div></div>
-      <div class="ptItem"><div class="ptLeft"><div class="badge">3×</div><div>같은 심볼 3개</div></div><div class="ptMul">WIN</div></div>
-      <div class="ptItem"><div class="ptLeft"><div class="badge">4×</div><div>같은 심볼 4개</div></div><div class="ptMul">BIG WIN</div></div>
-      <div class="ptItem"><div class="ptLeft"><div class="badge">5×</div><div>같은 심볼 5개</div></div><div class="ptMul">MEGA</div></div>
-      <div class="ptItem"><div class="ptLeft"><div class="badge">JP</div><div><b>PRO10</b> 5개 = JACKPOT</div></div><div class="ptMul">SPECIAL</div></div>
-    `;
-  }
-
-  function movePaytableUnderReels() {
-    if (!ui.uiReelWrap || !ui.uiPaytable) return;
-    if (ui.uiReelWrap.querySelector(".tu-paywrap")) return;
-
-    const wrap = document.createElement("div");
-    wrap.className = "tu-paywrap";
-    wrap.style.marginTop = "12px";
-
-    const title = document.createElement("div");
-    title.textContent = "PAY TABLE";
-    title.style.fontFamily = '"Orbitron", system-ui, sans-serif';
-    title.style.fontWeight = "900";
-    title.style.letterSpacing = ".14em";
-    title.style.fontSize = "12px";
-    title.style.color = "rgba(215,228,255,.88)";
-    title.style.margin = "4px 0 8px";
-    title.style.textTransform = "uppercase";
-
-    wrap.appendChild(title);
-    wrap.appendChild(ui.uiPaytable);
-    ui.uiReelWrap.appendChild(wrap);
-  }
-
-  // ---- status / log helpers (works for both UI types)
-  function setOnline(on) {
-    // module ui
-    if (S.ui?.setOnline) S.ui.setOnline(on);
-    if (ui.apiDot) ui.apiDot.style.background = on ? "#22c55e" : "#ef4444";
-    if (ui.apiText) setText(ui.apiText, on ? "Online" : "Offline");
-  }
-
-  function setNote(msg, isErr = false) {
-    if (ui.uiNote) {
-      setText(ui.uiNote, msg || "");
-      ui.uiNote.style.color = isErr ? "rgba(255,120,160,.95)" : "rgba(215,228,255,.82)";
+    if (S.ui?.setKpi) {
+      S.ui.setKpi({
+        bet: betUi,
+        jackpot: st?.jackpot ?? 0,
+        win: 0,
+      });
     }
-    if (ui.log) setText(ui.log, msg || "");
-    if (S.ui?.setLog) S.ui.setLog(msg || "");
-  }
 
-  function setResult(msg, isErr = false) {
-    if (ui.uiResult) {
-      setText(ui.uiResult, msg || "");
-      ui.uiResult.style.color = isErr ? "rgba(255,120,160,.95)" : "";
+    // 페이테이블 (없으면 symbols로 생성)
+    if (!Array.isArray(S.PAYTABLE) || S.PAYTABLE.length === 0) {
+      S.PAYTABLE = derivePaytableFromSymbols(st?.symbols || []);
     }
-    // module ui에서는 winVal를 결과표시로 쓰는 경우가 많아 같이 넣어줌
-    if (ui.winVal) setText(ui.winVal, msg || "");
+    S.ui.buildPaytable?.();
+
+    S.ui.setLog?.("READY");
+
+    return st;
   }
 
-  function setPlayerAndWallet({ displayName, ut }) {
-    // cyberpunk
-    if (ui.uiPlayer) setText(ui.uiPlayer, displayName || "-");
-    if (ui.uiWallet && ut !== undefined) setText(ui.uiWallet, fmtInt(ut));
-
-    // module ui
-    if (S.ui?.setPlayer) S.ui.setPlayer({ displayName, ut });
-    if (ui.playerName) setText(ui.playerName, displayName || "-");
-    if (ui.playerUt && ut !== undefined) setText(ui.playerUt, String(ut));
-  }
-
-  function setJackpot(v) {
-    if (ui.uiJackpot) setText(ui.uiJackpot, fmtInt(v));
-    if (ui.jpVal) setText(ui.jpVal, fmtInt(v));
-    if (S.ui?.setKpi) S.ui.setKpi({ jackpot: v });
-  }
-
-  // ---- main flow
-  let spinning = false;
-  let autoOn = false;
-  let autoTimer = null;
-
-  function stopAuto() {
-    autoOn = false;
-    if (ui.btnAuto) setText(ui.btnAuto, "AUTO OFF");
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = null;
-  }
-  function startAuto() {
-    if (autoOn) return;
-    autoOn = true;
-    if (ui.btnAuto) setText(ui.btnAuto, "AUTO ON");
-    autoTimer = setInterval(() => { if (!spinning) spin(); }, 1250);
-  }
-
-  async function loadState() {
-    setNote("SYNC…");
-    try {
-      const js = await S.api.state();
-      // worker가 살아있으면 ok 유무와 상관 없이 Online은 켬(네트워크 OK)
-      setOnline(true);
-
-      if (!js || js.ok === false) {
-        setResult("STATE ERROR", true);
-        setNote(`state fail: ${js?.error || "unknown"}`, true);
-        return;
-      }
-
-      const name = String(js.userName || js.name || js.displayName || "").trim();
-      const idt = S.api.getUserIdentity?.() || {};
-      const displayName = name || idt.name || idt.id || idt.u || "Guest";
-
-      const ut = (js.ut ?? js.UT ?? js.totalUT ?? js.wallet ?? js.balance);
-      setPlayerAndWallet({ displayName, ut: ut ?? 0 });
-
-      setJackpot(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0);
-
-      // 서버가 bet을 내려주면 맞춰주기(없으면 로컬 bet 유지)
-      const srvBet = Number(js.bet);
-      if (Number.isFinite(srvBet) && srvBet > 0) {
-        bet = clamp(Math.round(srvBet / 5) * 5, 10, 1000);
-        saveBet();
-      }
-      if (ui.uiBet) setText(ui.uiBet, fmtInt(bet));
-      if (ui.betVal) setText(ui.betVal, fmtInt(bet));
-      if (S.ui?.setKpi) S.ui.setKpi({ bet });
-
-      // grid 렌더는 slot.game.js에 있으면 위임
-      if (js.grid && S.game?.renderGrid) S.game.renderGrid(js.grid);
-
-      setResult("READY");
-      setNote("");
-
-    } catch (e) {
-      setOnline(false);
-      setResult("STATE ERROR", true);
-      setNote(String(e?.message || e), true);
-    }
-  }
-
-  async function spin() {
+  async function doSpinOnce() {
     if (spinning) return;
     spinning = true;
-    if (ui.btnSpin) ui.btnSpin.disabled = true;
 
     try {
-      S.audio?.unlock?.();
-      S.audio?.sfx?.("start");
+      S.ui.setLog?.("SPIN…");
 
-      setNote("SPINNING…");
-      S.audio?.loop?.(true);
+      // ✅ /slot/spin
+      // (현재 vault worker는 bet을 고정값으로 쓰고 있어서,
+      //  다음 단계에서 worker가 bet을 받도록 바꾸면 UI bet이 실제 반영됨)
+      const res = await S.api.spin({ bet: betUi });
 
-      // 비주얼은 game쪽 있으면 위임(없어도 상관없게)
-      const visual = S.game?.spinVisual ? S.game.spinVisual(750) : Promise.resolve();
+      // 온라인 표시
+      S.ui.setOnline(true);
 
-      const js = await S.api.spin({ bet });
-      await visual;
-
-      S.audio?.loop?.(false);
-      S.audio?.sfx?.("stop");
-
-      if (!js || js.ok === false) {
-        setResult("SPIN ERROR", true);
-        setNote(`spin fail: ${js?.error || "unknown"}`, true);
-        // 돈 부족/오류면 자동 끔
-        stopAuto();
+      if (!res?.ok) {
+        S.ui.setLog?.(res?.error ? `ERROR: ${res.error}` : "ERROR");
+        // 잔액은 응답에 있을 수도 있음
+        if (res?.ut !== undefined) {
+          S.ui.setPlayer({ displayName: "", u: "", ut: res.ut });
+        }
         return;
       }
 
-      // 업데이트
-      const name = String(js.userName || js.name || js.displayName || "").trim();
-      const idt = S.api.getUserIdentity?.() || {};
-      const displayName = name || idt.name || idt.id || idt.u || "Guest";
+      // ✅ 스핀 결과 반영 (이름/UT)
+      const displayName =
+        res?.identity?.name ||
+        res?.identity?.nickname ||
+        res?.identity?.id ||
+        "Guest";
 
-      const ut = (js.ut ?? js.UT ?? js.totalUT ?? js.wallet ?? js.balance);
-      setPlayerAndWallet({ displayName, ut: ut ?? 0 });
+      const nickname =
+        res?.identity?.nickname ||
+        "";
 
-      setJackpot(js.jackpot ?? js.jackpotUT ?? js.jackpot_ut ?? 0);
+      S.ui.setPlayer({
+        displayName,
+        u: nickname,
+        ut: res?.ut ?? 0,
+      });
 
-      const srvBet = Number(js.bet);
-      if (Number.isFinite(srvBet) && srvBet > 0) {
-        bet = clamp(Math.round(srvBet / 5) * 5, 10, 1000);
-        saveBet();
-      }
-      if (ui.uiBet) setText(ui.uiBet, fmtInt(bet));
-      if (ui.betVal) setText(ui.betVal, fmtInt(bet));
-      if (S.ui?.setKpi) S.ui.setKpi({ bet });
+      S.ui.setKpi?.({
+        bet: betUi,
+        jackpot: res?.jackpot ?? 0,
+        win: res?.win ?? 0,
+      });
 
-      if (js.grid && S.game?.renderGrid) S.game.renderGrid(js.grid);
+      // 간단 로그
+      const wt = res?.winType || "";
+      const net = res?.net ?? 0;
+      S.ui.setLog?.(`${wt}  (NET: ${net})`);
 
-      // 결과 메시지
-      const betCharged = Number(js.betCharged ?? js.bet_cost ?? bet);
-      const win = Number(js.win ?? js.payout ?? 0);
-      const delta = win - betCharged;
-
-      if (js.jackpotHit || js.isJackpot) {
-        setResult(`JACKPOT!!! +${fmtInt(js.jackpotWin ?? win)} UT`);
-        S.audio?.sfx?.("jackpot");
-      } else if (delta > 0) {
-        setResult(`WIN +${fmtInt(delta)} UT`);
-        S.audio?.sfx?.("win");
-      } else if (delta < 0) {
-        setResult(`LOSE ${fmtInt(delta)} UT`);
-        S.audio?.sfx?.("lose");
-      } else {
-        setResult("EVEN 0 UT");
-      }
-
-      setNote("");
+      // TODO(다음 단계): 잭팟/대승 애니메이션 + 숫자 카운트업(1분30초)
+      // 여기서 winType === "JACKPOT" 일 때 연출 길게 타면 됨.
 
     } catch (e) {
-      S.audio?.loop?.(false);
-      setResult("SPIN ERROR", true);
-      setNote(String(e?.message || e), true);
-      stopAuto();
+      S.ui.setOnline(false);
+      S.ui.setLog?.(`SYNC FAILED: ${String(e?.message || e)}`);
     } finally {
       spinning = false;
-      if (ui.btnSpin) ui.btnSpin.disabled = false;
     }
+  }
+
+  function bind() {
+    // 베팅 -/+
+    if (el.betMinus) {
+      el.betMinus.addEventListener("click", () => setBetUi(betUi - betStep));
+    }
+    if (el.betPlus) {
+      el.betPlus.addEventListener("click", () => setBetUi(betUi + betStep));
+    }
+
+    // 스핀
+    if (el.spinBtn) {
+      el.spinBtn.addEventListener("click", async () => {
+        setAuto(false);
+        await doSpinOnce();
+      });
+    }
+
+    // 오토
+    if (el.autoBtn) {
+      el.autoBtn.addEventListener("click", () => setAuto(!autoOn));
+    }
+
+    // 오토 루프(가볍게)
+    setInterval(async () => {
+      if (!autoOn) return;
+      if (spinning) return;
+      await doSpinOnce();
+    }, 1200);
   }
 
   async function boot() {
-    ensureApiBase();
-    bridgeIdentityFromUniqueCurrentUser();
-    loadBet();
+    if (booted) return;
+    booted = true;
 
-    // UI 초기
-    if (ui.uiBet) setText(ui.uiBet, fmtInt(bet));
-    if (ui.betVal) setText(ui.betVal, fmtInt(bet));
-    setResult("READY");
-    setOnline(false);
+    // 기본값
+    setAuto(false);
+    setBetUi(betUi);
 
-    // paytable
-    // module ui paytable이 있으면 그걸 쓰고, 없으면 cyberpunk paytable 생성
-    if (S.ui?.buildPaytable) S.ui.buildPaytable();
-    buildCyberPaytable();
-    movePaytableUnderReels();
+    bind();
 
-    ensureBetControls();
-    ensureSoundButton();
+    // 첫 동기화
+    try {
+      await syncState();
+    } catch (e) {
+      S.ui?.setOnline?.(false);
+      S.ui?.setLog?.(`SYNC FAILED: ${String(e?.message || e)}`);
+    }
 
-    // bind buttons
-    if (ui.btnSpin) ui.btnSpin.addEventListener("click", spin);
-    if (ui.btnAuto) ui.btnAuto.addEventListener("click", () => {
-      S.audio?.unlock?.();
-      S.audio?.sfx?.("start");
-      if (autoOn) stopAuto();
-      else startAuto();
-    });
-
-    await loadState();
+    // 주기적 동기화(UT/잭팟 갱신)
+    const refreshMs = Number(window.UNIQUE?.CONFIG?.REFRESH_MS || 30000);
+    setInterval(async () => {
+      try { await syncState(); } catch (_) {}
+    }, refreshMs);
   }
 
+  // DOM 준비 후 시작
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
