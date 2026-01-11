@@ -5,473 +5,48 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>THE UNIQUE SLOT</title>
 
-  <!-- Cyberpunk Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
+  <script src="../js/unique.config.js?v=20260112"></script>
 
-  <style>
-    :root{
-      --bg0:#05060a;
-      --bg1:#070a16;
-      --ink:#d7e4ff;
-      --muted:rgba(215,228,255,.7);
-
-      --neon-cyan:#21f6ff;
-      --neon-pink:#ff2bd6;
-      --neon-lime:#b7ff2a;
-      --neon-amber:#ffcc33;
-      --neon-violet:#a98bff;
-
-      --shadow: 0 30px 90px rgba(0,0,0,.75);
-      --blur: blur(12px);
-
-      --radius:22px;
-      --radius2:18px;
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--ink);
-      background: radial-gradient(1200px 700px at 12% 12%, rgba(33,246,255,.14), transparent 60%),
-                  radial-gradient(900px 520px at 88% 22%, rgba(255,43,214,.12), transparent 60%),
-                  radial-gradient(900px 520px at 52% 92%, rgba(183,255,42,.10), transparent 60%),
-                  linear-gradient(180deg, var(--bg0), var(--bg1) 55%, #04050c);
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px 14px;
-      overflow:hidden;
-    }
-
-    /* --- Cyberpunk HUD overlays --- */
-    .fx-grid, .fx-scan, .fx-noise{
-      position:fixed; inset:-2px;
-      pointer-events:none;
-      z-index:0;
-    }
-    .fx-grid{
-      background:
-        linear-gradient(to right, rgba(33,246,255,.08) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(33,246,255,.06) 1px, transparent 1px);
-      background-size: 56px 56px, 56px 56px;
-      opacity:.22;
-      transform: perspective(900px) rotateX(56deg) translateY(180px);
-      filter: blur(.4px);
-      animation: gridDrift 9s linear infinite;
-      transform-origin:center;
-    }
-    @keyframes gridDrift{
-      from{ background-position: 0 0, 0 0; }
-      to  { background-position: 0 560px, 0 560px; }
-    }
-
-    .fx-scan{
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(255,43,214,.06) 45%,
-        rgba(33,246,255,.08) 55%,
-        transparent 100%);
-      mix-blend-mode: screen;
-      opacity:.45;
-      animation: scan 2.8s linear infinite;
-    }
-    @keyframes scan{
-      from{ transform: translateY(-120%); }
-      to  { transform: translateY(120%); }
-    }
-
-    .fx-noise{
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-      opacity:.13;
-      mix-blend-mode: overlay;
-      animation: noise 1.2s steps(2) infinite;
-    }
-    @keyframes noise{
-      0%{ transform: translate3d(0,0,0); }
-      50%{ transform: translate3d(-1%,1%,0); }
-      100%{ transform: translate3d(1%,-1%,0); }
-    }
-
-    .wrap{
-      position:relative;
-      z-index:5;
-      width:min(1240px, 100%);
-      border-radius: calc(var(--radius) + 6px);
-      border: 1px solid rgba(33,246,255,.22);
-      background:
-        radial-gradient(900px 450px at 18% 18%, rgba(33,246,255,.12), transparent 55%),
-        radial-gradient(900px 450px at 88% 24%, rgba(255,43,214,.10), transparent 55%),
-        linear-gradient(180deg, rgba(10,14,36,.66), rgba(4,6,16,.66));
-      box-shadow:
-        0 0 0 1px rgba(255,43,214,.08) inset,
-        0 0 50px rgba(33,246,255,.10),
-        0 0 70px rgba(255,43,214,.07),
-        var(--shadow);
-      backdrop-filter: var(--blur);
-      -webkit-backdrop-filter: var(--blur);
-      overflow:hidden;
-    }
-
-    .wrap:before{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius: calc(var(--radius) + 8px);
-      background: linear-gradient(90deg, rgba(33,246,255,.55), rgba(255,43,214,.55), rgba(183,255,42,.35));
-      opacity:.22;
-      filter: blur(14px);
-      z-index:-1;
-    }
-
-    .top{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:16px 18px 10px;
-    }
-    .title{
-      font-family:"Orbitron", system-ui, sans-serif;
-      font-weight:900;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-size:16px;
-      color:transparent;
-      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-lime));
-      -webkit-background-clip:text;
-      background-clip:text;
-      text-shadow:
-        0 0 14px rgba(33,246,255,.25),
-        0 0 18px rgba(255,43,214,.18);
-    }
-
-    .top a{
-      font-family:"Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      color: rgba(215,228,255,.88);
-      text-decoration:none;
-      border:1px solid rgba(33,246,255,.22);
-      padding:8px 12px; border-radius:999px;
-      background: rgba(4,6,16,.55);
-      box-shadow: 0 0 0 1px rgba(255,43,214,.12) inset, 0 12px 28px rgba(0,0,0,.35);
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .top a:hover{
-      transform: translateY(-1px);
-      box-shadow: 0 0 18px rgba(33,246,255,.18), 0 0 22px rgba(255,43,214,.12);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 360px 1fr;
-      gap:14px;
-      padding: 0 18px 18px;
-    }
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr}
-    }
-
-    .panel{
-      border-radius: var(--radius);
-      border: 1px solid rgba(140,170,255,.16);
-      background: linear-gradient(180deg, rgba(2,6,23,.50), rgba(2,6,23,.28));
-      box-shadow:
-        0 0 0 1px rgba(33,246,255,.10) inset,
-        0 18px 60px rgba(0,0,0,.35);
-      padding:14px;
-      position:relative;
-      overflow:hidden;
-    }
-    .panel:before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        radial-gradient(420px 220px at 20% 10%, rgba(33,246,255,.10), transparent 60%),
-        radial-gradient(380px 220px at 86% 18%, rgba(255,43,214,.08), transparent 60%);
-      opacity:.9;
-      pointer-events:none;
-    }
-
-    .statGrid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-bottom:12px;
-      position:relative;
-      z-index:2;
-    }
-
-    .stat{
-      border-radius: var(--radius2);
-      border: 1px solid rgba(140,170,255,.14);
-      background: rgba(4,6,16,.36);
-      padding: 10px 12px;
-      box-shadow: 0 0 0 1px rgba(33,246,255,.08) inset;
-    }
-    .k{
-      font-family:"Share Tech Mono", ui-monospace, monospace;
-      font-size: 11px;
-      letter-spacing:.14em;
-      opacity:.75;
-      text-transform:uppercase;
-    }
-    .v{
-      font-family:"Orbitron", system-ui, sans-serif;
-      font-weight:900;
-      margin-top:6px;
-      font-size:15px;
-      letter-spacing:.06em;
-    }
-
-    /* ✅ UT 안 보이는 상황 방지: 기본색을 먼저 주고, 클립 지원일 때만 투명+그라데이션 */
-    .v.neon{
-      color: var(--neon-cyan);
-      text-shadow: 0 0 16px rgba(33,246,255,.22);
-    }
-    @supports (-webkit-background-clip:text) {
-      .v.neon{
-        color:transparent;
-        background: linear-gradient(90deg, var(--neon-cyan), var(--neon-amber));
-        -webkit-background-clip:text;
-        background-clip:text;
-        text-shadow: 0 0 18px rgba(33,246,255,.18);
-      }
-    }
-
-    .row{
-      position:relative;
-      z-index:2;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      margin-top:10px;
-    }
-
-    .btn{
-      border:0;
-      cursor:pointer;
-      border-radius: 16px;
-      padding: 12px 14px;
-      font-weight:900;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      font-family:"Orbitron", system-ui, sans-serif;
-      transition: transform .10s ease, box-shadow .12s ease, filter .12s ease;
-      user-select:none;
-    }
-
-    .btnSpin{
-      flex:1;
-      color:#071017;
-      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-lime));
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.14) inset,
-        0 22px 60px rgba(0,0,0,.55),
-        0 0 28px rgba(33,246,255,.18),
-        0 0 34px rgba(255,43,214,.12);
-      position:relative;
-      overflow:hidden;
-    }
-    .btnSpin:before{
-      content:"";
-      position:absolute; inset:-80% -40%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
-      transform: rotate(18deg);
-      animation: shine 2.4s linear infinite;
-      opacity:.6;
-    }
-    @keyframes shine{
-      from{ transform: translateX(-40%) rotate(18deg); }
-      to  { transform: translateX(40%) rotate(18deg); }
-    }
-    .btnSpin:hover{ transform: translateY(-1px); filter:saturate(1.1) }
-    .btnSpin:disabled{ opacity:.55; cursor:not-allowed; transform:none; filter:none; }
-
-    .btnAuto{
-      width:140px;
-      color: rgba(215,228,255,.9);
-      background: rgba(4,6,16,.40);
-      border:1px solid rgba(33,246,255,.20);
-      box-shadow: 0 0 0 1px rgba(255,43,214,.10) inset, 0 18px 50px rgba(0,0,0,.35);
-    }
-    .btnAuto:hover{ transform: translateY(-1px); box-shadow: 0 0 18px rgba(33,246,255,.14); }
-
-    .note{
-      position:relative;
-      z-index:2;
-      margin-top:12px;
-      font-family:"Share Tech Mono", ui-monospace, monospace;
-      font-size:12px;
-      line-height:1.35;
-      letter-spacing:.06em;
-      color: rgba(215,228,255,.82);
-      min-height: 18px;
-      white-space: pre-wrap;
-    }
-
-    .paytable{
-      position:relative;
-      z-index:2;
-      margin-top:14px;
-      border-top:1px solid rgba(140,170,255,.14);
-      padding-top:12px;
-      max-height:280px;
-      overflow:auto;
-    }
-
-    .ptItem{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:9px 10px;
-      border-radius:14px;
-      border:1px solid rgba(140,170,255,.12);
-      background: rgba(4,6,16,.30);
-      margin-bottom:8px;
-      font-size:12px;
-      box-shadow: 0 0 0 1px rgba(33,246,255,.07) inset;
-    }
-    .ptLeft{display:flex; gap:10px; align-items:center}
-    .badge{
-      width:26px; height:26px;
-      border-radius:10px;
-      border:1px solid rgba(33,246,255,.22);
-      display:flex; align-items:center; justify-content:center;
-      color: rgba(215,228,255,.92);
-      font-weight:900;
-      background: rgba(2,6,23,.35);
-      box-shadow: 0 0 18px rgba(33,246,255,.12);
-      flex:0 0 26px;
-      font-size:11px;
-      font-family:"Share Tech Mono", ui-monospace, monospace;
-    }
-    .ptMul{
-      font-family:"Share Tech Mono", ui-monospace, monospace;
-      color: rgba(215,228,255,.85);
-    }
-
-    .reelWrap{
-      border-radius: var(--radius);
-      border: 1px solid rgba(33,246,255,.20);
-      background: linear-gradient(180deg, rgba(2,6,23,.45), rgba(2,6,23,.22));
-      box-shadow:
-        0 0 0 1px rgba(255,43,214,.10) inset,
-        0 22px 70px rgba(0,0,0,.42);
-      padding:14px;
-      position:relative;
-      overflow:hidden;
-    }
-    .reelWrap:before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(480px 260px at 18% 12%, rgba(33,246,255,.12), transparent 60%),
-        radial-gradient(420px 260px at 84% 18%, rgba(255,43,214,.10), transparent 60%);
-      opacity:.9;
-      pointer-events:none;
-    }
-
-    .reels{
-      position:relative;
-      z-index:2;
-      display:grid;
-      grid-template-columns:repeat(5, 1fr);
-      gap:10px;
-      padding:10px;
-      border-radius: 18px;
-      border:1px solid rgba(140,170,255,.14);
-      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
-      min-height: 360px;
-    }
-
-    /* ✅ “위→아래” 흐르는 느낌용: 틱 애니메이션 */
-    @keyframes reelTick {
-      0%   { transform: translateY(-18px); filter: blur(1.4px) brightness(1.05); opacity: .85; }
-      100% { transform: translateY(0);      filter: blur(0px)  brightness(1);    opacity: 1; }
-    }
-    .tick { animation: reelTick .08s linear 1; }
-
-    .cell{
-      border-radius:16px;
-      border:1px solid rgba(140,170,255,.14);
-      background: linear-gradient(180deg, rgba(9,12,28,.72), rgba(4,6,16,.44));
-      display:flex; align-items:center; justify-content:center;
-      min-height:110px;
-      position:relative;
-      overflow:hidden;
-      box-shadow:
-        0 0 0 1px rgba(33,246,255,.07) inset,
-        0 18px 40px rgba(0,0,0,.35);
-    }
-    .cell:before{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius:18px;
-      background: linear-gradient(90deg, rgba(33,246,255,.28), rgba(255,43,214,.20), rgba(183,255,42,.18));
-      opacity:.08;
-      filter: blur(10px);
-      pointer-events:none;
-    }
-    .cell .sym{
-      width:92%;
-      height:92%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-    }
-
-    .sym svg{
-      width: 92%;
-      height: 92%;
-      display:block;
-      filter: drop-shadow(0 12px 18px rgba(0,0,0,.55));
-    }
-    .sym img{
-      position:absolute;
-      inset: 6%;
-      width:88%;
-      height:88%;
-      object-fit:contain;
-      opacity:.62;
-      filter:
-        drop-shadow(0 0 16px rgba(33,246,255,.28))
-        drop-shadow(0 0 18px rgba(255,43,214,.18));
-      mix-blend-mode: screen;
-      pointer-events:none;
-    }
-
-    .winFlash{ animation: winFlash .6s ease-out 1; }
-    @keyframes winFlash{
-      0%{ box-shadow: 0 0 0 1px rgba(33,246,255,.15) inset; }
-      40%{ box-shadow: 0 0 28px rgba(33,246,255,.22), 0 0 34px rgba(255,43,214,.16); }
-      100%{ box-shadow: 0 0 0 rgba(0,0,0,0); }
-    }
-    .jackpotPulse{ animation: jackpotPulse .8s ease-in-out 2; }
-    @keyframes jackpotPulse{
-      0%{ filter:saturate(1) contrast(1); }
-      50%{ filter:saturate(1.6) contrast(1.15); }
-      100%{ filter:saturate(1) contrast(1); }
-    }
-  </style>
+  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
 </head>
+
 <body>
-  <div class="fx-grid"></div>
-  <div class="fx-scan"></div>
-  <div class="fx-noise"></div>
+  <!-- 스핀 중에만 번쩍이는 배경 -->
+  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
 
-  <div class="wrap">
-    <div class="top">
-      <div class="title" id="uiTitle">THE UNIQUE SLOT</div>
-      <a href="../the-unique-main.html">← MAIN</a>
-    </div>
+  <!-- 잭팟 티커(자정까지 유지) -->
+  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
+    <div class="ticker-track" id="jackpotTickerTrack"></div>
+  </div>
 
-    <div class="grid">
-      <div class="panel">
-        <div class="statGrid">
+  <main class="slot-page">
+    <!-- PAYTABLE (모바일 최상단) -->
+    <section class="card paytable" id="paytableCard">
+      <div class="card-hd">
+        <div class="title">PAY TABLE</div>
+        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
+      </div>
+      <div class="card-bd" id="paytableBody"></div>
+    </section>
+
+    <!-- 게임 영역 -->
+    <section class="grid-wrap">
+      <!-- 패널(내 자산/버튼) -->
+      <section class="card panel" id="panelCard">
+        <div class="panel-top">
+          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
+          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
+        </div>
+
+        <div class="stats">
           <div class="stat">
             <div class="k">PLAYER</div>
             <div class="v" id="uiPlayer">-</div>
           </div>
           <div class="stat">
             <div class="k">WALLET (UT)</div>
-            <div class="v neon" id="uiWallet">0</div>
+            <div class="v" id="uiWallet">0</div>
           </div>
           <div class="stat">
             <div class="k">JACKPOT</div>
@@ -483,34 +58,270 @@
           </div>
         </div>
 
-        <div class="stat" style="margin-bottom:10px; position:relative; z-index:2;">
+        <div class="betbox">
           <div class="k">BET</div>
-          <div class="v neon" id="uiBet">10</div>
+          <div class="betrow">
+            <div class="betv" id="uiBet">10</div>
+            <div class="betbtns">
+              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
+              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
+            </div>
+          </div>
         </div>
 
-        <div class="row">
-          <button class="btn btnAuto" id="btnAuto">AUTO OFF</button>
-          <button class="btn btnSpin" id="btnSpin">SPIN</button>
+        <div class="controls">
+          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
+          <button class="btn" id="btnSound" type="button">SOUND ON</button>
+          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
+        </div>
+      </section>
+
+      <!-- 슬롯 스테이지 -->
+      <section class="card stage" id="stageCard">
+        <div class="stage-hd">
+          <div class="stage-title">SLOT</div>
+          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
         </div>
 
-        <div class="note" id="uiNote"></div>
-        <div class="paytable" id="uiPaytable"></div>
-      </div>
+        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
+      </section>
+    </section>
 
-      <div class="reelWrap" id="uiReelWrap">
-        <div class="reels" id="uiReels"></div>
+    <!-- 잭팟/빅윈 연출 -->
+    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
+      <div class="celebrate-card">
+        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
+        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
+        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
+        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
       </div>
     </div>
+  </main>
+
+  <!-- 슬롯 스크립트 -->
+  <script src="./slot/slot.config.js?v=20260112"></script>
+  <script src="./slot/slot.api.js?v=20260112"></script>
+  <script src="./slot/slot.audio.js?v=20260112"></script>
+  <script src="./slot/slot.ui.js?v=20260112"></script>
+  <script src="./slot/slot.game.js?v=20260112"></script>
+  <script src="./slot/slot.app.js?v=20260112"></script>
+</body>
+</html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>THE UNIQUE SLOT</title>
+
+  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
+  <script src="../js/unique.config.js?v=20260112"></script>
+
+  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
+</head>
+
+<body>
+  <!-- 스핀 중에만 번쩍이는 배경 -->
+  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
+
+  <!-- 잭팟 티커(자정까지 유지) -->
+  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
+    <div class="ticker-track" id="jackpotTickerTrack"></div>
   </div>
-  <script src="../js/unique.config.js?v=20260111"></script>
 
-<script src="./slot/slot.config.js?v=20260111"></script>
-<script src="./slot/slot.api.js?v=20260111"></script>
-<script src="./slot/slot.audio.js?v=20260111"></script>
-<script src="./slot/slot.game.js?v=20260111"></script>
-<script src="./slot/slot.ui.js?v=20260111"></script>
+  <main class="slot-page">
+    <!-- PAYTABLE (모바일 최상단) -->
+    <section class="card paytable" id="paytableCard">
+      <div class="card-hd">
+        <div class="title">PAY TABLE</div>
+        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
+      </div>
+      <div class="card-bd" id="paytableBody"></div>
+    </section>
 
-<script src="./slot/slot.app.js?v=20260111"></script>
+    <!-- 게임 영역 -->
+    <section class="grid-wrap">
+      <!-- 패널(내 자산/버튼) -->
+      <section class="card panel" id="panelCard">
+        <div class="panel-top">
+          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
+          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
+        </div>
 
+        <div class="stats">
+          <div class="stat">
+            <div class="k">PLAYER</div>
+            <div class="v" id="uiPlayer">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">WALLET (UT)</div>
+            <div class="v" id="uiWallet">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">JACKPOT</div>
+            <div class="v" id="uiJackpot">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">LAST RESULT</div>
+            <div class="v" id="uiResult">READY</div>
+          </div>
+        </div>
+
+        <div class="betbox">
+          <div class="k">BET</div>
+          <div class="betrow">
+            <div class="betv" id="uiBet">10</div>
+            <div class="betbtns">
+              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
+              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
+          <button class="btn" id="btnSound" type="button">SOUND ON</button>
+          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
+        </div>
+      </section>
+
+      <!-- 슬롯 스테이지 -->
+      <section class="card stage" id="stageCard">
+        <div class="stage-hd">
+          <div class="stage-title">SLOT</div>
+          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
+        </div>
+
+        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
+      </section>
+    </section>
+
+    <!-- 잭팟/빅윈 연출 -->
+    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
+      <div class="celebrate-card">
+        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
+        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
+        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
+        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 슬롯 스크립트 -->
+  <script src="./slot/slot.config.js?v=20260112"></script>
+  <script src="./slot/slot.api.js?v=20260112"></script>
+  <script src="./slot/slot.audio.js?v=20260112"></script>
+  <script src="./slot/slot.ui.js?v=20260112"></script>
+  <script src="./slot/slot.game.js?v=20260112"></script>
+  <script src="./slot/slot.app.js?v=20260112"></script>
+</body>
+</html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>THE UNIQUE SLOT</title>
+
+  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
+  <script src="../js/unique.config.js?v=20260112"></script>
+
+  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
+</head>
+
+<body>
+  <!-- 스핀 중에만 번쩍이는 배경 -->
+  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
+
+  <!-- 잭팟 티커(자정까지 유지) -->
+  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
+    <div class="ticker-track" id="jackpotTickerTrack"></div>
+  </div>
+
+  <main class="slot-page">
+    <!-- PAYTABLE (모바일 최상단) -->
+    <section class="card paytable" id="paytableCard">
+      <div class="card-hd">
+        <div class="title">PAY TABLE</div>
+        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
+      </div>
+      <div class="card-bd" id="paytableBody"></div>
+    </section>
+
+    <!-- 게임 영역 -->
+    <section class="grid-wrap">
+      <!-- 패널(내 자산/버튼) -->
+      <section class="card panel" id="panelCard">
+        <div class="panel-top">
+          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
+          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">PLAYER</div>
+            <div class="v" id="uiPlayer">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">WALLET (UT)</div>
+            <div class="v" id="uiWallet">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">JACKPOT</div>
+            <div class="v" id="uiJackpot">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">LAST RESULT</div>
+            <div class="v" id="uiResult">READY</div>
+          </div>
+        </div>
+
+        <div class="betbox">
+          <div class="k">BET</div>
+          <div class="betrow">
+            <div class="betv" id="uiBet">10</div>
+            <div class="betbtns">
+              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
+              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
+          <button class="btn" id="btnSound" type="button">SOUND ON</button>
+          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
+        </div>
+      </section>
+
+      <!-- 슬롯 스테이지 -->
+      <section class="card stage" id="stageCard">
+        <div class="stage-hd">
+          <div class="stage-title">SLOT</div>
+          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
+        </div>
+
+        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
+      </section>
+    </section>
+
+    <!-- 잭팟/빅윈 연출 -->
+    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
+      <div class="celebrate-card">
+        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
+        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
+        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
+        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 슬롯 스크립트 -->
+  <script src="./slot/slot.config.js?v=20260112"></script>
+  <script src="./slot/slot.api.js?v=20260112"></script>
+  <script src="./slot/slot.audio.js?v=20260112"></script>
+  <script src="./slot/slot.ui.js?v=20260112"></script>
+  <script src="./slot/slot.game.js?v=20260112"></script>
+  <script src="./slot/slot.app.js?v=20260112"></script>
 </body>
 </html>
