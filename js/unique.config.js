@@ -4,31 +4,39 @@
   window.UNIQUE.CONFIG = window.UNIQUE.CONFIG || {};
 
   const stripSlash = (s) => String(s || "").replace(/\/+$/, "");
-
   const C = window.UNIQUE.CONFIG;
 
-  // ✅ 공통 백엔드
+  /* =========================
+     ✅ 공통 백엔드
+  ========================= */
   C.SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
   C.SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
   C.GOOGLE_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ Worker 주소(여기만 바꾸면 전부 따라오게)
-  // - slot.page.js 는 SLOT_WORKER_BASE를 읽음
-  // - 기존 코드들은 SLOT_API_BASE를 읽는 경우가 있어서 둘 다 유지(동일값)
+  /* =========================
+     ✅ Worker 주소(여기만 바꾸면 전부 따라오게)
+     - "지금은 일단 돌아가게" 기준:
+       슬롯 state/spin은 vault worker(/slot/state, /slot/spin)를 사용
+  ========================= */
   C.VAULT_API_BASE = stripSlash("https://the-unique-vault-api.wordycow0001.workers.dev");
-  C.SLOT_API_BASE  = stripSlash("https://the-unique-slot-api.wordycow0001.workers.dev");
 
-  // ✅ 신/구 호환 키(중요)
+  // ✅ 슬롯도 동일하게 vault를 바라보게 고정(핵심)
+  // (별도 the-unique-slot-api는 테스트용 /spin 등이므로, 지금 구조에선 안 씀)
+  C.SLOT_API_BASE = C.VAULT_API_BASE;
+
+  // ✅ 신/구 호환 키(기존 코드들이 이 키들을 읽음)
   C.VAULT_WORKER_BASE = C.VAULT_API_BASE;
   C.SLOT_WORKER_BASE  = C.SLOT_API_BASE;
 
-  // ✅ (옵션) games/slot/slot.api.js 가 window.SLOT_API_BASE도 보므로 같이 세팅
-  //   - 모듈형 슬롯을 다시 쓸 때도 자동으로 동일 워커로 붙음
-  window.SLOT_API_BASE = C.SLOT_API_BASE;
+  // ✅ 전역 브릿지(슬롯 모듈들이 window.SLOT_API_BASE를 직접 읽는 경우)
+  window.VAULT_API_BASE = C.VAULT_API_BASE;
+  window.SLOT_API_BASE  = C.SLOT_API_BASE;
 
-  // ✅ 경제/설정
+  /* =========================
+     ✅ 경제/설정
+  ========================= */
   C.UT_PRICE_FACTOR = 0.30;
 
   C.RANK_JSON = "rank-hall.json";
@@ -52,7 +60,7 @@
       title: "현대 사회에 맞는 여행도구 so.t",
       description: "so.t 안에서 서로를 챙겨주며 함께 여행을 그린다.",
       cover: "img/ebook-network-marketing-cover.jpg",
-      link: "ebook1.html",
+      link: "ebook-network-marketing-cover.jpg" ? "ebook1.html" : "ebook1.html",
       visible: true,
       order: 2,
       posY: 50,
@@ -65,13 +73,12 @@
   C.YT_VIDEO_ID = "DBcSLPRz0HI";
   C.REFRESH_MS = 30000;
 
-  // 디버그 확인용
+  // ✅ 디버그 확인용
   console.log("[UNIQUE.CONFIG]", {
-    SLOT_WORKER_BASE: C.SLOT_WORKER_BASE,
+    VAULT_API_BASE: C.VAULT_API_BASE,
+    SLOT_API_BASE: C.SLOT_API_BASE,
     VAULT_WORKER_BASE: C.VAULT_WORKER_BASE,
+    SLOT_WORKER_BASE: C.SLOT_WORKER_BASE,
+    window_SLOT_API_BASE: window.SLOT_API_BASE,
   });
-  // 슬롯 모듈들이 window.SLOT_API_BASE 를 직접 읽으므로 브릿지로 연결
-window.VAULT_API_BASE = window.UNIQUE.CONFIG.VAULT_API_BASE;
-window.SLOT_API_BASE  = window.UNIQUE.CONFIG.VAULT_API_BASE; // ✅ 슬롯은 vault의 /slot/state, /slot/spin을 사용
-
 })();
