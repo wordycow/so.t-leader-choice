@@ -1,447 +1,397 @@
 /* games/slot/slot.app.js */
 window.SLOT = window.SLOT || {};
-(function(S){
+(function (S) {
   "use strict";
 
-  const $ = (id)=> document.getElementById(id);
-
-  const state = {
-    ut: 500,
-    jackpot: 20,
-    bet: 10,
-    auto: false,
-    busy: false,
-    playerId: "wordycow",
-    playerName: "이유송"
+  const LS = {
+    WALLET: "slotWalletUT",
+    BET: "slotBetUT",
+    AUTO: "slotAutoOn",
+    PLAYER_ID: "slotPlayerId",
+    PLAYER_NAME: "slotPlayerName",
   };
 
-  function fmt(n){
-    const x = Number(n)||0;
-    return x.toLocaleString("en-US");
+  const state = {
+    wallet: 0,
+    bet: 10,
+    auto: false,
+    spinning: false,
+    els: {},
+  };
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+
+  function num(v, d = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
   }
 
-  function clampBet(n){
-    n = Math.max(5, Math.min(5000, Math.floor((Number(n)||10)/5)*5));
-    if (n % 5 !== 0) n = Math.round(n/5)*5;
-    return n;
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
   }
 
-  function setNote(text){
-    if (S.ui && S.ui.setNote) S.ui.setNote(text);
-    else { const el = $("uiNote"); if (el) el.textContent = text; }
+  function setText(el, t) {
+    if (el) el.textContent = String(t);
   }
 
-  function setBet(n){
-    state.bet = clampBet(n);
-    if (S.ui && S.ui.setBet) S.ui.setBet(fmt(state.bet));
-    else { const el = $("uiBet"); if (el) el.textContent = fmt(state.bet); }
+  function injectStyleOnce(id, cssText) {
+    if (document.getElementById(id)) return;
+    const st = document.createElement("style");
+    st.id = id;
+    st.textContent = cssText;
+    document.head.appendChild(st);
   }
 
-  function hardSetWalletText(v){
-    const el = $("uiWallet");
-    if (el) el.textContent = fmt(v);
+  // ---------------------------
+  // UI API (slot.app.js가 쓰던 것들)
+  // ---------------------------
+  S.ui = S.ui || {};
+  S.ui.setWallet = (v) => {
+    state.wallet = num(v, state.wallet);
+    setText(state.els.walletValue, state.wallet);
+  };
+  S.ui.setBet = (v) => {
+    state.bet = clamp(num(v, state.bet), 5, 5000);
+    setText(state.els.betValue, state.bet);
+  };
+  S.ui.setJackpot = (v) => setText(state.els.jackpotValue, v);
+  S.ui.setLastResult = (v) => setText(state.els.lastResultValue, v);
+
+  // ---------------------------
+  // 요소 찾기 (있으면 쓰고, 없으면 넘어감)
+  // ---------------------------
+  function grabEls() {
+    state.els = {
+      // 값 표시
+      walletValue: $("#walletValue") || $("#walletUt") || $("[data-wallet]"),
+      betValue: $("#betValue") || $("[data-bet]"),
+      jackpotValue: $("#jackpotValue") || $("[data-jackpot]"),
+      lastResultValue: $("#lastResultValue") || $("[data-last-result]"),
+
+      // 버튼
+      btnSpin: $("#btnSpin") || $("#spinBtn") || $("button[data-spin]") || $("button"),
+      btnAuto: $("#btnAuto") || $("#autoBtn") || $("[data-auto]"),
+      btnMinus: $("#btnBetMinus") || $("[data-bet-minus]"),
+      btnPlus: $("#btnBetPlus") || $("[data-bet-plus]"),
+
+      // 블럭
+      paytableBlock:
+        $("#payTable") ||
+        $(".paytable") ||
+        $("[data-paytable]") ||
+        $(".slot-paytable") ||
+        null,
+      stageMount:
+        $("#reels") ||
+        $("#reelMount") ||
+        $("#slotStage") ||
+        $("#stage") ||
+        $("[data-slot-stage]") ||
+        $(".slot-stage") ||
+        null,
+      assetPanel:
+        $("#assetPanel") ||
+        $("#leftPanel") ||
+        $(".left-panel") ||
+        $("[data-slot-panel]") ||
+        null,
+
+      // 플레이어 표시 (슬래시 제거용)
+      playerIdEl: $("#playerId") || $("[data-player-id]"),
+      playerNameEl: $("#playerName") || $("[data-player-name]"),
+      playerComboEl: $("#playerLabel") || $("[data-player]"),
+    };
   }
 
-  function animateNumber(el, from, to, ms){
-    if (!el) return;
-    const a = Number(from)||0;
-    const b = Number(to)||0;
-    const t0 = performance.now();
-    const d = b - a;
+  // ---------------------------
+  // 모바일/데스크탑 레이아웃 재배치
+  // PayTable -> Slot -> AssetPanel
+  // ---------------------------
+  function relaxScrollLocks() {
+    // "밑으로 내리면 내려가야" = overflow hidden / 100vh 락 풀기
+    [document.documentElement, document.body].forEach((el) => {
+      el.style.overflowY = "auto";
+      el.style.height = "auto";
+      el.style.minHeight = "100vh";
+    });
+  }
 
-    const ease = (p)=> 1 - Math.pow(1-p, 3);
+  function setupFlowLayout() {
+    const pay = state.els.paytableBlock;
+    const stage = state.els.stageMount;
+    const panel = state.els.assetPanel;
 
-    function tick(t){
-      const p = Math.min(1, (t - t0) / ms);
-      const v = Math.round(a + d * ease(p));
-      el.textContent = fmt(v);
-      if (p < 1) requestAnimationFrame(tick);
+    // 블럭 3개 중 하나라도 못 찾으면 레이아웃 강제 재배치 안 함
+    if (!pay || !stage || !panel) return;
+
+    // stage는 mount 자체 말고 “카드/패널” 단위로 잡는 게 안전
+    const stageBlock =
+      stage.closest(".slot-stage-card") ||
+      stage.closest(".panel-right") ||
+      stage.closest(".right-panel") ||
+      stage.closest(".card") ||
+      stage;
+
+    const payBlock =
+      pay.closest(".slot-paytable-card") ||
+      pay.closest(".card") ||
+      pay;
+
+    const panelBlock =
+      panel.closest(".slot-panel-card") ||
+      panel.closest(".card") ||
+      panel;
+
+    // 공통 부모(최대한 바깥)
+    const host =
+      stageBlock.closest(".page-wrap") ||
+      stageBlock.closest("main") ||
+      stageBlock.parentElement ||
+      document.body;
+
+    let flow = document.getElementById("slotFlow");
+    if (!flow) {
+      flow = document.createElement("div");
+      flow.id = "slotFlow";
+      host.insertBefore(flow, host.firstChild);
     }
+
+    // 블럭들을 flow 안으로 이동 (순서 강제)
+    flow.appendChild(payBlock);
+    flow.appendChild(stageBlock);
+    flow.appendChild(panelBlock);
+
+    // z-index: 배경 레이어는 뒤(0), UI는 위(2)
+    flow.style.position = "relative";
+    flow.style.zIndex = "2";
+
+    injectStyleOnce(
+      "slot-flow-style",
+      `
+      /* 데스크탑: 패널은 왼쪽, 오른쪽 위에 paytable / 아래에 슬롯 */
+      #slotFlow{
+        width: min(1100px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 12px;
+        display: grid;
+        gap: 14px;
+        align-items: start;
+        grid-template-columns: 360px 1fr;
+        grid-template-areas:
+          "panel pay"
+          "panel stage";
+      }
+      /* 블럭에 영역 지정 (가능한 경우만) */
+      #slotFlow > :nth-child(1){ grid-area: pay; }
+      #slotFlow > :nth-child(2){ grid-area: stage; }
+      #slotFlow > :nth-child(3){ grid-area: panel; }
+
+      /* 모바일: 위에서 아래로 PayTable -> Slot -> Panel */
+      @media (max-width: 900px){
+        #slotFlow{
+          display:flex;
+          flex-direction:column;
+        }
+        #slotFlow > :nth-child(1){ order: 1; }
+        #slotFlow > :nth-child(2){ order: 2; }
+        #slotFlow > :nth-child(3){ order: 3; }
+      }
+    `
+    );
+
+    // 배경 레이어가 보이도록 z-index 정리 (game.js가 만든 div가 있어도 잡아줌)
+    const bgA = document.getElementById("slotBgA");
+    const bgB = document.getElementById("slotBgB");
+    if (bgA) bgA.style.zIndex = "0";
+    if (bgB) bgB.style.zIndex = "1";
+  }
+
+  // ---------------------------
+  // 플레이어 표시: "아이디 / 이름" 슬래시 제거
+  // ---------------------------
+  function fixPlayerSlash() {
+    const combo = state.els.playerComboEl;
+    const idEl = state.els.playerIdEl;
+    const nameEl = state.els.playerNameEl;
+
+    // 1) 분리된 엘리먼트가 있으면 거기에 넣고 끝
+    if (idEl && nameEl) {
+      const pid = (localStorage.getItem(LS.PLAYER_ID) || "").trim();
+      const pname = (localStorage.getItem(LS.PLAYER_NAME) || "").trim();
+      if (pid) setText(idEl, pid);
+      if (pname) setText(nameEl, pname);
+      return;
+    }
+
+    // 2) 한 줄 텍스트 안에 "/"가 있으면 제거해서 줄바꿈 느낌으로 정리
+    if (combo) {
+      const t = combo.textContent || "";
+      if (t.includes("/")) {
+        const [a, b] = t.split("/").map((s) => s.trim());
+        combo.innerHTML = "";
+        const top = document.createElement("div");
+        const bottom = document.createElement("div");
+        top.textContent = a || "";
+        bottom.textContent = b || "";
+        combo.appendChild(top);
+        combo.appendChild(bottom);
+      }
+    }
+  }
+
+  // ---------------------------
+  // 저장/로드
+  // ---------------------------
+  function loadState() {
+    state.wallet = num(localStorage.getItem(LS.WALLET), num(state.els.walletValue?.textContent, 0));
+    state.bet = clamp(num(localStorage.getItem(LS.BET), 10), 5, 5000);
+    state.auto = (localStorage.getItem(LS.AUTO) ?? "0") === "1";
+    S.ui.setWallet(state.wallet);
+    S.ui.setBet(state.bet);
+    if (state.els.btnAuto) state.els.btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
+  }
+
+  function saveState() {
+    localStorage.setItem(LS.WALLET, String(Math.max(0, Math.floor(state.wallet))));
+    localStorage.setItem(LS.BET, String(Math.max(5, Math.floor(state.bet))));
+    localStorage.setItem(LS.AUTO, state.auto ? "1" : "0");
+  }
+
+  // ---------------------------
+  // 숫자 카운트업(이긴 느낌 연출)
+  // ---------------------------
+  function animateCount(el, from, to, ms = 900) {
+    if (!el) return;
+    const a = Math.floor(from);
+    const b = Math.floor(to);
+    if (a === b) {
+      el.textContent = String(b);
+      return;
+    }
+    const t0 = performance.now();
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / ms);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = Math.floor(a + (b - a) * eased);
+      el.textContent = String(v);
+      if (p < 1) requestAnimationFrame(tick);
+    };
     requestAnimationFrame(tick);
   }
 
-  // ✅ 족보 UI 채우기 (slot.html의 #uiPaytable)
-  function renderPaytable(){
-    const wrap = $("uiPaytable");
-    if (!wrap || !S.game || !S.game.getPaytable) return;
+  // ---------------------------
+  // 스핀 동작
+  // ---------------------------
+  async function doSpinOnce() {
+    if (state.spinning) return;
+    if (!S.game || typeof S.game.spin !== "function") return;
 
-    const { PAY, SYMBOL_IDS } = S.game.getPaytable();
-    const rows = [];
-
-    for (const sym of SYMBOL_IDS){
-      const p = PAY[sym] || {};
-      const isJack = (sym === "pro10");
-      const line = `
-        <div class="ptItem">
-          <div class="ptLeft">
-            <span class="badge">${sym.toUpperCase()}</span>
-            <img src="${(S.IMG_PATH ? S.IMG_PATH(sym) : `img/slot/${sym}.png`)}" alt="" style="width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));">
-          </div>
-          <div class="ptRight">
-            <div class="ptLine">2개: <b>EVEN</b> (x${p[2] ?? 1})</div>
-            <div class="ptLine">3개: x${p[3] ?? 0}</div>
-            <div class="ptLine">4개: x${p[4] ?? 0}</div>
-            <div class="ptLine">${isJack ? "5개: <b>JACKPOT</b>" : `5개: x${p[5] ?? 0}`}</div>
-          </div>
-        </div>
-      `;
-      rows.push(line);
-    }
-
-    wrap.innerHTML = `<div class="paytable">${rows.join("")}</div>`;
-  }
-
-  // ✅ 잭팟 티커(자정까지 유지)
-  function ensureJackpotTicker(){
-    if ($("jackpotTicker")) return;
-
-    const bar = document.createElement("div");
-    bar.id = "jackpotTicker";
-    bar.style.position = "fixed";
-    bar.style.top = "0";
-    bar.style.left = "0";
-    bar.style.right = "0";
-    bar.style.zIndex = "9999";
-    bar.style.pointerEvents = "none";
-    bar.style.padding = "10px 0";
-    bar.style.background = "rgba(0,0,0,0.45)";
-    bar.style.backdropFilter = "blur(10px)";
-    bar.style.borderBottom = "1px solid rgba(255,255,255,0.12)";
-    bar.style.display = "none";
-    bar.style.overflow = "hidden";
-
-    const inner = document.createElement("div");
-    inner.style.whiteSpace = "nowrap";
-    inner.style.display = "inline-block";
-    inner.style.willChange = "transform";
-    inner.style.paddingLeft = "100%";
-    inner.style.animation = "tickerMove 18s linear infinite";
-    inner.style.color = "#fff";
-    inner.style.fontWeight = "800";
-    inner.style.textShadow = "0 10px 30px rgba(0,0,0,.6)";
-    inner.id = "jackpotTickerText";
-
-    const st = document.createElement("style");
-    st.textContent = `
-      @keyframes tickerMove { 0%{ transform:translateX(0);} 100%{ transform:translateX(-100%);} }
-    `;
-    document.head.appendChild(st);
-
-    bar.appendChild(inner);
-    document.body.appendChild(bar);
-  }
-
-  function showJackpotTicker(name){
-    ensureJackpotTicker();
-    const bar = $("jackpotTicker");
-    const text = $("jackpotTickerText");
-    if (!bar || !text) return;
-
-    text.textContent = `${name}님이 잭팟이 터지셨습니다. 축하드립니다.  🎉🎉🎉`;
-    bar.style.display = "block";
-
-    // 자정까지 유지
-    const now = new Date();
-    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
-    const ttl = midnight.getTime() - now.getTime();
-
-    localStorage.setItem("slotJackpotTicker", JSON.stringify({
-      name,
-      until: midnight.getTime()
-    }));
-
-    setTimeout(() => {
-      const saved = JSON.parse(localStorage.getItem("slotJackpotTicker") || "null");
-      if (!saved || Date.now() > saved.until){
-        bar.style.display = "none";
-        localStorage.removeItem("slotJackpotTicker");
-      }
-    }, Math.min(ttl, 60*1000)); // 1분마다 한번씩만 체크
-  }
-
-  function restoreJackpotTicker(){
-    ensureJackpotTicker();
-    const saved = JSON.parse(localStorage.getItem("slotJackpotTicker") || "null");
-    if (!saved) return;
-    if (Date.now() > saved.until){
-      localStorage.removeItem("slotJackpotTicker");
-      return;
-    }
-    showJackpotTicker(saved.name);
-  }
-
-  // ✅ 승리/잭팟 오버레이(잭팟 60초)
-  function ensureOverlay(){
-    if ($("slotCelebrate")) return;
-
-    const st = document.createElement("style");
-    st.textContent = `
-      #slotCelebrate{
-        position:fixed; inset:0; z-index:10000;
-        display:none; align-items:center; justify-content:center;
-        background:rgba(0,0,0,.55);
-        backdrop-filter: blur(10px);
-      }
-      #slotCelebrate .card{
-        width:min(720px, 92vw);
-        border-radius:24px;
-        border:1px solid rgba(255,255,255,.16);
-        background: radial-gradient(circle at top, rgba(255,255,255,.12), rgba(0,0,0,.35));
-        box-shadow: 0 40px 120px rgba(0,0,0,.55);
-        padding:22px;
-        position:relative;
-        overflow:hidden;
-        transform: translateY(8px) scale(.98);
-        animation: popIn .22s ease forwards;
-      }
-      #slotCelebrate .title{
-        font-weight:900; letter-spacing:.06em;
-        font-size:40px;
-      }
-      #slotCelebrate .amt{
-        margin-top:10px;
-        font-weight:900;
-        font-size:46px;
-      }
-      #slotCelebrate .sub{
-        margin-top:8px;
-        opacity:.9;
-        font-weight:700;
-      }
-      #slotCelebrate .close{
-        position:absolute; right:14px; top:14px;
-        border-radius:14px; padding:10px 12px;
-        border:1px solid rgba(255,255,255,.18);
-        background:rgba(0,0,0,.25);
-        color:#fff; font-weight:800;
-        cursor:pointer;
-      }
-      #slotCelebrate.jackpot .card{
-        background: radial-gradient(circle at top, rgba(255,215,0,.18), rgba(0,0,0,.35));
-      }
-      #slotCelebrate.jackpot .title{
-        text-shadow: 0 0 24px rgba(255,215,0,.45);
-      }
-      #slotCelebrate .spark{
-        position:absolute; inset:-40%;
-        background:
-          radial-gradient(circle, rgba(255,255,255,.18) 0 2px, transparent 3px) 0 0 / 22px 22px;
-        opacity:.18;
-        animation: sparkMove 1.2s linear infinite;
-        pointer-events:none;
-      }
-      @keyframes sparkMove { from{ transform:translate3d(0,0,0) rotate(0deg);} to{ transform:translate3d(40px,40px,0) rotate(8deg);} }
-      @keyframes popIn { to{ transform: translateY(0) scale(1);} }
-    `;
-    document.head.appendChild(st);
-
-    const ov = document.createElement("div");
-    ov.id = "slotCelebrate";
-    ov.innerHTML = `
-      <div class="spark"></div>
-      <div class="card">
-        <button class="close">닫기</button>
-        <div class="title" id="slotCeleTitle">WIN</div>
-        <div class="amt" id="slotCeleAmt">+0 UT</div>
-        <div class="sub" id="slotCeleSub"></div>
-      </div>
-    `;
-    document.body.appendChild(ov);
-
-    ov.querySelector(".close").addEventListener("click", () => hideOverlay());
-    ov.addEventListener("click", (e)=>{ if (e.target === ov) hideOverlay(); });
-  }
-
-  let overlayTimer = null;
-  function showOverlay({ title, amountText, subText, jackpot=false, ms=2500 }){
-    ensureOverlay();
-    const ov = $("slotCelebrate");
-    if (!ov) return;
-
-    ov.classList.toggle("jackpot", !!jackpot);
-    $("slotCeleTitle").textContent = title;
-    $("slotCeleAmt").textContent = amountText;
-    $("slotCeleSub").textContent = subText || "";
-
-    ov.style.display = "flex";
-
-    if (overlayTimer) clearTimeout(overlayTimer);
-    overlayTimer = setTimeout(() => {
-      // 잭팟은 기본 60초지만, 원하면 클릭으로 닫을 수 있게 둠
-      hideOverlay();
-    }, ms);
-  }
-
-  function hideOverlay(){
-    const ov = $("slotCelebrate");
-    if (ov) ov.style.display = "none";
-    if (overlayTimer) clearTimeout(overlayTimer);
-    overlayTimer = null;
-  }
-
-  async function onSpin(){
-    if (state.busy) return;
-    state.busy = true;
-    setNote("SPINNING...");
-
-    const bet = state.bet;
-    if (state.ut < bet){
-      setNote("NOT ENOUGH UT");
-      state.busy = false;
+    if (state.wallet < state.bet) {
+      S.ui.setLastResult("UT 부족");
       return;
     }
 
-    // 잭팟 풀 누적(가볍게)
-    state.jackpot = Math.round((state.jackpot + bet * 0.1) * 10) / 10;
+    state.spinning = true;
 
-    // 실제 스핀
-    const res = await S.game.spin({ bet });
+    const before = state.wallet;
+    state.wallet = before - state.bet;
+    animateCount(state.els.walletValue, before, state.wallet, 250);
+    saveState();
 
-    // UT 반영(로컬)
-    const prevUt = state.ut;
-    const newUt = state.ut - bet + (res.payout || 0);
-    state.ut = newUt;
+    // 게임 스핀(배경 현란은 game.js가 스핀 동안만 돌림)
+    const result = await S.game.spin({ bet: state.bet });
 
-    // UI 반영
-    const walletEl = $("uiWallet");
-    if (walletEl){
-      // 승리/잭팟 때만 카운트업(감성)
-      if (newUt >= prevUt) animateNumber(walletEl, prevUt, newUt, res.jackpot ? 2400 : 900);
-      else walletEl.textContent = fmt(newUt);
-    } else if (S.ui && S.ui.setWallet){
-      S.ui.setWallet(fmt(newUt));
-    }
+    // payout 반영
+    const after = state.wallet + (result?.payout || 0);
+    animateCount(state.els.walletValue, state.wallet, after, result?.jackpot ? 3500 : 900);
+    state.wallet = after;
+    saveState();
 
-    if (S.ui && S.ui.setJackpot) S.ui.setJackpot(fmt(state.jackpot));
-    else { const je = $("uiJackpot"); if (je) je.textContent = fmt(state.jackpot); }
-
-    // ✅ 결과 텍스트 규칙
-    if (res.jackpot){
-      setNote("JACKPOT !!!");
-      // 잭팟 터지면 풀 리셋(연출용)
-      state.jackpot = 20;
-      if (S.ui && S.ui.setJackpot) S.ui.setJackpot(fmt(state.jackpot));
-
-      showJackpotTicker(state.playerName);
-      showOverlay({
-        title: "JACKPOT",
-        amountText: `+${fmt(Math.max(0, res.netDelta||0))} UT`,
-        subText: "축하 60초 연출 (클릭하면 닫힘)",
-        jackpot: true,
-        ms: 60_000
-      });
-    } else if ((res.payout||0) > 0 && (res.netDelta||0) === 0){
-      // 2개 본전: EVEN
-      setNote("EVEN");
-      showOverlay({
-        title: "EVEN",
-        amountText: "+0 UT",
-        subText: "본전 HIT",
-        jackpot: false,
-        ms: 1400
-      });
-    } else if ((res.payout||0) > 0){
-      setNote(`WIN +${fmt(Math.max(0, res.netDelta||0))} UT`);
-      showOverlay({
-        title: "WIN",
-        amountText: `+${fmt(Math.max(0, res.netDelta||0))} UT`,
-        subText: "좋아. 계속 간다.",
-        jackpot: false,
-        ms: 2200
-      });
+    // 결과 텍스트: EVEN / WIN / LOSE
+    if (result?.jackpot) {
+      S.ui.setLastResult("JACKPOT");
+    } else if ((result?.netDelta || 0) > 0) {
+      S.ui.setLastResult("WIN");
+    } else if ((result?.netDelta || 0) === 0 && (result?.payout || 0) > 0) {
+      S.ui.setLastResult("EVEN");
     } else {
-      setNote("LOSE");
-      // LOSE는 오버레이 안 띄움(짜증 덜 나게)
+      S.ui.setLastResult("LOSE");
     }
 
-    // 서버 기록(있으면)
-    try{
-      if (S.api && S.api.commitSlotSpin){
-        await S.api.commitSlotSpin({
-          bet,
-          payout: res.payout||0,
-          net: res.netDelta||0,
-          jackpot: !!res.jackpot
-        });
-      }
-    }catch(e){}
+    state.spinning = false;
 
-    state.busy = false;
+    // AUTO
+    if (state.auto) {
+      setTimeout(() => doSpinOnce(), 350);
+    }
   }
 
-  function bindUI(){
-    // player 표시: slash 절대 안 씀(두 줄)
-    const p = $("uiPlayer");
-    if (p) p.innerHTML = `<div>${state.playerId}</div><div style="opacity:.85;font-weight:700">${state.playerName}</div>`;
+  // ---------------------------
+  // 바인딩
+  // ---------------------------
+  function bindUi() {
+    const { btnSpin, btnAuto, btnMinus, btnPlus } = state.els;
 
-    if (S.ui){
-      S.ui.setWallet(fmt(state.ut));
-      S.ui.setJackpot(fmt(state.jackpot));
-      S.ui.setBet(fmt(state.bet));
-      S.ui.setAuto(false);
-      S.ui.setSound(S.game.getSoundEnabled());
-      S.ui.setNote("READY");
-    } else {
-      hardSetWalletText(state.ut);
-      const je = $("uiJackpot"); if (je) je.textContent = fmt(state.jackpot);
-      const be = $("uiBet"); if (be) be.textContent = fmt(state.bet);
-      setNote("READY");
+    if (btnSpin) {
+      btnSpin.addEventListener("click", (e) => {
+        e.preventDefault();
+        doSpinOnce();
+      });
     }
 
-    // 버튼
-    const btnSpin = $("btnSpin");
-    const btnAuto = $("btnAuto");
-    const btnSound= $("btnSound");
-    const btnBetDown = $("btnBetDown");
-    const btnBetUp   = $("btnBetUp");
-    const btnMain = $("btnMain");
+    if (btnAuto) {
+      btnAuto.addEventListener("click", (e) => {
+        e.preventDefault();
+        state.auto = !state.auto;
+        btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
+        saveState();
+        if (state.auto && !state.spinning) doSpinOnce();
+      });
+    }
 
-    if (btnSpin) btnSpin.addEventListener("click", onSpin);
+    const step = 5;
+    if (btnMinus) {
+      btnMinus.addEventListener("click", (e) => {
+        e.preventDefault();
+        state.bet = clamp(state.bet - step, 5, 5000);
+        S.ui.setBet(state.bet);
+        saveState();
+      });
+    }
 
-    if (btnAuto) btnAuto.addEventListener("click", async ()=>{
-      state.auto = !state.auto;
-      if (S.ui && S.ui.setAuto) S.ui.setAuto(state.auto);
-
-      // auto loop
-      while(state.auto){
-        await onSpin();
-        await new Promise(r=>setTimeout(r, 450));
-      }
-    });
-
-    if (btnSound) btnSound.addEventListener("click", ()=>{
-      const on = !S.game.getSoundEnabled();
-      S.game.setSoundEnabled(on);
-      if (S.ui && S.ui.setSound) S.ui.setSound(on);
-    });
-
-    if (btnBetDown) btnBetDown.addEventListener("click", ()=> setBet(state.bet - 5));
-    if (btnBetUp)   btnBetUp.addEventListener("click", ()=> setBet(state.bet + 5));
-
-    if (btnMain) btnMain.addEventListener("click", ()=>{
-      location.href = "../index.html";
-    });
+    if (btnPlus) {
+      btnPlus.addEventListener("click", (e) => {
+        e.preventDefault();
+        state.bet = clamp(state.bet + step, 5, 5000);
+        S.ui.setBet(state.bet);
+        saveState();
+      });
+    }
   }
 
-  async function init(){
-    // 릴 만들기
-    if (S.game && S.game.buildReels) S.game.buildReels();
+  function init() {
+    grabEls();
+    relaxScrollLocks();
+    setupFlowLayout();
+    fixPlayerSlash();
 
-    // 족보 그리기
-    renderPaytable();
+    // 릴 생성
+    try {
+      S.game?.buildReels?.();
+    } catch (_) {}
 
-    // 잭팟 티커 복구
-    restoreJackpotTicker();
-
-    // UI 연결
-    bindUI();
+    loadState();
+    bindUi();
   }
 
-  // 시작
-  if (document.readyState === "loading"){
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
+
+  // 외부에서 호출 가능하게
+  S.app = S.app || {};
+  S.app.spin = doSpinOnce;
 
 })(window.SLOT);
