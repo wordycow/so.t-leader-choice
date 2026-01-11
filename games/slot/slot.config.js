@@ -1,36 +1,55 @@
-// games/slot/slot.config.js
-window.SLOT = window.SLOT || {};
-(function (S) {
-  S.API_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+(function () {
+  const S = (window.S = window.S || {});
+  S.CONFIG = S.CONFIG || {};
 
-  // slot.html이 games/ 아래 → img/slot/...
-  S.IMG_PATH = (id) => `img/slot/${id}.png`;
+  // ✅ 경로 (slot.html 기준: /games)
+  S.CONFIG.IMG_DIR = "img/slot";
+  S.CONFIG.SOUND_DIR = "sounds";
 
-  // ✅ 낮은→높은 (pro10 = jackpot 최고)
-  S.SYMBOLS = [
-    "star1","star2","star3",
-    "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
+  // ✅ 배경 PNG OK
+  S.CONFIG.BG_LIST = [
+    "img/slot/bg1.png",
+    "img/slot/bg2.png",
+    "img/slot/bg3.png",
+    "img/slot/bg4.png",
+    "img/slot/bg5.png",
   ];
 
-  // ✅ UI 표시용 (실정산/승률은 서버 + sheet config)
-  S.PAYTABLE = [
-    { id:"star1",  name:"STAR I",   pays:[1, 2, 3, 5, 8] },
-    { id:"star2",  name:"STAR II",  pays:[1, 2, 4, 6, 10] },
-    { id:"star3",  name:"STAR III", pays:[1, 3, 5, 8, 15] },
+  // ✅ 베팅 (유송 요구: ±5 / 기본 10)
+  S.CONFIG.BET_DEFAULT = 10;
+  S.CONFIG.BET_MIN = 10;
+  S.CONFIG.BET_MAX = 1000;
+  S.CONFIG.BET_STEP = 5;
 
-    { id:"pro1",  name:"PRO I",  pays:[2, 4, 8, 12, 20] },
-    { id:"pro2",  name:"PRO II", pays:[3, 6, 10, 16, 25] },
-    { id:"pro3",  name:"PRO III",pays:[4, 8, 12, 20, 30] },
-    { id:"pro4",  name:"PRO IV", pays:[5, 10, 15, 25, 40] },
-    { id:"pro5",  name:"PRO V",  pays:[6, 12, 18, 30, 50] },
-    { id:"pro6",  name:"PRO VI", pays:[8, 15, 22, 36, 60] },
-    { id:"pro7",  name:"PRO VII",pays:[10, 18, 28, 45, 75] },
-    { id:"pro8",  name:"PRO VIII",pays:[12, 22, 35, 55, 90] },
-    { id:"pro9",  name:"PRO IX", pays:[15, 28, 45, 70, 120] },
-    { id:"pro10", name:"PRO X(JP)",pays:[0, 0, 0, 0, 0] }
+  // ✅ 5x3
+  S.CONFIG.COLS = 5;
+  S.CONFIG.ROWS = 3;
+
+  // ✅ 사운드 파일명(대소문자 그대로)
+  S.CONFIG.SOUNDS = {
+    start: "sounds/start-button-sound.MP3",
+    spin: "sounds/spining-sound.MP3",        // 철자 주의: spining
+    stop: "sounds/stop-stop-stop-sound.MP3",
+    win: "sounds/win-sound.MP3",
+    lose: "sounds/lose-sound.MP3",
+    jackpot: "sounds/jackpot-sound.MP3",
+  };
+
+  // ✅ 로그인 키(게이트/메인에서 저장된 값 최대한 다 잡아줌)
+  S.CONFIG.LOGIN_KEYS = [
+    "unique_user",
+    "UNIQUE_USER",
+    "uniqueUser",
+    "unique.user",
+    "user",
+    "USER",
+    "login",
+    "auth",
+    "unique_id",
+    "UNIQUE_ID",
+    "user_id",
+    "uid",
+    "id",
+    "slot_user_id", // 슬롯이 마지막으로 기억해둔 값
   ];
-
-  S.NUM_REELS = 5;
-  S.CELL_W = 150;
-  S.CELL_H = 130;
-})(window.SLOT);
+})();
