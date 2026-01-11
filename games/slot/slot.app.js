@@ -1,3 +1,18 @@
+// ✅ 슬롯은 현재 vault worker의 /slot/* 를 사용해야 함
+(function(){
+  const UC = window.UNIQUE?.CONFIG || {};
+  const base =
+    (UC.VAULT_WORKER_BASE || UC.VAULT_API_BASE || UC.VAULT_API_BASE || "").trim();
+
+  if (base) {
+    window.SLOT_API_BASE = base;              // slot.api.js가 읽는 키
+    try { window.SLOT?.api?.setBase(base); } catch(e) {}
+    console.log("[SLOT] API BASE =", base);
+  } else {
+    console.warn("[SLOT] VAULT base missing in UNIQUE.CONFIG");
+  }
+})();
+
 /* games/slot/slot.app.js */
 (() => {
   window.SLOT = window.SLOT || {};
