@@ -1,377 +1,465 @@
 /* games/slot/slot.game.js */
-/* ✅ uiReels에 3x5 렌더 + 10초 스핀 + 사운드 + 결과 커밋(SLOT_COMMIT_RESULT) */
-
 window.SLOT = window.SLOT || {};
 (function (S) {
-  const $ = (id) => document.getElementById(id);
+  "use strict";
 
-  // ✅ 심볼(이미지 파일명 = games/img/slot/*.png)
-  const SYMBOLS = [
+  const ROWS = 3;
+  const COLS = 5;
+
+  // ✅ 기본 심볼(네 폴더에 있는 이미지 전부 사용)
+  const SYMBOL_IDS = [
     "star1","star2","star3",
     "pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"
   ];
 
-  // ✅ (임시) 페이테이블: 3/4/5 연속(왼쪽부터) 배수
-  // netDelta = bet * (mult - 1)
+  // ✅ 기본 가중치(Apps Script config 있으면 그걸로 덮어씀)
+  let WEIGHTS = {
+    star1:22, star2:18, star3:14,
+    pro1:12, pro2:9, pro3:7, pro4:5, pro5:4,
+    pro6:3, pro7:2.5, pro8:2, pro9:1.5, pro10:1
+  };
+
+  // ✅ 족보(라인 3개: 가로 3줄만)
+  // 2개는 “본전(배팅=지급)”부터 시작해서 최소한 ‘졌는데 -가 표시’ 느낌 없게
   const PAY = {
-    star1:{3:2,4:3,5:5},
-    star2:{3:3,4:5,5:8},
-    star3:{3:5,4:8,5:15},
-    pro1 :{3:6,4:10,5:20},
-    pro2 :{3:7,4:12,5:24},
-    pro3 :{3:8,4:14,5:28},
-    pro4 :{3:9,4:16,5:32},
-    pro5 :{3:10,4:18,5:36},
-    pro6 :{3:12,4:22,5:45},
-    pro7 :{3:14,4:26,5:55},
-    pro8 :{3:16,4:32,5:70},
-    pro9 :{3:20,4:40,5:90},
-    pro10:{3:25,4:60,5:150} // ✅ 여기서 5연속이면 JACKPOT 연출만 (풀 지급은 다음 단계)
+    star1:{2:1,3:2,4:5,5:12},
+    star2:{2:1,3:2.5,4:6,5:15},
+    star3:{2:1,3:3,4:7,5:18},
+    pro1 :{2:1,3:3.5,4:8,5:22},
+    pro2 :{2:1,3:4,4:10,5:26},
+    pro3 :{2:1,3:4.5,4:12,5:30},
+    pro4 :{2:1,3:5,4:14,5:35},
+    pro5 :{2:1,3:6,4:16,5:40},
+    pro6 :{2:1,3:7,4:18,5:45},
+    pro7 :{2:1,3:8,4:20,5:55},
+    pro8 :{2:1,3:10,4:25,5:65},
+    pro9 :{2:1,3:12,4:30,5:80},
+    pro10:{2:1,3:15,4:40,5:100} // 5개면 JACKPOT 처리
+  };
+
+  // ✅ 배경(유송이 말한 bg1~bg5)
+  const BG_LIST_DEFAULT = [
+    "img/slot/bg1.jpg",
+    "img/slot/bg2.jpg",
+    "img/slot/bg3.jpg",
+    "img/slot/bg4.jpg",
+    "img/slot/bg5.jpg"
+  ];
+
+  // ✅ 사운드 경로 (games/sounds)
+  const SOUND = {
+    start:  "sounds/start-button-sound.MP3",
+    spin:   "sounds/spining-sound.MP3",
+    stop:   "sounds/stop-stop-stop-sound.MP3",
+    win:    "sounds/win-sound.MP3",
+    lose:   "sounds/lose-sound.MP3",
+    jackpot:"sounds/jackpot-sound.MP3",
   };
 
   const state = {
-    inited: false,
+    cfg: null,
+    grid: null,
+    cells: null,
     spinning: false,
-    auto: false,
-    cells: [], // {cell, img}
+    soundOn: (localStorage.getItem("slotSoundOn") ?? "1") !== "0",
+    bgTimer: null,
+    bgIdx: 0,
+    bgA: null,
+    bgB: null,
+    bgFlip: false,
+    audio: {}
   };
 
-  function randSym(){
-    return SYMBOLS[(Math.random() * SYMBOLS.length) | 0];
-  }
-
-  function imgSrc(sym){
-    // slot.html이 /games/slot.html 이므로 "img/slot/..." 가 정답
-    return `img/slot/${sym}.png`;
-  }
-
-  function setText(id, v){
-    const el = $(id);
-    if (el) el.textContent = String(v ?? "");
-  }
-
-  function setNote(msg){
-    const el = $("uiNote");
-    if (el) el.textContent = msg || "";
-  }
-
-  function getBet(){
-    const v = Number(($("uiBet")?.textContent || "").trim());
-    return Number.isFinite(v) && v > 0 ? v : 10;
-  }
-
-  function getWallet(){
-    const v = Number(($("uiWallet")?.textContent || "").trim());
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  function mount(){
-    return $("uiReels");
-  }
-
-  function buildCells(){
-    const m = mount();
-    if (!m) return false;
-
-    m.innerHTML = "";
-    state.cells = [];
-
-    // 3 x 5 = 15
-    for (let i = 0; i < 15; i++){
-      const cell = document.createElement("div");
-      cell.className = "cell";
-
-      const sym = document.createElement("div");
-      sym.className = "sym";
-
-      const img = document.createElement("img");
-      img.alt = "";
-      img.draggable = false;
-
-      sym.appendChild(img);
-      cell.appendChild(sym);
-      m.appendChild(cell);
-
-      state.cells.push({ cell, img });
-    }
-    return true;
-  }
-
-  function tickCell(cell){
-    if (!cell) return;
-    cell.classList.remove("tick");
-    // reflow
-    void cell.offsetWidth;
-    cell.classList.add("tick");
-    setTimeout(() => cell.classList.remove("tick"), 90);
-  }
-
-  function setCell(index, sym, doTick){
-    const o = state.cells[index];
-    if (!o) return;
-    o.img.src = imgSrc(sym);
-    o.img.alt = sym;
-    if (doTick) tickCell(o.cell);
-  }
-
-  function renderGrid(grid, doTick){
-    // grid: [ [..5], [..5], [..5] ]
-    for (let r = 0; r < 3; r++){
-      for (let c = 0; c < 5; c++){
-        setCell(r * 5 + c, grid[r][c], !!doTick);
-      }
-    }
-  }
-
-  function randomGrid(){
-    return Array.from({ length: 3 }, () =>
-      Array.from({ length: 5 }, () => randSym())
+  function findMount() {
+    return (
+      document.getElementById("reels") ||
+      document.getElementById("reelMount") ||
+      document.getElementById("slotStage") ||
+      document.getElementById("stage") ||
+      document.querySelector("[data-slot-stage]") ||
+      document.querySelector(".slot-stage") ||
+      document.querySelector(".stage") ||
+      null
     );
   }
 
-  function evaluate(grid, bet){
-    let best = { mult: 0, row: -1, count: 0, sym: null };
+  function ensureMount() {
+    let mount = findMount();
+    if (mount) return mount;
 
-    for (let r = 0; r < 3; r++){
-      const line = grid[r];
-      const sym = line[0];
-      let count = 1;
-      for (let c = 1; c < 5; c++){
-        if (line[c] === sym) count++;
-        else break;
-      }
+    const candidate =
+      document.getElementById("gameStage") ||
+      document.querySelector(".right-panel") ||
+      document.querySelector(".panel-right") ||
+      document.querySelector(".stage-wrap") ||
+      document.querySelector(".board") ||
+      document.body;
 
-      if (count >= 3){
-        const mult = (PAY[sym] && PAY[sym][count]) ? PAY[sym][count] : 0;
-        if (mult > best.mult){
-          best = { mult, row: r, count, sym };
+    mount = document.createElement("div");
+    mount.id = "reels";
+    candidate.appendChild(mount);
+    return mount;
+  }
+
+  function imgPath(id) {
+    if (typeof S.IMG_PATH === "function") return S.IMG_PATH(id);
+    return `img/slot/${id}.png`;
+  }
+
+  function ensureGridDOM(){
+    const mount = ensureMount();
+    if (!mount) return null;
+
+    let gridEl = mount.querySelector(".slot-grid");
+    if (!gridEl){
+      gridEl = document.createElement("div");
+      gridEl.className = "slot-grid";
+      // ✅ 기존 CSS가 있으면 그걸 쓰고, 없으면 최소한만 보이게
+      gridEl.style.display = "grid";
+      gridEl.style.gridTemplateColumns = "repeat(5, 1fr)";
+      gridEl.style.gridTemplateRows = "repeat(3, 1fr)";
+      gridEl.style.gap = "12px";
+      gridEl.style.width = "100%";
+      gridEl.style.height = "100%";
+      gridEl.style.padding = "18px";
+      gridEl.style.boxSizing = "border-box";
+      mount.innerHTML = "";
+      mount.appendChild(gridEl);
+
+      state.cells = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+
+      for (let r=0;r<ROWS;r++){
+        for (let c=0;c<COLS;c++){
+          const cell = document.createElement("div");
+          cell.className = "slot-cell";
+          cell.dataset.r = String(r);
+          cell.dataset.c = String(c);
+          cell.style.borderRadius = "16px";
+          cell.style.overflow = "hidden";
+          cell.style.display = "flex";
+          cell.style.alignItems = "center";
+          cell.style.justifyContent = "center";
+          cell.style.background = "rgba(0,0,0,0.14)";
+          cell.style.border = "1px solid rgba(255,255,255,0.10)";
+
+          const img = document.createElement("img");
+          img.alt = "";
+          img.decoding = "async";
+          img.loading = "eager";
+          img.style.width = "78%";
+          img.style.height = "78%";
+          img.style.objectFit = "contain";
+          img.style.filter = "drop-shadow(0 10px 18px rgba(0,0,0,0.35))";
+
+          cell.appendChild(img);
+          gridEl.appendChild(cell);
+          state.cells[r][c] = img;
         }
       }
     }
-
-    if (best.mult > 0){
-      const netDelta = Math.round(bet * (best.mult - 1));
-      const winCells = [];
-      for (let c = 0; c < best.count; c++){
-        winCells.push(best.row * 5 + c);
-      }
-
-      const isJackpot = (best.sym === "pro10" && best.count === 5);
-      const resultText = isJackpot ? "JACKPOT" : `WIN x${best.mult}`;
-      return { isWin:true, isJackpot, netDelta, lossAmount:0, resultText, winCells };
-    }
-
-    return { isWin:false, isJackpot:false, netDelta:-bet, lossAmount:bet, resultText:"LOSE", winCells:[] };
+    return gridEl;
   }
 
-  // ======================
-  // ✅ SOUND (games/sounds/)
-  // ======================
-  const sound = (() => {
-    const base = "sounds/";
-    const map = {
-      start:  base + "start-button-sound.MP3",
-      spin:   base + "spining-sound.MP3",
-      stop:   base + "stop-stop-stop-sound.MP3",
-      win:    base + "win-sound.MP3",
-      lose:   base + "lose-sound.MP3",
-      jackpot:base + "jackpot-sound.MP3",
+  function setSymbol(r,c,id){
+    const img = state.cells?.[r]?.[c];
+    if (!img) return;
+    img.alt = id;
+    img.src = imgPath(id);
+    if (state.grid) state.grid[r][c] = id;
+  }
+
+  function renderGrid(grid){
+    ensureGridDOM();
+    const g = Array.isArray(grid) ? grid : defaultGrid();
+    state.grid = g.map(row => row.slice());
+    for (let r=0;r<ROWS;r++){
+      for (let c=0;c<COLS;c++){
+        setSymbol(r,c,state.grid[r][c]);
+      }
+    }
+  }
+
+  function defaultGrid(){
+    return [
+      ["star1","star2","star3","pro1","pro5"],
+      ["star2","star3","pro1","pro5","pro10"],
+      ["star1","star2","star3","pro1","pro5"]
+    ];
+  }
+
+  function setConfig(cfg){
+    state.cfg = cfg || null;
+    if (!cfg) return;
+
+    // ✅ Apps Script Config 값이 있으면 가중치 덮어쓰기
+    const m = {};
+    const pick = (k, fallback) => {
+      const v = Number(cfg?.[k]);
+      return Number.isFinite(v) ? v : fallback;
     };
 
-    const a = {};
-    function get(name){
-      if (a[name]) return a[name];
-      const src = map[name];
-      if (!src) return null;
-      const audio = new Audio(src);
-      audio.preload = "auto";
-      a[name] = audio;
-      return audio;
+    m.star1 = pick("SLOT_W_STAR1", WEIGHTS.star1);
+    m.star2 = pick("SLOT_W_STAR2", WEIGHTS.star2);
+    m.star3 = pick("SLOT_W_STAR3", WEIGHTS.star3);
+    m.pro1  = pick("SLOT_W_PRO1",  WEIGHTS.pro1);
+    m.pro2  = pick("SLOT_W_PRO2",  WEIGHTS.pro2);
+    m.pro3  = pick("SLOT_W_PRO3",  WEIGHTS.pro3);
+    m.pro4  = pick("SLOT_W_PRO4",  WEIGHTS.pro4);
+    m.pro5  = pick("SLOT_W_PRO5",  WEIGHTS.pro5);
+    m.pro6  = pick("SLOT_W_PRO6",  WEIGHTS.pro6);
+    m.pro7  = pick("SLOT_W_PRO7",  WEIGHTS.pro7);
+    m.pro8  = pick("SLOT_W_PRO8",  WEIGHTS.pro8);
+    m.pro9  = pick("SLOT_W_PRO9",  WEIGHTS.pro9);
+    m.pro10 = pick("SLOT_W_PRO10", WEIGHTS.pro10);
+    WEIGHTS = m;
+  }
+
+  function weightedPick(){
+    let total = 0;
+    for (const id of SYMBOL_IDS) total += (Number(WEIGHTS[id]) || 0);
+    const t = Math.random() * total;
+    let acc = 0;
+    for (const id of SYMBOL_IDS){
+      acc += (Number(WEIGHTS[id]) || 0);
+      if (t <= acc) return id;
     }
+    return "star1";
+  }
 
-    function play(name, opt={}){
-      const audio = get(name);
-      if (!audio) return;
-      try{
-        audio.loop = !!opt.loop;
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-      }catch(e){}
-    }
-
-    function stop(name){
-      const audio = get(name);
-      if (!audio) return;
-      try{
-        audio.loop = false;
-        audio.pause();
-        audio.currentTime = 0;
-      }catch(e){}
-    }
-
-    return { play, stop };
-  })();
-
-  function flashWinCells(indexes){
-    indexes.forEach(i => {
-      const cell = state.cells[i]?.cell;
-      if (!cell) return;
-      cell.classList.add("winFlash");
-      setTimeout(() => cell.classList.remove("winFlash"), 650);
+  function preload(urls){
+    urls.forEach(u => {
+      const im = new Image();
+      im.decoding = "async";
+      im.src = u;
     });
   }
 
-  function pulseJackpot(){
-    const wrap = $("uiReelWrap");
-    if (!wrap) return;
-    wrap.classList.add("jackpotPulse");
-    setTimeout(() => wrap.classList.remove("jackpotPulse"), 1800);
+  function ensureBgLayers(){
+    if (state.bgA && state.bgB) return;
+
+    const mk = (id, z) => {
+      const d = document.createElement("div");
+      d.id = id;
+      d.style.position = "fixed";
+      d.style.inset = "0";
+      d.style.zIndex = String(z);
+      d.style.pointerEvents = "none";
+      d.style.backgroundSize = "cover";
+      d.style.backgroundPosition = "center";
+      d.style.opacity = "0";
+      d.style.transition = "opacity 180ms linear";
+      d.style.filter = "saturate(1.15) contrast(1.05)";
+      document.body.appendChild(d);
+      return d;
+    };
+
+    // 기존 배경보다 뒤에 깔리도록 아주 뒤쪽
+    state.bgA = mk("slotBgA", -5);
+    state.bgB = mk("slotBgB", -4);
   }
 
-  async function commitResult(outcome){
-    if (typeof window.SLOT_COMMIT_RESULT !== "function"){
-      setNote("정산 함수가 없습니다 (SLOT_COMMIT_RESULT).");
-      return;
-    }
-
-    setNote("정산 중...");
-    await window.SLOT_COMMIT_RESULT({
-      netDelta: outcome.netDelta,
-      lossAmount: outcome.lossAmount,
-      resultText: outcome.resultText
-    });
-
-    if (outcome.isWin) setNote(`+${outcome.netDelta} UT`);
-    else setNote(`${outcome.netDelta} UT`);
+  function setBg(url){
+    ensureBgLayers();
+    const on = state.bgFlip ? state.bgA : state.bgB;
+    const off = state.bgFlip ? state.bgB : state.bgA;
+    on.style.backgroundImage = `url("${url}")`;
+    on.style.opacity = "0.95";
+    off.style.opacity = "0";
+    state.bgFlip = !state.bgFlip;
   }
 
-  async function spinOnce(){
-    if (state.spinning) return;
+  function startBgCycle(intervalMs=200){
+    const list = (S.BG_LIST && Array.isArray(S.BG_LIST) && S.BG_LIST.length>=2)
+      ? S.BG_LIST
+      : BG_LIST_DEFAULT;
 
-    const bet = getBet();
-    const wallet = getWallet();
-    if (wallet < bet){
-      setNote("잔액 부족");
-      return;
+    preload(list);
+
+    stopBgCycle();
+    state.bgIdx = 0;
+    setBg(list[state.bgIdx % list.length]);
+
+    state.bgTimer = setInterval(() => {
+      state.bgIdx++;
+      setBg(list[state.bgIdx % list.length]);
+    }, intervalMs);
+  }
+
+  function stopBgCycle(){
+    if (state.bgTimer){
+      clearInterval(state.bgTimer);
+      state.bgTimer = null;
     }
+    // 멈출 때는 마지막 배경은 유지(현란함 유지)
+  }
 
-    state.spinning = true;
-    $("btnSpin") && ($("btnSpin").disabled = true);
-    setText("uiResult", "SPINNING");
-    setNote("");
+  function getAudio(key){
+    if (state.audio[key]) return state.audio[key];
+    const a = new Audio(SOUND[key]);
+    a.preload = "auto";
+    a.volume = 0.85;
+    state.audio[key] = a;
+    return a;
+  }
 
-    // ✅ 최종 그리드 미리 결정
-    const finalGrid = randomGrid();
+  function playOne(key){
+    if (!state.soundOn) return;
+    try{
+      const a = getAudio(key);
+      a.pause();
+      a.currentTime = 0;
+      a.loop = false;
+      a.play().catch(()=>{});
+    }catch(e){}
+  }
 
-    // ✅ 10초 스핀(릴 순차 스톱)
-    const startTs = performance.now();
-    const stopAt = [7000, 7800, 8600, 9400, 10000]; // ms
-    const stopped = [false,false,false,false,false];
+  function playLoop(key){
+    if (!state.soundOn) return;
+    try{
+      const a = getAudio(key);
+      a.loop = true;
+      if (a.paused) a.play().catch(()=>{});
+    }catch(e){}
+  }
 
-    sound.play("start");
-    sound.play("spin", { loop:true });
+  function stopLoop(key){
+    try{
+      const a = getAudio(key);
+      a.loop = false;
+      a.pause();
+      a.currentTime = 0;
+    }catch(e){}
+  }
 
-    await new Promise((resolve) => {
-      const timer = setInterval(() => {
-        const t = performance.now() - startTs;
+  function setSoundEnabled(on){
+    state.soundOn = !!on;
+    localStorage.setItem("slotSoundOn", state.soundOn ? "1" : "0");
+    if (!state.soundOn) stopLoop("spin");
+  }
 
-        for (let c = 0; c < 5; c++){
-          if (!stopped[c]){
-            if (t >= stopAt[c]){
-              stopped[c] = true;
+  function evaluate(grid, bet){
+    let payout = 0;
+    let jackpot = false;
+    const lines = [];
 
-              // ✅ 이 릴(열) 확정
-              for (let r = 0; r < 3; r++){
-                setCell(r * 5 + c, finalGrid[r][c], true);
-              }
-              sound.play("stop");
-            } else {
-              // ✅ 도는 동안 랜덤으로 흔들기
-              for (let r = 0; r < 3; r++){
-                setCell(r * 5 + c, randSym(), true);
-              }
-            }
-          }
-        }
-
-        // 마지막 릴 멈춘 뒤 조금 텀
-        if (t >= stopAt[4] + 220){
-          clearInterval(timer);
-          resolve();
-        }
-      }, 80);
-    });
-
-    sound.stop("spin");
-
-    // ✅ 최종 그리드 확정 렌더
-    renderGrid(finalGrid, false);
-
-    // ✅ 승/패 판정
-    const outcome = evaluate(finalGrid, bet);
-    setText("uiResult", outcome.resultText);
-
-    if (outcome.isWin){
-      flashWinCells(outcome.winCells);
-      if (outcome.isJackpot){
-        pulseJackpot();
-        sound.play("jackpot");
-      } else {
-        sound.play("win");
+    for (let r=0;r<ROWS;r++){
+      const first = grid[r][0];
+      let cnt = 1;
+      for (let c=1;c<COLS;c++){
+        if (grid[r][c] === first) cnt++;
+        else break;
       }
-    } else {
-      sound.play("lose");
+      if (cnt >= 2){
+        const mult = (PAY[first] && PAY[first][cnt]) ? PAY[first][cnt] : 0;
+        const linePay = Math.floor(bet * mult);
+        if (linePay > 0){
+          payout += linePay;
+          lines.push({ row:r, sym:first, count:cnt, pay:linePay });
+        }
+        if (first === "pro10" && cnt === 5) jackpot = true;
+      }
     }
 
-    // ✅ 시트 반영
-    await commitResult(outcome);
+    const netDelta = payout - bet;
+    const lossAmount = (payout <= 0) ? bet : 0;
 
-    $("btnSpin") && ($("btnSpin").disabled = false);
+    return { payout, netDelta, lossAmount, jackpot, lines };
+  }
+
+  // ✅ 10초 스핀: 빠르게 시작 → 점점 늦추며 릴별로 “탁탁탁” 멈춤
+  async function spin({ bet=10 } = {}){
+    if (state.spinning) return { ok:false, error:"busy" };
+    state.spinning = true;
+
+    ensureGridDOM();
+    if (!state.grid) renderGrid(null);
+
+    const totalMs = 10000;
+    const startFast = 35;    // 초반 속도(빠르게)
+    const endSlow   = 150;   // 멈추기 직전 느리게
+
+    // reel stop 타이밍(총 10초 안에서 순차)
+    const stopAt = [7200, 8000, 8600, 9200, 9800];
+
+    playOne("start");
+    playLoop("spin");
+    startBgCycle(200);
+
+    const running = Array(COLS).fill(true);
+    const stopPromises = [];
+
+    // 각 릴(열) 업데이트 루프 (setTimeout 기반 가변 딜레이)
+    for (let c=0;c<COLS;c++){
+      const col = c;
+      const t0 = performance.now();
+      const tStop = stopAt[col];
+
+      const tick = () => {
+        if (!running[col]) return;
+
+        const elapsed = performance.now() - t0;
+        const ratio = Math.min(1, elapsed / tStop);
+        const delay = Math.floor(startFast + (endSlow - startFast) * (ratio * ratio)); // 감속 곡선
+
+        for (let r=0;r<ROWS;r++){
+          setSymbol(r, col, weightedPick());
+        }
+        setTimeout(tick, delay);
+      };
+
+      tick();
+
+      stopPromises.push(new Promise(res => {
+        setTimeout(() => {
+          running[col] = false;
+          playOne("stop");
+          res(true);
+        }, tStop);
+      }));
+    }
+
+    // 전체 종료 대기
+    await Promise.all(stopPromises);
+
+    stopBgCycle();
+    stopLoop("spin");
+
+    const result = evaluate(state.grid, bet);
+    let resultText = "LOSE";
+
+    if (result.jackpot){
+      playOne("jackpot");
+      resultText = `JACKPOT +${Math.max(0, result.netDelta)} UT`;
+    } else if (result.payout > 0){
+      playOne("win");
+      resultText = `WIN +${Math.max(0, result.netDelta)} UT`;
+    } else {
+      playOne("lose");
+      resultText = "LOSE";
+    }
+
     state.spinning = false;
 
-    // ✅ AUTO면 다음 스핀
-    if (state.auto){
-      setTimeout(() => spinOnce(), 650);
-    }
+    return {
+      ok:true,
+      grid: state.grid,
+      ...result,
+      resultText
+    };
   }
 
-  function bind(){
-    const btnSpin = $("btnSpin");
-    const btnAuto = $("btnAuto");
-
-    if (btnSpin && !btnSpin.dataset.bound){
-      btnSpin.dataset.bound = "1";
-      btnSpin.addEventListener("click", spinOnce);
-    }
-
-    if (btnAuto && !btnAuto.dataset.bound){
-      btnAuto.dataset.bound = "1";
-      btnAuto.addEventListener("click", () => {
-        state.auto = !state.auto;
-        btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
-        if (state.auto && !state.spinning) spinOnce();
-      });
-    }
+  // 초기 릴 생성(호환)
+  function buildReels(){
+    renderGrid(null);
   }
 
-  function init(){
-    if (state.inited) return;
-    state.inited = true;
-
-    const ok = buildCells();
-    if (!ok) return;
-
-    // ✅ 진입 즉시 “빈 화면” 제거: 랜덤 그리드 1회 깔기
-    renderGrid(randomGrid(), false);
-    bind();
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-
-  // 외부에서 쓰기 좋게 노출
+  // 노출
   S.game = S.game || {};
-  S.game.init = init;
-  S.game.spinOnce = spinOnce;
+  S.game.buildReels = buildReels;
   S.game.renderGrid = renderGrid;
+  S.game.spin = spin;
+  S.game.setConfig = setConfig;
+  S.game.setSoundEnabled = setSoundEnabled;
+  S.game.getSoundEnabled = () => state.soundOn;
 
 })(window.SLOT);
