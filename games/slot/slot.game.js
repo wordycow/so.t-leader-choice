@@ -38,12 +38,13 @@ window.SLOT = window.SLOT || {};
 
   // ✅ 배경 (유송: png 확정)
   const BG_LIST_DEFAULT = [
-    "img/slot/bg1.png",
-    "img/slot/bg2.png",
-    "img/slot/bg3.png",
-    "img/slot/bg4.png",
-    "img/slot/bg5.png"
-  ];
+  "img/slot/bg1.png",
+  "img/slot/bg2.png",
+  "img/slot/bg3.png",
+  "img/slot/bg4.png",
+  "img/slot/bg5.png"
+];
+
 
   // ✅ 사운드 경로 (games/sounds)
   const SOUND = {
