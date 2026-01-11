@@ -164,7 +164,8 @@
 
           <div class="btn-row">
             <button id="btn-submit" type="submit" class="btn btn-primary">가입 신청</button>
-            <button type="button" class="btn btn-ghost" onclick="history.back()">뒤로가기</button>
+            <!-- ✅ gate로 정확히 복귀 -->
+            <button id="btn-back" type="button" class="btn btn-ghost">뒤로가기</button>
           </div>
 
           <div id="status" class="status"></div>
@@ -172,11 +173,19 @@
       </div>
     </main>
   </div>
+
 <script>
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-  const WORKER_BASE_URL = "https://the-unique-vault-api.wordycow0001.workers.dev";
+  const WORKER_BASE_URL   = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  // ✅ return 기본값: 게이트
+  function getReturnUrl(){
+    const qs = new URLSearchParams(location.search);
+    const ret = (qs.get("return") || "").trim();
+    return ret || "the-unique-gate.html";
+  }
 
   // ===== legacy JSONP =====
   function apiOnceJSONP(action, params = {}, timeoutMs = 25000) {
@@ -265,37 +274,68 @@
     if (type === "ok") el.classList.add("status-ok");
   }
 
-  function normalizeId(v){ return String(v || "").trim().toLowerCase(); }
+  // ✅ 응답 형태가 달라도 ok 판정
+  function isOk(resp){
+    if (!resp) return false;
+    if (resp.ok === true) return true;
+    if (resp.success === true) return true;
+    if (String(resp.status || "").toLowerCase() === "ok") return true;
+    if (String(resp.result || "").toLowerCase() === "ok") return true;
+    if (resp.found === true || resp.exists === true) return true;
+    return false;
+  }
+
+  function extractUser(resp){
+    if (!resp) return null;
+    if (resp.user) return resp.user;
+    if (resp.data) return resp.data;
+    if (resp.row)  return resp.row;
+    if (resp.result && resp.result.user) return resp.result.user;
+
+    const hasAny = (resp.id || resp.ID || resp.아이디 || resp.name || resp.이름 || resp.phone || resp.전화번호);
+    return hasAny ? resp : null;
+  }
+
   function normalizePhone(v){ return String(v || "").replace(/[^\d]/g, ""); }
 
-  function saveUserToLocal(u) {
-    const idLower = String(u.id || "").toLowerCase().trim();
-    localStorage.setItem("uniqueCurrentUser", JSON.stringify({
-      id: idLower,
-      name: u.name || "",
-      phone: u.phone || "",
-      nickname: u.nickname || "",
-      team: u.team || "",
-      joinedAt: u.joinedAt || "",
-      balance: Number(u.balance || 0)
-    }));
-    localStorage.setItem("myUtPoints", String(Number(u.balance || 0)));
-    if (String(u.nickname || "").trim()) localStorage.setItem("myNickname_" + idLower, String(u.nickname || "").trim());
+  // ✅ 아이디 대소문자 섞여도 중복 가입 방지 (raw/lower/UPPER로 3번 체크)
+  async function existsUserId(rawId){
+    const base = String(rawId || "").trim();
+    if (!base) return false;
+
+    const candidates = [];
+    for (const v of [base, base.toLowerCase(), base.toUpperCase()]){
+      if (v && !candidates.includes(v)) candidates.push(v);
+    }
+
+    for (const idTry of candidates){
+      const r = await api("getUser", { id: idTry });
+      const u = extractUser(r);
+      if (isOk(r) && u) return true;
+    }
+    return false;
   }
 
   const form = document.getElementById("uniqueSignupForm");
   const btnSubmit = document.getElementById("btn-submit");
+  const btnBack = document.getElementById("btn-back");
+
+  btnBack.addEventListener("click", () => {
+    // ✅ 무조건 gate로 복귀(뒤로가기 꼬임 방지)
+    const ret = getReturnUrl();
+    window.location.href = ret;
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     setStatus("");
 
-    const id = normalizeId(document.getElementById("signup-id").value);
-    const name = (document.getElementById("signup-name").value || "").trim();
+    const idRaw = (document.getElementById("signup-id").value || "").trim(); // ✅ 입력 그대로 보존
+    const name  = (document.getElementById("signup-name").value || "").trim();
     const phone = normalizePhone(document.getElementById("signup-phone").value);
-    const team = (document.getElementById("signup-team").value || "").trim();
+    const team  = (document.getElementById("signup-team").value || "").trim();
 
-    if (!id || !name || !phone || !team) {
+    if (!idRaw || !name || !phone || !team) {
       setStatus("모든 항목을 입력/선택해 주세요.", "error");
       return;
     }
@@ -308,30 +348,39 @@
     btnSubmit.disabled = true;
 
     try {
-      // ✅ 중복 체크: getUser
-      const exists = await api("getUser", { id });
-      if (exists && exists.ok && exists.user) {
+      // ✅ 중복 체크 (대소문자 포함)
+      const already = await existsUserId(idRaw);
+      if (already) {
         setStatus("이미 등록된 아이디입니다. 게이트에서 로그인해 주세요.", "error");
         btnSubmit.disabled = false;
         return;
       }
 
-      // ✅ 가입: signup
-      const r = await api("signup", { id, name, phone, team });
+      // ✅ 가입: signup (성공하면 gate에서 로그인하도록 돌려보냄)
+      const r = await api("signup", { id: idRaw, name, phone, team });
 
-      if (!r || !r.ok || !r.user) {
+      // ✅ signup 응답이 user를 안줘도 ok면 성공 처리 (시트 기록이 목적)
+      if (!isOk(r)) {
         setStatus("가입 실패: " + (r?.error || "unknown"), "error");
         btnSubmit.disabled = false;
         return;
       }
 
-      saveUserToLocal(r.user);
-      setStatus("가입 완료! 메인으로 이동합니다.", "ok");
-      window.location.href = "the-unique-main.html";
+      setStatus("가입 완료! 게이트로 돌아갑니다.", "ok");
+
+      const ret = getReturnUrl();
+      const joiner = ret.includes("?") ? "&" : "?";
+      const nextUrl = `${ret}${joiner}signup=1&id=${encodeURIComponent(idRaw)}`;
+
+      // ✅ 바로 튀면 status가 안 보이니까 400ms만 딜레이
+      setTimeout(() => {
+        window.location.href = nextUrl;
+      }, 400);
 
     } catch (err) {
       console.error(err);
       const msg = String(err && err.message ? err.message : err);
+
       if (msg.includes("timeout") || msg.includes("abort")) {
         setStatus("네트워크 지연으로 가입이 지연되었습니다. 다시 시도해 주세요.", "error");
       } else if (msg.includes("load failed")) {
@@ -339,6 +388,7 @@
       } else {
         setStatus("가입 처리 중 오류가 발생했습니다.", "error");
       }
+
       btnSubmit.disabled = false;
     }
   });
