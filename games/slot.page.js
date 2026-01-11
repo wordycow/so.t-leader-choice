@@ -9,7 +9,11 @@
 (() => {
   "use strict";
 
-  const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
+  const WORKER_BASE =
+  (window.UNIQUE && window.UNIQUE.CONFIG && window.UNIQUE.CONFIG.SLOT_WORKER_BASE)
+    ? window.UNIQUE.CONFIG.SLOT_WORKER_BASE
+    : "https://the-unique-slot-api.wordycow0001.workers.dev";
+
   window.__UNIQUE_SLOT_PAGE__ = "slot.page.js@2026-01-10_pathfix_v2";
 
   // ---------- utils ----------
