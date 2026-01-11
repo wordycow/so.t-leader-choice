@@ -1,127 +1,79 @@
-// games/slot/slot.api.js
-(() => {
-  // ✅ 고정
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-  const WORKER_BASE_URL   = "https://the-unique-vault-api.wordycow0001.workers.dev";
+(function () {
+  const S = (window.S = window.S || {});
+  S.api = S.api || {};
 
-  // ✅ 슬롯 페이지는 워커를 기본으로 치지 않는다(404 찌꺼기 제거)
-  const SLOT_ACTIONS = new Set(["getSlotState", "slotCommit"]);
+  const DEFAULT_TIMEOUT = 12000;
 
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  function getGoogleScriptUrl() {
+    // ✅ unique.config.js에서 가져오기
+    const U = window.U || window.UNIQUE || {};
+    const fromUnique = U?.CONFIG?.GOOGLE_SCRIPT_URL ? String(U.CONFIG.GOOGLE_SCRIPT_URL).trim() : "";
+    const fromLocal = S?.CONFIG?.GOOGLE_SCRIPT_URL ? String(S.CONFIG.GOOGLE_SCRIPT_URL).trim() : "";
+    return fromUnique || fromLocal || "";
+  }
 
-  function apiOnceJSONP(action, params = {}, timeoutMs = 25000) {
+  function buildUrl(base, params) {
+    const hasQ = base.includes("?");
+    const qs = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== "")
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      .join("&");
+    return base + (hasQ ? "&" : "?") + qs;
+  }
+
+  function jsonp(base, params = {}, timeoutMs = DEFAULT_TIMEOUT) {
     return new Promise((resolve, reject) => {
-      const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+      const cb = `__slotcb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      let done = false;
 
-      params.action = action;
-      params.callback = cb;
-      params._t = Date.now();
-
-      const qs = new URLSearchParams(params).toString();
-      const s = document.createElement("script");
-      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
-      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
-
-      const t = setTimeout(() => { cleanup(); reject(new Error("API timeout")); }, timeoutMs);
-
-      window[cb] = (data) => { cleanup(); resolve(data); };
-      s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
-
-      function cleanup() {
-        clearTimeout(t);
-        try { delete window[cb]; } catch(e){}
-        try { s.remove(); } catch(e){}
-      }
-      (document.body || document.documentElement).appendChild(s);
-    });
-  }
-
-  async function apiJSONP(action, params = {}) {
-    let lastErr = null;
-    for (let i = 1; i <= 3; i++){
-      try{
-        const timeoutMs = (i === 1) ? 20000 : 30000;
-        return await apiOnceJSONP(action, params, timeoutMs);
-      }catch(e){
-        lastErr = e;
-        await sleep(450 * i);
-      }
-    }
-    throw lastErr || new Error("API failed");
-  }
-
-  async function apiWorker(action, params = {}, timeoutMs = 12000){
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-
-    try{
-      const r = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
-        method: "POST",
-        headers: { "content-type":"application/json" },
-        body: JSON.stringify(params || {}),
-        signal: controller.signal,
-        cache: "no-store",
-        credentials: "omit"
-      });
-
-      // ✅ 200 아니면 바로 에러로 던져서(= fallback) 콘솔/로직 꼬임 방지
-      if (!r.ok) throw new Error(`worker_http_${r.status}`);
-
-      const js = await r.json().catch(()=>null);
-      if (!js) throw new Error("worker_bad_json");
-      return js;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  async function api(action, params = {}) {
-    const force = new URLSearchParams(location.search).get("api");
-    if (force === "legacy") return apiJSONP(action, params);
-    if (force === "worker") return apiWorker(action, params, 20000);
-
-    // ✅ 슬롯 액션은 기본 JSONP (워커 404 네트워크 찌꺼기 제거)
-    if (SLOT_ACTIONS.has(action)) return apiJSONP(action, params);
-
-    // (혹시 다른 액션 확장 시) 워커 우선 + 실패시 JSONP
-    try{
-      return await apiWorker(action, params, 9000);
-    } catch(e){
-      return await apiJSONP(action, params);
-    }
-  }
-
-  function getLocalUser(){
-    try{
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return null;
-      const u = JSON.parse(raw);
-      if (!u || !u.id) return null;
-      return {
-        id: String(u.id||"").trim().toLowerCase(),
-        name: String(u.name||"").trim(),
-        balance: Number(u.balance||0)
+      const cleanup = (script, timer) => {
+        if (done) return;
+        done = true;
+        try { delete window[cb]; } catch (_) {}
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+        if (timer) clearTimeout(timer);
       };
-    }catch(e){
-      return null;
-    }
-  }
 
-  async function getSlotState(){
-    const u = getLocalUser();
-    if (!u) return { ok:false, error:"no_session" };
-    return await api("getSlotState", { id: u.id });
-  }
+      window[cb] = (data) => {
+        cleanup(script, timer);
+        resolve(data);
+      };
 
-  async function commitSlotSpin({ netDelta = 0, lossAmount = 0 }){
-    const u = getLocalUser();
-    if (!u) return { ok:false, error:"no_session" };
-    return await api("slotCommit", {
-      id: u.id,
-      netDelta: Number(netDelta || 0),
-      lossAmount: Number(lossAmount || 0)
+      const url = buildUrl(base, { ...params, callback: cb, _ts: Date.now() });
+
+      const script = document.createElement("script");
+      script.src = url;
+      script.async = true;
+      script.onerror = () => {
+        cleanup(script, timer);
+        reject(new Error("jsonp load error"));
+      };
+
+      const timer = setTimeout(() => {
+        cleanup(script, timer);
+        reject(new Error("jsonp timeout"));
+      }, timeoutMs);
+
+      document.head.appendChild(script);
     });
   }
 
-  window.SLOT_API = { getLocalUser, getSlotState, commitSlotSpin };
+  async function call(action, params = {}) {
+    const base = getGoogleScriptUrl();
+    if (!base) throw new Error("GOOGLE_SCRIPT_URL not set (unique.config.js 확인)");
+
+    const data = await jsonp(base, { action, ...params });
+    if (!data || data.ok !== true) {
+      const msg = data?.message || data?.error || "API error";
+      const err = new Error(msg);
+      err.payload = data;
+      throw err;
+    }
+    return data;
+  }
+
+  S.api.call = call;
+  S.api.getConfig = () => call("getConfig");
+  S.api.getSlotState = (id) => call("getSlotState", { id });
+  S.api.slotCommit = (payload) => call("slotCommit", payload);
 })();
