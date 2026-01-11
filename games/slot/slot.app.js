@@ -1,443 +1,598 @@
 /* games/slot/slot.app.js */
-window.SLOT = window.SLOT || {};
-(function(S){
+(function () {
   "use strict";
 
-  // -------------------------
-  // API BASE (Apps Script)
-  // -------------------------
-  function getApiBase_(){
-    return (
-      (window.U && U.CONFIG && (U.CONFIG.GOOGLE_SCRIPT_URL || U.CONFIG.SLOT_API_BASE)) ||
-      window.GOOGLE_SCRIPT_URL ||
-      window.SLOT_API_BASE ||
-      ""
-    );
+  window.SLOT = window.SLOT || {};
+  const S = window.SLOT;
+
+  // =========================
+  // Config / Storage (login 유지)
+  // =========================
+  const STORAGE_FIXED_KEY = "THE_UNIQUE_LOGIN"; // ✅ slot이 무조건 찾고/저장하는 고정 키
+  const FALLBACK_SCAN_LIMIT = 80;
+
+  function getUConfig_() {
+    // unique.config.js가 어떤 형태든 최대한 잡는다
+    const U = window.U || window.UNIQUE || {};
+    const cfg =
+      (U && U.CONFIG) ||
+      window.UNIQUE_CONFIG ||
+      window.CONFIG ||
+      {};
+    return cfg || {};
   }
 
-  function jsonp_(base, params){
-    return new Promise((resolve, reject)=>{
-      if(!base) return reject(new Error("missing api base"));
+  function getGoogleScriptUrl_() {
+    const cfg = getUConfig_();
+    const url = String(cfg.GOOGLE_SCRIPT_URL || cfg.GSCRIPT_URL || "").trim();
+    return url;
+  }
+
+  function loadUserFromSomewhere_() {
+    // 1) URL ?id=
+    const url = new URL(location.href);
+    const idQ = (url.searchParams.get("id") || "").trim();
+    const nameQ = (url.searchParams.get("name") || "").trim();
+    const nickQ = (url.searchParams.get("nickname") || url.searchParams.get("nick") || "").trim();
+    if (idQ) {
+      const u = { id: idQ.toLowerCase(), name: nameQ, nickname: nickQ };
+      persistUser_(u);
+      return u;
+    }
+
+    // 2) 고정키
+    const fixed = safeParse_(localStorage.getItem(STORAGE_FIXED_KEY));
+    if (fixed && fixed.id) return fixed;
+
+    // 3) 흔한 키들
+    const candidates = [
+      "unique_user",
+      "UNIQUE_USER",
+      "UniqueUser",
+      "the_unique_user",
+      "THE_UNIQUE_USER",
+      "auth_user",
+      "AUTH_USER",
+      "login",
+      "LOGIN",
+      "user",
+      "USER",
+      "U_USER",
+      "U.AUTH",
+      "U_AUTH",
+    ];
+    for (const k of candidates) {
+      const v = safeParse_(localStorage.getItem(k)) || safeParse_(sessionStorage.getItem(k));
+      if (v && v.id) {
+        persistUser_(v);
+        return v;
+      }
+    }
+
+    // 4) 마지막 수단: localStorage 전체 스캔 (id/name/nickname 같은 형태를 찾아냄)
+    let found = null;
+    let scanned = 0;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      if (scanned++ > FALLBACK_SCAN_LIMIT) break;
+      const k = localStorage.key(i);
+      if (!k) continue;
+      const raw = localStorage.getItem(k);
+      const obj = safeParse_(raw);
+      if (obj && obj.id && (obj.name || obj.nickname || obj.nick)) {
+        found = obj;
+        break;
+      }
+    }
+    if (found) {
+      persistUser_(found);
+      return found;
+    }
+
+    return null;
+  }
+
+  function persistUser_(u) {
+    if (!u || !u.id) return;
+    const obj = {
+      id: String(u.id).trim().toLowerCase(),
+      name: String(u.name || "").trim(),
+      nickname: String(u.nickname || u.nick || "").trim(),
+    };
+    localStorage.setItem(STORAGE_FIXED_KEY, JSON.stringify(obj));
+  }
+
+  function safeParse_(s) {
+    if (!s) return null;
+    const str = String(s);
+    try {
+      const o = JSON.parse(str);
+      if (o && typeof o === "object") return o;
+    } catch (_) {}
+    return null;
+  }
+
+  // =========================
+  // JSONP (구글 Apps Script 전용)
+  // =========================
+  function jsonp_(baseUrl, params, opts) {
+    const timeout = (opts && opts.timeout) || 12000;
+
+    return new Promise((resolve, reject) => {
       const cb = "__slotcb_" + Math.random().toString(36).slice(2);
-      const url = new URL(base);
-      Object.entries(params||{}).forEach(([k,v])=> url.searchParams.set(k, String(v)));
-      url.searchParams.set("callback", cb);
+      const u = new URL(baseUrl, location.href);
+
+      Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+      u.searchParams.set("callback", cb);
+      u.searchParams.set("_", String(Date.now()));
 
       const script = document.createElement("script");
-      const cleanup = ()=>{
-        try{ delete window[cb]; }catch(_){}
-        if(script && script.parentNode) script.parentNode.removeChild(script);
+      script.async = true;
+      script.src = u.toString();
+
+      let done = false;
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup_();
+        reject(new Error("jsonp timeout"));
+      }, timeout);
+
+      function cleanup_() {
+        try { clearTimeout(timer); } catch (_) {}
+        try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+        try { script.remove(); } catch (_) {}
+      }
+
+      window[cb] = (data) => {
+        if (done) return;
+        done = true;
+        cleanup_();
+        resolve(data);
       };
 
-      window[cb] = (data)=>{ cleanup(); resolve(data); };
-      script.onerror = ()=>{ cleanup(); reject(new Error("jsonp failed")); };
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        cleanup_();
+        reject(new Error("jsonp network error"));
+      };
 
-      script.src = url.toString();
       document.head.appendChild(script);
-
-      setTimeout(()=>{
-        if(window[cb]){
-          cleanup();
-          reject(new Error("jsonp timeout"));
-        }
-      }, 12000);
     });
   }
 
-  // -------------------------
-  // UI: 무조건 함수 주입 (에러 방지)
-  // -------------------------
-  S.ui = (S.ui && typeof S.ui === "object") ? S.ui : {};
-  const ui = S.ui;
+  // =========================
+  // UI helpers (S.ui 같은 의존성 제거)
+  // =========================
+  function setText_(selectors, text) {
+    const list = Array.isArray(selectors) ? selectors : [selectors];
+    for (const sel of list) {
+      const el = typeof sel === "string" ? document.querySelector(sel) : sel;
+      if (el) {
+        el.textContent = text;
+        return true;
+      }
+    }
+    return false;
+  }
 
-  function qsAny_(sels){
-    for(const s of sels){
-      const el = document.querySelector(s);
-      if(el) return el;
+  function findEl_(selectors) {
+    const list = Array.isArray(selectors) ? selectors : [selectors];
+    for (const sel of list) {
+      const el = document.querySelector(sel);
+      if (el) return el;
     }
     return null;
   }
 
-  const elPlayer = ()=> qsAny_(["#playerName","[data-player-name]",".player-name",".js-player",".player .value"]);
-  const elWallet = ()=> qsAny_(["#walletUt","[data-wallet-ut]",".wallet-ut",".js-wallet",".wallet .value"]);
-  const elJackpot= ()=> qsAny_(["#jackpotUt","[data-jackpot-ut]",".jackpot-ut",".js-jackpot",".jackpot .value"]);
-  const elResult = ()=> qsAny_(["#lastResult","[data-last-result]",".last-result",".js-last-result"]);
-  const elBet    = ()=> qsAny_(["#betValue","[data-bet]",".bet-value",".js-bet"]);
-  const btnSpin  = ()=> qsAny_(["#spinBtn","[data-spin]",".btn-spin","button.spin","button#spin"]);
-  const btnMinus = ()=> qsAny_(["#betMinus","[data-bet-minus]",".bet-minus","button.minus",".bet-step-minus"]);
-  const btnPlus  = ()=> qsAny_(["#betPlus","[data-bet-plus]",".bet-plus","button.plus",".bet-step-plus"]);
+  function animateNumber_(el, from, to, ms) {
+    if (!el) return;
+    const start = performance.now();
+    const dur = Math.max(200, ms || 900);
+    const a = Number(from) || 0;
+    const b = Number(to) || 0;
 
-  ui.setPlayer = function(name){ const el = elPlayer(); if(el) el.textContent = name || "-"; };
-  ui.setWallet = function(ut){ const el = elWallet(); if(el) el.textContent = String(Math.floor(Number(ut||0))); };
-  ui.setJackpot= function(v){ const el = elJackpot(); if(el) el.textContent = String(Math.floor(Number(v||0))); };
-  ui.setResult = function(t){ const el = elResult(); if(el) el.textContent = t || "READY"; };
-  ui.setBet    = function(v){ const el = elBet(); if(el) el.textContent = String(Math.floor(Number(v||0))); };
-
-  // -------------------------
-  // Mobile stack 재배치(가능하면)
-  // paytable -> reels -> panel(내자산/버튼)
-  // -------------------------
-  function applyMobileStack_(){
-    const w = window.innerWidth || 9999;
-    if (w > 780) return;
-
-    const pay = qsAny_(["#payTable","[data-paytable]",".paytable",".pay-table"]);
-    const reels = qsAny_(["#reels","[data-slot-reels]",".slot-reels",".reels"]);
-    const panel = qsAny_(["#leftPanel",".left-panel",".slot-panel","[data-panel]"]);
-
-    if(!pay || !reels || !panel) return;
-
-    const wrap = document.getElementById("slotMobileStack") || document.createElement("div");
-    wrap.id = "slotMobileStack";
-    wrap.style.display = "flex";
-    wrap.style.flexDirection = "column";
-    wrap.style.gap = "14px";
-    wrap.style.width = "100%";
-
-    // 공통 부모를 최대한 안전하게
-    const host = panel.parentElement || document.body;
-    if(!wrap.parentNode) host.insertBefore(wrap, host.firstChild);
-
-    // 원하는 순서로 꽂기
-    if (pay.parentNode !== wrap) wrap.appendChild(pay);
-    if (reels.parentNode !== wrap) wrap.appendChild(reels);
-    if (panel.parentNode !== wrap) wrap.appendChild(panel);
-
-    // 스크롤 자연스럽게
-    document.documentElement.style.height = "auto";
-    document.body.style.height = "auto";
-    document.body.style.overflow = "auto";
-  }
-
-  // -------------------------
-  // 잭팟 티커 (자정까지 유지)
-  // -------------------------
-  function ensureTicker_(){
-    let bar = document.getElementById("jackpotTicker");
-    if(bar) return bar;
-
-    bar = document.createElement("div");
-    bar.id = "jackpotTicker";
-    bar.style.position = "fixed";
-    bar.style.left = "0";
-    bar.style.right = "0";
-    bar.style.top = "0";
-    bar.style.zIndex = "9999";
-    bar.style.padding = "10px 0";
-    bar.style.background = "rgba(0,0,0,0.55)";
-    bar.style.backdropFilter = "blur(8px)";
-    bar.style.color = "#fff";
-    bar.style.fontWeight = "800";
-    bar.style.letterSpacing = "0.2px";
-    bar.style.display = "none";
-    bar.style.overflow = "hidden";
-
-    const inner = document.createElement("div");
-    inner.id = "jackpotTickerInner";
-    inner.style.whiteSpace = "nowrap";
-    inner.style.display = "inline-block";
-    inner.style.paddingLeft = "100%";
-    inner.style.animation = "slotTicker 10s linear infinite";
-
-    const style = document.createElement("style");
-    style.textContent = `
-      @keyframes slotTicker {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-100%); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    bar.appendChild(inner);
-    document.body.appendChild(bar);
-    return bar;
-  }
-
-  function setTickerUntilMidnight_(text){
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24,0,0,0);
-
-    localStorage.setItem("slot_jackpot_ticker_text", text);
-    localStorage.setItem("slot_jackpot_ticker_exp", String(midnight.getTime()));
-
-    showTickerIfValid_();
-  }
-
-  function showTickerIfValid_(){
-    const text = localStorage.getItem("slot_jackpot_ticker_text") || "";
-    const exp = Number(localStorage.getItem("slot_jackpot_ticker_exp") || 0);
-    const now = Date.now();
-
-    const bar = ensureTicker_();
-    const inner = document.getElementById("jackpotTickerInner");
-
-    if(text && exp && now < exp){
-      if(inner) inner.textContent = text;
-      bar.style.display = "block";
-      // 상단 바 때문에 내용이 가려지지 않게
-      document.body.style.paddingTop = "52px";
-    }else{
-      bar.style.display = "none";
-      document.body.style.paddingTop = "";
-      localStorage.removeItem("slot_jackpot_ticker_text");
-      localStorage.removeItem("slot_jackpot_ticker_exp");
+    function step(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const v = a + (b - a) * (1 - Math.pow(1 - t, 3));
+      el.textContent = fmt2_(v);
+      if (t < 1) requestAnimationFrame(step);
     }
+    requestAnimationFrame(step);
   }
 
-  // -------------------------
-  // state
-  // -------------------------
-  const state = {
-    apiBase: "",
-    cfg: null,
-    user: null, // {id,name,nickname,balance}
-    bet: 10,
-    betMin: 10,
-    betMax: 1000,
-    betStep: 5, // ✅ 무조건 5단위
-    inited: false,
-  };
-
-  function readIdentity_(){
-    const sp = new URLSearchParams(location.search);
-    const id =
-      sp.get("id") ||
-      localStorage.getItem("unique_id") ||
-      localStorage.getItem("uniqueUserId") ||
-      localStorage.getItem("user_id") ||
-      "";
-    const nickname =
-      sp.get("nick") ||
-      sp.get("nickname") ||
-      localStorage.getItem("unique_nick") ||
-      localStorage.getItem("uniqueNickname") ||
-      localStorage.getItem("nickname") ||
-      "";
-    return { id: String(id||"").trim().toLowerCase(), nickname: String(nickname||"").trim() };
+  function toast_(msg) {
+    console.log("[SLOT]", msg);
+    const host = document.body;
+    const t = document.createElement("div");
+    t.textContent = msg;
+    t.style.position = "fixed";
+    t.style.left = "50%";
+    t.style.bottom = "18px";
+    t.style.transform = "translateX(-50%)";
+    t.style.padding = "10px 14px";
+    t.style.borderRadius = "14px";
+    t.style.background = "rgba(2,6,23,0.86)";
+    t.style.border = "1px solid rgba(255,255,255,0.12)";
+    t.style.color = "#e5e7eb";
+    t.style.zIndex = "99999";
+    t.style.backdropFilter = "blur(10px)";
+    host.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
   }
 
-  function clampBet_(v){
-    v = Math.floor(Number(v||0));
-    if(!Number.isFinite(v)) v = state.betMin;
-    if(v < state.betMin) v = state.betMin;
-    if(v > state.betMax) v = state.betMax;
-    const step = state.betStep;
-    v = Math.round(v / step) * step;
-    if(v < state.betMin) v = state.betMin;
-    if(v > state.betMax) v = state.betMax;
-    return v;
+  // ✅ 잭팟 티커(자정까지 유지)
+  function setJackpotTicker_(name) {
+    const msg = `${name}님이 잭팟이 터지셨습니다. 축하드립니다.`;
+    const exp = endOfTodayMs_();
+    localStorage.setItem("SLOT_JACKPOT_TICKER", JSON.stringify({ msg, exp }));
+    showJackpotTickerIfAny_();
   }
 
-  function animateNumber_(from, to, ms, onTick){
-    const t0 = performance.now();
-    const dur = Math.max(180, ms|0);
-    function raf(t){
-      const p = Math.min(1, (t - t0) / dur);
-      const v = Math.round(from + (to - from) * (p*p*(3-2*p)));
-      onTick(v);
-      if(p < 1) requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-  }
+  function showJackpotTickerIfAny_() {
+    const raw = localStorage.getItem("SLOT_JACKPOT_TICKER");
+    const obj = safeParse_(raw);
+    if (!obj || !obj.msg || !obj.exp) return;
 
-  async function loadConfig_(){
-    const res = await jsonp_(state.apiBase, { action:"getConfig" });
-    if(res && res.ok && res.config){
-      state.cfg = res.config;
-
-      const mn = Number(res.config.SLOT_BET_MIN);
-      const mx = Number(res.config.SLOT_BET_MAX);
-      state.betMin = Number.isFinite(mn) ? mn : 10;
-      state.betMax = Number.isFinite(mx) ? mx : 1000;
-      state.bet = clampBet_(state.bet);
-
-      if (S.game && typeof S.game.setConfig === "function"){
-        S.game.setConfig(res.config);
-      }
-    }
-  }
-
-  async function loadUser_(){
-    const ident = readIdentity_();
-
-    if(ident.id){
-      const r = await jsonp_(state.apiBase, { action:"getSlotState", id: ident.id });
-      if(r && r.ok && r.user){
-        state.user = r.user;
-        ui.setPlayer(state.user.nickname || state.user.name || "-");
-        ui.setWallet(state.user.balance || 0);
-        ui.setJackpot(r.jackpotTotal || 0);
-        return;
-      }
-    }
-
-    if(ident.nickname){
-      const u = await jsonp_(state.apiBase, { action:"getUserByNick", nickname: ident.nickname });
-      if(u && u.ok && u.user && u.user.id){
-        localStorage.setItem("unique_id", u.user.id);
-        localStorage.setItem("unique_nick", u.user.nickname || ident.nickname);
-
-        const r2 = await jsonp_(state.apiBase, { action:"getSlotState", id: u.user.id });
-        if(r2 && r2.ok && r2.user){
-          state.user = r2.user;
-          ui.setPlayer(state.user.nickname || state.user.name || ident.nickname);
-          ui.setWallet(state.user.balance || 0);
-          ui.setJackpot(r2.jackpotTotal || 0);
-          return;
-        }
-      }
-      ui.setPlayer(ident.nickname);
-    }
-
-    ui.setPlayer("-");
-    ui.setWallet(0);
-    ui.setJackpot(0);
-  }
-
-  async function commitSpin_(result){
-    if(!state.user || !state.user.id) return null;
-
-    const res = await jsonp_(state.apiBase, {
-      action:"slotCommit",
-      id: state.user.id,
-      netDelta: result.netDelta,
-      lossAmount: result.lossAmount
-    });
-
-    if(res && res.ok){
-      if(res.user && typeof res.user.balance !== "undefined"){
-        state.user.balance = Number(res.user.balance||0);
-        ui.setWallet(state.user.balance);
-      }
-      if(typeof res.jackpotTotal !== "undefined") ui.setJackpot(res.jackpotTotal);
-    }
-    return res;
-  }
-
-  function bindUI_(){
-    ui.setBet(state.bet);
-
-    const minus = btnMinus();
-    const plus  = btnPlus();
-    const spin  = btnSpin();
-
-    if(minus){
-      minus.addEventListener("click", ()=>{
-        state.bet = clampBet_(state.bet - state.betStep);
-        ui.setBet(state.bet);
-      });
-    }
-    if(plus){
-      plus.addEventListener("click", ()=>{
-        state.bet = clampBet_(state.bet + state.betStep);
-        ui.setBet(state.bet);
-      });
-    }
-
-    if(spin){
-      spin.addEventListener("click", async ()=>{
-        if(!S.game || typeof S.game.spin !== "function") return;
-
-        if(!state.user){
-          ui.setResult("NO USER");
-          return;
-        }
-
-        const before = Math.floor(Number(state.user.balance||0));
-        if(before < state.bet){
-          ui.setResult("NO UT");
-          return;
-        }
-
-        spin.disabled = true;
-        ui.setResult("SPIN...");
-
-        try{
-          const result = await S.game.spin({ bet: state.bet });
-
-          // 결과 텍스트 (EVEN 표시)
-          let label = "LOSE";
-          if(result.jackpot){
-            label = `JACKPOT +${Math.max(0,result.netDelta)} UT`;
-          }else if(result.netDelta > 0){
-            label = `WIN +${result.netDelta} UT`;
-          }else if(result.netDelta === 0 && result.hadHit){
-            label = `EVEN (0 UT)`;
-          }else{
-            label = "LOSE";
-          }
-          ui.setResult(label);
-
-          // 돈 올라가는 느낌 (빠르게)
-          const afterPred = Math.max(0, before + result.netDelta);
-          animateNumber_(before, afterPred, result.jackpot ? 1600 : 650, (v)=>ui.setWallet(v));
-
-          // 잭팟이면 티커 자정까지
-          if(result.jackpot){
-            const name = state.user.nickname || state.user.name || "누군가";
-            setTickerUntilMidnight_(`${name}님이 잭팟이 터지셨습니다. 축하드립니다.`);
-          }
-
-          await commitSpin_(result);
-
-        }catch(err){
-          console.error(err);
-          ui.setResult("ERROR");
-        }finally{
-          spin.disabled = false;
-        }
-      });
-    }
-  }
-
-  function boot_(){
-    if(state.inited) return;
-    state.inited = true;
-
-    // bg 목록 강제 (png)
-    S.BG_LIST = [
-      "img/slot/bg1.png",
-      "img/slot/bg2.png",
-      "img/slot/bg3.png",
-      "img/slot/bg4.png",
-      "img/slot/bg5.png"
-    ];
-
-    showTickerIfValid_();
-    applyMobileStack_();
-
-    state.apiBase = getApiBase_();
-    if(!state.apiBase){
-      ui.setResult("NO API");
-      // 그래도 UI는 깨지면 안 됨
-      if(S.game && typeof S.game.buildReels === "function") S.game.buildReels();
-      bindUI_();
+    if (Date.now() > Number(obj.exp)) {
+      localStorage.removeItem("SLOT_JACKPOT_TICKER");
       return;
     }
 
-    if(S.game && typeof S.game.buildReels === "function") S.game.buildReels();
+    let bar = document.getElementById("slotJackpotTicker");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "slotJackpotTicker";
+      bar.style.position = "fixed";
+      bar.style.top = "0";
+      bar.style.left = "0";
+      bar.style.right = "0";
+      bar.style.height = "42px";
+      bar.style.zIndex = "99998";
+      bar.style.background = "rgba(2,6,23,0.75)";
+      bar.style.borderBottom = "1px solid rgba(255,255,255,0.12)";
+      bar.style.backdropFilter = "blur(10px)";
+      bar.style.overflow = "hidden";
+      bar.style.display = "flex";
+      bar.style.alignItems = "center";
 
-    Promise.resolve()
-      .then(loadConfig_)
-      .then(loadUser_)
-      .then(bindUI_)
-      .then(()=> ui.setResult("READY"))
-      .catch(err=>{
-        console.error(err);
-        ui.setResult("ERROR");
-      });
-  }
+      const inner = document.createElement("div");
+      inner.id = "slotJackpotTickerInner";
+      inner.style.whiteSpace = "nowrap";
+      inner.style.willChange = "transform";
+      inner.style.color = "#fbbf24";
+      inner.style.fontWeight = "800";
+      inner.style.letterSpacing = "0.5px";
+      inner.style.paddingLeft = "100%";
+      inner.style.animation = "slotTicker 12s linear infinite";
+      inner.textContent = obj.msg;
 
-  function wait_(){
-    if(S.game && typeof S.game.spin === "function"){
-      boot_();
-    }else{
-      setTimeout(wait_, 50);
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes slotTicker {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-120%); }
+        }
+        body { padding-top: 42px; }
+      `;
+      bar.appendChild(style);
+      bar.appendChild(inner);
+      document.body.appendChild(bar);
+    } else {
+      const inner = document.getElementById("slotJackpotTickerInner");
+      if (inner) inner.textContent = obj.msg;
     }
   }
 
-  window.addEventListener("resize", ()=>{ try{ applyMobileStack_(); }catch(_){} });
-  document.addEventListener("DOMContentLoaded", wait_);
+  function endOfTodayMs_() {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }
 
-})(window.SLOT);
+  // =========================
+  // App
+  // =========================
+  let cfg = null;
+  let user = null;
+  let balance = 0;
+  let bet = 10;
+  const BET_STEP = 5; // ✅ 유송: 5단위 고정
+  let busy = false;
+
+  async function init_() {
+    showJackpotTickerIfAny_();
+
+    user = loadUserFromSomewhere_();
+    if (!user || !user.id) {
+      toast_("로그인 정보(id)를 못 찾았어. gate에서 로그인 후 다시 들어와줘.");
+      // 그래도 화면은 살아있게
+    }
+
+    // UI elements (여러 후보를 다 지원)
+    const elPlayer = findEl_([
+      "#playerName", "#slotPlayer", "[data-slot-player]", ".js-player", ".player-value"
+    ]);
+    const elWallet = findEl_([
+      "#walletValue", "#slotWallet", "[data-slot-wallet]", ".js-wallet", ".wallet-value"
+    ]);
+    const elJackpot = findEl_([
+      "#jackpotValue", "#slotJackpot", "[data-slot-jackpot]"
+    ]);
+    const elLast = findEl_([
+      "#lastResult", "#slotLastResult", "[data-slot-last]"
+    ]);
+    const elBet = findEl_([
+      "#betValue", "#slotBet", "[data-slot-bet]"
+    ]);
+
+    const btnSpin = findEl_([
+      "#btnSpin", "#spinBtn", "[data-slot-spin]"
+    ]);
+    const btnAuto = findEl_([
+      "#btnAuto", "#autoBtn", "[data-slot-auto]"
+    ]);
+    const btnMinus = findEl_([
+      "#betMinus", "#btnBetMinus", "[data-slot-bet-minus]"
+    ]);
+    const btnPlus = findEl_([
+      "#betPlus", "#btnBetPlus", "[data-slot-bet-plus]"
+    ]);
+    const btnSound = findEl_([
+      "#btnSound", "#soundBtn", "[data-slot-sound]"
+    ]);
+
+    // initial UI
+    if (elPlayer) elPlayer.textContent = displayName_(user);
+    if (elLast) elLast.textContent = "READY";
+    if (elBet) elBet.textContent = String(bet);
+
+    // mount slot grid
+    if (S.game && S.game.ensureMounted) S.game.ensureMounted();
+
+    // load config from Apps Script
+    const gs = getGoogleScriptUrl_();
+    if (!gs) {
+      toast_("GOOGLE_SCRIPT_URL이 비었어. unique.config.js에 Apps Script /exec URL 넣어줘.");
+    } else {
+      try {
+        const res = await jsonp_(gs, { action: "getConfig" }, { timeout: 12000 });
+        if (res && res.ok && res.config) {
+          cfg = res.config;
+          if (S.game && S.game.setConfig) S.game.setConfig(cfg);
+        }
+      } catch (e) {
+        console.error(e);
+        toast_("Config 불러오기 실패(구글 스크립트). 배포 URL / 권한 확인 필요.");
+      }
+    }
+
+    // fetch slot state (user + totals)
+    if (gs && user && user.id) {
+      try {
+        const st = await jsonp_(gs, { action: "getSlotState", id: user.id }, { timeout: 12000 });
+        if (st && st.ok && st.user) {
+          user = Object.assign({}, user, st.user);
+          persistUser_(user);
+
+          balance = Number(st.user.balance || 0);
+          if (elWallet) elWallet.textContent = fmt2_(balance);
+
+          if (elPlayer) elPlayer.textContent = displayName_(user);
+          if (elJackpot && Number.isFinite(Number(st.jackpotTotal))) {
+            elJackpot.textContent = fmt2_(st.jackpotTotal);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        toast_("getSlotState 실패: Apps Script 응답/권한 확인");
+      }
+    }
+
+    // bet min/max (cfg 있으면 반영, 없으면 기본)
+    const betMin = cfg ? num_(cfg.SLOT_BET_MIN, 10) : 10;
+    const betMax = cfg ? num_(cfg.SLOT_BET_MAX, 1000) : 1000;
+    bet = clamp_(bet, betMin, betMax);
+    if (elBet) elBet.textContent = String(bet);
+
+    // bind buttons
+    if (btnMinus) btnMinus.onclick = () => {
+      if (busy) return;
+      bet = clamp_(bet - BET_STEP, betMin, betMax);
+      if (elBet) elBet.textContent = String(bet);
+    };
+
+    if (btnPlus) btnPlus.onclick = () => {
+      if (busy) return;
+      bet = clamp_(bet + BET_STEP, betMin, betMax);
+      if (elBet) elBet.textContent = String(bet);
+    };
+
+    let autoOn = false;
+    let autoTimer = null;
+
+    function setAuto_(on) {
+      autoOn = !!on;
+      if (btnAuto) btnAuto.textContent = autoOn ? "AUTO ON" : "AUTO OFF";
+      if (!autoOn && autoTimer) {
+        clearTimeout(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    if (btnAuto) {
+      btnAuto.onclick = () => {
+        if (busy) return;
+        setAuto_(!autoOn);
+        if (autoOn) loopAuto_();
+      };
+    }
+
+    if (btnSound) {
+      let soundOn = true;
+      btnSound.textContent = "SOUND ON";
+      btnSound.onclick = () => {
+        soundOn = !soundOn;
+        btnSound.textContent = soundOn ? "SOUND ON" : "SOUND OFF";
+        if (S.game && S.game.setSound) S.game.setSound(soundOn);
+      };
+    }
+
+    async function loopAuto_() {
+      if (!autoOn) return;
+      await doSpin_();
+      autoTimer = setTimeout(loopAuto_, 650);
+    }
+
+    async function doSpin_() {
+      const gs2 = getGoogleScriptUrl_();
+
+      if (busy) return;
+      if (!user || !user.id) {
+        toast_("로그인(id) 없음. gate에서 로그인 후 다시.");
+        return;
+      }
+      if (balance < bet) {
+        toast_("UT 잔액 부족");
+        return;
+      }
+      if (!S.game || !S.game.spin) {
+        toast_("slot.game이 로드되지 않았어(스크립트 순서 확인)");
+        return;
+      }
+
+      busy = true;
+      try {
+        if (btnSpin) btnSpin.disabled = true;
+
+        const before = balance;
+        const res = await S.game.spin({ bet });
+
+        // UI result (즉시)
+        if (elLast) elLast.textContent = res.resultText || "READY";
+
+        // ✅ 서버(구글시트) 커밋
+        const netDelta = Number(res.netDelta || 0);
+        const lossAmount = Number(res.lossAmount || 0);
+
+        if (gs2) {
+          const commit = await jsonp_(gs2, {
+            action: "slotCommit",
+            id: user.id,
+            netDelta: String(netDelta),
+            lossAmount: String(lossAmount),
+          }, { timeout: 12000 });
+
+          if (commit && commit.ok && commit.user) {
+            balance = Number(commit.user.balance || 0);
+            if (elWallet) animateNumber_(elWallet, before, balance, res.jackpot ? 2200 : 1100);
+
+            // jackpot/casino totals
+            if (elJackpot && Number.isFinite(Number(commit.jackpotTotal))) {
+              elJackpot.textContent = fmt2_(commit.jackpotTotal);
+            }
+
+            // ✅ 잭팟 티커(자정까지)
+            if (res.jackpot) {
+              setJackpotTicker_(displayName_(user));
+              showWinOverlay_("JACKPOT!", `+${fmt2_(Math.max(0, netDelta))} UT`, 3500);
+            } else if (netDelta > 0) {
+              showWinOverlay_("WIN!", `+${fmt2_(netDelta)} UT`, 1400);
+            } else if (netDelta === 0) {
+              showWinOverlay_("EVEN!", `+0 UT`, 900);
+            }
+          } else {
+            toast_("slotCommit 실패(구글시트 반영 안 됨)");
+          }
+        } else {
+          toast_("GOOGLE_SCRIPT_URL 없음(구글시트 반영 불가)");
+        }
+      } catch (e) {
+        console.error(e);
+        toast_("스핀 오류: 콘솔 확인");
+      } finally {
+        busy = false;
+        if (btnSpin) btnSpin.disabled = false;
+      }
+    }
+
+    if (btnSpin) btnSpin.onclick = doSpin_;
+  }
+
+  function showWinOverlay_(title, sub, ms) {
+    const wrap = document.createElement("div");
+    wrap.style.position = "fixed";
+    wrap.style.inset = "0";
+    wrap.style.display = "grid";
+    wrap.style.placeItems = "center";
+    wrap.style.zIndex = "99997";
+    wrap.style.pointerEvents = "none";
+    wrap.style.background = "radial-gradient(circle at center, rgba(0,0,0,0.20), rgba(0,0,0,0.55))";
+
+    const box = document.createElement("div");
+    box.style.padding = "22px 26px";
+    box.style.borderRadius = "22px";
+    box.style.background = "rgba(2,6,23,0.75)";
+    box.style.border = "1px solid rgba(255,255,255,0.14)";
+    box.style.backdropFilter = "blur(12px)";
+    box.style.textAlign = "center";
+    box.style.transform = "translateY(8px) scale(0.98)";
+    box.style.animation = "slotPop 220ms ease-out forwards";
+
+    const h = document.createElement("div");
+    h.textContent = title;
+    h.style.fontSize = "34px";
+    h.style.fontWeight = "900";
+    h.style.letterSpacing = "1px";
+    h.style.color = "#fbbf24";
+
+    const p = document.createElement("div");
+    p.textContent = sub;
+    p.style.marginTop = "6px";
+    p.style.fontSize = "18px";
+    p.style.fontWeight = "800";
+    p.style.color = "#e5e7eb";
+
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes slotPop {
+        from { opacity: 0; transform: translateY(10px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+    `;
+    box.appendChild(style);
+    box.appendChild(h);
+    box.appendChild(p);
+    wrap.appendChild(box);
+    document.body.appendChild(wrap);
+
+    setTimeout(() => wrap.remove(), Math.max(600, ms || 1200));
+  }
+
+  function displayName_(u) {
+    const nick = String((u && (u.nickname || u.nick)) || "").trim();
+    const name = String((u && u.name) || "").trim();
+    // ✅ “슬래시 느낌 제거” (표시용)
+    const d = (nick || name || "-").replaceAll("/", " ").trim();
+    return d || "-";
+  }
+
+  function fmt2_(n) {
+    const x = Number(n) || 0;
+    return x % 1 === 0 ? String(x) : x.toFixed(2);
+  }
+
+  function num_(v, d) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  function clamp_(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
+  // =========================
+  // Boot
+  // =========================
+  document.addEventListener("DOMContentLoaded", init_);
+})();
