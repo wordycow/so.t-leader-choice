@@ -1,11 +1,11 @@
 // games/slot/slot.api.js
 (() => {
-  // ✅ 고정: 기존 프로젝트 동일
+  // ✅ 고정
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
   const WORKER_BASE_URL   = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  // ✅ 슬롯 전용 액션은 워커를 치지 말고 JSONP(앱스스크립트)로 고정 → 404 찌꺼기 제거
-  const SLOT_ONLY_ACTIONS = new Set(["getSlotState", "slotCommit"]);
+  // ✅ 슬롯 페이지는 워커를 기본으로 치지 않는다(404 찌꺼기 제거)
+  const SLOT_ACTIONS = new Set(["getSlotState", "slotCommit"]);
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -32,7 +32,7 @@
         try { delete window[cb]; } catch(e){}
         try { s.remove(); } catch(e){}
       }
-      document.body.appendChild(s);
+      (document.body || document.documentElement).appendChild(s);
     });
   }
 
@@ -64,7 +64,7 @@
         credentials: "omit"
       });
 
-      // ✅ r.ok 아니면(404 포함) 무조건 throw → 폴백 타게
+      // ✅ 200 아니면 바로 에러로 던져서(= fallback) 콘솔/로직 꼬임 방지
       if (!r.ok) throw new Error(`worker_http_${r.status}`);
 
       const js = await r.json().catch(()=>null);
@@ -76,13 +76,14 @@
   }
 
   async function api(action, params = {}) {
-    // ✅ 슬롯은 워커 접근 자체를 안 함
-    if (SLOT_ONLY_ACTIONS.has(action)) return apiJSONP(action, params);
-
     const force = new URLSearchParams(location.search).get("api");
     if (force === "legacy") return apiJSONP(action, params);
     if (force === "worker") return apiWorker(action, params, 20000);
 
+    // ✅ 슬롯 액션은 기본 JSONP (워커 404 네트워크 찌꺼기 제거)
+    if (SLOT_ACTIONS.has(action)) return apiJSONP(action, params);
+
+    // (혹시 다른 액션 확장 시) 워커 우선 + 실패시 JSONP
     try{
       return await apiWorker(action, params, 9000);
     } catch(e){
@@ -115,7 +116,6 @@
   async function commitSlotSpin({ netDelta = 0, lossAmount = 0 }){
     const u = getLocalUser();
     if (!u) return { ok:false, error:"no_session" };
-
     return await api("slotCommit", {
       id: u.id,
       netDelta: Number(netDelta || 0),
