@@ -20,7 +20,7 @@ window.SLOT = window.SLOT || {};
   };
 
   // ✅ 족보(라인 3개: 가로 3줄만)
-  // 2개는 “본전(배팅=지급)”부터 시작해서 최소한 ‘졌는데 -가 표시’ 느낌 없게
+  // 2개는 “본전(배팅=지급)”부터 시작
   const PAY = {
     star1:{2:1,3:2,4:5,5:12},
     star2:{2:1,3:2.5,4:6,5:15},
@@ -46,7 +46,7 @@ window.SLOT = window.SLOT || {};
     "img/slot/bg5.jpg"
   ];
 
-  // ✅ 사운드 경로 (games/sounds)
+  // ✅ 사운드 경로 (games/sounds) — slot.html 기준 상대경로로 해석됨
   const SOUND = {
     start:  "sounds/start-button-sound.MP3",
     spin:   "sounds/spining-sound.MP3",
@@ -70,6 +70,9 @@ window.SLOT = window.SLOT || {};
     audio: {}
   };
 
+  /* -------------------------
+     Mount / DOM
+  ------------------------- */
   function findMount() {
     return (
       document.getElementById("reels") ||
@@ -106,15 +109,16 @@ window.SLOT = window.SLOT || {};
     return `img/slot/${id}.png`;
   }
 
-  function ensureGridDOM(){
+  function ensureGridDOM() {
     const mount = ensureMount();
     if (!mount) return null;
 
     let gridEl = mount.querySelector(".slot-grid");
-    if (!gridEl){
+    if (!gridEl) {
       gridEl = document.createElement("div");
       gridEl.className = "slot-grid";
-      // ✅ 기존 CSS가 있으면 그걸 쓰고, 없으면 최소한만 보이게
+
+      // 최소 스타일(기존 CSS가 있으면 그게 우선)
       gridEl.style.display = "grid";
       gridEl.style.gridTemplateColumns = "repeat(5, 1fr)";
       gridEl.style.gridTemplateRows = "repeat(3, 1fr)";
@@ -123,17 +127,19 @@ window.SLOT = window.SLOT || {};
       gridEl.style.height = "100%";
       gridEl.style.padding = "18px";
       gridEl.style.boxSizing = "border-box";
+
       mount.innerHTML = "";
       mount.appendChild(gridEl);
 
-      state.cells = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+      state.cells = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
 
-      for (let r=0;r<ROWS;r++){
-        for (let c=0;c<COLS;c++){
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
           const cell = document.createElement("div");
           cell.className = "slot-cell";
           cell.dataset.r = String(r);
           cell.dataset.c = String(c);
+
           cell.style.borderRadius = "16px";
           cell.style.overflow = "hidden";
           cell.style.display = "flex";
@@ -160,7 +166,7 @@ window.SLOT = window.SLOT || {};
     return gridEl;
   }
 
-  function setSymbol(r,c,id){
+  function setSymbol(r, c, id) {
     const img = state.cells?.[r]?.[c];
     if (!img) return;
     img.alt = id;
@@ -168,18 +174,18 @@ window.SLOT = window.SLOT || {};
     if (state.grid) state.grid[r][c] = id;
   }
 
-  function renderGrid(grid){
+  function renderGrid(grid) {
     ensureGridDOM();
     const g = Array.isArray(grid) ? grid : defaultGrid();
     state.grid = g.map(row => row.slice());
-    for (let r=0;r<ROWS;r++){
-      for (let c=0;c<COLS;c++){
-        setSymbol(r,c,state.grid[r][c]);
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        setSymbol(r, c, state.grid[r][c]);
       }
     }
   }
 
-  function defaultGrid(){
+  function defaultGrid() {
     return [
       ["star1","star2","star3","pro1","pro5"],
       ["star2","star3","pro1","pro5","pro10"],
@@ -187,46 +193,127 @@ window.SLOT = window.SLOT || {};
     ];
   }
 
-  function setConfig(cfg){
+  function createEmptyGrid_() {
+    return Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => "star1"));
+  }
+
+  /* -------------------------
+     Config / Weights
+  ------------------------- */
+  function setConfig(cfg) {
     state.cfg = cfg || null;
     if (!cfg) return;
 
-    // ✅ Apps Script Config 값이 있으면 가중치 덮어쓰기
-    const m = {};
     const pick = (k, fallback) => {
       const v = Number(cfg?.[k]);
       return Number.isFinite(v) ? v : fallback;
     };
 
-    m.star1 = pick("SLOT_W_STAR1", WEIGHTS.star1);
-    m.star2 = pick("SLOT_W_STAR2", WEIGHTS.star2);
-    m.star3 = pick("SLOT_W_STAR3", WEIGHTS.star3);
-    m.pro1  = pick("SLOT_W_PRO1",  WEIGHTS.pro1);
-    m.pro2  = pick("SLOT_W_PRO2",  WEIGHTS.pro2);
-    m.pro3  = pick("SLOT_W_PRO3",  WEIGHTS.pro3);
-    m.pro4  = pick("SLOT_W_PRO4",  WEIGHTS.pro4);
-    m.pro5  = pick("SLOT_W_PRO5",  WEIGHTS.pro5);
-    m.pro6  = pick("SLOT_W_PRO6",  WEIGHTS.pro6);
-    m.pro7  = pick("SLOT_W_PRO7",  WEIGHTS.pro7);
-    m.pro8  = pick("SLOT_W_PRO8",  WEIGHTS.pro8);
-    m.pro9  = pick("SLOT_W_PRO9",  WEIGHTS.pro9);
-    m.pro10 = pick("SLOT_W_PRO10", WEIGHTS.pro10);
-    WEIGHTS = m;
+    WEIGHTS = {
+      star1: pick("SLOT_W_STAR1", WEIGHTS.star1),
+      star2: pick("SLOT_W_STAR2", WEIGHTS.star2),
+      star3: pick("SLOT_W_STAR3", WEIGHTS.star3),
+      pro1:  pick("SLOT_W_PRO1",  WEIGHTS.pro1),
+      pro2:  pick("SLOT_W_PRO2",  WEIGHTS.pro2),
+      pro3:  pick("SLOT_W_PRO3",  WEIGHTS.pro3),
+      pro4:  pick("SLOT_W_PRO4",  WEIGHTS.pro4),
+      pro5:  pick("SLOT_W_PRO5",  WEIGHTS.pro5),
+      pro6:  pick("SLOT_W_PRO6",  WEIGHTS.pro6),
+      pro7:  pick("SLOT_W_PRO7",  WEIGHTS.pro7),
+      pro8:  pick("SLOT_W_PRO8",  WEIGHTS.pro8),
+      pro9:  pick("SLOT_W_PRO9",  WEIGHTS.pro9),
+      pro10: pick("SLOT_W_PRO10", WEIGHTS.pro10),
+    };
   }
 
-  function weightedPick(){
+  function weightedPick() {
     let total = 0;
     for (const id of SYMBOL_IDS) total += (Number(WEIGHTS[id]) || 0);
+
     const t = Math.random() * total;
     let acc = 0;
-    for (const id of SYMBOL_IDS){
+    for (const id of SYMBOL_IDS) {
       acc += (Number(WEIGHTS[id]) || 0);
       if (t <= acc) return id;
     }
     return "star1";
   }
 
-  function preload(urls){
+  /* -------------------------
+     Outcome control (Vegas 느낌)
+     - 잭팟: 기본 20ppm = 1/50,000
+     - 나머지는 “자주 2개(본전), 종종 3개, 가끔 4개, 아주 가끔 5개”
+  ------------------------- */
+  function rollOutcomeType_(cfg) {
+    // 잭팟: 20ppm = 1/50,000 (스핀이 월 5만이면 ‘대충 월1회’ 체감)
+    const ppm = Number(cfg?.SLOT_JACKPOT_PPM ?? 20);
+    const pJackpot = Math.max(0, ppm) / 1_000_000;
+
+    // (선택) 확률 커스텀 가능
+    const pFive  = Number(cfg?.SLOT_P5  ?? 0.004); // 0.4%
+    const pFour  = Number(cfg?.SLOT_P4  ?? 0.020); // 2%
+    const pThree = Number(cfg?.SLOT_P3  ?? 0.120); // 12%
+    const pTwo   = Number(cfg?.SLOT_P2  ?? 0.250); // 25%
+
+    const r = Math.random();
+    if (r < pJackpot) return "jackpot";
+
+    let x = pJackpot;
+    if (r < (x += pFive))  return "five";
+    if (r < (x += pFour))  return "four";
+    if (r < (x += pThree)) return "three";
+    if (r < (x += pTwo))   return "two";
+    return "lose";
+  }
+
+  function forceOneLine_(grid, type) {
+    // 한 줄만 “확정 히트” 만들고 나머지는 랜덤(과당첨 방지)
+    const lowSyms  = ["star1","star2","star3","pro1","pro2","pro3"];
+    const midSyms  = ["pro3","pro4","pro5","pro6"];
+    const highSyms = ["pro7","pro8","pro9"];
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    const row = Math.floor(Math.random() * ROWS);
+
+    // 기본 랜덤으로 깔기
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        grid[r][c] = weightedPick();
+      }
+    }
+
+    let sym = pick(lowSyms);
+    let count = 0;
+
+    if (type === "two")    { sym = pick(lowSyms);   count = 2; }
+    if (type === "three")  { sym = pick(lowSyms);   count = 3; }
+    if (type === "four")   { sym = pick(midSyms);   count = 4; }
+    if (type === "five")   { sym = pick(highSyms);  count = 5; }
+    if (type === "jackpot"){ sym = "pro10";         count = 5; }
+
+    // ✅ evaluate가 “0번 칸부터 연속”만 보니까, 반드시 c=0부터 박아준다
+    if (count > 0) {
+      for (let c = 0; c < count; c++) grid[row][c] = sym;
+    }
+
+    // ✅ 다른 줄에서 우연히 2개 이상 연속되는 걸 줄이기
+    for (let r = 0; r < ROWS; r++) {
+      if (r === row) continue;
+      const first = grid[r][0];
+      if (grid[r][1] === first) {
+        let repl = weightedPick();
+        while (repl === first) repl = weightedPick();
+        grid[r][1] = repl;
+      }
+    }
+
+    return { row, sym, count };
+  }
+
+  /* -------------------------
+     Preload / Background
+  ------------------------- */
+  function preload(urls) {
     urls.forEach(u => {
       const im = new Image();
       im.decoding = "async";
@@ -234,7 +321,11 @@ window.SLOT = window.SLOT || {};
     });
   }
 
-  function ensureBgLayers(){
+  function preloadSymbols_() {
+    preload(SYMBOL_IDS.map(id => imgPath(id)));
+  }
+
+  function ensureBgLayers() {
     if (state.bgA && state.bgB) return;
 
     const mk = (id, z) => {
@@ -253,23 +344,24 @@ window.SLOT = window.SLOT || {};
       return d;
     };
 
-    // 기존 배경보다 뒤에 깔리도록 아주 뒤쪽
     state.bgA = mk("slotBgA", -5);
     state.bgB = mk("slotBgB", -4);
   }
 
-  function setBg(url){
+  function setBg(url) {
     ensureBgLayers();
-    const on = state.bgFlip ? state.bgA : state.bgB;
+    const on  = state.bgFlip ? state.bgA : state.bgB;
     const off = state.bgFlip ? state.bgB : state.bgA;
+
     on.style.backgroundImage = `url("${url}")`;
     on.style.opacity = "0.95";
     off.style.opacity = "0";
+
     state.bgFlip = !state.bgFlip;
   }
 
-  function startBgCycle(intervalMs=200){
-    const list = (S.BG_LIST && Array.isArray(S.BG_LIST) && S.BG_LIST.length>=2)
+  function startBgCycle(intervalMs = 200) {
+    const list = (S.BG_LIST && Array.isArray(S.BG_LIST) && S.BG_LIST.length >= 2)
       ? S.BG_LIST
       : BG_LIST_DEFAULT;
 
@@ -285,15 +377,18 @@ window.SLOT = window.SLOT || {};
     }, intervalMs);
   }
 
-  function stopBgCycle(){
-    if (state.bgTimer){
+  function stopBgCycle() {
+    if (state.bgTimer) {
       clearInterval(state.bgTimer);
       state.bgTimer = null;
     }
-    // 멈출 때는 마지막 배경은 유지(현란함 유지)
+    // 멈출 때 마지막 배경 유지
   }
 
-  function getAudio(key){
+  /* -------------------------
+     Audio
+  ------------------------- */
+  function getAudio(key) {
     if (state.audio[key]) return state.audio[key];
     const a = new Audio(SOUND[key]);
     a.preload = "auto";
@@ -302,60 +397,66 @@ window.SLOT = window.SLOT || {};
     return a;
   }
 
-  function playOne(key){
+  function playOne(key) {
     if (!state.soundOn) return;
-    try{
+    try {
       const a = getAudio(key);
       a.pause();
       a.currentTime = 0;
       a.loop = false;
-      a.play().catch(()=>{});
-    }catch(e){}
+      a.play().catch(() => {});
+    } catch (_) {}
   }
 
-  function playLoop(key){
+  function playLoop(key) {
     if (!state.soundOn) return;
-    try{
+    try {
       const a = getAudio(key);
       a.loop = true;
-      if (a.paused) a.play().catch(()=>{});
-    }catch(e){}
+      if (a.paused) a.play().catch(() => {});
+    } catch (_) {}
   }
 
-  function stopLoop(key){
-    try{
+  function stopLoop(key) {
+    try {
       const a = getAudio(key);
       a.loop = false;
       a.pause();
       a.currentTime = 0;
-    }catch(e){}
+    } catch (_) {}
   }
 
-  function setSoundEnabled(on){
+  function setSoundEnabled(on) {
     state.soundOn = !!on;
     localStorage.setItem("slotSoundOn", state.soundOn ? "1" : "0");
     if (!state.soundOn) stopLoop("spin");
   }
 
-  function evaluate(grid, bet){
+  /* -------------------------
+     Evaluate
+  ------------------------- */
+  function evaluate(grid, bet) {
     let payout = 0;
     let jackpot = false;
     const lines = [];
 
-    for (let r=0;r<ROWS;r++){
+    for (let r = 0; r < ROWS; r++) {
       const first = grid[r][0];
       let cnt = 1;
-      for (let c=1;c<COLS;c++){
+      for (let c = 1; c < COLS; c++) {
         if (grid[r][c] === first) cnt++;
         else break;
       }
-      if (cnt >= 2){
+
+      if (cnt >= 2) {
         const mult = (PAY[first] && PAY[first][cnt]) ? PAY[first][cnt] : 0;
         const linePay = Math.floor(bet * mult);
-        if (linePay > 0){
+
+        if (linePay > 0) {
           payout += linePay;
-          lines.push({ row:r, sym:first, count:cnt, pay:linePay });
+          lines.push({ row: r, sym: first, count: cnt, pay: linePay });
         }
+
         if (first === "pro10" && cnt === 5) jackpot = true;
       }
     }
@@ -366,20 +467,31 @@ window.SLOT = window.SLOT || {};
     return { payout, netDelta, lossAmount, jackpot, lines };
   }
 
-  // ✅ 10초 스핀: 빠르게 시작 → 점점 늦추며 릴별로 “탁탁탁” 멈춤
-  async function spin({ bet=10 } = {}){
-    if (state.spinning) return { ok:false, error:"busy" };
+  /* -------------------------
+     Spin (진짜 슬롯처럼: 빠르게 시작 → 감속 → 열별로 탁탁 멈춤)
+     - 최종 결과는 "미리 결정"하고, 각 열이 멈출 때 그 열을 최종 심볼로 고정
+  ------------------------- */
+  async function spin({ bet = 10 } = {}) {
+    if (state.spinning) return { ok: false, error: "busy" };
     state.spinning = true;
 
     ensureGridDOM();
     if (!state.grid) renderGrid(null);
 
-    const totalMs = 10000;
-    const startFast = 35;    // 초반 속도(빠르게)
-    const endSlow   = 150;   // 멈추기 직전 느리게
+    // 스핀 시간(기본 7.2초). Config로 조절 가능
+    const totalMs = Math.max(2500, Number(state.cfg?.SLOT_SPIN_MS ?? 7200));
+    const startFast = Math.max(10, Number(state.cfg?.SLOT_FAST_MS ?? 28));   // 초반 속도(빠르게)
+    const endSlow   = Math.max(startFast, Number(state.cfg?.SLOT_SLOW_MS ?? 110)); // 끝 감속(덜 느리게)
 
-    // reel stop 타이밍(총 10초 안에서 순차)
-    const stopAt = [7200, 8000, 8600, 9200, 9800];
+    // 열별 멈춤 타이밍(총 시간 안에서 순차)
+    const gap = Math.max(120, Number(state.cfg?.SLOT_STOP_GAP_MS ?? 420));
+    const lastStop = totalMs - 200;
+    const stopAt = Array.from({ length: COLS }, (_, i) => Math.min(lastStop, (lastStop - (COLS - 1) * gap) + i * gap));
+
+    // ✅ 최종 결과 미리 결정
+    const finalGrid = createEmptyGrid_();
+    const type = rollOutcomeType_(state.cfg);
+    forceOneLine_(finalGrid, type);
 
     playOne("start");
     playLoop("spin");
@@ -388,8 +500,7 @@ window.SLOT = window.SLOT || {};
     const running = Array(COLS).fill(true);
     const stopPromises = [];
 
-    // 각 릴(열) 업데이트 루프 (setTimeout 기반 가변 딜레이)
-    for (let c=0;c<COLS;c++){
+    for (let c = 0; c < COLS; c++) {
       const col = c;
       const t0 = performance.now();
       const tStop = stopAt[col];
@@ -401,38 +512,48 @@ window.SLOT = window.SLOT || {};
         const ratio = Math.min(1, elapsed / tStop);
         const delay = Math.floor(startFast + (endSlow - startFast) * (ratio * ratio)); // 감속 곡선
 
-        for (let r=0;r<ROWS;r++){
-          setSymbol(r, col, weightedPick());
-        }
+        // 돌 때는 랜덤
+        for (let r = 0; r < ROWS; r++) setSymbol(r, col, weightedPick());
         setTimeout(tick, delay);
       };
 
       tick();
 
-      stopPromises.push(new Promise(res => {
+      stopPromises.push(new Promise((res) => {
         setTimeout(() => {
           running[col] = false;
+
+          // ✅ 멈출 때는 "그 열"을 최종 심볼로 고정 (진짜 슬롯 느낌)
+          for (let r = 0; r < ROWS; r++) setSymbol(r, col, finalGrid[r][col]);
+
           playOne("stop");
           res(true);
         }, tStop);
       }));
     }
 
-    // 전체 종료 대기
     await Promise.all(stopPromises);
 
     stopBgCycle();
     stopLoop("spin");
 
-    const result = evaluate(state.grid, bet);
-    let resultText = "LOSE";
+    // state.grid는 이미 최종 열들로 채워졌지만 확정으로 맞춰줌
+    state.grid = finalGrid.map(row => row.slice());
+    renderGrid(state.grid);
 
-    if (result.jackpot){
+    const result = evaluate(state.grid, bet);
+
+    let resultText = "LOSE";
+    if (result.jackpot) {
       playOne("jackpot");
       resultText = `JACKPOT +${Math.max(0, result.netDelta)} UT`;
-    } else if (result.payout > 0){
+      try {
+        window.dispatchEvent(new CustomEvent("slot:jackpot", { detail: { netDelta: result.netDelta, payout: result.payout, bet } }));
+      } catch (_) {}
+    } else if (result.payout > 0) {
       playOne("win");
-      resultText = `WIN +${Math.max(0, result.netDelta)} UT`;
+      if (result.netDelta > 0) resultText = `WIN +${result.netDelta} UT`;
+      else resultText = `HIT +0 UT`; // 2개 본전용
     } else {
       playOne("lose");
       resultText = "LOSE";
@@ -440,20 +561,27 @@ window.SLOT = window.SLOT || {};
 
     state.spinning = false;
 
+    // 결과 이벤트(원하면 UI에서 받아서 표시/티커 등 처리)
+    try {
+      window.dispatchEvent(new CustomEvent("slot:result", { detail: { ...result, bet, resultText, grid: state.grid } }));
+    } catch (_) {}
+
     return {
-      ok:true,
+      ok: true,
       grid: state.grid,
       ...result,
       resultText
     };
   }
 
-  // 초기 릴 생성(호환)
-  function buildReels(){
+  /* -------------------------
+     Public
+  ------------------------- */
+  function buildReels() {
+    preloadSymbols_();
     renderGrid(null);
   }
 
-  // 노출
   S.game = S.game || {};
   S.game.buildReels = buildReels;
   S.game.renderGrid = renderGrid;
