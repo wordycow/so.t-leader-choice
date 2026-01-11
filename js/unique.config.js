@@ -6,6 +6,10 @@
 
     GOOGLE_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
 
+    // ✅ Worker 주소 (여기만 바꾸면 전체가 따라오게 만들기)
+    VAULT_API_BASE: "https://the-unique-vault-api.wordycow0001.workers.dev",
+    SLOT_API_BASE: "https://the-unique-slot-api.wordycow0001.workers.dev",
+
     UT_PRICE_FACTOR: 0.30,
 
     RANK_JSON: "rank-hall.json",
@@ -20,7 +24,6 @@
 
     SCHEDULE_GVIZ_URL: "https://docs.google.com/spreadsheets/d/1C4fyJtyBHSaBIWyN_lM75Zp7myvtz3cKfHYUbAmoVQY/gviz/tq?gid=0&tqx=responseHandler:handleScheduleSheet",
 
-    // ✅ 유튜브 변경 반영
     YT_VIDEO_ID: "DBcSLPRz0HI",
 
     REFRESH_MS: 30000
