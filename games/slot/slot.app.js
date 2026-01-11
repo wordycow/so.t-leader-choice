@@ -3,8 +3,9 @@ window.SLOT = window.SLOT || {};
 (function (S) {
   "use strict";
 
-  const LS = {
-    WALLET: "slotWalletUT",
+  // ✅ 기존 데이터 덮어쓰기 방지용: init때는 절대 wallet 저장 안 함
+  const LS_KEYS = {
+    WALLET: "slotWalletUT",      // (기존에 쓰던 키 유지)
     BET: "slotBetUT",
     AUTO: "slotAutoOn",
     PLAYER_ID: "slotPlayerId",
@@ -12,7 +13,7 @@ window.SLOT = window.SLOT || {};
   };
 
   const state = {
-    wallet: 0,
+    wallet: null,   // null = 아직 모름(0으로 덮지 않음)
     bet: 10,
     auto: false,
     spinning: false,
@@ -21,18 +22,14 @@ window.SLOT = window.SLOT || {};
 
   const $ = (sel, root = document) => root.querySelector(sel);
 
-  function num(v, d = 0) {
+  const num = (v) => {
     const n = Number(v);
-    return Number.isFinite(n) ? n : d;
-  }
+    return Number.isFinite(n) ? n : null;
+  };
 
-  function clamp(n, a, b) {
-    return Math.max(a, Math.min(b, n));
-  }
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-  function setText(el, t) {
-    if (el) el.textContent = String(t);
-  }
+  const setText = (el, t) => { if (el) el.textContent = String(t); };
 
   function injectStyleOnce(id, cssText) {
     if (document.getElementById(id)) return;
@@ -42,24 +39,76 @@ window.SLOT = window.SLOT || {};
     document.head.appendChild(st);
   }
 
-  // ---------------------------
-  // UI API (slot.app.js가 쓰던 것들)
-  // ---------------------------
-  S.ui = S.ui || {};
-  S.ui.setWallet = (v) => {
-    state.wallet = num(v, state.wallet);
-    setText(state.els.walletValue, state.wallet);
-  };
-  S.ui.setBet = (v) => {
-    state.bet = clamp(num(v, state.bet), 5, 5000);
-    setText(state.els.betValue, state.bet);
-  };
-  S.ui.setJackpot = (v) => setText(state.els.jackpotValue, v);
-  S.ui.setLastResult = (v) => setText(state.els.lastResultValue, v);
+  // -------------------------
+  // ✅ “키 자동 탐색” (닉네임/UT 못잡는 문제 해결용)
+  // -------------------------
+  function getLocalStorageAny(keys) {
+    for (const k of keys) {
+      const v = localStorage.getItem(k);
+      if (v !== null && String(v).trim() !== "") return v;
+    }
+    return null;
+  }
 
-  // ---------------------------
-  // 요소 찾기 (있으면 쓰고, 없으면 넘어감)
-  // ---------------------------
+  function scanLocalStorageSmart() {
+    // 키 이름에서 추정 (유송 프로젝트에서 흔히 쓰는 패턴들)
+    const all = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      all.push([k, localStorage.getItem(k)]);
+    }
+
+    const lower = (s) => String(s || "").toLowerCase();
+
+    // nickname 후보
+    const nickKeys = all
+      .filter(([k, v]) => v && /[가-힣a-zA-Z0-9]/.test(v) && (
+        lower(k).includes("nick") || lower(k).includes("name") || lower(k).includes("player")
+      ))
+      .map(([k]) => k);
+
+    // ut 후보 (숫자인 값 + 키에 ut/wallet/balance 포함)
+    const utKeys = all
+      .filter(([k, v]) => {
+        const n = num(v);
+        if (n === null) return false;
+        const lk = lower(k);
+        return lk.includes("ut") || lk.includes("wallet") || lk.includes("balance");
+      })
+      .map(([k]) => k);
+
+    return { nickKeys, utKeys };
+  }
+
+  function hydratePlayerAndWalletFromAnySource() {
+    // 1) “확정 키” 먼저
+    let pid = getLocalStorageAny([LS_KEYS.PLAYER_ID, "playerId", "uniquePlayerId", "uniqueId", "loginId", "username"]);
+    let pname = getLocalStorageAny([LS_KEYS.PLAYER_NAME, "nickname", "uniqueNickname", "displayName", "userName", "name"]);
+
+    // 2) 못 찾으면 “스마트 스캔”
+    if (!pname) {
+      const { nickKeys } = scanLocalStorageSmart();
+      pname = getLocalStorageAny(nickKeys);
+    }
+
+    // 3) UT
+    let w = getLocalStorageAny([LS_KEYS.WALLET, "walletUT", "walletUt", "ut", "UT", "uniqueUT", "uniqueUt"]);
+    if (w === null) {
+      const { utKeys } = scanLocalStorageSmart();
+      w = getLocalStorageAny(utKeys);
+    }
+
+    const walletNum = num(w);
+
+    // 화면 반영 (placeholder '-' / 0이면 덮어씀)
+    if (pname) setPlayerUI(pid, pname);
+    if (walletNum !== null && walletNum >= 0) S.ui.setWallet(walletNum, { persist: false }); // ✅ init에선 저장 금지
+  }
+
+  // -------------------------
+  // ✅ UI 엘리먼트 잡기
+  // -------------------------
   function grabEls() {
     state.els = {
       // 값 표시
@@ -69,222 +118,263 @@ window.SLOT = window.SLOT || {};
       lastResultValue: $("#lastResultValue") || $("[data-last-result]"),
 
       // 버튼
-      btnSpin: $("#btnSpin") || $("#spinBtn") || $("button[data-spin]") || $("button"),
+      btnSpin: $("#btnSpin") || $("#spinBtn") || $("button[data-spin]") || $("button#spin") || $("button"),
       btnAuto: $("#btnAuto") || $("#autoBtn") || $("[data-auto]"),
-      btnMinus: $("#btnBetMinus") || $("[data-bet-minus]"),
-      btnPlus: $("#btnBetPlus") || $("[data-bet-plus]"),
 
-      // 블럭
-      paytableBlock:
-        $("#payTable") ||
-        $(".paytable") ||
-        $("[data-paytable]") ||
-        $(".slot-paytable") ||
-        null,
+      // 플레이어 표시
+      playerBox: $("#playerBox") || $("[data-player]") || $(".player-box") || null,
+      playerIdEl: $("#playerId") || $("[data-player-id]"),
+      playerNameEl: $("#playerName") || $("[data-player-name]"),
+
+      // 블럭 (paytable / slot / panel)
+      payBlock: $("#payTable") || $("[data-paytable]") || $(".paytable") || $(".slot-paytable"),
       stageMount:
         $("#reels") ||
         $("#reelMount") ||
         $("#slotStage") ||
         $("#stage") ||
-        $("[data-slot-stage]") ||
-        $(".slot-stage") ||
+        document.querySelector("[data-slot-stage]") ||
+        document.querySelector(".slot-stage") ||
         null,
-      assetPanel:
-        $("#assetPanel") ||
-        $("#leftPanel") ||
-        $(".left-panel") ||
-        $("[data-slot-panel]") ||
-        null,
-
-      // 플레이어 표시 (슬래시 제거용)
-      playerIdEl: $("#playerId") || $("[data-player-id]"),
-      playerNameEl: $("#playerName") || $("[data-player-name]"),
-      playerComboEl: $("#playerLabel") || $("[data-player]"),
+      panelBlock: null, // spin 버튼으로 역추적
     };
+
+    // panelBlock은 spin 버튼이 있는 카드/패널을 기준으로 잡는 게 가장 확실
+    if (state.els.btnSpin) {
+      state.els.panelBlock =
+        state.els.btnSpin.closest(".panel, .card, .left-panel, .slot-panel, .slot-card") ||
+        state.els.btnSpin.closest("section, article, div") ||
+        null;
+    }
   }
 
-  // ---------------------------
-  // 모바일/데스크탑 레이아웃 재배치
-  // PayTable -> Slot -> AssetPanel
-  // ---------------------------
-  function relaxScrollLocks() {
-    // "밑으로 내리면 내려가야" = overflow hidden / 100vh 락 풀기
-    [document.documentElement, document.body].forEach((el) => {
-      el.style.overflowY = "auto";
-      el.style.height = "auto";
-      el.style.minHeight = "100vh";
-    });
+  // -------------------------
+  // ✅ 플레이어 UI (슬래시 없음, 2줄)
+  // -------------------------
+  function setPlayerUI(pid, pname) {
+    // 분리 엘리먼트가 있으면 거기에
+    if (state.els.playerIdEl || state.els.playerNameEl) {
+      if (state.els.playerIdEl) setText(state.els.playerIdEl, pid || "");
+      if (state.els.playerNameEl) setText(state.els.playerNameEl, pname || "");
+      return;
+    }
+
+    // 없으면 playerBox 안에 2줄로 강제 구성
+    const box = state.els.playerBox;
+    if (!box) return;
+    box.innerHTML = "";
+    const top = document.createElement("div");
+    const bottom = document.createElement("div");
+    top.textContent = (pid || "").trim();
+    bottom.textContent = (pname || "").trim();
+    box.appendChild(top);
+    box.appendChild(bottom);
   }
 
-  function setupFlowLayout() {
-    const pay = state.els.paytableBlock;
+  // -------------------------
+  // ✅ 결과/지갑/베팅 UI API (다른 스크립트가 호출해도 안 죽게)
+  // -------------------------
+  S.ui = S.ui || {};
+
+  S.ui.setWallet = (v, opt = {}) => {
+    const n = num(v);
+    if (n === null) return;
+    state.wallet = Math.floor(n);
+    setText(state.els.walletValue, state.wallet);
+
+    // ✅ init에서는 저장 금지 (persist:false)
+    const persist = opt.persist !== false;
+    if (persist) localStorage.setItem(LS_KEYS.WALLET, String(state.wallet));
+  };
+
+  S.ui.setBet = (v) => {
+    const n = num(v);
+    if (n === null) return;
+    state.bet = clamp(Math.floor(n), 5, 5000);
+    setText(state.els.betValue, state.bet);
+    localStorage.setItem(LS_KEYS.BET, String(state.bet));
+  };
+
+  S.ui.setLastResult = (t) => setText(state.els.lastResultValue, t);
+  S.ui.setJackpot = (t) => setText(state.els.jackpotValue, t);
+
+  // 닉네임/아이디를 외부 모듈이 넘겨도 반영되게
+  S.ui.setPlayer = (pid, pname) => {
+    if (pid) localStorage.setItem(LS_KEYS.PLAYER_ID, String(pid));
+    if (pname) localStorage.setItem(LS_KEYS.PLAYER_NAME, String(pname));
+    setPlayerUI(pid, pname);
+  };
+
+  // -------------------------
+  // ✅ 레이아웃: PayTable → Slot → Panel
+  // (DOM을 “계속 흔드는” 방식 금지 / 딱 한번만 정리)
+  // -------------------------
+  function setupFlowOnce() {
+    const pay = state.els.payBlock;
     const stage = state.els.stageMount;
-    const panel = state.els.assetPanel;
+    const panel = state.els.panelBlock;
 
-    // 블럭 3개 중 하나라도 못 찾으면 레이아웃 강제 재배치 안 함
-    if (!pay || !stage || !panel) return;
+    // paytable이 없으면 억지로 재배치하지 않음
+    if (!stage || !panel) return;
 
-    // stage는 mount 자체 말고 “카드/패널” 단위로 잡는 게 안전
+    // 각 블럭의 "카드" 단위를 최대한 보존
     const stageBlock =
-      stage.closest(".slot-stage-card") ||
-      stage.closest(".panel-right") ||
-      stage.closest(".right-panel") ||
-      stage.closest(".card") ||
-      stage;
+      stage.closest(".panel, .card, .slot-card, .right-panel") || stage;
 
     const payBlock =
-      pay.closest(".slot-paytable-card") ||
-      pay.closest(".card") ||
-      pay;
+      pay ? (pay.closest(".panel, .card, .slot-card") || pay) : null;
 
     const panelBlock =
-      panel.closest(".slot-panel-card") ||
-      panel.closest(".card") ||
-      panel;
+      panel.closest(".panel, .card, .slot-card, .left-panel") || panel;
 
-    // 공통 부모(최대한 바깥)
     const host =
       stageBlock.closest(".page-wrap") ||
       stageBlock.closest("main") ||
       stageBlock.parentElement ||
       document.body;
 
+    // 이미 만든 flow면 또 건드리지 않음
     let flow = document.getElementById("slotFlow");
     if (!flow) {
       flow = document.createElement("div");
       flow.id = "slotFlow";
       host.insertBefore(flow, host.firstChild);
+    } else {
+      // 이미 정리되어 있으면 종료
+      if (flow.contains(stageBlock) && flow.contains(panelBlock)) return;
     }
 
-    // 블럭들을 flow 안으로 이동 (순서 강제)
-    flow.appendChild(payBlock);
+    // ✅ 순서 고정: pay → stage → panel
+    flow.innerHTML = "";
+    if (payBlock) flow.appendChild(payBlock);
     flow.appendChild(stageBlock);
     flow.appendChild(panelBlock);
-
-    // z-index: 배경 레이어는 뒤(0), UI는 위(2)
-    flow.style.position = "relative";
-    flow.style.zIndex = "2";
 
     injectStyleOnce(
       "slot-flow-style",
       `
-      /* 데스크탑: 패널은 왼쪽, 오른쪽 위에 paytable / 아래에 슬롯 */
       #slotFlow{
-        width: min(1100px, calc(100% - 24px));
+        width: min(760px, calc(100% - 16px));
         margin: 0 auto;
-        padding: 12px;
-        display: grid;
+        padding: 10px 8px 18px;
+        display:flex;
+        flex-direction:column;
         gap: 14px;
-        align-items: start;
-        grid-template-columns: 360px 1fr;
-        grid-template-areas:
-          "panel pay"
-          "panel stage";
+        position: relative;
+        z-index: 2; /* 배경 레이어보다 위 */
       }
-      /* 블럭에 영역 지정 (가능한 경우만) */
-      #slotFlow > :nth-child(1){ grid-area: pay; }
-      #slotFlow > :nth-child(2){ grid-area: stage; }
-      #slotFlow > :nth-child(3){ grid-area: panel; }
-
-      /* 모바일: 위에서 아래로 PayTable -> Slot -> Panel */
-      @media (max-width: 900px){
-        #slotFlow{
-          display:flex;
-          flex-direction:column;
-        }
-        #slotFlow > :nth-child(1){ order: 1; }
-        #slotFlow > :nth-child(2){ order: 2; }
-        #slotFlow > :nth-child(3){ order: 3; }
-      }
+      html,body{height:auto; min-height:100vh; overflow-y:auto;}
     `
     );
-
-    // 배경 레이어가 보이도록 z-index 정리 (game.js가 만든 div가 있어도 잡아줌)
-    const bgA = document.getElementById("slotBgA");
-    const bgB = document.getElementById("slotBgB");
-    if (bgA) bgA.style.zIndex = "0";
-    if (bgB) bgB.style.zIndex = "1";
   }
 
-  // ---------------------------
-  // 플레이어 표시: "아이디 / 이름" 슬래시 제거
-  // ---------------------------
-  function fixPlayerSlash() {
-    const combo = state.els.playerComboEl;
-    const idEl = state.els.playerIdEl;
-    const nameEl = state.els.playerNameEl;
+  // -------------------------
+  // ✅ 베팅 5단위 +/- 버튼이 없으면 자동 생성
+  // -------------------------
+  function ensureBetStepButtons() {
+    // 이미 있으면 끝
+    if (document.getElementById("btnBetMinus") && document.getElementById("btnBetPlus")) return;
 
-    // 1) 분리된 엘리먼트가 있으면 거기에 넣고 끝
-    if (idEl && nameEl) {
-      const pid = (localStorage.getItem(LS.PLAYER_ID) || "").trim();
-      const pname = (localStorage.getItem(LS.PLAYER_NAME) || "").trim();
-      if (pid) setText(idEl, pid);
-      if (pname) setText(nameEl, pname);
-      return;
-    }
+    // betValue 주변에 붙이기
+    const betValue = state.els.betValue;
+    if (!betValue) return;
 
-    // 2) 한 줄 텍스트 안에 "/"가 있으면 제거해서 줄바꿈 느낌으로 정리
-    if (combo) {
-      const t = combo.textContent || "";
-      if (t.includes("/")) {
-        const [a, b] = t.split("/").map((s) => s.trim());
-        combo.innerHTML = "";
-        const top = document.createElement("div");
-        const bottom = document.createElement("div");
-        top.textContent = a || "";
-        bottom.textContent = b || "";
-        combo.appendChild(top);
-        combo.appendChild(bottom);
-      }
-    }
+    const holder =
+      betValue.closest(".panel, .card, .stat, .box, .tile, .row") ||
+      betValue.parentElement ||
+      betValue;
+
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.gap = "10px";
+    wrap.style.marginTop = "10px";
+
+    const mkBtn = (id, text) => {
+      const b = document.createElement("button");
+      b.id = id;
+      b.type = "button";
+      b.textContent = text;
+      b.style.flex = "1";
+      b.style.height = "40px";
+      b.style.borderRadius = "12px";
+      b.style.border = "1px solid rgba(255,255,255,0.12)";
+      b.style.background = "rgba(0,0,0,0.18)";
+      b.style.color = "#e7ecff";
+      b.style.fontWeight = "700";
+      b.style.letterSpacing = "0.5px";
+      return b;
+    };
+
+    const minus = mkBtn("btnBetMinus", "-5");
+    const plus = mkBtn("btnBetPlus", "+5");
+
+    wrap.appendChild(minus);
+    wrap.appendChild(plus);
+
+    holder.appendChild(wrap);
+
+    minus.addEventListener("click", () => {
+      S.ui.setBet((state.bet || 10) - 5);
+    });
+    plus.addEventListener("click", () => {
+      S.ui.setBet((state.bet || 10) + 5);
+    });
   }
 
-  // ---------------------------
-  // 저장/로드
-  // ---------------------------
-  function loadState() {
-    state.wallet = num(localStorage.getItem(LS.WALLET), num(state.els.walletValue?.textContent, 0));
-    state.bet = clamp(num(localStorage.getItem(LS.BET), 10), 5, 5000);
-    state.auto = (localStorage.getItem(LS.AUTO) ?? "0") === "1";
-    S.ui.setWallet(state.wallet);
-    S.ui.setBet(state.bet);
+  // -------------------------
+  // ✅ 저장은 “베팅/오토”만 init에서, 지갑은 절대 저장 금지
+  // -------------------------
+  function loadStateSafe() {
+    const bet = num(localStorage.getItem(LS_KEYS.BET));
+    const auto = (localStorage.getItem(LS_KEYSளம்        Keys.AUTO) ?? "0") === "1";
+
+    state.bet = bet !== null ? clamp(Math.floor(bet), 5, 5000) : 10;
+    state.auto = auto;
+
+    setText(state.els.betValue, state.bet);
     if (state.els.btnAuto) state.els.btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
   }
 
-  function saveState() {
-    localStorage.setItem(LS.WALLET, String(Math.max(0, Math.floor(state.wallet))));
-    localStorage.setItem(LS.BET, String(Math.max(5, Math.floor(state.bet))));
-    localStorage.setItem(LS.AUTO, state.auto ? "1" : "0");
+  function saveAuto() {
+    localStorage.setItem(LS_KEYS.AUTO, state.auto ? "1" : "0");
   }
 
-  // ---------------------------
-  // 숫자 카운트업(이긴 느낌 연출)
-  // ---------------------------
-  function animateCount(el, from, to, ms = 900) {
+  // -------------------------
+  // ✅ 숫자 카운트업 연출
+  // -------------------------
+  function animateCount(el, from, to, ms = 800) {
     if (!el) return;
     const a = Math.floor(from);
     const b = Math.floor(to);
-    if (a === b) {
-      el.textContent = String(b);
-      return;
-    }
+    if (a === b) { el.textContent = String(b); return; }
+
     const t0 = performance.now();
     const tick = (t) => {
       const p = Math.min(1, (t - t0) / ms);
       const eased = 1 - Math.pow(1 - p, 3);
-      const v = Math.floor(a + (b - a) * eased);
-      el.textContent = String(v);
+      el.textContent = String(Math.floor(a + (b - a) * eased));
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }
 
-  // ---------------------------
-  // 스핀 동작
-  // ---------------------------
+  // -------------------------
+  // ✅ 스핀
+  // -------------------------
   async function doSpinOnce() {
     if (state.spinning) return;
     if (!S.game || typeof S.game.spin !== "function") return;
+
+    // wallet 모르면 “표시값”에서 읽어보되, 저장은 안 함
+    if (state.wallet === null) {
+      const displayed = num(state.els.walletValue?.textContent);
+      if (displayed !== null) state.wallet = displayed;
+    }
+
+    if (state.wallet === null) {
+      S.ui.setLastResult("UT 로딩중");
+      return;
+    }
 
     if (state.wallet < state.bet) {
       S.ui.setLastResult("UT 부족");
@@ -294,18 +384,21 @@ window.SLOT = window.SLOT || {};
     state.spinning = true;
 
     const before = state.wallet;
-    state.wallet = before - state.bet;
-    animateCount(state.els.walletValue, before, state.wallet, 250);
-    saveState();
+    const afterPayBet = before - state.bet;
 
-    // 게임 스핀(배경 현란은 game.js가 스핀 동안만 돌림)
+    // ✅ 여기서만 wallet 변화 저장(덮어쓰기 방지)
+    animateCount(state.els.walletValue, before, afterPayBet, 220);
+    state.wallet = afterPayBet;
+    localStorage.setItem(LS_KEYS.WALLET, String(state.wallet));
+
     const result = await S.game.spin({ bet: state.bet });
 
-    // payout 반영
-    const after = state.wallet + (result?.payout || 0);
-    animateCount(state.els.walletValue, state.wallet, after, result?.jackpot ? 3500 : 900);
-    state.wallet = after;
-    saveState();
+    const payout = Number(result?.payout || 0);
+    const final = state.wallet + payout;
+
+    animateCount(state.els.walletValue, state.wallet, final, result?.jackpot ? 3500 : 900);
+    state.wallet = final;
+    localStorage.setItem(LS_KEYS.WALLET, String(state.wallet));
 
     // 결과 텍스트: EVEN / WIN / LOSE
     if (result?.jackpot) {
@@ -320,68 +413,40 @@ window.SLOT = window.SLOT || {};
 
     state.spinning = false;
 
-    // AUTO
-    if (state.auto) {
-      setTimeout(() => doSpinOnce(), 350);
-    }
+    if (state.auto) setTimeout(doSpinOnce, 350);
   }
 
-  // ---------------------------
-  // 바인딩
-  // ---------------------------
   function bindUi() {
-    const { btnSpin, btnAuto, btnMinus, btnPlus } = state.els;
-
-    if (btnSpin) {
-      btnSpin.addEventListener("click", (e) => {
+    if (state.els.btnSpin) {
+      state.els.btnSpin.addEventListener("click", (e) => {
         e.preventDefault();
         doSpinOnce();
       });
     }
 
-    if (btnAuto) {
-      btnAuto.addEventListener("click", (e) => {
+    if (state.els.btnAuto) {
+      state.els.btnAuto.addEventListener("click", (e) => {
         e.preventDefault();
         state.auto = !state.auto;
-        btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
-        saveState();
+        state.els.btnAuto.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
+        saveAuto();
         if (state.auto && !state.spinning) doSpinOnce();
-      });
-    }
-
-    const step = 5;
-    if (btnMinus) {
-      btnMinus.addEventListener("click", (e) => {
-        e.preventDefault();
-        state.bet = clamp(state.bet - step, 5, 5000);
-        S.ui.setBet(state.bet);
-        saveState();
-      });
-    }
-
-    if (btnPlus) {
-      btnPlus.addEventListener("click", (e) => {
-        e.preventDefault();
-        state.bet = clamp(state.bet + step, 5, 5000);
-        S.ui.setBet(state.bet);
-        saveState();
       });
     }
   }
 
   function init() {
     grabEls();
-    relaxScrollLocks();
-    setupFlowLayout();
-    fixPlayerSlash();
+    setupFlowOnce();           // ✅ 순서: paytable → slot → panel
+    loadStateSafe();           // ✅ wallet 저장 금지
+    ensureBetStepButtons();    // ✅ -5 +5 없으면 생성
+    bindUi();
 
     // 릴 생성
-    try {
-      S.game?.buildReels?.();
-    } catch (_) {}
+    try { S.game?.buildReels?.(); } catch (_) {}
 
-    loadState();
-    bindUi();
+    // ✅ 이름/UT 자동 주입(가능한 모든 키에서 찾아서)
+    hydratePlayerAndWalletFromAnySource();
   }
 
   if (document.readyState === "loading") {
@@ -390,7 +455,6 @@ window.SLOT = window.SLOT || {};
     init();
   }
 
-  // 외부에서 호출 가능하게
   S.app = S.app || {};
   S.app.spin = doSpinOnce;
 
