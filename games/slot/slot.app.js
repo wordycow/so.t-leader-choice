@@ -1,338 +1,447 @@
-// games/slot/slot.app.js
-(() => {
-  const $ = (id) => document.getElementById(id);
+/* games/slot/slot.app.js */
+window.SLOT = window.SLOT || {};
+(function(S){
+  "use strict";
 
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[m]));
+  const $ = (id)=> document.getElementById(id);
 
-  function setText(id, v){
-    const el = $(id);
-    if (el) el.textContent = String(v ?? "");
-  }
-
-  function setHTML(id, html){
-    const el = $(id);
-    if (el) el.innerHTML = html;
-  }
-
-  function setNote(msg){
-    const el = $("uiNote");
-    if (el) el.textContent = msg || "";
-  }
-
-  function updateLocalStorageBalance(newBal){
-    try{
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (!raw) return;
-      const u = JSON.parse(raw);
-      u.balance = Number(newBal || 0);
-      localStorage.setItem("uniqueCurrentUser", JSON.stringify(u));
-      localStorage.setItem("myUtPoints", String(Number(newBal || 0)));
-    }catch(e){}
-  }
-
-  function setPlayerBox(id, name){
-    // ✅ “id / name” 제거 → 2줄
-    setHTML("uiPlayer", `
-      <div style="font-weight:800; letter-spacing:0.2px;">${esc(id)}</div>
-      <div style="opacity:0.9; margin-top:2px;">${esc(name || "")}</div>
-    `);
-  }
-
-  // ✅ 베팅 로컬 상태
-  const BET_KEY = "slotBetUt";
-  function getBet(cfg){
-    const saved = Number(localStorage.getItem(BET_KEY));
-    const def = Math.floor(Number(cfg?.SLOT_BET_UT) || 10);
-    const min = Math.floor(Number(cfg?.SLOT_BET_MIN) || 10);
-    const max = Math.floor(Number(cfg?.SLOT_BET_MAX) || 1000);
-    let bet = Number.isFinite(saved) ? saved : def;
-    bet = Math.max(min, Math.min(max, bet));
-    return bet;
-  }
-  function setBet(bet, cfg){
-    const min = Math.floor(Number(cfg?.SLOT_BET_MIN) || 10);
-    const max = Math.floor(Number(cfg?.SLOT_BET_MAX) || 1000);
-    bet = Math.max(min, Math.min(max, Math.floor(bet)));
-    localStorage.setItem(BET_KEY, String(bet));
-    setText("uiBet", bet);
-    return bet;
-  }
-
-  function ensureBetButtons(cfg){
-    if ($("betMinus") || $("betPlus")) return;
-
-    const betEl = $("uiBet");
-    if (!betEl) return;
-
-    const host =
-      betEl.closest("[data-bet-host]") ||
-      betEl.parentElement;
-
-    if (!host) return;
-
-    const step = 5; // ✅ 유송 요청: 5단위
-    const row = document.createElement("div");
-    row.style.display = "flex";
-    row.style.gap = "10px";
-    row.style.marginTop = "10px";
-    row.style.alignItems = "center";
-
-    row.innerHTML = `
-      <button id="betMinus" type="button"
-        style="flex:1; padding:10px 12px; border-radius:14px;
-               border:1px solid rgba(255,255,255,0.14);
-               background:rgba(0,0,0,0.20); color:#e7ecff; font-weight:800;">
-        -${step}
-      </button>
-      <button id="betPlus" type="button"
-        style="flex:1; padding:10px 12px; border-radius:14px;
-               border:1px solid rgba(255,255,255,0.14);
-               background:rgba(0,0,0,0.20); color:#e7ecff; font-weight:800;">
-        +${step}
-      </button>
-    `;
-
-    host.appendChild(row);
-
-    $("betMinus").addEventListener("click", () => {
-      const cur = Number($("uiBet")?.textContent || 0);
-      setBet(cur - step, cfg);
-    });
-    $("betPlus").addEventListener("click", () => {
-      const cur = Number($("uiBet")?.textContent || 0);
-      setBet(cur + step, cfg);
-    });
-  }
-
-  function findButtonByText(txt){
-    const buttons = Array.from(document.querySelectorAll("button"));
-    const t = String(txt).toLowerCase();
-    return buttons.find(b => String(b.textContent||"").trim().toLowerCase() === t)
-        || buttons.find(b => String(b.textContent||"").toLowerCase().includes(t))
-        || null;
-  }
-
-  // ✅ 자정까지 티커 유지(로컬 저장)
-  const TICKER_KEY = "slotJackpotTickerV1";
-  function nextMidnightMs(){
-    const d = new Date();
-    d.setHours(24,0,0,0); // 로컬이 서울이면 그대로 “자정”
-    return d.getTime();
-  }
-  function setJackpotTicker(name){
-    const text = `${name}님이 잭팟이 터지셨습니다. 축하드립니다.`;
-    localStorage.setItem(TICKER_KEY, JSON.stringify({
-      text,
-      expiresAt: nextMidnightMs()
-    }));
-    showJackpotTicker();
-  }
-  function showJackpotTicker(){
-    let payload = null;
-    try{ payload = JSON.parse(localStorage.getItem(TICKER_KEY) || "null"); }catch(e){}
-    if (!payload || !payload.text || !payload.expiresAt) return;
-
-    if (Date.now() > Number(payload.expiresAt)){
-      localStorage.removeItem(TICKER_KEY);
-      return;
-    }
-
-    // 상단 타이틀 영역에 얹기 (없으면 body 상단)
-    let bar = document.getElementById("jackpotTicker");
-    if (!bar){
-      bar = document.createElement("div");
-      bar.id = "jackpotTicker";
-      bar.style.position = "fixed";
-      bar.style.left = "0";
-      bar.style.right = "0";
-      bar.style.top = "0";
-      bar.style.zIndex = "9999";
-      bar.style.pointerEvents = "none";
-      bar.style.overflow = "hidden";
-      bar.style.height = "34px";
-      bar.style.background = "rgba(0,0,0,0.25)";
-      bar.style.borderBottom = "1px solid rgba(255,255,255,0.10)";
-      document.body.appendChild(bar);
-
-      const inner = document.createElement("div");
-      inner.id = "jackpotTickerInner";
-      inner.style.whiteSpace = "nowrap";
-      inner.style.display = "inline-block";
-      inner.style.paddingLeft = "100%";
-      inner.style.fontWeight = "900";
-      inner.style.letterSpacing = "0.2px";
-      inner.style.lineHeight = "34px";
-      inner.style.color = "#fbbf24";
-      inner.style.textShadow = "0 6px 18px rgba(0,0,0,0.6)";
-      inner.style.animation = "tickerMove 12s linear infinite";
-      inner.textContent = payload.text;
-      bar.appendChild(inner);
-
-      const style = document.createElement("style");
-      style.textContent = `
-        @keyframes tickerMove {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-120%); }
-        }
-        body { padding-top: 34px; } /* 티커가 덮지 않게 */
-      `;
-      document.head.appendChild(style);
-    } else {
-      const inner = document.getElementById("jackpotTickerInner");
-      if (inner) inner.textContent = payload.text;
-    }
-  }
-
-  async function boot(){
-    // 세션 체크
-    const u = window.SLOT_API?.getLocalUser?.();
-    if (!u){
-      location.href = "../the-unique-gate.html";
-      return;
-    }
-
-    // 기본 표시(즉시)
-    setPlayerBox(u.id, u.name || "-");
-    setText("uiWallet", Number(u.balance||0));
-    setText("uiJackpot", "…");
-    setText("uiResult", "READY");
-    setNote("");
-
-    // 기본 그리드(즉시)
-    window.SLOT?.game?.buildReels?.();
-
-    // 티커 복원
-    showJackpotTicker();
-
-    // 시트에서 최신값 로드
-    let cfg = null;
-    try{
-      const r = await window.SLOT_API.getSlotState();
-      if (!r || !r.ok || !r.user){
-        setNote("시트에서 유저 정보를 불러오지 못했습니다.");
-        return;
-      }
-
-      cfg = r.config || null;
-      window.SLOT_CONFIG = cfg;
-      window.SLOT?.game?.setConfig?.(cfg);
-
-      setPlayerBox(r.user.id, r.user.name || "-");
-      setText("uiWallet", Number(r.user.balance||0));
-      setText("uiJackpot", Number(r.jackpotTotal || 0));
-
-      updateLocalStorageBalance(Number(r.user.balance||0));
-
-      // 베팅 표시 + 버튼
-      const bet = getBet(cfg);
-      setText("uiBet", bet);
-      ensureBetButtons(cfg);
-
-    }catch(e){
-      setNote("네트워크 오류로 유저 정보를 불러오지 못했습니다.");
-      return;
-    }
-
-    // ✅ 버튼 연결
-    const spinBtn = findButtonByText("SPIN");
-    const autoBtn = findButtonByText("AUTO");
-
-    let autoOn = false;
-    let spinning = false;
-
-    async function doSpin(){
-      if (spinning) return;
-      spinning = true;
-
-      const bet = Number($("uiBet")?.textContent || 0);
-      const walletNow = Number($("uiWallet")?.textContent || 0);
-      if (walletNow < bet){
-        setNote("잔액 부족");
-        spinning = false;
-        autoOn = false;
-        return;
-      }
-
-      // ✅ “-10 UT” 같은 잔챙이 출력은 안 남김 (LOSE면 note 비움)
-      setText("uiResult", "SPINNING");
-      setNote("");
-
-      // 체감용: 일단 UI에서만 선차감(서버 반영은 끝나고 commit)
-      setText("uiWallet", walletNow - bet);
-
-      const out = await window.SLOT?.game?.spin?.({ bet });
-      if (!out || !out.ok){
-        setNote("스핀 실패(리로드 후 재시도)");
-        // 안전하게 새로고침
-        try{ await window.SLOT_REFRESH?.(); }catch(e){}
-        spinning = false;
-        return;
-      }
-
-      // 결과 커밋(시트 반영)
-      await window.SLOT_COMMIT_RESULT?.({
-        netDelta: out.netDelta,
-        lossAmount: out.lossAmount,
-        resultText: out.resultText
-      });
-
-      // WIN/JACKPOT만 표시(LOSE는 조용히)
-      if (out.jackpot){
-        const name = (window.SLOT_API?.getLocalUser?.()?.name) || "";
-        setJackpotTicker(name || "누군가");
-        setNote("JACKPOT!");
-      } else if (out.payout > 0){
-        setNote(`WIN +${Math.max(0, out.netDelta)} UT`);
-      } else {
-        setNote("");
-      }
-
-      spinning = false;
-
-      if (autoOn){
-        setTimeout(doSpin, 450);
-      }
-    }
-
-    if (spinBtn){
-      spinBtn.addEventListener("click", () => {
-        autoOn = false; // 수동 스핀 누르면 자동 끔
-        doSpin();
-      }, { passive:true });
-    }
-
-    if (autoBtn){
-      autoBtn.addEventListener("click", () => {
-        autoOn = !autoOn;
-        if (autoOn) doSpin();
-      }, { passive:true });
-    }
-  }
-
-  // ✅ 스핀 끝난 직후 “딱 여기만” 호출하면 된다.
-  window.SLOT_COMMIT_RESULT = async function({ netDelta = 0, lossAmount = 0, resultText = "" } = {}){
-    const setTextSafe = (id, v) => { const el = $(id); if (el) el.textContent = String(v ?? ""); };
-
-    try{
-      const r = await window.SLOT_API.commitSlotSpin({ netDelta, lossAmount });
-      if (!r || !r.ok || !r.user){
-        setNote("시트 반영 실패. (잠시 후 다시)");
-        return;
-      }
-
-      setTextSafe("uiWallet", Number(r.user.balance||0));
-      setTextSafe("uiJackpot", Number(r.jackpotTotal||0));
-      if (resultText) setTextSafe("uiResult", resultText);
-
-      updateLocalStorageBalance(Number(r.user.balance||0));
-
-    }catch(e){
-      setNote("시트 반영 중 네트워크 오류.");
-    }
+  const state = {
+    ut: 500,
+    jackpot: 20,
+    bet: 10,
+    auto: false,
+    busy: false,
+    playerId: "wordycow",
+    playerName: "이유송"
   };
 
-  window.SLOT_REFRESH = boot;
-  document.addEventListener("DOMContentLoaded", boot);
-})();
+  function fmt(n){
+    const x = Number(n)||0;
+    return x.toLocaleString("en-US");
+  }
+
+  function clampBet(n){
+    n = Math.max(5, Math.min(5000, Math.floor((Number(n)||10)/5)*5));
+    if (n % 5 !== 0) n = Math.round(n/5)*5;
+    return n;
+  }
+
+  function setNote(text){
+    if (S.ui && S.ui.setNote) S.ui.setNote(text);
+    else { const el = $("uiNote"); if (el) el.textContent = text; }
+  }
+
+  function setBet(n){
+    state.bet = clampBet(n);
+    if (S.ui && S.ui.setBet) S.ui.setBet(fmt(state.bet));
+    else { const el = $("uiBet"); if (el) el.textContent = fmt(state.bet); }
+  }
+
+  function hardSetWalletText(v){
+    const el = $("uiWallet");
+    if (el) el.textContent = fmt(v);
+  }
+
+  function animateNumber(el, from, to, ms){
+    if (!el) return;
+    const a = Number(from)||0;
+    const b = Number(to)||0;
+    const t0 = performance.now();
+    const d = b - a;
+
+    const ease = (p)=> 1 - Math.pow(1-p, 3);
+
+    function tick(t){
+      const p = Math.min(1, (t - t0) / ms);
+      const v = Math.round(a + d * ease(p));
+      el.textContent = fmt(v);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ✅ 족보 UI 채우기 (slot.html의 #uiPaytable)
+  function renderPaytable(){
+    const wrap = $("uiPaytable");
+    if (!wrap || !S.game || !S.game.getPaytable) return;
+
+    const { PAY, SYMBOL_IDS } = S.game.getPaytable();
+    const rows = [];
+
+    for (const sym of SYMBOL_IDS){
+      const p = PAY[sym] || {};
+      const isJack = (sym === "pro10");
+      const line = `
+        <div class="ptItem">
+          <div class="ptLeft">
+            <span class="badge">${sym.toUpperCase()}</span>
+            <img src="${(S.IMG_PATH ? S.IMG_PATH(sym) : `img/slot/${sym}.png`)}" alt="" style="width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));">
+          </div>
+          <div class="ptRight">
+            <div class="ptLine">2개: <b>EVEN</b> (x${p[2] ?? 1})</div>
+            <div class="ptLine">3개: x${p[3] ?? 0}</div>
+            <div class="ptLine">4개: x${p[4] ?? 0}</div>
+            <div class="ptLine">${isJack ? "5개: <b>JACKPOT</b>" : `5개: x${p[5] ?? 0}`}</div>
+          </div>
+        </div>
+      `;
+      rows.push(line);
+    }
+
+    wrap.innerHTML = `<div class="paytable">${rows.join("")}</div>`;
+  }
+
+  // ✅ 잭팟 티커(자정까지 유지)
+  function ensureJackpotTicker(){
+    if ($("jackpotTicker")) return;
+
+    const bar = document.createElement("div");
+    bar.id = "jackpotTicker";
+    bar.style.position = "fixed";
+    bar.style.top = "0";
+    bar.style.left = "0";
+    bar.style.right = "0";
+    bar.style.zIndex = "9999";
+    bar.style.pointerEvents = "none";
+    bar.style.padding = "10px 0";
+    bar.style.background = "rgba(0,0,0,0.45)";
+    bar.style.backdropFilter = "blur(10px)";
+    bar.style.borderBottom = "1px solid rgba(255,255,255,0.12)";
+    bar.style.display = "none";
+    bar.style.overflow = "hidden";
+
+    const inner = document.createElement("div");
+    inner.style.whiteSpace = "nowrap";
+    inner.style.display = "inline-block";
+    inner.style.willChange = "transform";
+    inner.style.paddingLeft = "100%";
+    inner.style.animation = "tickerMove 18s linear infinite";
+    inner.style.color = "#fff";
+    inner.style.fontWeight = "800";
+    inner.style.textShadow = "0 10px 30px rgba(0,0,0,.6)";
+    inner.id = "jackpotTickerText";
+
+    const st = document.createElement("style");
+    st.textContent = `
+      @keyframes tickerMove { 0%{ transform:translateX(0);} 100%{ transform:translateX(-100%);} }
+    `;
+    document.head.appendChild(st);
+
+    bar.appendChild(inner);
+    document.body.appendChild(bar);
+  }
+
+  function showJackpotTicker(name){
+    ensureJackpotTicker();
+    const bar = $("jackpotTicker");
+    const text = $("jackpotTickerText");
+    if (!bar || !text) return;
+
+    text.textContent = `${name}님이 잭팟이 터지셨습니다. 축하드립니다.  🎉🎉🎉`;
+    bar.style.display = "block";
+
+    // 자정까지 유지
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    const ttl = midnight.getTime() - now.getTime();
+
+    localStorage.setItem("slotJackpotTicker", JSON.stringify({
+      name,
+      until: midnight.getTime()
+    }));
+
+    setTimeout(() => {
+      const saved = JSON.parse(localStorage.getItem("slotJackpotTicker") || "null");
+      if (!saved || Date.now() > saved.until){
+        bar.style.display = "none";
+        localStorage.removeItem("slotJackpotTicker");
+      }
+    }, Math.min(ttl, 60*1000)); // 1분마다 한번씩만 체크
+  }
+
+  function restoreJackpotTicker(){
+    ensureJackpotTicker();
+    const saved = JSON.parse(localStorage.getItem("slotJackpotTicker") || "null");
+    if (!saved) return;
+    if (Date.now() > saved.until){
+      localStorage.removeItem("slotJackpotTicker");
+      return;
+    }
+    showJackpotTicker(saved.name);
+  }
+
+  // ✅ 승리/잭팟 오버레이(잭팟 60초)
+  function ensureOverlay(){
+    if ($("slotCelebrate")) return;
+
+    const st = document.createElement("style");
+    st.textContent = `
+      #slotCelebrate{
+        position:fixed; inset:0; z-index:10000;
+        display:none; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.55);
+        backdrop-filter: blur(10px);
+      }
+      #slotCelebrate .card{
+        width:min(720px, 92vw);
+        border-radius:24px;
+        border:1px solid rgba(255,255,255,.16);
+        background: radial-gradient(circle at top, rgba(255,255,255,.12), rgba(0,0,0,.35));
+        box-shadow: 0 40px 120px rgba(0,0,0,.55);
+        padding:22px;
+        position:relative;
+        overflow:hidden;
+        transform: translateY(8px) scale(.98);
+        animation: popIn .22s ease forwards;
+      }
+      #slotCelebrate .title{
+        font-weight:900; letter-spacing:.06em;
+        font-size:40px;
+      }
+      #slotCelebrate .amt{
+        margin-top:10px;
+        font-weight:900;
+        font-size:46px;
+      }
+      #slotCelebrate .sub{
+        margin-top:8px;
+        opacity:.9;
+        font-weight:700;
+      }
+      #slotCelebrate .close{
+        position:absolute; right:14px; top:14px;
+        border-radius:14px; padding:10px 12px;
+        border:1px solid rgba(255,255,255,.18);
+        background:rgba(0,0,0,.25);
+        color:#fff; font-weight:800;
+        cursor:pointer;
+      }
+      #slotCelebrate.jackpot .card{
+        background: radial-gradient(circle at top, rgba(255,215,0,.18), rgba(0,0,0,.35));
+      }
+      #slotCelebrate.jackpot .title{
+        text-shadow: 0 0 24px rgba(255,215,0,.45);
+      }
+      #slotCelebrate .spark{
+        position:absolute; inset:-40%;
+        background:
+          radial-gradient(circle, rgba(255,255,255,.18) 0 2px, transparent 3px) 0 0 / 22px 22px;
+        opacity:.18;
+        animation: sparkMove 1.2s linear infinite;
+        pointer-events:none;
+      }
+      @keyframes sparkMove { from{ transform:translate3d(0,0,0) rotate(0deg);} to{ transform:translate3d(40px,40px,0) rotate(8deg);} }
+      @keyframes popIn { to{ transform: translateY(0) scale(1);} }
+    `;
+    document.head.appendChild(st);
+
+    const ov = document.createElement("div");
+    ov.id = "slotCelebrate";
+    ov.innerHTML = `
+      <div class="spark"></div>
+      <div class="card">
+        <button class="close">닫기</button>
+        <div class="title" id="slotCeleTitle">WIN</div>
+        <div class="amt" id="slotCeleAmt">+0 UT</div>
+        <div class="sub" id="slotCeleSub"></div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+
+    ov.querySelector(".close").addEventListener("click", () => hideOverlay());
+    ov.addEventListener("click", (e)=>{ if (e.target === ov) hideOverlay(); });
+  }
+
+  let overlayTimer = null;
+  function showOverlay({ title, amountText, subText, jackpot=false, ms=2500 }){
+    ensureOverlay();
+    const ov = $("slotCelebrate");
+    if (!ov) return;
+
+    ov.classList.toggle("jackpot", !!jackpot);
+    $("slotCeleTitle").textContent = title;
+    $("slotCeleAmt").textContent = amountText;
+    $("slotCeleSub").textContent = subText || "";
+
+    ov.style.display = "flex";
+
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(() => {
+      // 잭팟은 기본 60초지만, 원하면 클릭으로 닫을 수 있게 둠
+      hideOverlay();
+    }, ms);
+  }
+
+  function hideOverlay(){
+    const ov = $("slotCelebrate");
+    if (ov) ov.style.display = "none";
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = null;
+  }
+
+  async function onSpin(){
+    if (state.busy) return;
+    state.busy = true;
+    setNote("SPINNING...");
+
+    const bet = state.bet;
+    if (state.ut < bet){
+      setNote("NOT ENOUGH UT");
+      state.busy = false;
+      return;
+    }
+
+    // 잭팟 풀 누적(가볍게)
+    state.jackpot = Math.round((state.jackpot + bet * 0.1) * 10) / 10;
+
+    // 실제 스핀
+    const res = await S.game.spin({ bet });
+
+    // UT 반영(로컬)
+    const prevUt = state.ut;
+    const newUt = state.ut - bet + (res.payout || 0);
+    state.ut = newUt;
+
+    // UI 반영
+    const walletEl = $("uiWallet");
+    if (walletEl){
+      // 승리/잭팟 때만 카운트업(감성)
+      if (newUt >= prevUt) animateNumber(walletEl, prevUt, newUt, res.jackpot ? 2400 : 900);
+      else walletEl.textContent = fmt(newUt);
+    } else if (S.ui && S.ui.setWallet){
+      S.ui.setWallet(fmt(newUt));
+    }
+
+    if (S.ui && S.ui.setJackpot) S.ui.setJackpot(fmt(state.jackpot));
+    else { const je = $("uiJackpot"); if (je) je.textContent = fmt(state.jackpot); }
+
+    // ✅ 결과 텍스트 규칙
+    if (res.jackpot){
+      setNote("JACKPOT !!!");
+      // 잭팟 터지면 풀 리셋(연출용)
+      state.jackpot = 20;
+      if (S.ui && S.ui.setJackpot) S.ui.setJackpot(fmt(state.jackpot));
+
+      showJackpotTicker(state.playerName);
+      showOverlay({
+        title: "JACKPOT",
+        amountText: `+${fmt(Math.max(0, res.netDelta||0))} UT`,
+        subText: "축하 60초 연출 (클릭하면 닫힘)",
+        jackpot: true,
+        ms: 60_000
+      });
+    } else if ((res.payout||0) > 0 && (res.netDelta||0) === 0){
+      // 2개 본전: EVEN
+      setNote("EVEN");
+      showOverlay({
+        title: "EVEN",
+        amountText: "+0 UT",
+        subText: "본전 HIT",
+        jackpot: false,
+        ms: 1400
+      });
+    } else if ((res.payout||0) > 0){
+      setNote(`WIN +${fmt(Math.max(0, res.netDelta||0))} UT`);
+      showOverlay({
+        title: "WIN",
+        amountText: `+${fmt(Math.max(0, res.netDelta||0))} UT`,
+        subText: "좋아. 계속 간다.",
+        jackpot: false,
+        ms: 2200
+      });
+    } else {
+      setNote("LOSE");
+      // LOSE는 오버레이 안 띄움(짜증 덜 나게)
+    }
+
+    // 서버 기록(있으면)
+    try{
+      if (S.api && S.api.commitSlotSpin){
+        await S.api.commitSlotSpin({
+          bet,
+          payout: res.payout||0,
+          net: res.netDelta||0,
+          jackpot: !!res.jackpot
+        });
+      }
+    }catch(e){}
+
+    state.busy = false;
+  }
+
+  function bindUI(){
+    // player 표시: slash 절대 안 씀(두 줄)
+    const p = $("uiPlayer");
+    if (p) p.innerHTML = `<div>${state.playerId}</div><div style="opacity:.85;font-weight:700">${state.playerName}</div>`;
+
+    if (S.ui){
+      S.ui.setWallet(fmt(state.ut));
+      S.ui.setJackpot(fmt(state.jackpot));
+      S.ui.setBet(fmt(state.bet));
+      S.ui.setAuto(false);
+      S.ui.setSound(S.game.getSoundEnabled());
+      S.ui.setNote("READY");
+    } else {
+      hardSetWalletText(state.ut);
+      const je = $("uiJackpot"); if (je) je.textContent = fmt(state.jackpot);
+      const be = $("uiBet"); if (be) be.textContent = fmt(state.bet);
+      setNote("READY");
+    }
+
+    // 버튼
+    const btnSpin = $("btnSpin");
+    const btnAuto = $("btnAuto");
+    const btnSound= $("btnSound");
+    const btnBetDown = $("btnBetDown");
+    const btnBetUp   = $("btnBetUp");
+    const btnMain = $("btnMain");
+
+    if (btnSpin) btnSpin.addEventListener("click", onSpin);
+
+    if (btnAuto) btnAuto.addEventListener("click", async ()=>{
+      state.auto = !state.auto;
+      if (S.ui && S.ui.setAuto) S.ui.setAuto(state.auto);
+
+      // auto loop
+      while(state.auto){
+        await onSpin();
+        await new Promise(r=>setTimeout(r, 450));
+      }
+    });
+
+    if (btnSound) btnSound.addEventListener("click", ()=>{
+      const on = !S.game.getSoundEnabled();
+      S.game.setSoundEnabled(on);
+      if (S.ui && S.ui.setSound) S.ui.setSound(on);
+    });
+
+    if (btnBetDown) btnBetDown.addEventListener("click", ()=> setBet(state.bet - 5));
+    if (btnBetUp)   btnBetUp.addEventListener("click", ()=> setBet(state.bet + 5));
+
+    if (btnMain) btnMain.addEventListener("click", ()=>{
+      location.href = "../index.html";
+    });
+  }
+
+  async function init(){
+    // 릴 만들기
+    if (S.game && S.game.buildReels) S.game.buildReels();
+
+    // 족보 그리기
+    renderPaytable();
+
+    // 잭팟 티커 복구
+    restoreJackpotTicker();
+
+    // UI 연결
+    bindUI();
+  }
+
+  // 시작
+  if (document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+})(window.SLOT);
