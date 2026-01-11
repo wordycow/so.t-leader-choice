@@ -1,120 +1,115 @@
-// games/slot/slot.game.js
+/* games/slot/slot.game.js */
+/* 릴(3x5) 렌더링 마운트가 없어서 죽는 문제 해결 + 기본 렌더 제공 */
+
 window.SLOT = window.SLOT || {};
 (function (S) {
 
-  const reelsEl = document.getElementById("reels");
-  const reels = [];
-
-  function createSymbol(sym){
-    const d = document.createElement("div");
-    d.className = "symbol";
-    const img = document.createElement("img");
-    img.src = S.IMG_PATH(sym);
-    img.alt = sym;
-    d.appendChild(img);
-    return d;
+  // ✅ 릴을 붙일 마운트 자동 탐색
+  function findMount() {
+    return (
+      document.getElementById("reels") ||
+      document.getElementById("reelMount") ||
+      document.getElementById("slotStage") ||
+      document.getElementById("stage") ||
+      document.querySelector("[data-slot-stage]") ||
+      document.querySelector(".slot-stage") ||
+      document.querySelector(".stage") ||
+      null
+    );
   }
 
-  function buildReels(){
-    reelsEl.innerHTML = "";
-    reels.length = 0;
+  // ✅ 없으면 “오른쪽 큰 패널”로 보이는 곳에 reels를 만들어 붙임
+  function ensureMount() {
+    let mount = findMount();
+    if (mount) return mount;
 
-    for(let i=0; i<S.NUM_REELS; i++){
-      const col = document.createElement("div");
-      col.className = "reel-col";
+    // 오른쪽 패널로 추정되는 후보들
+    const candidate =
+      document.getElementById("gameStage") ||
+      document.querySelector(".right-panel") ||
+      document.querySelector(".panel-right") ||
+      document.querySelector(".stage-wrap") ||
+      document.querySelector(".board") ||
+      document.body;
 
-      const strip = document.createElement("div");
-      strip.className = "reel-strip";
+    mount = document.createElement("div");
+    mount.id = "reels";
+    mount.style.width = "100%";
+    mount.style.height = "100%";
+    mount.style.display = "flex";
+    mount.style.alignItems = "center";
+    mount.style.justifyContent = "center";
 
-      for(let k=0; k<12; k++){
-        strip.appendChild(createSymbol(S.SYMBOLS[Math.floor(Math.random()*S.SYMBOLS.length)]));
-      }
-
-      col.appendChild(strip);
-      reelsEl.appendChild(col);
-
-      reels.push({ el: strip, offset:0, speed:0, running:false, h:0 });
-    }
+    candidate.appendChild(mount);
+    return mount;
   }
 
-  function measure(){
-    const sample = reelsEl.querySelector(".symbol");
-    if(!sample) return;
-
-    const h = sample.getBoundingClientRect().height;
-    const stripStyle = getComputedStyle(reelsEl.querySelector(".reel-strip"));
-    const gap = parseFloat(stripStyle.gap || "0");
-
-    reels.forEach(r => {
-      r.h = h + gap;
-      r.offset = 0;
-      r.el.style.transform = `translateY(0px)`;
-    });
+  // ✅ 심볼 이미지 경로 기본값 (없으면 자동 보정)
+  function imgPath(id) {
+    if (typeof S.IMG_PATH === "function") return S.IMG_PATH(id);
+    // slot.html 위치가 /games/slot.html 이면 img/slot/... 이 맞음
+    return `img/slot/${id}.png`;
   }
 
-  function animate(){
-    reels.forEach(r => {
-      if(!r.running) return;
-      r.offset += r.speed;
-      r.el.style.transform = `translateY(${r.offset}px)`;
+  // ✅ 3x5 기본 그리드 렌더
+  function renderGrid(grid) {
+    const mount = ensureMount();
+    if (!mount) return;
 
-      if(r.offset >= r.h){
-        r.offset -= r.h;
-        const last = r.el.lastElementChild;
-        if(last) r.el.removeChild(last);
-        r.el.prepend(createSymbol(S.SYMBOLS[Math.floor(Math.random()*S.SYMBOLS.length)]));
-      }
-    });
-    requestAnimationFrame(animate);
+    // grid 없으면 빈 그리드
+    const g = Array.isArray(grid) ? grid : [
+      ["star1","star2","star3","pro1","pro5"],
+      ["star2","star3","pro1","pro5","pro10"],
+      ["star1","star2","star3","pro1","pro5"]
+    ];
+
+    // (기존 CSS가 없어도 보이게 최소 스타일을 인라인로 같이 줌)
+    mount.innerHTML = `
+      <div class="slot-grid" style="
+        width: 100%;
+        height: 100%;
+        max-width: 900px;
+        aspect-ratio: 16/9;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 12px;
+        padding: 18px;
+        box-sizing: border-box;
+      ">
+        ${g.flatMap((row, r) =>
+          row.map((id, c) => `
+            <div class="slot-cell" data-r="${r}" data-c="${c}" style="
+              border-radius: 18px;
+              background: rgba(0,0,0,0.18);
+              border: 1px solid rgba(255,255,255,0.10);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              overflow:hidden;
+            ">
+              <img alt="${id}" src="${imgPath(id)}" style="
+                width: 80%;
+                height: 80%;
+                object-fit: contain;
+                filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
+              "/>
+            </div>
+          `)
+        ).join("")}
+      </div>
+    `;
   }
 
-  function startSpinVisual(){
-    reelsEl.classList.add("spinning");
-    reels.forEach((r, i) => {
-      r.running = true;
-      r.speed = 26 + i * 2;
-      r.el.style.transition = "none";
-    });
+  // ✅ 초기 릴 생성(기존 buildReels 호출부 호환)
+  function buildReels() {
+    // 여기서 null이면 죽던 문제를 제거
+    renderGrid(null);
   }
 
-  function stopSpinVisual(){
-    reelsEl.classList.remove("spinning");
-    reels.forEach(r => r.running = false);
-  }
+  // 외부에서 쓰기 좋게 노출
+  S.game = S.game || {};
+  S.game.buildReels = buildReels;
+  S.game.renderGrid = renderGrid;
 
-  function stopReel(i, resultSyms){
-    const r = reels[i];
-    r.running = false;
-
-    r.el.innerHTML = "";
-
-    // buffer
-    for(let k=0; k<3; k++) r.el.appendChild(createSymbol(S.SYMBOLS[Math.floor(Math.random()*S.SYMBOLS.length)]));
-
-    // result (top/mid/bot)
-    r.el.appendChild(createSymbol(resultSyms[0]));
-    r.el.appendChild(createSymbol(resultSyms[1]));
-    r.el.appendChild(createSymbol(resultSyms[2]));
-
-    // buffer
-    for(let k=0; k<3; k++) r.el.appendChild(createSymbol(S.SYMBOLS[Math.floor(Math.random()*S.SYMBOLS.length)]));
-
-    // snap to show result rows (index 3,4,5)
-    const target = -(r.h * 3);
-    r.el.style.transition = "none";
-    r.el.style.transform = `translateY(${target + 18}px)`;
-
-    requestAnimationFrame(() => {
-      r.el.style.transition = "transform 0.2s ease-out";
-      r.el.style.transform = `translateY(${target}px)`;
-    });
-  }
-
-  // init
-  buildReels();
-  setTimeout(measure, 120);
-  window.addEventListener("resize", () => setTimeout(measure, 200));
-  requestAnimationFrame(animate);
-
-  S.game = { reelsEl, buildReels, measure, startSpinVisual, stopSpinVisual, stopReel, reels };
 })(window.SLOT);
