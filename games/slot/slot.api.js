@@ -1,10 +1,11 @@
 // games/slot/slot.api.js
 (() => {
+  // ✅ 고정: 기존 프로젝트 동일
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
   const WORKER_BASE_URL   = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
-  // ✅ 슬롯은 Apps Script에만 액션이 있으니, 워커 404 치지 말고 바로 JSONP로 보낸다.
-  const SLOT_ACTIONS = new Set(["getSlotState", "slotCommit"]);
+  // ✅ 슬롯 전용 액션은 워커를 치지 말고 JSONP(앱스스크립트)로 고정 → 404 찌꺼기 제거
+  const SLOT_ONLY_ACTIONS = new Set(["getSlotState", "slotCommit"]);
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -63,6 +64,9 @@
         credentials: "omit"
       });
 
+      // ✅ r.ok 아니면(404 포함) 무조건 throw → 폴백 타게
+      if (!r.ok) throw new Error(`worker_http_${r.status}`);
+
       const js = await r.json().catch(()=>null);
       if (!js) throw new Error("worker_bad_json");
       return js;
@@ -72,11 +76,10 @@
   }
 
   async function api(action, params = {}) {
+    // ✅ 슬롯은 워커 접근 자체를 안 함
+    if (SLOT_ONLY_ACTIONS.has(action)) return apiJSONP(action, params);
+
     const force = new URLSearchParams(location.search).get("api");
-
-    // ✅ 슬롯 액션은 무조건 legacy(JSONP)
-    if (SLOT_ACTIONS.has(action)) return apiJSONP(action, params);
-
     if (force === "legacy") return apiJSONP(action, params);
     if (force === "worker") return apiWorker(action, params, 20000);
 
