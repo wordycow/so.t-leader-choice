@@ -17,7 +17,7 @@ window.SLOT = window.SLOT || {};
     pro6:3, pro7:2.5, pro8:2, pro9:1.5, pro10:1
   };
 
-  // ✅ 2개는 "EVEN(본전)" = 배팅*1
+  // ✅ 2개 = EVEN(본전) = x1
   const PAY = {
     star1:{2:1,3:2,4:5,5:12},
     star2:{2:1,3:2.5,4:6,5:15},
@@ -34,7 +34,7 @@ window.SLOT = window.SLOT || {};
     pro10:{2:1,3:15,4:40,5:100}
   };
 
-  // ✅ bg1~bg5 PNG로 고정
+  // ✅ bg1~bg5 PNG
   const BG_LIST_DEFAULT = [
     "img/slot/bg1.png",
     "img/slot/bg2.png",
@@ -66,7 +66,7 @@ window.SLOT = window.SLOT || {};
     audio: {}
   };
 
-  // ✅ "큰 컨테이너(stage)" 절대 잡지 말기 (UI 지워지는 원인)
+  // ✅ "큰 컨테이너(stage/body)" 절대 잡지 마라. (UI 리셋 원인)
   function findMount() {
     return (
       document.getElementById("reels") ||
@@ -82,7 +82,6 @@ window.SLOT = window.SLOT || {};
     let mount = findMount();
     if (mount) return mount;
 
-    // 마지막 수단: reels 전용 박스만 만들어서 넣음 (절대 body 통째로 지우지 않음)
     const candidate =
       document.querySelector(".right-panel") ||
       document.querySelector(".panel-right") ||
@@ -147,6 +146,14 @@ window.SLOT = window.SLOT || {};
           img.style.objectFit = "contain";
           img.style.filter = "drop-shadow(0 10px 18px rgba(0,0,0,0.35))";
 
+          // ✅ 파일명 대소문자 실수(.PNG) 대비
+          img.onerror = () => {
+            try{
+              const u = img.src || "";
+              if (u.endsWith(".png")) img.src = u.slice(0,-4)+".PNG";
+            }catch(_){}
+          };
+
           cell.appendChild(img);
           gridEl.appendChild(cell);
           state.cells[r][c] = img;
@@ -164,6 +171,14 @@ window.SLOT = window.SLOT || {};
     if (state.grid) state.grid[r][c] = id;
   }
 
+  function defaultGrid(){
+    return [
+      ["star1","star2","star3","pro1","pro5"],
+      ["star2","star3","pro1","pro5","pro10"],
+      ["star1","star2","star3","pro1","pro5"]
+    ];
+  }
+
   function renderGrid(grid){
     ensureGridDOM();
     const g = Array.isArray(grid) ? grid : defaultGrid();
@@ -173,14 +188,6 @@ window.SLOT = window.SLOT || {};
         setSymbol(r,c,state.grid[r][c]);
       }
     }
-  }
-
-  function defaultGrid(){
-    return [
-      ["star1","star2","star3","pro1","pro5"],
-      ["star2","star3","pro1","pro5","pro10"],
-      ["star1","star2","star3","pro1","pro5"]
-    ];
   }
 
   function setConfig(cfg){
@@ -232,18 +239,7 @@ window.SLOT = window.SLOT || {};
   function ensureBgLayers(){
     if (state.bgA && state.bgB) return;
 
-    // ✅ 배경이 "안 보이는" 케이스 대비: 게임 루트는 위로 올려줌
-    const gameRoot =
-      document.querySelector(".slot-app") ||
-      document.querySelector(".page-wrap") ||
-      document.querySelector(".container") ||
-      document.querySelector("#app");
-
-    if (gameRoot){
-      gameRoot.style.position = gameRoot.style.position || "relative";
-      gameRoot.style.zIndex = "5";
-    }
-
+    // ✅ 음수 z-index 쓰면 배경이 뒤로 숨어버리는 케이스가 있음 → 양수로
     const mk = (id, z) => {
       const d = document.createElement("div");
       d.id = id;
@@ -260,9 +256,18 @@ window.SLOT = window.SLOT || {};
       return d;
     };
 
-    // ✅ 음수 zIndex 쓰지 말자(바디 배경 뒤로 숨어버림)
     state.bgA = mk("slotBgA", 1);
     state.bgB = mk("slotBgB", 2);
+
+    // 게임 UI는 항상 위로
+    const root =
+      document.querySelector(".slot-app") ||
+      document.querySelector(".page-wrap") ||
+      document.querySelector("#app");
+    if (root){
+      root.style.position = root.style.position || "relative";
+      root.style.zIndex = "5";
+    }
   }
 
   function setBg(url){
@@ -297,6 +302,7 @@ window.SLOT = window.SLOT || {};
       clearInterval(state.bgTimer);
       state.bgTimer = null;
     }
+    // ✅ 멈추면 마지막 배경 유지
   }
 
   function getAudio(key){
@@ -374,21 +380,15 @@ window.SLOT = window.SLOT || {};
   }
 
   function rollOutcomeType_(cfg){
-    // 잭팟: 기본 20ppm = 1/50,000
     const ppm = Number(cfg?.SLOT_JACKPOT_PPM ?? 20);
     const pJackpot = Math.max(0, ppm) / 1_000_000;
 
-    const pFive  = Number(cfg?.SLOT_P_FIVE  ?? 0.004);
-    const pFour  = Number(cfg?.SLOT_P_FOUR  ?? 0.020);
-    const pThree = Number(cfg?.SLOT_P_THREE ?? 0.120);
-    const pTwo   = Number(cfg?.SLOT_P_TWO   ?? 0.250);
-
     const r = Math.random();
     if (r < pJackpot) return "jackpot";
-    if (r < pJackpot + pFive) return "five";
-    if (r < pJackpot + pFive + pFour) return "four";
-    if (r < pJackpot + pFive + pFour + pThree) return "three";
-    if (r < pJackpot + pFive + pFour + pThree + pTwo) return "two";
+    if (r < pJackpot + 0.004) return "five";
+    if (r < pJackpot + 0.004 + 0.020) return "four";
+    if (r < pJackpot + 0.004 + 0.020 + 0.120) return "three";
+    if (r < pJackpot + 0.004 + 0.020 + 0.120 + 0.250) return "two";
     return "lose";
   }
 
@@ -400,7 +400,6 @@ window.SLOT = window.SLOT || {};
 
     const row = Math.floor(Math.random()*3);
 
-    // 기본 랜덤
     for(let r=0;r<3;r++){
       for(let c=0;c<5;c++){
         grid[r][c] = weightedPick();
@@ -420,7 +419,6 @@ window.SLOT = window.SLOT || {};
       for(let c=0;c<count;c++) grid[row][c] = sym;
     }
 
-    // 다른 줄 우연 2연속 방지
     for(let r=0;r<3;r++){
       if (r === row) continue;
       const first = grid[r][0];
@@ -441,13 +439,14 @@ window.SLOT = window.SLOT || {};
     ensureGridDOM();
     if (!state.grid) renderGrid(null);
 
-    const totalMs = 10000;
     const startFast = 35;
     const endSlow   = 150;
     const stopAt = [7200, 8000, 8600, 9200, 9800];
 
     playOne("start");
     playLoop("spin");
+
+    // ✅ 스핀 중에만 배경 현란하게
     startBgCycle(220);
 
     const running = Array(COLS).fill(true);
@@ -484,11 +483,11 @@ window.SLOT = window.SLOT || {};
 
     await Promise.all(stopPromises);
 
-    // ✅ 결과 강제(승률/체감 컨트롤)
     const type = rollOutcomeType_(state.cfg);
     forceOneLine_(state.grid, type);
     renderGrid(state.grid);
 
+    // ✅ 스핀 끝나면 배경 교체 멈춤
     stopBgCycle();
     stopLoop("spin");
 
