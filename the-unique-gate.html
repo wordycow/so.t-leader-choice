@@ -34,7 +34,7 @@
     .scene {
       position: fixed;
       inset: 0;
-      overflow: hidden;           /* ✅ 박쥐가 오른쪽에서 잘려도 자연스럽게 */
+      overflow: hidden;
       pointer-events: none;
       z-index: 0;
     }
@@ -199,7 +199,6 @@
     }
     .status-error { color: #fecaca; }
 
-    /* ✅ & (PC/모바일 공통, 이제 media 밖이라 안 꼬임) */
     .divider-amp{
       margin: 10px 0 10px;
       text-align:center;
@@ -218,18 +217,12 @@
       user-select:none;
     }
 
-    /* =====================================================
-       ✅ 박쥐/마녀 (그림자 없음 / 위아래만 / 변수로 조절)
-       ===================================================== */
-   :root{
-      /* 박쥐: 더 넓게 = 여기 55vw를 더 키우면 됨 (예: 70vw) */
+    :root{
       --bat-top: -8vh;
-      --bat-right: 0vw;                     /* 오른쪽에 붙어서 날개 잘리게 */
-      --bat-width: clamp(320px, 55vw, 900px); /* ✅ 넓이(윙스팬) 조절 */
-
+      --bat-right: 0vw;
+      --bat-width: clamp(320px, 55vw, 900px);
       --bat-bob: 20px;
 
-      /* 마녀: 성 왼쪽 / 작게 */
       --witch-top: 28vh;
       --witch-right: 20vw;
       --witch-width: clamp(18px, 7vw, 44px);
@@ -244,7 +237,7 @@
       display:block;
       width:100%;
       height:auto;
-      filter:none; /* ✅ 그림자/글로우 제거 */
+      filter:none;
     }
 
     @keyframes floatY {
@@ -269,7 +262,6 @@
       animation: floatY 3.2s ease-in-out infinite alternate;
     }
 
-    /* ✅ 버튼(UNIQUE MARKET) */
     .btn-with-icon{ gap:10px; justify-content:center; }
     .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
     .btn-with-icon span{ line-height:1; }
@@ -334,7 +326,9 @@
 
           <div class="btn-row">
             <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
-            <a href="the-unique-signup.html" class="btn btn-ghost">회원가입</a>
+
+            <!-- ✅ 회원가입 후 다시 게이트로 돌아올 수 있게 return 파라미터를 달아줌 (signup이 지원하면 자동 복귀) -->
+            <a href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
           </div>
 
           <div id="status" class="status"></div>
@@ -356,26 +350,23 @@
       </div>
     </main>
   </div>
+
   <script>
-  // ✅ 기존 Apps Script URL (유지: fallback용)
+  // ✅ 구글 Apps Script 웹앱 (가입/조회가 여기로 붙음)
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ 새 Worker API (추가: 1순위)
-  const WORKER_BASE_URL = "https://the-unique-vault-api.wordycow0001.workers.dev";
-
-  console.log("Gate GOOGLE_SCRIPT_URL:", GOOGLE_SCRIPT_URL);
-  console.log("Gate WORKER_BASE_URL:", WORKER_BASE_URL);
+  // ✅ 로그인 성공 시 이동할 메인
+  const MAIN_PAGE = "the-unique-main.html";
 
   // ✅ 인앱 브라우저 감지(카톡/텔레그램/인스타 등)
   function isInAppBrowser(){
     const ua = navigator.userAgent || "";
     return /KAKAOTALK|Instagram|FBAN|FBAV|Line|NAVER|DaumApps|Whale|Telegram|TikTok/i.test(ua);
   }
-
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-  // ✅ (기존) JSONP 1회 호출
-  function apiOnceJSONP(action, params = {}, timeoutMs = 25000) {
+  // ✅ JSONP 1회 호출
+  function apiOnceJSONP(action, params = {}, timeoutMs = 20000) {
     return new Promise((resolve, reject) => {
       const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
@@ -406,58 +397,21 @@
     });
   }
 
-  // ✅ (기존) JSONP 재시도
+  // ✅ JSONP 재시도
   async function apiJSONP(action, params = {}) {
     let lastErr = null;
     const tries = 3;
 
     for (let i = 1; i <= tries; i++){
       try{
-        const timeoutMs = (i === 1) ? 20000 : 30000;
+        const timeoutMs = (i === 1) ? 16000 : 24000;
         return await apiOnceJSONP(action, params, timeoutMs);
       } catch(e){
         lastErr = e;
-        await sleep(450 * i);
+        await sleep(350 * i);
       }
     }
     throw lastErr || new Error("API failed");
-  }
-
-  // ✅ (신규) Worker POST 호출
-  async function apiWorker(action, params = {}, timeoutMs = 12000){
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-
-    try{
-      const r = await fetch(`${WORKER_BASE_URL}/api/${encodeURIComponent(action)}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(params || {}),
-        signal: controller.signal,
-        cache: "no-store",
-        credentials: "omit"
-      });
-      const js = await r.json().catch(()=>null);
-      if (!js) throw new Error("worker_bad_json");
-      return js;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  // ✅ 최종 API: Worker 먼저 → 실패 시 JSONP fallback
-  async function api(action, params = {}) {
-    // 강제 옵션: gate.html?api=legacy  (문제 생기면 즉시 복구용)
-    const force = new URLSearchParams(location.search).get("api");
-    if (force === "legacy") return apiJSONP(action, params);
-    if (force === "worker") return apiWorker(action, params, 20000);
-
-    try{
-      return await apiWorker(action, params, 9000);
-    } catch(e){
-      console.warn("Worker failed, fallback to JSONP:", e);
-      return await apiJSONP(action, params);
-    }
   }
 
   function setStatus(msg, isError=false){
@@ -465,6 +419,28 @@
     if (!el) return;
     el.textContent = msg || "";
     el.className = "status" + (isError ? " status-error" : "");
+  }
+
+  function pick(obj, keys){
+    for (const k of keys){
+      if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
+    }
+    return "";
+  }
+
+  function normalizeUser(u, fallbackId){
+    const rawId = String(pick(u, ["id","ID","userId","userid","아이디"]) || fallbackId || "").trim();
+    const idLower = rawId.toLowerCase();
+
+    return {
+      id: idLower,
+      name: String(pick(u, ["name","이름","성명","fullName"]) || "").trim(),
+      nickname: String(pick(u, ["nickname","닉네임","별명"]) || "").trim(),
+      phone: String(pick(u, ["phone","전화번호","핸드폰","휴대폰"]) || "").trim(),
+      team: String(pick(u, ["team","소속","추천인","리더","sponsor"]) || "").trim(),
+      joinedAt: String(pick(u, ["joinedAt","joinAt","timestamp","타임스탬프"]) || "").trim(),
+      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0)
+    };
   }
 
   function saveUserToLocal(u){
@@ -489,52 +465,120 @@
     }
   }
 
+  function extractUser(resp){
+    if (!resp) return null;
+    // 흔한 케이스들 다 흡수
+    if (resp.user) return resp.user;
+    if (resp.data) return resp.data;
+    if (resp.row)  return resp.row;
+    if (resp.result && resp.result.user) return resp.result.user;
+
+    // resp 자체가 유저 형태일 수도 있음(서버 구현차)
+    const hasAny =
+      (resp.id || resp.ID || resp.아이디 || resp.name || resp.이름 || resp.phone || resp.전화번호 || resp.team || resp.소속);
+    return hasAny ? resp : null;
+  }
+
+  function isOk(resp){
+    if (!resp) return false;
+    if (resp.ok === true) return true;
+    if (resp.success === true) return true;
+    if (String(resp.status || "").toLowerCase() === "ok") return true;
+    if (String(resp.result || "").toLowerCase() === "ok") return true;
+    if (resp.found === true || resp.exists === true) return true;
+    return false;
+  }
+
+  // ✅ 핵심: 서버가 대소문자 구분해도 통과시키기 위해 3번 조회
+  async function getUserByIdRobust(rawId){
+    const base = String(rawId || "").trim();
+    if (!base) return null;
+
+    const candidates = [];
+    for (const v of [base, base.toLowerCase(), base.toUpperCase()]){
+      if (v && !candidates.includes(v)) candidates.push(v);
+    }
+
+    let lastResp = null;
+    for (const idTry of candidates){
+      const r = await apiJSONP("getUser", { id: idTry });
+      lastResp = r;
+      const u0 = extractUser(r);
+      if (isOk(r) && u0) return normalizeUser(u0, idTry);
+    }
+
+    // 서버가 ok는 주는데 user를 다른 구조로 주는 경우: 마지막 응답에서 강제로 뽑아봄
+    const u1 = extractUser(lastResp);
+    if (isOk(lastResp) && u1) return normalizeUser(u1, base);
+
+    return null;
+  }
+
   const form = document.getElementById("gate-form");
   const idInput = document.getElementById("login-id");
   const loginBtn = document.getElementById("login-btn");
 
-  // ✅ 인앱브라우저 안내
   if (isInAppBrowser()){
-    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 접속 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
+    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
   }
+
+  // ✅ 회원가입 후 돌아왔을 때: ?id=xxx or ?signup=1
+  (function initFromQuery(){
+    const qs = new URLSearchParams(location.search);
+    const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
+    const signup = qs.get("signup");
+
+    if (preId && idInput) idInput.value = preId;
+
+    if (signup === "1"){
+      setStatus("✅ 회원가입 완료! 아이디 확인 후 로그인하세요.");
+    } else if (preId){
+      setStatus("아이디 확인 후 로그인하세요.");
+    }
+
+    // 옵션: ?autologin=1 이면 자동 로그인
+    const auto = qs.get("autologin");
+    if (auto === "1" && preId){
+      setTimeout(() => form && form.dispatchEvent(new Event("submit", { cancelable: true })), 200);
+    }
+  })();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const raw = (idInput.value || "").trim();
-    const id = raw.toLowerCase();
-
-    if (!id) { setStatus("아이디를 입력해 주세요.", true); return; }
+    if (!raw) { setStatus("아이디를 입력해 주세요.", true); return; }
 
     setStatus("회원 확인 중...");
     if (loginBtn) loginBtn.disabled = true;
 
     try {
-      // ✅ 여기 호출은 그대로: getUser
-      const r = await api("getUser", { id });
+      const user = await getUserByIdRobust(raw);
 
-      if (!r || !r.ok || !r.user) {
+      if (!user || !user.id) {
         setStatus("등록되지 않은 아이디입니다. (대소문자/띄어쓰기 확인)", true);
         if (loginBtn) loginBtn.disabled = false;
         return;
       }
 
-      saveUserToLocal(r.user);
-      window.location.href = "the-unique-main.html";
+      saveUserToLocal(user);
+      window.location.href = MAIN_PAGE;
 
     } catch (err) {
       console.error(err);
       const msg = String(err && err.message ? err.message : err);
-      if (msg.includes("timeout") || msg.includes("abort")) {
-        setStatus("네트워크 지연으로 서버 응답이 늦습니다. 다시 시도해 주세요.", true);
+
+      if (msg.includes("timeout")) {
+        setStatus("네트워크 지연으로 응답이 늦습니다. 다시 시도해 주세요.", true);
       } else if (msg.includes("load failed")) {
         setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", true);
       } else {
         setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", true);
       }
+
       if (loginBtn) loginBtn.disabled = false;
     }
   });
-</script>
+  </script>
 </body>
 </html>
