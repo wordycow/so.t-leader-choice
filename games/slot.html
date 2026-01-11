@@ -5,323 +5,1212 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>THE UNIQUE SLOT</title>
 
-  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
-  <script src="../js/unique.config.js?v=20260112"></script>
+  <style>
+    :root{
+      --bg0:#050814;
+      --panel: rgba(10,16,32,.62);
+      --panel2: rgba(6,10,22,.55);
+      --line: rgba(110,170,255,.22);
+      --line2: rgba(220,120,255,.18);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.65);
+      --aqua:#62e6ff;
+      --pink:#ff6bf2;
+      --gold:#ffd54a;
 
-  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
+      --r: 18px;
+      --r2: 26px;
+
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(98,230,255,.18), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(255,107,242,.16), transparent 60%),
+        radial-gradient(900px 600px at 50% 90%, rgba(255,213,74,.10), transparent 60%),
+        linear-gradient(180deg, #020318, #020318 40%, #050814);
+      overflow-x:hidden;
+    }
+
+    /* 스핀 중 배경 번쩍 레이어 (스핀할 때만 켜짐) */
+    .bg-flash{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:0;
+      transition: opacity .35s ease;
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.2) contrast(1.05);
+      mix-blend-mode: screen;
+    }
+    .bg-flash.on{ opacity:.55; }
+
+    .wrap{
+      width:min(1180px, calc(100% - 28px));
+      margin: 18px auto 60px;
+      padding: 0;
+    }
+
+    .banner{
+      display:none;
+      margin: 10px 0 16px;
+      border:1px solid rgba(255,213,74,.35);
+      background: linear-gradient(90deg, rgba(255,213,74,.15), rgba(98,230,255,.10), rgba(255,107,242,.10));
+      border-radius: 14px;
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+    .banner.on{ display:block; }
+    .ticker{
+      white-space: nowrap;
+      overflow:hidden;
+      position:relative;
+      padding: 10px 12px;
+      font-weight:800;
+      color: rgba(255,245,210,.95);
+      text-shadow: 0 2px 14px rgba(0,0,0,.6);
+    }
+    .ticker span{
+      display:inline-block;
+      padding-left: 100%;
+      animation: ticker 18s linear infinite;
+    }
+    @keyframes ticker{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-100%); }
+    }
+
+    .card{
+      border-radius: var(--r2);
+      border: 1px solid rgba(120,190,255,.18);
+      background: linear-gradient(180deg, rgba(18,28,58,.55), rgba(6,10,22,.45));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 16px;
+      border-bottom:1px solid rgba(110,170,255,.14);
+    }
+    .title{
+      letter-spacing:.22em;
+      font-weight:900;
+      font-size: 14px;
+      color: rgba(98,230,255,.9);
+    }
+    .title b{ color: rgba(255,107,242,.92); }
+    .btn{
+      border:1px solid rgba(98,230,255,.28);
+      background: rgba(7,10,20,.45);
+      color: rgba(234,240,255,.9);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.06em;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(255,107,242,.35); background: rgba(12,16,30,.55); }
+    .btn:active{ transform: translateY(0); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr 1.4fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Paytable */
+    .pay{
+      padding: 16px;
+    }
+    .pay-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 12px;
+    }
+    .pay-head h3{
+      margin:0;
+      font-size: 13px;
+      letter-spacing:.18em;
+      color: rgba(234,240,255,.78);
+    }
+    .pay-body{
+      display:none;
+      border-top: 1px solid rgba(110,170,255,.12);
+      padding-top: 12px;
+    }
+    .pay.open .pay-body{ display:block; }
+
+    .pay-note{
+      font-size: 12px;
+      color: rgba(234,240,255,.65);
+      margin: 0 0 10px;
+    }
+
+    .pay-list{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (max-width: 720px){
+      .pay-list{ grid-template-columns: 1fr; }
+    }
+
+    .pay-item{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      border: 1px solid rgba(110,170,255,.12);
+      background: rgba(4,6,18,.35);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .pay-item img{
+      width: 46px; height: 46px; object-fit: contain;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.55));
+    }
+    .pay-item .meta{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .pay-item .meta .name{
+      font-weight:900;
+      font-size: 13px;
+      letter-spacing:.08em;
+      color: rgba(234,240,255,.92);
+    }
+    .pay-item .meta .rule{
+      font-size: 12px;
+      color: rgba(234,240,255,.68);
+      line-height: 1.35;
+    }
+
+    /* Left status */
+    .status{
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .pill{
+      border:1px solid rgba(110,170,255,.14);
+      background: rgba(4,6,18,.32);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .pill .k{
+      font-size: 11px;
+      letter-spacing:.22em;
+      color: rgba(234,240,255,.55);
+      margin-bottom: 8px;
+    }
+    .pill .v{
+      font-size: 16px;
+      font-weight:900;
+      letter-spacing:.04em;
+      color: rgba(234,240,255,.92);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height: 22px;
+    }
+    .pill .v .dot{
+      width:10px;height:10px;border-radius:999px;background: rgba(98,230,255,.9);
+      box-shadow: 0 0 20px rgba(98,230,255,.55);
+    }
+    .pill .v .dot.warn{ background: rgba(255,107,242,.9); box-shadow: 0 0 20px rgba(255,107,242,.55); }
+    .pill .v .dot.gold{ background: rgba(255,213,74,.95); box-shadow: 0 0 22px rgba(255,213,74,.55); }
+
+    .bet-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top: 8px;
+    }
+    .bet{
+      font-size: 26px;
+      font-weight: 1000;
+      color: rgba(98,230,255,.95);
+      text-shadow: 0 0 22px rgba(98,230,255,.18);
+      letter-spacing:.04em;
+      min-width: 70px;
+    }
+    .mini{
+      width: 44px;
+      height: 36px;
+      border-radius: 999px;
+      border:1px solid rgba(110,170,255,.16);
+      background: rgba(4,6,18,.35);
+      color: rgba(234,240,255,.92);
+      font-weight: 1000;
+      cursor:pointer;
+    }
+    .mini:hover{ border-color: rgba(255,107,242,.30); }
+
+    .toggle-row{
+      display:flex;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .toggle{
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(110,170,255,.16);
+      background: rgba(4,6,18,.35);
+      font-weight: 1000;
+      cursor:pointer;
+      text-align:center;
+      user-select:none;
+    }
+    .toggle.on{
+      border-color: rgba(98,230,255,.35);
+      background: rgba(98,230,255,.12);
+      color: rgba(234,240,255,.96);
+    }
+
+    .spin{
+      margin-top: 10px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 0;
+      cursor:pointer;
+      font-weight: 1100;
+      letter-spacing:.18em;
+      color: rgba(4,6,18,.95);
+      background: linear-gradient(90deg, rgba(98,230,255,.95), rgba(255,107,242,.92), rgba(255,213,74,.92));
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
+      transition: transform .12s ease, filter .12s ease;
+    }
+    .spin:hover{ transform: translateY(-1px); filter: saturate(1.1); }
+    .spin:active{ transform: translateY(0); }
+    .spin:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* Slot grid */
+    .slot-area{
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .slot-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .slot-head h3{
+      margin:0;
+      font-size: 13px;
+      letter-spacing:.18em;
+      color: rgba(234,240,255,.78);
+    }
+    .slot-sub{
+      font-size: 12px;
+      color: rgba(234,240,255,.62);
+      white-space:nowrap;
+    }
+    .slot-grid{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap: 10px;
+      padding: 10px;
+      border-radius: 18px;
+      border: 1px solid rgba(110,170,255,.12);
+      background: rgba(4,6,18,.28);
+      min-height: 240px;
+    }
+    @media (max-width: 520px){
+      .slot-grid{ gap:8px; }
+    }
+
+    .cell{
+      aspect-ratio: 1/1;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: radial-gradient(120px 120px at 30% 20%, rgba(98,230,255,.10), transparent 55%),
+                  radial-gradient(120px 120px at 70% 30%, rgba(255,107,242,.10), transparent 60%),
+                  rgba(2,3,10,.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .cell img{
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.55));
+      transform: translateZ(0);
+    }
+
+    .cell.flash::after{
+      content:"";
+      position:absolute; inset:-20%;
+      background: conic-gradient(from 0deg, rgba(98,230,255,.0), rgba(98,230,255,.22), rgba(255,107,242,.22), rgba(255,213,74,.22), rgba(98,230,255,.0));
+      filter: blur(6px);
+      animation: spinflash .55s linear infinite;
+    }
+    @keyframes spinflash{
+      to{ transform: rotate(360deg); }
+    }
+
+    .float-win{
+      position: fixed;
+      left: 50%;
+      top: 18%;
+      transform: translateX(-50%);
+      z-index: 50;
+      pointer-events:none;
+      font-weight: 1100;
+      letter-spacing:.08em;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,213,74,.35);
+      background: rgba(6,10,22,.65);
+      box-shadow: 0 24px 70px rgba(0,0,0,.55);
+      opacity:0;
+    }
+    .float-win.on{
+      opacity:1;
+      animation: floatpop 1.1s ease forwards;
+    }
+    @keyframes floatpop{
+      0%{ transform: translateX(-50%) translateY(10px) scale(.95); opacity:0; }
+      20%{ opacity:1; }
+      60%{ transform: translateX(-50%) translateY(-6px) scale(1.02); }
+      100%{ transform: translateX(-50%) translateY(-20px) scale(1.02); opacity:0; }
+    }
+
+    /* Login overlay */
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(10px);
+      z-index: 80;
+    }
+    .overlay.on{ display:flex; }
+    .modal{
+      width:min(520px, 100%);
+      border-radius: 20px;
+      border:1px solid rgba(110,170,255,.22);
+      background: rgba(8,12,26,.85);
+      box-shadow: 0 30px 90px rgba(0,0,0,.65);
+      padding: 16px;
+    }
+    .modal h2{
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing:.08em;
+    }
+    .modal p{
+      margin: 0 0 12px;
+      color: rgba(234,240,255,.70);
+      line-height:1.45;
+      font-size: 13px;
+    }
+    .modal .row{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+    }
+  </style>
 </head>
 
 <body>
-  <!-- 스핀 중에만 번쩍이는 배경 -->
-  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
+  <div id="bgFlash" class="bg-flash"></div>
 
-  <!-- 잭팟 티커(자정까지 유지) -->
-  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
-    <div class="ticker-track" id="jackpotTickerTrack"></div>
-  </div>
+  <div class="wrap">
+    <div id="jackpotBanner" class="banner">
+      <div class="ticker"><span id="jackpotText"></span></div>
+    </div>
 
-  <main class="slot-page">
-    <!-- PAYTABLE (모바일 최상단) -->
-    <section class="card paytable" id="paytableCard">
-      <div class="card-hd">
-        <div class="title">PAY TABLE</div>
-        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
+    <div class="card">
+      <div class="topbar">
+        <div class="title">THE <b>UNIQUE</b> SLOT</div>
+        <a class="btn" href="../main.html">← MAIN</a>
       </div>
-      <div class="card-bd" id="paytableBody"></div>
-    </section>
 
-    <!-- 게임 영역 -->
-    <section class="grid-wrap">
-      <!-- 패널(내 자산/버튼) -->
-      <section class="card panel" id="panelCard">
-        <div class="panel-top">
-          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
-          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
+      <!-- PAYTABLE -->
+      <div id="payCard" class="pay">
+        <div class="pay-head">
+          <h3>PAY TABLE</h3>
+          <button id="payToggle" class="btn" type="button">접기/펼치기</button>
         </div>
+        <div class="pay-body">
+          <p class="pay-note">룰: <b>2개 = EVEN(±0)</b> / <b>3개 이상 = WIN</b> / <b>5개 = JACKPOT</b></p>
+          <div id="payList" class="pay-list"></div>
+        </div>
+      </div>
 
-        <div class="stats">
-          <div class="stat">
+      <div class="grid">
+        <!-- LEFT (상태/컨트롤) -->
+        <div class="status">
+          <div class="pill">
             <div class="k">PLAYER</div>
-            <div class="v" id="uiPlayer">-</div>
+            <div class="v"><span class="dot" id="dotLogin"></span><span id="playerName">-</span></div>
           </div>
-          <div class="stat">
+
+          <div class="pill">
             <div class="k">WALLET (UT)</div>
-            <div class="v" id="uiWallet">0</div>
+            <div class="v"><span class="dot"></span><span id="wallet">0</span></div>
           </div>
-          <div class="stat">
+
+          <div class="pill">
             <div class="k">JACKPOT</div>
-            <div class="v" id="uiJackpot">0</div>
+            <div class="v"><span class="dot gold"></span><span id="jackpot">0</span></div>
           </div>
-          <div class="stat">
+
+          <div class="pill">
             <div class="k">LAST RESULT</div>
-            <div class="v" id="uiResult">READY</div>
-          </div>
-        </div>
-
-        <div class="betbox">
-          <div class="k">BET</div>
-          <div class="betrow">
-            <div class="betv" id="uiBet">10</div>
-            <div class="betbtns">
-              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
-              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
+            <div class="v"><span class="dot warn"></span><span id="lastResult">READY</span></div>
+            <div class="bet-row">
+              <div>
+                <div class="k" style="margin:0 0 6px;">BET</div>
+                <div class="bet" id="bet">10</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button id="betDown" class="mini" type="button">-5</button>
+                <button id="betUp" class="mini" type="button">+5</button>
+              </div>
             </div>
+
+            <div class="toggle-row">
+              <div id="autoBtn" class="toggle">AUTO OFF</div>
+              <div id="soundBtn" class="toggle on">SOUND ON</div>
+            </div>
+
+            <button id="spinBtn" class="spin" type="button">SPIN</button>
           </div>
         </div>
 
-        <div class="controls">
-          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
-          <button class="btn" id="btnSound" type="button">SOUND ON</button>
-          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
+        <!-- RIGHT (슬롯) -->
+        <div class="slot-area">
+          <div class="slot-head">
+            <h3>SLOT</h3>
+            <div class="slot-sub">2개=EVEN / 3개↑=WIN / 5개=JACKPOT</div>
+          </div>
+          <div id="slotGrid" class="slot-grid"></div>
         </div>
-      </section>
-
-      <!-- 슬롯 스테이지 -->
-      <section class="card stage" id="stageCard">
-        <div class="stage-hd">
-          <div class="stage-title">SLOT</div>
-          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
-        </div>
-
-        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
-      </section>
-    </section>
-
-    <!-- 잭팟/빅윈 연출 -->
-    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
-      <div class="celebrate-card">
-        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
-        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
-        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
-        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
       </div>
     </div>
-  </main>
-
-  <!-- 슬롯 스크립트 -->
-  <script src="./slot/slot.config.js?v=20260112"></script>
-  <script src="./slot/slot.api.js?v=20260112"></script>
-  <script src="./slot/slot.audio.js?v=20260112"></script>
-  <script src="./slot/slot.ui.js?v=20260112"></script>
-  <script src="./slot/slot.game.js?v=20260112"></script>
-  <script src="./slot/slot.app.js?v=20260112"></script>
-</body>
-</html>
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>THE UNIQUE SLOT</title>
-
-  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
-  <script src="../js/unique.config.js?v=20260112"></script>
-
-  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
-</head>
-
-<body>
-  <!-- 스핀 중에만 번쩍이는 배경 -->
-  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
-
-  <!-- 잭팟 티커(자정까지 유지) -->
-  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
-    <div class="ticker-track" id="jackpotTickerTrack"></div>
   </div>
 
-  <main class="slot-page">
-    <!-- PAYTABLE (모바일 최상단) -->
-    <section class="card paytable" id="paytableCard">
-      <div class="card-hd">
-        <div class="title">PAY TABLE</div>
-        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
-      </div>
-      <div class="card-bd" id="paytableBody"></div>
-    </section>
+  <div id="floatWin" class="float-win"></div>
 
-    <!-- 게임 영역 -->
-    <section class="grid-wrap">
-      <!-- 패널(내 자산/버튼) -->
-      <section class="card panel" id="panelCard">
-        <div class="panel-top">
-          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
-          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
-        </div>
-
-        <div class="stats">
-          <div class="stat">
-            <div class="k">PLAYER</div>
-            <div class="v" id="uiPlayer">-</div>
-          </div>
-          <div class="stat">
-            <div class="k">WALLET (UT)</div>
-            <div class="v" id="uiWallet">0</div>
-          </div>
-          <div class="stat">
-            <div class="k">JACKPOT</div>
-            <div class="v" id="uiJackpot">0</div>
-          </div>
-          <div class="stat">
-            <div class="k">LAST RESULT</div>
-            <div class="v" id="uiResult">READY</div>
-          </div>
-        </div>
-
-        <div class="betbox">
-          <div class="k">BET</div>
-          <div class="betrow">
-            <div class="betv" id="uiBet">10</div>
-            <div class="betbtns">
-              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
-              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
-          <button class="btn" id="btnSound" type="button">SOUND ON</button>
-          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
-        </div>
-      </section>
-
-      <!-- 슬롯 스테이지 -->
-      <section class="card stage" id="stageCard">
-        <div class="stage-hd">
-          <div class="stage-title">SLOT</div>
-          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
-        </div>
-
-        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
-      </section>
-    </section>
-
-    <!-- 잭팟/빅윈 연출 -->
-    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
-      <div class="celebrate-card">
-        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
-        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
-        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
-        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <h2>로그인 정보가 없습니다</h2>
+      <p>
+        gate → main → slot 흐름에서 저장된 <b>아이디(localStorage)</b>를 못 찾았습니다.<br>
+        MAIN으로 돌아가서 로그인 후 다시 들어오세요.
+      </p>
+      <div class="row">
+        <a class="btn" href="../gate.html">← GATE</a>
+        <a class="btn" href="../main.html">← MAIN</a>
       </div>
     </div>
-  </main>
-
-  <!-- 슬롯 스크립트 -->
-  <script src="./slot/slot.config.js?v=20260112"></script>
-  <script src="./slot/slot.api.js?v=20260112"></script>
-  <script src="./slot/slot.audio.js?v=20260112"></script>
-  <script src="./slot/slot.ui.js?v=20260112"></script>
-  <script src="./slot/slot.game.js?v=20260112"></script>
-  <script src="./slot/slot.app.js?v=20260112"></script>
-</body>
-</html>
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>THE UNIQUE SLOT</title>
-
-  <!-- ✅ 프로젝트 공용 config (이미 쓰고 있던 경로 유지: 필요 시 경로만 맞춰) -->
-  <script src="../js/unique.config.js?v=20260112"></script>
-
-  <link rel="stylesheet" href="./slot/slot.css?v=20260112" />
-</head>
-
-<body>
-  <!-- 스핀 중에만 번쩍이는 배경 -->
-  <div id="bgCycle" class="bg-cycle" aria-hidden="true"></div>
-
-  <!-- 잭팟 티커(자정까지 유지) -->
-  <div id="jackpotTicker" class="ticker hidden" aria-live="polite">
-    <div class="ticker-track" id="jackpotTickerTrack"></div>
   </div>
 
-  <main class="slot-page">
-    <!-- PAYTABLE (모바일 최상단) -->
-    <section class="card paytable" id="paytableCard">
-      <div class="card-hd">
-        <div class="title">PAY TABLE</div>
-        <button class="btn ghost" id="btnPayToggle" type="button">접기/펼치기</button>
-      </div>
-      <div class="card-bd" id="paytableBody"></div>
-    </section>
+  <script>
+    /*****************************************************************
+     * 0) 설정
+     *****************************************************************/
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-    <!-- 게임 영역 -->
-    <section class="grid-wrap">
-      <!-- 패널(내 자산/버튼) -->
-      <section class="card panel" id="panelCard">
-        <div class="panel-top">
-          <div class="logo">THE <span class="logo-accent">UNIQUE</span> SLOT</div>
-          <a class="btn ghost" id="btnMain" href="../main.html">← MAIN</a>
-        </div>
+    // 파일명(대소문자 포함) — 니 GitHub 업로드 목록 그대로
+    const ASSET = {
+      imgBase: "img/slot/",
+      sndBase: "sounds/",
+      bg: ["bg1.png","bg2.png","bg3.png","bg4.png","bg5.png"],
+      sound: {
+        start: "start-button-sound.MP3",
+        spin:  "spining-sound.MP3",           // <- 오타(스피닝) 파일명 그대로
+        stop:  "stop-stop-stop-sound.MP3",
+        win:   "win-sound.MP3",
+        lose:  "lose-sound.MP3",
+        jackpot:"jackpot-sound.MP3"
+      }
+    };
 
-        <div class="stats">
-          <div class="stat">
-            <div class="k">PLAYER</div>
-            <div class="v" id="uiPlayer">-</div>
+    const BET = { min: 10, max: 1000, step: 5, def: 10 };
+
+    // 심볼/확률(기본값: 니 Apps Script DEFAULT_CONFIG의 weight 기반)
+    const SYMBOLS = [
+      { key:"star1", label:"STAR 1", w:22, img:"star1.png",  pay:{3:2,   4:5,  5:12} },
+      { key:"star2", label:"STAR 2", w:18, img:"star2.png",  pay:{3:2.5, 4:6,  5:15} },
+      { key:"star3", label:"STAR 3", w:14, img:"star3.png",  pay:{3:3,   4:7,  5:18} },
+
+      { key:"pro1",  label:"PRO 1",  w:12, img:"pro1.png",   pay:{3:4,   4:10, 5:25} },
+      { key:"pro2",  label:"PRO 2",  w:9,  img:"pro2.png",   pay:{3:4.5, 4:11, 5:28} },
+      { key:"pro3",  label:"PRO 3",  w:7,  img:"pro3.png",   pay:{3:5,   4:12, 5:30} },
+      { key:"pro4",  label:"PRO 4",  w:5,  img:"pro4.png",   pay:{3:5.5, 4:13, 5:33} },
+      { key:"pro5",  label:"PRO 5",  w:4,  img:"pro5.png",   pay:{3:6,   4:14, 5:36} },
+      { key:"pro6",  label:"PRO 6",  w:3,  img:"pro6.png",   pay:{3:6.5, 4:15, 5:40} },
+      { key:"pro7",  label:"PRO 7",  w:2.5,img:"pro7.png",   pay:{3:7,   4:16, 5:44} },
+      { key:"pro8",  label:"PRO 8",  w:2,  img:"pro8.png",   pay:{3:7.5, 4:18, 5:48} },
+      { key:"pro9",  label:"PRO 9",  w:1.5,img:"pro9.png",   pay:{3:8,   4:20, 5:55} },
+      { key:"pro10", label:"PRO 10", w:1,  img:"pro10.png",  pay:{3:9,   4:24, 5:70} },
+    ];
+
+    /*****************************************************************
+     * 1) DOM
+     *****************************************************************/
+    const el = {
+      bgFlash: document.getElementById("bgFlash"),
+      payCard: document.getElementById("payCard"),
+      payToggle: document.getElementById("payToggle"),
+      payList: document.getElementById("payList"),
+      slotGrid: document.getElementById("slotGrid"),
+
+      dotLogin: document.getElementById("dotLogin"),
+      playerName: document.getElementById("playerName"),
+      wallet: document.getElementById("wallet"),
+      jackpot: document.getElementById("jackpot"),
+      lastResult: document.getElementById("lastResult"),
+      bet: document.getElementById("bet"),
+      betDown: document.getElementById("betDown"),
+      betUp: document.getElementById("betUp"),
+      autoBtn: document.getElementById("autoBtn"),
+      soundBtn: document.getElementById("soundBtn"),
+      spinBtn: document.getElementById("spinBtn"),
+
+      banner: document.getElementById("jackpotBanner"),
+      bannerText: document.getElementById("jackpotText"),
+
+      floatWin: document.getElementById("floatWin"),
+      overlay: document.getElementById("overlay"),
+    };
+
+    /*****************************************************************
+     * 2) 상태
+     *****************************************************************/
+    const S = {
+      id: "",
+      name: "",
+      nickname: "",
+      balance: 0,
+      jackpotTotal: 0,
+      casinoTotal: 0,
+
+      bet: BET.def,
+      spinning: false,
+      auto: false,
+      sound: true,
+
+      bgTimer: null,
+      spinTimer: null,
+
+      audio: null,
+      cells: [],
+      gridKeys: []
+    };
+
+    /*****************************************************************
+     * 3) 유틸
+     *****************************************************************/
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+    function round2(n){ return Math.round(n*100)/100; }
+    function fmt(n){
+      const x = Number(n||0);
+      if (!Number.isFinite(x)) return "0";
+      if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
+      // 소수 필요하면 유지
+      return (Math.round(x*100)/100).toString();
+    }
+    function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+    function safeName(s){
+      return String(s||"")
+        .replace(/[\/\\<>]/g,"")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    // ✅ JSONP: 콜백명을 무조건 안전한 식별자로 생성(하이픈/공백 금지)
+    function jsonp(url, params){
+      return new Promise((resolve, reject)=>{
+        const cb = "__slot_cb_" + Math.random().toString(36).slice(2);
+        params = Object.assign({}, params, { callback: cb });
+
+        const qs = new URLSearchParams(params);
+        const src = url + (url.includes("?") ? "&" : "?") + qs.toString();
+
+        const script = document.createElement("script");
+        let done = false;
+
+        const t = setTimeout(()=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("timeout"));
+        }, 12000);
+
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(_){}
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cb] = (data)=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = ()=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("jsonp_failed"));
+        };
+
+        script.src = src;
+        document.head.appendChild(script);
+      });
+    }
+
+    async function api(action, params={}){
+      const res = await jsonp(SCRIPT_URL, Object.assign({ action }, params));
+      if (!res || res.ok !== true){
+        const msg = (res && (res.message || res.error)) ? (res.message || res.error) : "api_error";
+        throw new Error(msg);
+      }
+      return res;
+    }
+
+    // ✅ 로그인 키 복구(여기서 “잃어버리는 문제”를 끝낸다)
+    function readLoginId(){
+      const q = new URLSearchParams(location.search);
+      const qid = (q.get("id") || q.get("uid") || q.get("user_id") || "").trim();
+      if (qid){
+        localStorage.setItem("unique_user_id", qid);
+        return qid;
+      }
+
+      // 가장 가능성 큰 후보키들 싹 다 훑는다
+      const keys = [
+        "unique_user_id","uniqueUserId","unique_id","the_unique_id",
+        "USER_ID","user_id","uid","id","loginId",
+        "unique.login.id","unique_login_id"
+      ];
+      for (const k of keys){
+        const v = (localStorage.getItem(k) || sessionStorage.getItem(k) || "").trim();
+        if (v) { localStorage.setItem("unique_user_id", v); return v; }
+      }
+
+      // JSON 덩어리 저장 케이스들
+      const jsonKeys = ["unique_user","uniqueUser","user","login","auth","unique.login","uniqueUser"];
+      for (const jk of jsonKeys){
+        const raw = localStorage.getItem(jk) || sessionStorage.getItem(jk);
+        if (!raw) continue;
+        try{
+          const obj = JSON.parse(raw);
+          const v = (obj && (obj.id || obj.userId || obj.uid || (obj.user && obj.user.id))) ? (obj.id || obj.userId || obj.uid || obj.user.id) : "";
+          if (v){
+            localStorage.setItem("unique_user_id", String(v).trim());
+            // 이름도 있으면 같이
+            if (obj.name) localStorage.setItem("unique_user_name", safeName(obj.name));
+            if (obj.nickname) localStorage.setItem("unique_user_nick", safeName(obj.nickname));
+            return String(v).trim();
+          }
+        }catch(_){}
+      }
+
+      return "";
+    }
+
+    function setLast(msg){
+      el.lastResult.textContent = msg;
+    }
+
+    function showOverlay(on){
+      el.overlay.classList.toggle("on", !!on);
+    }
+
+    function animateNumber(node, from, to, ms=650){
+      from = Number(from||0); to = Number(to||0);
+      const t0 = performance.now();
+      function step(t){
+        const p = clamp((t - t0) / ms, 0, 1);
+        // easeOutCubic
+        const e = 1 - Math.pow(1-p, 3);
+        const v = from + (to-from) * e;
+        node.textContent = fmt(round2(v));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function toastWin(text){
+      el.floatWin.textContent = text;
+      el.floatWin.classList.remove("on");
+      void el.floatWin.offsetWidth;
+      el.floatWin.classList.add("on");
+    }
+
+    /*****************************************************************
+     * 4) Pay table 렌더
+     *****************************************************************/
+    function renderPaytable(){
+      el.payList.innerHTML = "";
+      for (const s of SYMBOLS){
+        const row = document.createElement("div");
+        row.className = "pay-item";
+        row.innerHTML = `
+          <img src="${ASSET.imgBase + s.img}" alt="${s.key}" onerror="this.style.display='none'">
+          <div class="meta">
+            <div class="name">${s.label}</div>
+            <div class="rule">2개: EVEN(±0) / 3개: x${s.pay[3]} / 4개: x${s.pay[4]} / 5개: x${s.pay[5]} (JACKPOT)</div>
           </div>
-          <div class="stat">
-            <div class="k">WALLET (UT)</div>
-            <div class="v" id="uiWallet">0</div>
-          </div>
-          <div class="stat">
-            <div class="k">JACKPOT</div>
-            <div class="v" id="uiJackpot">0</div>
-          </div>
-          <div class="stat">
-            <div class="k">LAST RESULT</div>
-            <div class="v" id="uiResult">READY</div>
-          </div>
-        </div>
+        `;
+        el.payList.appendChild(row);
+      }
+    }
 
-        <div class="betbox">
-          <div class="k">BET</div>
-          <div class="betrow">
-            <div class="betv" id="uiBet">10</div>
-            <div class="betbtns">
-              <button class="btn mini" id="btnBetMinus" type="button">-5</button>
-              <button class="btn mini" id="btnBetPlus" type="button">+5</button>
-            </div>
-          </div>
-        </div>
+    /*****************************************************************
+     * 5) 슬롯 그리드 생성/업데이트
+     *****************************************************************/
+    function makeGrid(){
+      el.slotGrid.innerHTML = "";
+      S.cells = [];
+      for (let i=0;i<15;i++){
+        const c = document.createElement("div");
+        c.className = "cell";
+        c.innerHTML = `<img alt="slot" />`;
+        el.slotGrid.appendChild(c);
+        S.cells.push(c);
+      }
+      // 초기 랜덤
+      setGrid(randomGridKeys());
+    }
 
-        <div class="controls">
-          <button class="btn" id="btnAuto" type="button">AUTO OFF</button>
-          <button class="btn" id="btnSound" type="button">SOUND ON</button>
-          <button class="btn primary" id="btnSpin" type="button">SPIN</button>
-        </div>
-      </section>
+    function setGrid(keys){
+      S.gridKeys = keys.slice();
+      for (let i=0;i<15;i++){
+        const k = keys[i];
+        const sym = SYMBOLS.find(x=>x.key===k) || SYMBOLS[0];
+        const img = S.cells[i].querySelector("img");
+        img.src = ASSET.imgBase + sym.img;
+        img.onerror = ()=>{ img.style.display="none"; };
+        img.style.display="block";
+      }
+    }
 
-      <!-- 슬롯 스테이지 -->
-      <section class="card stage" id="stageCard">
-        <div class="stage-hd">
-          <div class="stage-title">SLOT</div>
-          <div class="stage-sub" id="uiHint">2개 = EVEN / 3개 이상 = WIN / 잭팟은 레어</div>
-        </div>
+    function randomPickWeighted(){
+      const total = SYMBOLS.reduce((a,s)=>a + s.w, 0);
+      let r = Math.random() * total;
+      for (const s of SYMBOLS){
+        r -= s.w;
+        if (r <= 0) return s.key;
+      }
+      return SYMBOLS[SYMBOLS.length-1].key;
+    }
 
-        <div id="slotGrid" class="slot-grid" aria-label="slot reels"></div>
-      </section>
-    </section>
+    function randomGridKeys(){
+      const arr = [];
+      for (let i=0;i<15;i++) arr.push(randomPickWeighted());
+      return arr;
+    }
 
-    <!-- 잭팟/빅윈 연출 -->
-    <div id="celebrate" class="celebrate hidden" role="dialog" aria-modal="true">
-      <div class="celebrate-card">
-        <div class="celebrate-title" id="celebrateTitle">JACKPOT!</div>
-        <div class="celebrate-amount"><span id="celebrateAmount">0</span> UT</div>
-        <div class="celebrate-sub" id="celebrateSub">축하드립니다.</div>
-        <button class="btn primary" id="btnCelebrateClose" type="button">닫기</button>
-      </div>
-    </div>
-  </main>
+    function evaluate(keys){
+      const cnt = new Map();
+      for (const k of keys) cnt.set(k, (cnt.get(k)||0) + 1);
 
-  <!-- 슬롯 스크립트 -->
-  <script src="./slot/slot.config.js?v=20260112"></script>
-  <script src="./slot/slot.api.js?v=20260112"></script>
-  <script src="./slot/slot.audio.js?v=20260112"></script>
-  <script src="./slot/slot.ui.js?v=20260112"></script>
-  <script src="./slot/slot.game.js?v=20260112"></script>
-  <script src="./slot/slot.app.js?v=20260112"></script>
+      let bestKey = SYMBOLS[0].key;
+      let bestCount = 1;
+
+      for (const [k,v] of cnt.entries()){
+        if (v > bestCount){
+          bestCount = v;
+          bestKey = k;
+        } else if (v === bestCount){
+          // 동률이면 더 희귀한(가중치 낮은) 걸 우선
+          const a = SYMBOLS.find(x=>x.key===k)?.w ?? 999;
+          const b = SYMBOLS.find(x=>x.key===bestKey)?.w ?? 999;
+          if (a < b) bestKey = k;
+        }
+      }
+
+      return { bestKey, bestCount };
+    }
+
+    /*****************************************************************
+     * 6) 배경(스핀 중만) + 사운드(있으면 쓰고 없으면 꺼짐)
+     *****************************************************************/
+    function initAudio(){
+      try{
+        const a = {
+          start: new Audio(ASSET.sndBase + ASSET.sound.start),
+          spin:  new Audio(ASSET.sndBase + ASSET.sound.spin),
+          stop:  new Audio(ASSET.sndBase + ASSET.sound.stop),
+          win:   new Audio(ASSET.sndBase + ASSET.sound.win),
+          lose:  new Audio(ASSET.sndBase + ASSET.sound.lose),
+          jackpot:new Audio(ASSET.sndBase + ASSET.sound.jackpot),
+        };
+        a.spin.loop = true;
+        S.audio = a;
+        applySoundState();
+      }catch(_){
+        S.audio = null;
+        S.sound = false;
+        el.soundBtn.classList.remove("on");
+        el.soundBtn.textContent = "SOUND OFF";
+      }
+    }
+
+    function applySoundState(){
+      if (!S.audio) return;
+      const vol = S.sound ? 1 : 0;
+      for (const k of Object.keys(S.audio)){
+        try{ S.audio[k].volume = vol; }catch(_){}
+      }
+    }
+
+    function playSound(name){
+      if (!S.audio || !S.sound) return;
+      const a = S.audio[name];
+      if (!a) return;
+      try{
+        a.currentTime = 0;
+        a.play().catch(()=>{});
+      }catch(_){}
+    }
+
+    function spinLoop(on){
+      if (!S.audio) return;
+      const a = S.audio.spin;
+      if (!a) return;
+      try{
+        if (on){
+          a.currentTime = 0;
+          a.play().catch(()=>{});
+        } else {
+          a.pause();
+          a.currentTime = 0;
+        }
+      }catch(_){}
+    }
+
+    function startBgFlash(){
+      stopBgFlash();
+      let idx = 0;
+      el.bgFlash.classList.add("on");
+      // 빠르게 교체 (현란)
+      S.bgTimer = setInterval(()=>{
+        idx = (idx + 1) % ASSET.bg.length;
+        const file = ASSET.bg[idx];
+        el.bgFlash.style.backgroundImage = `url("${ASSET.imgBase + file}")`;
+      }, 120);
+    }
+
+    function stopBgFlash(){
+      if (S.bgTimer){
+        clearInterval(S.bgTimer);
+        S.bgTimer = null;
+      }
+      el.bgFlash.classList.remove("on");
+    }
+
+    /*****************************************************************
+     * 7) 잭팟 티커(자정까지 유지)
+     *****************************************************************/
+    function msUntilMidnightLocal(){
+      const d = new Date();
+      const m = new Date(d);
+      m.setHours(24,0,0,0);
+      return m.getTime() - d.getTime();
+    }
+
+    function setJackpotBanner(msg){
+      const until = Date.now() + msUntilMidnightLocal();
+      localStorage.setItem("slot_jackpot_banner", JSON.stringify({ msg, until }));
+      renderJackpotBanner();
+    }
+
+    function renderJackpotBanner(){
+      const raw = localStorage.getItem("slot_jackpot_banner");
+      if (!raw){
+        el.banner.classList.remove("on");
+        return;
+      }
+      try{
+        const obj = JSON.parse(raw);
+        if (!obj || !obj.msg || !obj.until || Date.now() > obj.until){
+          localStorage.removeItem("slot_jackpot_banner");
+          el.banner.classList.remove("on");
+          return;
+        }
+        el.bannerText.textContent = obj.msg;
+        el.banner.classList.add("on");
+      }catch(_){
+        localStorage.removeItem("slot_jackpot_banner");
+        el.banner.classList.remove("on");
+      }
+    }
+
+    /*****************************************************************
+     * 8) 서버 동기화
+     *****************************************************************/
+    async function syncState(){
+      const id = S.id;
+      const data = await api("getSlotState", { id });
+
+      const u = data.user || {};
+      S.name = safeName(u.name || localStorage.getItem("unique_user_name") || "");
+      S.nickname = safeName(u.nickname || localStorage.getItem("unique_user_nick") || "");
+      S.balance = Number(u.balance || 0);
+      S.jackpotTotal = Number(data.jackpotTotal || 0);
+      S.casinoTotal = Number(data.casinoTotal || 0);
+
+      // 표시명 우선순위: nickname > name > id
+      const display = S.nickname || S.name || S.id;
+      el.playerName.textContent = display || "-";
+      el.dotLogin.classList.toggle("warn", !display);
+
+      animateNumber(el.wallet, Number(el.wallet.textContent||0), S.balance, 550);
+      el.jackpot.textContent = fmt(S.jackpotTotal);
+
+      // slot에서도 표준키로 고정 저장(다음에 “잃어버림” 방지)
+      localStorage.setItem("unique_user_id", S.id);
+      if (S.name) localStorage.setItem("unique_user_name", S.name);
+      if (S.nickname) localStorage.setItem("unique_user_nick", S.nickname);
+    }
+
+    async function commitSpin(netDelta, lossAmount){
+      const res = await api("slotCommit", {
+        id: S.id,
+        netDelta: String(netDelta),
+        lossAmount: String(lossAmount)
+      });
+
+      const u = res.user || {};
+      const newBal = Number(u.balance || S.balance);
+      const newJack = Number(res.jackpotTotal || S.jackpotTotal);
+
+      S.balance = newBal;
+      S.jackpotTotal = newJack;
+
+      animateNumber(el.wallet, Number(el.wallet.textContent||0), newBal, 650);
+      el.jackpot.textContent = fmt(newJack);
+    }
+
+    /*****************************************************************
+     * 9) SPIN 로직
+     *****************************************************************/
+    async function doSpin(){
+      if (S.spinning) return;
+
+      const bet = S.bet;
+      if (!Number.isFinite(bet) || bet < BET.min) return;
+
+      if (S.balance < bet){
+        setLast("잔액 부족");
+        playSound("lose");
+        return;
+      }
+
+      S.spinning = true;
+      el.spinBtn.disabled = true;
+      setLast("SPINNING...");
+      playSound("start");
+
+      // 스핀 연출
+      startBgFlash();
+      spinLoop(true);
+
+      // 셀 반짝임
+      S.cells.forEach(c=>c.classList.add("flash"));
+
+      // 돌아가는 느낌 (중간에 계속 바꿈)
+      const spinMs = 1200;
+      const tick = 90;
+      let elapsed = 0;
+
+      while (elapsed < spinMs){
+        setGrid(randomGridKeys());
+        await sleep(tick);
+        elapsed += tick;
+      }
+
+      // 최종 결과
+      const finalKeys = randomGridKeys();
+      setGrid(finalKeys);
+
+      // 정지 연출
+      spinLoop(false);
+      playSound("stop");
+      stopBgFlash();
+      S.cells.forEach(c=>c.classList.remove("flash"));
+
+      const { bestKey, bestCount } = evaluate(finalKeys);
+      const sym = SYMBOLS.find(x=>x.key===bestKey) || SYMBOLS[0];
+
+      let win = 0;
+      let kind = "lose";
+
+      if (bestCount >= 5){
+        kind = "jackpot";
+        win = bet * sym.pay[5];
+      } else if (bestCount === 4){
+        kind = "win";
+        win = bet * sym.pay[4];
+      } else if (bestCount === 3){
+        kind = "win";
+        win = bet * sym.pay[3];
+      } else if (bestCount === 2){
+        kind = "even";
+        win = bet; // ✅ EVEN = ±0
+      } else {
+        kind = "lose";
+        win = 0;
+      }
+
+      win = round2(win);
+      const netDelta = round2(win - bet);
+      const lossAmount = (netDelta < 0) ? Math.abs(netDelta) : 0;
+
+      // UI 먼저 “도박 영상처럼” 수치 튀게
+      const before = S.balance;
+      const after = round2(S.balance + netDelta);
+      animateNumber(el.wallet, before, after, 720);
+
+      if (kind === "even"){
+        setLast("HIT +0 UT");
+        toastWin("HIT +0 UT");
+        playSound("win");
+      } else if (kind === "win"){
+        setLast(`WIN +${fmt(netDelta)} UT`);
+        toastWin(`WIN +${fmt(netDelta)} UT`);
+        playSound("win");
+      } else if (kind === "jackpot"){
+        setLast(`JACKPOT +${fmt(netDelta)} UT`);
+        toastWin(`JACKPOT +${fmt(netDelta)} UT`);
+        playSound("jackpot");
+
+        const who = safeName(S.nickname || S.name || S.id || "누군가");
+        setJackpotBanner(`${who}님이 잭팟이 터지셨습니다. 축하드립니다.`);
+      } else {
+        setLast(`LOSE -${fmt(bet)} UT`);
+        toastWin(`LOSE -${fmt(bet)} UT`);
+        playSound("lose");
+      }
+
+      // 서버 반영(실제 잔액/잭팟은 서버값을 기준으로 재동기화)
+      try{
+        await commitSpin(netDelta, lossAmount);
+      }catch(err){
+        // 실패 시 서버값으로 다시 맞춘다
+        setLast("SERVER ERROR: 재동기화");
+        try{ await syncState(); }catch(_){}
+      }
+
+      S.spinning = false;
+      el.spinBtn.disabled = false;
+
+      // AUTO면 0.6초 후 자동 재스핀
+      if (S.auto){
+        await sleep(600);
+        doSpin();
+      }
+    }
+
+    /*****************************************************************
+     * 10) 이벤트
+     *****************************************************************/
+    function setBet(next){
+      next = Math.round(next / BET.step) * BET.step;
+      next = clamp(next, BET.min, BET.max);
+      S.bet = next;
+      el.bet.textContent = String(next);
+    }
+
+    el.payToggle.addEventListener("click", ()=>{
+      el.payCard.classList.toggle("open");
+    });
+
+    el.betDown.addEventListener("click", ()=> setBet(S.bet - BET.step));
+    el.betUp.addEventListener("click", ()=> setBet(S.bet + BET.step));
+
+    el.autoBtn.addEventListener("click", ()=>{
+      S.auto = !S.auto;
+      el.autoBtn.classList.toggle("on", S.auto);
+      el.autoBtn.textContent = S.auto ? "AUTO ON" : "AUTO OFF";
+      if (S.auto && !S.spinning){
+        doSpin();
+      }
+    });
+
+    el.soundBtn.addEventListener("click", ()=>{
+      S.sound = !S.sound;
+      el.soundBtn.classList.toggle("on", S.sound);
+      el.soundBtn.textContent = S.sound ? "SOUND ON" : "SOUND OFF";
+      applySoundState();
+    });
+
+    el.spinBtn.addEventListener("click", doSpin);
+
+    /*****************************************************************
+     * 11) 부팅
+     *****************************************************************/
+    async function boot(){
+      renderJackpotBanner();
+      renderPaytable();
+      makeGrid();
+      initAudio();
+      setBet(BET.def);
+
+      // 로그인 복구
+      const id = readLoginId();
+      if (!id){
+        el.dotLogin.classList.add("warn");
+        showOverlay(true);
+        return;
+      }
+      S.id = String(id).trim().toLowerCase();
+
+      // 서버 동기화
+      try{
+        await syncState();
+        showOverlay(false);
+        setLast("READY");
+      }catch(err){
+        // 여기서 user_not_found면, 실제로 시트에 id가 없다는 뜻
+        setLast("INIT ERROR: " + (err && err.message ? err.message : "init_failed"));
+        // 그래도 overlay는 안 띄움(유저가 보고 판단하게)
+      }
+    }
+
+    boot();
+  </script>
 </body>
 </html>
