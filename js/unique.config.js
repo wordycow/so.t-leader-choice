@@ -70,4 +70,8 @@
     SLOT_WORKER_BASE: C.SLOT_WORKER_BASE,
     VAULT_WORKER_BASE: C.VAULT_WORKER_BASE,
   });
+  // 슬롯 모듈들이 window.SLOT_API_BASE 를 직접 읽으므로 브릿지로 연결
+window.VAULT_API_BASE = window.UNIQUE.CONFIG.VAULT_API_BASE;
+window.SLOT_API_BASE  = window.UNIQUE.CONFIG.VAULT_API_BASE; // ✅ 슬롯은 vault의 /slot/state, /slot/spin을 사용
+
 })();
