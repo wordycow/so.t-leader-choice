@@ -33,12 +33,12 @@
 
     // 기본 표시(즉시)
     setText("uiPlayer", `${u.id} / ${u.name || "-"}`);
-    setText("uiWallet", Number(u.balance||0));
+    setText("uiWallet", Number(u.balance || 0));
     setText("uiJackpot", "…");
     setText("uiResult", "READY");
     setNote("");
 
-    // 시트에서 최신값 로드
+    // 시트에서 최신값 로드(권위는 시트)
     try{
       const r = await window.SLOT_API.getSlotState();
       if (!r || !r.ok || !r.user){
@@ -47,11 +47,10 @@
       }
 
       setText("uiPlayer", `${r.user.id} / ${r.user.name || "-"}`);
-      setText("uiWallet", Number(r.user.balance||0));
+      setText("uiWallet", Number(r.user.balance || 0));
       setText("uiJackpot", Number(r.jackpotTotal || 0));
 
-      updateLocalStorageBalance(Number(r.user.balance||0));
-
+      updateLocalStorageBalance(Number(r.user.balance || 0));
     }catch(e){
       setNote("네트워크 오류로 유저 정보를 불러오지 못했습니다.");
     }
@@ -68,13 +67,11 @@
         return;
       }
 
-      // UI 반영
-      setText("uiWallet", Number(r.user.balance||0));
-      setText("uiJackpot", Number(r.jackpotTotal||0));
+      setText("uiWallet", Number(r.user.balance || 0));
+      setText("uiJackpot", Number(r.jackpotTotal || 0));
       if (resultText) setText("uiResult", resultText);
 
-      updateLocalStorageBalance(Number(r.user.balance||0));
-
+      updateLocalStorageBalance(Number(r.user.balance || 0));
     }catch(e){
       setNote("시트 반영 중 네트워크 오류.");
     }
