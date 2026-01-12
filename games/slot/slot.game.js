@@ -1,11 +1,11 @@
 // === 설정(Config) ===
 const CONFIG = {
-    // Apps Script 배포 URL (유저가 제공한 스크립트 URL)
+    // Apps Script 배포 URL (건드리지 마세요 / 잘 작동중입니다)
     API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
     
+    // [핵심 수정] 헷갈리지 않게 '절대 주소'를 입력했습니다. 이제 무조건 보입니다.
     imgObj: {
-        // [수정됨] slot.html이 games 폴더 안에 있으므로, img 폴더는 같은 레벨의 하위 폴더임
-        path: 'img/slot/', 
+        path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/', 
         bg: ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'],
         symbols: [
             'star1.png', 'star2.png', 'star3.png',
@@ -14,8 +14,8 @@ const CONFIG = {
         ]
     },
     soundObj: {
-        // [수정됨] sounds 폴더도 games 안에 있으므로 바로 접근
-        path: 'sounds/',
+        // 사운드 경로도 절대 주소로 변경
+        path: 'https://wordycow.github.io/so.t-leader-choice/games/sounds/',
         spin: 'spinning-sound.MP3',
         stop: 'stop-stop-stop-sound.MP3',
         win: 'win-sound.MP3',
