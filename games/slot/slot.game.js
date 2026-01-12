@@ -1,4 +1,6 @@
+// === 설정 ===
 const CONFIG = {
+    // 404 방지를 위해 절대 경로 사용
     API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
     imgObj: {
         path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/', 
@@ -16,7 +18,7 @@ let state = { id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: tru
 let els = {}; const audios = {};
 
 async function init() {
-    console.log("SLOT ENGINE: CYBER GOLD V1 STARTED");
+    console.log("SLOT ENGINE: FINAL FIX STARTED");
     els = {
         bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
         reelsContainer: document.getElementById('reels-container'), spinBtn: document.getElementById('btn-spin'),
@@ -53,26 +55,10 @@ async function init() {
     if(els.btnAuto) els.btnAuto.addEventListener('click', toggleAuto);
 }
 
-function toggleSound() {
-    state.audioEnabled = !state.audioEnabled;
-    if(els.btnSound) els.btnSound.classList.toggle("active", state.audioEnabled);
-}
-
-function toggleAuto() {
-    state.isAuto = !state.isAuto;
-    updateAutoBtn();
-    if (state.isAuto && !state.isSpinning) onSpinClick();
-}
-
-function updateAutoBtn() {
-    if(els.btnAuto) els.btnAuto.innerHTML = state.isAuto ? "AUTO<br>ON" : "AUTO<br>OFF";
-    if(els.btnAuto) els.btnAuto.classList.toggle("active", state.isAuto);
-}
-
-function updateWinPanel(label, amount) {
-    if (els.winLabel) els.winLabel.innerText = label;
-    if (els.winAmount) els.winAmount.innerText = amount;
-}
+function toggleSound() { state.audioEnabled = !state.audioEnabled; if(els.btnSound) els.btnSound.classList.toggle("active", state.audioEnabled); }
+function toggleAuto() { state.isAuto = !state.isAuto; updateAutoBtn(); if (state.isAuto && !state.isSpinning) onSpinClick(); }
+function updateAutoBtn() { if(els.btnAuto) els.btnAuto.innerHTML = state.isAuto ? "AUTO<br>ON" : "AUTO<br>OFF"; if(els.btnAuto) els.btnAuto.classList.toggle("active", state.isAuto); }
+function updateWinPanel(label, amount) { if (els.winLabel) els.winLabel.innerText = label; if (els.winAmount) els.winAmount.innerText = amount; }
 
 function animateValue(obj, start, end, duration) {
     if(!obj) return;
@@ -149,17 +135,17 @@ async function onSpinClick() {
     const strips = document.querySelectorAll('.reel-strip');
     const symbolDom = document.querySelector('.symbol'); if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // [핵심] 스핀 시작 시 위치 리셋 (화면 깜빡임 방지)
+    // 리셋
     strips.forEach((strip) => { strip.style.transition = 'none'; strip.style.transform = 'translateY(0px)'; });
-    void els.gameContainer.offsetWidth; // Reflow
+    void els.gameContainer.offsetWidth; 
 
-    // [순차 출발]
+    // 순차 출발
     strips.forEach((strip, index) => {
         setTimeout(() => {
             strip.style.transition = `transform 4s linear`; 
             const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
             strip.style.transform = `translateY(${targetY}px)`; 
-        }, index * 100);
+        }, index * 150);
     });
 
     try {
@@ -183,17 +169,17 @@ function stopReelsWithResult(data) {
         symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 5]}.png')`;
         symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 10]}.png')`;
 
-        // [순차 정지] 릴마다 0.6초씩 시차
+        // 순차 정지 (왼쪽부터 탁탁탁)
         setTimeout(() => {
             strip.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)'; 
             const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
             strip.style.transform = `translateY(${finalY}px)`;
             if(state.audioEnabled) { audios.stop.cloneNode().play(); }
             if (colIdx === CONFIG.reels - 1) { els.gameContainer.classList.add('shake'); setTimeout(() => els.gameContainer.classList.remove('shake'), 500); }
-        }, 1500 + (colIdx * 600)); 
+        }, 1500 + (colIdx * 500)); 
     });
 
-    setTimeout(() => { handleSpinEnd(data); }, 1500 + ((CONFIG.reels - 1) * 600) + 700);
+    setTimeout(() => { handleSpinEnd(data); }, 1500 + ((CONFIG.reels - 1) * 500) + 700);
 }
 
 function handleSpinEnd(data) {
