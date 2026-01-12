@@ -1,58 +1,66 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const C = () => SLOT.config;
+  const CFG = () => SLOT.config || {};
 
-  function isValidScriptUrl(url) {
-    return typeof url === "string" && url.startsWith("https://script.google.com/macros/s/");
+  function assertScriptUrl() {
+    const url = String(CFG().SCRIPT_URL || "").trim();
+    if (!url || url.includes("PASTE_YOUR")) throw new Error("SCRIPT_URL not set in slot.config.js");
+    return url;
   }
 
-  function jsonp(action, params = {}) {
+  function jsonp(params, timeoutMs = 12000) {
+    const base = assertScriptUrl();
     return new Promise((resolve, reject) => {
-      const scriptUrl = C()?.SCRIPT_URL;
-      if (!isValidScriptUrl(scriptUrl)) {
-        reject(new Error("SCRIPT_URL not set in slot.config.js"));
-        return;
-      }
+      const cbName = "__SLOTcb_" + Math.random().toString(16).slice(2);
+      const q = new URLSearchParams(params);
+      q.set("callback", cbName);
 
-      const cbName = `__slot_cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      const qs = new URLSearchParams({
-        action,
-        callback: cbName,
-        t: String(Date.now()),
-        ...Object.fromEntries(
-          Object.entries(params).map(([k, v]) => [k, v == null ? "" : String(v)])
-        ),
-      });
+      const script = document.createElement("script");
+      let done = false;
 
-      const s = document.createElement("script");
-      s.src = `${scriptUrl}?${qs.toString()}`;
-      s.async = true;
+      const cleanup = () => {
+        try { delete window[cbName]; } catch (_) {}
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      };
 
-      function cleanup() {
-        try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
-        if (s && s.parentNode) s.parentNode.removeChild(s);
-      }
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error("JSONP timeout"));
+      }, timeoutMs);
 
       window[cbName] = (data) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
         cleanup();
         resolve(data);
       };
 
-      s.onerror = () => {
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
         cleanup();
-        reject(new Error("network_error"));
+        reject(new Error("JSONP load error"));
       };
 
-      document.head.appendChild(s);
+      script.src = `${base}?${q.toString()}`;
+      document.head.appendChild(script);
     });
   }
 
+  async function call(action, payload = {}) {
+    const res = await jsonp({ action, ...payload });
+    if (!res || res.ok !== true) {
+      throw new Error((res && (res.message || res.error)) ? (res.message || res.error) : "API error");
+    }
+    return res;
+  }
+
   SLOT.api = {
-    async getSlotState(id) {
-      return jsonp("getSlotState", { id });
-    },
-    async slotSpin(id, bet) {
-      return jsonp("slotSpin", { id, bet });
-    },
+    getSlotState: (id) => call("getSlotState", { id }),
+    slotSpin: (id, bet) => call("slotSpin", { id, bet })
   };
 })();
