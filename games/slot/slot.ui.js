@@ -1,226 +1,247 @@
-/* games/slot/slot.ui.js */
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const cfg = SLOT.config;
+  const cfg = SLOT.config || {};
 
-  function $(sel) { return document.querySelector(sel); }
-  function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
+  const els = {};
 
-  function setText(el, text) {
-    if (!el) return;
-    el.textContent = text == null ? "" : String(text);
+  function $(id) { return document.getElementById(id); }
+
+  function fmt(n) {
+    const x = Number(n || 0);
+    if (!Number.isFinite(x)) return "0";
+    return String(Math.round(x * 100) / 100);
   }
 
-  function setNum(el, n) {
-    if (!el) return;
-    const v = Number(n);
-    el.textContent = Number.isFinite(v) ? String(v) : "0";
+  function symbolToSrc(key) {
+    const s = (cfg.SYMBOL_MAP && cfg.SYMBOL_MAP[key]) ? cfg.SYMBOL_MAP[key] : null;
+    const base = cfg.ASSET && cfg.ASSET.imgBase ? cfg.ASSET.imgBase : "";
+    if (!base || !s || !s.file) return "";
+    return `${base}/${s.file}`;
   }
 
-  function symbolDef(key) {
-    return (cfg.SYMBOLS || []).find(s => s.key === key) || null;
-  }
+  function ensureGrid() {
+    const grid = els.slotGrid;
+    if (!grid) return;
 
-  function symbolImgUrl(key) {
-    const s = symbolDef(key);
-    if (!s) return "";
-    return `${cfg.ASSET.imgBase}${s.file}`;
-  }
-
-  function ensureGridCells() {
-    // 1) 이미 15칸이 있으면 그대로 사용
-    let cells = $all(".slot-cell,[data-slot-cell]");
-    if (cells.length === 15) return cells;
-
-    // 2) 없으면 slotGrid 컨테이너 찾아서 15칸 생성
-    const grid = $("#slotGrid") || $(".slot-grid") || $("[data-slot-grid]");
-    if (!grid) return cells;
+    const rows = (cfg.GRID && cfg.GRID.rows) || 3;
+    const cols = (cfg.GRID && cfg.GRID.cols) || 5;
 
     grid.innerHTML = "";
-    for (let i = 0; i < 15; i++) {
-      const d = document.createElement("div");
-      d.className = "slot-cell";
-      d.setAttribute("data-slot-cell", "1");
-      grid.appendChild(d);
+    const cells = [];
+
+    for (let i = 0; i < rows * cols; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      const img = document.createElement("img");
+      img.className = "cellImg";
+      img.alt = "";
+
+      const label = document.createElement("div");
+      label.className = "cellLabel";
+      label.textContent = "";
+
+      cell.appendChild(img);
+      cell.appendChild(label);
+      grid.appendChild(cell);
+
+      cells.push({ cell, img, label });
     }
-    return $all(".slot-cell,[data-slot-cell]");
+
+    els._cells = cells;
   }
 
-  function renderGrid(keys = []) {
-    const cells = ensureGridCells();
-    if (!cells || !cells.length) return;
+  function renderPaytable() {
+    const wrap = els.payWrap;
+    if (!wrap) return;
 
-    for (let i = 0; i < cells.length; i++) {
-      const key = keys[i];
-      const cell = cells[i];
-      if (!key) { cell.innerHTML = ""; continue; }
+    const lines = cfg.PAYTABLE_TEXT || [];
+    wrap.innerHTML = "";
 
-      const url = symbolImgUrl(key);
-      const s = symbolDef(key);
+    const box = document.createElement("div");
+    box.className = "payBox";
 
-      // 이미지가 없거나 경로가 틀려도 텍스트로라도 보이게
-      cell.innerHTML = url
-        ? `<img alt="${s?.label || key}" src="${url}" style="width:100%;height:100%;object-fit:contain;" />`
-        : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;">${s?.label || key}</div>`;
-    }
-  }
+    const ul = document.createElement("ul");
+    ul.className = "payList";
 
-  // ====== PAYTABLE 접기/펼치기 ======
-  function bindPayTableToggle() {
-    const btn =
-      document.querySelector("#btnPayToggle") ||
-      document.querySelector("#payToggleBtn") ||
-      document.querySelector("#payTableToggle") ||
-      document.querySelector('[data-action="pay-toggle"]') ||
-      Array.from(document.querySelectorAll("button")).find(b => (b.textContent || "").includes("접기/펼치기"));
-
-    if (!btn) return;
-
-    // 버튼이 들어있는 카드(또는 섹션) 찾기
-    const card =
-      btn.closest("#payTable") ||
-      btn.closest(".paytable-card") ||
-      btn.closest(".card") ||
-      btn.closest("section") ||
-      document.querySelector("#payTable") ||
-      document.querySelector(".paytable-card");
-
-    if (!card) return;
-
-    // 카드 안에서 “헤더 제외 나머지”를 body로 간주
-    const header =
-      btn.closest(".card-head") ||
-      btn.closest(".panel-head") ||
-      btn.parentElement;
-
-    const bodyCandidates = [
-      card.querySelector(".paytable-body"),
-      card.querySelector(".card-body"),
-      card.querySelector(".panel-body"),
-      card.querySelector("[data-paytable-body]"),
-    ].filter(Boolean);
-
-    let bodies = bodyCandidates.length ? bodyCandidates : [];
-    if (!bodies.length) {
-      bodies = Array.from(card.children).filter(ch => ch !== header);
-    }
-
-    // 초기 상태 복원
-    const saved = localStorage.getItem(cfg.STORAGE.payCollapsed);
-    let collapsed = saved === "1";
-    applyCollapsed(collapsed);
-
-    btn.addEventListener("click", () => {
-      collapsed = !collapsed;
-      localStorage.setItem(cfg.STORAGE.payCollapsed, collapsed ? "1" : "0");
-      applyCollapsed(collapsed);
+    lines.forEach(t => {
+      const li = document.createElement("li");
+      li.textContent = t;
+      ul.appendChild(li);
     });
 
-    function applyCollapsed(isCollapsed) {
-      bodies.forEach(el => {
-        el.style.display = isCollapsed ? "none" : "";
-      });
-    }
+    box.appendChild(ul);
+    wrap.appendChild(box);
   }
 
-  // ====== 잭팟 배너(자정까지) ======
-  function setJackpotBanner(text) {
-    const key = cfg.STORAGE.banner;
-    if (!text) {
-      localStorage.removeItem(key);
-      hideBanner();
-      return;
-    }
+  function togglePaytable() {
+    const wrap = els.payWrap;
+    if (!wrap) return;
 
-    // 자정까지 유지
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-
-    localStorage.setItem(key, JSON.stringify({ text, until: midnight.getTime() }));
-    showBanner(text);
+    // ✅ CSS에 의존하지 않고 무조건 토글
+    const now = wrap.style.display;
+    wrap.style.display = (now === "none") ? "" : "none";
   }
 
-  function restoreJackpotBanner() {
-    const key = cfg.STORAGE.banner;
-    const raw = localStorage.getItem(key);
-    if (!raw) return;
-    try {
-      const o = JSON.parse(raw);
-      if (!o || !o.text || !o.until) return;
-      if (Date.now() > Number(o.until)) {
-        localStorage.removeItem(key);
-        return;
-      }
-      showBanner(o.text);
-    } catch (_) {}
+  function showOverlay(title, htmlText) {
+    const ov = els.loginOverlay;
+    if (!ov) return;
+
+    const t = els.overlayTitle;
+    const tx = els.overlayText;
+    if (t) t.textContent = title || "";
+    if (tx) tx.innerHTML = htmlText || "";
+
+    ov.classList.remove("hidden");
   }
 
-  function showBanner(text) {
-    let el = document.querySelector("#jackpotBanner");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "jackpotBanner";
-      el.style.cssText =
-        "position:sticky;top:0;z-index:50;background:#0b1226;color:#fff;padding:10px 12px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.12)";
-      el.innerHTML = `<div id="jackpotTicker" style="white-space:nowrap;will-change:transform;display:inline-block;">${escapeHtml(
-        text
-      )}</div>`;
-      document.body.prepend(el);
-
-      // ticker animation
-      const ticker = el.querySelector("#jackpotTicker");
-      ticker.animate(
-        [{ transform: "translateX(100%)" }, { transform: "translateX(-120%)" }],
-        { duration: 12000, iterations: Infinity }
-      );
-    } else {
-      const ticker = el.querySelector("#jackpotTicker");
-      if (ticker) ticker.textContent = text;
-    }
+  function hideOverlay() {
+    const ov = els.loginOverlay;
+    if (!ov) return;
+    ov.classList.add("hidden");
   }
 
-  function hideBanner() {
-    const el = document.querySelector("#jackpotBanner");
-    if (el) el.remove();
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-    }[m]));
-  }
-
-  // ====== public helpers ======
-  function setPlayer(nameOrNick) {
-    setText($("#playerValue") || $("#playerName") || $("[data-player]"), nameOrNick || "-");
-  }
-
-  function setWallet(ut) {
-    setNum($("#walletValue") || $("#walletUt") || $("[data-wallet]"), ut);
-  }
-
-  function setJackpotPool(ut) {
-    setNum($("#jackpotValue") || $("#jackpotPool") || $("[data-jackpot]"), ut);
-  }
-
-  function setLastResult(text) {
-    setText($("#lastResultValue") || $("#lastResult") || $("[data-last]"), text || "READY");
-  }
-
-  function setBet(ut) {
-    setNum($("#betValue") || $("#betUt") || $("[data-bet]"), ut);
+  function setBanner(msg) {
+    if (!els.jackpotBanner || !els.jackpotBannerText) return;
+    els.jackpotBannerText.textContent = msg || "";
+    if (msg) els.jackpotBanner.classList.remove("hidden");
+    else els.jackpotBanner.classList.add("hidden");
   }
 
   SLOT.ui = {
-    renderGrid,
-    bindPayTableToggle,
-    setPlayer,
-    setWallet,
-    setJackpotPool,
-    setLastResult,
-    setBet,
-    setJackpotBanner,
-    restoreJackpotBanner,
+    init() {
+      els.slotGrid = $("slotGrid");
+      els.slotBgImg = $("slotBgImg");
+      els.payWrap = $("payWrap");
+      els.payToggle = $("payToggle");
+
+      els.playerName = $("playerName");
+      els.walletUt = $("walletUt");
+      els.jackpotPool = $("jackpotPool");
+      els.lastResult = $("lastResult");
+
+      els.betUt = $("betUt");
+      els.betDown = $("betDown");
+      els.betUp = $("betUp");
+
+      els.autoBtn = $("autoBtn");
+      els.soundBtn = $("soundBtn");
+      els.spinBtn = $("spinBtn");
+
+      els.loginOverlay = $("loginOverlay");
+      els.overlayTitle = $("overlayTitle");
+      els.overlayText = $("overlayText");
+
+      els.jackpotBanner = $("jackpotBanner");
+      els.jackpotBannerText = $("jackpotBannerText");
+
+      // bg
+      const bg = cfg.ASSET && cfg.ASSET.bg ? cfg.ASSET.bg : "";
+      if (els.slotBgImg) {
+        if (bg) {
+          els.slotBgImg.src = bg;
+          els.slotBgImg.style.display = "";
+        } else {
+          els.slotBgImg.removeAttribute("src");
+          els.slotBgImg.style.display = "none";
+        }
+      }
+
+      ensureGrid();
+      renderPaytable();
+
+      if (els.payToggle) {
+        els.payToggle.addEventListener("click", (e) => {
+          e.preventDefault();
+          togglePaytable();
+        });
+      }
+    },
+
+    setPlayer(name) { if (els.playerName) els.playerName.textContent = name || "-"; },
+    setWallet(n) { if (els.walletUt) els.walletUt.textContent = fmt(n); },
+    setJackpotPool(n) { if (els.jackpotPool) els.jackpotPool.textContent = fmt(n); },
+    setLastResult(t) { if (els.lastResult) els.lastResult.textContent = t || "READY"; },
+
+    setBet(n) { if (els.betUt) els.betUt.textContent = String(n || 0); },
+
+    applyKeys(keys) {
+      const cells = els._cells || [];
+      if (!Array.isArray(keys) || keys.length !== cells.length) return;
+
+      keys.forEach((k, i) => {
+        const c = cells[i];
+        const src = symbolToSrc(k);
+
+        if (c.img) {
+          if (src) {
+            c.img.src = src;
+            c.img.style.display = "";
+          } else {
+            c.img.removeAttribute("src");
+            c.img.style.display = "none";
+          }
+        }
+        if (c.label) {
+          const info = (cfg.SYMBOL_MAP && cfg.SYMBOL_MAP[k]) ? cfg.SYMBOL_MAP[k] : null;
+          c.label.textContent = info ? info.label : (k || "");
+        }
+      });
+    },
+
+    showLoginOverlayMissingId() {
+      showOverlay(
+        "로그인 정보가 없습니다",
+        `URL에 <b>?id=아이디</b>를 붙이거나 MAIN에서 로그인 후 들어오세요.<br/>
+         예: <code>.../games/slot.html?id=wordycow</code>`
+      );
+    },
+
+    showOverlayConfigMissing() {
+      showOverlay(
+        "설정이 필요합니다",
+        `slot.config.js의 <b>SCRIPT_URL</b>에 Apps Script 웹앱(/exec) 주소를 넣어주세요.`
+      );
+    },
+
+    hideOverlay,
+
+    // ✅ 잭팟 배너: 자정까지 유지(로컬 저장)
+    persistBannerUntilMidnight(msg) {
+      try {
+        const key = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.banner;
+        if (!key) return;
+
+        const now = new Date();
+        const end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+
+        localStorage.setItem(key, JSON.stringify({
+          msg: msg || "",
+          until: end.getTime()
+        }));
+      } catch (_) {}
+    },
+
+    loadPersistedBanner() {
+      try {
+        const key = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.banner;
+        if (!key) return;
+
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+
+        const data = JSON.parse(raw);
+        if (!data || !data.msg || !data.until) return;
+
+        if (Date.now() <= Number(data.until)) {
+          setBanner(String(data.msg));
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch (_) {}
+    },
+
+    showBanner(msg) { setBanner(msg); }
   };
 })();
