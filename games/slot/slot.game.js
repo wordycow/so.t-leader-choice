@@ -149,10 +149,11 @@ async function onSpinClick() {
     const strips = document.querySelectorAll('.reel-strip');
     const symbolDom = document.querySelector('.symbol'); if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // [핵심] 멈춘 뒤 재정렬 방지: 시작할 때 위치 초기화
+    // [핵심] 스핀 시작 시 위치 리셋 (화면 깜빡임 방지)
     strips.forEach((strip) => { strip.style.transition = 'none'; strip.style.transform = 'translateY(0px)'; });
-    void els.gameContainer.offsetWidth; 
+    void els.gameContainer.offsetWidth; // Reflow
 
+    // [순차 출발]
     strips.forEach((strip, index) => {
         setTimeout(() => {
             strip.style.transition = `transform 4s linear`; 
@@ -182,6 +183,7 @@ function stopReelsWithResult(data) {
         symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 5]}.png')`;
         symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 10]}.png')`;
 
+        // [순차 정지] 릴마다 0.6초씩 시차
         setTimeout(() => {
             strip.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)'; 
             const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
