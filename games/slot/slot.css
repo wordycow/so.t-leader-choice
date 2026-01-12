@@ -1,4 +1,4 @@
-/* === 전체 폰트 및 기본 설정 === */
+/* === 전체 설정 === */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 :root {
@@ -6,7 +6,6 @@
     --neon-blue: #00ffff;
     --neon-gold: #ffcc00;
     --dark-bg: #050510;
-    --frame-dark: #111;
 }
 
 body {
@@ -18,11 +17,12 @@ body {
     display: flex; justify-content: center; align-items: center;
 }
 
-/* 배경 */
+/* 배경: 스핀 중 화려하게 변하는 것이 슬롯 뒤로 비쳐야 함 */
 #game-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover; background-position: center; z-index: -2;
-    filter: brightness(0.5); /* 배경을 어둡게 눌러 슬롯 집중 */
+    /* 배경이 너무 밝으면 심볼이 안 보이므로 적당히 어둡게 */
+    filter: brightness(0.6) contrast(1.1); 
 }
 
 /* 오버레이 */
@@ -35,34 +35,26 @@ body {
 .glass-panel {
     background: rgba(20, 20, 40, 0.8);
     border: 4px solid var(--neon-blue); padding: 2rem; border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 0 50px var(--neon-blue);
+    text-align: center; box-shadow: 0 0 50px var(--neon-blue);
 }
-.glass-panel h1 { 
-    margin: 0; font-size: 2.5rem; color: var(--neon-pink); 
-    text-shadow: 0 0 20px var(--neon-pink);
-}
+.glass-panel h1 { margin: 0; font-size: 2.5rem; color: var(--neon-pink); text-shadow: 0 0 20px var(--neon-pink); }
 .blink { animation: blink 1s infinite alternate; margin-top: 15px; font-size: 1.2rem; }
 @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
 
-/* 메인 컨테이너 */
 #game-container {
     width: 100%; max-width: 600px; height: 100%;
     display: flex; flex-direction: column;
-    padding: 10px; box-sizing: border-box;
-    position: relative;
+    padding: 10px; box-sizing: border-box; position: relative;
 }
 
-/* 상단 티커 */
 .ticker-wrap {
     background: #000; border-top: 2px solid var(--neon-pink); border-bottom: 2px solid var(--neon-pink);
     height: 30px; line-height: 30px; overflow: hidden; margin-bottom: 10px;
 }
 .ticker { display: inline-block; white-space: nowrap; animation: ticker 20s linear infinite; }
-.ticker-item { color: var(--neon-gold); font-weight: bold; font-size: 0.9rem; padding-right: 50px; }
+.ticker-item { color: var(--neon-gold); font-weight: bold; padding-right: 50px; }
 @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-/* 상단 정보 */
 .top-bar { 
     display: flex; justify-content: space-between; 
     background: rgba(30,30,50,0.9); padding: 10px 15px; border-radius: 10px;
@@ -71,101 +63,89 @@ body {
 .info-box { font-size: 1rem; font-weight: 700; }
 .wallet-info span { color: var(--neon-blue); }
 
-/* === [핵심] 3D 슬롯 프레임 (원통형 느낌) === */
+/* === [핵심] 3D 반투명 슬롯 프레임 === */
 .slot-machine-frame-outer {
     flex-grow: 1; 
-    background: #1a1a1a;
-    border-radius: 20px;
-    padding: 15px; /* 내부 여백 */
-    position: relative;
+    /* 프레임 자체도 약간 투명하게 */
+    background: rgba(20, 20, 20, 0.85);
+    border-radius: 20px; padding: 15px; position: relative;
     border: 3px solid #333;
-    box-shadow: 
-        0 0 20px rgba(0,0,0,0.8), 
-        inset 0 0 30px #000;
-    display: flex; flex-direction: column;
-    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 30px #000;
+    display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* 기계 장식 (네온 라인) */
 .machine-decoration {
     height: 4px; width: 100%; background: var(--neon-pink);
-    box-shadow: 0 0 10px var(--neon-pink); margin: 5px 0;
-    border-radius: 2px; opacity: 0.7;
+    box-shadow: 0 0 10px var(--neon-pink); margin: 5px 0; border-radius: 2px; opacity: 0.7;
 }
 
 .slot-machine-frame-inner {
-    flex-grow: 1;
-    position: relative;
-    background: #000;
-    border: 2px solid #444;
-    border-radius: 10px;
-    overflow: hidden; /* 중요: 릴이 튀어나가지 않게 */
+    flex-grow: 1; position: relative;
+    /* [중요] 릴 배경을 반투명 검정으로 설정 -> 뒤가 비침 */
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 10px; overflow: hidden;
 }
 
-.reels-container {
-    display: flex; width: 100%; height: 100%;
-}
+.reels-container { display: flex; width: 100%; height: 100%; }
 
 .reel {
-    width: 20%; height: 100%; 
-    position: relative;
-    border-right: 1px solid rgba(255,255,255,0.05);
+    width: 20%; height: 100%; position: relative;
+    /* 릴 구분선도 은은하게 */
+    border-right: 1px solid rgba(255,255,255,0.15);
 }
 .reel:last-child { border-right: none; }
-
 .reel-strip { width: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
 
-/* === [3D 원통 효과 오버레이] === */
-/* 위/아래는 아주 진한 검정, 가운데는 투명 + 약간의 광택 */
+/* === [3D 원통 오버레이 수정] === */
+/* 가운데 부분을 완전히 투명하게 뚫어서 배경이 잘 보이게 함 */
 .cylinder-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 10;
     background: linear-gradient(
         180deg, 
-        rgba(0,0,0,0.95) 0%, 
-        rgba(0,0,0,0.6) 15%, 
-        rgba(255,255,255,0.05) 40%, /* 미세한 광택 */
-        rgba(255,255,255,0.05) 60%, 
-        rgba(0,0,0,0.6) 85%, 
-        rgba(0,0,0,0.95) 100%
+        rgba(0,0,0,0.9) 0%,     /* 위쪽 어둠 */
+        rgba(0,0,0,0.5) 15%, 
+        rgba(255,255,255,0) 40%, /* 완전 투명 (배경 보임) */
+        rgba(255,255,255,0) 60%, 
+        rgba(0,0,0,0.5) 85%, 
+        rgba(0,0,0,0.9) 100%    /* 아래쪽 어둠 */
     );
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+    /* 양 옆에 살짝 그림자를 줘서 원통 굴곡 표현 */
+    box-shadow: inset 20px 0 20px rgba(0,0,0,0.3), inset -20px 0 20px rgba(0,0,0,0.3);
 }
 
+/* 심볼: 또렷하게 */
 .symbol {
     width: 100%; aspect-ratio: 1/1; display: block;
-    background-size: 85%; background-repeat: no-repeat; background-position: center;
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); /* 심볼 발광 */
+    background-size: 80%; /* 여백 확보 */
+    background-repeat: no-repeat; background-position: center;
+    /* 쨍한 느낌을 위해 필터 조정 */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)) brightness(1.1);
 }
 
-/* 승리 라인 */
 .win-line {
     position: absolute; top: 50%; left: 0; width: 100%; height: 3px;
     background: red; z-index: 20; transform: translateY(-50%);
     box-shadow: 0 0 10px red; display: none;
 }
 
-/* 하단 당첨 정보 패널 */
 .win-info-panel {
     background: linear-gradient(90deg, #111, #222, #111);
     margin: 10px 0; padding: 15px; border-radius: 15px;
-    border: 2px solid var(--neon-gold);
-    text-align: center;
+    border: 2px solid var(--neon-gold); text-align: center;
     box-shadow: 0 0 15px var(--neon-gold);
     min-height: 70px; display: flex; flex-direction: column; justify-content: center;
 }
 .win-label { color: #888; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
 .win-amount { color: var(--neon-gold); font-size: 1.8rem; font-weight: 900; text-shadow: 0 0 10px var(--neon-gold); }
 
-/* 컨트롤 패널 */
 .control-panel {
     display: flex; justify-content: space-between; align-items: center;
     background: rgba(30,30,40,0.95); padding: 15px;
-    border-radius: 20px 20px 0 0;
-    border-top: 2px solid var(--neon-blue);
+    border-radius: 20px 20px 0 0; border-top: 2px solid var(--neon-blue);
 }
 
-/* 버튼 스타일 */
 .neon-btn {
     background: #222; border: 2px solid #555; color: white;
     width: 45px; height: 45px; border-radius: 10px; font-size: 1.2rem; font-weight: bold;
@@ -184,13 +164,11 @@ body {
     width: 90px; height: 90px; border-radius: 50%;
     background: radial-gradient(circle, #ff00de, #990099);
     border: 3px solid white; color: white; font-size: 1.4rem; font-weight: 900;
-    box-shadow: 0 0 20px #ff00de, 0 5px 10px #000;
-    cursor: pointer;
+    box-shadow: 0 0 20px #ff00de, 0 5px 10px #000; cursor: pointer;
 }
 .spin-btn:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 0 10px #ff00de; }
 .spin-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
 
-/* 타격감 (흔들림) */
 .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 @keyframes shake {
   10%, 90% { transform: translate3d(-2px, 0, 0); }
