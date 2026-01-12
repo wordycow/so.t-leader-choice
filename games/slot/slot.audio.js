@@ -1,55 +1,34 @@
-(function () {
-  window.SLOT = window.SLOT || {};
-  const { ASSET } = window.SLOT.config;
+(() => {
+  const SLOT = (window.SLOT = window.SLOT || {});
+  const cfg = SLOT.config || {};
 
-  const AudioSys = {
-    enabled: true,
-    audio: null,
-    init() {
-      try {
-        const a = {
-          start: new Audio(ASSET.sndBase + ASSET.sound.start),
-          spin:  new Audio(ASSET.sndBase + ASSET.sound.spin),
-          stop:  new Audio(ASSET.sndBase + ASSET.sound.stop),
-          win:   new Audio(ASSET.sndBase + ASSET.sound.win),
-          lose:  new Audio(ASSET.sndBase + ASSET.sound.lose),
-          jackpot:new Audio(ASSET.sndBase + ASSET.sound.jackpot),
-        };
-        a.spin.loop = true;
-        this.audio = a;
-        this.apply();
-      } catch (_) {
-        this.enabled = false;
-        this.audio = null;
-      }
+  function loadBool(key, def) {
+    try {
+      const v = localStorage.getItem(key);
+      if (v == null) return def;
+      return v === "1";
+    } catch (_) {
+      return def;
+    }
+  }
+
+  function saveBool(key, val) {
+    try { localStorage.setItem(key, val ? "1" : "0"); } catch (_) {}
+  }
+
+  const keySound = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.sound;
+
+  SLOT.audio = {
+    isOn: loadBool(keySound, true),
+
+    set(on) {
+      this.isOn = !!on;
+      saveBool(keySound, this.isOn);
     },
-    setEnabled(on) {
-      this.enabled = !!on;
-      this.apply();
-    },
-    apply() {
-      if (!this.audio) return;
-      const vol = this.enabled ? 1 : 0;
-      for (const k of Object.keys(this.audio)) {
-        try { this.audio[k].volume = vol; } catch(_){}
-      }
-    },
-    play(name) {
-      if (!this.audio || !this.enabled) return;
-      const a = this.audio[name];
-      if (!a) return;
-      try { a.currentTime = 0; a.play().catch(()=>{}); } catch(_){}
-    },
-    spinLoop(on) {
-      if (!this.audio) return;
-      const a = this.audio.spin;
-      if (!a) return;
-      try {
-        if (on) { a.currentTime = 0; a.play().catch(()=>{}); }
-        else { a.pause(); a.currentTime = 0; }
-      } catch(_){}
+
+    toggle() {
+      this.set(!this.isOn);
+      return this.isOn;
     }
   };
-
-  window.SLOT.audio = AudioSys;
 })();
