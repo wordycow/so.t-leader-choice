@@ -1,157 +1,187 @@
-(function () {
-  window.SLOT = window.SLOT || {};
-  const { ASSET, SYMBOLS } = window.SLOT.config;
-
-  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
-  function round2(n){ return Math.round(n*100)/100; }
-  function fmt(n){
-    const x = Number(n||0);
-    if (!Number.isFinite(x)) return "0";
-    if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
-    return (Math.round(x*100)/100).toString();
-  }
+(() => {
+  const SLOT = (window.SLOT = window.SLOT || {});
+  const CFG = () => SLOT.config;
 
   const UI = {
     el: null,
     cells: [],
-    gridKeys: [],
+
     init() {
       this.el = {
-        bgA: document.getElementById("bgA"),
-        bgB: document.getElementById("bgB"),
-        bgFlash: document.getElementById("bgFlash"),
-
-        payCard: document.getElementById("payCard"),
-        payToggle: document.getElementById("payToggle"),
-        payList: document.getElementById("payList"),
-        slotGrid: document.getElementById("slotGrid"),
-
-        dotLogin: document.getElementById("dotLogin"),
         playerName: document.getElementById("playerName"),
-        wallet: document.getElementById("wallet"),
-        jackpot: document.getElementById("jackpot"),
+        walletUt: document.getElementById("walletUt"),
+        jackpotPool: document.getElementById("jackpotPool"),
         lastResult: document.getElementById("lastResult"),
+        bet: document.getElementById("betUt"),
 
-        bet: document.getElementById("bet"),
-        betDown: document.getElementById("betDown"),
         betUp: document.getElementById("betUp"),
-
+        betDown: document.getElementById("betDown"),
+        spinBtn: document.getElementById("spinBtn"),
         autoBtn: document.getElementById("autoBtn"),
         soundBtn: document.getElementById("soundBtn"),
-        spinBtn: document.getElementById("spinBtn"),
+
+        stage: document.getElementById("slotStage"),
+        grid: document.getElementById("slotGrid"),
+        bg: document.getElementById("slotBgImg"),
+
+        payWrap: document.getElementById("payWrap"),
+        payToggle: document.getElementById("payToggle"),
+
+        overlay: document.getElementById("loginOverlay"),
 
         banner: document.getElementById("jackpotBanner"),
-        bannerText: document.getElementById("jackpotText"),
-
-        floatWin: document.getElementById("floatWin"),
-        overlay: document.getElementById("overlay"),
+        bannerText: document.getElementById("jackpotBannerText"),
       };
+
+      // 엘리먼트가 없으면(파일 꼬임) 최소한 크래시는 막는다
+      return this.el;
     },
 
-    setLast(msg){ this.el.lastResult.textContent = msg; },
-    showOverlay(on){ this.el.overlay.classList.toggle("on", !!on); },
-
-    toast(text){
-      const el = this.el.floatWin;
-      el.textContent = text;
-      el.classList.remove("on");
-      void el.offsetWidth;
-      el.classList.add("on");
-    },
-
-    animateNumber(node, from, to, ms=650){
-      from = Number(from||0); to = Number(to||0);
-      const t0 = performance.now();
-      const self = this;
-      function step(t){
-        const p = clamp((t - t0) / ms, 0, 1);
-        const e = 1 - Math.pow(1-p, 3);
-        const v = from + (to-from) * e;
-        node.textContent = fmt(round2(v));
-        if (p < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    },
-
-    renderPaytable(){
-      this.el.payList.innerHTML = "";
-      for (const s of SYMBOLS){
-        const row = document.createElement("div");
-        row.className = "pay-item";
-        row.innerHTML = `
-          <img src="${ASSET.imgBase + s.img}" alt="${s.key}" onerror="this.style.display='none'">
-          <div class="meta">
-            <div class="name">${s.label}</div>
-            <div class="rule">2연속: EVEN(±0) / 3연속: x${s.pay[3]} / 4연속: x${s.pay[4]} / 5연속: x${s.pay[5]} (JACKPOT)</div>
-          </div>
-        `;
-        this.el.payList.appendChild(row);
-      }
-    },
-
-    makeGrid(){
-      this.el.slotGrid.innerHTML = "";
+    makeGrid() {
+      if (!this.el?.grid) return;
+      this.el.grid.innerHTML = "";
       this.cells = [];
-      for (let i=0;i<15;i++){
+
+      for (let i = 0; i < 15; i++) {
         const c = document.createElement("div");
         c.className = "cell";
-        c.innerHTML = `<img alt="slot" />`;
-        this.el.slotGrid.appendChild(c);
+        c.innerHTML = `<img alt="" />`;
+        this.el.grid.appendChild(c);
         this.cells.push(c);
       }
     },
 
-    setGrid(keys){
-      this.gridKeys = keys.slice();
-      for (let i=0;i<15;i++){
+    setGrid(keys) {
+      const cfg = CFG();
+      if (!this.cells?.length) return;
+
+      for (let i = 0; i < 15; i++) {
         const k = keys[i];
-        const sym = SYMBOLS.find(x=>x.key===k) || SYMBOLS[0];
+        const sym = cfg.SYMBOLS.find(s => s.key === k) || cfg.SYMBOLS[0];
         const img = this.cells[i].querySelector("img");
-        img.src = ASSET.imgBase + sym.img;
-        img.onerror = ()=>{ img.style.display="none"; };
-        img.style.display="block";
+        if (img) img.src = cfg.ASSETS.imgBase + sym.img;
       }
     },
 
-    flashCells(on){
-      this.cells.forEach(c => c.classList.toggle("flash", !!on));
+    clearHit() {
+      if (!this.cells?.length) return;
+      this.cells.forEach(c => c.classList.remove("hit"));
     },
 
-    // ✅ 배경 교체(두 레이어 크로스페이드)
-    bg: {
-      side: "A",
-      set(url){
-        const ui = UI;
-        const a = ui.el.bgA, b = ui.el.bgB;
-        if (!a || !b) return;
-
-        if (this.side === "A") {
-          b.style.backgroundImage = `url("${url}")`;
-          b.classList.add("on");
-          a.classList.remove("on");
-          this.side = "B";
-        } else {
-          a.style.backgroundImage = `url("${url}")`;
-          a.classList.add("on");
-          b.classList.remove("on");
-          this.side = "A";
-        }
-      },
-      flash(on){
-        const ui = UI;
-        if (!ui.el.bgFlash) return;
-        ui.el.bgFlash.classList.toggle("on", !!on);
-      }
+    setHit(indices) {
+      if (!this.cells?.length) return;
+      indices.forEach(i => {
+        const c = this.cells[i];
+        if (c) c.classList.add("hit");
+      });
     },
 
-    setBanner(msg){
-      this.el.bannerText.textContent = msg;
-      this.el.banner.classList.add("on");
+    setBackground(bgFile) {
+      if (!this.el?.bg) return;
+      this.el.bg.src = `img/slot/${bgFile}`;
     },
-    hideBanner(){
-      this.el.banner.classList.remove("on");
+
+    setPlayer(user) {
+      if (!this.el?.playerName) return;
+      const name = user?.nickname || user?.name || user?.id || "-";
+      this.el.playerName.textContent = name;
     },
+
+    setWallet(n) {
+      if (!this.el?.walletUt) return;
+      this.el.walletUt.textContent = String(Math.floor(Number(n || 0)));
+    },
+
+    setJackpotPool(n) {
+      if (!this.el?.jackpotPool) return;
+      this.el.jackpotPool.textContent = String(Math.floor(Number(n || 0)));
+    },
+
+    setLast(text) {
+      if (!this.el?.lastResult) return;
+      this.el.lastResult.textContent = String(text || "");
+    },
+
+    setBet(n) {
+      if (!this.el?.bet) return;
+      this.el.bet.textContent = String(Math.floor(Number(n || 0)));
+    },
+
+    setButtonsDisabled(disabled) {
+      if (!this.el) return;
+      ["betUp","betDown","spinBtn","autoBtn","soundBtn"].forEach(k=>{
+        if (this.el[k]) this.el[k].disabled = !!disabled;
+      });
+    },
+
+    setAuto(on) {
+      if (!this.el?.autoBtn) return;
+      this.el.autoBtn.textContent = on ? "AUTO ON" : "AUTO OFF";
+    },
+
+    setSound(on) {
+      if (!this.el?.soundBtn) return;
+      this.el.soundBtn.textContent = on ? "SOUND ON" : "SOUND OFF";
+    },
+
+    showOverlay() {
+      if (!this.el?.overlay) return;
+      this.el.overlay.classList.remove("hidden");
+    },
+
+    hideOverlay() {
+      if (!this.el?.overlay) return;
+      this.el.overlay.classList.add("hidden");
+    },
+
+    showBanner(text) {
+      if (!this.el?.banner || !this.el?.bannerText) return;
+      this.el.bannerText.textContent = text;
+      this.el.banner.classList.remove("hidden");
+      // 애니메이션 리셋
+      this.el.bannerText.style.animation = "none";
+      void this.el.bannerText.offsetHeight;
+      this.el.bannerText.style.animation = "";
+    },
+
+    hideBanner() {
+      if (!this.el?.banner) return;
+      this.el.banner.classList.add("hidden");
+    },
+
+    renderPaytable() {
+      const cfg = CFG();
+      if (!this.el?.payWrap) return;
+
+      const rows = cfg.SYMBOLS.map(s => {
+        const p3 = s.pay?.[3] ?? "-";
+        const p4 = s.pay?.[4] ?? "-";
+        const p5 = s.pay?.[5] ?? "-";
+        return `
+          <tr>
+            <td>
+              <div class="paySym">
+                <img src="${cfg.ASSETS.imgBase + s.img}" alt="">
+                <b>${s.label}</b>
+              </div>
+            </td>
+            <td>${p3}x</td>
+            <td>${p4}x</td>
+            <td>${p5}x</td>
+          </tr>
+        `;
+      }).join("");
+
+      this.el.payWrap.innerHTML = `
+        <table class="payTable">
+          <thead>
+            <tr><th>SYMBOL</th><th>3</th><th>4</th><th>5</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
   };
 
-  window.SLOT.ui = UI;
+  SLOT.ui = UI;
 })();
