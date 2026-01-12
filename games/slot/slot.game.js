@@ -1,9 +1,9 @@
 // === 설정(Config) ===
 const CONFIG = {
-    // Apps Script 배포 URL (건드리지 마세요)
+    // Apps Script 배포 URL (유지)
     API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
     
-    // [중요] 404 에러 방지를 위한 절대 경로 유지
+    // [절대 경로] 404 방지
     imgObj: {
         path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/', 
         bg: ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'],
@@ -26,19 +26,13 @@ const CONFIG = {
     rows: 3,
     symbolHeight: 0, 
     bgIntervalTime: 200,
-    // [수정] 빈 공간 방지를 위해 심볼 개수를 넉넉하게 늘림 (60 -> 120)
-    dummySymbolCount: 120 
+    // [수정] 심볼을 150개로 대폭 늘려 위아래 여유 확보
+    dummySymbolCount: 150 
 };
 
 // === 상태(State) ===
 let state = {
-    id: null,        
-    wallet: 0,       
-    bet: 10,         
-    isSpinning: false,
-    audioEnabled: false,
-    bgIntervalId: null,
-    jackpotPool: 0   
+    id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, bgIntervalId: null, jackpotPool: 0   
 };
 
 // === DOM 요소 ===
@@ -58,13 +52,13 @@ const els = {
 
 const audios = {};
 
-// === 1. 초기화 (Init) ===
+// === 초기화 ===
 async function init() {
+    console.log("SLOT GAME LOADED: VERSION FINAL"); // 콘솔에서 로드 확인용
+
     const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
     const urlParams = new URLSearchParams(window.location.search);
-    const paramId = urlParams.get('id');
-
-    state.id = localId || paramId;
+    state.id = localId || urlParams.get('id');
 
     if (!state.id) {
         els.userId.innerText = "GUEST";
@@ -75,15 +69,14 @@ async function init() {
         await syncUserData();
     }
 
+    // 오디오 로드
     Object.keys(CONFIG.soundObj).forEach(key => {
         if (key !== 'path') {
             try {
                 const audio = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[key]);
                 if(key === 'spin') audio.loop = true;
                 audios[key] = audio;
-            } catch(e) {
-                console.warn("Audio load fail:", key);
-            }
+            } catch(e) { console.warn("Audio error", key); }
         }
     });
 
@@ -95,17 +88,15 @@ async function init() {
     els.minus.addEventListener('click', () => changeBet(-10));
 }
 
+// === 유저 동기화 ===
 async function syncUserData() {
     if (!state.id) return;
-    
     els.msg.innerText = "SYNCING...";
     try {
         const res = await jsonpRequest('getSlotState', { id: state.id });
-        
         if (res.ok) {
             state.wallet = Number(res.user.balance);
             state.jackpotPool = Number(res.jackpotTotal);
-            
             updateUI();
             updateTicker(state.jackpotPool);
             els.msg.innerText = "READY";
@@ -115,7 +106,6 @@ async function syncUserData() {
             els.spinBtn.disabled = true;
         }
     } catch (e) {
-        console.error(e);
         els.msg.innerText = "NETWORK ERROR";
     }
 }
@@ -124,39 +114,21 @@ function jsonpRequest(action, params = {}) {
     return new Promise((resolve, reject) => {
         const callbackName = 'cb_' + Math.round(100000 * Math.random());
         const script = document.createElement('script');
-        
-        const timeout = setTimeout(() => {
-            cleanup();
-            reject(new Error("Timeout"));
-        }, 15000); 
-
-        window[callbackName] = function(data) {
-            cleanup();
-            resolve(data);
-        };
-
+        const timeout = setTimeout(() => { cleanup(); reject(new Error("Timeout")); }, 15000); 
+        window[callbackName] = function(data) { cleanup(); resolve(data); };
         function cleanup() {
             clearTimeout(timeout);
             if(document.body.contains(script)) document.body.removeChild(script);
             delete window[callbackName];
         }
-
-        params.action = action;
-        params.callback = callbackName;
-        const qs = new URLSearchParams(params).toString();
-        
-        script.src = `${CONFIG.API_URL}?${qs}`;
-        
-        script.onerror = () => {
-            cleanup();
-            reject(new Error("Script Load Error"));
-        };
-
+        params.action = action; params.callback = callbackName;
+        script.src = `${CONFIG.API_URL}?${new URLSearchParams(params).toString()}`;
+        script.onerror = () => { cleanup(); reject(new Error("Script Error")); };
         document.body.appendChild(script);
     });
 }
 
-// === 3. 게임 로직 (수정됨) ===
+// === 게임 로직 ===
 function createReels() {
     els.reelsContainer.innerHTML = '';
     for (let i = 0; i < CONFIG.reels; i++) {
@@ -166,6 +138,7 @@ function createReels() {
         stripDiv.className = 'reel-strip';
         
         let html = '';
+        // 150개의 심볼 생성
         for(let j=0; j < CONFIG.dummySymbolCount; j++) {
             const sym = getRandomSymbolName();
             html += `<div class="symbol" style="background-image: url('${CONFIG.imgObj.path}${sym}')"></div>`;
@@ -175,7 +148,7 @@ function createReels() {
         els.reelsContainer.appendChild(reelDiv);
     }
     
-    // 심볼 높이 측정
+    // 높이 측정
     setTimeout(() => {
         const firstSymbol = document.querySelector('.symbol');
         if(firstSymbol) CONFIG.symbolHeight = firstSymbol.offsetHeight;
@@ -183,19 +156,14 @@ function createReels() {
 }
 
 function getRandomSymbolName() {
-    const idx = Math.floor(Math.random() * CONFIG.imgObj.symbols.length);
-    return CONFIG.imgObj.symbols[idx];
+    return CONFIG.imgObj.symbols[Math.floor(Math.random() * CONFIG.imgObj.symbols.length)];
 }
 
 async function onSpinClick() {
     if (state.isSpinning) return;
-    
     if (state.wallet < state.bet) {
         await syncUserData(); 
-        if(state.wallet < state.bet) {
-            alert("잔액이 부족합니다 (UT 부족)");
-            return;
-        }
+        if(state.wallet < state.bet) { alert("잔액 부족 (UT)"); return; }
     }
 
     state.isSpinning = true;
@@ -207,45 +175,34 @@ async function onSpinClick() {
         audios.spin.currentTime = 0;
         audios.spin.play();
     }
-    
     startBgEffect(); 
 
+    // 1. 스핀 애니메이션 (엄청 빠르게, 멀리 이동)
     const strips = document.querySelectorAll('.reel-strip');
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // [연출 수정] 강렬한 블러 + 빠른 이동
     strips.forEach((strip) => {
-        // 이미지를 맨 끝부분보다 훨씬 더 아래로 이동시켜서 속도감을 냄
-        strip.style.transition = `transform 3s linear`; 
-        // 끝보다 10칸 정도 덜 가서 계속 도는 느낌 유지
+        // 현재 위치에서 -100칸 정도 더 내려감 (매우 빠름)
+        strip.style.transition = `transform 2.5s linear`; 
+        // 130번째 심볼 근처까지 이동 (끝이 아님!)
         const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
         strip.style.transform = `translateY(${targetY}px)`; 
-        // [중요] 세로 모션 블러 효과 (8px)
-        strip.style.filter = 'blur(8px)';
+        strip.style.filter = 'blur(8px)'; // 강한 블러
     });
 
     try {
-        const res = await jsonpRequest('slotSpin', {
-            id: state.id,
-            bet: state.bet
-        });
-
-        if (!res.ok) {
-            throw new Error(res.error || "Spin Failed");
-        }
-
+        const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
+        if (!res.ok) throw new Error(res.error || "Spin Failed");
         stopReelsWithResult(res);
-
     } catch (err) {
         console.error(err);
         stopBgEffect();
         audios.spin.pause();
         state.isSpinning = false;
         els.spinBtn.disabled = false;
-        els.msg.innerText = "ERROR: " + err.message;
-        
-        // 에러 시 릴 리셋
+        els.msg.innerText = "ERROR";
+        // 에러 시 릴 초기화
         strips.forEach(strip => {
              strip.style.transition = 'none';
              strip.style.transform = 'translateY(0)';
@@ -259,46 +216,46 @@ function stopReelsWithResult(data) {
     const serverKeys = data.spin.keys;
     const strips = document.querySelectorAll('.reel-strip');
 
+    // [핵심] 멈출 위치: 전체 150개 중 120번째(뒤쪽)에서 멈춤.
+    // 이렇게 하면 멈춘 뒤에도 아래에 30개 정도의 심볼이 더 남아있어서, 
+    // 반동(Bounce)이 생겨도 절대 빈 공간이 보이지 않음.
+    const STOP_INDEX = CONFIG.dummySymbolCount - 30; // 120번째
+
     strips.forEach((strip, colIdx) => {
         const topSym = serverKeys[colIdx] + ".png";       
         const midSym = serverKeys[colIdx + 5] + ".png";   
         const botSym = serverKeys[colIdx + 10] + ".png";  
 
         const symbols = strip.querySelectorAll('.symbol');
-        const len = symbols.length;
         
-        // [수정] 멈추는 위치 심볼 교체
-        // 맨 끝에서부터 역순으로 채움. 
-        // len-5 위치부터 채워서 여유 공간(buffer)을 확보 -> 빈 공간 방지
-        symbols[len - 6].style.backgroundImage = `url('${CONFIG.imgObj.path}${getRandomSymbolName()}')`; 
-        symbols[len - 5].style.backgroundImage = `url('${CONFIG.imgObj.path}${topSym}')`;
-        symbols[len - 4].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`; // 중앙 (결과)
-        symbols[len - 3].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
-        symbols[len - 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${getRandomSymbolName()}')`; // 아래 여유분
-        symbols[len - 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${getRandomSymbolName()}')`; // 맨 끝 여유분
+        // 120번째 위치에 결과 심볼 심기
+        // STOP_INDEX = 화면 맨 위
+        // STOP_INDEX + 1 = 화면 중간 (결과)
+        // STOP_INDEX + 2 = 화면 아래
+        if(symbols[STOP_INDEX]) symbols[STOP_INDEX].style.backgroundImage = `url('${CONFIG.imgObj.path}${topSym}')`;
+        if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`; // 결과!
+        if(symbols[STOP_INDEX + 2]) symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
 
-        const delay = colIdx * 300; 
+        const delay = colIdx * 300; // 릴 별 시간차
         
         setTimeout(() => {
-            // [연출 수정] 멈출 때 블러 제거 및 탄성 효과
-            strip.style.transition = 'transform 0.5s cubic-bezier(0.2, 1, 0.3, 1)'; 
-            strip.style.filter = 'none'; // 블러 해제
+            strip.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'; // 부드러운 정지
+            strip.style.filter = 'none'; 
             
-            // 정확한 위치 계산: (len - 5)번째 심볼이 맨 위에 오도록
-            const targetY = -((len - 5) * CONFIG.symbolHeight);
-            strip.style.transform = `translateY(${targetY}px)`;
+            // 정확히 STOP_INDEX가 맨 위에 오도록 이동
+            const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
+            strip.style.transform = `translateY(${finalY}px)`;
 
             if(state.audioEnabled) {
                 const stopSound = audios.stop.cloneNode();
                 stopSound.volume = 0.6;
                 stopSound.play();
             }
-
         }, 500 + delay); 
     });
 
-    const totalTime = 500 + (CONFIG.reels * 300) + 600;
-    
+    // 종료 처리
+    const totalTime = 500 + (CONFIG.reels * 300) + 700;
     setTimeout(() => {
         handleSpinEnd(data);
     }, totalTime);
@@ -311,7 +268,6 @@ function handleSpinEnd(data) {
     audios.spin.pause();
 
     const spin = data.spin;
-    
     state.wallet = data.user.balance; 
     state.jackpotPool = data.jackpotTotal;
 
@@ -345,30 +301,21 @@ function handleSpinEnd(data) {
 
     updateUI();
     updateTicker(data.jackpotTotal);
-    
-    // [추가] 다음 스핀을 위해 릴 위치 조용히 리셋? 
-    // 여기서는 하지 않음 (연속성을 위해). 
-    // 다음 스핀 누르면 createReels()를 호출하는 방식이 아니므로,
-    // DOM이 계속 길어지지 않게 하려면 리셋이 필요할 수 있음.
-    // 하지만 현재 로직은 매번 createReels() 하지 않고 기존 strip을 재활용하므로
-    // 다음 스핀 시 '순간이동' 리셋이 필요함.
-    
+
+    // [무한 스핀 트릭]
+    // 사용자가 다음 스핀을 누르기 전, 아주 조용히 릴을 0번 위치로 초기화하고
+    // 심볼을 랜덤으로 섞어놓으면 무한히 돌릴 수 있습니다.
     setTimeout(() => {
-        // 다음 판을 위해 릴을 몰래 초기 위치로 되돌림 (사용자 눈속임)
         const strips = document.querySelectorAll('.reel-strip');
         strips.forEach(strip => {
-            strip.style.transition = 'none';
-            strip.style.transform = 'translateY(0px)';
-            // 현재 보이는 결과 심볼을 맨 위(0,1,2)로 복사해서 자연스럽게 이어지게 하면 좋지만
-            // 코드가 복잡해지므로, 그냥 0으로 리셋하고 심볼들을 랜덤으로 다시 채워둠
-            // (사용자는 다음 스핀 누르기 전까지 눈치 못 챔)
+            strip.style.transition = 'none'; // 애니메이션 없이
+            strip.style.transform = 'translateY(0px)'; // 0번 위치로 순간이동
         });
-        // 릴 내용물 리필 (다음 스핀 준비)
-        createReels(); 
-    }, 2000); // 결과 확인 후 2초 뒤 리셋
+        createReels(); // 심볼 내용물 랜덤 리셋
+    }, 2500); 
 }
 
-// === 4. 유틸리티 ===
+// === 유틸리티 ===
 function startBgEffect() {
     let idx = 0;
     state.bgIntervalId = setInterval(() => {
@@ -394,9 +341,7 @@ function updateUI() {
 }
 
 function updateTicker(jackpotAmount) {
-    if(els.ticker) {
-        els.ticker.innerText = `★ JACKPOT POOL: ${jackpotAmount.toLocaleString()} UT ★ [NOTICE] 5연속 MEGA WIN 25배 지급! ★ THE UNIQUE SLOT OPEN ★`;
-    }
+    if(els.ticker) els.ticker.innerText = `★ JACKPOT POOL: ${jackpotAmount.toLocaleString()} UT ★ [NOTICE] 5연속 MEGA WIN 25배 지급! ★ THE UNIQUE SLOT OPEN ★`;
 }
 
 function changeBet(delta) {
