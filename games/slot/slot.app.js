@@ -1,317 +1,317 @@
 (function () {
-  const S = (window.S = window.S || {});
-  S.app = S.app || {};
+  window.SLOT = window.SLOT || {};
+  const CFG = window.SLOT.config;
+  const API = window.SLOT.api;
+  const UI  = window.SLOT.ui;
+  const AUD = window.SLOT.audio;
+  const GAME= window.SLOT.game;
 
-  const state = {
-    userId: "",
-    userName: "-",
+  function round2(n){ return Math.round(n*100)/100; }
+  function safeName(s){
+    return String(s||"")
+      .replace(/[\/\\<>]/g,"")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+  function fmt(n){
+    const x = Number(n||0);
+    if (!Number.isFinite(x)) return "0";
+    if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
+    return (Math.round(x*100)/100).toString();
+  }
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+  // ✅ 로그인 id 복구: gate에서 저장한 uniqueCurrentUser 포함해서 전부 찾음
+  function readLoginId(){
+    const q = new URLSearchParams(location.search);
+    const qid = (q.get("id") || q.get("uid") || q.get("user_id") || "").trim();
+    if (qid){
+      localStorage.setItem("unique_user_id", qid);
+      return qid;
+    }
+
+    // gate 저장
+    const cur = localStorage.getItem("uniqueCurrentUser");
+    if (cur){
+      try{
+        const obj = JSON.parse(cur);
+        if (obj && obj.id){
+          localStorage.setItem("unique_user_id", String(obj.id));
+          if (obj.name) localStorage.setItem("unique_user_name", safeName(obj.name));
+          if (obj.nickname) localStorage.setItem("unique_user_nick", safeName(obj.nickname));
+          return String(obj.id);
+        }
+      }catch(_){}
+    }
+
+    const keys = [
+      "unique_user_id","uniqueUserId","unique_id","the_unique_id",
+      "USER_ID","user_id","uid","id","loginId",
+      "unique.login.id","unique_login_id"
+    ];
+    for (const k of keys){
+      const v = (localStorage.getItem(k) || sessionStorage.getItem(k) || "").trim();
+      if (v) { localStorage.setItem("unique_user_id", v); return v; }
+    }
+    return "";
+  }
+
+  // ✅ 잭팟 배너: 자정까지 유지(기존 요구사항)
+  function msUntilMidnightLocal(){
+    const d = new Date();
+    const m = new Date(d);
+    m.setHours(24,0,0,0);
+    return m.getTime() - d.getTime();
+  }
+  function setJackpotBanner(msg){
+    const until = Date.now() + msUntilMidnightLocal();
+    localStorage.setItem("slot_jackpot_banner", JSON.stringify({ msg, until }));
+    renderJackpotBanner();
+  }
+  function renderJackpotBanner(){
+    const raw = localStorage.getItem("slot_jackpot_banner");
+    if (!raw){ UI.hideBanner(); return; }
+    try{
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.msg || !obj.until || Date.now() > obj.until){
+        localStorage.removeItem("slot_jackpot_banner");
+        UI.hideBanner();
+        return;
+      }
+      UI.setBanner(obj.msg);
+    }catch(_){
+      localStorage.removeItem("slot_jackpot_banner");
+      UI.hideBanner();
+    }
+  }
+
+  const S = {
+    id: "",
+    name: "",
+    nickname: "",
     balance: 0,
-    jackpot: 0,
-    casino: 0,
-    bet: 10,
-    auto: false,
+    jackpotTotal: 0,
+
+    bet: CFG.BET.def,
     spinning: false,
-    soundOn: true,
+    auto: false,
+    sound: true,
+
+    oddsProfile: "LOW", // 기본 LOW
   };
 
-  function qs(name) {
-    return new URLSearchParams(location.search).get(name) || "";
+  function setBet(next){
+    next = Math.round(next / CFG.BET.step) * CFG.BET.step;
+    next = clamp(next, CFG.BET.min, CFG.BET.max);
+    S.bet = next;
+    UI.el.bet.textContent = String(next);
   }
 
-  function parseMaybeJson(v) {
-    if (!v) return null;
-    const s = String(v);
-    if (!s) return null;
-    try { return JSON.parse(s); } catch (_) { return null; }
+  async function syncState(){
+    const data = await API.getSlotState(S.id);
+
+    const u = data.user || {};
+    S.name = safeName(u.name || localStorage.getItem("unique_user_name") || "");
+    S.nickname = safeName(u.nickname || localStorage.getItem("unique_user_nick") || "");
+    S.balance = Number(u.balance || 0);
+    S.jackpotTotal = Number(data.jackpotTotal || 0);
+
+    const display = S.nickname || S.name || S.id;
+    UI.el.playerName.textContent = display || "-";
+    UI.el.dotLogin.classList.toggle("warn", !display);
+
+    UI.animateNumber(UI.el.wallet, Number(UI.el.wallet.textContent||0), S.balance, 550);
+    UI.el.jackpot.textContent = fmt(S.jackpotTotal);
+
+    localStorage.setItem("unique_user_id", S.id);
+    if (S.name) localStorage.setItem("unique_user_name", S.name);
+    if (S.nickname) localStorage.setItem("unique_user_nick", S.nickname);
   }
 
-  function loadLogin() {
-    // 1) querystring 우선
-    const qid = (qs("id") || qs("uid") || "").trim().toLowerCase();
-    if (qid) return { id: qid };
+  async function commitSpin(netDelta, lossAmount){
+    const res = await API.slotCommit(S.id, netDelta, lossAmount);
+    const u = res.user || {};
+    const newBal = Number(u.balance || S.balance);
+    const newJack = Number(res.jackpotTotal || S.jackpotTotal);
 
-    // 2) localStorage 다 훑기
-    const keys = S.CONFIG.LOGIN_KEYS || [];
-    for (const k of keys) {
-      let raw = "";
-      try { raw = localStorage.getItem(k) || ""; } catch (_) {}
-      if (!raw) continue;
+    S.balance = newBal;
+    S.jackpotTotal = newJack;
 
-      const obj = parseMaybeJson(raw);
-      if (obj && typeof obj === "object") {
-        const id = String(obj.id || obj.userId || obj.userid || obj.uid || "").trim().toLowerCase();
-        const name = String(obj.name || obj.nickname || obj.nick || "").trim();
-        if (id) return { id, name };
-      }
-
-      // plain string
-      const plain = String(raw).trim().toLowerCase();
-      if (plain && plain.length >= 3) return { id: plain };
-    }
-    return null;
+    UI.animateNumber(UI.el.wallet, Number(UI.el.wallet.textContent||0), newBal, 650);
+    UI.el.jackpot.textContent = fmt(newJack);
   }
 
-  function clampBet(v) {
-    const min = S.CONFIG.BET_MIN ?? 10;
-    const max = S.CONFIG.BET_MAX ?? 1000;
-    let x = Math.floor(Number(v || 0));
-    if (!Number.isFinite(x)) x = min;
-    x = Math.max(min, Math.min(max, x));
-    return x;
-  }
+  async function doSpin(){
+    if (S.spinning) return;
 
-  function setBet(v) {
-    state.bet = clampBet(v);
-    S.ui.setBet(state.bet);
-    try { localStorage.setItem("slot_bet", String(state.bet)); } catch (_) {}
-  }
+    const bet = S.bet;
+    if (!Number.isFinite(bet) || bet < CFG.BET.min) return;
 
-  function loadBet() {
-    try {
-      const v = Number(localStorage.getItem("slot_bet") || S.CONFIG.BET_DEFAULT || 10);
-      setBet(v);
-    } catch (_) {
-      setBet(S.CONFIG.BET_DEFAULT || 10);
-    }
-  }
-
-  function renderPaytable() {
-    const body = document.getElementById("paytableBody");
-    if (!body) return;
-
-    const list = S.game.paytable();
-    const rows = list.map(s => {
-      const p2 = s.pay[2] ? `2개: EVEN (x${s.pay[2]})` : "";
-      const p3 = s.pay[3] ? `3개: x${s.pay[3]}` : "";
-      const p4 = s.pay[4] ? `4개: x${s.pay[4]}` : "";
-      const p5 = s.pay[5] ? `5개: x${s.pay[5]}` : "";
-      return `
-        <div class="pt-row">
-          <div class="pt-left">
-            <img class="pt-ico" src="${S.CONFIG.IMG_DIR}/${s.id}.png" alt="${s.name}" />
-            <div class="pt-name">${s.name}</div>
-          </div>
-          <div class="pt-right">
-            <div>${p2}</div>
-            <div>${p3}</div>
-            <div>${p4}</div>
-            <div>${p5}</div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    body.innerHTML = `<div class="pt-list">${rows}</div>`;
-  }
-
-  async function syncStateFromServer() {
-    const login = loadLogin();
-    if (!login?.id) {
-      state.userId = "";
-      state.userName = "-";
-      S.ui.setPlayer("-");
-      S.ui.setWallet(0);
-      S.ui.setJackpot(0);
-      S.ui.setResult("LOGIN REQUIRED");
-      S.ui.setSpinEnabled(false);
+    if (S.balance < bet){
+      UI.setLast("잔액 부족");
+      AUD.play("lose");
       return;
     }
 
-    state.userId = login.id;
-    try { localStorage.setItem("slot_user_id", login.id); } catch (_) {}
+    S.spinning = true;
+    UI.el.spinBtn.disabled = true;
+    UI.setLast("SPINNING...");
+    AUD.play("start");
 
-    // 서버에서 유저/잭팟/카지노 가져오기
-    const r = await S.api.getSlotState(state.userId);
-    const u = r.user || {};
-    state.userName = (u.nickname || u.name || login.name || state.userId || "-");
-    state.balance = Number(u.balance || 0);
-    state.jackpot = Number(r.jackpotTotal || 0);
-    state.casino = Number(r.casinoTotal || 0);
+    // 배경/사운드/플래시
+    const bg = GAME.makeBgSpinner(UI);
+    bg.start();
+    AUD.spinLoop(true);
+    UI.flashCells(true);
 
-    S.ui.setPlayer(state.userName);
-    S.ui.setWallet(state.balance);
-    S.ui.setJackpot(state.jackpot);
-    S.ui.setResult("READY");
-    S.ui.setSpinEnabled(true);
-  }
+    // ✅ 이번달 잭팟 “없음” 기본: jackpot outcome 자체를 막는다
+    let outcome = GAME.pickOutcome(S.oddsProfile);
+    if (!CFG.JACKPOT.enabled) {
+      if (outcome === "jackpot") outcome = "win4";
+    }
 
-  function bindUI() {
-    const btnSpin = document.getElementById("btnSpin");
-    const btnAuto = document.getElementById("btnAuto");
-    const btnSound = document.getElementById("btnSound");
-    const btnMinus = document.getElementById("btnBetMinus");
-    const btnPlus = document.getElementById("btnBetPlus");
-    const btnPayToggle = document.getElementById("btnPayToggle");
+    const built = GAME.buildFinalGrid(outcome);
+    const finalKeys = built.keys;
 
-    btnMinus.onclick = () => setBet(state.bet - (S.CONFIG.BET_STEP || 5));
-    btnPlus.onclick = () => setBet(state.bet + (S.CONFIG.BET_STEP || 5));
+    // 후반부 배경 천천히(연출)
+    setTimeout(() => bg.slow(), Math.max(0, CFG.SPIN.totalMs - (CFG.SPIN.stopCascadeMs * 5) - 800));
 
-    btnSound.onclick = () => {
-      state.soundOn = !state.soundOn;
-      S.audio.setEnabled(state.soundOn);
-      S.ui.setSoundLabel(state.soundOn);
-    };
+    // ✅ 10초 + 컬럼 하나씩 멈춤 애니메이션
+    await GAME.animateSpin(UI, finalKeys);
 
-    btnAuto.onclick = () => {
-      state.auto = !state.auto;
-      S.ui.setAutoLabel(state.auto);
-      if (state.auto && !state.spinning) spinOnce(); // 즉시 1회
-    };
+    // 정지
+    AUD.spinLoop(false);
+    AUD.play("stop");
+    bg.stop();
+    UI.flashCells(false);
 
-    btnSpin.onclick = () => spinOnce();
+    // 결과 계산(가운데 줄 연속)
+    const { bestKey, bestCount } = GAME.evaluate(finalKeys);
+    const sym = CFG.SYMBOLS.find(x=>x.key===bestKey) || CFG.SYMBOLS[0];
 
-    btnPayToggle.onclick = () => {
-      const card = document.getElementById("paytableCard");
-      card?.classList.toggle("collapsed");
-    };
-  }
+    let kind = "lose";
+    let win = 0;
 
-  function randomizeAnim(ms = 900) {
-    const rows = S.CONFIG.ROWS || 3;
-    const cols = S.CONFIG.COLS || 5;
-    const size = rows * cols;
-    const ids = ["star1","star2","star3","pro1","pro2","pro3","pro4","pro5","pro6","pro7","pro8","pro9","pro10"];
+    if (bestCount >= 5){
+      kind = "jackpot";
+      win = bet * sym.pay[5];
+    } else if (bestCount === 4){
+      kind = "win";
+      win = bet * sym.pay[4];
+    } else if (bestCount === 3){
+      kind = "win";
+      win = bet * sym.pay[3];
+    } else if (bestCount === 2){
+      kind = "even";
+      win = bet; // EVEN = ±0
+    } else {
+      kind = "lose";
+      win = 0;
+    }
 
-    return new Promise((resolve) => {
-      const t0 = performance.now();
-      const timer = setInterval(() => {
-        const grid = new Array(size).fill(0).map(() => ids[(Math.random() * ids.length) | 0]);
-        S.ui.renderGrid(grid);
-        if (performance.now() - t0 > ms) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 70);
-    });
-  }
+    win = round2(win);
+    const netDelta = round2(win - bet);
+    const lossAmount = (netDelta < 0) ? Math.abs(netDelta) : 0;
 
-  function resultText(spin) {
-    if (spin.type === "JACKPOT") return `JACKPOT +${spin.win.toFixed(2)} UT`;
-    if (spin.type === "EVEN") return `EVEN`;
-    if (spin.type === "WIN") return `WIN +${Math.max(0, spin.netDelta).toFixed(2)} UT`;
-    return `MISS -${state.bet} UT`;
-  }
+    // UI 먼저 튀게
+    const before = S.balance;
+    const after = round2(S.balance + netDelta);
+    UI.animateNumber(UI.el.wallet, before, after, 720);
 
-  async function spinOnce() {
-    if (state.spinning) return;
-    if (!state.userId) return;
+    if (kind === "even"){
+      UI.setLast("HIT +0 UT");
+      UI.toast("HIT +0 UT");
+      AUD.play("win");
+    } else if (kind === "win"){
+      UI.setLast(`WIN +${fmt(netDelta)} UT`);
+      UI.toast(`WIN +${fmt(netDelta)} UT`);
+      AUD.play("win");
+    } else if (kind === "jackpot"){
+      UI.setLast(`JACKPOT +${fmt(netDelta)} UT`);
+      UI.toast(`JACKPOT +${fmt(netDelta)} UT`);
+      AUD.play("jackpot");
 
-    state.spinning = true;
-    S.ui.setSpinEnabled(false);
+      const who = safeName(S.nickname || S.name || S.id || "누군가");
+      setJackpotBanner(`${who}님이 잭팟이 터지셨습니다. 축하드립니다.`);
+    } else {
+      UI.setLast(`LOSE -${fmt(bet)} UT`);
+      UI.toast(`LOSE -${fmt(bet)} UT`);
+      AUD.play("lose");
+    }
 
-    try {
-      S.audio.play("start");
-      S.audio.play("spin");
-      S.ui.startBgCycle();
-      S.ui.setResult("SPINNING...");
+    // 서버 반영
+    try{
+      await commitSpin(netDelta, lossAmount);
+    }catch(err){
+      UI.setLast("SERVER ERROR: 재동기화");
+      try{ await syncState(); }catch(_){}
+    }
 
-      await randomizeAnim(950);
+    S.spinning = false;
+    UI.el.spinBtn.disabled = false;
 
-      // 최종 결과
-      const spin = S.game.spin(state.bet, state.jackpot);
-
-      // 결과 그리기
-      S.ui.renderGrid(spin.grid);
-
-      S.audio.stopSpin();
-      S.audio.play("stop");
-      S.ui.stopBgCycle();
-
-      const txt = resultText(spin);
-      S.ui.setResult(txt);
-
-      // 서버 커밋(구글 Apps Script)
-      const payload = {
-        id: state.userId,
-        netDelta: spin.netDelta,
-        lossAmount: spin.lossAmount,
-        bet: state.bet,
-        win: spin.win,
-        resultType: spin.type,
-        jackpotPayout: spin.jackpotPayout,
-        grid: JSON.stringify(spin.grid),
-        name: state.userName
-      };
-
-      const beforeBal = state.balance;
-      const beforeJack = state.jackpot;
-
-      const r = await S.api.slotCommit(payload);
-
-      // 서버값 반영
-      const u = r.user || {};
-      state.balance = Number(u.balance ?? state.balance);
-      state.jackpot = Number(r.jackpotTotal ?? state.jackpot);
-
-      // 숫자 카운트업(돈 올라가는 느낌)
-      S.ui.animateWallet(beforeBal, state.balance, 900);
-      S.ui.animateJackpot(beforeJack, state.jackpot, 900);
-
-      // 사운드/연출
-      if (spin.type === "JACKPOT") {
-        S.audio.play("jackpot");
-        S.ui.jackpotTickerFor(state.userName);
-        S.ui.showCelebrate({
-          title: "JACKPOT!",
-          amount: spin.win,
-          sub: `${state.userName}님 잭팟 축하드립니다.`,
-          ms: 60000
-        });
-      } else if (spin.type === "WIN") {
-        S.audio.play("win");
-        // 빅윈이면 팝업(연출)
-        if (spin.netDelta >= state.bet * 10) {
-          S.ui.showCelebrate({
-            title: "BIG WIN!",
-            amount: spin.netDelta,
-            sub: "축하드립니다.",
-            ms: 12000
-          });
-        }
-      } else if (spin.type === "MISS") {
-        S.audio.play("lose");
-      }
-
-    } catch (e) {
-      console.error(e);
-      S.audio.stopSpin();
-      S.ui.stopBgCycle();
-      S.ui.setResult(`ERROR: ${e.message || e}`);
-    } finally {
-      state.spinning = false;
-      S.ui.setSpinEnabled(true);
-
-      // AUTO면 계속
-      if (state.auto) {
-        setTimeout(() => {
-          if (!state.spinning) spinOnce();
-        }, 900);
-      }
+    if (S.auto){
+      setTimeout(() => doSpin(), 600);
     }
   }
 
-  async function init() {
-    S.ui.init();
-    S.audio.init();
+  function bindEvents(){
+    UI.el.payToggle.addEventListener("click", ()=> UI.el.payCard.classList.toggle("open"));
 
-    state.soundOn = S.audio.loadEnabled();
-    S.ui.setSoundLabel(state.soundOn);
+    UI.el.betDown.addEventListener("click", ()=> setBet(S.bet - CFG.BET.step));
+    UI.el.betUp.addEventListener("click", ()=> setBet(S.bet + CFG.BET.step));
 
-    loadBet();
-    renderPaytable();
-    bindUI();
+    UI.el.autoBtn.addEventListener("click", ()=>{
+      S.auto = !S.auto;
+      UI.el.autoBtn.classList.toggle("on", S.auto);
+      UI.el.autoBtn.textContent = S.auto ? "AUTO ON" : "AUTO OFF";
+      if (S.auto && !S.spinning) doSpin();
+    });
 
-    await syncStateFromServer();
+    UI.el.soundBtn.addEventListener("click", ()=>{
+      S.sound = !S.sound;
+      UI.el.soundBtn.classList.toggle("on", S.sound);
+      UI.el.soundBtn.textContent = S.sound ? "SOUND ON" : "SOUND OFF";
+      AUD.setEnabled(S.sound);
+    });
 
-    // 초기 그리드(보기)
-    const size = (S.CONFIG.ROWS || 3) * (S.CONFIG.COLS || 5);
-    S.ui.renderGrid(new Array(size).fill("star1"));
+    UI.el.spinBtn.addEventListener("click", doSpin);
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    init().catch((e) => {
-      console.error(e);
-      S.ui?.setResult?.(`INIT ERROR: ${e.message || e}`);
-    });
-  });
+  async function boot(){
+    renderJackpotBanner();
+
+    // 기본 배경 1장 고정(항상 보임)
+    UI.bg.set(CFG.ASSET.imgBase + CFG.ASSET.bg[0]);
+
+    UI.renderPaytable();
+    UI.makeGrid();
+    AUD.init();
+
+    // odds profile 로컬저장(나중에 admin에서 이 값을 바꾸게 만들면 됨)
+    const savedProfile = (localStorage.getItem("slot_odds_profile") || "").toUpperCase().trim();
+    if (savedProfile && CFG.ODDS_PROFILES[savedProfile]) S.oddsProfile = savedProfile;
+
+    setBet(CFG.BET.def);
+
+    const id = readLoginId();
+    if (!id){
+      UI.el.dotLogin.classList.add("warn");
+      UI.showOverlay(true);
+      return;
+    }
+    S.id = String(id).trim().toLowerCase();
+
+    bindEvents();
+
+    try{
+      await syncState();
+      UI.showOverlay(false);
+      UI.setLast("READY");
+    }catch(err){
+      UI.setLast("INIT ERROR: " + (err && err.message ? err.message : "init_failed"));
+    }
+  }
+
+  window.SLOT.app = { boot };
 })();
