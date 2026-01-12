@@ -1,9 +1,6 @@
 // === 설정(Config) ===
 const CONFIG = {
-    // Apps Script 배포 URL (유지)
     API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
-    
-    // [절대 경로] 404 방지
     imgObj: {
         path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/', 
         bg: ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'],
@@ -22,12 +19,7 @@ const CONFIG = {
         jackpot: 'jackpot-sound.MP3',
         btn: 'start-button-sound.MP3'
     },
-    reels: 5,
-    rows: 3,
-    symbolHeight: 0, 
-    bgIntervalTime: 200,
-    // [수정] 심볼을 150개로 대폭 늘려 위아래 여유 확보
-    dummySymbolCount: 150 
+    reels: 5, rows: 3, symbolHeight: 0, bgIntervalTime: 200, dummySymbolCount: 150 
 };
 
 // === 상태(State) ===
@@ -43,33 +35,35 @@ const els = {
     spinBtn: document.getElementById('btn-spin'),
     walletSpan: document.getElementById('wallet-balance'),
     betSpan: document.getElementById('current-bet'),
-    msg: document.getElementById('message-area'),
+    // [변경] 새 당첨 정보 패널 요소
+    winPanel: document.querySelector('.win-info-panel'),
+    winLabel: document.getElementById('win-label'),
+    winAmount: document.getElementById('win-amount'),
     plus: document.getElementById('btn-bet-plus'),
     minus: document.getElementById('btn-bet-minus'),
     userId: document.getElementById('user-id'),
-    ticker: document.querySelector('.ticker-item')
+    ticker: document.querySelector('.ticker-item'),
+    gameContainer: document.getElementById('game-container')
 };
 
 const audios = {};
 
 // === 초기화 ===
 async function init() {
-    console.log("SLOT GAME LOADED: VERSION FINAL"); // 콘솔에서 로드 확인용
+    console.log("SLOT GAME LOADED: VERSION ULTRA 3D");
 
     const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
-    const urlParams = new URLSearchParams(window.location.search);
-    state.id = localId || urlParams.get('id');
+    state.id = localId || new URLSearchParams(window.location.search).get('id');
 
     if (!state.id) {
         els.userId.innerText = "GUEST";
         els.spinBtn.disabled = true;
-        els.msg.innerText = "PLEASE LOGIN";
+        setWinDisplay("PLEASE LOGIN", "---");
     } else {
         els.userId.innerText = state.id;
         await syncUserData();
     }
 
-    // 오디오 로드
     Object.keys(CONFIG.soundObj).forEach(key => {
         if (key !== 'path') {
             try {
@@ -88,25 +82,51 @@ async function init() {
     els.minus.addEventListener('click', () => changeBet(-10));
 }
 
+// === [추가] 숫자 애니메이션 함수 (지갑용) ===
+function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        // 정수로 변환하여 표시 (toLocaleString으로 콤마 추가)
+        obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            obj.innerText = end.toLocaleString(); // 최종값 보정
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
 // === 유저 동기화 ===
-async function syncUserData() {
+async function syncUserData(animate = false) {
     if (!state.id) return;
-    els.msg.innerText = "SYNCING...";
+    if(!animate) setWinDisplay("SYNCING...", "...");
     try {
         const res = await jsonpRequest('getSlotState', { id: state.id });
         if (res.ok) {
-            state.wallet = Number(res.user.balance);
+            const newWallet = Number(res.user.balance);
             state.jackpotPool = Number(res.jackpotTotal);
+            
+            // [변경] 지갑 숫자 애니메이션 적용
+            if (animate && state.wallet !== newWallet) {
+                animateValue(els.walletSpan, state.wallet, newWallet, 1000);
+            } else {
+                els.walletSpan.innerText = newWallet.toLocaleString();
+            }
+            state.wallet = newWallet; // 상태 업데이트
+
             updateUI();
             updateTicker(state.jackpotPool);
-            els.msg.innerText = "READY";
+            if(!animate) setWinDisplay("READY", "GOOD LUCK!");
             els.spinBtn.disabled = false;
         } else {
-            els.msg.innerText = "USER NOT FOUND";
+            setWinDisplay("ERROR", "USER NOT FOUND");
             els.spinBtn.disabled = true;
         }
     } catch (e) {
-        els.msg.innerText = "NETWORK ERROR";
+        setWinDisplay("ERROR", "NETWORK FAIL");
     }
 }
 
@@ -138,7 +158,6 @@ function createReels() {
         stripDiv.className = 'reel-strip';
         
         let html = '';
-        // 150개의 심볼 생성
         for(let j=0; j < CONFIG.dummySymbolCount; j++) {
             const sym = getRandomSymbolName();
             html += `<div class="symbol" style="background-image: url('${CONFIG.imgObj.path}${sym}')"></div>`;
@@ -147,8 +166,6 @@ function createReels() {
         reelDiv.appendChild(stripDiv);
         els.reelsContainer.appendChild(reelDiv);
     }
-    
-    // 높이 측정
     setTimeout(() => {
         const firstSymbol = document.querySelector('.symbol');
         if(firstSymbol) CONFIG.symbolHeight = firstSymbol.offsetHeight;
@@ -168,8 +185,13 @@ async function onSpinClick() {
 
     state.isSpinning = true;
     els.spinBtn.disabled = true;
-    els.msg.innerText = "SPINNING...";
+    setWinDisplay("SPINNING...", `BET: ${state.bet}`);
+    els.winPanel.classList.remove('jackpot-hit'); // 잭팟 효과 초기화
     
+    // [변경] 베팅 차감 애니메이션 (현재 잔액 -> 베팅 후 잔액)
+    animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500);
+    state.wallet -= state.bet; // 즉시 차감 반영
+
     if(state.audioEnabled) {
         audios.btn.play();
         audios.spin.currentTime = 0;
@@ -177,18 +199,16 @@ async function onSpinClick() {
     }
     startBgEffect(); 
 
-    // 1. 스핀 애니메이션 (엄청 빠르게, 멀리 이동)
     const strips = document.querySelectorAll('.reel-strip');
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
     strips.forEach((strip) => {
-        // 현재 위치에서 -100칸 정도 더 내려감 (매우 빠름)
         strip.style.transition = `transform 2.5s linear`; 
-        // 130번째 심볼 근처까지 이동 (끝이 아님!)
         const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
         strip.style.transform = `translateY(${targetY}px)`; 
-        strip.style.filter = 'blur(8px)'; // 강한 블러
+        // [변경] 블러를 8px에서 4px로 줄여서 덜 흐릿하게
+        strip.style.filter = 'blur(4px)'; 
     });
 
     try {
@@ -201,25 +221,20 @@ async function onSpinClick() {
         audios.spin.pause();
         state.isSpinning = false;
         els.spinBtn.disabled = false;
-        els.msg.innerText = "ERROR";
-        // 에러 시 릴 초기화
+        setWinDisplay("ERROR", "TRY AGAIN");
         strips.forEach(strip => {
              strip.style.transition = 'none';
              strip.style.transform = 'translateY(0)';
              strip.style.filter = 'none';
         });
-        syncUserData();
+        syncUserData(true); // 에러 시 잔액 복구 애니메이션
     }
 }
 
 function stopReelsWithResult(data) {
     const serverKeys = data.spin.keys;
     const strips = document.querySelectorAll('.reel-strip');
-
-    // [핵심] 멈출 위치: 전체 150개 중 120번째(뒤쪽)에서 멈춤.
-    // 이렇게 하면 멈춘 뒤에도 아래에 30개 정도의 심볼이 더 남아있어서, 
-    // 반동(Bounce)이 생겨도 절대 빈 공간이 보이지 않음.
-    const STOP_INDEX = CONFIG.dummySymbolCount - 30; // 120번째
+    const STOP_INDEX = CONFIG.dummySymbolCount - 30;
 
     strips.forEach((strip, colIdx) => {
         const topSym = serverKeys[colIdx] + ".png";       
@@ -227,44 +242,32 @@ function stopReelsWithResult(data) {
         const botSym = serverKeys[colIdx + 10] + ".png";  
 
         const symbols = strip.querySelectorAll('.symbol');
-        
-        // 120번째 위치에 결과 심볼 심기
-        // STOP_INDEX = 화면 맨 위
-        // STOP_INDEX + 1 = 화면 중간 (결과)
-        // STOP_INDEX + 2 = 화면 아래
         if(symbols[STOP_INDEX]) symbols[STOP_INDEX].style.backgroundImage = `url('${CONFIG.imgObj.path}${topSym}')`;
-        if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`; // 결과!
+        if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`;
         if(symbols[STOP_INDEX + 2]) symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
 
-        const delay = colIdx * 300; // 릴 별 시간차
+        const delay = colIdx * 300; 
         
-      // [기존 코드] stopReelsWithResult 함수 내부...
-setTimeout(() => {
-    strip.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'; 
-    strip.style.filter = 'none'; 
-    
-    const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
-    strip.style.transform = `translateY(${finalY}px)`;
+        setTimeout(() => {
+            strip.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'; 
+            strip.style.filter = 'none'; 
+            const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
+            strip.style.transform = `translateY(${finalY}px)`;
 
-    if(state.audioEnabled) {
-        const stopSound = audios.stop.cloneNode();
-        stopSound.volume = 0.6;
-        stopSound.play();
-    }
+            if(state.audioEnabled) {
+                const stopSound = audios.stop.cloneNode();
+                stopSound.volume = 0.6;
+                stopSound.play();
+            }
 
-    // ▼▼▼ [여기부터 추가!] 마지막 릴이 멈출 때 화면 흔들기 ▼▼▼
-    if (colIdx === CONFIG.reels - 1) {
-        const gameContainer = document.getElementById('game-container');
-        gameContainer.classList.add('shake-hard');
-        // 0.5초 뒤에 흔들림 클래스 제거 (다음 스핀을 위해)
-        setTimeout(() => gameContainer.classList.remove('shake-hard'), 500);
-    }
-    // ▲▲▲ [여기까지 추가!] ▲▲▲
-
-}, 500 + delay);
+            // 마지막 릴 멈출 때 타격감
+            if (colIdx === CONFIG.reels - 1) {
+                els.gameContainer.classList.add('shake-hard');
+                setTimeout(() => els.gameContainer.classList.remove('shake-hard'), 500);
+            }
+        }, 500 + delay); 
     });
 
-    // 종료 처리
     const totalTime = 500 + (CONFIG.reels * 300) + 700;
     setTimeout(() => {
         handleSpinEnd(data);
@@ -278,54 +281,75 @@ function handleSpinEnd(data) {
     audios.spin.pause();
 
     const spin = data.spin;
-    state.wallet = data.user.balance; 
+    const oldWallet = state.wallet;
+    const newWallet = data.user.balance;
     state.jackpotPool = data.jackpotTotal;
 
-    let msgText = "";
+    // [변경] 지갑 잔액 증가 애니메이션 (당첨금 수령)
+    if (newWallet > oldWallet) {
+        animateValue(els.walletSpan, oldWallet, newWallet, 1500); // 1.5초 동안 증가
+    } else {
+        els.walletSpan.innerText = newWallet.toLocaleString();
+    }
+    state.wallet = newWallet;
+
     let sound = audios.lose;
+    let labelText = "NO WIN";
+    let amountText = "TRY AGAIN";
 
     if (spin.kind === "lose") {
-        msgText = "TRY AGAIN";
+        labelText = "RESULT";
+        amountText = "NO WIN";
     } else {
         const payout = spin.payout;
+        const netWin = spin.netDelta + state.bet; // 순수익 + 베팅원금
+
         if (spin.kind === "even") {
-            msgText = `EVEN! (+${spin.netDelta + state.bet})`;
+            labelText = "EVEN! (+1 BONUS)";
+            amountText = `+${payout.toLocaleString()} UT`;
             sound = audios.win;
         } else if (spin.kind === "jackpot") {
-            msgText = `★ JACKPOT ★ (+${payout.toLocaleString()})`;
+            // [요청 반영] 잭팟 시 "얼마 터졌다" 명확히 표시
+            labelText = "★ JACKPOT HIT! ★";
+            amountText = `+${payout.toLocaleString()} UT`;
             sound = audios.jackpot;
+            els.winPanel.classList.add('jackpot-hit'); // 잭팟 전용 스타일 추가
         } else {
-            msgText = `WIN! (+${payout.toLocaleString()})`;
+            // win3, win4, mega
+            const multiplier = spin.kind === 'win3' ? '3X' : spin.kind === 'win4' ? '10X' : '25X';
+            labelText = `${multiplier} BIG WIN!`;
+            amountText = `+${payout.toLocaleString()} UT`;
             sound = audios.win;
         }
     }
+
+    setWinDisplay(labelText, amountText); // 하단 패널 업데이트
 
     if (spin.payout > 0 && state.audioEnabled) {
         sound.currentTime = 0;
         sound.play();
     }
 
-    els.msg.innerText = msgText;
-    if(spin.payout > 0) els.msg.style.color = "#00ffff";
-    else els.msg.style.color = "gray";
-
     updateUI();
     updateTicker(data.jackpotTotal);
 
-    // [무한 스핀 트릭]
-    // 사용자가 다음 스핀을 누르기 전, 아주 조용히 릴을 0번 위치로 초기화하고
-    // 심볼을 랜덤으로 섞어놓으면 무한히 돌릴 수 있습니다.
     setTimeout(() => {
         const strips = document.querySelectorAll('.reel-strip');
         strips.forEach(strip => {
-            strip.style.transition = 'none'; // 애니메이션 없이
-            strip.style.transform = 'translateY(0px)'; // 0번 위치로 순간이동
+            strip.style.transition = 'none';
+            strip.style.transform = 'translateY(0px)';
         });
-        createReels(); // 심볼 내용물 랜덤 리셋
+        createReels(); 
     }, 2500); 
 }
 
 // === 유틸리티 ===
+// [추가] 하단 당첨 정보 패널 업데이트 함수
+function setWinDisplay(label, amount) {
+    els.winLabel.innerText = label;
+    els.winAmount.innerText = amount;
+}
+
 function startBgEffect() {
     let idx = 0;
     state.bgIntervalId = setInterval(() => {
@@ -346,7 +370,7 @@ function unlockAudio() {
 }
 
 function updateUI() {
-    els.walletSpan.innerText = state.wallet.toLocaleString();
+    // els.walletSpan.innerText는 animateValue가 처리하므로 여기선 제외
     els.betSpan.innerText = state.bet.toLocaleString();
 }
 
