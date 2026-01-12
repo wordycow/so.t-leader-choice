@@ -4,215 +4,268 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>THE UNIQUE SLOT</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;900&display=swap" rel="stylesheet">
     <style>
-        /* === [THE UNIQUE: FINAL FIX] === */
+        /* === [THE UNIQUE: HYPER SPEED EDITION] === */
         :root {
             --gold: #ffcc00;
             --gold-glow: #ffaa00;
             --neon-blue: #00f7ff;
-            --glass-black: rgba(0, 0, 0, 0.85); /* 가독성 위해 좀 더 진하게 */
+            --bg-dark: #050508;
+            --panel-bg: rgba(20, 20, 25, 0.9);
         }
 
         body {
             margin: 0; padding: 0;
-            background-color: #050505;
+            background-color: var(--bg-dark);
             color: white; font-family: 'Rajdhani', sans-serif;
-            overflow: hidden; height: 100vh;
+            overflow: hidden; height: 100vh; width: 100vw;
             display: flex; justify-content: center; align-items: center;
         }
 
         #game-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center; z-index: -2;
-            filter: brightness(0.4);
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            z-index: -2;
         }
 
-        /* 메인 컨테이너: 화면 밖으로 절대 안나가게 고정 */
+        /* 그리드 배경 (속도감) */
+        .cyber-grid {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(transparent 95%, rgba(0, 247, 255, 0.1) 96%, transparent 97%),
+                linear-gradient(90deg, transparent 95%, rgba(0, 247, 255, 0.1) 96%, transparent 97%);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            z-index: -1; opacity: 0.3;
+        }
+
+        /* 메인 컨테이너 (화면 꽉 채움 & 잘림 방지) */
         #game-container {
-            width: 100%; max-width: 600px; height: 100%; 
-            max-height: 100vh; /* 화면 꽉 채움 */
+            width: 100%; max-width: 600px; height: 100%; max-height: 100vh;
             display: flex; flex-direction: column; 
             padding: 10px; box-sizing: border-box;
         }
 
-        /* --- 1. 상단 (지갑 강조) --- */
-        .top-section { 
-            flex: 0 0 auto; /* 크기 고정 */
-            display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px;
-        }
+        /* --- 1. 상단 (지갑 초대형 확대) --- */
+        .top-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px; }
         
-        .header-panel {
+        .header-bar {
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255,255,255,0.05); border-bottom: 1px solid #333;
-            padding: 5px 10px; border-radius: 10px;
+            padding: 0 5px;
         }
-        .brand-name { font-size: 1rem; color: #888; letter-spacing: 1px; margin: 0; }
-        .user-id { font-size: 1rem; color: var(--neon-blue); font-weight: bold; }
+        .brand { font-size: 1.2rem; color: #fff; text-shadow: 0 0 10px var(--neon-blue); letter-spacing: 2px; margin: 0; font-weight: 900; }
+        .user-id { font-size: 1rem; color: #aaa; }
 
-        /* [핵심] 지갑 & 잭팟 디스플레이 (초대형) */
+        /* 지갑 패널 (가장 중요) */
         .wallet-panel {
-            background: linear-gradient(180deg, rgba(20,20,20,0.9), rgba(0,0,0,0.9));
+            background: linear-gradient(180deg, rgba(30,30,30,0.9), rgba(10,10,10,0.95));
             border: 2px solid var(--gold); border-radius: 12px;
             padding: 10px; text-align: center;
-            box-shadow: 0 0 25px rgba(255, 204, 0, 0.15);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
+            display: flex; flex-direction: column; justify-content: center;
+            min-height: 80px;
         }
-        .wallet-label { font-size: 0.8rem; color: #aaa; letter-spacing: 3px; margin-bottom: 0; }
+        .wallet-label { font-size: 0.8rem; color: #888; letter-spacing: 4px; margin-bottom: -5px; }
         .wallet-amount { 
-            font-size: 2.8rem; /* 엄청 크게 */
+            font-size: 3.5rem; /* 글자 크기 대폭 확대 */
             font-weight: 900; color: #fff;
-            text-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold-glow);
-            line-height: 1; margin: 5px 0;
+            text-shadow: 0 0 15px var(--gold), 0 0 30px var(--gold-glow);
+            line-height: 1.1; margin: 0;
         }
-        .unit { font-size: 1rem; color: var(--gold); vertical-align: middle; }
+        .unit { font-size: 1.2rem; color: var(--gold); margin-left: 5px; }
+        .jackpot-ticker { font-size: 0.9rem; color: var(--gold); margin-top: 5px; animation: pulse 2s infinite; }
 
-        /* 잭팟 풀 (작게 표시해서 지갑 방해 안하게) */
-        .jackpot-ticker { font-size: 0.9rem; color: var(--gold); text-align: center; letter-spacing: 1px; animation: pulse 2s infinite; }
-
-        /* --- 2. 슬롯 머신 (가운데 꽉 차게) --- */
+        /* --- 2. 슬롯 머신 (전기 흐르는 프레임) --- */
         .machine-frame {
-            flex: 1 1 auto; /* 남은 공간 다 차지 */
+            flex: 1; /* 남은 공간 모두 차지 */
             position: relative;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--neon-blue); border-radius: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid var(--neon-blue); border-radius: 15px;
             overflow: hidden; 
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
-            /* 너무 작아지지 않게 최소 높이 설정 */
-            min-height: 200px; 
+            box-shadow: 0 0 20px var(--neon-blue), inset 0 0 50px #000;
+            min-height: 200px; /* 최소 높이 보장 */
+            margin: 5px 0;
         }
         
+        /* 릴 컨테이너 */
         .reels-container { display: flex; width: 100%; height: 100%; }
-        .reel { width: 20%; height: 100%; border-right: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
-        .reel:last-child { border-right: none; }
-        .reel-strip { width: 100%; position: absolute; top: 0; left: 0; }
-
-        /* 스피드 블러 애니메이션 */
-        .reel-strip.spinning { animation: spinBlur 0.25s linear infinite; filter: blur(3px); }
-        @keyframes spinBlur { 0% { transform: translateY(-150px); } 100% { transform: translateY(150px); } }
-        
-        /* 정지 바운스 */
-        .reel-strip.stopping { animation: bounceStop 0.4s ease-out forwards; filter: blur(0); }
-        @keyframes bounceStop { 0% { transform: translateY(-50px); } 60% { transform: translateY(20px); } 80% { transform: translateY(-10px); } 100% { transform: translateY(0); } }
-
-        .symbol { width: 100%; aspect-ratio: 1/1; display: block; background-size: 90%; background-repeat: no-repeat; background-position: center; }
-        .win-line { position: absolute; top: 50%; left: 0; width: 100%; height: 4px; background: rgba(255, 0, 0, 0.5); z-index: 20; transform: translateY(-50%); display: none; }
-
-        /* --- 3. 하단 컨트롤 (절대 안 사라짐) --- */
-        .bottom-section { 
-            flex: 0 0 auto; /* 크기 고정 */
-            margin-top: 10px; 
+        .reel { 
+            width: 20%; height: 100%; 
+            border-right: 1px solid rgba(255,255,255,0.1); 
+            position: relative; overflow: hidden; 
         }
+        .reel:last-child { border-right: none; }
+        
+        /* 릴 스트립 (움직이는 부분) */
+        .reel-strip { width: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
+
+        /* [스피드 효과] 블러 처리된 회전 */
+        .reel-strip.spinning {
+            /* 위에서 아래로 무한 반복 */
+            animation: spinBlur 0.2s linear infinite; 
+            filter: blur(4px); /* 잔상 효과 */
+        }
+        @keyframes spinBlur {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        /* [타격감] 멈춤 효과 (바운스) */
+        .reel-strip.stopping {
+            animation: bounceStop 0.3s cubic-bezier(0.17, 0.67, 0.33, 1.45) forwards; /* 탄력 있는 정지 */
+            filter: blur(0);
+        }
+        @keyframes bounceStop {
+            0% { transform: translateY(-50%); } /* 위에서 */
+            100% { transform: translateY(0); } /* 제자리로 쾅 */
+        }
+
+        .symbol { 
+            width: 100%; aspect-ratio: 1/1; 
+            background-size: 90%; background-repeat: no-repeat; background-position: center;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+        }
+        
+        /* 윈 라인 */
+        .win-line { 
+            position: absolute; top: 50%; left: 0; width: 100%; height: 4px; 
+            background: var(--gold); box-shadow: 0 0 20px var(--gold);
+            z-index: 20; transform: translateY(-50%); display: none; 
+        }
+
+        /* --- 3. 하단 컨트롤 (절대 안 잘림) --- */
+        .bottom-section { flex: 0 0 auto; margin-top: 5px; }
 
         .msg-panel {
-            text-align: center; background: rgba(0,0,0,0.8);
-            border: 1px solid #444; border-radius: 8px;
-            padding: 8px; margin-bottom: 8px;
-            display: flex; flex-direction: column; justify-content: center;
-            height: 40px; /* 고정 높이 */
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 8px;
+            padding: 8px; margin-bottom: 5px; text-align: center;
+            height: 40px; display: flex; align-items: center; justify-content: center;
         }
         .msg-text { font-size: 1.2rem; font-weight: bold; color: #fff; letter-spacing: 1px; }
-        .msg-text.win { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+        .msg-text.win { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-size: 1.4rem; animation: pulse 0.5s infinite; }
 
         .control-bar {
             display: flex; justify-content: space-between; align-items: center;
-            background: #111; padding: 10px; border-radius: 15px;
+            background: #151515; padding: 10px; border-radius: 15px;
             border-top: 2px solid var(--neon-blue);
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
         }
 
-        /* 버튼들 */
+        /* 버튼 스타일 */
         .btn-rect {
             background: #222; border: 1px solid #555; color: #ccc;
-            font-family: 'Rajdhani', sans-serif; font-weight: bold;
             border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-family: 'Rajdhani', sans-serif; font-weight: bold;
         }
         .btn-rect:active { transform: scale(0.95); background: #333; }
 
-        .btn-sound { width: 50px; height: 50px; font-size: 0.7rem; flex-direction: column; }
+        .btn-sound, .btn-auto { width: 55px; height: 55px; font-size: 0.75rem; flex-direction: column; line-height: 1.2; }
         .btn-sound.active { color: var(--neon-blue); border-color: var(--neon-blue); background: rgba(0,247,255,0.1); }
-
-        .btn-auto { width: 50px; height: 50px; font-size: 0.7rem; flex-direction: column; }
-        .btn-auto.active { color: var(--gold); border-color: var(--gold); background: rgba(255,204,0,0.1); }
+        .btn-auto.active { color: var(--gold); border-color: var(--gold); background: rgba(255,204,0,0.1); box-shadow: 0 0 10px var(--gold); }
 
         .bet-group { display: flex; align-items: center; gap: 5px; }
-        .btn-bet { width: 40px; height: 40px; font-size: 1.2rem; }
+        .btn-bet { width: 45px; height: 45px; font-size: 1.5rem; }
         .bet-display {
-            background: #000; border: 1px solid #444; width: 60px; height: 40px;
+            background: #000; border: 1px solid #444; width: 70px; height: 45px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border-radius: 5px;
         }
         .bet-lbl { font-size: 0.6rem; color: #666; }
-        .bet-val { font-size: 1rem; font-weight: bold; color: #fff; }
+        .bet-val { font-size: 1.2rem; font-weight: bold; color: #fff; }
 
         .btn-spin {
-            width: 75px; height: 75px; border-radius: 50%;
-            background: radial-gradient(circle, #ffd700, #ff8800);
-            border: 3px solid #fff; color: #000;
-            font-size: 1.3rem; font-weight: 900;
-            box-shadow: 0 0 15px var(--gold); cursor: pointer;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: radial-gradient(circle, #ffcc00, #ff9900);
+            border: 4px solid #fff; color: #332200;
+            font-size: 1.5rem; font-weight: 900;
+            box-shadow: 0 0 20px var(--gold); cursor: pointer;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.5);
         }
-        .btn-spin:active { transform: scale(0.95); }
+        .btn-spin:active { transform: scale(0.95); box-shadow: 0 0 10px var(--gold); }
         .btn-spin:disabled { filter: grayscale(1); opacity: 0.5; }
 
-        /* 오버레이들 */
-        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        #jackpot-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; }
-        #jackpot-overlay.show { display: flex; animation: fadeIn 0.5s; }
-        .jp-title { font-size: 3rem; color: var(--gold); animation: pulse 0.5s infinite; }
-        .jp-win-amount { font-size: 4rem; color: #fff; text-shadow: 0 0 20px var(--neon-blue); }
+        /* --- 잭팟 오버레이 (영상 효과) --- */
+        #jackpot-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 99999;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #jackpot-overlay.show { display: flex; animation: fadeIn 0.3s; }
+        .jp-title { font-size: 4rem; color: var(--gold); font-weight: 900; text-shadow: 0 0 50px var(--gold); animation: pulse 0.3s infinite; margin: 0; }
+        .jp-amount { font-size: 5rem; color: #fff; font-weight: 900; text-shadow: 0 0 30px var(--neon-blue); margin: 20px 0; }
         
-        .coin { position: absolute; width: 30px; height: 30px; background: gold; border-radius: 50%; animation: fall linear infinite; z-index: -1; }
-        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* 코인 파티클 */
+        .coin {
+            position: absolute; width: 40px; height: 40px;
+            background: radial-gradient(circle, #ffd700, #b8860b);
+            border: 2px solid #fff; border-radius: 50%;
+            box-shadow: 0 0 10px var(--gold);
+            z-index: -1; animation: fall linear infinite;
+        }
+        @keyframes fall { from { transform: translateY(-10vh) rotate(0deg); } to { transform: translateY(110vh) rotate(720deg); } }
         @keyframes pulse { 50% { transform: scale(1.1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 모바일 최적화 */
+        /* 시작 화면 */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        /* 모바일 대응 */
         @media (max-width: 400px) {
-            .wallet-amount { font-size: 2.2rem; }
-            .btn-spin { width: 65px; height: 65px; font-size: 1.1rem; }
-            .btn-sound, .btn-auto { width: 45px; height: 45px; }
-            .bet-group { gap: 2px; }
+            .wallet-amount { font-size: 2.5rem; }
+            .btn-spin { width: 70px; height: 70px; font-size: 1.3rem; }
+            .btn-sound, .btn-auto { width: 45px; height: 45px; font-size: 0.65rem; }
+            .bet-group { gap: 3px; }
             .btn-bet { width: 35px; height: 35px; }
+            .bet-display { width: 55px; }
+            .jp-title { font-size: 2.5rem; } .jp-amount { font-size: 3rem; }
         }
     </style>
 </head>
 <body>
 
     <div id="game-bg"></div>
+    <div class="cyber-grid"></div>
 
     <div id="jackpot-overlay">
-        <h1 class="jp-title">★ JACKPOT ★</h1>
-        <div class="jp-win-amount" id="jp-ani-amount">0</div>
+        <h1 class="jp-title">JACKPOT!</h1>
+        <div class="jp-amount" id="jp-ani-amount">0</div>
         <div id="coin-container"></div>
+        <div style="color:#aaa; margin-top:20px; animation:blink 1s infinite;">TAP TO CLOSE</div>
     </div>
 
     <div id="start-overlay">
-        <h1 style="color:white; font-size: 2rem;">THE UNIQUE</h1>
-        <div style="color:var(--gold); margin-top:20px; animation:pulse 1s infinite;">TOUCH TO START</div>
+        <h1 style="color:white; font-size: 2.5rem; text-shadow: 0 0 20px var(--neon-blue);">THE UNIQUE</h1>
+        <div style="color:var(--gold); font-size:1.2rem; margin-top:20px; animation:pulse 1s infinite; cursor:pointer;">TOUCH TO START</div>
     </div>
 
     <div id="game-container">
         <div class="top-section">
-            <div class="header-panel">
-                <h2 class="brand-name">THE UNIQUE SLOT</h2>
-                <div class="user-id" id="user-id">GUEST</div>
+            <div class="header-bar">
+                <h2 class="brand">UNIQUE SLOT</h2>
+                <span class="user-id" id="user-id">GUEST</span>
             </div>
             
             <div class="wallet-panel">
-                <div class="wallet-label">YOUR WALLET</div>
+                <div class="wallet-label">BALANCE</div>
                 <div class="wallet-amount"><span id="wallet-balance">0</span><span class="unit">UT</span></div>
-                <div class="jackpot-ticker">JP: <span id="jackpot-pool">...</span></div>
+                <div class="jackpot-ticker">MEGA JACKPOT: <span id="jackpot-pool">...</span></div>
             </div>
         </div>
 
         <div class="machine-frame" id="machine-frame">
             <div class="reels-container" id="reels-container"></div>
-            <div style="position:absolute; width:100%; height:100%; pointer-events:none; background:linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.8) 100%);"></div>
+            <div style="position:absolute; width:100%; height:100%; pointer-events:none; background:linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.8) 100%); z-index:10;"></div>
             <div class="win-line"></div>
         </div>
 
         <div class="bottom-section">
             <div class="msg-panel">
-                <div class="msg-text" id="status-msg">READY</div>
+                <div class="msg-text" id="status-msg">READY TO SPIN</div>
             </div>
 
             <div class="control-bar">
@@ -246,14 +299,14 @@
                 spin: 'spinning-sound.MP3', stop: 'stop-stop-stop-sound.MP3', win: 'win-sound.MP3', lose: 'lose-sound.MP3', jackpot: 'jackpot-sound.MP3', btn: 'start-button-sound.MP3'
             },
             reels: 5, rows: 3, symbolHeight: 0, 
-            dummySymbolCount: 3 // 화면에 보일 3개만 유지 (나머지는 CSS 블러 처리)
+            dummySymbolCount: 3 // 화면에 보일 개수 (실제 회전은 CSS로 처리)
         };
 
         let state = { id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, isAuto: false, jackpotPool: 0 };
         let els = {}; const audios = {};
 
         async function init() {
-            console.log("THE UNIQUE: WALLET FIX & LAYOUT STABLE");
+            console.log("THE UNIQUE: SPEED V12");
             els = {
                 bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
                 reelsContainer: document.getElementById('reels-container'), machineFrame: document.getElementById('machine-frame'),
@@ -270,7 +323,7 @@
 
             if (!state.id) {
                 els.userId.innerText = "GUEST"; els.spinBtn.disabled = true;
-                setStatus("로그인 필요");
+                setStatus("LOGIN REQUIRED");
             } else {
                 els.userId.innerText = state.id;
                 await syncUserData();
@@ -333,7 +386,7 @@
             for (let i = 0; i < CONFIG.reels; i++) {
                 const reelDiv = document.createElement('div'); reelDiv.className = 'reel';
                 const stripDiv = document.createElement('div'); stripDiv.className = 'reel-strip';
-                // 화면에 보일 딱 3개만 생성 (회전은 CSS 블러로 처리)
+                // 화면에 보일 3개만 생성 (회전은 CSS 블러로 처리)
                 let html = '';
                 for(let j=0; j < 3; j++) html += `<div class="symbol" style="background-image: url('${CONFIG.imgObj.path}${getRandomSymbolName()}')"></div>`;
                 stripDiv.innerHTML = html; reelDiv.appendChild(stripDiv); els.reelsContainer.appendChild(reelDiv);
@@ -342,7 +395,7 @@
         }
         function getRandomSymbolName() { return CONFIG.imgObj.symbols[Math.floor(Math.random() * CONFIG.imgObj.symbols.length)]; }
 
-        /* === [핵심] 스피드 스핀 (블러 효과) === */
+        /* === [핵심] 하이퍼 스피드 스핀 === */
         async function onSpinClick() {
             if (state.isSpinning) return;
             if (state.wallet < state.bet) { state.isAuto = false; updateAutoBtn(); alert("잔액 부족"); return; }
@@ -355,15 +408,14 @@
             startBgEffect();
 
             const strips = document.querySelectorAll('.reel-strip');
-            if(!CONFIG.symbolHeight) CONFIG.symbolHeight = document.querySelector('.symbol').offsetHeight;
-
-            // [눈속임] CSS 애니메이션 클래스(spinning)를 붙여서 미친듯이 도는 잔상을 만듦
+            
+            // 모든 릴 '즉시' 블러 회전 시작
             strips.forEach((strip, index) => {
                 strip.classList.remove("stopping"); 
-                // 시차를 두고 출발
+                // 아주 약간의 시차만 두고 다같이 돔
                 setTimeout(() => {
                     strip.classList.add("spinning"); 
-                }, index * 100);
+                }, index * 50);
             });
 
             try {
@@ -377,7 +429,7 @@
             }
         }
 
-        /* === [핵심] 순차 정지 (탁... 탁... 탁...) === */
+        /* === [핵심] 스나이퍼 싱크 정지 === */
         function stopReelsWithResult(data) {
             const serverKeys = data.spin.keys;
             const strips = document.querySelectorAll('.reel-strip');
@@ -385,22 +437,22 @@
             strips.forEach((strip, colIdx) => {
                 const symbols = strip.querySelectorAll('.symbol');
                 
-                // 멈추는 타이밍: 1번 릴부터 순서대로 (0.5초 간격)
-                const stopDelay = 800 + (colIdx * 500); 
+                // 정지 타이밍: 1번 릴부터 0.4초 간격 (빠른 호흡)
+                const stopDelay = 600 + (colIdx * 400); 
 
                 setTimeout(() => {
-                    // 1. 회전 애니메이션 제거 (멈춤)
+                    // 1. 회전 멈춤
                     strip.classList.remove("spinning");
                     
-                    // 2. 결과 이미지 교체 (눈보다 빠름)
+                    // 2. 결과 이미지 교체
                     symbols[0].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx]}.png')`;
                     symbols[1].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 5]}.png')`;
                     symbols[2].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 10]}.png')`;
 
-                    // 3. 바운스 효과 적용 (탁! 꽂힘)
+                    // 3. 바운스 (탁! 꽂힘)
                     strip.classList.add("stopping");
 
-                    // 4. 소리 싱크
+                    // 4. 소리 싱크 (정확함)
                     if(state.audioEnabled) {
                         const stopSound = audios.stop.cloneNode();
                         stopSound.volume = 0.8;
@@ -409,8 +461,8 @@
                 }, stopDelay);
             });
 
-            // 전체 종료 (마지막 릴 멈추고 0.5초 뒤)
-            setTimeout(() => { handleSpinEnd(data); }, 800 + (4 * 500) + 500);
+            // 전체 종료
+            setTimeout(() => { handleSpinEnd(data); }, 600 + (4 * 400) + 500);
         }
 
         function handleSpinEnd(data) {
@@ -438,7 +490,7 @@
             if (isWin && state.audioEnabled) { sound.currentTime = 0; sound.play(); }
 
             if (state.isAuto) {
-                setTimeout(() => { if (state.isAuto && state.wallet >= state.bet) onSpinClick(); else toggleAuto(); }, 2000); 
+                setTimeout(() => { if (state.isAuto && state.wallet >= state.bet) onSpinClick(); else toggleAuto(); }, 1500); 
             }
         }
 
@@ -454,11 +506,12 @@
             els.coinBox.innerHTML = '';
         }
         function createCoins() {
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<100; i++) {
                 const coin = document.createElement('div');
                 coin.className = 'coin';
                 coin.style.left = Math.random() * 100 + 'vw';
                 coin.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                coin.style.animationDelay = Math.random() + 's';
                 els.coinBox.appendChild(coin);
             }
         }
@@ -468,7 +521,7 @@
             state.bgIntervalId = setInterval(() => {
                 idx = (idx + 1) % CONFIG.imgObj.bg.length;
                 els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[idx]}')`;
-            }, 200);
+            }, 100); // 0.1초 (더 빠르게)
         }
         function stopBgEffect() { clearInterval(state.bgIntervalId); els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`; }
         function jsonpRequest(action, params = {}) {
