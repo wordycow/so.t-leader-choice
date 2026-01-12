@@ -1,60 +1,59 @@
 /* games/slot/slot.config.js */
-(function () {
-  // 전역 네임스페이스
-  window.SLOT = window.SLOT || {};
+(() => {
+  const SLOT = (window.SLOT = window.SLOT || {});
 
-  // Apps Script (너가 쓰는 그대로)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+  // ✅ 너의 Apps Script 웹앱 exec URL로 교체
+  // 예) https://script.google.com/macros/s/AKfycbxxxxx/exec
+  const SCRIPT_URL = SLOT?.config?.SCRIPT_URL || "PASTE_YOUR_APPS_SCRIPT_EXEC_URL";
 
-  // ✅ slot.html이 games/slot.html 이라서 상대경로는 이게 맞다
-  const ASSET = {
-    imgBase: "img/slot/",
-    sndBase: "sounds/",
-    bg: ["bg1.png", "bg2.png", "bg3.png", "bg4.png", "bg5.png"],
-    sound: {
-      start: "start-button-sound.MP3",
-      spin: "spining-sound.MP3", // 파일명 오타 그대로
-      stop: "stop-stop-stop-sound.MP3",
-      win: "win-sound.MP3",
-      lose: "lose-sound.MP3",
-      jackpot: "jackpot-sound.MP3"
-    }
-  };
+  // ✅ slot.html 위치(/games/slot.html) 기준으로 이미지 폴더는 보통 ../img/slot/
+  // 네 프로젝트에 맞게 폴더만 조정하면 됨.
+  const ASSET = Object.assign(
+    {
+      imgBase: "../img/slot/", // ✅ 여기 때문에 imgBase 에러가 났던 거다
+    },
+    (SLOT.config && SLOT.config.ASSET) || {}
+  );
 
-  // ✅ 베팅: 5 단위 (유송 요청)
-  const BET = { min: 10, max: 1000, step: 5, def: 10 };
-
-  // 심볼/배당 (원형 유지)
+  // ✅ 심볼 키는 서버가 내려주는 keys[] (star1~pro10) 와 동일해야 함
   const SYMBOLS = [
-    { key: "star1", label: "STAR 1", w: 22, img: "star1.png", pay: { 3: 2, 4: 5, 5: 12 } },
-    { key: "star2", label: "STAR 2", w: 18, img: "star2.png", pay: { 3: 2.5, 4: 6, 5: 15 } },
-    { key: "star3", label: "STAR 3", w: 14, img: "star3.png", pay: { 3: 3, 4: 7, 5: 18 } },
-
-    { key: "pro1", label: "PRO 1", w: 12, img: "pro1.png", pay: { 3: 4, 4: 10, 5: 25 } },
-    { key: "pro2", label: "PRO 2", w: 9, img: "pro2.png", pay: { 3: 4.5, 4: 11, 5: 28 } },
-    { key: "pro3", label: "PRO 3", w: 7, img: "pro3.png", pay: { 3: 5, 4: 12, 5: 30 } },
-    { key: "pro4", label: "PRO 4", w: 5, img: "pro4.png", pay: { 3: 5.5, 4: 13, 5: 33 } },
-    { key: "pro5", label: "PRO 5", w: 4, img: "pro5.png", pay: { 3: 6, 4: 14, 5: 36 } },
-    { key: "pro6", label: "PRO 6", w: 3, img: "pro6.png", pay: { 3: 6.5, 4: 15, 5: 40 } },
-    { key: "pro7", label: "PRO 7", w: 2.5, img: "pro7.png", pay: { 3: 7, 4: 16, 5: 44 } },
-    { key: "pro8", label: "PRO 8", w: 2, img: "pro8.png", pay: { 3: 7.5, 4: 18, 5: 48 } },
-    { key: "pro9", label: "PRO 9", w: 1.5, img: "pro9.png", pay: { 3: 8, 4: 20, 5: 55 } },
-    { key: "pro10", label: "PRO 10", w: 1, img: "pro10.png", pay: { 3: 9, 4: 24, 5: 70 } }
+    { key: "star1",  label: "STAR1",  file: "star1.png" },
+    { key: "star2",  label: "STAR2",  file: "star2.png" },
+    { key: "star3",  label: "STAR3",  file: "star3.png" },
+    { key: "pro1",   label: "PRO1",   file: "pro1.png" },
+    { key: "pro2",   label: "PRO2",   file: "pro2.png" },
+    { key: "pro3",   label: "PRO3",   file: "pro3.png" },
+    { key: "pro4",   label: "PRO4",   file: "pro4.png" },
+    { key: "pro5",   label: "PRO5",   file: "pro5.png" },
+    { key: "pro6",   label: "PRO6",   file: "pro6.png" },
+    { key: "pro7",   label: "PRO7",   file: "pro7.png" },
+    { key: "pro8",   label: "PRO8",   file: "pro8.png" },
+    { key: "pro9",   label: "PRO9",   file: "pro9.png" },
+    { key: "pro10",  label: "PRO10",  file: "pro10.png" },
   ];
 
-  // ✅ 스핀 연출 기본값 (요청: 10초, 하나씩 멈춤)
+  const PAY = { even: 0, win3: 3, win4: 10, mega: 25 };
+
   const SPIN = {
-    totalMs: 10000,
-    tickMs: 90,
-    stopStepMs: 1200, // 컬럼별 멈추는 간격(대충 1.2초씩)
-    bgFastMs: 180,
-    bgSlowMs: 900
+    betDefault: 10,
+    betMin: 10,
+    betMax: 1000,
+    betStep: 10,
   };
 
-  // ✅ 잭팟은 “운영자 수동”으로 가는 중이니까, 슬롯 자체는 당장 JACKPOT을 터뜨리지 않게 막아둔다
-  const JACKPOT = {
-    enabled: false // false면 5연속도 MEGA로만 처리(배너/잭팟사운드 X)
+  const STORAGE = {
+    userId: "slot.userId",
+    bet: "slot.bet",
+    payCollapsed: "slot.pay.collapsed",
+    banner: "slot.banner.untilMidnight",
   };
 
-  window.SLOT.config = { SCRIPT_URL, ASSET, BET, SYMBOLS, SPIN, JACKPOT };
+  SLOT.config = Object.assign({}, SLOT.config || {}, {
+    SCRIPT_URL,
+    ASSET,
+    SYMBOLS,
+    PAY,
+    SPIN,
+    STORAGE,
+  });
 })();
