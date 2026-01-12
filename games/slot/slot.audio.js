@@ -1,34 +1,24 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const cfg = SLOT.config || {};
+  const C = () => SLOT.config;
 
-  function loadBool(key, def) {
-    try {
-      const v = localStorage.getItem(key);
-      if (v == null) return def;
-      return v === "1";
-    } catch (_) {
-      return def;
-    }
+  function getSoundOn() {
+    try { return localStorage.getItem(C().STORAGE_KEYS.sound) !== "0"; }
+    catch (_) { return true; }
   }
 
-  function saveBool(key, val) {
-    try { localStorage.setItem(key, val ? "1" : "0"); } catch (_) {}
+  function setSoundOn(v) {
+    const on = !!v;
+    try { localStorage.setItem(C().STORAGE_KEYS.sound, on ? "1" : "0"); } catch(_) {}
+    return on;
   }
-
-  const keySound = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.sound;
 
   SLOT.audio = {
-    isOn: loadBool(keySound, true),
-
-    set(on) {
-      this.isOn = !!on;
-      saveBool(keySound, this.isOn);
-    },
-
-    toggle() {
-      this.set(!this.isOn);
-      return this.isOn;
-    }
+    getSoundOn,
+    setSoundOn,
+    // 필요하면 여기에 효과음 추가
+    playClick() {},
+    playSpin() {},
+    playWin() {},
   };
 })();
