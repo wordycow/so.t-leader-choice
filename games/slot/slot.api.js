@@ -1,79 +1,68 @@
 (function () {
-  const S = (window.S = window.S || {});
-  S.api = S.api || {};
+  window.SLOT = window.SLOT || {};
 
-  const DEFAULT_TIMEOUT = 12000;
+  const ROOT = "https://wordycow.github.io/so.t-leader-choice/";
+  const CFG = {
+    ROOT,
+    MAIN_URL: ROOT + "the-unique-main.html",
+    GATE_URL: ROOT + "the-unique-gate.html",
 
-  function getGoogleScriptUrl() {
-    // ✅ unique.config.js에서 가져오기
-    const U = window.U || window.UNIQUE || {};
-    const fromUnique = U?.CONFIG?.GOOGLE_SCRIPT_URL ? String(U.CONFIG.GOOGLE_SCRIPT_URL).trim() : "";
-    const fromLocal = S?.CONFIG?.GOOGLE_SCRIPT_URL ? String(S.CONFIG.GOOGLE_SCRIPT_URL).trim() : "";
-    return fromUnique || fromLocal || "";
-  }
+    SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
 
-  function buildUrl(base, params) {
-    const hasQ = base.includes("?");
-    const qs = Object.entries(params)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "")
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-      .join("&");
-    return base + (hasQ ? "&" : "?") + qs;
-  }
+    ASSET: {
+      imgBase: "img/slot/",
+      sndBase: "sounds/",
+      bg: ["bg1.png","bg2.png","bg3.png","bg4.png","bg5.png"],
+      sound: {
+        start: "start-button-sound.MP3",
+        spin:  "spining-sound.MP3",       // 파일명 그대로
+        stop:  "stop-stop-stop-sound.MP3",
+        win:   "win-sound.MP3",
+        lose:  "lose-sound.MP3",
+        jackpot:"jackpot-sound.MP3"
+      }
+    },
 
-  function jsonp(base, params = {}, timeoutMs = DEFAULT_TIMEOUT) {
-    return new Promise((resolve, reject) => {
-      const cb = `__slotcb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      let done = false;
+    BET: { min: 10, max: 1000, step: 5, def: 10 },
 
-      const cleanup = (script, timer) => {
-        if (done) return;
-        done = true;
-        try { delete window[cb]; } catch (_) {}
-        if (script && script.parentNode) script.parentNode.removeChild(script);
-        if (timer) clearTimeout(timer);
-      };
+    // ✅ 스핀 연출(요구사항): 10초 + 하나씩 멈춤
+    SPIN: {
+      totalMs: 10000,
+      tickMs: 90,
+      stopCascadeMs: 950,   // 컬럼 멈춤 간격(거의 1초)
+      bgFastMs: 420,        // 초반 배경 전환(빠름)
+      bgSlowMs: 1100,       // 후반 배경 전환(느림)
+    },
 
-      window[cb] = (data) => {
-        cleanup(script, timer);
-        resolve(data);
-      };
+    // ✅ 승률(LOW/MID/HIGH) : jackpot은 기본 0 (운영자 수동)
+    ODDS_PROFILES: {
+      LOW:  { lose:0.80, even:0.17, win3:0.028, win4:0.002, jackpot:0.0 },
+      MID:  { lose:0.70, even:0.20, win3:0.085, win4:0.015, jackpot:0.0 },
+      HIGH: { lose:0.55, even:0.23, win3:0.17,  win4:0.05,  jackpot:0.0 },
+    },
 
-      const url = buildUrl(base, { ...params, callback: cb, _ts: Date.now() });
+    // ✅ 잭팟: 이번달 “없음” 기본값
+    JACKPOT: {
+      enabled: false, // 나중에 casino-admin 연결되면 서버값으로 true/false 제어
+    },
 
-      const script = document.createElement("script");
-      script.src = url;
-      script.async = true;
-      script.onerror = () => {
-        cleanup(script, timer);
-        reject(new Error("jsonp load error"));
-      };
+    SYMBOLS: [
+      { key:"star1", label:"STAR 1", w:22, img:"star1.png",  pay:{3:2,   4:5,  5:12} },
+      { key:"star2", label:"STAR 2", w:18, img:"star2.png",  pay:{3:2.5, 4:6,  5:15} },
+      { key:"star3", label:"STAR 3", w:14, img:"star3.png",  pay:{3:3,   4:7,  5:18} },
 
-      const timer = setTimeout(() => {
-        cleanup(script, timer);
-        reject(new Error("jsonp timeout"));
-      }, timeoutMs);
+      { key:"pro1",  label:"PRO 1",  w:12, img:"pro1.png",   pay:{3:4,   4:10, 5:25} },
+      { key:"pro2",  label:"PRO 2",  w:9,  img:"pro2.png",   pay:{3:4.5, 4:11, 5:28} },
+      { key:"pro3",  label:"PRO 3",  w:7,  img:"pro3.png",   pay:{3:5,   4:12, 5:30} },
+      { key:"pro4",  label:"PRO 4",  w:5,  img:"pro4.png",   pay:{3:5.5, 4:13, 5:33} },
+      { key:"pro5",  label:"PRO 5",  w:4,  img:"pro5.png",   pay:{3:6,   4:14, 5:36} },
+      { key:"pro6",  label:"PRO 6",  w:3,  img:"pro6.png",   pay:{3:6.5, 4:15, 5:40} },
+      { key:"pro7",  label:"PRO 7",  w:2.5,img:"pro7.png",   pay:{3:7,   4:16, 5:44} },
+      { key:"pro8",  label:"PRO 8",  w:2,  img:"pro8.png",   pay:{3:7.5, 4:18, 5:48} },
+      { key:"pro9",  label:"PRO 9",  w:1.5,img:"pro9.png",   pay:{3:8,   4:20, 5:55} },
+      { key:"pro10", label:"PRO 10", w:1,  img:"pro10.png",  pay:{3:9,   4:24, 5:70} },
+    ],
+  };
 
-      document.head.appendChild(script);
-    });
-  }
-
-  async function call(action, params = {}) {
-    const base = getGoogleScriptUrl();
-    if (!base) throw new Error("GOOGLE_SCRIPT_URL not set (unique.config.js 확인)");
-
-    const data = await jsonp(base, { action, ...params });
-    if (!data || data.ok !== true) {
-      const msg = data?.message || data?.error || "API error";
-      const err = new Error(msg);
-      err.payload = data;
-      throw err;
-    }
-    return data;
-  }
-
-  S.api.call = call;
-  S.api.getConfig = () => call("getConfig");
-  S.api.getSlotState = (id) => call("getSlotState", { id });
-  S.api.slotCommit = (payload) => call("slotCommit", payload);
+  window.SLOT.config = CFG;
 })();
