@@ -1,317 +1,198 @@
-:root{
-  --ink:#e7ecff;
-  --muted:#aab4da;
-
-  --panel: rgba(10,16,32,0.72);
-  --panel2: rgba(2,6,23,0.55);
-  --line: rgba(88,120,255,0.22);
-
-  --neonA: rgba(0,255,220,0.75);
-  --neonB: rgba(160,80,255,0.75);
-  --neonC: rgba(255,200,0,0.65);
-
-  --slot-bg: none; /* JS가 url("...") 넣음 */
+/* 전체 설정 */
+:root {
+    --neon-pink: #ff00ff;
+    --neon-blue: #00ffff;
+    --dark-bg: #050510;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; }
-
-body{
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--ink);
-  background: radial-gradient(circle at top, #030817 0, #020617 42%, #000 100%);
-  overflow-x:hidden;
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--dark-bg);
+    color: white;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden; /* 스크롤 방지 */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* ✅ 전체 배경 (bg1~bg5) */
-body::before{
-  content:"";
-  position:fixed; inset:0;
-  background-image: var(--slot-bg);
-  background-size: cover;
-  background-position: center;
-  opacity: 0.28;
-  filter: saturate(1.25) contrast(1.1);
-  z-index:-2;
-}
-body::after{
-  content:"";
-  position:fixed; inset:0;
-  background:
-    radial-gradient(circle at 30% 10%, rgba(0,255,220,0.10), transparent 40%),
-    radial-gradient(circle at 80% 25%, rgba(160,80,255,0.10), transparent 45%),
-    radial-gradient(circle at 50% 80%, rgba(255,200,0,0.07), transparent 55%),
-    linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.65));
-  z-index:-1;
-  pointer-events:none;
+/* 동적 배경 */
+#game-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-image: url('../img/slot/bg1.png'); /* 기본 배경 */
+    z-index: -2;
+    transition: filter 0.3s;
 }
 
-.wrap{
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 18px;
-  display:flex;
-  flex-direction:column;
-  gap: 14px;
+/* 입장 오버레이 */
+#start-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
 }
 
-.topbar{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  padding: 8px 2px;
-  opacity: 0.95;
-}
-.toplink{
-  color: var(--muted);
-  text-decoration:none;
-  letter-spacing:0.08em;
-  font-weight:700;
-  font-size: 14px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(0,0,0,0.25);
-}
-.title{
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  font-size: 14px;
-  color: rgba(231,236,255,0.9);
+.glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border: 2px solid var(--neon-blue);
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 20px var(--neon-blue);
 }
 
-.banner{
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border-radius: 14px;
-  padding: 10px 14px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(0,255,220,0.18);
-  box-shadow: 0 0 22px rgba(0,255,220,0.08);
-  backdrop-filter: blur(10px);
-}
-.banner.hidden{ display:none; }
-.bannerText{
-  white-space:nowrap;
-  overflow:hidden;
+.glass-panel h1 { margin: 0; color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+.glass-panel p { margin-top: 10px; font-size: 1.2rem; animation: blink 1s infinite; }
+
+@keyframes blink { 50% { opacity: 0.5; } }
+
+/* 게임 컨테이너 (모바일 최적화) */
+#game-container {
+    width: 100%;
+    max-width: 800px; /* PC에서도 너무 커지지 않게 */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    box-sizing: border-box;
 }
 
-.card{
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(8,14,30,0.70), rgba(2,6,23,0.55));
-  border: 1px solid rgba(88,120,255,0.22);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.25) inset,
-    0 24px 60px rgba(0,0,0,0.45),
-    0 0 24px rgba(0,255,220,0.05);
-  overflow:hidden;
+/* 잭팟 티커 */
+.ticker-wrap {
+    width: 100%;
+    background: rgba(0,0,0,0.8);
+    overflow: hidden;
+    height: 30px;
+    line-height: 30px;
+    border-bottom: 1px solid var(--neon-pink);
+}
+.ticker { display: inline-block; white-space: nowrap; animation: ticker 20s linear infinite; }
+.ticker-item { color: var(--neon-pink); font-weight: bold; padding-right: 50px; }
+@keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+/* 상단바 */
+.top-bar { display: flex; justify-content: space-between; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; margin-bottom: 5px; }
+.info-box { font-size: 0.9rem; font-weight: bold; }
+
+/* 슬롯 머신 프레임 (핵심) */
+.slot-machine-frame {
+    flex-grow: 1;
+    position: relative;
+    background: rgba(0,0,0,0.5);
+    border: 3px solid var(--neon-blue);
+    border-radius: 10px;
+    box-shadow: inset 0 0 20px #000;
+    overflow: hidden;
+    margin: 10px 0;
+    display: flex;
+    align-items: center; /* 세로 중앙 정렬 */
 }
 
-.cardHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  padding: 14px 16px;
-}
-.cardTitle{
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  font-size: 14px;
-}
-.cardHint{
-  margin-left:auto;
-  color: rgba(231,236,255,0.65);
-  font-size: 12px;
-  text-align:right;
-  max-width: 62%;
+/* 릴 컨테이너 */
+.reels-container {
+    display: flex;
+    width: 100%;
+    height: 100%; /* 부모 높이 꽉 채움 */
+    justify-content: space-around;
 }
 
-.btn{
-  cursor:pointer;
-  color: rgba(231,236,255,0.95);
-  background: rgba(0,0,0,0.20);
-  border: 1px solid rgba(0,255,220,0.22);
-  border-radius: 12px;
-  padding: 10px 16px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.25) inset,
-    0 0 18px rgba(0,255,220,0.08);
-  transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+/* 개별 릴 (Column) */
+.reel {
+    width: 18%; /* 5개니까 여백 포함해서 */
+    height: 100%;
+    overflow: hidden; /* 넘치는 심볼 숨김 */
+    position: relative;
+    background: rgba(0,0,0,0.3);
+    border-right: 1px solid rgba(255,255,255,0.1);
 }
-.btn:hover{
-  border-color: rgba(160,80,255,0.35);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.25) inset,
-    0 0 26px rgba(160,80,255,0.12),
-    0 0 18px rgba(0,255,220,0.10);
-}
-.btn:active{ transform: translateY(1px) scale(0.99); }
+.reel:last-child { border-right: none; }
 
-.btn.tiny{
-  padding: 7px 10px;
-  border-radius: 10px;
-  font-size: 12px;
+/* 릴 내부의 긴 이미지 띠 (Strip) */
+.reel-strip {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    will-change: transform; /* 성능 최적화 */
 }
 
-.stage{
-  position:relative;
-  padding: 14px 14px 16px;
-}
-.stageBg{
-  position:absolute;
-  inset: 10px;
-  width: calc(100% - 20px);
-  height: calc(100% - 20px);
-  object-fit: cover;
-  border-radius: 16px;
-  opacity: 0.12;
-  filter: saturate(1.25) contrast(1.1);
-  pointer-events:none;
-}
-.grid{
-  position:relative;
-  display:grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(0,0,0,0.18);
-  backdrop-filter: blur(6px);
+/* 심볼 이미지 */
+.symbol {
+    width: 100%;
+    aspect-ratio: 1/1; /* 정사각형 유지 */
+    display: block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
 }
 
-/* ✅ 슬롯 칸: “세로 직사각형” + 이미지 안 짤리게 */
-#slotGrid > *{
-  aspect-ratio: 3 / 4; /* 세로로 더 긴 직사각형 */
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.10));
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
+/* 스핀 중 블러 효과 */
+.blur-move {
+    filter: blur(3px); /* 속도감 */
+    transition: transform 0.1s linear; /* 부드러운 이동 아님, 빠른 이동 */
 }
 
-/* 어떤 구조로 들어오든 이미지가 “칸 안에서” 안 짤리게 */
-#slotGrid img{
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 10px;          /* 가장자리 잘림 방지 */
-  transform: scale(0.98); /* 미세 여유 */
+/* 승리 라인 (가운데) */
+.win-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 0, 0, 0.7);
+    transform: translateY(-50%);
+    z-index: 10;
+    box-shadow: 0 0 10px red;
+    pointer-events: none;
 }
 
-/* PAYTABLE */
-.payWrap{
-  padding: 8px 16px 16px;
-}
-#paytableCard.collapsed .payWrap{ display:none; }
-#paytableCard.collapsed .ruleLine{ display:none; }
-
-.ruleLine{
-  padding: 0 16px 14px;
-  color: rgba(231,236,255,0.55);
-  font-size: 12px;
+/* 컨트롤 패널 */
+.control-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, #222, #000);
+    padding: 10px;
+    border-radius: 10px;
+    border-top: 2px solid var(--neon-pink);
 }
 
-/* PANEL */
-.kv{
-  padding: 14px 16px 4px;
-  display:grid;
-  grid-template-columns: 140px 1fr;
-  gap: 10px 14px;
+.bet-control { display: flex; align-items: center; gap: 10px; }
+.bet-control button {
+    width: 40px; height: 40px; border-radius: 50%; border: none; font-weight: bold; font-size: 1.2rem;
+    background: #333; color: white;
 }
-.k{
-  color: rgba(231,236,255,0.72);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
-.v{
-  font-size: 15px;
-  font-weight: 900;
-}
+.bet-display { font-size: 1.1rem; font-weight: bold; color: var(--neon-blue); }
 
-.betRow{
-  padding: 8px 16px 14px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
+.spin-btn {
+    width: 100px; height: 60px;
+    background: radial-gradient(circle, #ff00ff, #aa00aa);
+    border: 2px solid white;
+    border-radius: 10px;
+    font-size: 1.5rem; font-weight: 900; color: white;
+    box-shadow: 0 0 15px var(--neon-pink);
+    cursor: pointer;
 }
-.betCtl{
-  display:flex;
-  align-items:center;
-  gap: 8px;
-}
-.betVal{
-  min-width: 56px;
-  text-align:center;
-  padding: 7px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.15);
-  font-weight: 900;
-}
+.spin-btn:active { transform: scale(0.95); }
+.spin-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
 
-.btnRow{
-  padding: 0 16px 16px;
-  display:flex;
-  gap: 10px;
-  flex-wrap:wrap;
-}
-
-/* overlay */
-.overlay{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background: rgba(0,0,0,0.65);
-  z-index: 100;
-}
-.overlay.hidden{ display:none; }
-.overlayCard{
-  width:min(560px, 92vw);
-  border-radius: 18px;
-  padding: 18px;
-  background: rgba(8,14,30,0.88);
-  border: 1px solid rgba(0,255,220,0.20);
-  box-shadow: 0 0 30px rgba(0,255,220,0.08);
-}
-.overlayTitle{
-  font-weight: 900;
-  margin-bottom: 8px;
-}
-.overlayText{
-  color: rgba(231,236,255,0.75);
-  line-height: 1.5;
-}
-.overlayLink{
-  display:inline-block;
-  margin-top: 12px;
-  color: rgba(0,255,220,0.9);
-  text-decoration:none;
-  font-weight: 900;
-}
-
-/* ✅ 모바일: PAYTABLE을 맨 아래로 */
-@media (max-width: 560px){
-  .wrap{ padding: 12px; }
-  .cardHint{ max-width: 58%; font-size: 11px; }
-
-  #stageCard{ order: 1; }
-  #panelCard{ order: 2; }
-  #paytableCard{ order: 3; }
-
-  .kv{ grid-template-columns: 120px 1fr; }
-  .grid{ gap: 10px; padding: 10px; }
-  #slotGrid > *{ border-radius: 12px; }
-  #slotGrid img{ padding: 12px; }
+#message-area {
+    text-align: center;
+    font-size: 1.2rem;
+    height: 1.5rem;
+    color: yellow;
+    margin-top: 5px;
+    text-shadow: 1px 1px 0 #000;
 }
