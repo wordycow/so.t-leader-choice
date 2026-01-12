@@ -1,91 +1,155 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const K = () => SLOT.config.STORAGE_KEYS;
+  const C = () => SLOT.config || {};
+  const K = () => (C().STORAGE_KEYS ? C().STORAGE_KEYS.sound : "slot_sound_on");
 
-  const SOUND_BASE = "./sounds"; // games/sounds
-
-  // ✅ GitHub는 대소문자 구분: 파일명 그대로
-  const FILES = {
-    start:   `${SOUND_BASE}/start-button-sound.MP3`,
-    spin:    `${SOUND_BASE}/spining-sound.MP3`,
-    stop:    `${SOUND_BASE}/stop-stop-stop-sound.MP3`,
-    win:     `${SOUND_BASE}/win-sound.MP3`,
-    lose:    `${SOUND_BASE}/lose-sound.MP3`,
-    jackpot: `${SOUND_BASE}/jackpot-sound.MP3`,
-  };
-
-  const aud = {};
   let enabled = true;
   let unlocked = false;
 
-  function loadAll() {
-    Object.entries(FILES).forEach(([k, src]) => {
-      const a = new Audio(src);
-      a.preload = "auto";
-      aud[k] = a;
-    });
-    // spin은 루프
-    aud.spin.loop = true;
+  const aud = {
+    start: null,
+    spinning: null,
+    stop: null,
+    win: null,
+    lose: null,
+    jackpot: null,
+  };
+
+  function loadAudio(name, file, { loop = false, volume = 0.9 } = {}) {
+    const base = C().SOUND?.base || "./sounds";
+    const url = `${base}/${file}`;
+    const a = new Audio(url);
+    a.preload = "auto";
+    a.loop = loop;
+    a.volume = volume;
+    return a;
   }
 
-  function readEnabled() {
-    const v = localStorage.getItem(K().sound);
-    if (v === null) return true;
-    return v === "1";
+  function init() {
+    // localStorage
+    try {
+      const v = localStorage.getItem(K());
+      enabled = v === null ? true : v === "1";
+    } catch (_) {}
+
+    const files = C().SOUND?.files || {};
+    aud.start = loadAudio("start", files.start || "start-button-sound.MP3", { loop: false, volume: 0.9 });
+    aud.spinning = loadAudio("spinning", files.spinning || "spinning-sound.MP3", { loop: true, volume: 0.7 });
+    aud.stop = loadAudio("stop", files.stop || "stop-stop-stop-sound.MP3", { loop: false, volume: 0.85 });
+    aud.win = loadAudio("win", files.win || "win-sound.MP3", { loop: false, volume: 0.9 });
+    aud.lose = loadAudio("lose", files.lose || "lose-sound.MP3", { loop: false, volume: 0.9 });
+    aud.jackpot = loadAudio("jackpot", files.jackpot || "jackpot-sound.MP3", { loop: false, volume: 1.0 });
+
+    bindSoundButton();
+    bindUnlockOnce();
+    refreshSoundBtnText();
+  }
+
+  function bindUnlockOnce() {
+    const unlockOnce = () => {
+      unlock();
+      window.removeEventListener("pointerdown", unlockOnce);
+      window.removeEventListener("keydown", unlockOnce);
+    };
+    window.addEventListener("pointerdown", unlockOnce, { once: true, passive: true });
+    window.addEventListener("keydown", unlockOnce, { once: true });
+  }
+
+  function unlock() {
+    if (unlocked) return;
+    unlocked = true;
+
+    // “한 번 재생 시도”로 오디오 정책 해제 유도
+    try {
+      const a = aud.start;
+      if (!a) return;
+      const prevMuted = a.muted;
+      a.muted = true;
+      const p = a.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          a.pause();
+          a.currentTime = 0;
+          a.muted = prevMuted;
+        }).catch(() => {
+          a.muted = prevMuted;
+        });
+      } else {
+        a.muted = prevMuted;
+      }
+    } catch (_) {}
   }
 
   function setEnabled(on) {
     enabled = !!on;
-    localStorage.setItem(K().sound, enabled ? "1" : "0");
-    if (!enabled) stopAll();
+    try {
+      localStorage.setItem(K(), enabled ? "1" : "0");
+    } catch (_) {}
+
+    if (!enabled) stopSpinning();
+    refreshSoundBtnText();
   }
 
-  async function unlock() {
-    if (unlocked) return true;
+  function isEnabled() {
+    return enabled;
+  }
+
+  function playOne(a) {
+    if (!enabled || !a) return;
     try {
-      // 모바일 정책: 유저 제스처에서 1회 재생 시도 필요
-      const a = aud.start;
-      a.volume = 0.001;
-      await a.play();
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (_) {}
+  }
+
+  function startSpinning() {
+    if (!enabled || !aud.spinning) return;
+    try {
+      const p = aud.spinning.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (_) {}
+  }
+
+  function stopSpinning() {
+    const a = aud.spinning;
+    if (!a) return;
+    try {
       a.pause();
       a.currentTime = 0;
-      a.volume = 1;
-      unlocked = true;
-      return true;
-    } catch (_) {
-      // 조용히 실패(브라우저 정책)
-      return false;
-    }
+    } catch (_) {}
   }
 
-  function stopAll() {
-    Object.values(aud).forEach(a => {
-      try { a.pause(); a.currentTime = 0; } catch(_) {}
+  function bindSoundButton() {
+    const btn = document.getElementById("soundBtn");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+      unlock();
+      setEnabled(!enabled);
     });
   }
 
-  async function play(name, { loop=false, volume=1 } = {}) {
-    if (!enabled) return;
-    const a = aud[name];
-    if (!a) return;
-    try {
-      a.loop = !!loop;
-      a.volume = volume;
-      a.currentTime = 0;
-      await a.play();
-    } catch (_) {
-      // 정책/상태로 막혀도 UI는 계속 진행
-    }
+  function refreshSoundBtnText() {
+    const btn = document.getElementById("soundBtn");
+    if (!btn) return;
+    btn.textContent = enabled ? "SOUND ON" : "SOUND OFF";
   }
 
-  function stop(name) {
-    const a = aud[name];
-    if (!a) return;
-    try { a.pause(); a.currentTime = 0; } catch(_) {}
-  }
+  // 외부에서 쓰기 좋은 API
+  SLOT.audio = {
+    init,
+    unlock,
+    setEnabled,
+    isEnabled,
 
-  loadAll();
-  enabled = readEnabled();
+    playStart: () => playOne(aud.start),
+    playStop: () => playOne(aud.stop),
+    playWin: () => playOne(aud.win),
+    playLose: () => playOne(aud.lose),
+    playJackpot: () => playOne(aud.jackpot),
 
-  SLOT.audio = { FILES, unlock, play, stop, stopAll, setEnabled, get enabled(){ return enabled; } };
+    startSpinning,
+    stopSpinning,
+  };
 })();
