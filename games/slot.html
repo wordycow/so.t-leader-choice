@@ -1,538 +1,1009 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE UNIQUE SLOT - CASINO EDITION</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;800;900&display=swap" rel="stylesheet">
-    <style>
-        /* === [V13: REAL CASINO MECHANICS] === */
-        :root {
-            --gold: #ffcc00;
-            --gold-shine: #fff7cc;
-            --neon-blue: #00f7ff;
-            --dark-metal: #1a1a1a;
-            --reel-bg: #e0e0e0; /* 리얼 슬롯은 릴 배경이 보통 흰색/회색 */
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>THE UNIQUE SLOT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #ffcc00;
+      --gold-glow: #ffaa00;
+      --neon-blue: #00f7ff;
+      --glass-black: rgba(0, 0, 0, 0.85);
+    }
 
-        body {
-            margin: 0; padding: 0;
-            background-color: #000;
-            color: white; font-family: 'Rajdhani', sans-serif;
-            overflow: hidden; height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-        }
+    * { box-sizing: border-box; }
 
-        #game-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #2b0000 0%, #000000 90%); /* 강원랜드풍 붉은/검정 배경 */
-            z-index: -2;
-        }
+    body {
+      margin: 0; padding: 0;
+      background-color: #050505;
+      color: white; font-family: 'Rajdhani', sans-serif;
+      overflow: hidden; height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+    }
 
-        /* 메인 컨테이너 */
-        #game-container {
-            width: 100%; max-width: 600px; height: 100%; 
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 10px; box-sizing: border-box;
-        }
+    #game-bg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-size: cover; background-position: center; z-index: -2;
+      filter: brightness(0.4);
+    }
 
-        /* --- 1. 상단 정보 (직관적) --- */
-        .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(180deg, #333, #111);
-            border: 2px solid var(--gold); border-radius: 10px;
-            padding: 10px 15px; margin-bottom: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .wallet-box { text-align: right; }
-        .wallet-label { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; display: block; }
-        .wallet-amount { font-size: 2rem; color: var(--gold); font-weight: 900; text-shadow: 0 0 10px var(--gold); line-height: 1; }
-        .brand-logo { font-size: 1.5rem; color: #fff; font-weight: 900; text-shadow: 0 0 10px var(--neon-blue); font-style: italic; }
+    #game-container {
+      width: 100%; max-width: 600px; height: 100%;
+      max-height: 100vh;
+      display: flex; flex-direction: column;
+      padding: 10px;
+    }
 
-        /* --- 2. 슬롯 머신 프레임 (리얼 메카닉) --- */
-        .machine-body {
-            flex: 1; position: relative;
-            background: #000;
-            border: 4px solid #444; border-radius: 10px;
-            box-shadow: inset 0 0 20px #000, 0 0 30px rgba(255, 204, 0, 0.1);
-            overflow: hidden;
-            display: flex;
-        }
+    .top-section {
+      flex: 0 0 auto;
+      display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px;
+    }
 
-        /* 릴 컨테이너 */
-        .reel-col {
-            width: 33.33%; height: 100%;
-            border-right: 2px solid #222;
-            position: relative;
-            background: var(--reel-bg); /* 흰색 배경으로 리얼함 살림 */
-            overflow: hidden;
-        }
-        .reel-col:last-child { border-right: none; }
+    .header-panel {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.05); border-bottom: 1px solid #333;
+      padding: 5px 10px; border-radius: 10px;
+    }
+    .brand-name { font-size: 1rem; color: #888; letter-spacing: 1px; margin: 0; }
+    .user-id { font-size: 1rem; color: var(--neon-blue); font-weight: bold; }
 
-        /* 릴 스트립 (이미지 통) */
-        .reel-strip {
-            width: 100%; 
-            position: absolute; 
-            top: 0; left: 0;
-            /* 기본적으로 심볼 3개가 보이도록 배치 (중앙 정렬) */
-            transform: translateY(0); 
-        }
+    .wallet-panel {
+      background: linear-gradient(180deg, rgba(20,20,20,0.9), rgba(0,0,0,0.9));
+      border: 2px solid var(--gold); border-radius: 12px;
+      padding: 10px; text-align: center;
+      box-shadow: 0 0 25px rgba(255, 204, 0, 0.15);
+    }
 
-        /* === [핵심 애니메이션] === */
-        
-        /* 1. 스핀 시작 (백스핀 -> 가속) */
-        .reel-strip.start-spin {
-            animation: backSpinStart 0.4s ease-in forwards;
-        }
-        @keyframes backSpinStart {
-            0% { transform: translateY(0); }
-            40% { transform: translateY(-30px); } /* 위로 살짝 당김 (반동) */
-            100% { transform: translateY(100%); } /* 아래로 쾅 출발 */
-        }
+    /* ✅ JP를 크게(지갑 위) */
+    .jp-label { font-size: 0.75rem; color: #aaa; letter-spacing: 3px; margin: 0; }
+    .jp-amount {
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 10px var(--gold-glow), 0 0 18px rgba(255,170,0,0.35);
+      margin: 2px 0 8px 0;
+      line-height: 1;
+    }
 
-        /* 2. 무한 회전 (블러 효과) */
-        .reel-strip.spinning {
-            /* 이미지를 반복시켜서 계속 도는 것처럼 보이게 함 */
-            background-repeat: repeat-y;
-            animation: spinLoop 0.3s linear infinite; /* 엄청 빠름 */
-            filter: blur(2px); /* 속도감 잔상 */
-        }
-        @keyframes spinLoop {
-            0% { transform: translateY(-100%); } /* 위에서 */
-            100% { transform: translateY(0%); }   /* 아래로 (패턴 반복) */
-        }
+    .wallet-label { font-size: 0.75rem; color: #aaa; letter-spacing: 3px; margin: 0; }
+    .wallet-amount {
+      font-size: 2.6rem;
+      font-weight: 900; color: #fff;
+      text-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold-glow);
+      line-height: 1; margin: 6px 0 0 0;
+    }
 
-        /* 3. 정지 (쾅 -> 바운스) */
-        .reel-strip.stopping {
-            animation: hardStop 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; /* 탄성 있는 정지 */
-            filter: blur(0);
-        }
-        @keyframes hardStop {
-            0% { transform: translateY(-100%); } /* 위에서 꽂힘 */
-            60% { transform: translateY(20px); } /* 바닥 뚫을 듯이 내려감 (오버슈트) */
-            80% { transform: translateY(-10px); } /* 다시 튕김 */
-            100% { transform: translateY(0); }    /* 정지 */
-        }
+    .unit { font-size: 1rem; color: var(--gold); vertical-align: middle; margin-left: 4px; }
 
-        /* 심볼 스타일 */
-        .symbol {
-            width: 100%; aspect-ratio: 1/1;
-            background-size: 80%; background-repeat: no-repeat; background-position: center;
-            border-bottom: 1px solid rgba(0,0,0,0.1); /* 심볼 간 구분선 */
-        }
+    .machine-frame {
+      flex: 1 1 auto;
+      position: relative;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--neon-blue); border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
+      min-height: 200px;
+    }
 
-        /* 승리 라인 (가운데) */
-        .pay-line {
-            position: absolute; top: 50%; left: 0; width: 100%; height: 4px;
-            background: rgba(255, 0, 0, 0.6); z-index: 10;
-            transform: translateY(-50%); box-shadow: 0 0 10px red;
-            display: none;
-        }
+    /* ✅ Canvas 슬롯 */
+    #slot-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
-        /* --- 3. 하단 컨트롤 --- */
-        .bottom-panel { margin-top: 10px; }
+    /* 유리 느낌 오버레이 */
+    .glass-vignette {
+      position:absolute; inset:0;
+      pointer-events:none;
+      background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.82) 0%,
+        rgba(0,0,0,0.05) 22%,
+        rgba(0,0,0,0.05) 78%,
+        rgba(0,0,0,0.82) 100%
+      );
+      z-index: 5;
+    }
 
-        .msg-display {
-            background: #111; color: #fff; text-align: center;
-            padding: 8px; border: 1px solid #444; border-radius: 5px;
-            font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;
-            height: 30px; display: flex; align-items: center; justify-content: center;
-        }
-        .msg-display.win { color: var(--gold); text-shadow: 0 0 10px var(--gold); animation: blink 0.5s infinite; }
+    .win-line {
+      position: absolute; top: 50%; left: 0; width: 100%; height: 4px;
+      background: rgba(255, 0, 0, 0.5); z-index: 20;
+      transform: translateY(-50%); display: none;
+    }
 
-        .controls {
-            display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(180deg, #333, #000);
-            padding: 15px; border-radius: 15px; border-top: 2px solid #555;
-        }
+    .bottom-section {
+      flex: 0 0 auto;
+      margin-top: 10px;
+    }
 
-        /* 버튼 디자인 (물리 버튼 느낌) */
-        .btn {
-            background: radial-gradient(circle, #444, #222);
-            border: 2px solid #666; color: #fff;
-            border-radius: 50%; cursor: pointer;
-            box-shadow: 0 5px 0 #000; transition: 0.1s;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Rajdhani', sans-serif; font-weight: bold;
-        }
-        .btn:active { transform: translateY(5px); box-shadow: 0 0 0 #000; }
-        .btn:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+    .msg-panel {
+      text-align: center; background: rgba(0,0,0,0.8);
+      border: 1px solid #444; border-radius: 8px;
+      padding: 8px; margin-bottom: 8px;
+      display: flex; flex-direction: column; justify-content: center;
+      height: 40px;
+    }
+    .msg-text { font-size: 1.2rem; font-weight: bold; color: #fff; letter-spacing: 1px; }
+    .msg-text.win { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
 
-        .btn-small { width: 50px; height: 50px; font-size: 0.8rem; flex-direction: column; line-height: 1; }
-        .btn-small.active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+    .control-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #111; padding: 10px; border-radius: 15px;
+      border-top: 2px solid var(--neon-blue);
+    }
 
-        .bet-ctrl { display: flex; align-items: center; gap: 5px; background: #111; padding: 5px 10px; border-radius: 20px; border: 1px solid #333; }
-        .bet-val { font-size: 1.2rem; font-weight: bold; color: var(--gold); min-width: 40px; text-align: center; }
-        .btn-mini { width: 30px; height: 30px; font-size: 1rem; background: #333; border-radius: 5px; border: 1px solid #555; color: #fff; }
+    .btn-rect {
+      background: #222; border: 1px solid #555; color: #ccc;
+      font-family: 'Rajdhani', sans-serif; font-weight: bold;
+      border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-rect:active { transform: scale(0.95); background: #333; }
 
-        .btn-spin {
-            width: 90px; height: 90px;
-            background: radial-gradient(circle, #ff0000, #990000);
-            border: 4px solid #ffaaaa; color: #fff;
-            font-size: 1.5rem; text-shadow: 0 2px 2px #000;
-        }
+    .btn-sound, .btn-auto { width: 50px; height: 50px; font-size: 0.7rem; flex-direction: column; }
+    .btn-sound.active { color: var(--neon-blue); border-color: var(--neon-blue); background: rgba(0,247,255,0.1); }
+    .btn-auto.active  { color: var(--gold); border-color: var(--gold); background: rgba(255,204,0,0.1); }
 
-        /* 잭팟 오버레이 */
-        #jp-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 9999;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .jp-txt { font-size: 4rem; color: var(--gold); font-weight: 900; animation: pulse 0.3s infinite alternate; }
-        .jp-money { font-size: 5rem; color: #fff; font-weight: bold; text-shadow: 0 0 20px var(--gold); margin-top: 20px; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
-        @keyframes blink { 50% { opacity: 0; } }
+    .bet-group { display: flex; align-items: center; gap: 5px; }
+    .btn-bet { width: 40px; height: 40px; font-size: 1.2rem; }
+    .bet-display {
+      background: #000; border: 1px solid #444; width: 60px; height: 40px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 5px;
+    }
+    .bet-lbl { font-size: 0.6rem; color: #666; }
+    .bet-val { font-size: 1rem; font-weight: bold; color: #fff; }
 
-    </style>
+    .btn-spin {
+      width: 75px; height: 75px; border-radius: 50%;
+      background: radial-gradient(circle, #ffd700, #ff8800);
+      border: 3px solid #fff; color: #000;
+      font-size: 1.3rem; font-weight: 900;
+      box-shadow: 0 0 15px var(--gold); cursor: pointer;
+    }
+    .btn-spin:active { transform: scale(0.95); }
+    .btn-spin:disabled { filter: grayscale(1); opacity: 0.5; }
+
+    #start-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); z-index: 9000;
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+    }
+
+    #jackpot-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95); z-index: 10000;
+      display: none; justify-content: center; align-items: center; flex-direction: column;
+    }
+    #jackpot-overlay.show { display: flex; animation: fadeIn 0.5s; }
+    .jp-title { font-size: 3rem; color: var(--gold); animation: pulse 0.5s infinite; }
+    .jp-win-amount { font-size: 4rem; color: #fff; text-shadow: 0 0 20px var(--neon-blue); }
+
+    .coin { position: absolute; width: 30px; height: 30px; background: gold; border-radius: 50%; animation: fall linear infinite; z-index: -1; }
+    @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulse { 50% { transform: scale(1.1); } }
+
+    @media (max-width: 400px) {
+      .wallet-amount { font-size: 2.2rem; }
+      .jp-amount { font-size: 1.5rem; }
+      .btn-spin { width: 65px; height: 65px; font-size: 1.1rem; }
+      .btn-sound, .btn-auto { width: 45px; height: 45px; }
+      .bet-group { gap: 2px; }
+      .btn-bet { width: 35px; height: 35px; }
+    }
+  </style>
 </head>
 <body>
 
-    <div id="game-bg"></div>
+  <div id="game-bg"></div>
 
-    <div id="jp-overlay">
-        <div class="jp-txt">JACKPOT!</div>
-        <div class="jp-money" id="jp-display">0</div>
-        <div style="color:#aaa; margin-top:30px;">TOUCH TO COLLECT</div>
+  <div id="jackpot-overlay">
+    <h1 class="jp-title">★ JACKPOT ★</h1>
+    <div class="jp-win-amount" id="jp-ani-amount">0</div>
+    <div id="coin-container"></div>
+  </div>
+
+  <div id="start-overlay">
+    <h1 style="color:white; font-size: 2rem;">THE UNIQUE</h1>
+    <div style="color:var(--gold); margin-top:20px; animation:pulse 1s infinite;">TOUCH TO START</div>
+  </div>
+
+  <div id="game-container">
+    <div class="top-section">
+      <div class="header-panel">
+        <h2 class="brand-name">THE UNIQUE SLOT</h2>
+        <div class="user-id" id="user-id">GUEST</div>
+      </div>
+
+      <div class="wallet-panel">
+        <div class="jp-label">JACKPOT POOL</div>
+        <div class="jp-amount"><span id="jackpot-pool">...</span><span class="unit">UT</span></div>
+
+        <div class="wallet-label">YOUR WALLET</div>
+        <div class="wallet-amount"><span id="wallet-balance">0</span><span class="unit">UT</span></div>
+      </div>
     </div>
 
-    <div id="game-container">
-        <div class="top-bar">
-            <div class="brand-logo">THE UNIQUE</div>
-            <div class="wallet-box">
-                <span class="wallet-label">CREDIT</span>
-                <span class="wallet-amount" id="wallet">0</span>
-            </div>
-        </div>
-
-        <div class="machine-body" id="machine">
-            <div class="reel-col">
-                <div class="reel-strip" id="reel-1"></div>
-            </div>
-            <div class="reel-col">
-                <div class="reel-strip" id="reel-2"></div>
-            </div>
-            <div class="reel-col">
-                <div class="reel-strip" id="reel-3"></div>
-            </div>
-            
-            <div class="pay-line"></div>
-        </div>
-
-        <div class="bottom-panel">
-            <div class="msg-display" id="msg-box">READY</div>
-
-            <div class="controls">
-                <button id="btn-sound" class="btn btn-small">SOUND<br>OFF</button>
-                
-                <div class="bet-ctrl">
-                    <button id="btn-minus" class="btn-mini">-</button>
-                    <div class="bet-val" id="bet-val">10</div>
-                    <button id="btn-plus" class="btn-mini">+</button>
-                </div>
-
-                <button id="btn-auto" class="btn btn-small">AUTO<br>OFF</button>
-                <button id="btn-spin" class="btn btn-spin">SPIN</button>
-            </div>
-        </div>
+    <div class="machine-frame" id="machine-frame">
+      <canvas id="slot-canvas"></canvas>
+      <div class="glass-vignette"></div>
+      <div class="win-line"></div>
     </div>
 
-    <script>
-        /* === [V13 ENGINE] === */
-        const CONFIG = {
-            API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
-            imgBase: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/',
-            // 심볼 목록
-            symbols: ['star1.png', 'star2.png', 'star3.png', 'pro1.png', 'pro2.png', 'pro3.png', 'pro4.png', 'pro5.png', 'pro6.png', 'pro7.png', 'pro8.png', 'pro9.png', 'pro10.png'],
-            // 사운드 목록
-            sounds: {
-                spin: 'spinning-sound.MP3',
-                stop: 'stop-stop-stop-sound.MP3',
-                win: 'win-sound.MP3',
-                jackpot: 'jackpot-sound.MP3',
-                btn: 'start-button-sound.MP3'
+    <div class="bottom-section">
+      <div class="msg-panel">
+        <div class="msg-text" id="status-msg">READY</div>
+      </div>
+
+      <div class="control-bar">
+        <button id="btn-sound" class="btn-rect btn-sound">SOUND<br>OFF</button>
+        <button id="btn-auto" class="btn-rect btn-auto">AUTO<br>OFF</button>
+
+        <div class="bet-group">
+          <button id="btn-bet-minus" class="btn-rect btn-bet">-</button>
+          <div class="bet-display">
+            <span class="bet-lbl">BET</span>
+            <span class="bet-val" id="current-bet">10</span>
+          </div>
+          <button id="btn-bet-plus" class="btn-rect btn-bet">+</button>
+        </div>
+
+        <button id="btn-spin" class="btn-spin">SPIN</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
+      imgObj: {
+        path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/',
+        bg: ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'],
+        symbols: [
+          'star1.png','star2.png','star3.png',
+          'pro1.png','pro2.png','pro3.png','pro4.png','pro5.png','pro6.png','pro7.png',
+          'pro8.png','pro9.png','pro10.png'
+        ]
+      },
+      soundObj: {
+        path: 'https://wordycow.github.io/so.t-leader-choice/games/sounds/',
+        spin: 'spinning-sound.MP3',
+        stop: 'stop-stop-stop-sound.MP3',
+        win: 'win-sound.MP3',
+        lose: 'lose-sound.MP3',
+        jackpot: 'jackpot-sound.MP3',
+        btn: 'start-button-sound.MP3'
+      },
+      reels: 5,
+      rows: 3
+    };
+
+    // ✅ 유송이 원하는 심볼 매핑 (서버가 A/J/Q/K/숫자를 보내도 이미지로 변환)
+    const SYMBOL_ALIAS = {
+      "1": "star1", "A": "star1",
+      "2": "star2",
+      "3": "star3",
+      "4": "pro1",
+      "5": "pro2",
+      "6": "pro3",
+      "7": "pro4",
+      "8": "pro5",
+      "9": "pro6",
+      "10": "pro7",
+      "11": "pro8", "J": "pro8",
+      "12": "pro9", "Q": "pro9",
+      "13": "pro10", "K": "pro10"
+    };
+
+    let state = {
+      id: null,
+      wallet: 0,
+      bet: 10,
+      isSpinning: false,
+      audioEnabled: false,
+      isAuto: false,
+      jackpotPool: 0,
+      bgIntervalId: null,
+      bgIdx: 0,
+      bgSpeed: 200
+    };
+
+    let els = {};
+    const audios = {};
+
+    // =========================
+    // Canvas Reel Engine
+    // =========================
+    const SlotCanvas = (() => {
+      const buffer = 3; // 위/아래 여유 심볼 수
+      let canvas, ctx;
+      let dpr = 1;
+      let cw = 0, ch = 0;
+      let reelW = 0, sym = 0, xPad = 0, yPad = 0;
+      let reels = [];
+      let raf = null;
+      let last = 0;
+      let running = false;
+
+      let onAllStopped = null;
+      let onReelDecelStart = null;
+      let onReelStopped = null;
+
+      const baseNames = CONFIG.imgObj.symbols.map(f => f.replace(".png",""));
+
+      function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+      function easeOutBack(t){
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+      }
+
+      function keyToBaseName(key){
+        if (key == null) return randBase();
+        const s = String(key).trim();
+        if (SYMBOL_ALIAS[s]) return SYMBOL_ALIAS[s];
+        // 서버가 이미 star1/pro3 같은 이름을 주는 경우
+        if (baseNames.includes(s)) return s;
+        // 혹시 star1.png 같이 오는 경우
+        if (s.endsWith(".png")) return s.replace(".png","");
+        return randBase();
+      }
+
+      function randBase(){
+        return baseNames[(Math.random() * baseNames.length) | 0];
+      }
+
+      function makeReel(i){
+        return {
+          i,
+          symbols: [],
+          offset: 0,
+          speed: 0,
+          mode: "idle",   // idle | wait | spin | decel | snap | stopped
+          startAt: 0,
+          stopAt: 0,
+          final: null,
+          decelStart: 0,
+          decelDur: 650,
+          speedStart: 0,
+          speedEnd: 120,
+          snapStart: 0,
+          snapDur: 380,
+          snapFrom: 0
+        };
+      }
+
+      function fillReel(r){
+        // rows + buffer*2 + 여유 몇 개
+        const need = CONFIG.rows + buffer * 2 + 6;
+        r.symbols = [];
+        for (let k=0;k<need;k++) r.symbols.push(randBase());
+        r.offset = Math.random() * (sym || 1);
+      }
+
+      function resize(){
+        if (!canvas) return;
+        // devicePixelRatio 적용 (선명하게)
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+        const rect = canvas.getBoundingClientRect();
+        const newW = Math.max(1, Math.floor(rect.width * dpr));
+        const newH = Math.max(1, Math.floor(rect.height * dpr));
+
+        if (newW === cw && newH === ch) return;
+
+        // offset 스케일 유지
+        const oldSym = sym || 1;
+
+        cw = newW; ch = newH;
+        canvas.width = cw;
+        canvas.height = ch;
+
+        reelW = cw / CONFIG.reels;
+
+        // ✅ 심볼은 "정사각" + 3줄이 화면에 들어가게
+        sym = Math.floor(Math.min(reelW, ch / CONFIG.rows));
+        sym = Math.max(48, sym);
+
+        xPad = Math.floor((reelW - sym) / 2);
+        yPad = Math.floor((ch - sym * CONFIG.rows) / 2);
+
+        // 기존 offset 비율 유지
+        reels.forEach(r => {
+          r.offset = (r.offset / oldSym) * sym;
+        });
+      }
+
+      function init(c, hooks={}){
+        canvas = c;
+        ctx = canvas.getContext("2d", { alpha: true });
+
+        reels = [];
+        for (let i=0;i<CONFIG.reels;i++) reels.push(makeReel(i));
+
+        resize();
+        reels.forEach(fillReel);
+
+        onReelDecelStart = hooks.onReelDecelStart || null;
+        onReelStopped = hooks.onReelStopped || null;
+      }
+
+      function start(){
+        if (running) return;
+        running = true;
+        last = performance.now();
+        raf = requestAnimationFrame(loop);
+      }
+
+      function stop(){
+        running = false;
+        if (raf) cancelAnimationFrame(raf);
+        raf = null;
+      }
+
+      function startSpin(){
+        const now = performance.now();
+        reels.forEach((r, i) => {
+          r.mode = "wait";
+          r.startAt = now + i * 80; // 살짝 시차
+          r.stopAt = 0;
+          r.final = null;
+          r.speed = 0;
+          r.offset = Math.random() * sym;
+        });
+        start();
+      }
+
+      function scheduleStop(keys, doneCb){
+        // keys: row-major (0~4 top row, 5~9 mid row, 10~14 bottom row)
+        const now = performance.now();
+        onAllStopped = doneCb || null;
+
+        for (let col=0; col<CONFIG.reels; col++){
+          const top = keyToBaseName(keys[col]);
+          const mid = keyToBaseName(keys[col + CONFIG.reels]);
+          const bot = keyToBaseName(keys[col + CONFIG.reels * 2]);
+
+          reels[col].final = [top, mid, bot];
+          reels[col].stopAt = now + 900 + col * 520; // ✅ 순차 정지 타이밍
+        }
+      }
+
+      function abortToIdle(){
+        reels.forEach(r => {
+          r.mode = "idle";
+          r.speed = 0;
+          r.final = null;
+        });
+      }
+
+      function update(dt, now){
+        // dt: seconds
+        for (const r of reels){
+          if (r.mode === "wait"){
+            if (now >= r.startAt){
+              r.mode = "spin";
+              r.speed = 900 + r.i * 120;
             }
+          }
+
+          if (r.mode === "spin"){
+            // 스핀 중: 계속 랜덤으로 순환(진짜 위→아래로 흐름)
+            const accel = 3200; // px/s^2
+            const max = 2400 + r.i * 60;
+            r.speed = Math.min(max, r.speed + accel * dt);
+
+            // stopAt 도달하면 감속 시작
+            if (r.stopAt && now >= r.stopAt){
+              r.mode = "decel";
+              r.decelStart = now;
+              r.speedStart = r.speed;
+              r.speedEnd = 140;
+
+              if (typeof onReelDecelStart === "function") onReelDecelStart(r.i);
+            }
+          }
+
+          if (r.mode === "decel"){
+            const p = Math.min(1, (now - r.decelStart) / r.decelDur);
+            r.speed = r.speedStart + (r.speedEnd - r.speedStart) * easeOutCubic(p);
+
+            if (p >= 1){
+              // ✅ 마지막 스냅(탁!)
+              // 보이는 3줄(버퍼 위치)에 최종 심볼 세팅
+              if (r.final){
+                r.symbols[buffer + 0] = r.final[0];
+                r.symbols[buffer + 1] = r.final[1];
+                r.symbols[buffer + 2] = r.final[2];
+              }
+
+              r.mode = "snap";
+              r.snapStart = now;
+              r.snapFrom = r.offset;
+              r.speed = 0;
+            }
+          }
+
+          // 실제 이동(위→아래)
+          if (r.mode === "spin" || r.mode === "decel"){
+            r.offset += r.speed * dt;
+
+            while (r.offset >= sym){
+              r.offset -= sym;
+              // 아래로 내려가는 느낌: 위에서 새 심볼 들어오고 아래로 빠짐
+              r.symbols.pop();
+              r.symbols.unshift(randBase());
+            }
+          }
+
+          if (r.mode === "snap"){
+            const p = Math.min(1, (now - r.snapStart) / r.snapDur);
+            r.offset = r.snapFrom + (0 - r.snapFrom) * easeOutBack(p);
+
+            if (p >= 1){
+              r.offset = 0;
+              r.mode = "stopped";
+
+              if (typeof onReelStopped === "function") onReelStopped(r.i);
+            }
+          }
+        }
+      }
+
+      function draw(){
+        if (!ctx) return;
+        ctx.clearRect(0,0,cw,ch);
+
+        // 배경 어둡게(캔버스 내)
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0,0,cw,ch);
+        ctx.restore();
+
+        // 각 릴 그리기
+        for (const r of reels){
+          const rx = r.i * reelW;
+
+          // 클립(릴 칸 별로 잘라서 그리기)
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(rx, 0, reelW, ch);
+          ctx.clip();
+
+          // 속도에 따라 살짝 블러 느낌(가벼운 필터)
+          // (filter는 브라우저/기기마다 비용이 있어서 "약하게"만)
+          const fast = (r.mode === "spin" && r.speed > 1600);
+          ctx.filter = fast ? "blur(1.5px)" : "none";
+
+          // 심볼들 draw
+          for (let i=0;i<r.symbols.length;i++){
+            const base = r.symbols[i];
+            const img = SlotCanvasImages[base]; // 아래에서 채움
+
+            const x = rx + xPad;
+            const y = yPad + ((i - buffer) * sym) - r.offset;
+
+            // 화면 밖은 스킵
+            if (y < -sym*2 || y > ch + sym*2) continue;
+
+            if (img && img.complete){
+              ctx.drawImage(img, x, y, sym, sym);
+            } else {
+              // 이미지 로딩 전 fallback
+              ctx.save();
+              ctx.globalAlpha = 0.18;
+              ctx.fillStyle = "#fff";
+              ctx.fillRect(x, y, sym, sym);
+              ctx.restore();
+            }
+          }
+
+          ctx.restore();
+
+          // 릴 구분선(네온)
+          ctx.save();
+          ctx.globalAlpha = 0.25;
+          ctx.strokeStyle = "#00f7ff";
+          ctx.lineWidth = Math.max(1, Math.floor(2 * dpr));
+          ctx.strokeRect(rx + 0.5, 0.5, reelW - 1, ch - 1);
+          ctx.restore();
+        }
+      }
+
+      function loop(now){
+        const dt = Math.min(0.033, (now - last) / 1000);
+        last = now;
+
+        update(dt, now);
+        draw();
+
+        // 모든 릴 멈췄는지 체크
+        const allStopped = reels.every(r => r.mode === "stopped" || r.mode === "idle");
+        if (allStopped && onAllStopped){
+          const cb = onAllStopped;
+          onAllStopped = null;
+          cb();
+        }
+
+        raf = requestAnimationFrame(loop);
+      }
+
+      return {
+        init, resize, startSpin, scheduleStop, abortToIdle, stop
+      };
+    })();
+
+    // ✅ 심볼 이미지 캐시(캔버스에서 사용)
+    const SlotCanvasImages = {};
+
+    // =========================
+    // App
+    // =========================
+    async function init() {
+      els = {
+        bg: document.getElementById('game-bg'),
+        overlay: document.getElementById('start-overlay'),
+        machineFrame: document.getElementById('machine-frame'),
+        canvas: document.getElementById('slot-canvas'),
+
+        spinBtn: document.getElementById('btn-spin'),
+        autoBtn: document.getElementById('btn-auto'),
+        soundBtn: document.getElementById('btn-sound'),
+
+        walletSpan: document.getElementById('wallet-balance'),
+        jackpotPool: document.getElementById('jackpot-pool'),
+        betSpan: document.getElementById('current-bet'),
+
+        statusMsg: document.getElementById('status-msg'),
+        plus: document.getElementById('btn-bet-plus'),
+        minus: document.getElementById('btn-bet-minus'),
+        userId: document.getElementById('user-id'),
+
+        jpOverlay: document.getElementById('jackpot-overlay'),
+        jpAmount: document.getElementById('jp-ani-amount'),
+        coinBox: document.getElementById('coin-container'),
+      };
+
+      // 배경 초기
+      els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[0]}')`;
+
+      // 로그인 ID
+      const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
+      state.id = localId || new URLSearchParams(window.location.search).get('id');
+
+      if (!state.id) {
+        els.userId.innerText = "GUEST";
+        els.spinBtn.disabled = true;
+        setStatus("로그인 필요");
+      } else {
+        els.userId.innerText = state.id;
+        await syncUserData();
+      }
+
+      // 오디오 로드
+      Object.keys(CONFIG.soundObj).forEach(key => {
+        if (key !== 'path') {
+          try {
+            const audio = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[key]);
+            if (key === 'spin') audio.loop = true;
+            audios[key] = audio;
+          } catch (e) {}
+        }
+      });
+
+      // ✅ 심볼 이미지 프리로드(캔버스용)
+      await preloadSymbolImages();
+
+      // ✅ Canvas 엔진 초기화 + 리사이즈 감시
+      SlotCanvas.init(els.canvas, {
+        onReelDecelStart: (idx) => {
+          // 멈출수록 배경 느려지게
+          const ms = 220 + idx * 90;
+          setBgSpeed(ms);
+        },
+        onReelStopped: () => {
+          if (state.audioEnabled && audios.stop) {
+            const s = audios.stop.cloneNode();
+            s.volume = 0.85;
+            s.play().catch(()=>{});
+          }
+        }
+      });
+
+      const ro = new ResizeObserver(() => SlotCanvas.resize());
+      ro.observe(els.machineFrame);
+      window.addEventListener("resize", () => SlotCanvas.resize());
+
+      // UI 이벤트
+      if (els.overlay) {
+        els.overlay.addEventListener('click', () => {
+          els.overlay.style.display = 'none';
+          toggleSound(true);
+        });
+      }
+
+      els.spinBtn.addEventListener('click', () => {
+        state.isAuto = false;
+        updateAutoBtn();
+        onSpinClick();
+      });
+
+      els.plus.addEventListener('click', () => changeBet(5));
+      els.minus.addEventListener('click', () => changeBet(-5));
+      els.soundBtn.addEventListener('click', () => toggleSound(!state.audioEnabled));
+      els.autoBtn.addEventListener('click', toggleAuto);
+
+      els.jpOverlay.addEventListener('click', closeJackpot);
+
+      updateUI();
+    }
+
+    async function preloadSymbolImages(){
+      const bases = CONFIG.imgObj.symbols.map(f => f.replace(".png",""));
+      const jobs = bases.map(base => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve([base, img]);
+        img.onerror = () => resolve([base, null]);
+        img.src = CONFIG.imgObj.path + base + ".png";
+      }));
+
+      const result = await Promise.all(jobs);
+      for (const [base, img] of result){
+        if (img) SlotCanvasImages[base] = img;
+      }
+    }
+
+    function toggleSound(forceState) {
+      state.audioEnabled = forceState;
+      els.soundBtn.innerHTML = state.audioEnabled ? "SOUND<br>ON" : "SOUND<br>OFF";
+      els.soundBtn.classList.toggle("active", state.audioEnabled);
+
+      if (!state.audioEnabled){
+        // ✅ 끄면 즉시 전부 정지
+        Object.values(audios).forEach(a => { try { a.pause(); } catch(e){} });
+      } else {
+        if (audios.btn) audios.btn.play().catch(()=>{});
+      }
+    }
+
+    function toggleAuto() {
+      state.isAuto = !state.isAuto;
+      updateAutoBtn();
+      if (state.isAuto && !state.isSpinning) onSpinClick();
+    }
+
+    function updateAutoBtn() {
+      els.autoBtn.innerHTML = state.isAuto ? "AUTO<br>ON" : "AUTO<br>OFF";
+      els.autoBtn.classList.toggle("active", state.isAuto);
+    }
+
+    function setStatus(msg, isWin = false) {
+      els.statusMsg.innerText = msg;
+      els.statusMsg.className = isWin ? "msg-text win" : "msg-text";
+    }
+
+    async function syncUserData(animate = false) {
+      if (!state.id) return;
+      try {
+        const res = await jsonpRequest('getSlotState', { id: state.id });
+        if (res.ok) {
+          const newWallet = Number(res.user.balance);
+          state.jackpotPool = Number(res.jackpotTotal);
+
+          if (animate) animateValue(els.walletSpan, state.wallet, newWallet, 1000);
+          else els.walletSpan.innerText = newWallet.toLocaleString();
+
+          state.wallet = newWallet;
+          updateUI();
+
+          if (!animate) setStatus("READY");
+          els.spinBtn.disabled = false;
+        }
+      } catch (e) {
+        setStatus("NETWORK ERROR");
+      }
+    }
+
+    // ✅ 배경 전환 (스핀 중 0.2초 -> 멈출수록 느려짐)
+    function startBgEffect(ms = 200) {
+      state.bgSpeed = ms;
+      clearInterval(state.bgIntervalId);
+
+      state.bgIntervalId = setInterval(() => {
+        state.bgIdx = (state.bgIdx + 1) % CONFIG.imgObj.bg.length;
+        els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[state.bgIdx]}')`;
+      }, ms);
+    }
+
+    function setBgSpeed(ms){
+      if (!state.bgIntervalId) return;
+      startBgEffect(ms);
+    }
+
+    function stopBgEffect() {
+      clearInterval(state.bgIntervalId);
+      state.bgIntervalId = null;
+      state.bgIdx = 0;
+      els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`;
+    }
+
+    async function onSpinClick() {
+      if (state.isSpinning) return;
+      if (state.wallet < state.bet) {
+        state.isAuto = false;
+        updateAutoBtn();
+        alert("잔액 부족");
+        return;
+      }
+
+      state.isSpinning = true;
+      els.spinBtn.disabled = true;
+      setStatus("SPINNING...");
+
+      // 베팅 차감 애니
+      animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 450);
+      state.wallet -= state.bet;
+
+      // 사운드 & 배경 & 캔버스 스핀 시작
+      if (state.audioEnabled) {
+        try { audios.btn && audios.btn.play().catch(()=>{}); } catch(e){}
+        try {
+          if (audios.spin) { audios.spin.volume = 0.65; audios.spin.currentTime = 0; audios.spin.play().catch(()=>{}); }
+        } catch(e){}
+      }
+
+      startBgEffect(200);
+      SlotCanvas.startSpin();
+
+      try {
+        const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
+        if (!res.ok) throw new Error("Spin Failed");
+
+        // ✅ 서버 결과(15칸)를 릴별로 순차 정지시키고, 전부 멈추면 handleSpinEnd 실행
+        SlotCanvas.scheduleStop(res.spin.keys, () => handleSpinEnd(res));
+      } catch (err) {
+        // 실패 시 정리
+        stopBgEffect();
+        try { audios.spin && audios.spin.pause(); } catch(e){}
+        SlotCanvas.abortToIdle();
+        state.isSpinning = false;
+        els.spinBtn.disabled = false;
+        syncUserData();
+      }
+    }
+
+    function handleSpinEnd(data) {
+      state.isSpinning = false;
+      stopBgEffect();
+
+      try { audios.spin && audios.spin.pause(); } catch(e){}
+      els.spinBtn.disabled = false;
+
+      const spin = data.spin;
+      let sound = audios.lose;
+      let msg = "TRY AGAIN";
+      let isWin = false;
+
+      if (spin.kind !== "lose") {
+        msg = `WIN! +${Number(spin.payout).toLocaleString()} UT`;
+        isWin = true;
+
+        if (spin.kind === "jackpot") {
+          msg = "★ JACKPOT ★";
+          sound = audios.jackpot;
+          showJackpotOverlay(Number(spin.payout));
+        } else {
+          sound = audios.win;
+        }
+      }
+
+      setStatus(msg, isWin);
+
+      // 지갑/잭팟 동기화
+      const newBal = Number(data.user.balance);
+      if (state.wallet !== newBal) animateValue(els.walletSpan, state.wallet, newBal, 900);
+      state.wallet = newBal;
+
+      state.jackpotPool = Number(data.jackpotTotal);
+      updateUI();
+
+      if (isWin && state.audioEnabled && sound) {
+        try { sound.currentTime = 0; sound.play().catch(()=>{}); } catch(e){}
+      } else if (!isWin && state.audioEnabled && audios.lose) {
+        try { audios.lose.currentTime = 0; audios.lose.play().catch(()=>{}); } catch(e){}
+      }
+
+      if (state.isAuto) {
+        setTimeout(() => {
+          if (state.isAuto && state.wallet >= state.bet) onSpinClick();
+          else toggleAuto();
+        }, 1600);
+      }
+    }
+
+    function showJackpotOverlay(amount) {
+      els.jpOverlay.style.display = 'flex';
+      els.jpOverlay.classList.add('show');
+      animateValue(els.jpAmount, 0, amount, 2500);
+      createCoins();
+      if (state.audioEnabled && audios.jackpot){
+        try { audios.jackpot.currentTime = 0; audios.jackpot.play().catch(()=>{}); } catch(e){}
+      }
+    }
+
+    function closeJackpot() {
+      els.jpOverlay.style.display = 'none';
+      els.jpOverlay.classList.remove('show');
+      els.coinBox.innerHTML = '';
+    }
+
+    function createCoins() {
+      els.coinBox.innerHTML = '';
+      for (let i=0; i<50; i++) {
+        const coin = document.createElement('div');
+        coin.className = 'coin';
+        coin.style.left = Math.random() * 100 + 'vw';
+        coin.style.animationDuration = (Math.random() * 2 + 1) + 's';
+        els.coinBox.appendChild(coin);
+      }
+    }
+
+    function jsonpRequest(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'cb_' + Math.round(100000 * Math.random());
+        const script = document.createElement('script');
+
+        const cleanup = () => {
+          try { delete window[callbackName]; } catch(e){}
+          if (script.parentNode) script.parentNode.removeChild(script);
         };
 
-        const STATE = {
-            wallet: 0, bet: 10, id: null,
-            spinning: false, auto: false, sound: false,
-            reels: [null, null, null] // 릴 DOM 요소
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
         };
 
-        const AUDIOS = {};
+        params.action = action;
+        params.callback = callbackName;
+        script.src = `${CONFIG.API_URL}?${new URLSearchParams(params).toString()}`;
+        script.onerror = () => { cleanup(); reject(new Error("JSONP load error")); };
+        document.body.appendChild(script);
+      });
+    }
 
-        // === 초기화 ===
-        async function init() {
-            console.log("ENGINE V13: CASINO MECHANICS");
-            
-            // DOM 연결
-            STATE.reels = [
-                document.getElementById('reel-1'),
-                document.getElementById('reel-2'),
-                document.getElementById('reel-3')
-            ];
+    function animateValue(obj, start, end, duration) {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) window.requestAnimationFrame(step);
+        else obj.innerText = end.toLocaleString();
+      };
+      window.requestAnimationFrame(step);
+    }
 
-            // 사운드 로드
-            const soundPath = 'https://wordycow.github.io/so.t-leader-choice/games/sounds/';
-            for(let k in CONFIG.sounds) {
-                AUDIOS[k] = new Audio(soundPath + CONFIG.sounds[k]);
-                if(k==='spin') AUDIOS[k].loop = true;
-            }
+    function updateUI() {
+      els.betSpan.innerText = state.bet;
+      els.jackpotPool.innerText = Number(state.jackpotPool || 0).toLocaleString();
+      els.walletSpan.innerText = Number(state.wallet || 0).toLocaleString();
+    }
 
-            // 사용자 ID 확인
-            const urlParams = new URLSearchParams(window.location.search);
-            STATE.id = urlParams.get('id') || localStorage.getItem('user_id');
+    function changeBet(delta) {
+      if (state.isSpinning) return;
+      const n = state.bet + delta;
+      if (n >= 5 && n <= 1000) {
+        state.bet = n;
+        updateUI();
+      }
+    }
 
-            if(!STATE.id) {
-                document.getElementById('msg-box').innerText = "LOGIN REQUIRED";
-                document.getElementById('btn-spin').disabled = true;
-            } else {
-                // 초기 릴 세팅 (랜덤)
-                STATE.reels.forEach(el => renderReelStatic(el));
-                await updateServerData();
-            }
-
-            // 이벤트 리스너
-            document.getElementById('btn-spin').onclick = startSpin;
-            document.getElementById('btn-auto').onclick = toggleAuto;
-            document.getElementById('btn-sound').onclick = toggleSound;
-            document.getElementById('btn-plus').onclick = () => changeBet(5);
-            document.getElementById('btn-minus').onclick = () => changeBet(-5);
-            document.getElementById('jp-overlay').onclick = () => {
-                document.getElementById('jp-overlay').style.display = 'none';
-            };
-        }
-
-        // --- 릴 렌더링 (정지 상태) ---
-        function renderReelStatic(el, topSymbol = null) {
-            let html = '';
-            // 릴 하나당 심볼 3개 표시 (위, 중간, 아래)
-            // topSymbol이 주어지면 그걸 맨 위에, 아니면 랜덤
-            const syms = [];
-            for(let i=0; i<3; i++) {
-                if(i===0 && topSymbol) syms.push(topSymbol);
-                else syms.push(CONFIG.symbols[Math.floor(Math.random()*CONFIG.symbols.length)]);
-            }
-            
-            // HTML 생성
-            syms.forEach(s => {
-                html += `<div class="symbol" style="background-image: url('${CONFIG.imgBase}${s}')"></div>`;
-            });
-            el.innerHTML = html;
-            el.style.transform = 'translateY(0)';
-            el.className = 'reel-strip'; // 클래스 초기화
-        }
-
-        // --- [핵심] 스핀 시작 ---
-        async function startSpin() {
-            if(STATE.spinning) return;
-            if(STATE.wallet < STATE.bet) { STATE.auto = false; updateBtn(); alert("잔액 부족"); return; }
-
-            STATE.spinning = true;
-            document.getElementById('btn-spin').disabled = true;
-            updateMsg("SPINNING...", false);
-            
-            // 돈 차감 (선반영)
-            animateValue('wallet', STATE.wallet, STATE.wallet - STATE.bet, 500);
-            STATE.wallet -= STATE.bet;
-
-            // 사운드 재생
-            if(STATE.sound) { AUDIOS.btn.play(); AUDIOS.spin.currentTime=0; AUDIOS.spin.play(); }
-
-            // 1. 백스핀 & 가속 (Start Animation)
-            STATE.reels.forEach((el, idx) => {
-                // 기존 내용 유지하면서 애니메이션 클래스 부여
-                // 시차를 둬서 다다닥 출발하는 느낌
-                setTimeout(() => {
-                    el.className = 'reel-strip start-spin';
-                }, idx * 100); 
-            });
-
-            // 2. 0.4초 후 무한 스핀 모드 전환 (블러 효과)
-            setTimeout(() => {
-                STATE.reels.forEach(el => {
-                    el.className = 'reel-strip spinning'; // CSS animation: spinLoop
-                    // 스핀 중일 땐 심볼이 뭉개져 보이게 배경이미지 패턴으로 변경 (최적화 & 시각효과)
-                    // 실제로는 CSS filter:blur가 핵심 역할
-                });
-            }, 500);
-
-            // 3. 서버 결과 요청
-            try {
-                const res = await jsonpRequest('slotSpin', { id: STATE.id, bet: STATE.bet });
-                if(!res.ok) throw new Error();
-                // 결과 도착 -> 정지 시퀀스 실행
-                stopSequence(res);
-            } catch(e) {
-                // 에러 시 비상 정지
-                STATE.spinning = false;
-                STATE.reels.forEach(el => el.className = 'reel-strip'); // 정지
-                if(STATE.sound) AUDIOS.spin.pause();
-                document.getElementById('btn-spin').disabled = false;
-                updateServerData();
-            }
-        }
-
-        // --- [핵심] 정지 시퀀스 (타격감) ---
-        function stopSequence(data) {
-            const keys = data.spin.keys; // 결과 심볼 키들
-            // 슬롯머신은 릴 3개, 각 릴의 결과는 keys[0], keys[5], keys[10] (예시)
-            // 서버 로직에 따라 다르겠지만, 보통 위에서부터 내려오므로
-            // 화면에 보일 최종 심볼 3개를 세팅해야 함.
-            
-            // 이 코드는 3x5 배열 중 각 컬럼의 심볼을 가져옴 (0, 5, 10 인덱스 사용 가정)
-            const finalSymbols = [
-                [keys[0], keys[1], keys[2]], // Reel 1 (Top, Mid, Bot)
-                [keys[5], keys[6], keys[7]], // Reel 2
-                [keys[10], keys[11], keys[12]] // Reel 3
-            ];
-
-            // 순차 정지 (0.5초 간격)
-            STATE.reels.forEach((el, idx) => {
-                setTimeout(() => {
-                    // 1. 스핀 모드 해제 및 결과 심볼 주입
-                    el.className = 'reel-strip'; // 애니메이션 제거 (순간 멈춤)
-                    
-                    // 결과 심볼 3개를 HTML로 다시 그림
-                    let html = '';
-                    // 위에서 꽂히는 느낌을 위해:
-                    // [결과1][결과2][결과3] 이렇게 배치하고
-                    // translateY(-100%) 에서 0으로 꽂아버림
-                    
-                    // 실제로는 CSS animation 'hardStop'이 -100% -> 0%로 움직임
-                    // 따라서 결과 이미지를 렌더링해두면 됨
-                    finalSymbols[idx].forEach(k => {
-                        html += `<div class="symbol" style="background-image: url('${CONFIG.imgBase}${k}.png')"></div>`;
-                    });
-                    el.innerHTML = html;
-
-                    // 2. 정지 애니메이션 (쾅!) 적용
-                    // void el.offsetWidth; // Reflow (애니메이션 리셋용)
-                    el.className = 'reel-strip stopping';
-
-                    // 3. 사운드 (탁!)
-                    if(STATE.sound) {
-                        const stopSnd = AUDIOS.stop.cloneNode();
-                        stopSnd.volume = 0.8;
-                        stopSnd.play();
-                    }
-
-                }, 600 + (idx * 600)); // 0.6초 간격 (기존보다 더 텀을 줌)
-            });
-
-            // 모든 릴 정지 후 결과 처리
-            setTimeout(() => {
-                finishSpin(data);
-            }, 600 + (2 * 600) + 600);
-        }
-
-        function finishSpin(data) {
-            STATE.spinning = false;
-            if(STATE.sound) AUDIOS.spin.pause();
-            document.getElementById('btn-spin').disabled = false;
-
-            // 지갑 업데이트
-            if(STATE.wallet !== data.user.balance) {
-                animateValue('wallet', STATE.wallet, data.user.balance, 1000);
-                STATE.wallet = data.user.balance;
-            }
-
-            // 결과 메시지
-            const win = data.spin.payout > 0;
-            if(win) {
-                if(data.spin.kind === 'jackpot') {
-                    showJackpot(data.spin.payout);
-                    if(STATE.sound) AUDIOS.jackpot.play();
-                } else {
-                    updateMsg(`WIN! +${data.spin.payout}`, true);
-                    if(STATE.sound) AUDIOS.win.play();
-                }
-            } else {
-                updateMsg("TRY AGAIN", false);
-            }
-
-            // 오토 스핀
-            if(STATE.auto) {
-                setTimeout(() => {
-                    if(STATE.auto && STATE.wallet >= STATE.bet) startSpin();
-                    else STATE.auto = false; updateBtn();
-                }, 1500);
-            }
-        }
-
-        // --- 유틸리티 ---
-        function updateServerData() {
-            jsonpRequest('getSlotState', { id: STATE.id }).then(res => {
-                if(res.ok) {
-                    STATE.wallet = Number(res.user.balance);
-                    document.getElementById('wallet').innerText = STATE.wallet.toLocaleString();
-                    document.getElementById('msg-box').innerText = "READY";
-                }
-            });
-        }
-
-        function showJackpot(amt) {
-            const el = document.getElementById('jp-overlay');
-            el.style.display = 'flex';
-            animateValue('jp-display', 0, amt, 3000);
-        }
-
-        function updateMsg(txt, isWin) {
-            const el = document.getElementById('msg-box');
-            el.innerText = txt;
-            el.className = isWin ? "msg-display win" : "msg-display";
-        }
-
-        function toggleAuto() {
-            STATE.auto = !STATE.auto;
-            updateBtn();
-            if(STATE.auto && !STATE.spinning) startSpin();
-        }
-
-        function updateBtn() {
-            const btn = document.getElementById('btn-auto');
-            btn.innerHTML = STATE.auto ? "AUTO<br>ON" : "AUTO<br>OFF";
-            btn.classList.toggle('active', STATE.auto);
-        }
-
-        function toggleSound() {
-            STATE.sound = !STATE.sound;
-            const btn = document.getElementById('btn-sound');
-            btn.innerHTML = STATE.sound ? "SOUND<br>ON" : "SOUND<br>OFF";
-            btn.classList.toggle('active', STATE.sound);
-        }
-
-        function changeBet(d) {
-            if(STATE.spinning) return;
-            let n = STATE.bet + d;
-            if(n >= 5 && n <= 1000) { STATE.bet = n; document.getElementById('bet-val').innerText = n; }
-        }
-
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id);
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString();
-                if (progress < 1) window.requestAnimationFrame(step);
-                else obj.innerText = end.toLocaleString();
-            };
-            window.requestAnimationFrame(step);
-        }
-
-        function jsonpRequest(action, params) {
-            return new Promise((resolve) => {
-                const cb = 'cb_' + Math.round(Math.random()*100000);
-                window[cb] = (data) => { delete window[cb]; document.body.removeChild(script); resolve(data); };
-                const script = document.createElement('script');
-                params.action = action; params.callback = cb;
-                script.src = `${CONFIG.API_URL}?${new URLSearchParams(params)}`;
-                document.body.appendChild(script);
-            });
-        }
-
-        window.onload = init;
-    </script>
+    window.onload = init;
+  </script>
 </body>
 </html>
