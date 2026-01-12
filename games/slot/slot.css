@@ -1,8 +1,10 @@
-/* 전체 설정 */
+/* === 전체 설정 === */
 :root {
     --neon-pink: #ff00ff;
     --neon-blue: #00ffff;
+    --neon-purple: #bd00ff;
     --dark-bg: #050510;
+    --frame-border: #1a1a2e;
 }
 
 body {
@@ -11,11 +13,13 @@ body {
     background-color: var(--dark-bg);
     color: white;
     font-family: 'Arial', sans-serif;
-    overflow: hidden; /* 스크롤 방지 */
+    overflow: hidden;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    /* 전체적인 빛 번짐 효과 */
+    text-shadow: 0 0 5px rgba(255,255,255,0.3);
 }
 
 /* 동적 배경 */
@@ -24,138 +28,175 @@ body {
     top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover;
     background-position: center;
-    background-image: url('../img/slot/bg1.png'); /* 기본 배경 */
     z-index: -2;
     transition: filter 0.3s;
+    /* 배경을 좀 더 어둡게 눌러줌 */
+    filter: brightness(0.7);
 }
 
 /* 입장 오버레이 */
 #start-overlay {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.85);
     z-index: 999;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    backdrop-filter: blur(5px);
 }
 
 .glass-panel {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    padding: 2rem;
+    background: rgba(20, 20, 40, 0.6);
     border: 2px solid var(--neon-blue);
-    border-radius: 15px;
+    padding: 3rem;
+    border-radius: 20px;
     text-align: center;
-    box-shadow: 0 0 20px var(--neon-blue);
+    box-shadow: 0 0 30px var(--neon-blue), inset 0 0 20px rgba(0,255,255,0.2);
 }
 
-.glass-panel h1 { margin: 0; color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
-.glass-panel p { margin-top: 10px; font-size: 1.2rem; animation: blink 1s infinite; }
+.glass-panel h1 { 
+    margin: 0; font-size: 2.5rem;
+    color: var(--neon-pink); 
+    text-shadow: 0 0 15px var(--neon-pink), 0 0 30px var(--neon-purple);
+}
+.glass-panel p { margin-top: 20px; font-size: 1.2rem; animation: blink 1s infinite alternate; }
 
-@keyframes blink { 50% { opacity: 0.5; } }
+@keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
 
-/* 게임 컨테이너 (모바일 최적화) */
+/* 게임 컨테이너 */
 #game-container {
     width: 100%;
-    max-width: 800px; /* PC에서도 너무 커지지 않게 */
-    height: 100%;
+    max-width: 900px; /* 약간 더 넓게 */
+    height: 95vh;     /* 꽉 차게 */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px;
+    padding: 10px 0;
     box-sizing: border-box;
+    position: relative;
 }
 
 /* 잭팟 티커 */
 .ticker-wrap {
     width: 100%;
-    background: rgba(0,0,0,0.8);
+    background: linear-gradient(90deg, #000, rgba(50,0,50,0.8), #000);
     overflow: hidden;
-    height: 30px;
-    line-height: 30px;
-    border-bottom: 1px solid var(--neon-pink);
+    height: 32px;
+    line-height: 32px;
+    border-top: 1px solid var(--neon-purple);
+    border-bottom: 1px solid var(--neon-purple);
+    box-shadow: 0 0 10px var(--neon-purple);
 }
-.ticker { display: inline-block; white-space: nowrap; animation: ticker 20s linear infinite; }
-.ticker-item { color: var(--neon-pink); font-weight: bold; padding-right: 50px; }
+.ticker { display: inline-block; white-space: nowrap; animation: ticker 25s linear infinite; }
+.ticker-item { color: #ffd700; text-shadow: 0 0 5px #ffd700; font-weight: bold; padding-right: 50px; font-size: 1.1rem; }
 @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
 /* 상단바 */
-.top-bar { display: flex; justify-content: space-between; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; margin-bottom: 5px; }
-.info-box { font-size: 0.9rem; font-weight: bold; }
+.top-bar { 
+    display: flex; justify-content: space-between; 
+    background: rgba(20,20,30,0.8); 
+    padding: 10px 20px; 
+    border-radius: 15px; margin: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 10px #000;
+}
+.info-box { font-size: 1rem; font-weight: bold; color: var(--neon-blue); }
 
-/* 슬롯 머신 프레임 (핵심) */
+/* === [핵심] 슬롯 머신 프레임 입체화 === */
 .slot-machine-frame {
     flex-grow: 1;
     position: relative;
-    background: rgba(0,0,0,0.5);
-    border: 3px solid var(--neon-blue);
-    border-radius: 10px;
-    box-shadow: inset 0 0 20px #000;
+    margin: 10px;
+    /* 깊이감 있는 테두리 */
+    border: 4px solid var(--frame-border);
+    border-radius: 15px;
+    /* 네온 글로우 + 내부 깊은 그림자 (핵심) */
+    box-shadow: 
+        0 0 20px var(--neon-blue), /* 외부 네온 */
+        0 0 60px var(--neon-purple), /* 외부 네온2 */
+        inset 0 0 30px #000, /* 내부 그림자 (깊이감) */
+        inset 0 0 10px rgba(0,0,0,0.8);
+    background: #111;
     overflow: hidden;
-    margin: 10px 0;
-    display: flex;
-    align-items: center; /* 세로 중앙 정렬 */
 }
 
 /* 릴 컨테이너 */
 .reels-container {
     display: flex;
     width: 100%;
-    height: 100%; /* 부모 높이 꽉 채움 */
-    justify-content: space-around;
+    height: 100%;
+    justify-content: space-between;
+    padding: 5px; /* 프레임과 릴 사이 간격 */
+    box-sizing: border-box;
+    background: #000;
 }
 
 /* 개별 릴 (Column) */
 .reel {
-    width: 18%; /* 5개니까 여백 포함해서 */
+    width: 19%;
     height: 100%;
-    overflow: hidden; /* 넘치는 심볼 숨김 */
+    overflow: hidden;
     position: relative;
-    background: rgba(0,0,0,0.3);
-    border-right: 1px solid rgba(255,255,255,0.1);
+    /* 릴 사이 구분선 */
+    background: #0a0a0a;
+    border-left: 1px solid #222;
+    border-right: 1px solid #222;
+    box-sizing: border-box;
 }
-.reel:last-child { border-right: none; }
 
-/* 릴 내부의 긴 이미지 띠 (Strip) */
+/* === [핵심] 입체 원통 효과 오버레이 === */
+/* 1단계에서 추가한 div에 스타일 적용 */
+.reel-overlay-shadow {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* 클릭 통과 */
+    z-index: 5;
+    /* 위아래는 어둡고 가운데는 투명한 그라데이션 */
+    background: linear-gradient(
+        to bottom, 
+        rgba(0,0,0,0.9) 0%, 
+        rgba(0,0,0,0.5) 15%, 
+        rgba(0,0,0,0) 40%, 
+        rgba(0,0,0,0) 60%, 
+        rgba(0,0,0,0.5) 85%, 
+        rgba(0,0,0,0.9) 100%
+    );
+    /* 원통의 질감 느낌 추가 */
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* 릴 내부 스트립 */
 .reel-strip {
     width: 100%;
     position: absolute;
-    top: 0;
-    left: 0;
-    will-change: transform; /* 성능 최적화 */
+    top: 0; left: 0;
+    will-change: transform;
 }
 
 /* 심볼 이미지 */
 .symbol {
     width: 100%;
-    aspect-ratio: 1/1; /* 정사각형 유지 */
+    aspect-ratio: 1/1;
     display: block;
-    background-size: contain;
+    background-size: 90%; /* 여백을 줘서 입체감 강조 */
     background-repeat: no-repeat;
     background-position: center;
-    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+    /* 심볼 자체 발광 효과 */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.4));
 }
 
-/* 스핀 중 블러 효과 */
-.blur-move {
-    filter: blur(3px); /* 속도감 */
-    transition: transform 0.1s linear; /* 부드러운 이동 아님, 빠른 이동 */
-}
-
-/* 승리 라인 (가운데) */
+/* 승리 라인 */
 .win-line {
     position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: rgba(255, 0, 0, 0.7);
+    top: 50%; left: 0; width: 100%; height: 4px;
+    background: rgba(255, 50, 50, 0.6);
     transform: translateY(-50%);
     z-index: 10;
-    box-shadow: 0 0 10px red;
+    box-shadow: 0 0 15px red, 0 0 30px red;
     pointer-events: none;
+    display: none; /* 평소엔 숨김 */
 }
 
 /* 컨트롤 패널 */
@@ -163,36 +204,79 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(to bottom, #222, #000);
-    padding: 10px;
-    border-radius: 10px;
-    border-top: 2px solid var(--neon-pink);
+    background: linear-gradient(135deg, #222, #111);
+    padding: 15px 20px;
+    border-radius: 20px;
+    margin: 10px;
+    border: 2px solid #333;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 
-.bet-control { display: flex; align-items: center; gap: 10px; }
+.bet-control { display: flex; align-items: center; gap: 15px; }
 .bet-control button {
-    width: 40px; height: 40px; border-radius: 50%; border: none; font-weight: bold; font-size: 1.2rem;
-    background: #333; color: white;
-}
-.bet-display { font-size: 1.1rem; font-weight: bold; color: var(--neon-blue); }
-
-.spin-btn {
-    width: 100px; height: 60px;
-    background: radial-gradient(circle, #ff00ff, #aa00aa);
-    border: 2px solid white;
-    border-radius: 10px;
-    font-size: 1.5rem; font-weight: 900; color: white;
-    box-shadow: 0 0 15px var(--neon-pink);
+    width: 50px; height: 50px; border-radius: 50%; border: 2px solid #555;
+    font-weight: bold; font-size: 1.5rem;
+    background: linear-gradient(to bottom, #444, #222);
+    color: #ddd;
+    box-shadow: 0 3px 5px #000;
     cursor: pointer;
 }
-.spin-btn:active { transform: scale(0.95); }
-.spin-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
+.bet-control button:active { transform: translateY(2px); box-shadow: 0 1px 2px #000; }
+
+.bet-display { 
+    font-size: 1.2rem; font-weight: bold; color: var(--neon-blue); 
+    background: #000; padding: 10px 20px; border-radius: 10px;
+    border: 1px solid var(--neon-blue);
+    box-shadow: inset 0 0 10px var(--neon-blue);
+}
+
+.spin-btn {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.8);
+    /* 화려한 그라데이션 버튼 */
+    background: radial-gradient(circle at 30% 30%, var(--neon-pink), #770077);
+    font-size: 1.8rem; font-weight: 900; color: white;
+    text-shadow: 0 0 5px #fff;
+    box-shadow: 0 0 30px var(--neon-pink), 0 10px 20px #000;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.spin-btn:active:not(:disabled) { 
+    transform: scale(0.95); 
+    box-shadow: 0 0 15px var(--neon-pink), 0 5px 10px #000;
+    background: radial-gradient(circle at 50% 50%, var(--neon-pink), #550055);
+}
+.spin-btn:disabled { 
+    filter: grayscale(1) brightness(0.7); cursor: not-allowed;
+    box-shadow: none;
+}
 
 #message-area {
     text-align: center;
-    font-size: 1.2rem;
-    height: 1.5rem;
-    color: yellow;
-    margin-top: 5px;
-    text-shadow: 1px 1px 0 #000;
+    font-size: 1.4rem;
+    font-weight: bold;
+    height: 2rem;
+    color: #fff;
+    text-shadow: 0 0 10px var(--neon-blue);
+    margin-bottom: 10px;
+}
+
+/* 타격감(흔들림) 애니메이션 */
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+.shake-hard {
+    animation: shake 0.5s; /* 0.5초간 흔들림 */
+    animation-iteration-count: 1;
 }
