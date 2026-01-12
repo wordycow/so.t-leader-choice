@@ -1,301 +1,125 @@
-:root{
-  --bg0:#050712;
-  --bg1:#070b18;
-  --line:rgba(160,180,255,.18);
-  --text:#e7ecff;
-  --muted:rgba(231,236,255,.72);
-  --glass:rgba(7,11,24,.55);
-  --glass2:rgba(7,11,24,.25);
-  --shadow:0 18px 50px rgba(0,0,0,.45);
-  --r:22px;
-}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>THE UNIQUE SLOT</title>
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  color:var(--text);
-  background: radial-gradient(circle at 30% 20%, #101a3a 0, var(--bg1) 40%, #000 100%);
-  overflow-x:hidden;
-}
+  <!-- ✅ CSS는 여기 한 줄 -->
+  <link rel="stylesheet" href="slot/slot.css" />
+</head>
 
-/* 스핀 중 배경 */
-.bg-cycle{
-  position:fixed;
-  inset:0;
-  z-index:-2;
-  background-size:cover;
-  background-position:center;
-  opacity:.65;
-  filter:saturate(1.2) contrast(1.05);
-  transition: opacity .25s ease;
-}
-.bg-cycle.spinning{ opacity:.9; }
+<body>
+  <!-- ✅ 배경은 항상 노출(깜빡임/사라짐 방지) -->
+  <div class="bg-stage" aria-hidden="true">
+    <div id="bgA" class="bg-img on"></div>
+    <div id="bgB" class="bg-img"></div>
+    <div id="bgFlash" class="bg-flash"></div>
+  </div>
 
-/* ticker */
-.ticker{
-  position:sticky;
-  top:0;
-  z-index:50;
-  width:100%;
-  background:rgba(0,0,0,.55);
-  border-bottom:1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(10px);
-  overflow:hidden;
-}
-.ticker.hidden{ display:none; }
-.ticker-track{
-  white-space:nowrap;
-  padding:10px 0;
-  font-weight:800;
-  letter-spacing:.3px;
-  animation: marquee 18s linear infinite;
-}
-@keyframes marquee{
-  0%{ transform: translateX(100%); }
-  100%{ transform: translateX(-100%); }
-}
+  <div class="wrap">
+    <div id="jackpotBanner" class="banner">
+      <div class="ticker"><span id="jackpotText"></span></div>
+    </div>
 
-.slot-page{
-  width:min(1200px, 100%);
-  margin: 16px auto 36px;
-  padding: 0 14px;
-}
+    <div class="card">
+      <div class="topbar">
+        <div class="title">THE <b>UNIQUE</b> SLOT</div>
 
-/* 카드 */
-.card{
-  border:1px solid var(--line);
-  border-radius: var(--r);
-  background: linear-gradient(180deg, rgba(5,7,18,.65), rgba(5,7,18,.35));
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
-  overflow:hidden;
-}
-.card-hd{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 16px;
-  border-bottom:1px solid var(--line);
-}
-.card-bd{ padding:14px 16px; }
-.title{ font-weight:900; letter-spacing:.5px; }
+        <!-- ✅ MAIN 버튼은 절대경로로 고정 -->
+        <a class="btn" id="mainBtn"
+           href="https://wordycow.github.io/so.t-leader-choice/the-unique-main.html">MAIN</a>
+      </div>
 
-.btn{
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  border-radius: 14px;
-  padding: 12px 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform .06s ease, background .2s ease, border-color .2s ease;
-}
-.btn:hover{ background: rgba(255,255,255,.10); }
-.btn:active{ transform: translateY(1px); }
-.btn:disabled{ opacity:.45; cursor:not-allowed; }
+      <!-- PAYTABLE -->
+      <div id="payCard" class="pay">
+        <div class="pay-head">
+          <h3>PAY TABLE</h3>
+          <button id="payToggle" class="btn" type="button">접기/펼치기</button>
+        </div>
+        <div class="pay-body">
+          <p class="pay-note">룰(가운데 줄 기준): <b>2연속=EVEN(±0)</b> / <b>3연속↑=WIN</b> / <b>5연속=JACKPOT</b></p>
+          <div id="payList" class="pay-list"></div>
+        </div>
+      </div>
 
-.btn.ghost{
-  padding:10px 12px;
-  border-radius: 999px;
-}
+      <div class="grid">
+        <!-- LEFT -->
+        <div class="status">
+          <div class="pill">
+            <div class="k">PLAYER</div>
+            <div class="v"><span class="dot" id="dotLogin"></span><span id="playerName">-</span></div>
+          </div>
 
-.btn.primary{
-  border:none;
-  background: linear-gradient(90deg, #35d4ff, #b776ff, #ff6fd8, #baff32);
-  color:#0b1024;
-}
+          <div class="pill">
+            <div class="k">WALLET (UT)</div>
+            <div class="v"><span class="dot"></span><span id="wallet">0</span></div>
+          </div>
 
-.btn.mini{
-  padding: 10px 12px;
-  border-radius: 999px;
-  min-width: 54px;
-}
+          <div class="pill">
+            <div class="k">JACKPOT</div>
+            <div class="v"><span class="dot gold"></span><span id="jackpot">0</span></div>
+          </div>
 
-/* paytable */
-.paytable{ margin-bottom: 14px; }
-.paytable.collapsed .card-bd{ display:none; }
+          <div class="pill">
+            <div class="k">LAST RESULT</div>
+            <div class="v"><span class="dot warn"></span><span id="lastResult">READY</span></div>
 
-.pt-list{ display:flex; flex-direction:column; gap:10px; }
-.pt-row{
-  display:flex;
-  gap:14px;
-  padding:10px 12px;
-  border:1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  background: rgba(0,0,0,.18);
-}
-.pt-left{ display:flex; align-items:center; gap:10px; min-width: 190px; }
-.pt-ico{ width:44px; height:44px; object-fit:contain; }
-.pt-name{ font-weight:900; letter-spacing:.3px; }
-.pt-right{ color:var(--muted); font-weight:700; line-height:1.5; }
+            <div class="bet-row">
+              <div>
+                <div class="k" style="margin:0 0 6px;">BET</div>
+                <div class="bet" id="bet">10</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button id="betDown" class="mini" type="button">-5</button>
+                <button id="betUp" class="mini" type="button">+5</button>
+              </div>
+            </div>
 
-/* layout */
-.grid-wrap{
-  display:grid;
-  grid-template-columns: 360px 1fr;
-  gap:14px;
-}
+            <div class="toggle-row">
+              <div id="autoBtn" class="toggle">AUTO OFF</div>
+              <div id="soundBtn" class="toggle on">SOUND ON</div>
+            </div>
 
-/* panel */
-.panel{ padding:14px; }
-.panel-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding: 6px 4px 12px;
-}
-.logo{
-  font-weight: 1000;
-  letter-spacing: .6px;
-}
-.logo-accent{
-  background: linear-gradient(90deg, #35d4ff, #b776ff, #ff6fd8, #baff32);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-.stats{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:10px;
-}
-.stat{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius: 16px;
-  padding:10px 12px;
-  background: rgba(0,0,0,.16);
-}
-.stat .k{ font-size:12px; letter-spacing:.8px; color:var(--muted); font-weight:900; }
-.stat .v{ font-size:18px; font-weight:1000; margin-top:6px; }
+            <button id="spinBtn" class="spin" type="button">SPIN</button>
+          </div>
+        </div>
 
-.betbox{
-  margin-top:12px;
-  border:1px solid rgba(255,255,255,.12);
-  border-radius: 16px;
-  padding:10px 12px;
-  background: rgba(0,0,0,.16);
-}
-.betbox .k{ font-size:12px; letter-spacing:.8px; color:var(--muted); font-weight:900; }
-.betrow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-top:8px;
-}
-.betv{
-  font-size:22px;
-  font-weight:1000;
-}
-.betbtns{
-  display:flex;
-  gap:8px;
-}
+        <!-- RIGHT -->
+        <div class="slot-area">
+          <div class="slot-head">
+            <h3>SLOT</h3>
+            <div class="slot-sub">가운데 줄: 2연속=EVEN / 3연속↑=WIN / 5연속=JACKPOT</div>
+          </div>
+          <div id="slotGrid" class="slot-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-.controls{
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap:10px;
-  margin-top:12px;
-}
+  <div id="floatWin" class="float-win"></div>
 
-/* stage */
-.stage{ padding:14px; }
-.stage-hd{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:10px;
-  padding: 6px 4px 12px;
-}
-.stage-title{ font-weight:1000; letter-spacing:.6px; }
-.stage-sub{ color:var(--muted); font-weight:800; font-size:12px; text-align:right; }
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <h2>로그인 정보가 없습니다</h2>
+      <p>
+        gate → main → slot 흐름에서 저장된 <b>아이디(localStorage)</b>를 못 찾았습니다.<br>
+        MAIN으로 돌아가서 로그인 후 다시 들어오세요.
+      </p>
+      <div class="row">
+        <a class="btn" href="https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html">← GATE</a>
+        <a class="btn" href="https://wordycow.github.io/so.t-leader-choice/the-unique-main.html">← MAIN</a>
+      </div>
+    </div>
+  </div>
 
-.slot-grid{
-  display:grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  padding: 12px;
-  border:1px solid rgba(255,255,255,.10);
-  border-radius: 18px;
-  background: rgba(0,0,0,.14);
-  min-height: 360px;
-}
-.cell{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius: 16px;
-  background: rgba(0,0,0,.18);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 10px;
-}
-.sym{
-  width: 100%;
-  height: 100%;
-  max-height: 96px;
-  object-fit: contain;
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,.35));
-}
-
-/* celebrate */
-.celebrate{
-  position:fixed;
-  inset:0;
-  z-index:1000;
-  background: rgba(0,0,0,.70);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-}
-.celebrate.hidden{ display:none; }
-.celebrate-card{
-  width:min(520px, 100%);
-  border-radius: 26px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(10,14,35,.75);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 30px 90px rgba(0,0,0,.55);
-  padding: 18px;
-  text-align:center;
-}
-.celebrate-title{
-  font-weight:1000;
-  font-size:28px;
-  letter-spacing:.8px;
-}
-.celebrate-amount{
-  margin-top: 10px;
-  font-weight:1000;
-  font-size: 46px;
-  background: linear-gradient(90deg, #35d4ff, #b776ff, #ff6fd8, #baff32);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-.celebrate-sub{
-  margin-top: 8px;
-  color: var(--muted);
-  font-weight:900;
-}
-#btnCelebrateClose{
-  margin-top: 14px;
-  width:100%;
-}
-
-/* mobile: paytable -> stage -> panel (유송 요구 순서) */
-@media (max-width: 900px){
-  .grid-wrap{
-    grid-template-columns: 1fr;
-  }
-  /* stage 먼저, panel 아래로 */
-  #stageCard{ order: 2; }
-  #panelCard{ order: 3; }
-  #paytableCard{ order: 1; }
-  .slot-grid{ min-height: 320px; }
-  .controls{ grid-template-columns: 1fr; }
-}
+  <!-- ✅ JS 로드 순서(여기 건드리지마) -->
+  <script src="slot/slot.config.js"></script>
+  <script src="slot/slot.api.js"></script>
+  <script src="slot/slot.audio.js"></script>
+  <script src="slot/slot.ui.js"></script>
+  <script src="slot/slot.game.js"></script>
+  <script src="slot/slot.app.js"></script>
+  <script src="slot/slot.page.js"></script>
+</body>
+</html>
