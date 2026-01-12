@@ -1,155 +1,152 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
   const CFG = () => SLOT.config;
-  const $ = (id) => document.getElementById(id);
 
-  const dom = {
-    betUt: $("betUt"),
-    betDown: $("betDown"),
-    betUp: $("betUp"),
-    autoBtn: $("autoBtn"),
-    soundBtn: $("soundBtn"),
-    spinBtn: $("spinBtn"),
-  };
-
-  const state = {
+  const el = {};
+  let state = {
     id: "",
-    bet: 10,
-    auto: false,
-    sound: true,
+    name: "",
+    balance: 0,
+    jackpot: 0,
+    bet: CFG().BET.def,
     spinning: false,
+    auto: false,
   };
 
-  function clampBet(n) {
-    const { min, max, step } = CFG().BET;
-    const v = Math.max(min, Math.min(max, n));
-    // step 단위로 정렬
-    const snapped = Math.round(v / step) * step;
-    return Math.max(min, Math.min(max, snapped));
+  function $(id){ return document.getElementById(id); }
+
+  function readBet(){
+    const v = Number(localStorage.getItem(CFG().STORAGE_KEYS.bet));
+    if (!Number.isFinite(v)) return CFG().BET.def;
+    return Math.max(CFG().BET.min, Math.min(CFG().BET.max, v));
   }
 
-  function setBet(n) {
-    state.bet = clampBet(n);
-    dom.betUt.textContent = String(state.bet);
-    try { localStorage.setItem(CFG().STORAGE_KEYS.bet, String(state.bet)); } catch (_) {}
+  function writeBet(v){
+    localStorage.setItem(CFG().STORAGE_KEYS.bet, String(v));
   }
 
-  function loadLocal() {
-    try {
-      const b = Number(localStorage.getItem(CFG().STORAGE_KEYS.bet) || CFG().BET.def);
-      state.bet = clampBet(b);
-      state.auto = localStorage.getItem(CFG().STORAGE_KEYS.auto) === "1";
-      state.sound = localStorage.getItem(CFG().STORAGE_KEYS.sound) !== "0";
-    } catch (_) {
-      state.bet = CFG().BET.def;
-      state.auto = false;
-      state.sound = true;
-    }
-    dom.betUt.textContent = String(state.bet);
-    dom.autoBtn.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
-    dom.soundBtn.textContent = state.sound ? "SOUND ON" : "SOUND OFF";
+  function readAuto(){
+    return localStorage.getItem(CFG().STORAGE_KEYS.auto) === "1";
+  }
+  function writeAuto(on){
+    localStorage.setItem(CFG().STORAGE_KEYS.auto, on ? "1" : "0");
   }
 
-  function setAuto(on) {
+  function setAuto(on){
     state.auto = !!on;
-    dom.autoBtn.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
-    try { localStorage.setItem(CFG().STORAGE_KEYS.auto, state.auto ? "1" : "0"); } catch (_) {}
+    writeAuto(state.auto);
+    el.autoBtn.textContent = state.auto ? "AUTO ON" : "AUTO OFF";
   }
 
-  function setSound(on) {
-    state.sound = !!on;
-    dom.soundBtn.textContent = state.sound ? "SOUND ON" : "SOUND OFF";
-    try { localStorage.setItem(CFG().STORAGE_KEYS.sound, state.sound ? "1" : "0"); } catch (_) {}
-    SLOT.audio.setOn(state.sound);
+  function syncSoundBtn(){
+    el.soundBtn.textContent = SLOT.audio.enabled ? "SOUND ON" : "SOUND OFF";
   }
 
-  function setSpinEnabled(on) {
-    dom.spinBtn.disabled = !on;
-    dom.betDown.disabled = !on;
-    dom.betUp.disabled = !on;
+  function clampBet(v){
+    v = Math.round(v);
+    v = Math.max(CFG().BET.min, Math.min(CFG().BET.max, v));
+    return v;
   }
 
-  async function refreshState() {
-    const res = await SLOT.api.getSlotState(state.id);
-    const user = res.user || {};
-    SLOT.ui.setPlayer(user.nickname || user.name || user.id || "-");
-    SLOT.ui.setWallet(user.balance || 0);
-    SLOT.ui.setJackpotPool(res.jackpotTotal || 0);
-    SLOT.ui.setLastResult("READY");
+  function setBet(v){
+    state.bet = clampBet(v);
+    writeBet(state.bet);
+    SLOT.UI.setBet(state.bet);
   }
 
-  async function doSpinOnce() {
+  function lockUi(lock){
+    state.spinning = !!lock;
+    el.spinBtn.disabled = lock;
+    el.betUp.disabled = lock;
+    el.betDown.disabled = lock;
+    el.autoBtn.disabled = lock;
+  }
+
+  async function doSpin(){
     if (state.spinning) return;
-    state.spinning = true;
-    setSpinEnabled(false);
-    SLOT.ui.setLastResult("SPINNING...");
 
+    lockUi(true);
     try {
-      const res = await SLOT.api.slotSpin(state.id, state.bet);
-      const spin = res.spin || {};
-      const keys = spin.keys || [];
-
-      // 스핀 애니메이션(속도/배경 동기화)
-      await SLOT.game.animateToKeys(keys, {
-        durationMs: 1200,
-        tickMs: 120
+      const res = await SLOT.game.spin({
+        id: state.id,
+        bet: state.bet,
+        onUpdateUser: ({ balance }) => {
+          state.balance = Number(balance || 0);
+          SLOT.UI.setWallet(state.balance);
+        }
       });
 
-      // 결과 표시
-      const kind = String(spin.kind || "");
-      if (kind === "lose") SLOT.ui.setLastResult("LOSE");
-      else if (kind === "even") SLOT.ui.setLastResult("EVEN");
-      else if (kind === "win3") SLOT.ui.setLastResult("WIN");
-      else if (kind === "win4") SLOT.ui.setLastResult("BIG WIN");
-      else if (kind === "mega") SLOT.ui.setLastResult("MEGA");
-      else if (kind === "jackpot") SLOT.ui.setLastResult("JACKPOT!");
-      else SLOT.ui.setLastResult("DONE");
+      if (res && res.ok && res.user && typeof res.user.balance !== "undefined") {
+        state.balance = Number(res.user.balance || 0);
+        SLOT.UI.setWallet(state.balance);
+      }
 
-      const user = res.user || {};
-      SLOT.ui.setWallet(user.balance || 0);
-      SLOT.ui.setJackpotPool(res.jackpotTotal || 0);
-
-    } catch (e) {
-      SLOT.ui.stopBgSpin();
-      SLOT.ui.setLastResult("ERROR");
-      console.error(e);
-      alert(String(e.message || e));
     } finally {
-      state.spinning = false;
-      setSpinEnabled(true);
+      lockUi(false);
+      if (state.auto) {
+        // auto는 템포 살짝 쉬고 재스핀
+        setTimeout(() => { if (state.auto) doSpin(); }, 300);
+      }
     }
   }
 
-  function bind() {
-    dom.betDown.addEventListener("click", () => setBet(state.bet - CFG().BET.step));
-    dom.betUp.addEventListener("click", () => setBet(state.bet + CFG().BET.step));
-    dom.autoBtn.addEventListener("click", () => setAuto(!state.auto));
-    dom.soundBtn.addEventListener("click", () => setSound(!state.sound));
+  async function boot({ id }){
+    state.id = String(id || "").trim().toLowerCase();
+    state.bet = readBet();
+    setAuto(readAuto());
 
-    dom.spinBtn.addEventListener("click", async () => {
-      await doSpinOnce();
-      if (state.auto) {
-        // auto는 쉬지 않고 연속
-        while (state.auto) {
-          await new Promise(r => setTimeout(r, 200));
-          await doSpinOnce();
-        }
-      }
+    // 사운드 버튼
+    syncSoundBtn();
+
+    // 초기 UI
+    SLOT.UI.setBet(state.bet);
+    SLOT.UI.setLast("READY");
+
+    // 서버 상태
+    const st = await SLOT.api.getSlotState(state.id).catch(err => ({ ok:false, error:String(err?.message||err) }));
+    if (!st || !st.ok) {
+      SLOT.UI.setLast("READY");
+      return;
+    }
+
+    const user = st.user || {};
+    state.name = user.nickname || user.name || state.id;
+    state.balance = Number(user.balance || 0);
+    state.jackpot = Number(st.jackpotTotal || 0);
+
+    SLOT.UI.setPlayer(state.name);
+    SLOT.UI.setWallet(state.balance);
+    SLOT.UI.setJackpot(state.jackpot);
+
+    // 초기 그리드
+    const initKeys = Array.from({length: 15}, () => CFG().SYMBOLS[Math.floor(Math.random()*CFG().SYMBOLS.length)].key);
+    SLOT.UI.setGrid(initKeys);
+
+    // 이벤트
+    el.spinBtn.addEventListener("click", async () => {
+      await SLOT.audio.unlock();
+      doSpin();
+    });
+
+    el.betUp.addEventListener("click", () => setBet(state.bet + CFG().BET.step));
+    el.betDown.addEventListener("click", () => setBet(state.bet - CFG().BET.step));
+
+    el.autoBtn.addEventListener("click", () => setAuto(!state.auto));
+
+    el.soundBtn.addEventListener("click", async () => {
+      await SLOT.audio.unlock();
+      SLOT.audio.setEnabled(!SLOT.audio.enabled);
+      syncSoundBtn();
     });
   }
 
-  SLOT.app = {
-    async boot(id) {
-      state.id = String(id || "").trim().toLowerCase();
-      if (!state.id) {
-        SLOT.ui.showOverlay(true);
-        return;
-      }
-      SLOT.ui.showOverlay(false);
+  function initDom(){
+    el.spinBtn = $("spinBtn");
+    el.betUp = $("betUp");
+    el.betDown = $("betDown");
+    el.autoBtn = $("autoBtn");
+    el.soundBtn = $("soundBtn");
+  }
 
-      loadLocal();
-      bind();
-      await refreshState();
-    }
-  };
+  SLOT.app = { initDom, boot };
 })();
