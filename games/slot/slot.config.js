@@ -1,31 +1,36 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
 
-  // ✅ 유송이 준 Apps Script 웹앱(/exec) URL
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+  // ✅ Apps Script 웹앱(/exec) URL
+  const SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ 이미지 폴더: games/img/slot (slot.html 기준 상대경로)
+  // ✅ slot.html 기준: /games/slot.html
+  // 이미지 폴더: /games/img/slot
   const IMG_BASE = "./img/slot";
 
-  const BG_FILES = ["bg1.png","bg2.png","bg3.png","bg4.png","bg5.png"];
+  // ✅ 사운드 폴더: /games/sounds
+  const SOUND_BASE = "./sounds";
+
+  const BG_FILES = ["bg1.png", "bg2.png", "bg3.png", "bg4.png", "bg5.png"];
 
   const SYMBOLS = [
-    { key: "star1",  label: "STAR1",  file: "star1.png"  },
-    { key: "star2",  label: "STAR2",  file: "star2.png"  },
-    { key: "star3",  label: "STAR3",  file: "star3.png"  },
-    { key: "pro1",   label: "PRO1",   file: "pro1.png"   },
-    { key: "pro2",   label: "PRO2",   file: "pro2.png"   },
-    { key: "pro3",   label: "PRO3",   file: "pro3.png"   },
-    { key: "pro4",   label: "PRO4",   file: "pro4.png"   },
-    { key: "pro5",   label: "PRO5",   file: "pro5.png"   },
-    { key: "pro6",   label: "PRO6",   file: "pro6.png"   },
-    { key: "pro7",   label: "PRO7",   file: "pro7.png"   },
-    { key: "pro8",   label: "PRO8",   file: "pro8.png"   },
-    { key: "pro9",   label: "PRO9",   file: "pro9.png"   },
-    { key: "pro10",  label: "PRO10",  file: "pro10.png"  },
+    { key: "star1", label: "STAR1", file: "star1.png" },
+    { key: "star2", label: "STAR2", file: "star2.png" },
+    { key: "star3", label: "STAR3", file: "star3.png" },
+    { key: "pro1", label: "PRO1", file: "pro1.png" },
+    { key: "pro2", label: "PRO2", file: "pro2.png" },
+    { key: "pro3", label: "PRO3", file: "pro3.png" },
+    { key: "pro4", label: "PRO4", file: "pro4.png" },
+    { key: "pro5", label: "PRO5", file: "pro5.png" },
+    { key: "pro6", label: "PRO6", file: "pro6.png" },
+    { key: "pro7", label: "PRO7", file: "pro7.png" },
+    { key: "pro8", label: "PRO8", file: "pro8.png" },
+    { key: "pro9", label: "PRO9", file: "pro9.png" },
+    { key: "pro10", label: "PRO10", file: "pro10.png" },
   ];
 
-  const SYMBOL_MAP = Object.fromEntries(SYMBOLS.map(s => [s.key, s]));
+  const SYMBOL_MAP = Object.fromEntries(SYMBOLS.map((s) => [s.key, s]));
 
   SLOT.config = {
     SCRIPT_URL,
@@ -34,16 +39,21 @@
 
     BET: { min: 10, max: 1000, step: 5, def: 10 },
 
-    SPIN: {
-      durationMs: 10000,   // ✅ 유송 요청: 10초
-      tickMinMs: 80,
-      tickMaxMs: 200,      // ✅ 느려질수록 0.2초(200ms)까지
-      bgMinMs: 200         // ✅ 배경 변경 최소 간격(요청값)
-    },
-
     ASSET: {
       imgBase: IMG_BASE,
       bgFiles: BG_FILES,
+    },
+
+    SOUND: {
+      base: SOUND_BASE,
+      files: {
+        start: "start-button-sound.MP3",
+        spinning: "spinning-sound.MP3",
+        stop: "stop-stop-stop-sound.MP3",
+        win: "win-sound.MP3",
+        lose: "lose-sound.MP3",
+        jackpot: "jackpot-sound.MP3",
+      },
     },
 
     SYMBOLS,
@@ -54,14 +64,20 @@
       "3연속: WIN(3x)",
       "4연속: WIN(10x)",
       "5연속: MEGA(25x)",
-      "JACKPOT: 잭팟풀 지급"
+      "JACKPOT: 잭팟풀 지급",
     ],
+
+    // ✅ 배경 회전: “스핀 느릴 때(최소속도) 0.2초” = 최대 200ms
+    BG_CYCLE: {
+      maxIntervalMs: 200, // 절대 200ms보다 느려지지 않게(=최소속도 기준)
+    },
 
     STORAGE_KEYS: {
       sound: "slot_sound_on",
       auto: "slot_auto_on",
       bet: "slot_bet_ut",
-      payCollapsed: "slot_pay_collapsed"
-    }
+      banner: "slot_jackpot_banner_v1",
+      payCollapsed: "slot_pay_collapsed_v1",
+    },
   };
 })();
