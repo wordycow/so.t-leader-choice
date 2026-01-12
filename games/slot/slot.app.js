@@ -1,208 +1,177 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const cfg = SLOT.config || {};
+  const C = () => SLOT.config;
 
-  function qs() { return new URLSearchParams(location.search); }
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n));
+  function getIdFromUrl() {
+    const u = new URL(location.href);
+    const id = (u.searchParams.get("id") || "").trim().toLowerCase();
+    return id || "";
   }
 
-  function loadNum(key, def) {
+  function getBet() {
+    const def = C().BET.def;
     try {
-      const v = localStorage.getItem(key);
-      if (v == null) return def;
-      const n = Number(v);
-      return Number.isFinite(n) ? n : def;
+      const v = Number(localStorage.getItem(C().STORAGE_KEYS.bet));
+      if (Number.isFinite(v)) return clamp(v, C().BET.min, C().BET.max);
+    } catch (_) {}
+    return def;
+  }
+
+  function setBet(v) {
+    const n = clamp(Math.round(v), C().BET.min, C().BET.max);
+    SLOT.ui.setBet(n);
+    try { localStorage.setItem(C().STORAGE_KEYS.bet, String(n)); } catch (_) {}
+    return n;
+  }
+
+  function getAutoOn() {
+    try { return localStorage.getItem(C().STORAGE_KEYS.auto) === "1"; }
+    catch (_) { return false; }
+  }
+  function setAutoOn(v) {
+    const on = !!v;
+    try { localStorage.setItem(C().STORAGE_KEYS.auto, on ? "1" : "0"); } catch (_) {}
+    return on;
+  }
+
+  // ✅ 자정까지 유지되는 잭팟 배너
+  function nextMidnightTs() {
+    const d = new Date();
+    d.setHours(24, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function saveBanner(text) {
+    const payload = { text, expiresAt: nextMidnightTs() };
+    try { localStorage.setItem(C().STORAGE_KEYS.banner, JSON.stringify(payload)); } catch (_) {}
+  }
+
+  function loadBanner() {
+    try {
+      const raw = localStorage.getItem(C().STORAGE_KEYS.banner);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.text || !obj.expiresAt) return null;
+      if (Date.now() > Number(obj.expiresAt)) return null;
+      return obj;
     } catch (_) {
-      return def;
+      return null;
     }
   }
 
-  function saveNum(key, n) {
-    try { localStorage.setItem(key, String(n)); } catch (_) {}
-  }
+  async function boot() {
+    SLOT.ui.init();
 
-  const keyBet = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.bet;
-  const keyAuto = cfg.STORAGE_KEYS && cfg.STORAGE_KEYS.auto;
+    const id = getIdFromUrl();
+    if (!id) {
+      SLOT.ui.showLoginOverlay(true);
+      return;
+    }
+    SLOT.ui.showLoginOverlay(false);
 
-  SLOT.app = {
-    state: {
-      id: "",
-      bet: loadNum(keyBet, (cfg.BET && cfg.BET.def) || 10),
-      auto: (function(){
-        try { return (localStorage.getItem(keyAuto) === "1"); } catch(_) { return false; }
-      })(),
-      spinning: false,
-      timer: null
-    },
+    // 버튼 라벨 초기화
+    const els = SLOT.ui.els();
+    els.autoBtn.textContent = getAutoOn() ? "AUTO ON" : "AUTO OFF";
+    els.soundBtn.textContent = SLOT.audio.getSoundOn() ? "SOUND ON" : "SOUND OFF";
 
-    async boot() {
-      SLOT.ui.init();
-      SLOT.ui.loadPersistedBanner();
+    // 베팅값 복원
+    let bet = setBet(getBet());
 
-      // SCRIPT_URL 확인
-      if (!cfg.SCRIPT_URL || !String(cfg.SCRIPT_URL).includes("/exec")) {
-        SLOT.ui.showOverlayConfigMissing();
-        return;
-      }
+    // 잭팟 배너 복원
+    const banner = loadBanner();
+    if (banner) SLOT.ui.showJackpotBanner(banner.text);
 
-      const id = (qs().get("id") || "").trim().toLowerCase();
-      if (!id) {
-        SLOT.ui.showLoginOverlayMissingId();
-        return;
-      }
+    // 슬롯 상태 불러오기
+    try {
+      SLOT.ui.setLastResult("LOADING...");
+      const state = await SLOT.api.getSlotState(id);
+      if (!state?.ok) throw new Error(state?.error || "getSlotState_failed");
 
-      this.state.id = id;
-      SLOT.ui.hideOverlay();
-
-      // bet 세팅
-      const betMin = (cfg.BET && cfg.BET.min) || 10;
-      const betMax = (cfg.BET && cfg.BET.max) || 1000;
-      const betStep = (cfg.BET && cfg.BET.step) || 5;
-
-      this.state.bet = clamp(this.state.bet, betMin, betMax);
-      // step 정렬(원치 않으면 제거 가능)
-      this.state.bet = Math.round(this.state.bet / betStep) * betStep;
-
-      SLOT.ui.setBet(this.state.bet);
+      const user = state.user || {};
+      SLOT.ui.setPlayer(user.name || user.nickname || id);
+      SLOT.ui.setWallet(user.balance ?? 0);
+      SLOT.ui.setJackpotPool(state.jackpotTotal ?? 0);
       SLOT.ui.setLastResult("READY");
+    } catch (e) {
+      SLOT.ui.setLastResult(`ERROR: ${e.message}`);
+      return;
+    }
 
-      // 버튼 바인딩
-      this.bindControls();
+    // 베팅 버튼
+    els.betDown.addEventListener("click", () => {
+      bet = setBet(bet - C().BET.step);
+    });
+    els.betUp.addEventListener("click", () => {
+      bet = setBet(bet + C().BET.step);
+    });
 
-      // 상태 로드
-      await this.refreshState();
+    // 오토
+    els.autoBtn.addEventListener("click", () => {
+      const on = setAutoOn(!getAutoOn());
+      els.autoBtn.textContent = on ? "AUTO ON" : "AUTO OFF";
+    });
 
-      // auto 복구
-      this.updateAutoUi();
-      if (this.state.auto) this.startAuto();
-    },
+    // 사운드
+    els.soundBtn.addEventListener("click", () => {
+      const on = SLOT.audio.setSoundOn(!SLOT.audio.getSoundOn());
+      els.soundBtn.textContent = on ? "SOUND ON" : "SOUND OFF";
+    });
 
-    bindControls() {
-      const betStep = (cfg.BET && cfg.BET.step) || 5;
-      const betMin = (cfg.BET && cfg.BET.min) || 10;
-      const betMax = (cfg.BET && cfg.BET.max) || 1000;
+    // 스핀
+    let spinning = false;
 
-      const down = document.getElementById("betDown");
-      const up = document.getElementById("betUp");
-      const spin = document.getElementById("spinBtn");
-      const auto = document.getElementById("autoBtn");
-      const sound = document.getElementById("soundBtn");
-
-      if (down) down.addEventListener("click", () => {
-        this.state.bet = clamp(this.state.bet - betStep, betMin, betMax);
-        SLOT.ui.setBet(this.state.bet);
-        saveNum(keyBet, this.state.bet);
-      });
-
-      if (up) up.addEventListener("click", () => {
-        this.state.bet = clamp(this.state.bet + betStep, betMin, betMax);
-        SLOT.ui.setBet(this.state.bet);
-        saveNum(keyBet, this.state.bet);
-      });
-
-      if (spin) spin.addEventListener("click", () => this.spinOnce());
-
-      if (auto) auto.addEventListener("click", () => {
-        this.state.auto = !this.state.auto;
-        try { localStorage.setItem(keyAuto, this.state.auto ? "1" : "0"); } catch(_) {}
-        this.updateAutoUi();
-        if (this.state.auto) this.startAuto();
-        else this.stopAuto();
-      });
-
-      if (sound) {
-        // 초기 표시
-        sound.textContent = (SLOT.audio && SLOT.audio.isOn) ? "SOUND ON" : "SOUND OFF";
-        sound.addEventListener("click", () => {
-          const on = SLOT.audio.toggle();
-          sound.textContent = on ? "SOUND ON" : "SOUND OFF";
-        });
-      }
-    },
-
-    updateAutoUi() {
-      const auto = document.getElementById("autoBtn");
-      if (auto) auto.textContent = this.state.auto ? "AUTO ON" : "AUTO OFF";
-    },
-
-    startAuto() {
-      if (this.state.timer) return;
-      this.state.timer = setInterval(() => {
-        // 너무 빨리 돌리면 서버/시트 부담. 1.2초 텀
-        this.spinOnce();
-      }, 1200);
-    },
-
-    stopAuto() {
-      if (!this.state.timer) return;
-      clearInterval(this.state.timer);
-      this.state.timer = null;
-    },
-
-    async refreshState() {
-      const res = await SLOT.api.getSlotState(this.state.id);
-      if (!res || !res.ok) {
-        console.error("[SLOT] getSlotState failed:", res);
-        // UI에 에러문구 박지 말고 READY 유지
-        SLOT.ui.setLastResult("READY");
-        return;
-      }
-
-      const u = res.user || {};
-      SLOT.ui.setPlayer(u.nickname || u.name || u.id || "-");
-      SLOT.ui.setWallet(u.balance || 0);
-      SLOT.ui.setJackpotPool(res.jackpotTotal || 0);
-      SLOT.ui.setLastResult("READY");
-    },
-
-    async spinOnce() {
-      if (this.state.spinning) return;
-      this.state.spinning = true;
+    async function doSpinOnce() {
+      if (spinning) return;
+      spinning = true;
+      SLOT.ui.setButtonsEnabled(false);
+      SLOT.ui.setLastResult("SPINNING...");
 
       try {
-        SLOT.ui.setLastResult("SPINNING...");
-
-        const res = await SLOT.api.slotSpin(this.state.id, this.state.bet);
-        if (!res || !res.ok) {
-          console.error("[SLOT] slotSpin failed:", res);
-          SLOT.ui.setLastResult("READY");
-          return;
-        }
+        const res = await SLOT.api.slotSpin(id, bet);
+        if (!res?.ok) throw new Error(res?.error || "slotSpin_failed");
 
         const spin = res.spin || {};
         const user = res.user || {};
 
-        SLOT.ui.setWallet(user.balance || 0);
-        SLOT.ui.setJackpotPool(res.jackpotTotal || 0);
+        // ✅ 스핀 애니메이션(배경 동기화 포함)
+        await SLOT.game.animateSpin(spin.keys, C().SPIN.durationMs);
 
-        // 결과 문구(원하면 더 세분화 가능)
-        let msg = "READY";
-        if (spin.kind === "lose") msg = "LOSE";
-        else if (spin.kind === "even") msg = "EVEN";
-        else if (spin.kind === "win3") msg = `WIN (x3) +${spin.netDelta || 0}`;
-        else if (spin.kind === "win4") msg = `WIN (x10) +${spin.netDelta || 0}`;
-        else if (spin.kind === "mega") msg = `MEGA (x25) +${spin.netDelta || 0}`;
-        else if (spin.kind === "jackpot") msg = `JACKPOT +${spin.netDelta || 0}`;
+        // UI 업데이트
+        SLOT.ui.setWallet(user.balance ?? 0);
+        SLOT.ui.setJackpotPool(res.jackpotTotal ?? 0);
 
-        SLOT.ui.setLastResult(msg);
+        const kind = String(spin.kind || "");
+        const payout = spin.payout ?? 0;
+        const fee = spin.fee ?? 0;
+        const net = spin.netDelta ?? 0;
 
-        // 그리드 반영
-        if (Array.isArray(spin.keys)) {
-          SLOT.game.applySpin(spin.keys);
+        SLOT.ui.setLastResult(`${kind.toUpperCase()} | payout ${payout} | fee ${fee} | net ${net}`);
+
+        // ✅ 잭팟이면 티커(자정까지 유지)
+        if (kind === "jackpot") {
+          // 이름은 화면 PLAYER 기준(운영자 요구 문구)
+          const playerText = SLOT.ui.els().playerName.textContent || "플레이어";
+          const text = `${playerText}님이 잭팟이 터지셨습니다. 축하드립니다.`;
+          saveBanner(text);
+          SLOT.ui.showJackpotBanner(text);
         }
-
-        // 잭팟 배너(자정까지 유지)
-        if (spin.kind === "jackpot") {
-          const player = document.getElementById("playerName")?.textContent || this.state.id;
-          const bannerMsg = `${player}님이 잭팟이 터지셨습니다. 축하드립니다.`;
-          SLOT.ui.showBanner(bannerMsg);
-          SLOT.ui.persistBannerUntilMidnight(bannerMsg);
-        }
+      } catch (e) {
+        SLOT.ui.setLastResult(`ERROR: ${e.message}`);
       } finally {
-        this.state.spinning = false;
+        SLOT.ui.setButtonsEnabled(true);
+        spinning = false;
+      }
+
+      // AUTO면 다음 스핀
+      if (getAutoOn()) {
+        setTimeout(() => { doSpinOnce(); }, 250);
       }
     }
-  };
+
+    els.spinBtn.addEventListener("click", doSpinOnce);
+  }
+
+  SLOT.app = { boot };
 })();
