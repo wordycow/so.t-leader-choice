@@ -33,7 +33,7 @@ let els = {};
 const audios = {};
 
 async function init() {
-    console.log("SLOT ENGINE: V6 FINAL - REAL AUTO");
+    console.log("SLOT ENGINE: V6 FINAL STARTED");
 
     els = {
         bg: document.getElementById('game-bg'),
@@ -88,22 +88,25 @@ async function init() {
 
 function toggleSound() {
     state.audioEnabled = !state.audioEnabled;
-    els.btnSound.innerText = state.audioEnabled ? "🔊 ON" : "🔇 OFF";
-    els.btnSound.classList.toggle("active", state.audioEnabled);
+    if(els.btnSound) {
+        els.btnSound.innerText = state.audioEnabled ? "🔊 ON" : "🔇 OFF";
+        els.btnSound.classList.toggle("active", state.audioEnabled);
+    }
 }
 
 function toggleAuto() {
     state.isAuto = !state.isAuto;
     updateAutoBtn();
-    // 오토를 켰는데 현재 멈춰있다면 바로 시작
     if (state.isAuto && !state.isSpinning) {
         onSpinClick();
     }
 }
 
 function updateAutoBtn() {
-    els.btnAuto.innerText = state.isAuto ? "AUTO ON" : "AUTO OFF";
-    els.btnAuto.classList.toggle("active", state.isAuto);
+    if(els.btnAuto) {
+        els.btnAuto.innerText = state.isAuto ? "AUTO ON" : "AUTO OFF";
+        els.btnAuto.classList.toggle("active", state.isAuto);
+    }
 }
 
 function updateWinPanel(label, amount) {
@@ -217,16 +220,16 @@ async function onSpinClick() {
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // [중요] 스핀 전 리셋 (화면 깜빡임 없이 순간이동)
+    // [중요] 스핀 전 리셋
     strips.forEach((strip) => {
         strip.style.transition = 'none';
         strip.style.transform = 'translateY(0px)';
     });
-    void els.gameContainer.offsetWidth; // 리플로우 강제
+    void els.gameContainer.offsetWidth; // 리플로우
 
-    // 릴 순차 출발 (다다다닥)
+    // 순차 출발
     strips.forEach((strip, index) => {
-        const startDelay = index * 100; // 0.1초 간격
+        const startDelay = index * 100; 
         setTimeout(() => {
             strip.style.transition = `transform 4s linear`; 
             const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
@@ -265,7 +268,6 @@ function stopReelsWithResult(data) {
         if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`;
         if(symbols[STOP_INDEX + 2]) symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
 
-        // [중요] 릴 순차 정지 (0.6초 간격으로 탁... 탁...)
         const stopDelay = colIdx * 600; 
         
         setTimeout(() => {
@@ -347,8 +349,6 @@ function handleSpinEnd(data) {
     updateUI();
     updateTicker(data.jackpotTotal);
 
-    // [오토 스핀 로직]
-    // 절대 줄이지 않고, 모든 결과 확인 후 2초 뒤에 다음 스핀
     if (state.isAuto) {
         setTimeout(() => {
             if (state.isAuto && state.wallet >= state.bet) {
@@ -358,7 +358,7 @@ function handleSpinEnd(data) {
                 updateAutoBtn();
                 alert("잔액 부족으로 자동 스핀이 중지되었습니다.");
             }
-        }, 2000); // 2초 대기
+        }, 2000); 
     }
 }
 
