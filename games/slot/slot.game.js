@@ -27,43 +27,46 @@ let state = {
     id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, bgIntervalId: null, jackpotPool: 0   
 };
 
-// === DOM 요소 ===
-const els = {
-    bg: document.getElementById('game-bg'),
-    overlay: document.getElementById('start-overlay'),
-    reelsContainer: document.getElementById('reels-container'),
-    spinBtn: document.getElementById('btn-spin'),
-    walletSpan: document.getElementById('wallet-balance'),
-    betSpan: document.getElementById('current-bet'),
-    // [변경] 새 당첨 정보 패널 요소
-    winPanel: document.querySelector('.win-info-panel'),
-    winLabel: document.getElementById('win-label'),
-    winAmount: document.getElementById('win-amount'),
-    plus: document.getElementById('btn-bet-plus'),
-    minus: document.getElementById('btn-bet-minus'),
-    userId: document.getElementById('user-id'),
-    ticker: document.querySelector('.ticker-item'),
-    gameContainer: document.getElementById('game-container')
-};
+// === DOM 요소 (안전하게 로드) ===
+let els = {};
 
 const audios = {};
 
 // === 초기화 ===
 async function init() {
-    console.log("SLOT GAME LOADED: VERSION ULTRA 3D");
+    console.log("SLOT ENGINE: CYLINDER V2 STARTED");
+
+    // DOM 요소 바인딩
+    els = {
+        bg: document.getElementById('game-bg'),
+        overlay: document.getElementById('start-overlay'),
+        reelsContainer: document.getElementById('reels-container'),
+        spinBtn: document.getElementById('btn-spin'),
+        walletSpan: document.getElementById('wallet-balance'),
+        betSpan: document.getElementById('current-bet'),
+        winPanel: document.querySelector('.win-info-panel'), // 없을 수도 있음 대비
+        winLabel: document.getElementById('win-label'),
+        winAmount: document.getElementById('win-amount'),
+        plus: document.getElementById('btn-bet-plus'),
+        minus: document.getElementById('btn-bet-minus'),
+        userId: document.getElementById('user-id'),
+        ticker: document.querySelector('.ticker-item'),
+        gameContainer: document.getElementById('game-container')
+    };
 
     const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
     state.id = localId || new URLSearchParams(window.location.search).get('id');
 
     if (!state.id) {
-        els.userId.innerText = "GUEST";
-        els.spinBtn.disabled = true;
-        setWinDisplay("PLEASE LOGIN", "---");
+        if(els.userId) els.userId.innerText = "GUEST";
+        if(els.spinBtn) els.spinBtn.disabled = true;
+        updateWinPanel("PLEASE LOGIN", "---");
     } else {
-        els.userId.innerText = state.id;
+        if(els.userId) els.userId.innerText = state.id;
         await syncUserData();
     }
 
+    // 오디오 로드
     Object.keys(CONFIG.soundObj).forEach(key => {
         if (key !== 'path') {
             try {
@@ -76,24 +79,30 @@ async function init() {
 
     createReels(); 
 
-    els.overlay.addEventListener('click', unlockAudio);
-    els.spinBtn.addEventListener('click', onSpinClick);
-    els.plus.addEventListener('click', () => changeBet(10));
-    els.minus.addEventListener('click', () => changeBet(-10));
+    if(els.overlay) els.overlay.addEventListener('click', unlockAudio);
+    if(els.spinBtn) els.spinBtn.addEventListener('click', onSpinClick);
+    if(els.plus) els.plus.addEventListener('click', () => changeBet(10));
+    if(els.minus) els.minus.addEventListener('click', () => changeBet(-10));
 }
 
-// === [추가] 숫자 애니메이션 함수 (지갑용) ===
+// === 안전한 UI 업데이트 함수 (에러 방지용) ===
+function updateWinPanel(label, amount) {
+    if (els.winLabel) els.winLabel.innerText = label;
+    if (els.winAmount) els.winAmount.innerText = amount;
+}
+
+// === 숫자 애니메이션 ===
 function animateValue(obj, start, end, duration) {
+    if(!obj) return;
     let startTimestamp = null;
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        // 정수로 변환하여 표시 (toLocaleString으로 콤마 추가)
         obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString();
         if (progress < 1) {
             window.requestAnimationFrame(step);
         } else {
-            obj.innerText = end.toLocaleString(); // 최종값 보정
+            obj.innerText = end.toLocaleString();
         }
     };
     window.requestAnimationFrame(step);
@@ -102,31 +111,30 @@ function animateValue(obj, start, end, duration) {
 // === 유저 동기화 ===
 async function syncUserData(animate = false) {
     if (!state.id) return;
-    if(!animate) setWinDisplay("SYNCING...", "...");
+    if(!animate) updateWinPanel("SYNCING...", "...");
     try {
         const res = await jsonpRequest('getSlotState', { id: state.id });
         if (res.ok) {
             const newWallet = Number(res.user.balance);
             state.jackpotPool = Number(res.jackpotTotal);
             
-            // [변경] 지갑 숫자 애니메이션 적용
             if (animate && state.wallet !== newWallet) {
                 animateValue(els.walletSpan, state.wallet, newWallet, 1000);
             } else {
-                els.walletSpan.innerText = newWallet.toLocaleString();
+                if(els.walletSpan) els.walletSpan.innerText = newWallet.toLocaleString();
             }
-            state.wallet = newWallet; // 상태 업데이트
+            state.wallet = newWallet;
 
             updateUI();
             updateTicker(state.jackpotPool);
-            if(!animate) setWinDisplay("READY", "GOOD LUCK!");
-            els.spinBtn.disabled = false;
+            if(!animate) updateWinPanel("READY", "GOOD LUCK!");
+            if(els.spinBtn) els.spinBtn.disabled = false;
         } else {
-            setWinDisplay("ERROR", "USER NOT FOUND");
-            els.spinBtn.disabled = true;
+            updateWinPanel("ERROR", "USER NOT FOUND");
+            if(els.spinBtn) els.spinBtn.disabled = true;
         }
     } catch (e) {
-        setWinDisplay("ERROR", "NETWORK FAIL");
+        updateWinPanel("ERROR", "NETWORK FAIL");
     }
 }
 
@@ -150,6 +158,7 @@ function jsonpRequest(action, params = {}) {
 
 // === 게임 로직 ===
 function createReels() {
+    if(!els.reelsContainer) return;
     els.reelsContainer.innerHTML = '';
     for (let i = 0; i < CONFIG.reels; i++) {
         const reelDiv = document.createElement('div');
@@ -185,12 +194,11 @@ async function onSpinClick() {
 
     state.isSpinning = true;
     els.spinBtn.disabled = true;
-    setWinDisplay("SPINNING...", `BET: ${state.bet}`);
-    els.winPanel.classList.remove('jackpot-hit'); // 잭팟 효과 초기화
+    updateWinPanel("SPINNING...", `BET: ${state.bet}`);
     
-    // [변경] 베팅 차감 애니메이션 (현재 잔액 -> 베팅 후 잔액)
+    // 베팅 차감 애니메이션
     animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500);
-    state.wallet -= state.bet; // 즉시 차감 반영
+    state.wallet -= state.bet; 
 
     if(state.audioEnabled) {
         audios.btn.play();
@@ -207,7 +215,6 @@ async function onSpinClick() {
         strip.style.transition = `transform 2.5s linear`; 
         const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
         strip.style.transform = `translateY(${targetY}px)`; 
-        // [변경] 블러를 8px에서 4px로 줄여서 덜 흐릿하게
         strip.style.filter = 'blur(4px)'; 
     });
 
@@ -221,13 +228,13 @@ async function onSpinClick() {
         audios.spin.pause();
         state.isSpinning = false;
         els.spinBtn.disabled = false;
-        setWinDisplay("ERROR", "TRY AGAIN");
+        updateWinPanel("ERROR", "TRY AGAIN");
         strips.forEach(strip => {
              strip.style.transition = 'none';
              strip.style.transform = 'translateY(0)';
              strip.style.filter = 'none';
         });
-        syncUserData(true); // 에러 시 잔액 복구 애니메이션
+        syncUserData(true);
     }
 }
 
@@ -260,10 +267,12 @@ function stopReelsWithResult(data) {
                 stopSound.play();
             }
 
-            // 마지막 릴 멈출 때 타격감
+            // 타격감 (화면 흔들림)
             if (colIdx === CONFIG.reels - 1) {
-                els.gameContainer.classList.add('shake-hard');
-                setTimeout(() => els.gameContainer.classList.remove('shake-hard'), 500);
+                if(els.gameContainer) {
+                    els.gameContainer.classList.add('shake');
+                    setTimeout(() => els.gameContainer.classList.remove('shake'), 500);
+                }
             }
         }, 500 + delay); 
     });
@@ -285,37 +294,32 @@ function handleSpinEnd(data) {
     const newWallet = data.user.balance;
     state.jackpotPool = data.jackpotTotal;
 
-    // [변경] 지갑 잔액 증가 애니메이션 (당첨금 수령)
+    // 지갑 증가 애니메이션
     if (newWallet > oldWallet) {
-        animateValue(els.walletSpan, oldWallet, newWallet, 1500); // 1.5초 동안 증가
+        animateValue(els.walletSpan, oldWallet, newWallet, 1500);
     } else {
-        els.walletSpan.innerText = newWallet.toLocaleString();
+        if(els.walletSpan) els.walletSpan.innerText = newWallet.toLocaleString();
     }
     state.wallet = newWallet;
 
     let sound = audios.lose;
-    let labelText = "NO WIN";
-    let amountText = "TRY AGAIN";
+    let labelText = "RESULT";
+    let amountText = "NO WIN";
 
     if (spin.kind === "lose") {
-        labelText = "RESULT";
+        labelText = "TRY AGAIN";
         amountText = "NO WIN";
     } else {
         const payout = spin.payout;
-        const netWin = spin.netDelta + state.bet; // 순수익 + 베팅원금
-
         if (spin.kind === "even") {
             labelText = "EVEN! (+1 BONUS)";
             amountText = `+${payout.toLocaleString()} UT`;
             sound = audios.win;
         } else if (spin.kind === "jackpot") {
-            // [요청 반영] 잭팟 시 "얼마 터졌다" 명확히 표시
             labelText = "★ JACKPOT HIT! ★";
             amountText = `+${payout.toLocaleString()} UT`;
             sound = audios.jackpot;
-            els.winPanel.classList.add('jackpot-hit'); // 잭팟 전용 스타일 추가
         } else {
-            // win3, win4, mega
             const multiplier = spin.kind === 'win3' ? '3X' : spin.kind === 'win4' ? '10X' : '25X';
             labelText = `${multiplier} BIG WIN!`;
             amountText = `+${payout.toLocaleString()} UT`;
@@ -323,7 +327,7 @@ function handleSpinEnd(data) {
         }
     }
 
-    setWinDisplay(labelText, amountText); // 하단 패널 업데이트
+    updateWinPanel(labelText, amountText);
 
     if (spin.payout > 0 && state.audioEnabled) {
         sound.currentTime = 0;
@@ -344,34 +348,27 @@ function handleSpinEnd(data) {
 }
 
 // === 유틸리티 ===
-// [추가] 하단 당첨 정보 패널 업데이트 함수
-function setWinDisplay(label, amount) {
-    els.winLabel.innerText = label;
-    els.winAmount.innerText = amount;
-}
-
 function startBgEffect() {
     let idx = 0;
     state.bgIntervalId = setInterval(() => {
         idx = (idx + 1) % CONFIG.imgObj.bg.length;
-        els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[idx]}')`;
+        if(els.bg) els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[idx]}')`;
     }, CONFIG.bgIntervalTime);
 }
 
 function stopBgEffect() {
     clearInterval(state.bgIntervalId);
-    els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`;
+    if(els.bg) els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`;
 }
 
 function unlockAudio() {
-    els.overlay.style.display = 'none';
+    if(els.overlay) els.overlay.style.display = 'none';
     state.audioEnabled = true;
     audios.btn.play().catch(()=>{}); 
 }
 
 function updateUI() {
-    // els.walletSpan.innerText는 animateValue가 처리하므로 여기선 제외
-    els.betSpan.innerText = state.bet.toLocaleString();
+    if(els.betSpan) els.betSpan.innerText = state.bet.toLocaleString();
 }
 
 function updateTicker(jackpotAmount) {
