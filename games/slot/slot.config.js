@@ -58,7 +58,7 @@
       "3연속: WIN(3x)",
       "4연속: WIN(10x)",
       "5연속: MEGA(25x)",
-      "JACKPOT: 운영자 지정(잭팟풀 지급)",
+      "JACKPOT: 잭팟풀 지급",
     ],
 
     STORAGE_KEYS: {
