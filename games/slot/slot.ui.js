@@ -1,237 +1,157 @@
 (function () {
-  const S = (window.S = window.S || {});
-  S.ui = S.ui || {};
+  window.SLOT = window.SLOT || {};
+  const { ASSET, SYMBOLS } = window.SLOT.config;
 
-  const els = {};
-  let bgTimer = null;
-  let bgIndex = 0;
-
-  function $(id) { return document.getElementById(id); }
-
-  function fmt(n) {
-    const x = Number(n || 0);
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+  function round2(n){ return Math.round(n*100)/100; }
+  function fmt(n){
+    const x = Number(n||0);
     if (!Number.isFinite(x)) return "0";
-    return x.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
+    return (Math.round(x*100)/100).toString();
   }
 
-  function init() {
-    els.bg = $("bgCycle");
+  const UI = {
+    el: null,
+    cells: [],
+    gridKeys: [],
+    init() {
+      this.el = {
+        bgA: document.getElementById("bgA"),
+        bgB: document.getElementById("bgB"),
+        bgFlash: document.getElementById("bgFlash"),
 
-    els.ticker = $("jackpotTicker");
-    els.tickerTrack = $("jackpotTickerTrack");
+        payCard: document.getElementById("payCard"),
+        payToggle: document.getElementById("payToggle"),
+        payList: document.getElementById("payList"),
+        slotGrid: document.getElementById("slotGrid"),
 
-    els.player = $("uiPlayer");
-    els.wallet = $("uiWallet");
-    els.jackpot = $("uiJackpot");
-    els.result = $("uiResult");
-    els.bet = $("uiBet");
+        dotLogin: document.getElementById("dotLogin"),
+        playerName: document.getElementById("playerName"),
+        wallet: document.getElementById("wallet"),
+        jackpot: document.getElementById("jackpot"),
+        lastResult: document.getElementById("lastResult"),
 
-    els.btnSpin = $("btnSpin");
-    els.btnAuto = $("btnAuto");
-    els.btnSound = $("btnSound");
-    els.btnMinus = $("btnBetMinus");
-    els.btnPlus = $("btnBetPlus");
-    els.btnPayToggle = $("btnPayToggle");
+        bet: document.getElementById("bet"),
+        betDown: document.getElementById("betDown"),
+        betUp: document.getElementById("betUp"),
 
-    els.payBody = $("paytableBody");
-    els.grid = $("slotGrid");
+        autoBtn: document.getElementById("autoBtn"),
+        soundBtn: document.getElementById("soundBtn"),
+        spinBtn: document.getElementById("spinBtn"),
 
-    els.celebrate = $("celebrate");
-    els.celebrateTitle = $("celebrateTitle");
-    els.celebrateAmount = $("celebrateAmount");
-    els.celebrateSub = $("celebrateSub");
-    els.btnCelebrateClose = $("btnCelebrateClose");
+        banner: document.getElementById("jackpotBanner"),
+        bannerText: document.getElementById("jackpotText"),
 
-    ensureGridDOM();
-    restoreTickerIfAny();
-    setBgStatic();
-  }
+        floatWin: document.getElementById("floatWin"),
+        overlay: document.getElementById("overlay"),
+      };
+    },
 
-  function ensureGridDOM() {
-    if (!els.grid) return;
-    if (els.grid.querySelectorAll(".cell").length) return;
+    setLast(msg){ this.el.lastResult.textContent = msg; },
+    showOverlay(on){ this.el.overlay.classList.toggle("on", !!on); },
 
-    const rows = S.CONFIG.ROWS || 3;
-    const cols = S.CONFIG.COLS || 5;
+    toast(text){
+      const el = this.el.floatWin;
+      el.textContent = text;
+      el.classList.remove("on");
+      void el.offsetWidth;
+      el.classList.add("on");
+    },
 
-    const frag = document.createDocumentFragment();
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        const img = document.createElement("img");
-        img.className = "sym";
-        img.alt = "";
-        img.loading = "eager";
-        img.decoding = "async";
-        img.dataset.pos = `${r}-${c}`;
-        cell.appendChild(img);
-        frag.appendChild(cell);
+    animateNumber(node, from, to, ms=650){
+      from = Number(from||0); to = Number(to||0);
+      const t0 = performance.now();
+      const self = this;
+      function step(t){
+        const p = clamp((t - t0) / ms, 0, 1);
+        const e = 1 - Math.pow(1-p, 3);
+        const v = from + (to-from) * e;
+        node.textContent = fmt(round2(v));
+        if (p < 1) requestAnimationFrame(step);
       }
-    }
-    els.grid.appendChild(frag);
-  }
+      requestAnimationFrame(step);
+    },
 
-  function renderGrid(gridIds) {
-    if (!els.grid) return;
-    const imgs = els.grid.querySelectorAll("img.sym");
-    for (let i = 0; i < imgs.length; i++) {
-      const id = gridIds[i] || "star1";
-      imgs[i].src = `${S.CONFIG.IMG_DIR}/${id}.png`;
-    }
-  }
+    renderPaytable(){
+      this.el.payList.innerHTML = "";
+      for (const s of SYMBOLS){
+        const row = document.createElement("div");
+        row.className = "pay-item";
+        row.innerHTML = `
+          <img src="${ASSET.imgBase + s.img}" alt="${s.key}" onerror="this.style.display='none'">
+          <div class="meta">
+            <div class="name">${s.label}</div>
+            <div class="rule">2연속: EVEN(±0) / 3연속: x${s.pay[3]} / 4연속: x${s.pay[4]} / 5연속: x${s.pay[5]} (JACKPOT)</div>
+          </div>
+        `;
+        this.el.payList.appendChild(row);
+      }
+    },
 
-  function setPlayer(name) { if (els.player) els.player.textContent = name || "-"; }
-  function setWallet(v) { if (els.wallet) els.wallet.textContent = fmt(v); }
-  function setJackpot(v) { if (els.jackpot) els.jackpot.textContent = fmt(v); }
-  function setResult(t) { if (els.result) els.result.textContent = t || "READY"; }
-  function setBet(v) { if (els.bet) els.bet.textContent = fmt(v); }
+    makeGrid(){
+      this.el.slotGrid.innerHTML = "";
+      this.cells = [];
+      for (let i=0;i<15;i++){
+        const c = document.createElement("div");
+        c.className = "cell";
+        c.innerHTML = `<img alt="slot" />`;
+        this.el.slotGrid.appendChild(c);
+        this.cells.push(c);
+      }
+    },
 
-  // ✅ 이전 코드 호환(에러났던 부분)
-  function setWalletUT(v) { setWallet(v); }
+    setGrid(keys){
+      this.gridKeys = keys.slice();
+      for (let i=0;i<15;i++){
+        const k = keys[i];
+        const sym = SYMBOLS.find(x=>x.key===k) || SYMBOLS[0];
+        const img = this.cells[i].querySelector("img");
+        img.src = ASSET.imgBase + sym.img;
+        img.onerror = ()=>{ img.style.display="none"; };
+        img.style.display="block";
+      }
+    },
 
-  function setSpinEnabled(on) {
-    if (els.btnSpin) els.btnSpin.disabled = !on;
-  }
+    flashCells(on){
+      this.cells.forEach(c => c.classList.toggle("flash", !!on));
+    },
 
-  function setAutoLabel(on) {
-    if (els.btnAuto) els.btnAuto.textContent = on ? "AUTO ON" : "AUTO OFF";
-  }
+    // ✅ 배경 교체(두 레이어 크로스페이드)
+    bg: {
+      side: "A",
+      set(url){
+        const ui = UI;
+        const a = ui.el.bgA, b = ui.el.bgB;
+        if (!a || !b) return;
 
-  function setSoundLabel(on) {
-    if (els.btnSound) els.btnSound.textContent = on ? "SOUND ON" : "SOUND OFF";
-  }
+        if (this.side === "A") {
+          b.style.backgroundImage = `url("${url}")`;
+          b.classList.add("on");
+          a.classList.remove("on");
+          this.side = "B";
+        } else {
+          a.style.backgroundImage = `url("${url}")`;
+          a.classList.add("on");
+          b.classList.remove("on");
+          this.side = "A";
+        }
+      },
+      flash(on){
+        const ui = UI;
+        if (!ui.el.bgFlash) return;
+        ui.el.bgFlash.classList.toggle("on", !!on);
+      }
+    },
 
-  function setBgStatic() {
-    if (!els.bg) return;
-    els.bg.style.backgroundImage = `url("${S.CONFIG.BG_LIST?.[0] || ""}")`;
-    els.bg.classList.remove("spinning");
-  }
+    setBanner(msg){
+      this.el.bannerText.textContent = msg;
+      this.el.banner.classList.add("on");
+    },
+    hideBanner(){
+      this.el.banner.classList.remove("on");
+    },
+  };
 
-  function startBgCycle() {
-    if (!els.bg) return;
-    stopBgCycle();
-    els.bg.classList.add("spinning");
-    const list = S.CONFIG.BG_LIST || [];
-    if (!list.length) return;
-
-    bgTimer = setInterval(() => {
-      bgIndex = (bgIndex + 1) % list.length;
-      els.bg.style.backgroundImage = `url("${list[bgIndex]}")`;
-    }, 120);
-  }
-
-  function stopBgCycle() {
-    if (bgTimer) clearInterval(bgTimer);
-    bgTimer = null;
-    bgIndex = 0;
-    setBgStatic();
-  }
-
-  function animateNumber(el, from, to, ms) {
-    if (!el) return;
-    const a = Number(from || 0);
-    const b = Number(to || 0);
-    const start = performance.now();
-    const dur = Math.max(250, ms || 700);
-
-    function step(now) {
-      const t = Math.min(1, (now - start) / dur);
-      const v = a + (b - a) * t;
-      el.textContent = fmt(v);
-      if (t < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  function showCelebrate({ title, amount, sub, ms = 60000 }) {
-    if (!els.celebrate) return;
-    els.celebrateTitle.textContent = title || "WIN!";
-    els.celebrateSub.textContent = sub || "축하드립니다.";
-    els.celebrateAmount.textContent = "0";
-    els.celebrate.classList.remove("hidden");
-
-    // 금액 카운트업
-    animateNumber(els.celebrateAmount, 0, amount || 0, 1200);
-
-    // 자동 종료(기본 60초)
-    const t = setTimeout(() => hideCelebrate(), ms);
-
-    const close = () => { clearTimeout(t); hideCelebrate(); };
-    els.btnCelebrateClose.onclick = close;
-  }
-
-  function hideCelebrate() {
-    if (!els.celebrate) return;
-    els.celebrate.classList.add("hidden");
-  }
-
-  function setTicker(message, untilTs) {
-    if (!els.ticker || !els.tickerTrack) return;
-    if (!message) return;
-
-    els.tickerTrack.textContent = message;
-    els.ticker.classList.remove("hidden");
-
-    try {
-      localStorage.setItem("slot_jackpot_ticker", JSON.stringify({ message, untilTs }));
-    } catch (_) {}
-  }
-
-  function clearTicker() {
-    if (!els.ticker) return;
-    els.ticker.classList.add("hidden");
-    try { localStorage.removeItem("slot_jackpot_ticker"); } catch (_) {}
-  }
-
-  function restoreTickerIfAny() {
-    try {
-      const raw = localStorage.getItem("slot_jackpot_ticker");
-      if (!raw) return;
-      const o = JSON.parse(raw);
-      if (!o?.message || !o?.untilTs) return;
-      if (Date.now() > Number(o.untilTs)) { clearTicker(); return; }
-      setTicker(o.message, o.untilTs);
-    } catch (_) {}
-  }
-
-  function midnightKSTTs() {
-    const now = new Date();
-    // KST 기준 자정
-    const kst = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    const y = kst.getFullYear();
-    const m = kst.getMonth();
-    const d = kst.getDate();
-    const next = new Date(Date.UTC(y, m, d + 1, 0, 0, 0)); // 대충 UTC 기준 만들고
-    // 다시 KST로 맞추는 보정은 localStorage expiry 용도로만 쓰니 이 정도면 충분
-    return next.getTime();
-  }
-
-  function jackpotTickerFor(name) {
-    const msg = `${name}님이 잭팟이 터지셨습니다. 축하드립니다.`;
-    setTicker(msg, midnightKSTTs());
-  }
-
-  S.ui.init = init;
-  S.ui.renderGrid = renderGrid;
-
-  S.ui.setPlayer = setPlayer;
-  S.ui.setWallet = setWallet;
-  S.ui.setWalletUT = setWalletUT; // 호환
-  S.ui.setJackpot = setJackpot;
-  S.ui.setResult = setResult;
-  S.ui.setBet = setBet;
-
-  S.ui.setSpinEnabled = setSpinEnabled;
-  S.ui.setAutoLabel = setAutoLabel;
-  S.ui.setSoundLabel = setSoundLabel;
-
-  S.ui.startBgCycle = startBgCycle;
-  S.ui.stopBgCycle = stopBgCycle;
-
-  S.ui.animateWallet = (from, to, ms) => animateNumber(els.wallet, from, to, ms);
-  S.ui.animateJackpot = (from, to, ms) => animateNumber(els.jackpot, from, to, ms);
-
-  S.ui.showCelebrate = showCelebrate;
-  S.ui.jackpotTickerFor = jackpotTickerFor;
+  window.SLOT.ui = UI;
 })();
