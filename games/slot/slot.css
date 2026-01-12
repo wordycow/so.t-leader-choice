@@ -1,4 +1,4 @@
-/* === 전체 설정 === */
+/* === 전체 폰트 및 기본 설정 === */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 :root {
@@ -17,15 +17,13 @@ body {
     display: flex; justify-content: center; align-items: center;
 }
 
-/* 배경: 스핀 중 화려하게 변하는 것이 슬롯 뒤로 비쳐야 함 */
 #game-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover; background-position: center; z-index: -2;
-    /* 배경이 너무 밝으면 심볼이 안 보이므로 적당히 어둡게 */
-    filter: brightness(0.6) contrast(1.1); 
+    /* 배경이 슬롯 뒤로 비쳐 보이려면 너무 어두우면 안됨. 밝기 적절히 조절 */
+    filter: brightness(0.8) contrast(1.2); 
 }
 
-/* 오버레이 */
 #start-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 9999;
@@ -63,14 +61,14 @@ body {
 .info-box { font-size: 1rem; font-weight: 700; }
 .wallet-info span { color: var(--neon-blue); }
 
-/* === [핵심] 3D 반투명 슬롯 프레임 === */
+/* === [핵심] 투명한 슬롯 프레임 === */
 .slot-machine-frame-outer {
     flex-grow: 1; 
-    /* 프레임 자체도 약간 투명하게 */
-    background: rgba(20, 20, 20, 0.85);
+    /* rgba의 마지막 숫자를 0.5로 낮춰 뒤가 훤히 비치게 함 */
+    background: rgba(10, 10, 15, 0.5); 
     border-radius: 20px; padding: 15px; position: relative;
-    border: 3px solid #333;
-    box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 30px #000;
+    border: 3px solid rgba(100,100,100,0.5);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
     display: flex; flex-direction: column; overflow: hidden;
 }
 
@@ -81,8 +79,8 @@ body {
 
 .slot-machine-frame-inner {
     flex-grow: 1; position: relative;
-    /* [중요] 릴 배경을 반투명 검정으로 설정 -> 뒤가 비침 */
-    background: rgba(0, 0, 0, 0.4);
+    /* 릴 컨테이너도 투명하게 */
+    background: rgba(0, 0, 0, 0.2); 
     border: 2px solid rgba(255,255,255,0.1);
     border-radius: 10px; overflow: hidden;
 }
@@ -91,37 +89,31 @@ body {
 
 .reel {
     width: 20%; height: 100%; position: relative;
-    /* 릴 구분선도 은은하게 */
-    border-right: 1px solid rgba(255,255,255,0.15);
+    border-right: 1px solid rgba(255,255,255,0.1);
 }
 .reel:last-child { border-right: none; }
 .reel-strip { width: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
 
-/* === [3D 원통 오버레이 수정] === */
-/* 가운데 부분을 완전히 투명하게 뚫어서 배경이 잘 보이게 함 */
 .cylinder-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 10;
+    /* 원통 느낌은 유지하되 가운데는 완전히 뚫어서 배경 보이게 */
     background: linear-gradient(
         180deg, 
-        rgba(0,0,0,0.9) 0%,     /* 위쪽 어둠 */
-        rgba(0,0,0,0.5) 15%, 
-        rgba(255,255,255,0) 40%, /* 완전 투명 (배경 보임) */
+        rgba(0,0,0,0.9) 0%,     
+        rgba(0,0,0,0.4) 15%, 
+        rgba(255,255,255,0) 40%, 
         rgba(255,255,255,0) 60%, 
-        rgba(0,0,0,0.5) 85%, 
-        rgba(0,0,0,0.9) 100%    /* 아래쪽 어둠 */
+        rgba(0,0,0,0.4) 85%, 
+        rgba(0,0,0,0.9) 100%    
     );
-    /* 양 옆에 살짝 그림자를 줘서 원통 굴곡 표현 */
-    box-shadow: inset 20px 0 20px rgba(0,0,0,0.3), inset -20px 0 20px rgba(0,0,0,0.3);
 }
 
-/* 심볼: 또렷하게 */
 .symbol {
     width: 100%; aspect-ratio: 1/1; display: block;
-    background-size: 80%; /* 여백 확보 */
+    background-size: 85%; /* 심볼 크기 */
     background-repeat: no-repeat; background-position: center;
-    /* 쨍한 느낌을 위해 필터 조정 */
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)) brightness(1.1);
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)) brightness(1.2);
 }
 
 .win-line {
