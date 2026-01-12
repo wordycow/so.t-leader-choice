@@ -43,7 +43,7 @@
     SYMBOL_MAP,
 
     PAYTABLE_TEXT: [
-      "2연속: EVEN(±0)",
+      "2연속: EVEN(±1)",
       "3연속: WIN(3x)",
       "4연속: WIN(10x)",
       "5연속: MEGA(25x)",
