@@ -6,13 +6,11 @@
     <title>THE UNIQUE SLOT</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
-        /* === [THE UNIQUE STYLE] === */
+        /* === [THE UNIQUE STYLE: 전기 네온 & 노 라인] === */
         :root {
             --gold: #ffcc00;
-            --gold-glow: #ffaa00;
             --neon-blue: #00f7ff;
-            --glass-black: rgba(0, 0, 0, 0.6);
-            --border-color: rgba(255, 204, 0, 0.3);
+            --glass-black: rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -23,14 +21,12 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 배경 */
         #game-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center; z-index: -2;
             filter: brightness(0.5);
         }
 
-        /* 메인 컨테이너 */
         #game-container {
             width: 100%; max-width: 600px; height: 100%;
             display: flex; flex-direction: column; justify-content: space-between;
@@ -40,62 +36,68 @@
         /* --- 상단 영역 --- */
         .top-section { margin-bottom: 5px; }
         
-        /* 로고 & 잭팟 */
         .header-panel {
             background: var(--glass-black);
             border: 2px solid var(--gold); border-radius: 15px;
             padding: 10px; text-align: center; margin-bottom: 5px;
             box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
         }
-        .brand-name {
-            font-size: 1.2rem; color: #fff; letter-spacing: 2px;
-            text-shadow: 0 0 5px var(--neon-blue); margin: 0;
-        }
+        .brand-name { font-size: 1.2rem; color: #fff; letter-spacing: 2px; margin: 0; }
         .jackpot-val {
             font-size: 2.2rem; font-weight: 900; color: var(--gold);
-            text-shadow: 0 0 15px var(--gold-glow); margin-top: 5px;
+            text-shadow: 0 0 15px var(--gold); margin-top: 5px;
         }
 
-        /* 정보창 (ID, 지갑) */
         .info-bar {
             display: flex; justify-content: space-between;
-            background: rgba(0,0,0,0.5); border: 1px solid #444;
+            background: rgba(0,0,0,0.6); border: 1px solid #444;
             padding: 8px 15px; border-radius: 10px;
         }
         .info-txt { font-size: 1rem; font-weight: bold; color: #ccc; }
         .money-txt { color: var(--gold); text-shadow: 0 0 5px var(--gold); }
 
-        /* --- 슬롯 머신 (투명) --- */
+        /* --- [수정] 슬롯 머신 프레임 (전기 효과 & 줄 제거) --- */
         .machine-frame {
             flex-grow: 1; position: relative;
-            background: rgba(0, 0, 0, 0.3); /* 반투명 */
-            border: 2px solid rgba(255,255,255,0.1); border-radius: 15px;
-            overflow: hidden; box-shadow: inset 0 0 30px #000;
+            background: rgba(0, 0, 0, 0.2); /* 투명도 높임 */
+            border-radius: 15px; overflow: hidden;
             margin: 5px 0;
+            /* 전기 흐르는 네온 효과 */
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue), inset 0 0 15px var(--neon-blue);
+            animation: electric-pulse 1.5s infinite alternate;
         }
+
+        @keyframes electric-pulse {
+            0% { box-shadow: 0 0 10px var(--neon-blue), inset 0 0 10px var(--neon-blue); border-color: var(--neon-blue); }
+            50% { box-shadow: 0 0 25px var(--neon-blue), inset 0 0 25px var(--neon-blue); border-color: #fff; } /* 하얗게 번쩍 */
+            100% { box-shadow: 0 0 10px var(--neon-blue), inset 0 0 10px var(--neon-blue); border-color: var(--neon-blue); }
+        }
+
         .reels-container { display: flex; width: 100%; height: 100%; }
-        .reel { width: 20%; height: 100%; border-right: 1px solid rgba(255,255,255,0.1); position: relative; }
-        .reel:last-child { border-right: none; }
+        
+        /* [수정] 릴 구분선 제거 (border-right 삭제) */
+        .reel { 
+            width: 20%; height: 100%; 
+            position: relative; 
+            /* border-right: 1px solid ... (삭제됨) */
+        }
+        
         .reel-strip { width: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
         
         .symbol {
             width: 100%; aspect-ratio: 1/1; display: block;
             background-size: 90%; background-repeat: no-repeat; background-position: center;
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.4)); /* 심볼 자체 발광 */
         }
         
-        /* 3D 원통 효과 */
-        .overlay-grad {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.8) 100%);
-        }
         .win-line {
             position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-            background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue);
-            z-index: 20; transform: translateY(-50%); opacity: 0.3;
+            background: var(--gold); box-shadow: 0 0 15px var(--gold);
+            z-index: 20; transform: translateY(-50%); display: none;
         }
 
-        /* --- 하단 컨트롤 패널 --- */
+        /* --- 하단 컨트롤 --- */
         .bottom-section { margin-top: 5px; }
 
         .msg-panel {
@@ -106,16 +108,16 @@
         }
         .msg-label { font-size: 0.8rem; color: #aaa; letter-spacing: 2px; }
         .msg-val { font-size: 1.5rem; font-weight: bold; color: #fff; }
-        .msg-val.win { color: var(--gold); text-shadow: 0 0 15px var(--gold); font-size: 1.8rem; }
+        .msg-val.win { color: var(--gold); text-shadow: 0 0 20px var(--gold); font-size: 2rem; }
 
         .control-bar {
             display: flex; justify-content: space-between; align-items: center;
             background: linear-gradient(180deg, #222, #111);
             border-top: 2px solid var(--gold); padding: 10px 15px;
-            border-radius: 15px 15px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            border-radius: 15px 15px 0 0;
         }
 
-        /* 버튼 스타일 통일 */
+        /* 버튼 디자인 */
         .btn-rect {
             background: #333; border: 1px solid #555; color: #ccc;
             font-family: 'Rajdhani', sans-serif; font-weight: bold;
@@ -124,15 +126,12 @@
         }
         .btn-rect:active { transform: scale(0.95); background: #444; }
 
-        /* 사운드 버튼 */
         .btn-sound { width: 60px; height: 50px; font-size: 0.8rem; flex-direction: column; line-height: 1.2; }
         .btn-sound.active { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(0, 247, 255, 0.1); }
 
-        /* 오토 버튼 */
         .btn-auto { width: 60px; height: 50px; font-size: 0.8rem; flex-direction: column; line-height: 1.2; }
         .btn-auto.active { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(0, 247, 255, 0.1); box-shadow: 0 0 10px var(--neon-blue); }
 
-        /* 베팅 그룹 */
         .bet-group { display: flex; align-items: center; gap: 5px; }
         .btn-bet { width: 40px; height: 40px; font-size: 1.2rem; background: #222; }
         .bet-display {
@@ -143,16 +142,14 @@
         .bet-title { font-size: 0.6rem; color: #666; }
         .bet-num { font-size: 1.1rem; font-weight: bold; color: var(--gold); }
 
-        /* 스핀 버튼 (제일 크게) */
         .btn-spin {
             width: 80px; height: 80px; border-radius: 50%;
             background: radial-gradient(circle, #ffcc00, #ff8800);
             border: 4px solid #fff; color: #4a3000;
             font-size: 1.5rem; font-weight: 900;
-            box-shadow: 0 0 20px var(--gold);
-            cursor: pointer; transition: 0.1s;
+            box-shadow: 0 0 20px var(--gold); cursor: pointer;
         }
-        .btn-spin:active { transform: scale(0.95); box-shadow: 0 0 10px var(--gold); }
+        .btn-spin:active { transform: scale(0.95); }
         .btn-spin:disabled { filter: grayscale(1); cursor: not-allowed; }
 
         /* 오버레이 */
@@ -167,10 +164,10 @@
             animation: blink 1s infinite; cursor: pointer; margin-top: 20px;
         }
         @keyframes blink { 50% { opacity: 0.3; } }
+        
         .shake-ani { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } }
 
-        /* 모바일 대응 */
         @media (max-width: 400px) {
             .control-bar { padding: 5px; gap: 5px; }
             .btn-sound, .btn-auto { width: 50px; height: 45px; font-size: 0.7rem; }
@@ -204,7 +201,6 @@
 
         <div class="machine-frame" id="machine-frame">
             <div class="reels-container" id="reels-container"></div>
-            <div class="overlay-grad"></div>
             <div class="win-line"></div>
         </div>
 
@@ -216,7 +212,6 @@
 
             <div class="control-bar">
                 <button id="btn-sound" class="btn-rect btn-sound">SOUND<br>OFF</button>
-                
                 <button id="btn-auto" class="btn-rect btn-auto">AUTO<br>OFF</button>
 
                 <div class="bet-group">
@@ -253,7 +248,7 @@
         let els = {}; const audios = {};
 
         async function init() {
-            console.log("THE UNIQUE SLOT: FINAL V10");
+            console.log("SLOT: NEON ELECTRIC & NO LINES");
             els = {
                 bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
                 reelsContainer: document.getElementById('reels-container'), machineFrame: document.getElementById('machine-frame'),
@@ -269,7 +264,7 @@
 
             if (!state.id) {
                 els.userId.innerText = "GUEST"; els.spinBtn.disabled = true;
-                updateWinPanel("LOGIN REQUIRED", "로그인이 필요합니다");
+                updateWinPanel("LOGIN REQUIRED", "로그인 필요");
             } else {
                 els.userId.innerText = state.id;
                 await syncUserData();
@@ -332,7 +327,7 @@
                 const reelDiv = document.createElement('div'); reelDiv.className = 'reel';
                 const stripDiv = document.createElement('div'); stripDiv.className = 'reel-strip';
                 let html = '';
-                // 꽉 채워진 슬롯: 위쪽에 심볼을 잔뜩 만들어둠
+                // [중요] 꽉 채워진 슬롯을 위해 충분한 심볼 생성
                 for(let j=0; j < CONFIG.dummySymbolCount; j++) html += `<div class="symbol" style="background-image: url('${CONFIG.imgObj.path}${getRandomSymbolName()}')"></div>`;
                 stripDiv.innerHTML = html; reelDiv.appendChild(stripDiv); els.reelsContainer.appendChild(reelDiv);
             }
@@ -340,7 +335,7 @@
         }
         function getRandomSymbolName() { return CONFIG.imgObj.symbols[Math.floor(Math.random() * CONFIG.imgObj.symbols.length)]; }
 
-        /* === [핵심] 위에서 아래로 꽂히는 스핀 === */
+        /* === [수정된 스핀 로직] 위에서 아래로 === */
         async function onSpinClick() {
             if (state.isSpinning) return;
             if (state.wallet < state.bet) { state.isAuto = false; updateAutoBtn(); alert("잔액 부족"); return; }
@@ -355,7 +350,7 @@
             const strips = document.querySelectorAll('.reel-strip');
             if(!CONFIG.symbolHeight) CONFIG.symbolHeight = document.querySelector('.symbol').offsetHeight;
 
-            // 1. 리셋: 모든 릴을 '위쪽(-Y)'으로 올려보냄
+            // 1. 리셋: 모든 릴을 '위쪽(-Y)'으로 올려보냄 (심볼이 가득 찬 상태)
             const startY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 5)); 
             strips.forEach((strip) => {
                 strip.style.transition = 'none';
@@ -363,19 +358,21 @@
             });
             void els.reelsContainer.offsetWidth; // Reflow
 
-            // 2. 출발: '아래쪽(0)'으로 빠르게 이동
+            // 2. 출발: '아래쪽(0)'으로 무한히 흐르는 애니메이션
+            // 60초 동안 아주 천천히 내려가게 해서 끊김 없이 계속 도는 것처럼 보이게 함
             strips.forEach((strip, index) => {
-                // 뒤로 갈수록 조금 더 늦게 출발하는 느낌 (폭포수)
+                const delay = index * 100; // 살짝 시차를 두고 출발
                 setTimeout(() => {
-                    strip.style.transition = `transform 2.5s linear`; // 끊김 없이 쭉 내려감
-                    strip.style.transform = `translateY(${-CONFIG.symbolHeight * 5}px)`; // 화면 근처까지 이동
-                }, index * 100);
+                    strip.style.transition = `transform 60s linear`; 
+                    strip.style.transform = `translateY(0px)`; 
+                }, delay);
             });
 
             // 3. 서버 요청
             try {
                 const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
                 if (!res.ok) throw new Error("Spin Failed");
+                // 4. 결과 도착 -> 순차 정지 시작
                 stopReelsWithResult(res);
             } catch (err) {
                 stopBgEffect(); audios.spin.pause(); state.isSpinning = false; els.spinBtn.disabled = false;
@@ -383,35 +380,44 @@
             }
         }
 
-        /* === [핵심] 순차 정지 & 사운드 싱크 === */
+        /* === [핵심] 순차 정지 (Ding... Ding... Ding...) === */
         function stopReelsWithResult(data) {
             const serverKeys = data.spin.keys;
             const strips = document.querySelectorAll('.reel-strip');
             
+            // 릴마다 하나씩 멈춤
             strips.forEach((strip, colIdx) => {
                 const symbols = strip.querySelectorAll('.symbol');
-                // 결과 심볼을 스트립 '맨 위(0,1,2)'에 심음
+                // 결과 심볼을 스트립 '맨 위(0,1,2)'에 심어둠
+                // (위에서 아래로 내려오고 있으므로, 멈출 때는 맨 위로 순간이동 후 안착)
                 symbols[0].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx]}.png')`;
                 symbols[1].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 5]}.png')`;
                 symbols[2].style.backgroundImage = `url('${CONFIG.imgObj.path}${serverKeys[colIdx + 10]}.png')`;
 
-                // 릴마다 0.4초 간격으로 탁! 탁! 탁!
-                const stopDelay = 1500 + (colIdx * 400); 
+                // [중요] 릴마다 0.6초씩 시차를 두고 멈춤
+                // 결과가 왔다고 바로 멈추지 않고, 1번 릴... 2번 릴... 차례대로 멈춤
+                const stopDelay = 500 + (colIdx * 600); 
 
                 setTimeout(() => {
-                    // 탁! 꽂히는 느낌 (바운스)
-                    strip.style.transition = 'transform 0.4s cubic-bezier(0.1, 1, 0.1, 1)'; 
-                    // 최종 위치는 0 (맨 위가 보임)
+                    // 1. 현재 애니메이션 중단 및 위치 재설정 (화면 바로 위로 순간이동)
+                    strip.style.transition = 'none';
+                    const jumpY = -(CONFIG.symbolHeight * 3); // 심볼 3개만큼 위
+                    strip.style.transform = `translateY(${jumpY}px)`;
+                    
+                    void strip.offsetWidth; // Reflow
+
+                    // 2. 탁! 하고 0번 위치로 안착
+                    strip.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'; 
                     strip.style.transform = `translateY(0px)`;
 
-                    // [싱크] 화면 멈춤과 동시에 소리
+                    // 3. 소리 재생 (화면 멈춤과 싱크)
                     if(state.audioEnabled) {
                         const stopSound = audios.stop.cloneNode();
                         stopSound.volume = 0.8;
                         stopSound.play();
                     }
                     
-                    // 마지막 릴 흔들림
+                    // 마지막 릴 쉐이크
                     if(colIdx === 4) {
                         els.machineFrame.classList.add('shake-ani');
                         setTimeout(()=>els.machineFrame.classList.remove('shake-ani'), 300);
@@ -420,8 +426,8 @@
                 }, stopDelay);
             });
 
-            // 전체 종료
-            setTimeout(() => { handleSpinEnd(data); }, 1500 + (4 * 400) + 500);
+            // 전체 종료 처리 (마지막 릴 멈추고 잠시 뒤)
+            setTimeout(() => { handleSpinEnd(data); }, 500 + (4 * 600) + 600);
         }
 
         function handleSpinEnd(data) {
