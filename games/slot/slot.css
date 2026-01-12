@@ -1,95 +1,105 @@
-/* === 전체 설정 === */
+/* === 전체 폰트 및 기본 설정 === */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+
 :root {
-    --neon-pink: #ff33ff;
-    --neon-blue: #33ffff;
-    --neon-gold: #ffd700;
-    --dark-bg: #080814;
-    --panel-bg: rgba(20, 20, 35, 0.9);
+    --neon-pink: #ff00de;
+    --neon-blue: #00ffff;
+    --neon-gold: #ffcc00;
+    --dark-bg: #050510;
+    --frame-dark: #111;
 }
 
 body {
     margin: 0; padding: 0;
     background-color: var(--dark-bg);
     color: white;
-    font-family: 'Montserrat', sans-serif; /* 폰트 변경 (없으면 기본 산세리프) */
+    font-family: 'Montserrat', sans-serif;
     overflow: hidden; height: 100vh;
     display: flex; justify-content: center; align-items: center;
-    /* 멍한 느낌 없애기 위해 전체적인 대비를 높임 */
 }
 
 /* 배경 */
 #game-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover; background-position: center; z-index: -2;
-    transition: filter 0.2s;
-    filter: brightness(0.6) contrast(1.2); /* 배경을 더 어둡고 진하게 */
+    filter: brightness(0.5); /* 배경을 어둡게 눌러 슬롯 집중 */
 }
 
 /* 오버레이 */
 #start-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); z-index: 999;
+    background: rgba(0,0,0,0.85); z-index: 9999;
     display: flex; justify-content: center; align-items: center;
-    backdrop-filter: blur(8px); cursor: pointer;
+    backdrop-filter: blur(10px); cursor: pointer;
 }
 .glass-panel {
-    background: rgba(30, 30, 50, 0.7);
-    border: 3px solid var(--neon-blue); padding: 3rem; border-radius: 25px;
+    background: rgba(20, 20, 40, 0.8);
+    border: 4px solid var(--neon-blue); padding: 2rem; border-radius: 20px;
     text-align: center;
-    box-shadow: 0 0 40px var(--neon-blue), inset 0 0 20px rgba(51,255,255,0.3);
+    box-shadow: 0 0 50px var(--neon-blue);
 }
 .glass-panel h1 { 
-    margin: 0; font-size: 3rem; color: var(--neon-pink); 
-    text-shadow: 0 0 15px var(--neon-pink), 0 0 30px var(--neon-blue);
+    margin: 0; font-size: 2.5rem; color: var(--neon-pink); 
+    text-shadow: 0 0 20px var(--neon-pink);
 }
-.blink { animation: blink 0.8s infinite alternate; margin-top: 20px; font-size: 1.5rem; }
-@keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
+.blink { animation: blink 1s infinite alternate; margin-top: 15px; font-size: 1.2rem; }
+@keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
 
-/* 게임 컨테이너 */
+/* 메인 컨테이너 */
 #game-container {
-    width: 100%; max-width: 800px; height: 100%;
+    width: 100%; max-width: 600px; height: 100%;
     display: flex; flex-direction: column;
-    justify-content: space-between;
-    padding: 10px 0; box-sizing: border-box;
+    padding: 10px; box-sizing: border-box;
+    position: relative;
 }
 
-/* 상단 티커 & 정보바 */
+/* 상단 티커 */
 .ticker-wrap {
-    background: #111; border-top: 2px solid var(--neon-pink); border-bottom: 2px solid var(--neon-pink);
-    height: 30px; line-height: 30px; overflow: hidden; box-shadow: 0 0 15px var(--neon-pink);
+    background: #000; border-top: 2px solid var(--neon-pink); border-bottom: 2px solid var(--neon-pink);
+    height: 30px; line-height: 30px; overflow: hidden; margin-bottom: 10px;
 }
 .ticker { display: inline-block; white-space: nowrap; animation: ticker 20s linear infinite; }
-.ticker-item { color: var(--neon-gold); font-weight: bold; padding-right: 50px; text-shadow: 0 0 5px var(--neon-gold); }
+.ticker-item { color: var(--neon-gold); font-weight: bold; font-size: 0.9rem; padding-right: 50px; }
 @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
+/* 상단 정보 */
 .top-bar { 
     display: flex; justify-content: space-between; 
-    background: var(--panel-bg); padding: 12px 20px; margin: 10px;
-    border-radius: 15px; border: 2px solid #333;
-    box-shadow: inset 0 0 15px #000, 0 5px 10px rgba(0,0,0,0.5);
+    background: rgba(30,30,50,0.9); padding: 10px 15px; border-radius: 10px;
+    border: 1px solid #444; margin-bottom: 10px;
 }
-.info-box { font-size: 1.1rem; font-weight: bold; color: #eee; }
-.wallet-info span { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
-.unit { font-size: 0.8em; color: #aaa; margin-left: 4px; }
+.info-box { font-size: 1rem; font-weight: 700; }
+.wallet-info span { color: var(--neon-blue); }
 
-/* === [핵심] 3D 슬롯 프레임 === */
+/* === [핵심] 3D 슬롯 프레임 (원통형 느낌) === */
 .slot-machine-frame-outer {
-    flex-grow: 1; margin: 5px 10px;
-    background: #222; padding: 15px; /* 외부 금속 프레임 느낌 */
+    flex-grow: 1; 
+    background: #1a1a1a;
     border-radius: 20px;
-    border: 3px solid #444;
-    box-shadow: 
-        0 0 20px var(--neon-blue),
-        inset 0 0 30px #000, /* 깊이감 */
-        0 10px 20px rgba(0,0,0,0.8);
+    padding: 15px; /* 내부 여백 */
     position: relative;
+    border: 3px solid #333;
+    box-shadow: 
+        0 0 20px rgba(0,0,0,0.8), 
+        inset 0 0 30px #000;
+    display: flex; flex-direction: column;
     overflow: hidden;
 }
 
+/* 기계 장식 (네온 라인) */
+.machine-decoration {
+    height: 4px; width: 100%; background: var(--neon-pink);
+    box-shadow: 0 0 10px var(--neon-pink); margin: 5px 0;
+    border-radius: 2px; opacity: 0.7;
+}
+
 .slot-machine-frame-inner {
-    width: 100%; height: 100%; position: relative;
-    background: #000; border-radius: 10px; overflow: hidden;
-    border: 2px solid #333;
+    flex-grow: 1;
+    position: relative;
+    background: #000;
+    border: 2px solid #444;
+    border-radius: 10px;
+    overflow: hidden; /* 중요: 릴이 튀어나가지 않게 */
 }
 
 .reels-container {
@@ -97,120 +107,94 @@ body {
 }
 
 .reel {
-    width: 20%; height: 100%; overflow: hidden; position: relative;
-    border-right: 1px solid rgba(255,255,255,0.1); /* 릴 구분선 */
+    width: 20%; height: 100%; 
+    position: relative;
+    border-right: 1px solid rgba(255,255,255,0.05);
 }
-
-/* === [핵심] 강력한 원통(Cylinder) 효과 === */
-.cylinder-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 10;
-    /* 위아래는 아주 어둡고, 가운데는 밝게 빛나는 그라데이션으로 굴곡 표현 */
-    background: linear-gradient(
-        to bottom, 
-        rgba(0,0,0,0.95) 0%, 
-        rgba(0,0,0,0.7) 10%,
-        rgba(255,255,255,0.1) 40%, /* 가운데 하이라이트 */
-        rgba(255,255,255,0.1) 60%, 
-        rgba(0,0,0,0.7) 90%,
-        rgba(0,0,0,0.95) 100%
-    );
-    box-shadow: inset 0 0 50px #000; /* 내부 그림자로 깊이감 더하기 */
-}
+.reel:last-child { border-right: none; }
 
 .reel-strip { width: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
 
-/* === 심볼 특수 효과 === */
+/* === [3D 원통 효과 오버레이] === */
+/* 위/아래는 아주 진한 검정, 가운데는 투명 + 약간의 광택 */
+.cylinder-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+    background: linear-gradient(
+        180deg, 
+        rgba(0,0,0,0.95) 0%, 
+        rgba(0,0,0,0.6) 15%, 
+        rgba(255,255,255,0.05) 40%, /* 미세한 광택 */
+        rgba(255,255,255,0.05) 60%, 
+        rgba(0,0,0,0.6) 85%, 
+        rgba(0,0,0,0.95) 100%
+    );
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+}
+
 .symbol {
     width: 100%; aspect-ratio: 1/1; display: block;
     background-size: 85%; background-repeat: no-repeat; background-position: center;
-    /* 기본적으로 발광 효과를 주어 멍한 느낌 제거 */
-    filter: drop-shadow(0 0 8px rgba(255,255,255,0.6));
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); /* 심볼 발광 */
 }
 
-/* === [변경] 하단 당첨 정보 패널 === */
+/* 승리 라인 */
+.win-line {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 3px;
+    background: red; z-index: 20; transform: translateY(-50%);
+    box-shadow: 0 0 10px red; display: none;
+}
+
+/* 하단 당첨 정보 패널 */
 .win-info-panel {
-    background: linear-gradient(to right, #111, #222, #111);
-    margin: 0 10px 10px; padding: 15px;
-    border-radius: 15px; border: 2px solid var(--neon-gold);
+    background: linear-gradient(90deg, #111, #222, #111);
+    margin: 10px 0; padding: 15px; border-radius: 15px;
+    border: 2px solid var(--neon-gold);
     text-align: center;
-    box-shadow: 0 0 20px var(--neon-gold), inset 0 0 20px rgba(255,215,0,0.2);
-    min-height: 80px; display: flex; flex-direction: column; justify-content: center;
+    box-shadow: 0 0 15px var(--neon-gold);
+    min-height: 70px; display: flex; flex-direction: column; justify-content: center;
 }
-.win-label { color: #aaa; font-size: 1rem; margin-bottom: 5px; font-weight: bold; letter-spacing: 1px; }
-.win-amount { 
-    color: var(--neon-gold); font-size: 2rem; font-weight: 900; 
-    text-shadow: 0 0 15px var(--neon-gold);
-}
-/* 잭팟 당첨 시 스타일 */
-.win-info-panel.jackpot-hit {
-    border-color: var(--neon-pink);
-    box-shadow: 0 0 40px var(--neon-pink), inset 0 0 30px var(--neon-pink);
-    animation: pulseBorder 1s infinite alternate;
-}
-.win-info-panel.jackpot-hit .win-amount {
-    color: var(--neon-pink); text-shadow: 0 0 20px var(--neon-pink);
-}
-@keyframes pulseBorder { from { box-shadow: 0 0 20px var(--neon-pink); } to { box-shadow: 0 0 50px var(--neon-pink); } }
+.win-label { color: #888; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+.win-amount { color: var(--neon-gold); font-size: 1.8rem; font-weight: 900; text-shadow: 0 0 10px var(--neon-gold); }
 
-
-/* === 컨트롤 패널 및 나이스한 버튼 === */
+/* 컨트롤 패널 */
 .control-panel {
     display: flex; justify-content: space-between; align-items: center;
-    background: var(--panel-bg); padding: 15px 20px;
-    border-top: 3px solid var(--neon-blue);
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    background: rgba(30,30,40,0.95); padding: 15px;
+    border-radius: 20px 20px 0 0;
+    border-top: 2px solid var(--neon-blue);
 }
 
-/* 네온 버튼 공통 스타일 */
+/* 버튼 스타일 */
 .neon-btn {
-    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-    border: 2px solid var(--neon-blue); color: var(--neon-blue);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 0 10px rgba(51,255,255,0.2);
-    text-shadow: 0 0 5px var(--neon-blue);
-    transition: all 0.1s; cursor: pointer;
+    background: #222; border: 2px solid #555; color: white;
+    width: 45px; height: 45px; border-radius: 10px; font-size: 1.2rem; font-weight: bold;
+    cursor: pointer; transition: all 0.1s;
 }
-.neon-btn:active {
-    transform: translateY(3px); /* 눌리는 느낌 */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 0 15px rgba(51,255,255,0.4);
-}
+.neon-btn:active { background: #444; transform: scale(0.95); }
 
-/* 베팅 컨트롤 */
-.bet-control-group { display: flex; align-items: center; gap: 10px; }
-.bet-btn { 
-    width: 50px; height: 50px; border-radius: 12px; 
-    font-size: 1.5rem; font-weight: bold; 
-}
 .bet-display {
     display: flex; flex-direction: column; align-items: center;
-    background: #000; padding: 5px 20px; border-radius: 10px;
-    border: 2px solid #333;
+    background: #000; padding: 5px 20px; border-radius: 8px; border: 1px solid #333;
 }
-.bet-label { font-size: 0.8rem; color: #777; }
-#current-bet { font-size: 1.4rem; font-weight: bold; color: #fff; }
+.bet-label { font-size: 0.7rem; color: #777; }
+#current-bet { font-size: 1.2rem; font-weight: bold; }
 
-/* 스핀 버튼 (가장 화려하게) */
-.spin-btn.neon-spin-btn {
-    width: 110px; height: 110px; border-radius: 50%;
-    border: 4px solid var(--neon-pink);
-    background: radial-gradient(circle, var(--neon-pink) 10%, #770077 90%);
-    color: white; font-size: 1.6rem; font-weight: 900; letter-spacing: 1px;
-    box-shadow: 0 0 30px var(--neon-pink), 0 10px 20px #000;
-    text-shadow: 0 0 10px #fff;
+.spin-btn {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: radial-gradient(circle, #ff00de, #990099);
+    border: 3px solid white; color: white; font-size: 1.4rem; font-weight: 900;
+    box-shadow: 0 0 20px #ff00de, 0 5px 10px #000;
+    cursor: pointer;
 }
-.spin-btn.neon-spin-btn:active:not(:disabled) {
-    transform: scale(0.96) translateY(2px);
-    box-shadow: 0 0 15px var(--neon-pink), 0 5px 10px #000;
-}
-.spin-btn:disabled {
-    filter: grayscale(0.8) brightness(0.6); cursor: not-allowed; box-shadow: none;
-}
+.spin-btn:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 0 10px #ff00de; }
+.spin-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
 
-/* 타격감 애니메이션 */
-.shake-hard { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+/* 타격감 (흔들림) */
+.shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 @keyframes shake {
   10%, 90% { transform: translate3d(-2px, 0, 0); }
-  20%, 80% { transform: translate3d(4px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-  40%, 60% { transform: translate3d(6px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
