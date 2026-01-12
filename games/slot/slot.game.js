@@ -1,141 +1,181 @@
 (function () {
-  const S = (window.S = window.S || {});
-  S.game = S.game || {};
+  window.SLOT = window.SLOT || {};
+  const { SYMBOLS, ASSET, SPIN, ODDS_PROFILES, JACKPOT } = window.SLOT.config;
 
-  // ✅ 심볼/가중치/배당 (2개는 모두 EVEN(×1))
-  const SYMBOLS = [
-    { id: "star1",  name: "STAR1",  w: 22, pay: { 2: 1, 3: 2, 4: 5, 5: 12 } },
-    { id: "star2",  name: "STAR2",  w: 18, pay: { 2: 1, 3: 2.5, 4: 6, 5: 15 } },
-    { id: "star3",  name: "STAR3",  w: 14, pay: { 2: 1, 3: 3, 4: 7, 5: 18 } },
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
 
-    { id: "pro1",   name: "PRO1",   w: 12, pay: { 2: 1, 3: 4, 4: 9, 5: 22 } },
-    { id: "pro2",   name: "PRO2",   w: 9,  pay: { 2: 1, 3: 4.5, 4: 10, 5: 25 } },
-    { id: "pro3",   name: "PRO3",   w: 7,  pay: { 2: 1, 3: 5, 4: 12, 5: 28 } },
-    { id: "pro4",   name: "PRO4",   w: 5,  pay: { 2: 1, 3: 5.5, 4: 13, 5: 30 } },
-    { id: "pro5",   name: "PRO5",   w: 4,  pay: { 2: 1, 3: 6, 4: 14, 5: 33 } },
-    { id: "pro6",   name: "PRO6",   w: 3,  pay: { 2: 1, 3: 6.5, 4: 15, 5: 36 } },
-    { id: "pro7",   name: "PRO7",   w: 2.5,pay: { 2: 1, 3: 7, 4: 16, 5: 40 } },
-    { id: "pro8",   name: "PRO8",   w: 2,  pay: { 2: 1, 3: 8, 4: 18, 5: 45 } },
-    { id: "pro9",   name: "PRO9",   w: 1.5,pay: { 2: 1, 3: 9, 4: 20, 5: 55 } },
-    { id: "pro10",  name: "PRO10",  w: 1,  pay: { 2: 1, 3: 10, 4: 25, 5: 70 } },
-  ];
-
-  const byId = Object.fromEntries(SYMBOLS.map(s => [s.id, s]));
-  const totalW = SYMBOLS.reduce((a, s) => a + s.w, 0);
-
-  function pick() {
-    let r = Math.random() * totalW;
-    for (const s of SYMBOLS) {
+  function weightedPickSymbolKey(){
+    const total = SYMBOLS.reduce((a,s)=>a + s.w, 0);
+    let r = Math.random() * total;
+    for (const s of SYMBOLS){
       r -= s.w;
-      if (r <= 0) return s.id;
+      if (r <= 0) return s.key;
     }
-    return "star1";
+    return SYMBOLS[SYMBOLS.length-1].key;
   }
 
-  function countAll(grid) {
-    const m = new Map();
-    for (const id of grid) m.set(id, (m.get(id) || 0) + 1);
-    return m;
+  function pickOutcome(profileKey){
+    const p = ODDS_PROFILES[profileKey] || ODDS_PROFILES.LOW;
+    const r = Math.random();
+    let acc = 0;
+
+    acc += p.lose;   if (r < acc) return "lose";
+    acc += p.even;   if (r < acc) return "even";
+    acc += p.win3;   if (r < acc) return "win3";
+    acc += p.win4;   if (r < acc) return "win4";
+    acc += (p.jackpot || 0);
+    return "lose";
   }
 
-  function bestHit(counts, bet) {
-    let best = null;
+  // ✅ 3x5(15칸) 그리드 생성
+  // 가운데 줄(row=1)에서 왼쪽부터 연속 매칭으로 결과를 만들고,
+  // 나머지 줄은 그냥 랜덤으로 채운다.
+  function buildFinalGrid(outcome, forcedKey){
+    const keys = new Array(15);
+    const payKey = forcedKey || weightedPickSymbolKey();
 
-    for (const [id, cnt] of counts.entries()) {
-      if (cnt < 2) continue;
-      const sym = byId[id];
-      const mul = sym?.pay?.[Math.min(5, cnt)] || (cnt === 2 ? 1 : 0);
-      const win = bet * mul;
-      const net = win - bet;
-      if (!best || win > best.win) best = { id, cnt: Math.min(5, cnt), mul, win, net };
-    }
+    // 우선 랜덤으로 전체 채움
+    for (let i=0;i<15;i++) keys[i] = weightedPickSymbolKey();
 
-    return best;
-  }
+    // 가운데 줄 인덱스: 5..9
+    const base = 5;
+    const setMid = (c, k) => { keys[base + c] = k; };
 
-  // ✅ 잭팟은 “월 1회 느낌”으로 매우 레어 (기본 1/50000)
-  function jackpotRoll() {
-    return Math.random() < 1 / 50000;
-  }
+    const k = payKey;
+    const k2 = (function(){
+      let t = weightedPickSymbolKey();
+      let guard = 0;
+      while (t === k && guard++ < 30) t = weightedPickSymbolKey();
+      return t;
+    })();
 
-  function makeJackpotGrid(rows, cols) {
-    const g = new Array(rows * cols).fill("pro10");
-    return g;
-  }
-
-  function spin(bet, jackpotPool) {
-    const rows = S.CONFIG.ROWS || 3;
-    const cols = S.CONFIG.COLS || 5;
-    const size = rows * cols;
-
-    // JACKPOT
-    if (jackpotRoll()) {
-      const grid = makeJackpotGrid(rows, cols);
-      const jackpotPay = Math.max(Number(jackpotPool || 0), bet * 500); // 풀 없으면 최소 연출금
-      const win = jackpotPay; // 잭팟은 풀(또는 최소치)만 지급으로 단순화
-      const netDelta = win - bet;
-
-      return {
-        grid,
-        type: "JACKPOT",
-        hit: { id: "pro10", cnt: 5, mul: 0, win },
-        win,
-        netDelta,
-        lossAmount: 0,
-        jackpotPayout: jackpotPay,
-      };
-    }
-
-    // normal
-    const grid = new Array(size).fill(0).map(() => pick());
-    const counts = countAll(grid);
-    const hit = bestHit(counts, bet);
-
-    if (!hit) {
-      return {
-        grid,
-        type: "MISS",
-        hit: null,
-        win: 0,
-        netDelta: -bet,
-        lossAmount: bet,
-        jackpotPayout: 0,
-      };
+    if (outcome === "lose"){
+      // 첫 2개부터 다르게
+      setMid(0, k);
+      setMid(1, k2);
+    } else if (outcome === "even"){
+      setMid(0, k);
+      setMid(1, k);
+      setMid(2, k2);
+    } else if (outcome === "win3"){
+      setMid(0, k);
+      setMid(1, k);
+      setMid(2, k);
+      setMid(3, k2);
+    } else if (outcome === "win4"){
+      setMid(0, k);
+      setMid(1, k);
+      setMid(2, k);
+      setMid(3, k);
+      setMid(4, k2);
+    } else if (outcome === "jackpot"){
+      setMid(0, k);
+      setMid(1, k);
+      setMid(2, k);
+      setMid(3, k);
+      setMid(4, k);
     }
 
-    // ✅ 2개 = EVEN (LOSE 느낌 제거 / HIT +0 금지)
-    if (hit.cnt === 2) {
-      return {
-        grid,
-        type: "EVEN",
-        hit,
-        win: bet,
-        netDelta: 0,
-        lossAmount: 0,
-        jackpotPayout: 0,
-      };
+    return { keys, payKey };
+  }
+
+  // ✅ 결과 평가: 가운데 줄(5칸)에서 왼쪽부터 연속
+  function evaluate(keys){
+    const mid = keys.slice(5, 10); // 5개
+    const first = mid[0];
+    let count = 1;
+    for (let i=1;i<5;i++){
+      if (mid[i] === first) count++;
+      else break;
+    }
+    return { bestKey: first, bestCount: count };
+  }
+
+  // ✅ 배경 전환(스핀 중은 빠르고, 멈출수록 느리게)
+  function makeBgSpinner(ui){
+    let t = null;
+    let idx = 0;
+    let currentMs = SPIN.bgFastMs;
+
+    function setIntervalMs(ms){
+      currentMs = ms;
+      stop();
+      t = setInterval(() => {
+        idx = (idx + 1) % ASSET.bg.length;
+        ui.bg.set(ASSET.imgBase + ASSET.bg[idx]);
+      }, currentMs);
     }
 
-    // WIN
-    return {
-      grid,
-      type: "WIN",
-      hit,
-      win: hit.win,
-      netDelta: hit.net,
-      lossAmount: 0,
-      jackpotPayout: 0,
-    };
+    function start(){
+      idx = Math.floor(Math.random() * ASSET.bg.length);
+      ui.bg.set(ASSET.imgBase + ASSET.bg[idx]);
+      ui.bg.flash(true);
+      setIntervalMs(SPIN.bgFastMs);
+    }
+    function slow(){
+      setIntervalMs(SPIN.bgSlowMs);
+    }
+    function stop(){
+      if (t){ clearInterval(t); t = null; }
+      ui.bg.flash(false);
+    }
+    return { start, slow, stop };
   }
 
-  function paytable() {
-    return SYMBOLS.map(s => ({
-      id: s.id,
-      name: s.name,
-      pay: s.pay
-    }));
+  // ✅ 10초 스핀 + 컬럼(5개) 하나씩 멈춤
+  // finalKeys는 “최종 고정값”
+  async function animateSpin(ui, finalKeys){
+    const cols = 5;
+    const rows = 3;
+
+    const totalMs = SPIN.totalMs;
+    const tickMs = SPIN.tickMs;
+
+    const cascade = SPIN.stopCascadeMs;            // ~1초
+    const stopStartAt = totalMs - (cascade * cols); // 마지막 5초쯤부터 1초 간격으로 멈춤
+
+    const stopped = new Array(cols).fill(false);
+    const working = ui.gridKeys && ui.gridKeys.length === 15 ? ui.gridKeys.slice() : new Array(15).fill(SYMBOLS[0].key);
+
+    let elapsed = 0;
+
+    while (elapsed < totalMs){
+      // 멈출 시점 판단
+      for (let c=0;c<cols;c++){
+        const stopAt = stopStartAt + (cascade * c);
+        if (!stopped[c] && elapsed >= stopAt){
+          // 이 컬럼을 final로 고정
+          for (let r=0;r<rows;r++){
+            working[r*cols + c] = finalKeys[r*cols + c];
+          }
+          stopped[c] = true;
+        }
+      }
+
+      // 아직 안 멈춘 컬럼만 랜덤 스핀
+      for (let c=0;c<cols;c++){
+        if (stopped[c]) continue;
+        for (let r=0;r<rows;r++){
+          working[r*cols + c] = weightedPickSymbolKey();
+        }
+      }
+
+      ui.setGrid(working);
+      await sleep(tickMs);
+
+      elapsed += tickMs;
+      // 후반부로 갈수록 배경 느리게 바꾸는 느낌은 app에서 slow() 호출로 처리
+    }
+
+    ui.setGrid(finalKeys);
   }
 
-  S.game.spin = spin;
-  S.game.paytable = paytable;
+  window.SLOT.game = {
+    pickOutcome,
+    buildFinalGrid,
+    evaluate,
+    makeBgSpinner,
+    animateSpin
+  };
 })();
