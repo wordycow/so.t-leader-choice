@@ -1,222 +1,151 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const C = () => SLOT.config;
+  const CFG = () => SLOT.config;
 
-  let els = {};
-  let cellImgs = [];
+  const $ = (id) => document.getElementById(id);
+
+  const dom = {
+    grid: $("slotGrid"),
+    bgImg: $("slotBgImg"),
+    payToggle: $("payToggle"),
+    payWrap: $("payWrap"),
+    playerName: $("playerName"),
+    walletUt: $("walletUt"),
+    jackpotPool: $("jackpotPool"),
+    lastResult: $("lastResult"),
+    overlay: $("loginOverlay"),
+  };
+
+  let cells = []; // {el, img}
   let bgTimer = null;
   let bgIndex = 0;
 
-  function q(id) { return document.getElementById(id); }
-
   function imgUrl(file) {
-    return `${C().ASSET.imgBase}/${file}`;
-  }
-
-  function setHidden(el, hidden) {
-    if (!el) return;
-    if (hidden) el.classList.add("hidden");
-    else el.classList.remove("hidden");
+    return `${CFG().ASSET.imgBase}/${file}`;
   }
 
   function buildGrid() {
-    const grid = els.slotGrid;
-    grid.innerHTML = "";
-    cellImgs = [];
+    const { rows, cols } = CFG().GRID;
+    dom.grid.innerHTML = "";
+    cells = [];
 
-    const total = C().GRID.rows * C().GRID.cols;
-    for (let i = 0; i < total; i++) {
+    dom.grid.style.setProperty("--r", rows);
+    dom.grid.style.setProperty("--c", cols);
+
+    for (let i = 0; i < rows * cols; i++) {
       const cell = document.createElement("div");
       cell.className = "cell";
 
       const img = document.createElement("img");
+      img.className = "cellImg";
       img.alt = "";
-      img.loading = "eager";
       img.decoding = "async";
+      img.loading = "eager";
 
       cell.appendChild(img);
-      grid.appendChild(cell);
-      cellImgs.push(img);
+      dom.grid.appendChild(cell);
+      cells.push({ el: cell, img });
     }
   }
 
+  function setCellKey(i, key) {
+    const sym = CFG().SYMBOL_MAP[key];
+    if (!cells[i]) return;
+    if (!sym) {
+      cells[i].img.removeAttribute("src");
+      return;
+    }
+    const src = imgUrl(sym.file);
+    cells[i].img.src = src;
+  }
+
+  function setKeys(keys = []) {
+    for (let i = 0; i < cells.length; i++) setCellKey(i, keys[i]);
+  }
+
   function renderPaytable() {
-    const wrap = els.payWrap;
+    const lines = CFG().PAYTABLE_TEXT || [];
     const ul = document.createElement("ul");
     ul.className = "payList";
-    (C().PAYTABLE_TEXT || []).forEach((t) => {
+    lines.forEach(t => {
       const li = document.createElement("li");
       li.textContent = t;
       ul.appendChild(li);
     });
-    wrap.innerHTML = "";
-    wrap.appendChild(ul);
-  }
-
-  function getPayCollapsed() {
-    try {
-      return localStorage.getItem(C().STORAGE_KEYS.payCollapsed) === "1";
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function setPayCollapsed(v) {
-    const collapsed = !!v;
-    if (els.payWrap) els.payWrap.style.display = collapsed ? "none" : "";
-    try {
-      localStorage.setItem(C().STORAGE_KEYS.payCollapsed, collapsed ? "1" : "0");
-    } catch (_) {}
+    dom.payWrap.innerHTML = "";
+    dom.payWrap.appendChild(ul);
   }
 
   function bindPayToggle() {
-    els.payToggle.addEventListener("click", () => {
-      const now = els.payWrap.style.display === "none";
-      setPayCollapsed(!now);
+    if (!dom.payToggle) return;
+    dom.payToggle.addEventListener("click", () => {
+      dom.payWrap.classList.toggle("collapsed");
     });
   }
 
-  function setGridKeys(keys) {
-    if (!Array.isArray(keys) || keys.length !== cellImgs.length) return;
-
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const sym = C().SYMBOL_MAP[key];
-      const img = cellImgs[i];
-      if (!sym) { img.removeAttribute("src"); continue; }
-      img.src = imgUrl(sym.file);
-    }
-  }
-
-  function randomGrid() {
-    const arr = C().SYMBOLS;
-    for (let i = 0; i < cellImgs.length; i++) {
-      const sym = arr[(Math.random() * arr.length) | 0];
-      cellImgs[i].src = imgUrl(sym.file);
-    }
-  }
-
-  function setBgByIndex(i) {
-    const files = C().ASSET.bgFiles || [];
+  function setBgByIndex(nextIdx) {
+    const files = CFG().ASSET.bgFiles || [];
     if (!files.length) return;
-    bgIndex = ((i % files.length) + files.length) % files.length;
-    els.slotBgImg.src = imgUrl(files[bgIndex]);
+
+    bgIndex = ((nextIdx % files.length) + files.length) % files.length;
+    const src = imgUrl(files[bgIndex]);
+
+    // src 바꾸기
+    dom.bgImg.src = src;
   }
 
-  function startBgCycle(intervalMs) {
-    stopBgCycle();
-    const min = Number(C().SPIN.minBgIntervalMs || 200);
-    const ms = Math.max(min, Math.floor(intervalMs || min));
-    setBgByIndex(bgIndex); // ensure set
+  function startBgSpin(intervalMs) {
+    stopBgSpin();
+    const ms = Math.max(50, Math.floor(intervalMs || 120));
+    setBgByIndex(bgIndex);
+
     bgTimer = setInterval(() => {
       setBgByIndex(bgIndex + 1);
     }, ms);
   }
 
-  function stopBgCycle() {
+  function stopBgSpin() {
     if (bgTimer) {
       clearInterval(bgTimer);
       bgTimer = null;
     }
   }
 
-  function setPlayer(name) { els.playerName.textContent = name || "-"; }
-  function setWallet(n) { els.walletUt.textContent = String(n ?? 0); }
-  function setJackpotPool(n) { els.jackpotPool.textContent = String(n ?? 0); }
-  function setLastResult(t) { els.lastResult.textContent = t || "READY"; }
-  function setBet(n) { els.betUt.textContent = String(n ?? 0); }
-
-  function setButtonsEnabled(enabled) {
-    const dis = !enabled;
-    ["spinBtn","betDown","betUp","autoBtn","soundBtn","payToggle"].forEach((id) => {
-      const el = els[id];
-      if (el) el.disabled = dis;
-    });
+  function initBgIdle() {
+    // 대기 시 첫 배경 고정
+    setBgByIndex(0);
   }
 
-  // ✅ 잭팟 티커
-  function showJackpotBanner(text) {
-    els.jackpotBannerText.textContent = text;
-    setHidden(els.jackpotBanner, false);
-  }
-  function hideJackpotBanner() {
-    setHidden(els.jackpotBanner, true);
+  function showOverlay(show) {
+    if (!dom.overlay) return;
+    dom.overlay.classList.toggle("hidden", !show);
   }
 
-  function showLoginOverlay(show) {
-    setHidden(els.loginOverlay, !show);
-  }
-
-  function preloadAssets() {
-    // background preload
-    (C().ASSET.bgFiles || []).forEach((f) => {
-      const im = new Image();
-      im.src = imgUrl(f);
-    });
-    // symbols preload
-    (C().SYMBOLS || []).forEach((s) => {
-      const im = new Image();
-      im.src = imgUrl(s.file);
-    });
-  }
+  function setPlayer(name) { dom.playerName.textContent = name || "-"; }
+  function setWallet(n) { dom.walletUt.textContent = String(n ?? 0); }
+  function setJackpotPool(n) { dom.jackpotPool.textContent = String(n ?? 0); }
+  function setLastResult(t) { dom.lastResult.textContent = t || "READY"; }
 
   SLOT.ui = {
     init() {
-      els = {
-        slotGrid: q("slotGrid"),
-        slotBgImg: q("slotBgImg"),
-        payWrap: q("payWrap"),
-        payToggle: q("payToggle"),
-
-        playerName: q("playerName"),
-        walletUt: q("walletUt"),
-        jackpotPool: q("jackpotPool"),
-        lastResult: q("lastResult"),
-
-        betUt: q("betUt"),
-        betDown: q("betDown"),
-        betUp: q("betUp"),
-        autoBtn: q("autoBtn"),
-        soundBtn: q("soundBtn"),
-        spinBtn: q("spinBtn"),
-
-        loginOverlay: q("loginOverlay"),
-
-        jackpotBanner: q("jackpotBanner"),
-        jackpotBannerText: q("jackpotBannerText"),
-      };
-
+      if (!CFG() || !CFG().ASSET || !CFG().ASSET.imgBase) {
+        throw new Error("slot.config not loaded");
+      }
       buildGrid();
       renderPaytable();
       bindPayToggle();
-
-      // paytable 상태 복원
-      setPayCollapsed(getPayCollapsed());
-
-      // bg 초기값
-      setBgByIndex(0);
-
-      preloadAssets();
+      initBgIdle();
+      setLastResult("READY");
     },
 
-    els: () => els,
+    setKeys,
+    startBgSpin,
+    stopBgSpin,
 
-    setGridKeys,
-    randomGrid,
-
-    startBgCycle,
-    stopBgCycle,
-    setBgByIndex,
-
+    showOverlay,
     setPlayer,
     setWallet,
     setJackpotPool,
     setLastResult,
-    setBet,
-    setButtonsEnabled,
-
-    showJackpotBanner,
-    hideJackpotBanner,
-    showLoginOverlay,
   };
 })();
