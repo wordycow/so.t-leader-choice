@@ -1,6 +1,8 @@
 // === 설정(Config) ===
 const CONFIG = {
+    // [중요] 여기가 연결 주소입니다. 절대 지워지지 않았습니다.
     API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
+    
     imgObj: {
         path: 'https://wordycow.github.io/so.t-leader-choice/games/img/slot/', 
         bg: ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'],
@@ -32,8 +34,9 @@ let state = {
 let els = {};
 const audios = {};
 
+// === 1. 초기화 (서버 연결 시작) ===
 async function init() {
-    console.log("SLOT ENGINE: V6 FINAL STARTED");
+    console.log("SLOT ENGINE: V6 FINAL CONNECTED");
 
     els = {
         bg: document.getElementById('game-bg'),
@@ -54,15 +57,18 @@ async function init() {
         btnAuto: document.getElementById('btn-auto')
     };
 
+    // [연결 확인] 로컬스토리지에서 아이디 가져오기
     const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
-    state.id = localId || new URLSearchParams(window.location.search).get('id');
+    const paramId = new URLSearchParams(window.location.search).get('id');
+    state.id = localId || paramId;
 
     if (!state.id) {
         if(els.userId) els.userId.innerText = "GUEST";
         if(els.spinBtn) els.spinBtn.disabled = true;
-        updateWinPanel("PLEASE LOGIN", "---");
+        updateWinPanel("PLEASE LOGIN", "로그인 필요");
     } else {
         if(els.userId) els.userId.innerText = state.id;
+        // [연결 실행] 서버에서 지갑 잔액 불러오기
         await syncUserData();
     }
 
@@ -127,6 +133,7 @@ function animateValue(obj, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
+// [서버 통신] 잔액 불러오기
 async function syncUserData(animate = false) {
     if (!state.id) return;
     try {
@@ -134,11 +141,14 @@ async function syncUserData(animate = false) {
         if (res.ok) {
             const newWallet = Number(res.user.balance);
             state.jackpotPool = Number(res.jackpotTotal);
+            
             if (animate && state.wallet !== newWallet) animateValue(els.walletSpan, state.wallet, newWallet, 1000);
             else if(els.walletSpan) els.walletSpan.innerText = newWallet.toLocaleString();
+            
             state.wallet = newWallet;
             updateUI();
             updateTicker(state.jackpotPool);
+            
             if(!animate) updateWinPanel("READY", "GOOD LUCK!");
             if(els.spinBtn) els.spinBtn.disabled = false;
         } else {
@@ -150,6 +160,7 @@ async function syncUserData(animate = false) {
     }
 }
 
+// [서버 통신] 데이터 전송
 function jsonpRequest(action, params = {}) {
     return new Promise((resolve, reject) => {
         const callbackName = 'cb_' + Math.round(100000 * Math.random());
@@ -194,6 +205,7 @@ function getRandomSymbolName() {
     return CONFIG.imgObj.symbols[Math.floor(Math.random() * CONFIG.imgObj.symbols.length)];
 }
 
+// [스핀 버튼 클릭]
 async function onSpinClick() {
     if (state.isSpinning) return;
     if (state.wallet < state.bet) {
@@ -206,6 +218,7 @@ async function onSpinClick() {
     els.spinBtn.disabled = true;
     updateWinPanel("SPINNING...", `BET: ${state.bet}`);
     
+    // 화면에서 먼저 차감 보여주기
     animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500);
     state.wallet -= state.bet; 
 
@@ -220,14 +233,14 @@ async function onSpinClick() {
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // [중요] 스핀 전 리셋
+    // 리셋
     strips.forEach((strip) => {
         strip.style.transition = 'none';
         strip.style.transform = 'translateY(0px)';
     });
-    void els.gameContainer.offsetWidth; // 리플로우
+    void els.gameContainer.offsetWidth; 
 
-    // 순차 출발
+    // 출발
     strips.forEach((strip, index) => {
         const startDelay = index * 100; 
         setTimeout(() => {
@@ -238,6 +251,7 @@ async function onSpinClick() {
     });
 
     try {
+        // [서버 요청] 게임 결과 요청
         const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
         if (!res.ok) throw new Error(res.error || "Spin Failed");
         stopReelsWithResult(res);
