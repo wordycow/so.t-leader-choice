@@ -267,3 +267,50 @@
     boot();
   }
 })();
+/* ===== slot 이동: 로그인 id를 붙여서 넘어가기 (main → slot) ===== */
+(function () {
+  function getLoginId() {
+    // 1) gate가 저장한 uniqueCurrentUser 우선
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u && u.id) return String(u.id).trim();
+      }
+    } catch (e) {}
+
+    // 2) 호환 키들
+    const keys = ["unique_user_id", "user_id", "uid", "id"];
+    for (const k of keys) {
+      const v = (localStorage.getItem(k) || "").trim();
+      if (v) return v;
+    }
+    return "";
+  }
+
+  // 클릭용 (onclick에서 호출)
+  window.goCasinoFromMain = function (e) {
+    if (e) e.preventDefault();
+
+    const id = getLoginId();
+    if (!id) {
+      alert("로그인 정보가 없습니다. 게이트에서 로그인 후 다시 시도하세요.");
+      location.href = "the-unique-gate.html";
+      return false;
+    }
+    location.href = "games/slot.html?id=" + encodeURIComponent(id);
+    return false;
+  };
+
+  // 우클릭 새탭/새창 열기에서도 id가 붙도록 href도 갱신
+  function refreshSlotHref() {
+    const a = document.getElementById("slotBtn");
+    if (!a) return;
+    const id = getLoginId();
+    if (id) a.href = "games/slot.html?id=" + encodeURIComponent(id);
+  }
+
+  // 지금 바로 + DOM 로드 후 한 번 더
+  refreshSlotHref();
+  document.addEventListener("DOMContentLoaded", refreshSlotHref);
+})();
