@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CASINO ADMIN</title>
+  <style>
+    :root{
+      --bg:#020318;
+      --panel: rgba(12,18,40,.72);
+      --panel2: rgba(6,10,22,.55);
+      --line: rgba(110,170,255,.22);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.65);
+      --aqua:#62e6ff;
+      --pink:#ff6bf2;
+      --gold:#ffd54a;
+      --r: 18px;
+      --r2: 26px;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(98,230,255,.18), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(255,107,242,.16), transparent 60%),
+        radial-gradient(900px 600px at 50% 90%, rgba(255,213,74,.10), transparent 60%),
+        linear-gradient(180deg, #020318, #020318 40%, #050814);
+      overflow-x:hidden;
+    }
+    .wrap{ width:min(1220px, calc(100% - 28px)); margin:18px auto 60px; }
+    .card{
+      border-radius: var(--r2);
+      border: 1px solid rgba(120,190,255,.18);
+      background: linear-gradient(180deg, rgba(18,28,58,.55), rgba(6,10,22,.45));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .top{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 14px 16px; border-bottom:1px solid rgba(110,170,255,.14);
+    }
+    .title{
+      letter-spacing:.22em; font-weight:900; font-size: 13px; color: rgba(98,230,255,.9);
+    }
+    .title b{ color: rgba(255,107,242,.92); }
+    .btn{
+      border:1px solid rgba(98,230,255,.28);
+      background: rgba(7,10,20,.45);
+      color: rgba(234,240,255,.9);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.06em;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+      text-decoration:none;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(255,107,242,.35); background: rgba(12,16,30,.55); }
+    .btn:active{ transform: translateY(0); }
+    .btn.primary{
+      border:0;
+      color: rgba(4,6,18,.95);
+      background: linear-gradient(90deg, rgba(98,230,255,.95), rgba(255,107,242,.92), rgba(255,213,74,.92));
+      box-shadow: 0 18px 40px rgba(0,0,0,.25);
+    }
+    .btn.danger{ border-color: rgba(255,107,242,.35); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr 1.4fr;
+      gap: 14px;
+      padding: 14px;
+    }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .panel{
+      border:1px solid rgba(110,170,255,.12);
+      background: rgba(4,6,18,.30);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .h{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:10px;
+    }
+    .h h3{
+      margin:0;
+      font-size: 13px;
+      letter-spacing:.18em;
+      color: rgba(234,240,255,.78);
+    }
+    .muted{ color: rgba(234,240,255,.65); font-size:12px; line-height:1.45; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .field{
+      display:flex; flex-direction:column; gap:6px;
+      min-width: 180px;
+      flex: 1;
+    }
+    .label{ font-size:11px; letter-spacing:.18em; color: rgba(234,240,255,.60); }
+    input, select, textarea{
+      width:100%;
+      border-radius: 14px;
+      border:1px solid rgba(110,170,255,.16);
+      background: rgba(8,12,26,.55);
+      color: rgba(234,240,255,.92);
+      padding: 10px 10px;
+      outline:none;
+    }
+    textarea{ min-height: 110px; resize: vertical; }
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 980px){ .kpi{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    .kpi .box{
+      border:1px solid rgba(110,170,255,.12);
+      background: rgba(4,6,18,.28);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .kpi .k{ font-size:11px; letter-spacing:.18em; color: rgba(234,240,255,.60); margin-bottom:6px; }
+    .kpi .v{ font-size:18px; font-weight:1000; letter-spacing:.02em; color: rgba(234,240,255,.92); }
+    .kpi .v b{ color: rgba(98,230,255,.95); }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      overflow:hidden;
+      border-radius: 16px;
+      border:1px solid rgba(110,170,255,.12);
+      background: rgba(4,6,18,.24);
+    }
+    th,td{ padding: 10px 10px; border-bottom:1px solid rgba(110,170,255,.10); font-size: 12px; }
+    th{ text-align:left; color: rgba(234,240,255,.70); letter-spacing:.08em; }
+    td{ color: rgba(234,240,255,.88); }
+    tr:hover td{ background: rgba(98,230,255,.05); }
+    .right{text-align:right}
+    .tag{
+      font-size:11px; font-weight:900;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(110,170,255,.16);
+      background: rgba(4,6,18,.35);
+    }
+    .tag.on{ border-color: rgba(98,230,255,.35); background: rgba(98,230,255,.12); }
+    .tag.off{ border-color: rgba(255,107,242,.35); background: rgba(255,107,242,.10); }
+    .toast{
+      position:fixed; left:50%; top:14%;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border:1px solid rgba(255,213,74,.35);
+      background: rgba(6,10,22,.70);
+      color: rgba(255,245,210,.95);
+      box-shadow: 0 24px 70px rgba(0,0,0,.55);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index:9999;
+    }
+    .toast.on{ opacity:1; transform: translateX(-50%) translateY(-6px); }
+
+    .overlay{
+      position:fixed; inset:0; display:none;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(10px);
+      align-items:center; justify-content:center;
+      padding:18px;
+      z-index:9000;
+    }
+    .overlay.on{ display:flex; }
+    .modal{
+      width:min(520px, 100%);
+      border-radius: 20px;
+      border:1px solid rgba(110,170,255,.22);
+      background: rgba(8,12,26,.90);
+      box-shadow: 0 30px 90px rgba(0,0,0,.65);
+      padding: 16px;
+    }
+    .modal h2{ margin:0 0 10px; font-size: 15px; letter-spacing:.08em; }
+    .modal .row{ justify-content:flex-end; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div class="title">CASINO <b>ADMIN</b></div>
+        <div class="row">
+          <a class="btn" href="https://wordycow.github.io/so.t-leader-choice/the-unique-main.html">MAIN</a>
+          <button class="btn" id="btnRefresh">REFRESH</button>
+          <button class="btn danger" id="btnLogout">LOGOUT</button>
+        </div>
+      </div>
+
+      <div style="padding:14px">
+        <div class="kpi">
+          <div class="box"><div class="k">TOTAL USERS</div><div class="v" id="kUsers">-</div></div>
+          <div class="box"><div class="k">TOTAL UT (SUPPLY)</div><div class="v"><b id="kSupply">-</b></div></div>
+          <div class="box"><div class="k">CASINO TOTAL</div><div class="v" id="kCasino">-</div></div>
+          <div class="box"><div class="k">JACKPOT TOTAL</div><div class="v" id="kJackpot">-</div></div>
+        </div>
+
+        <div class="grid">
+          <!-- LEFT: CONFIG -->
+          <div class="panel">
+            <div class="h">
+              <h3>CONFIG</h3>
+              <span class="muted" id="cfgStatus">-</span>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <div class="label">ADMIN KEY</div>
+                <input id="adminKey" placeholder="(서버에 저장된 ADMIN_KEY 입력)" />
+              </div>
+              <div class="field">
+                <div class="label">ODDS PROFILE</div>
+                <select id="oddsProfile">
+                  <option value="LOW">LOW (보수)</option>
+                  <option value="MID">MID (기본)</option>
+                  <option value="HIGH">HIGH (후한)</option>
+                  <option value="CUSTOM">CUSTOM</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <div class="label">FEE FLAT (UT)</div>
+                <input id="feeFlat" type="number" step="0.01" placeholder="예: 0.5" />
+              </div>
+              <div class="field">
+                <div class="label">FEE RATE (% of bet)</div>
+                <input id="feeRate" type="number" step="0.01" placeholder="예: 2 = 2%" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field" style="min-width:100%">
+                <div class="label">CUSTOM ODDS (JSON)</div>
+                <textarea id="oddsCustom" placeholder='예: {"lose":0.28,"even":0.64,"win3":0.075,"win4":0.005}'></textarea>
+                <div class="muted">lose/even/win3/win4 합이 1이어야 함. jackpot은 운영자 수동.</div>
+              </div>
+            </div>
+
+            <div class="row" style="justify-content:flex-end">
+              <button class="btn" id="btnLoadCfg">LOAD</button>
+              <button class="btn primary" id="btnSaveCfg">SAVE</button>
+            </div>
+          </div>
+
+          <!-- RIGHT: JACKPOT + USERS -->
+          <div class="panel">
+            <div class="h">
+              <h3>JACKPOT / USERS</h3>
+              <div class="row">
+                <span class="tag" id="tagMode">MODE: -</span>
+                <span class="tag" id="tagArmed">ARMED: -</span>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <div class="label">JACKPOT MODE</div>
+                <select id="jpMode">
+                  <option value="OFF">OFF (잭팟 없음)</option>
+                  <option value="MANUAL">MANUAL (운영자 지정)</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="label">MONTH (YYYY-MM)</div>
+                <input id="jpMonth" placeholder="예: 2026-01" />
+              </div>
+              <div class="field">
+                <div class="label">REMAINING (이번달 잭팟 횟수)</div>
+                <input id="jpRemaining" type="number" step="1" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field" style="min-width:100%">
+                <div class="label">TARGET USER IDs (콤마/줄바꿈 가능)</div>
+                <textarea id="jpTargets" placeholder="예: user01,user02,user03"></textarea>
+                <div class="muted">여기에 넣은 ID만 잭팟 대상으로 인정됨(운영자 수동).</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="btn" id="btnArm">ARM / DISARM</button>
+              <button class="btn primary" id="btnSaveJp">SAVE JACKPOT</button>
+            </div>
+
+            <hr style="border:0;border-top:1px solid rgba(110,170,255,.12); margin:14px 0;">
+
+            <div class="h">
+              <h3>USERS</h3>
+              <div class="row">
+                <input id="q" placeholder="검색: id / name / nickname" style="min-width:240px" />
+              </div>
+            </div>
+
+            <div style="overflow:auto; max-height: 420px; border-radius:16px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:32%">ID</th>
+                    <th style="width:28%">NAME/NICK</th>
+                    <th class="right" style="width:18%">BALANCE</th>
+                    <th style="width:22%">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="userTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- adjust modal -->
+  <div class="overlay" id="ov">
+    <div class="modal">
+      <h2>UT 조정</h2>
+      <div class="muted" id="mUser">-</div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <div class="field" style="min-width:100%">
+          <div class="label">DELTA (예: +10 또는 -5)</div>
+          <input id="mDelta" placeholder="+10" />
+        </div>
+        <div class="field" style="min-width:100%">
+          <div class="label">REASON</div>
+          <input id="mReason" placeholder="예: 운영자 조정" />
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="mCancel">CANCEL</button>
+        <button class="btn primary" id="mOk">APPLY</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ✅ 너의 Apps Script URL로 유지
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+
+    const el = {
+      adminKey: document.getElementById("adminKey"),
+      btnRefresh: document.getElementById("btnRefresh"),
+      btnLogout: document.getElementById("btnLogout"),
+
+      kUsers: document.getElementById("kUsers"),
+      kSupply: document.getElementById("kSupply"),
+      kCasino: document.getElementById("kCasino"),
+      kJackpot: document.getElementById("kJackpot"),
+
+      cfgStatus: document.getElementById("cfgStatus"),
+      oddsProfile: document.getElementById("oddsProfile"),
+      feeFlat: document.getElementById("feeFlat"),
+      feeRate: document.getElementById("feeRate"),
+      oddsCustom: document.getElementById("oddsCustom"),
+      btnLoadCfg: document.getElementById("btnLoadCfg"),
+      btnSaveCfg: document.getElementById("btnSaveCfg"),
+
+      jpMode: document.getElementById("jpMode"),
+      jpMonth: document.getElementById("jpMonth"),
+      jpRemaining: document.getElementById("jpRemaining"),
+      jpTargets: document.getElementById("jpTargets"),
+      btnArm: document.getElementById("btnArm"),
+      btnSaveJp: document.getElementById("btnSaveJp"),
+      tagMode: document.getElementById("tagMode"),
+      tagArmed: document.getElementById("tagArmed"),
+
+      q: document.getElementById("q"),
+      userTbody: document.getElementById("userTbody"),
+
+      ov: document.getElementById("ov"),
+      mUser: document.getElementById("mUser"),
+      mDelta: document.getElementById("mDelta"),
+      mReason: document.getElementById("mReason"),
+      mCancel: document.getElementById("mCancel"),
+      mOk: document.getElementById("mOk"),
+
+      toast: document.getElementById("toast"),
+    };
+
+    const S = {
+      key: sessionStorage.getItem("casino_admin_key") || "",
+      users: [],
+      cfg: {},
+      selectedUserId: ""
+    };
+
+    function toast(msg){
+      el.toast.textContent = msg;
+      el.toast.classList.add("on");
+      setTimeout(()=>el.toast.classList.remove("on"), 1400);
+    }
+
+    function safeKey(){
+      const k = (el.adminKey.value || S.key || "").trim();
+      return k;
+    }
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+    function fmt(n){
+      const x = Number(n||0);
+      if (!Number.isFinite(x)) return "0";
+      if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
+      return (Math.round(x*100)/100).toString();
+    }
+
+    function jsonp(url, params){
+      return new Promise((resolve, reject)=>{
+        const cb = "__admin_cb_" + Math.random().toString(36).slice(2);
+        params = Object.assign({}, params, { callback: cb });
+        const qs = new URLSearchParams(params);
+        const src = url + (url.includes("?") ? "&" : "?") + qs.toString();
+
+        const script = document.createElement("script");
+        let done = false;
+
+        const t = setTimeout(()=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("timeout"));
+        }, 12000);
+
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(_){}
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cb] = (data)=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = ()=>{
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("jsonp_failed"));
+        };
+
+        script.src = src;
+        document.head.appendChild(script);
+      });
+    }
+
+    async function api(action, params={}){
+      const adminKey = safeKey();
+      const res = await jsonp(SCRIPT_URL, Object.assign({ action, adminKey }, params));
+      if (!res || res.ok !== true){
+        throw new Error((res && (res.message||res.error)) ? (res.message||res.error) : "api_error");
+      }
+      return res;
+    }
+
+    function monthNow(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      return `${y}-${m}`;
+    }
+
+    function renderUsers(){
+      const q = (el.q.value||"").trim().toLowerCase();
+      const rows = S.users
+        .filter(u=>{
+          if (!q) return true;
+          return (String(u.id||"").toLowerCase().includes(q)
+            || String(u.name||"").toLowerCase().includes(q)
+            || String(u.nickname||"").toLowerCase().includes(q));
+        })
+        .sort((a,b)=>(Number(b.balance||0) - Number(a.balance||0)));
+
+      el.userTbody.innerHTML = "";
+      for (const u of rows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${u.id || "-"}</td>
+          <td>${(u.nickname || u.name || "-")}</td>
+          <td class="right">${fmt(u.balance||0)}</td>
+          <td>
+            <button class="btn" data-id="${u.id}">ADJUST</button>
+          </td>
+        `;
+        el.userTbody.appendChild(tr);
+      }
+
+      el.userTbody.querySelectorAll("button[data-id]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const id = btn.getAttribute("data-id");
+          const u = S.users.find(x=>String(x.id)===String(id));
+          S.selectedUserId = id;
+          el.mUser.textContent = `${id} / ${(u && (u.nickname||u.name)) || "-"}`;
+          el.mDelta.value = "";
+          el.mReason.value = "운영자 조정";
+          el.ov.classList.add("on");
+        });
+      });
+    }
+
+    function renderCfg(){
+      const c = S.cfg || {};
+      el.oddsProfile.value = c.oddsProfile || "MID";
+      el.feeFlat.value = (c.feeFlat ?? 0);
+      el.feeRate.value = (c.feeRatePercent ?? 0);
+      el.oddsCustom.value = c.oddsCustomJson || "";
+
+      el.jpMode.value = c.jackpotMode || "OFF";
+      el.jpMonth.value = c.jackpotMonth || monthNow();
+      el.jpRemaining.value = (c.jackpotRemaining ?? 0);
+      el.jpTargets.value = (c.jackpotTargets || "").split(",").join("\n");
+
+      el.tagMode.textContent = `MODE: ${(c.jackpotMode||"-")}`;
+      el.tagMode.className = "tag " + ((c.jackpotMode==="MANUAL") ? "on" : "off");
+
+      el.tagArmed.textContent = `ARMED: ${(c.jackpotArmed ? "ON":"OFF")}`;
+      el.tagArmed.className = "tag " + (c.jackpotArmed ? "on" : "off");
+    }
+
+    async function loadAll(){
+      const k = safeKey();
+      if (!k){
+        toast("ADMIN KEY 입력");
+        return;
+      }
+      sessionStorage.setItem("casino_admin_key", k);
+      S.key = k;
+
+      el.cfgStatus.textContent = "loading...";
+      const dash = await api("adminGetDashboard");
+      const cfg = await api("adminGetConfig");
+
+      S.users = dash.users || [];
+      S.cfg = cfg.config || {};
+
+      el.kUsers.textContent = String(dash.totalUsers ?? "-");
+      el.kSupply.textContent = fmt(dash.totalSupply ?? 0);
+      el.kCasino.textContent = fmt(dash.casinoTotal ?? 0);
+      el.kJackpot.textContent = fmt(dash.jackpotTotal ?? 0);
+
+      renderCfg();
+      renderUsers();
+      el.cfgStatus.textContent = "ok";
+      toast("SYNC OK");
+    }
+
+    async function saveCfg(){
+      const cfg = {
+        oddsProfile: el.oddsProfile.value,
+        feeFlat: Number(el.feeFlat.value || 0),
+        feeRatePercent: Number(el.feeRate.value || 0),
+        oddsCustomJson: String(el.oddsCustom.value || "").trim()
+      };
+      await api("adminSetConfig", { json: JSON.stringify(cfg) });
+      toast("CONFIG SAVED");
+      await loadAll();
+    }
+
+    async function saveJackpot(){
+      const targets = String(el.jpTargets.value || "")
+        .split(/[\n,]+/g).map(s=>s.trim()).filter(Boolean);
+
+      const payload = {
+        jackpotMode: el.jpMode.value,
+        jackpotMonth: String(el.jpMonth.value || monthNow()).trim(),
+        jackpotRemaining: Number(el.jpRemaining.value || 0),
+        jackpotTargets: targets.join(",")
+      };
+      await api("adminSetJackpot", { json: JSON.stringify(payload) });
+      toast("JACKPOT SAVED");
+      await loadAll();
+    }
+
+    async function toggleArm(){
+      await api("adminToggleJackpotArmed");
+      toast("ARM TOGGLED");
+      await loadAll();
+    }
+
+    async function adjustBalance(){
+      const id = S.selectedUserId;
+      const delta = Number(String(el.mDelta.value||"").trim());
+      if (!id || !Number.isFinite(delta) || delta === 0){
+        toast("delta 숫자 입력");
+        return;
+      }
+      const reason = String(el.mReason.value || "운영자 조정").trim();
+      await api("adminAdjustBalance", { id, delta: String(delta), reason });
+      toast("APPLIED");
+      el.ov.classList.remove("on");
+      await loadAll();
+    }
+
+    el.btnRefresh.addEventListener("click", loadAll);
+    el.btnLogout.addEventListener("click", ()=>{
+      sessionStorage.removeItem("casino_admin_key");
+      S.key = "";
+      el.adminKey.value = "";
+      toast("LOGOUT");
+    });
+    el.btnLoadCfg.addEventListener("click", loadAll);
+    el.btnSaveCfg.addEventListener("click", saveCfg);
+    el.btnSaveJp.addEventListener("click", saveJackpot);
+    el.btnArm.addEventListener("click", toggleArm);
+    el.q.addEventListener("input", renderUsers);
+
+    el.mCancel.addEventListener("click", ()=> el.ov.classList.remove("on"));
+    el.mOk.addEventListener("click", adjustBalance);
+
+    // boot
+    (function(){
+      if (S.key) el.adminKey.value = S.key;
+      el.jpMonth.value = monthNow();
+    })();
+  </script>
+</body>
+</html>
