@@ -1,14 +1,13 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
 
-  // ✅ Apps Script 웹앱(/exec) URL
+  // ✅ 유송이 준 Apps Script 웹앱(/exec) URL
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ 이미지 폴더: /games/img/slot
-  // slot.html이 /games/slot.html 이니까 상대경로는 ./img/slot 이 맞다.
+  // ✅ 이미지 폴더: games/img/slot (slot.html 기준 상대경로)
   const IMG_BASE = "./img/slot";
 
-  const BG_FILES = ["bg1.png", "bg2.png", "bg3.png", "bg4.png", "bg5.png"];
+  const BG_FILES = ["bg1.png","bg2.png","bg3.png","bg4.png","bg5.png"];
 
   const SYMBOLS = [
     { key: "star1",  label: "STAR1",  file: "star1.png"  },
@@ -35,16 +34,23 @@
 
     BET: { min: 10, max: 1000, step: 5, def: 10 },
 
+    SPIN: {
+      durationMs: 10000,   // ✅ 유송 요청: 10초
+      tickMinMs: 80,
+      tickMaxMs: 200,      // ✅ 느려질수록 0.2초(200ms)까지
+      bgMinMs: 200         // ✅ 배경 변경 최소 간격(요청값)
+    },
+
     ASSET: {
       imgBase: IMG_BASE,
-      bgFiles: BG_FILES
+      bgFiles: BG_FILES,
     },
 
     SYMBOLS,
     SYMBOL_MAP,
 
     PAYTABLE_TEXT: [
-      "2연속: EVEN(±1)",
+      "2연속: EVEN(+1)",
       "3연속: WIN(3x)",
       "4연속: WIN(10x)",
       "5연속: MEGA(25x)",
@@ -55,7 +61,7 @@
       sound: "slot_sound_on",
       auto: "slot_auto_on",
       bet: "slot_bet_ut",
-      banner: "slot_jackpot_banner_v1"
+      payCollapsed: "slot_pay_collapsed"
     }
   };
 })();
