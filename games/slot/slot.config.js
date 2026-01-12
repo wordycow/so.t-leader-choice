@@ -38,7 +38,7 @@
     betDefault: 10,
     betMin: 10,
     betMax: 1000,
-    betStep: 10,
+    betStep: 5,
   };
 
   const STORAGE = {
