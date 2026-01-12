@@ -22,12 +22,19 @@ const CONFIG = {
     reels: 5, rows: 3, symbolHeight: 0, bgIntervalTime: 200, dummySymbolCount: 150 
 };
 
-let state = { id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, bgIntervalId: null, jackpotPool: 0 };
+let state = {
+    id: null, wallet: 0, bet: 10, 
+    isSpinning: false, audioEnabled: true, 
+    isAuto: false, 
+    bgIntervalId: null, jackpotPool: 0   
+};
+
 let els = {};
 const audios = {};
 
 async function init() {
-    console.log("SLOT ENGINE: REAL MECHANIC V4");
+    console.log("SLOT ENGINE: V6 FINAL - REAL AUTO");
+
     els = {
         bg: document.getElementById('game-bg'),
         overlay: document.getElementById('start-overlay'),
@@ -42,7 +49,9 @@ async function init() {
         minus: document.getElementById('btn-bet-minus'),
         userId: document.getElementById('user-id'),
         ticker: document.querySelector('.ticker-item'),
-        gameContainer: document.getElementById('game-container')
+        gameContainer: document.getElementById('game-container'),
+        btnSound: document.getElementById('btn-sound'),
+        btnAuto: document.getElementById('btn-auto')
     };
 
     const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
@@ -63,16 +72,38 @@ async function init() {
                 const audio = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[key]);
                 if(key === 'spin') audio.loop = true;
                 audios[key] = audio;
-            } catch(e) { console.warn("Audio error", key); }
+            } catch(e) {}
         }
     });
 
     createReels(); 
 
     if(els.overlay) els.overlay.addEventListener('click', unlockAudio);
-    if(els.spinBtn) els.spinBtn.addEventListener('click', onSpinClick);
+    if(els.spinBtn) els.spinBtn.addEventListener('click', () => { state.isAuto = false; updateAutoBtn(); onSpinClick(); });
     if(els.plus) els.plus.addEventListener('click', () => changeBet(5));
     if(els.minus) els.minus.addEventListener('click', () => changeBet(-5));
+    if(els.btnSound) els.btnSound.addEventListener('click', toggleSound);
+    if(els.btnAuto) els.btnAuto.addEventListener('click', toggleAuto);
+}
+
+function toggleSound() {
+    state.audioEnabled = !state.audioEnabled;
+    els.btnSound.innerText = state.audioEnabled ? "🔊 ON" : "🔇 OFF";
+    els.btnSound.classList.toggle("active", state.audioEnabled);
+}
+
+function toggleAuto() {
+    state.isAuto = !state.isAuto;
+    updateAutoBtn();
+    // 오토를 켰는데 현재 멈춰있다면 바로 시작
+    if (state.isAuto && !state.isSpinning) {
+        onSpinClick();
+    }
+}
+
+function updateAutoBtn() {
+    els.btnAuto.innerText = state.isAuto ? "AUTO ON" : "AUTO OFF";
+    els.btnAuto.classList.toggle("active", state.isAuto);
 }
 
 function updateWinPanel(label, amount) {
@@ -87,28 +118,21 @@ function animateValue(obj, start, end, duration) {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
         obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString();
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        } else {
-            obj.innerText = end.toLocaleString();
-        }
+        if (progress < 1) window.requestAnimationFrame(step);
+        else obj.innerText = end.toLocaleString();
     };
     window.requestAnimationFrame(step);
 }
 
 async function syncUserData(animate = false) {
     if (!state.id) return;
-    if(!animate) updateWinPanel("SYNCING...", "...");
     try {
         const res = await jsonpRequest('getSlotState', { id: state.id });
         if (res.ok) {
             const newWallet = Number(res.user.balance);
             state.jackpotPool = Number(res.jackpotTotal);
-            if (animate && state.wallet !== newWallet) {
-                animateValue(els.walletSpan, state.wallet, newWallet, 1000);
-            } else {
-                if(els.walletSpan) els.walletSpan.innerText = newWallet.toLocaleString();
-            }
+            if (animate && state.wallet !== newWallet) animateValue(els.walletSpan, state.wallet, newWallet, 1000);
+            else if(els.walletSpan) els.walletSpan.innerText = newWallet.toLocaleString();
             state.wallet = newWallet;
             updateUI();
             updateTicker(state.jackpotPool);
@@ -136,7 +160,6 @@ function jsonpRequest(action, params = {}) {
         }
         params.action = action; params.callback = callbackName;
         script.src = `${CONFIG.API_URL}?${new URLSearchParams(params).toString()}`;
-        script.onerror = () => { cleanup(); reject(new Error("Script Error")); };
         document.body.appendChild(script);
     });
 }
@@ -171,6 +194,7 @@ function getRandomSymbolName() {
 async function onSpinClick() {
     if (state.isSpinning) return;
     if (state.wallet < state.bet) {
+        state.isAuto = false; updateAutoBtn();
         await syncUserData(); 
         if(state.wallet < state.bet) { alert("잔액 부족 (UT)"); return; }
     }
@@ -178,6 +202,7 @@ async function onSpinClick() {
     state.isSpinning = true;
     els.spinBtn.disabled = true;
     updateWinPanel("SPINNING...", `BET: ${state.bet}`);
+    
     animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500);
     state.wallet -= state.bet; 
 
@@ -192,14 +217,20 @@ async function onSpinClick() {
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    // === [핵심 수정] 릴마다 시간차를 두고 출발 ===
+    // [중요] 스핀 전 리셋 (화면 깜빡임 없이 순간이동)
+    strips.forEach((strip) => {
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateY(0px)';
+    });
+    void els.gameContainer.offsetWidth; // 리플로우 강제
+
+    // 릴 순차 출발 (다다다닥)
     strips.forEach((strip, index) => {
-        const startDelay = index * 150; // 0.15초씩 늦게 출발 (다다다닥 효과)
+        const startDelay = index * 100; // 0.1초 간격
         setTimeout(() => {
-            strip.style.transition = `transform 6s linear`; // 길게 돔
+            strip.style.transition = `transform 4s linear`; 
             const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
             strip.style.transform = `translateY(${targetY}px)`; 
-            strip.style.filter = 'none'; 
         }, startDelay);
     });
 
@@ -214,10 +245,7 @@ async function onSpinClick() {
         state.isSpinning = false;
         els.spinBtn.disabled = false;
         updateWinPanel("ERROR", "TRY AGAIN");
-        strips.forEach(strip => {
-             strip.style.transition = 'none';
-             strip.style.transform = 'translateY(0)';
-        });
+        state.isAuto = false; updateAutoBtn();
         syncUserData(true);
     }
 }
@@ -237,8 +265,7 @@ function stopReelsWithResult(data) {
         if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`;
         if(symbols[STOP_INDEX + 2]) symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
 
-        // === [핵심 수정] 정지 딜레이를 길게 주어 순차적으로 멈춤 ===
-        // 출발 시차(0.15s) + 정지 시차(0.6s) 조합
+        // [중요] 릴 순차 정지 (0.6초 간격으로 탁... 탁...)
         const stopDelay = colIdx * 600; 
         
         setTimeout(() => {
@@ -258,10 +285,10 @@ function stopReelsWithResult(data) {
                     setTimeout(() => els.gameContainer.classList.remove('shake'), 500);
                 }
             }
-        }, 1200 + stopDelay); // 기본 1.2초 보장 + 릴별 딜레이
+        }, 1500 + stopDelay); 
     });
 
-    const totalTime = 1200 + ((CONFIG.reels - 1) * 600) + 700;
+    const totalTime = 1500 + ((CONFIG.reels - 1) * 600) + 700;
     setTimeout(() => {
         handleSpinEnd(data);
     }, totalTime);
@@ -320,14 +347,19 @@ function handleSpinEnd(data) {
     updateUI();
     updateTicker(data.jackpotTotal);
 
-    setTimeout(() => {
-        const strips = document.querySelectorAll('.reel-strip');
-        strips.forEach(strip => {
-            strip.style.transition = 'none';
-            strip.style.transform = 'translateY(0px)';
-        });
-        createReels(); 
-    }, 2500); 
+    // [오토 스핀 로직]
+    // 절대 줄이지 않고, 모든 결과 확인 후 2초 뒤에 다음 스핀
+    if (state.isAuto) {
+        setTimeout(() => {
+            if (state.isAuto && state.wallet >= state.bet) {
+                onSpinClick();
+            } else if (state.wallet < state.bet) {
+                state.isAuto = false;
+                updateAutoBtn();
+                alert("잔액 부족으로 자동 스핀이 중지되었습니다.");
+            }
+        }, 2000); // 2초 대기
+    }
 }
 
 function startBgEffect() {
@@ -345,7 +377,6 @@ function stopBgEffect() {
 
 function unlockAudio() {
     if(els.overlay) els.overlay.style.display = 'none';
-    state.audioEnabled = true;
     audios.btn.play().catch(()=>{}); 
 }
 
