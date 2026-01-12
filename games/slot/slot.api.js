@@ -1,30 +1,30 @@
+/* games/slot/slot.api.js */
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const getScriptUrl = () => SLOT?.config?.SCRIPT_URL;
+  const cfg = SLOT.config || {};
 
-  async function call(action, params = {}) {
-    const base = getScriptUrl();
-    if (!base) throw new Error("SCRIPT_URL missing");
-
-    const url = new URL(base);
-    url.searchParams.set("action", action);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
-
-    const res = await fetch(url.toString(), { method: "GET", mode: "cors" });
-    const json = await res.json();
-
-    if (!json || json.ok !== true) {
-      const msg = json?.error || json?.message || "API error";
-      throw new Error(msg);
-    }
-    return json;
+  function qs(obj = {}) {
+    const u = new URLSearchParams();
+    Object.entries(obj).forEach(([k, v]) => {
+      if (v === undefined || v === null) return;
+      u.set(k, String(v));
+    });
+    return u.toString();
   }
 
-  SLOT.api = {
-    call,
-    getSlotState: (id) => call("getSlotState", { id }),
-    slotSpin: (id, bet) => call("slotSpin", { id, bet }),
-    adminInfo: () => call("adminInfo", {}),
-    adminSave: (payload) => call("adminSave", payload || {}),
-  };
+  async function call(action, params = {}) {
+    if (!cfg.SCRIPT_URL || cfg.SCRIPT_URL.includes("PASTE_YOUR")) {
+      throw new Error("SCRIPT_URL not set in slot.config.js");
+    }
+
+    const url = `${cfg.SCRIPT_URL}?${qs({ action, ...params, _ts: Date.now() })}`;
+
+    const r = await fetch(url, { method: "GET" });
+    const j = await r.json().catch(() => null);
+    if (!j) throw new Error("API response not JSON");
+    if (!j.ok) throw new Error(j.error || j.message || "API error");
+    return j;
+  }
+
+  SLOT.api = { call };
 })();
