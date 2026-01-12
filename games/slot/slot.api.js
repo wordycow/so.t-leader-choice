@@ -1,74 +1,58 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const cfg = SLOT.config || {};
+  const C = () => SLOT.config;
 
-  function isValidScriptUrl(u) {
-    return typeof u === "string" && u.startsWith("https://") && u.includes("/exec");
+  function isValidScriptUrl(url) {
+    return typeof url === "string" && url.startsWith("https://script.google.com/macros/s/");
   }
 
-  function jsonp(url, params = {}) {
+  function jsonp(action, params = {}) {
     return new Promise((resolve, reject) => {
-      const cb = "__slotcb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-      const qs = new URLSearchParams({ ...params, callback: cb }).toString();
-      const src = url + (url.includes("?") ? "&" : "?") + qs;
+      const scriptUrl = C()?.SCRIPT_URL;
+      if (!isValidScriptUrl(scriptUrl)) {
+        reject(new Error("SCRIPT_URL not set in slot.config.js"));
+        return;
+      }
+
+      const cbName = `__slot_cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const qs = new URLSearchParams({
+        action,
+        callback: cbName,
+        t: String(Date.now()),
+        ...Object.fromEntries(
+          Object.entries(params).map(([k, v]) => [k, v == null ? "" : String(v)])
+        ),
+      });
 
       const s = document.createElement("script");
+      s.src = `${scriptUrl}?${qs.toString()}`;
       s.async = true;
-      s.src = src;
 
-      let done = false;
       function cleanup() {
-        if (done) return;
-        done = true;
-        try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+        try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
         if (s && s.parentNode) s.parentNode.removeChild(s);
       }
 
-      window[cb] = (data) => {
+      window[cbName] = (data) => {
         cleanup();
         resolve(data);
       };
 
       s.onerror = () => {
         cleanup();
-        reject(new Error("JSONP network error"));
+        reject(new Error("network_error"));
       };
 
       document.head.appendChild(s);
-
-      // 타임아웃(10초)
-      setTimeout(() => {
-        if (done) return;
-        cleanup();
-        reject(new Error("JSONP timeout"));
-      }, 10000);
     });
   }
 
   SLOT.api = {
-    async call(action, params = {}) {
-      if (!isValidScriptUrl(cfg.SCRIPT_URL)) {
-        // UI에 에러문구 박지 말고, 콘솔로만 남김
-        console.error("[SLOT] SCRIPT_URL not set/invalid in slot.config.js");
-        return { ok: false, error: "script_url_not_set" };
-      }
-      return jsonp(cfg.SCRIPT_URL, { action, ...params });
+    async getSlotState(id) {
+      return jsonp("getSlotState", { id });
     },
-
-    getSlotState(id) {
-      return this.call("getSlotState", { id });
+    async slotSpin(id, bet) {
+      return jsonp("slotSpin", { id, bet });
     },
-
-    slotSpin(id, bet) {
-      return this.call("slotSpin", { id, bet });
-    },
-
-    adminInfo() {
-      return this.call("adminInfo", {});
-    },
-
-    adminSave(payload) {
-      return this.call("adminSave", payload || {});
-    }
   };
 })();
