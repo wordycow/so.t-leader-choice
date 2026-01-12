@@ -22,18 +22,12 @@ const CONFIG = {
     reels: 5, rows: 3, symbolHeight: 0, bgIntervalTime: 200, dummySymbolCount: 150 
 };
 
-// === 상태(State) ===
-let state = {
-    id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, bgIntervalId: null, jackpotPool: 0   
-};
-
+let state = { id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, bgIntervalId: null, jackpotPool: 0 };
 let els = {};
 const audios = {};
 
-// === 초기화 ===
 async function init() {
-    console.log("SLOT ENGINE: GLASS V3 STARTED");
-
+    console.log("SLOT ENGINE: REAL MECHANIC V4");
     els = {
         bg: document.getElementById('game-bg'),
         overlay: document.getElementById('start-overlay'),
@@ -77,8 +71,6 @@ async function init() {
 
     if(els.overlay) els.overlay.addEventListener('click', unlockAudio);
     if(els.spinBtn) els.spinBtn.addEventListener('click', onSpinClick);
-    
-    // [수정] 5단위 베팅 조절
     if(els.plus) els.plus.addEventListener('click', () => changeBet(5));
     if(els.minus) els.minus.addEventListener('click', () => changeBet(-5));
 }
@@ -200,13 +192,15 @@ async function onSpinClick() {
     const symbolDom = document.querySelector('.symbol');
     if(symbolDom) CONFIG.symbolHeight = symbolDom.offsetHeight;
 
-    strips.forEach((strip) => {
-        // [수정] 스핀 시간을 8초로 늘려 오랫동안 돌게 함 (대기 시간 확보)
-        strip.style.transition = `transform 8s linear`; 
-        const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
-        strip.style.transform = `translateY(${targetY}px)`; 
-        // [수정] 블러 효과 제거 (선명하게)
-        strip.style.filter = 'none'; 
+    // === [핵심 수정] 릴마다 시간차를 두고 출발 ===
+    strips.forEach((strip, index) => {
+        const startDelay = index * 150; // 0.15초씩 늦게 출발 (다다다닥 효과)
+        setTimeout(() => {
+            strip.style.transition = `transform 6s linear`; // 길게 돔
+            const targetY = -(CONFIG.symbolHeight * (CONFIG.dummySymbolCount - 20));
+            strip.style.transform = `translateY(${targetY}px)`; 
+            strip.style.filter = 'none'; 
+        }, startDelay);
     });
 
     try {
@@ -243,9 +237,9 @@ function stopReelsWithResult(data) {
         if(symbols[STOP_INDEX + 1]) symbols[STOP_INDEX + 1].style.backgroundImage = `url('${CONFIG.imgObj.path}${midSym}')`;
         if(symbols[STOP_INDEX + 2]) symbols[STOP_INDEX + 2].style.backgroundImage = `url('${CONFIG.imgObj.path}${botSym}')`;
 
-        // [수정] 릴마다 1초(1000ms)씩 간격을 둬서 확실하게 순차 정지
-        // 0번: 1.0초 후, 1번: 2.0초 후 ... 4번: 5.0초 후 정지
-        const delay = colIdx * 1000; 
+        // === [핵심 수정] 정지 딜레이를 길게 주어 순차적으로 멈춤 ===
+        // 출발 시차(0.15s) + 정지 시차(0.6s) 조합
+        const stopDelay = colIdx * 600; 
         
         setTimeout(() => {
             strip.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)'; 
@@ -264,11 +258,10 @@ function stopReelsWithResult(data) {
                     setTimeout(() => els.gameContainer.classList.remove('shake'), 500);
                 }
             }
-        }, 1000 + delay); // 기본 1초 + 릴별 딜레이
+        }, 1200 + stopDelay); // 기본 1.2초 보장 + 릴별 딜레이
     });
 
-    // 전체 종료 시간 = 마지막 릴 멈추고 0.7초 뒤
-    const totalTime = 1000 + ((CONFIG.reels - 1) * 1000) + 700;
+    const totalTime = 1200 + ((CONFIG.reels - 1) * 600) + 700;
     setTimeout(() => {
         handleSpinEnd(data);
     }, totalTime);
@@ -364,11 +357,10 @@ function updateTicker(jackpotAmount) {
     if(els.ticker) els.ticker.innerText = `★ JACKPOT POOL: ${jackpotAmount.toLocaleString()} UT ★ [NOTICE] 5연속 MEGA WIN 25배 지급! ★ THE UNIQUE SLOT OPEN ★`;
 }
 
-// [수정] 5단위 베팅 조절 함수
 function changeBet(delta) {
     if(state.isSpinning) return;
     const newBet = state.bet + delta;
-    if(newBet >= 5 && newBet <= 1000) { // 최소 5UT부터 가능
+    if(newBet >= 5 && newBet <= 1000) {
         state.bet = newBet;
         updateUI();
     }
