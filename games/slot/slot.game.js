@@ -238,20 +238,30 @@ function stopReelsWithResult(data) {
 
         const delay = colIdx * 300; // 릴 별 시간차
         
-        setTimeout(() => {
-            strip.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'; // 부드러운 정지
-            strip.style.filter = 'none'; 
-            
-            // 정확히 STOP_INDEX가 맨 위에 오도록 이동
-            const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
-            strip.style.transform = `translateY(${finalY}px)`;
+      // [기존 코드] stopReelsWithResult 함수 내부...
+setTimeout(() => {
+    strip.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'; 
+    strip.style.filter = 'none'; 
+    
+    const finalY = -(STOP_INDEX * CONFIG.symbolHeight);
+    strip.style.transform = `translateY(${finalY}px)`;
 
-            if(state.audioEnabled) {
-                const stopSound = audios.stop.cloneNode();
-                stopSound.volume = 0.6;
-                stopSound.play();
-            }
-        }, 500 + delay); 
+    if(state.audioEnabled) {
+        const stopSound = audios.stop.cloneNode();
+        stopSound.volume = 0.6;
+        stopSound.play();
+    }
+
+    // ▼▼▼ [여기부터 추가!] 마지막 릴이 멈출 때 화면 흔들기 ▼▼▼
+    if (colIdx === CONFIG.reels - 1) {
+        const gameContainer = document.getElementById('game-container');
+        gameContainer.classList.add('shake-hard');
+        // 0.5초 뒤에 흔들림 클래스 제거 (다음 스핀을 위해)
+        setTimeout(() => gameContainer.classList.remove('shake-hard'), 500);
+    }
+    // ▲▲▲ [여기까지 추가!] ▲▲▲
+
+}, 500 + delay);
     });
 
     // 종료 처리
