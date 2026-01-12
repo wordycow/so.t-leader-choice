@@ -1,37 +1,35 @@
 (() => {
   const SLOT = (window.SLOT = window.SLOT || {});
-  const C = () => SLOT.config;
+  const CFG = () => SLOT.config;
 
-  function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
+  function randKey() {
+    const syms = CFG().SYMBOLS || [];
+    return syms[Math.floor(Math.random() * syms.length)].key;
   }
 
-  async function animateSpin(finalKeys, durationMs) {
-    const total = C().GRID.rows * C().GRID.cols;
-    if (!Array.isArray(finalKeys) || finalKeys.length !== total) {
-      // 키가 이상하면 그냥 랜덤으로라도 표시
-      finalKeys = Array.from({ length: total }, () => C().SYMBOLS[(Math.random() * C().SYMBOLS.length) | 0].key);
-    }
+  async function animateToKeys(finalKeys, opts = {}) {
+    const durationMs = Math.max(600, opts.durationMs || 1200);
+    const tickMs = Math.max(50, opts.tickMs || 120); // 스핀 속도
+    const minBgMs = 200; // ✅ “최소 속도일때 0.2초”
+    const bgMs = Math.min(tickMs, minBgMs) ? Math.max(minBgMs, tickMs) : tickMs; // 안전
 
-    const dur = Math.max(600, Math.floor(durationMs || C().SPIN.durationMs || 1600));
-    // 그리드 난수 갱신 간격 = 스핀 속도 느낌
-    const tickMs = Math.max(60, Math.min(250, Math.floor(dur / 18)));
-    // ✅ 배경은 스핀 속도랑 같이(최소 200ms)
-    const bgMs = Math.max(Number(C().SPIN.minBgIntervalMs || 200), tickMs);
+    // bg는 스핀 속도와 같게. 단, 느린 쪽 최소 0.2초(200ms)
+    const bgInterval = Math.max(minBgMs, tickMs);
 
-    SLOT.ui.startBgCycle(bgMs);
+    SLOT.ui.startBgSpin(bgInterval);
 
     const start = Date.now();
-    while (Date.now() - start < dur) {
-      SLOT.ui.randomGrid();
-      await sleep(tickMs);
+    while (Date.now() - start < durationMs) {
+      const keys = finalKeys.map(() => randKey());
+      SLOT.ui.setKeys(keys);
+      await new Promise(r => setTimeout(r, tickMs));
     }
 
-    SLOT.ui.stopBgCycle();
-    SLOT.ui.setGridKeys(finalKeys);
+    SLOT.ui.setKeys(finalKeys);
+    SLOT.ui.stopBgSpin();
   }
 
   SLOT.game = {
-    animateSpin,
+    animateToKeys
   };
 })();
