@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>THE UNIQUE SLOT - CYBERPUNK</title>
+  <title>THE UNIQUE SLOT - PREMIUM 5x5</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --neon-blue: #00f3ff;
       --neon-pink: #bc13fe;
       --gold: #ffd700;
-      --gold-dim: #bfa406;
+      --gold-dark: #b8860b;
       --bg-dark: #050505;
-      --panel-bg: rgba(20, 25, 30, 0.9);
-      --border-glow: 0 0 10px rgba(0, 243, 255, 0.3);
+      --panel-bg: rgba(18, 20, 24, 0.95);
     }
 
     * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -34,8 +33,9 @@
     }
     .grid-overlay {
       position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
-      background: linear-gradient(transparent 95%, rgba(0, 243, 255, 0.1) 96%, transparent 97%),
-                  linear-gradient(90deg, transparent 95%, rgba(188, 19, 254, 0.1) 96%, transparent 97%);
+      background: 
+        linear-gradient(transparent 95%, rgba(0, 243, 255, 0.05) 96%, transparent 97%),
+        linear-gradient(90deg, transparent 95%, rgba(188, 19, 254, 0.05) 96%, transparent 97%);
       background-size: 60px 60px;
       transform: perspective(500px) rotateX(60deg);
       animation: gridMove 20s linear infinite;
@@ -45,130 +45,174 @@
 
     /* 메인 컨테이너 */
     #game-container {
-      width: 100%; max-width: 500px; height: 100%; max-height: 100vh;
+      width: 100%; max-width: 550px; height: 100%; max-height: 100vh;
       display: flex; flex-direction: column;
-      padding: 15px; position: relative;
+      padding: 10px; position: relative;
     }
 
-    /* 1. 상단: 잭팟 풀 (크게 강조) */
+    /* --- 1. 상단 섹션 (헤더 + 잭팟) --- */
     .top-section {
-      flex: 0 0 auto; text-align: center; margin-bottom: 10px;
-      text-shadow: 0 0 15px var(--gold);
-    }
-    .jp-label { font-size: 0.9rem; color: var(--neon-blue); letter-spacing: 4px; font-weight: 700; margin-bottom: -5px; }
-    .jp-amount {
-      font-size: 3rem; font-weight: 900; color: var(--gold);
-      background: linear-gradient(180deg, #fff, var(--gold));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
-      line-height: 1;
+      flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;
     }
 
-    /* 2. 슬롯 머신 프레임 */
+    /* 헤더 (홈버튼 + 로고 + ID) */
+    .header-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 5px;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    
+    /* [NEW] 메인으로 가기 버튼 */
+    .btn-home {
+      background: linear-gradient(135deg, #444, #222);
+      border: 1px solid #666; color: #fff;
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; cursor: pointer; text-decoration: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+      transition: 0.1s;
+    }
+    .btn-home:active { transform: scale(0.95); background: #111; }
+
+    .brand-name { font-size: 1.1rem; color: #888; letter-spacing: 2px; font-weight: 700; margin: 0; }
+    .user-id { font-size: 1rem; color: var(--neon-blue); font-weight: bold; text-shadow: 0 0 5px rgba(0, 243, 255, 0.5); }
+
+    /* [UPGRADE] 잭팟 패널 */
+    .jackpot-panel {
+      background: linear-gradient(180deg, rgba(40,0,0,0.8), rgba(10,0,0,0.9));
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      padding: 10px; text-align: center;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2), inset 0 0 30px rgba(255, 0, 0, 0.1);
+    }
+    /* 금빛 광택 애니메이션 */
+    .jackpot-panel::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,215,0,0.1), transparent);
+      animation: shine 3s infinite;
+    }
+    @keyframes shine { 0% { transform: translate(-100%, -100%) rotate(45deg); } 100% { transform: translate(100%, 100%) rotate(45deg); } }
+
+    .jp-label { 
+      font-size: 0.8rem; color: #ffaa00; letter-spacing: 4px; font-weight: 800; 
+      margin-bottom: 2px; text-shadow: 0 1px 2px #000;
+    }
+    .jp-amount {
+      font-size: 2.8rem; font-weight: 900; color: #fff;
+      background: linear-gradient(180deg, #fff 20%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+      line-height: 1; margin: 0;
+    }
+
+    /* --- 2. 슬롯 머신 프레임 (5x5) --- */
     .machine-frame {
       flex: 1; position: relative;
-      background: rgba(0, 0, 0, 0.6);
-      border: 2px solid var(--neon-pink);
-      border-radius: 4px; /* 사이버펑크는 각진 느낌 */
-      box-shadow: 0 0 20px rgba(188, 19, 254, 0.2), inset 0 0 30px #000;
+      background: rgba(0, 0, 0, 0.7);
+      border: 3px solid var(--neon-pink); /* 핑크 네온 테두리 */
+      border-radius: 8px;
+      box-shadow: 0 0 25px rgba(188, 19, 254, 0.25), inset 0 0 50px #000;
       overflow: hidden; margin-bottom: 10px;
-      /* 네온 코너 장식 */
-      clip-path: polygon(
-        0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 
-        100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px)
-      );
     }
     #slot-canvas { width: 100%; height: 100%; display: block; }
+    
+    /* 윈 라인 (중앙 강조) */
     .win-line {
-      position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-      background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue);
+      position: absolute; top: 50%; left: 0; width: 100%; height: 4px;
+      background: rgba(255, 215, 0, 0.3); box-shadow: 0 0 15px var(--gold);
       transform: translateY(-50%); display: none; z-index: 10;
     }
 
-    /* 3. 하단 컨트롤 덱 (통합형) */
+    /* --- 3. 컨트롤 덱 (고급 그라데이션) --- */
     .control-deck {
       flex: 0 0 auto;
       background: var(--panel-bg);
-      border: 1px solid var(--neon-blue);
-      border-radius: 15px;
+      border: 1px solid #333;
+      border-top: 3px solid var(--neon-blue);
+      border-radius: 16px 16px 0 0; /* 위쪽만 둥글게 */
       padding: 15px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
       position: relative;
     }
-    /* 덱 상단 장식바 */
-    .deck-top-bar {
-      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-      width: 60%; height: 4px; background: var(--neon-blue);
-      box-shadow: 0 0 10px var(--neon-blue); border-radius: 2px;
-    }
 
-    /* 정보창 (메시지 + 지갑) */
+    /* 정보창 LCD */
     .info-lcd {
-      background: #000; border: 1px solid #333;
-      border-radius: 4px; padding: 5px 10px;
+      background: #080808; border: 1px solid #333;
+      border-radius: 6px; padding: 8px 12px;
       margin-bottom: 15px;
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: inset 0 0 10px rgba(0,243,255,0.1);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
     }
-    .msg-area { font-size: 1rem; color: #fff; font-weight: 700; }
-    .msg-area.win { color: var(--gold); text-shadow: 0 0 5px var(--gold); animation: blink 0.5s infinite; }
+    .msg-area { font-size: 1.1rem; color: #fff; font-weight: 700; letter-spacing: 1px; }
+    .msg-area.win { color: var(--gold); text-shadow: 0 0 10px var(--gold); animation: blink 0.5s infinite; }
     
     .wallet-area { text-align: right; }
-    .wallet-lbl { font-size: 0.6rem; color: #666; display: block; line-height: 1; }
-    .wallet-val { font-size: 1.4rem; color: var(--neon-blue); font-weight: 700; text-shadow: 0 0 5px var(--neon-blue); }
+    .wallet-lbl { font-size: 0.65rem; color: #666; display: block; line-height: 1.2; font-weight: 700; }
+    .wallet-val { font-size: 1.5rem; color: var(--neon-blue); font-weight: 700; text-shadow: 0 0 8px rgba(0, 243, 255, 0.4); }
 
-    /* 버튼 그룹 */
+    /* 버튼 공통 스타일 (고급 그라데이션) */
+    .cyber-btn {
+      border: none; outline: none; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: transform 0.1s, filter 0.1s;
+      position: relative; overflow: hidden;
+    }
+    .cyber-btn:active { transform: translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    /* 금속 질감 효과 */
+    .cyber-btn::before {
+      content: ''; position: absolute; top:0; left:0; width:100%; height:50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+      pointer-events: none;
+    }
+
+    /* 상단 버튼 그룹 */
     .btn-row-top {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 12px; gap: 10px;
+      margin-bottom: 15px; gap: 10px;
     }
 
-    /* 버튼 스타일 (사이버펑크) */
-    .cyber-btn {
-      background: linear-gradient(180deg, #2a2a2a, #111);
-      border: 1px solid #444; color: #888;
-      border-radius: 6px; cursor: pointer;
-      font-family: 'Rajdhani', sans-serif; font-weight: 700;
-      transition: all 0.1s; position: relative; overflow: hidden;
+    /* 기능 버튼 (Sound/Auto) - 메탈릭 블루/실버 */
+    .btn-func {
+      width: 70px; height: 50px; font-size: 0.8rem; line-height: 1.1;
+      color: #e0e0e0;
+      background: linear-gradient(180deg, #3d4a5d, #232b36);
+      border: 1px solid #4a5b73;
     }
-    .cyber-btn:active { transform: translateY(2px); background: #000; }
-    .cyber-btn::after {
-      content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
-      background: var(--neon-blue); opacity: 0.5;
+    .btn-func.active {
+      background: linear-gradient(180deg, #00c3ff, #007ea7);
+      color: #fff; border-color: #00f3ff;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
     }
 
-    /* 기능 버튼 (Sound, Auto) */
-    .btn-func { width: 60px; height: 45px; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
-    .btn-func.active { 
-      color: #000; background: var(--neon-blue); border-color: var(--neon-blue); 
-      box-shadow: 0 0 15px var(--neon-blue);
-    }
-    .btn-func.active::after { display: none; }
-
-    /* 베팅 컨트롤 (중앙) */
+    /* 베팅 컨트롤 - 다크 메탈 */
     .bet-control {
-      display: flex; align-items: center; gap: 5px;
-      background: #000; padding: 3px; border-radius: 6px; border: 1px solid #333;
+      display: flex; align-items: center; gap: 6px;
+      background: #000; padding: 4px; border-radius: 8px; border: 1px solid #333;
     }
-    .btn-step { width: 35px; height: 35px; font-size: 1.2rem; color: #fff; background: #222; border: none; }
-    .bet-display { width: 70px; text-align: center; }
-    .bet-lbl { font-size: 0.6rem; color: #555; }
-    .bet-val { font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+    .btn-step {
+      width: 40px; height: 40px; font-size: 1.4rem; color: #fff;
+      background: linear-gradient(180deg, #444, #222);
+      border: 1px solid #555;
+    }
+    .bet-display { width: 80px; text-align: center; }
+    .bet-lbl { font-size: 0.65rem; color: #666; }
+    .bet-val { font-size: 1.3rem; color: var(--gold); font-weight: 700; }
 
-    /* 대망의 스핀 버튼 (와이드 바) */
-    .spin-bar-container { position: relative; width: 100%; height: 60px; }
+    /* SPIN 버튼 - 골드 그라데이션 */
+    .spin-container { width: 100%; height: 65px; }
     .btn-spin {
       width: 100%; height: 100%;
-      background: linear-gradient(90deg, #bfa406, #ffd700, #bfa406);
-      border: none; border-radius: 8px;
-      color: #000; font-size: 1.8rem; font-weight: 900; letter-spacing: 5px;
-      cursor: pointer;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+      background: linear-gradient(180deg, #ffd700, #ffaa00, #b8860b);
+      color: #3d2b00; font-size: 2rem; font-weight: 900; letter-spacing: 6px;
+      border: 1px solid #ffe680;
       text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+      box-shadow: 0 0 25px rgba(255, 170, 0, 0.4), inset 0 0 10px rgba(255,255,255,0.3);
     }
-    .btn-spin:active { transform: scale(0.98); background: linear-gradient(90deg, #8a7604, #bfa406); }
-    .btn-spin:disabled { filter: grayscale(1); opacity: 0.3; cursor: not-allowed; }
+    .btn-spin:active { background: linear-gradient(180deg, #b8860b, #ffaa00); }
+    .btn-spin:disabled { filter: grayscale(1); opacity: 0.4; cursor: not-allowed; }
 
     /* 오버레이 */
     #jackpot-overlay {
@@ -176,12 +220,12 @@
       display: none; justify-content: center; align-items: center; flex-direction: column;
     }
     #jackpot-overlay.show { display: flex; animation: fadeIn 0.3s; }
-    .jp-title { font-size: 4rem; color: var(--gold); animation: pulse 0.3s infinite; text-shadow: 0 0 30px var(--gold); margin: 0;}
-    .jp-win { font-size: 3rem; color: #fff; text-shadow: 0 0 20px var(--neon-blue); margin-top: 10px; }
-    .coin { position: absolute; width: 40px; height: 40px; background: gold; border-radius: 50%; animation: fall linear infinite; z-index: -1; }
+    .jp-title { font-size: 4rem; color: var(--gold); animation: pulse 0.3s infinite; text-shadow: 0 0 40px var(--gold); margin: 0;}
+    .jp-win { font-size: 3.5rem; color: #fff; text-shadow: 0 0 20px var(--neon-blue); margin-top: 15px; }
+    .coin { position: absolute; width: 45px; height: 45px; background: gold; border-radius: 50%; animation: fall linear infinite; z-index: -1; border: 2px solid #fff; box-shadow: 0 0 10px gold;}
     
     #start-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 90;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 90;
       display: flex; justify-content: center; align-items: center; flex-direction: column;
     }
 
@@ -192,10 +236,11 @@
 
     @media (max-width: 400px) {
       .jp-amount { font-size: 2.2rem; }
-      .btn-func { width: 50px; font-size: 0.7rem; }
+      .btn-func { width: 60px; font-size: 0.7rem; }
       .bet-control { gap: 2px; }
-      .bet-display { width: 50px; }
-      .btn-step { width: 30px; height: 30px; }
+      .bet-display { width: 60px; }
+      .btn-step { width: 35px; height: 35px; }
+      .btn-spin { font-size: 1.6rem; }
     }
   </style>
 </head>
@@ -212,15 +257,25 @@
 
   <div id="start-overlay">
     <h1 style="font-size:3rem; color:white; text-shadow:0 0 20px var(--neon-blue); margin:0;">UNIQUE</h1>
-    <h2 style="font-size:1.5rem; color:var(--neon-pink); letter-spacing:5px; margin:0 0 30px 0;">CYBER SLOTS</h2>
+    <h2 style="font-size:1.5rem; color:var(--neon-pink); letter-spacing:5px; margin:0 0 30px 0;">5x5 EDITION</h2>
     <div style="color:var(--gold); animation:blink 1s infinite;">TOUCH TO START</div>
   </div>
 
   <div id="game-container">
     
     <div class="top-section">
-      <div class="jp-label">MEGA JACKPOT</div>
-      <div class="jp-amount"><span id="jackpot-pool">...</span></div>
+      <div class="header-bar">
+        <div class="header-left">
+          <a href="https://wordycow.github.io/so.t-leader-choice/the-unique-main.html" class="btn-home">🏠</a>
+          <div class="brand-name">THE UNIQUE SLOT</div>
+        </div>
+        <div class="user-id" id="user-id">GUEST</div>
+      </div>
+      
+      <div class="jackpot-panel">
+        <div class="jp-label">MEGA JACKPOT</div>
+        <div class="jp-amount"><span id="jackpot-pool">...</span></div>
+      </div>
     </div>
 
     <div class="machine-frame" id="machine-frame">
@@ -229,8 +284,6 @@
     </div>
 
     <div class="control-deck">
-      <div class="deck-top-bar"></div>
-
       <div class="info-lcd">
         <div class="msg-area" id="status-msg">READY</div>
         <div class="wallet-area">
@@ -254,8 +307,8 @@
         <button id="btn-auto" class="cyber-btn btn-func">AUTO<br>OFF</button>
       </div>
 
-      <div class="spin-bar-container">
-        <button id="btn-spin" class="btn-spin">SPIN</button>
+      <div class="spin-container">
+        <button id="btn-spin" class="cyber-btn btn-spin">SPIN</button>
       </div>
     </div>
 
@@ -263,7 +316,7 @@
 
   <script>
     // ==========================================
-    // Configuration
+    // Configuration (5x5 Grid)
     // ==========================================
     const CONFIG = {
       API_URL: "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec",
@@ -286,7 +339,7 @@
         btn: 'start-button-sound.MP3'
       },
       reels: 5,
-      rows: 3
+      rows: 5  // [핵심] 5행으로 확장
     };
 
     const SYMBOL_ALIAS = {
@@ -304,7 +357,7 @@
     const SlotCanvasImages = {};
 
     // ==========================================
-    // Canvas Engine (Direction: Top to Bottom)
+    // Canvas Engine (5x5, Top to Bottom)
     // ==========================================
     const SlotCanvas = (() => {
       const buffer = 3;
@@ -358,6 +411,7 @@
         cw = newW; ch = newH;
         canvas.width = cw; canvas.height = ch;
         reelW = cw / CONFIG.reels;
+        // 5행이 다 들어가도록 계산
         sym = Math.floor(Math.min(reelW, ch / CONFIG.rows)); 
         xPad = Math.floor((reelW - sym) / 2);
         yPad = Math.floor((ch - sym * CONFIG.rows) / 2);
@@ -381,7 +435,7 @@
         const now = performance.now();
         reels.forEach((r, i) => {
           r.mode = "wait";
-          r.startAt = now + i * 100; 
+          r.startAt = now + i * 80; 
           r.stopAt = 0; r.final = null; r.speed = 0;
         });
         start();
@@ -391,11 +445,24 @@
         const now = performance.now();
         onAllStopped = doneCb;
         for (let col=0; col<CONFIG.reels; col++){
-          const top = keyToBaseName(keys[col]);
-          const mid = keyToBaseName(keys[col + CONFIG.reels]);
-          const bot = keyToBaseName(keys[col + CONFIG.reels * 2]);
-          reels[col].final = [top, mid, bot];
-          reels[col].stopAt = now + 800 + col * 400; // 순차 정지
+          // [5x5 매핑 로직]
+          // 서버가 3줄 데이터(0~14)만 준다고 가정하고, 위아래는 랜덤 채움
+          // keys: 0~4(Top), 5~9(Mid), 10~14(Bot)
+          
+          const sTop = keyToBaseName(keys[col]);
+          const sMid = keyToBaseName(keys[col + 5]);
+          const sBot = keyToBaseName(keys[col + 10]);
+
+          // 5행: [Rand, S_Top, S_Mid, S_Bot, Rand]
+          reels[col].final = [
+            randBase(), // Row 0
+            sTop,       // Row 1
+            sMid,       // Row 2
+            sBot,       // Row 3
+            randBase()  // Row 4
+          ];
+          
+          reels[col].stopAt = now + 800 + col * 350; 
         }
       }
 
@@ -405,10 +472,10 @@
         for (const r of reels){
           if (r.mode === "wait" && now >= r.startAt) {
             r.mode = "spin";
-            r.speed = 1500 + r.i * 200; // 초기 속도
+            r.speed = 1500 + r.i * 200;
           }
           if (r.mode === "spin"){
-            r.speed = Math.min(3500, r.speed + 2000 * dt); // 가속
+            r.speed = Math.min(3500, r.speed + 2000 * dt);
             if (r.stopAt && now >= r.stopAt){
               r.mode = "decel";
               r.decelStart = now;
@@ -421,24 +488,23 @@
             r.speed = r.speedStart + (r.speedEnd - r.speedStart) * easeOutCubic(p);
             if (p >= 1){
               if (r.final){
-                // 최종 심볼 배치 (버퍼 위치)
-                r.symbols[buffer] = r.final[0];
-                r.symbols[buffer+1] = r.final[1];
-                r.symbols[buffer+2] = r.final[2];
+                // 최종 심볼 5개를 버퍼 위치에 안착
+                for(let k=0; k<CONFIG.rows; k++){
+                  r.symbols[buffer + k] = r.final[k];
+                }
               }
               r.mode = "snap";
               r.snapStart = now;
-              r.snapFrom = r.offset; // 현재 어긋난 오프셋
+              r.snapFrom = r.offset;
               r.speed = 0;
             }
           }
 
-          // === [핵심 변경] 위에서 아래로 흐름 (Offset 증가) ===
+          // 위에서 아래로 흐름 (Offset 증가)
           if (r.mode === "spin" || r.mode === "decel"){
-            r.offset += r.speed * dt; // 양수: 아래로 이동
+            r.offset += r.speed * dt;
             while (r.offset >= sym){
               r.offset -= sym;
-              // 아래로 이동하므로 맨 아래 심볼 삭제, 맨 위에 새 심볼 추가
               r.symbols.pop(); 
               r.symbols.unshift(randBase()); 
             }
@@ -446,7 +512,6 @@
 
           if (r.mode === "snap"){
             const p = Math.min(1, (now - r.snapStart) / r.snapDur);
-            // Snap from current offset back to 0 (align to grid)
             r.offset = r.snapFrom + (0 - r.snapFrom) * easeOutBack(p);
             if (p >= 1){
               r.offset = 0;
@@ -468,7 +533,6 @@
           ctx.rect(rx, 0, reelW, ch);
           ctx.clip();
 
-          // 블러 효과 (빠를 때만)
           if (r.mode === "spin" && r.speed > 1800) ctx.filter = "blur(2px)";
           else ctx.filter = "none";
 
@@ -476,14 +540,12 @@
             const base = r.symbols[i];
             const img = SlotCanvasImages[base];
             const x = rx + xPad;
-            // Draw Position: Grid Y + Offset (Moves Down)
             const y = yPad + ((i - buffer) * sym) + r.offset; 
 
             if (y > -sym && y < ch + sym){
               if (img && img.complete) ctx.drawImage(img, x, y, sym, sym);
               else {
                 ctx.fillStyle = "#111"; ctx.fillRect(x, y, sym, sym);
-                ctx.fillStyle = "#fff"; ctx.fillText("?", x+sym/2, y+sym/2);
               }
             }
           }
@@ -491,7 +553,7 @@
           
           // 네온 구분선
           ctx.save();
-          ctx.strokeStyle = "rgba(0, 243, 255, 0.3)";
+          ctx.strokeStyle = "rgba(0, 243, 255, 0.2)";
           ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, ch); ctx.stroke();
           ctx.restore();
@@ -513,10 +575,10 @@
     })();
 
     // ==========================================
-    // Main App Logic
+    // App Logic
     // ==========================================
     async function init() {
-      console.log("CYBERPUNK ENGINE V15");
+      console.log("THE UNIQUE SLOT: 5x5 PREMIUM");
       els = {
         bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
         machineFrame: document.getElementById('machine-frame'), canvas: document.getElementById('slot-canvas'),
@@ -532,13 +594,12 @@
       state.id = localId || new URLSearchParams(window.location.search).get('id');
 
       if (!state.id) {
-        // els.userId.innerText = "GUEST"; 
         els.spinBtn.disabled = true; setStatus("LOGIN REQUIRED");
       } else {
         await syncUserData();
       }
 
-      // 사운드 로드
+      // 사운드
       for(let k in CONFIG.soundObj){
         if(k!=='path') try{ audios[k] = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[k]); if(k==='spin') audios[k].loop=true; }catch(e){}
       }
@@ -624,7 +685,6 @@
 
       if(state.audioEnabled && audios.spin){ audios.spin.currentTime=0; audios.spin.volume=0.6; audios.spin.play().catch(()=>{}); }
       
-      // 배경 번쩍임 시작
       startBgEffect(150);
       SlotCanvas.startSpin();
 
