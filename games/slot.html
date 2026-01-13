@@ -509,3 +509,270 @@
       function loop(now){
         const dt = Math.min(0.05, (now - last)/1000); last = now;
         update(dt, now); draw();
+        if (reels.every(r => r.mode === "stopped" || r.mode === "idle") && onAllStopped){
+          const cb = onAllStopped; onAllStopped = null; cb();
+        }
+        raf = requestAnimationFrame(loop);
+      }
+      return { init, resize, startSpin, scheduleStop, abortToIdle, stop };
+    })();
+
+    // ==========================================
+    // App Logic
+    // ==========================================
+    async function init() {
+      console.log("THE UNIQUE: V18 FIXED");
+      els = {
+        bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
+        machineFrame: document.getElementById('machine-frame'), canvas: document.getElementById('slot-canvas'),
+        spinBtn: document.getElementById('btn-spin'), autoBtn: document.getElementById('btn-auto'), soundBtn: document.getElementById('btn-sound'),
+        walletSpan: document.getElementById('wallet-balance'), jackpotPool: document.getElementById('jackpot-pool'),
+        betSpan: document.getElementById('current-bet'), statusMsg: document.getElementById('status-msg'),
+        plus: document.getElementById('btn-bet-plus'), minus: document.getElementById('btn-bet-minus'),
+        userId: document.getElementById('user-id'),
+        jpOverlay: document.getElementById('jackpot-overlay'), jpAmount: document.getElementById('jp-ani-amount'), coinBox: document.getElementById('coin-container')
+      };
+
+      // 배경 이미지 즉시 로드 (깜빡임 방지)
+      els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`;
+
+      const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
+      const paramId = new URLSearchParams(window.location.search).get('id');
+      
+      if (paramId) state.id = paramId;
+      else if (localId) state.id = localId;
+      else state.id = null;
+
+      if (!state.id) {
+        state.isGuest = true;
+        els.userId.innerText = "GUEST";
+        els.spinBtn.disabled = false;
+        setStatus("WELCOME GUEST");
+      } else {
+        state.isGuest = false;
+        els.userId.innerText = state.id;
+        await syncUserData();
+      }
+
+      for(let k in CONFIG.soundObj){
+        if(k!=='path') try{ audios[k] = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[k]); if(k==='spin') audios[k].loop=true; }catch(e){}
+      }
+
+      await preloadSymbolImages();
+
+      SlotCanvas.init(els.canvas, {
+        onReelStopped: () => {
+          if (state.audioEnabled && audios.stop) {
+            const s = audios.stop.cloneNode(); s.volume = 0.8; s.play().catch(()=>{});
+          }
+        }
+      });
+
+      window.addEventListener("resize", () => SlotCanvas.resize());
+      new ResizeObserver(()=>SlotCanvas.resize()).observe(els.machineFrame);
+
+      if(els.overlay) els.overlay.addEventListener('click', ()=>{ els.overlay.style.display='none'; toggleSound(true); });
+      
+      els.spinBtn.addEventListener('click', ()=>{ 
+        if (state.isGuest) {
+          window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
+          return;
+        }
+        state.isAuto=false; updateAutoBtn(); onSpinClick(); 
+      });
+
+      els.plus.addEventListener('click', ()=>changeBet(5));
+      els.minus.addEventListener('click', ()=>changeBet(-5));
+      els.soundBtn.addEventListener('click', ()=>toggleSound(!state.audioEnabled));
+      els.autoBtn.addEventListener('click', toggleAuto);
+      els.jpOverlay.addEventListener('click', closeJackpot);
+
+      updateUI();
+    }
+
+    async function preloadSymbolImages(){
+      const bases = CONFIG.imgObj.symbols.map(f => f.replace(".png",""));
+      const jobs = bases.map(base => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve([base, img]);
+        img.onerror = () => resolve([base, null]);
+        img.src = CONFIG.imgObj.path + base + ".png";
+      }));
+      const res = await Promise.all(jobs);
+      for(const [b, i] of res) if(i) SlotCanvasImages[b] = i;
+    }
+
+    function toggleSound(st){
+      state.audioEnabled = st;
+      els.soundBtn.innerHTML = st ? "SOUND<br>ON" : "SOUND<br>OFF";
+      els.soundBtn.classList.toggle("active", st);
+      if(!st) Object.values(audios).forEach(a=>a.pause());
+      else if(audios.btn) audios.btn.play().catch(()=>{});
+    }
+
+    function toggleAuto(){ 
+      if(state.isGuest) return; 
+      state.isAuto = !state.isAuto; updateAutoBtn(); 
+      if(state.isAuto && !state.isSpinning) onSpinClick(); 
+    }
+    function updateAutoBtn(){ 
+      els.autoBtn.innerHTML = state.isAuto ? "AUTO<br>ON" : "AUTO<br>OFF"; 
+      els.autoBtn.classList.toggle("active", state.isAuto); 
+    }
+
+    function setStatus(msg, isWin){ 
+      els.statusMsg.innerText = msg; 
+      els.statusMsg.className = isWin ? "msg-area win" : "msg-area"; 
+    }
+
+    async function syncUserData(ani){
+      if(!state.id) return;
+      try {
+        const res = await jsonpRequest('getSlotState', { id: state.id });
+        if(res.ok){
+          const nb = Number(res.user.balance);
+          state.jackpotPool = Number(res.jackpotTotal);
+          if(ani) animateValue(els.walletSpan, state.wallet, nb, 1000);
+          else els.walletSpan.innerText = nb.toLocaleString();
+          state.wallet = nb;
+          updateUI();
+          if(!ani) setStatus("READY");
+          els.spinBtn.disabled = false;
+        }
+      } catch(e) { setStatus("NETWORK ERROR"); }
+    }
+
+    async function onSpinClick(){
+      if(state.isSpinning) return;
+      if(state.wallet < state.bet) { state.isAuto=false; updateAutoBtn(); alert("잔액 부족"); return; }
+
+      state.isSpinning = true; els.spinBtn.disabled = true; setStatus("SPINNING...");
+      animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500); state.wallet -= state.bet;
+
+      if(state.audioEnabled && audios.spin){ audios.spin.currentTime=0; audios.spin.volume=0.6; audios.spin.play().catch(()=>{}); }
+      
+      startBgEffect(150);
+      SlotCanvas.startSpin();
+
+      try {
+        const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
+        if(!res.ok) throw new Error();
+        SlotCanvas.scheduleStop(res.spin.keys, () => handleSpinEnd(res));
+      } catch(e) {
+        if(state.audioEnabled) audios.spin.pause();
+        SlotCanvas.abortToIdle();
+        state.isSpinning = false; els.spinBtn.disabled = false;
+        syncUserData();
+      }
+    }
+
+    function handleSpinEnd(data){
+      state.isSpinning = false; stopBgEffect();
+      if(state.audioEnabled) audios.spin.pause();
+      els.spinBtn.disabled = false;
+
+      const spin = data.spin;
+      let isWin = false;
+      let msg = "TRY AGAIN";
+
+      if(spin.kind !== "lose"){
+        isWin = true;
+        msg = `WIN! +${Number(spin.payout).toLocaleString()} UT`;
+        if(spin.kind === "jackpot"){
+          showJackpotOverlay(Number(spin.payout));
+          if(state.audioEnabled) audios.jackpot.play().catch(()=>{});
+        } else {
+          if(state.audioEnabled) audios.win.play().catch(()=>{});
+        }
+      } else {
+        if(state.audioEnabled) audios.lose.play().catch(()=>{});
+      }
+
+      setStatus(msg, isWin);
+      
+      const newBal = Number(data.user.balance);
+      if(state.wallet !== newBal) animateValue(els.walletSpan, state.wallet, newBal, 1000);
+      state.wallet = newBal;
+      state.jackpotPool = Number(data.jackpotTotal);
+      updateUI();
+
+      if(state.isAuto){
+        setTimeout(() => {
+          if(state.isAuto && state.wallet >= state.bet) onSpinClick();
+          else toggleAuto();
+        }, 1500);
+      }
+    }
+
+    function showJackpotOverlay(amt){
+      els.jpOverlay.style.display = 'flex';
+      els.jpOverlay.classList.add('show');
+      animateValue(els.jpAmount, 0, amt, 3000);
+      createCoins();
+    }
+    function closeJackpot(){
+      els.jpOverlay.style.display = 'none';
+      els.jpOverlay.classList.remove('show');
+      els.coinBox.innerHTML = '';
+    }
+    function createCoins(){
+      els.coinBox.innerHTML = '';
+      for(let i=0;i<60;i++){
+        const c = document.createElement('div');
+        c.className = 'coin';
+        c.style.left = Math.random()*100+'vw';
+        c.style.animationDuration = (Math.random()*2+1)+'s';
+        els.coinBox.appendChild(c);
+      }
+    }
+
+    function startBgEffect(ms){
+      clearInterval(state.bgIntervalId);
+      state.bgIntervalId = setInterval(()=>{
+        state.bgIdx = (state.bgIdx+1)%CONFIG.imgObj.bg.length;
+        els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}${CONFIG.imgObj.bg[state.bgIdx]}')`;
+      }, ms);
+    }
+    function stopBgEffect(){
+      clearInterval(state.bgIntervalId);
+      els.bg.style.backgroundImage = `url('${CONFIG.imgObj.path}bg1.png')`;
+    }
+
+    function jsonpRequest(action, params){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_'+Math.round(Math.random()*100000);
+        window[cb] = (d) => { delete window[cb]; document.body.removeChild(s); resolve(d); };
+        const s = document.createElement('script');
+        params.action = action; params.callback = cb;
+        s.src = `${CONFIG.API_URL}?${new URLSearchParams(params)}`;
+        s.onerror = () => { delete window[cb]; document.body.removeChild(s); reject(); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function animateValue(obj, start, end, duration){
+      let s = null;
+      const step = (t) => {
+        if(!s) s = t;
+        const p = Math.min((t-s)/duration, 1);
+        obj.innerText = Math.floor(p*(end-start)+start).toLocaleString();
+        if(p<1) requestAnimationFrame(step); else obj.innerText = end.toLocaleString();
+      };
+      requestAnimationFrame(step);
+    }
+
+    function updateUI(){
+      els.betSpan.innerText = state.bet;
+      els.jackpotPool.innerText = Number(state.jackpotPool||0).toLocaleString();
+      els.walletSpan.innerText = Number(state.wallet||0).toLocaleString();
+    }
+    function changeBet(d){
+      if(state.isSpinning) return;
+      const n = state.bet + d;
+      if(n>=5 && n<=1000){ state.bet=n; updateUI(); }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
