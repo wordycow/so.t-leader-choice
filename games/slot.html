@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>THE UNIQUE SLOT - V17</title>
+  <title>THE UNIQUE SLOT - V18</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;800;900&display=swap" rel="stylesheet">
   <style>
-    /* === [V17: CYBERPUNK STRONG GRADIENT] === */
+    /* === [V18: BACKGROUND FIX & COMPACT HEIGHT] === */
     :root {
       --neon-cyan: #00f3ff;
       --neon-magenta: #ff00ff;
@@ -26,13 +26,16 @@
       display: flex; justify-content: center; align-items: center;
     }
 
+    /* 배경 설정 (CSS에서도 기본 이미지 설정) */
     #game-bg {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(circle at center, #1f2235 0%, #000 100%);
-      z-index: -2;
+      background-size: cover; background-position: center; z-index: -2;
+      filter: brightness(0.6);
+      /* 자바스크립트 로딩 전에도 검은색 방지 */
+      background-color: #1a1a1a; 
+      transition: background-image 0.2s;
     }
     
-    /* 사이버 그리드 배경 */
     .cyber-grid {
       position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
       background: linear-gradient(transparent 95%, rgba(0, 243, 255, 0.08) 96%, transparent 97%),
@@ -47,11 +50,13 @@
       width: 100%; max-width: 550px; height: 100%; max-height: 100vh;
       display: flex; flex-direction: column;
       padding: 10px; position: relative;
+      /* 화면이 너무 길어질 때를 대비해 중앙 정렬 */
+      justify-content: center; 
     }
 
     /* --- 1. 상단 섹션 --- */
     .top-section {
-      flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;
+      flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
     }
 
     .header-bar {
@@ -59,7 +64,6 @@
       padding: 0 2px;
     }
 
-    /* [수정] GO MAIN 버튼 */
     .btn-go-main {
       background: linear-gradient(135deg, #00c6ff, #0072ff);
       border: 1px solid #fff; color: #fff;
@@ -70,7 +74,6 @@
     }
     .btn-go-main:active { transform: scale(0.95); background: #0072ff; }
 
-    /* 유저 ID 표시 */
     .user-info {
       font-size: 1.1rem; font-weight: bold; color: #fff;
       text-shadow: 0 0 5px var(--neon-cyan);
@@ -78,7 +81,6 @@
       border: 1px solid #333;
     }
 
-    /* [핵심] 잭팟 패널 (별 + 금액) */
     .jackpot-panel {
       background: linear-gradient(180deg, rgba(20,0,0,0.9), rgba(60,0,0,0.95));
       border: 2px solid var(--gold-start); border-radius: 12px;
@@ -88,19 +90,13 @@
       position: relative; overflow: hidden;
     }
     
-    /* 별 아이콘 */
     .jp-star {
       font-size: 2.5rem; color: var(--gold-start);
       text-shadow: 0 0 15px var(--gold-start);
       animation: spinStar 3s infinite linear;
     }
-    @keyframes spinStar { 
-      0% { transform: rotateY(0deg); } 
-      50% { transform: rotateY(180deg); } 
-      100% { transform: rotateY(360deg); } 
-    }
+    @keyframes spinStar { 0% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } 100% { transform: rotateY(360deg); } }
 
-    /* 잭팟 텍스트 그룹 */
     .jp-text-group { text-align: left; }
     .jp-label { font-size: 0.7rem; color: #ffaa00; letter-spacing: 2px; font-weight: 800; display: block; }
     .jp-amount {
@@ -109,9 +105,16 @@
       line-height: 1;
     }
 
-    /* --- 2. 슬롯 머신 (5x5) --- */
+    /* --- 2. 슬롯 머신 (높이 제한 수정) --- */
     .machine-frame {
-      flex: 1; position: relative;
+      /* [중요 수정] flex: 1을 제거하고 aspect-ratio 사용 */
+      flex: 0 0 auto; 
+      width: 100%;
+      /* 5x5 그리드이므로 거의 정사각형 비율 유지 -> 늘어짐 방지 */
+      aspect-ratio: 1 / 0.9; 
+      max-height: 50vh; /* 화면의 절반 이상 넘지 않도록 제한 */
+      
+      position: relative;
       background: rgba(0, 0, 0, 0.8);
       border: 2px solid var(--neon-magenta);
       border-radius: 10px;
@@ -125,7 +128,7 @@
       transform: translateY(-50%); display: none; z-index: 10;
     }
 
-    /* --- 3. 컨트롤 덱 (강력한 그라데이션 버튼) --- */
+    /* --- 3. 컨트롤 덱 --- */
     .control-deck {
       flex: 0 0 auto;
       background: #111;
@@ -135,7 +138,6 @@
       box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
     }
 
-    /* 정보창 LCD */
     .info-lcd {
       background: #000; border: 1px solid #333;
       border-radius: 8px; padding: 10px 15px;
@@ -149,13 +151,11 @@
     .wallet-lbl { font-size: 0.7rem; color: #888; font-weight: 700; display: block; }
     .wallet-val { font-size: 1.6rem; color: var(--neon-cyan); font-weight: 700; text-shadow: 0 0 8px rgba(0, 243, 255, 0.6); }
 
-    /* 상단 버튼 줄 */
     .btn-row-top {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 15px; gap: 8px;
     }
 
-    /* [수정] 사이버펑크 버튼 스타일 (강한 그라데이션) */
     .cyber-btn {
       border: none; outline: none; cursor: pointer;
       font-family: 'Rajdhani', sans-serif; font-weight: 800;
@@ -167,18 +167,16 @@
     }
     .cyber-btn:active { transform: translateY(2px); filter: brightness(0.8); }
 
-    /* 기능 버튼 (Sound/Auto) - 블루 퍼플 그라데이션 */
     .btn-func {
       width: 70px; height: 50px; font-size: 0.85rem; line-height: 1.2;
       background: linear-gradient(135deg, #2b1055, #7597de);
       border: 1px solid #5b6ea8;
     }
     .btn-func.active {
-      background: linear-gradient(135deg, #00f260, #0575e6); /* 활성화 시 밝은 그린/블루 */
+      background: linear-gradient(135deg, #00f260, #0575e6);
       box-shadow: 0 0 15px #0575e6; border-color: #fff;
     }
 
-    /* 베팅 컨트롤 */
     .bet-control {
       display: flex; align-items: center; gap: 5px;
       background: #000; padding: 4px; border-radius: 10px; border: 1px solid #444;
@@ -192,25 +190,19 @@
     .bet-lbl { font-size: 0.7rem; color: #666; }
     .bet-val { font-size: 1.4rem; color: var(--gold-start); font-weight: 700; }
 
-    /* [수정] 스핀 버튼 (강력한 골드/레드 그라데이션) */
     .spin-container { width: 100%; height: 70px; }
     .btn-spin {
       width: 100%; height: 100%;
-      /* 눈에 확 띄는 강렬한 색상 */
       background: linear-gradient(90deg, #ff8c00, #ffd700, #ff0055);
       background-size: 200% 200%;
       animation: gradientMove 3s ease infinite;
-      
       color: #fff; font-size: 2.2rem; font-weight: 900; letter-spacing: 5px;
-      border: 2px solid #fff;
-      border-radius: 12px;
+      border: 2px solid #fff; border-radius: 12px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.5);
       box-shadow: 0 0 20px rgba(255, 140, 0, 0.6);
     }
     @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    
     .btn-spin:active { transform: scale(0.98); }
-    /* 게스트일 때도 버튼은 활성화되어 보임 (클릭 시 이동하므로) */
 
     /* 오버레이 */
     #jackpot-overlay {
@@ -410,6 +402,7 @@
         cw = newW; ch = newH;
         canvas.width = cw; canvas.height = ch;
         reelW = cw / CONFIG.reels;
+        // 5행이 다 들어가도록 계산 (화면 꽉 채우지 않고 비율 유지)
         sym = Math.floor(Math.min(reelW, ch / CONFIG.rows)); 
         xPad = Math.floor((reelW - sym) / 2);
         yPad = Math.floor((ch - sym * CONFIG.rows) / 2);
@@ -516,260 +509,3 @@
       function loop(now){
         const dt = Math.min(0.05, (now - last)/1000); last = now;
         update(dt, now); draw();
-        if (reels.every(r => r.mode === "stopped" || r.mode === "idle") && onAllStopped){
-          const cb = onAllStopped; onAllStopped = null; cb();
-        }
-        raf = requestAnimationFrame(loop);
-      }
-      return { init, resize, startSpin, scheduleStop, abortToIdle, stop };
-    })();
-
-    // ==========================================
-    // App Logic
-    // ==========================================
-    async function init() {
-      console.log("THE UNIQUE: V17 FINAL");
-      els = {
-        bg: document.getElementById('game-bg'), overlay: document.getElementById('start-overlay'),
-        machineFrame: document.getElementById('machine-frame'), canvas: document.getElementById('slot-canvas'),
-        spinBtn: document.getElementById('btn-spin'), autoBtn: document.getElementById('btn-auto'), soundBtn: document.getElementById('btn-sound'),
-        walletSpan: document.getElementById('wallet-balance'), jackpotPool: document.getElementById('jackpot-pool'),
-        betSpan: document.getElementById('current-bet'), statusMsg: document.getElementById('status-msg'),
-        plus: document.getElementById('btn-bet-plus'), minus: document.getElementById('btn-bet-minus'),
-        userId: document.getElementById('user-id'),
-        jpOverlay: document.getElementById('jackpot-overlay'), jpAmount: document.getElementById('jp-ani-amount'), coinBox: document.getElementById('coin-container')
-      };
-
-      // ID 확인
-      const localId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
-      const paramId = new URLSearchParams(window.location.search).get('id');
-      
-      if (paramId) state.id = paramId;
-      else if (localId) state.id = localId;
-      else state.id = null;
-
-      // [핵심] 게스트 처리
-      if (!state.id) {
-        state.isGuest = true;
-        els.userId.innerText = "GUEST";
-        // 게스트라도 버튼은 활성화 (누르면 이동)
-        els.spinBtn.disabled = false;
-        setStatus("WELCOME GUEST");
-      } else {
-        state.isGuest = false;
-        els.userId.innerText = state.id;
-        await syncUserData();
-      }
-
-      // 사운드 로드
-      for(let k in CONFIG.soundObj){
-        if(k!=='path') try{ audios[k] = new Audio(CONFIG.soundObj.path + CONFIG.soundObj[k]); if(k==='spin') audios[k].loop=true; }catch(e){}
-      }
-
-      await preloadSymbolImages();
-
-      SlotCanvas.init(els.canvas, {
-        onReelStopped: () => {
-          if (state.audioEnabled && audios.stop) {
-            const s = audios.stop.cloneNode(); s.volume = 0.8; s.play().catch(()=>{});
-          }
-        }
-      });
-
-      window.addEventListener("resize", () => SlotCanvas.resize());
-      new ResizeObserver(()=>SlotCanvas.resize()).observe(els.machineFrame);
-
-      if(els.overlay) els.overlay.addEventListener('click', ()=>{ els.overlay.style.display='none'; toggleSound(true); });
-      
-      // [핵심] 스핀 버튼 핸들러
-      els.spinBtn.addEventListener('click', ()=>{ 
-        if (state.isGuest) {
-          // 게스트는 스핀 대신 이동
-          window.location.href = "https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html";
-          return;
-        }
-        state.isAuto=false; updateAutoBtn(); onSpinClick(); 
-      });
-
-      els.plus.addEventListener('click', ()=>changeBet(5));
-      els.minus.addEventListener('click', ()=>changeBet(-5));
-      els.soundBtn.addEventListener('click', ()=>toggleSound(!state.audioEnabled));
-      els.autoBtn.addEventListener('click', toggleAuto);
-      els.jpOverlay.addEventListener('click', closeJackpot);
-
-      updateUI();
-    }
-
-    async function preloadSymbolImages(){
-      const bases = CONFIG.imgObj.symbols.map(f => f.replace(".png",""));
-      const jobs = bases.map(base => new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => resolve([base, img]);
-        img.onerror = () => resolve([base, null]);
-        img.src = CONFIG.imgObj.path + base + ".png";
-      }));
-      const res = await Promise.all(jobs);
-      for(const [b, i] of res) if(i) SlotCanvasImages[b] = i;
-    }
-
-    function toggleSound(st){
-      state.audioEnabled = st;
-      els.soundBtn.innerHTML = st ? "SOUND<br>ON" : "SOUND<br>OFF";
-      els.soundBtn.classList.toggle("active", st);
-      if(!st) Object.values(audios).forEach(a=>a.pause());
-      else if(audios.btn) audios.btn.play().catch(()=>{});
-    }
-
-    function toggleAuto(){ 
-      if(state.isGuest) return; // 게스트는 오토 불가
-      state.isAuto = !state.isAuto; updateAutoBtn(); 
-      if(state.isAuto && !state.isSpinning) onSpinClick(); 
-    }
-    function updateAutoBtn(){ 
-      els.autoBtn.innerHTML = state.isAuto ? "AUTO<br>ON" : "AUTO<br>OFF"; 
-      els.autoBtn.classList.toggle("active", state.isAuto); 
-    }
-
-    function setStatus(msg, isWin){ 
-      els.statusMsg.innerText = msg; 
-      els.statusMsg.className = isWin ? "msg-area win" : "msg-area"; 
-    }
-
-    async function syncUserData(ani){
-      if(!state.id) return;
-      try {
-        const res = await jsonpRequest('getSlotState', { id: state.id });
-        if(res.ok){
-          const nb = Number(res.user.balance);
-          state.jackpotPool = Number(res.jackpotTotal);
-          if(ani) animateValue(els.walletSpan, state.wallet, nb, 1000);
-          else els.walletSpan.innerText = nb.toLocaleString();
-          state.wallet = nb;
-          updateUI();
-          if(!ani) setStatus("READY");
-          els.spinBtn.disabled = false;
-        }
-      } catch(e) { setStatus("NETWORK ERROR"); }
-    }
-
-    async function onSpinClick(){
-      if(state.isSpinning) return;
-      if(state.wallet < state.bet) { state.isAuto=false; updateAutoBtn(); alert("잔액 부족"); return; }
-
-      state.isSpinning = true; els.spinBtn.disabled = true; setStatus("SPINNING...");
-      animateValue(els.walletSpan, state.wallet, state.wallet - state.bet, 500); state.wallet -= state.bet;
-
-      if(state.audioEnabled && audios.spin){ audios.spin.currentTime=0; audios.spin.volume=0.6; audios.spin.play().catch(()=>{}); }
-      
-      SlotCanvas.startSpin();
-
-      try {
-        const res = await jsonpRequest('slotSpin', { id: state.id, bet: state.bet });
-        if(!res.ok) throw new Error();
-        SlotCanvas.scheduleStop(res.spin.keys, () => handleSpinEnd(res));
-      } catch(e) {
-        if(state.audioEnabled) audios.spin.pause();
-        SlotCanvas.abortToIdle();
-        state.isSpinning = false; els.spinBtn.disabled = false;
-        syncUserData();
-      }
-    }
-
-    function handleSpinEnd(data){
-      state.isSpinning = false;
-      if(state.audioEnabled) audios.spin.pause();
-      els.spinBtn.disabled = false;
-
-      const spin = data.spin;
-      let isWin = false;
-      let msg = "TRY AGAIN";
-
-      if(spin.kind !== "lose"){
-        isWin = true;
-        msg = `WIN! +${Number(spin.payout).toLocaleString()} UT`;
-        if(spin.kind === "jackpot"){
-          showJackpotOverlay(Number(spin.payout));
-          if(state.audioEnabled) audios.jackpot.play().catch(()=>{});
-        } else {
-          if(state.audioEnabled) audios.win.play().catch(()=>{});
-        }
-      } else {
-        if(state.audioEnabled) audios.lose.play().catch(()=>{});
-      }
-
-      setStatus(msg, isWin);
-      
-      const newBal = Number(data.user.balance);
-      if(state.wallet !== newBal) animateValue(els.walletSpan, state.wallet, newBal, 1000);
-      state.wallet = newBal;
-      state.jackpotPool = Number(data.jackpotTotal);
-      updateUI();
-
-      if(state.isAuto){
-        setTimeout(() => {
-          if(state.isAuto && state.wallet >= state.bet) onSpinClick();
-          else toggleAuto();
-        }, 1500);
-      }
-    }
-
-    function showJackpotOverlay(amt){
-      els.jpOverlay.style.display = 'flex';
-      els.jpOverlay.classList.add('show');
-      animateValue(els.jpAmount, 0, amt, 3000);
-      createCoins();
-    }
-    function closeJackpot(){
-      els.jpOverlay.style.display = 'none';
-      els.jpOverlay.classList.remove('show');
-      els.coinBox.innerHTML = '';
-    }
-    function createCoins(){
-      els.coinBox.innerHTML = '';
-      for(let i=0;i<60;i++){
-        const c = document.createElement('div');
-        c.className = 'coin';
-        c.style.left = Math.random()*100+'vw';
-        c.style.animationDuration = (Math.random()*2+1)+'s';
-        els.coinBox.appendChild(c);
-      }
-    }
-
-    function jsonpRequest(action, params){
-      return new Promise((resolve, reject)=>{
-        const cb = 'cb_'+Math.round(Math.random()*100000);
-        window[cb] = (d) => { delete window[cb]; document.body.removeChild(s); resolve(d); };
-        const s = document.createElement('script');
-        params.action = action; params.callback = cb;
-        s.src = `${CONFIG.API_URL}?${new URLSearchParams(params)}`;
-        s.onerror = () => { delete window[cb]; document.body.removeChild(s); reject(); };
-        document.body.appendChild(s);
-      });
-    }
-
-    function animateValue(obj, start, end, duration){
-      let s = null;
-      const step = (t) => {
-        if(!s) s = t;
-        const p = Math.min((t-s)/duration, 1);
-        obj.innerText = Math.floor(p*(end-start)+start).toLocaleString();
-        if(p<1) requestAnimationFrame(step); else obj.innerText = end.toLocaleString();
-      };
-      requestAnimationFrame(step);
-    }
-
-    function updateUI(){
-      els.betSpan.innerText = state.bet;
-      els.jackpotPool.innerText = Number(state.jackpotPool||0).toLocaleString();
-      els.walletSpan.innerText = Number(state.wallet||0).toLocaleString();
-    }
-    function changeBet(d){
-      if(state.isSpinning) return;
-      const n = state.bet + d;
-      if(n>=5 && n<=1000){ state.bet=n; updateUI(); }
-    }
-
-    window.onload = init;
-  </script>
-</body>
-</html>
