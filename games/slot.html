@@ -13,7 +13,7 @@
       /* 투명도 대폭 증가 */
       --bg-dark: #050508;
       --glass-panel: rgba(20, 22, 28, 0.3); /* 거의 투명 */
-      --glass-lcd: rgba(0, 0, 0, 0.4);     /* 반투명 블랙 */
+      --glass-lcd: rgba(0, 0, 0, 0.4);      /* 반투명 블랙 */
     }
 
     * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -365,6 +365,24 @@
       "7":"pro4","8":"pro5","9":"pro6","10":"pro7","11":"pro8","J":"pro8","12":"pro9","Q":"pro9","13":"pro10","K":"pro10"
     };
 
+    // [수정] 심플하고 고급스러운 네이밍 (로마자 표기)
+    const SYMBOL_INFO = {
+      "star1": "STAR I",
+      "star2": "STAR II",
+      "star3": "STAR III",
+      
+      "pro1":  "PRO I",
+      "pro2":  "PRO II",
+      "pro3":  "PRO III",
+      "pro4":  "PRO IV",
+      "pro5":  "PRO V",
+      "pro6":  "PRO VI",
+      "pro7":  "PRO VII",
+      "pro8":  "PRO VIII",
+      "pro9":  "PRO IX",
+      "pro10": "PRO X" // JACKPOT SYMBOL
+    };
+
     let state = {
       id: null, wallet: 0, bet: 10, isSpinning: false, audioEnabled: false, isAuto: false, jackpotPool: 0,
       bgIntervalId: null, bgIdx: 0, isGuest: false
@@ -459,10 +477,39 @@
         const now = performance.now();
         onAllStopped = doneCb;
         for (let col=0; col<CONFIG.reels; col++){
-          const sTop = keyToBaseName(keys[col]);
-          const sMid = keyToBaseName(keys[col + 5]);
-          const sBot = keyToBaseName(keys[col + 10]);
-          reels[col].final = [randBase(), sTop, sMid, sBot, randBase()]; 
+          const sTop = keyToBaseName(keys[col]); // row0
+          const sMid = keyToBaseName(keys[col + 5]); // row1
+          const sBot = keyToBaseName(keys[col + 10]); // row2
+          // 5x5 그리드에서 scatter 방식이므로 row0,1,2만 실제 의미가 있음 (3,4는 시각적 여백)
+          // 하지만 5x5 그리드를 받으려면 25개가 필요하나 현재 서버는 15개(3x5)만 줄 수도 있음
+          // 서버에서 25개를 주는지 15개를 주는지에 따라 조정 필요
+          // 현재 서버 로직은 25개를 줍니다. (0~24)
+          // makeReel 구조상 3개가 중요하므로 3개씩 끊어서 넣어줌.
+          // 여기서는 서버가 보내준 keys가 25개라고 가정하고, 각 릴(col)에 해당하는 5개 심볼을 배치하는 것이 이상적이나,
+          // 기존 SlotCanvas 로직은 3-row 기반 시각화에 최적화 되어 있음.
+          // 따라서 3x5 (15개)만 받아서 시각화하고, 내부적으로는 Scatter 계산됨.
+          // 서버 코드에서는 keys를 25개 보내고 있음. 
+          // 릴당 5개씩 쪼개서 매핑:
+          // Col 0: keys[0], keys[1], keys[2], keys[3], keys[4]
+          // ... 이런식이 아니라, 보통 슬롯은 Row-major로 옴.
+          // Row 0: keys[0]..keys[4]
+          // Row 1: keys[5]..keys[9]
+          // Row 2: keys[10]..keys[14]
+          // Row 3: keys[15]..keys[19]
+          // Row 4: keys[20]..keys[24]
+          
+          // SlotCanvas 시각화 로직이 3 row 중심이면 keys[col], keys[col+5], keys[col+10] 만 쓰게 됨.
+          // 5x5 전체를 보여주려면 캔버스 로직 수정이 필요하나, 현재 디자인상 3줄만 보여주는게 깔끔함.
+          // (SCATTER 방식이라 보여주는 것과 실제 당첨 계산은 서버에서 다 했으므로 시각적으로만 그럴듯하면 됨)
+          
+          // 기존 로직 유지 (3줄만 시각화)
+          reels[col].final = [
+             randBase(), 
+             keyToBaseName(keys[col]),       // Row 0
+             keyToBaseName(keys[col + 5]),   // Row 1
+             keyToBaseName(keys[col + 10]),  // Row 2
+             randBase()
+          ]; 
           reels[col].stopAt = now + 800 + col * 350; 
         }
       }
@@ -483,7 +530,10 @@
             r.speed = r.speedStart + (r.speedEnd - r.speedStart) * easeOutCubic(p);
             if (p >= 1){
               if (r.final){
-                for(let k=0; k<CONFIG.rows; k++) r.symbols[buffer + k] = r.final[k];
+                for(let k=0; k<CONFIG.rows; k++) {
+                   // 5-row 지원을 위해 final 배열 길이 체크 필요하나, 위에서 5개 채워줌
+                   if(r.final[k]) r.symbols[buffer + k] = r.final[k];
+                }
               }
               r.mode = "snap"; r.snapStart = now; r.snapFrom = r.offset; r.speed = 0;
             }
@@ -692,23 +742,69 @@
       els.spinBtn.disabled = false;
 
       const spin = data.spin;
+      
       let isWin = false;
-      let msg = "TRY AGAIN";
+      let msgHTML = "TRY AGAIN";
 
       if(spin.kind !== "lose"){
         isWin = true;
-        msg = `WIN! +${Number(spin.payout).toLocaleString()} UT`;
+        
+        const symKey = spin.winSymbol; 
+        const cnt = spin.winCount;     
+        const amt = Number(spin.payout).toLocaleString();
+        
+        // [안전장치] 이미지 경로 생성 및 스타일 강제 고정
+        const imgUrl = CONFIG.imgObj.path + symKey + ".png";
+        const symName = SYMBOL_INFO[symKey] || symKey.toUpperCase();
+
+        // 타이틀 및 색상 결정
+        let title = "WIN!";
+        let color = "#00f3ff"; // Cyan
+
+        if (spin.kind === "jackpot") {
+           title = "🚨 JACKPOT 🚨";
+           color = "#ff0055"; 
+        } else if (cnt >= 8) {
+           title = "EPIC WIN!";
+           color = "#bc13fe"; // Purple
+        } else if (cnt >= 6) {
+           title = "BIG WIN!";
+           color = "#ffd700"; // Gold
+        } else if (cnt >= 5) {
+           title = "LUCKY HIT";
+        }
+
+        // [레이아웃 보호] flex로 감싸고, 이미지 크기는 30px로 고정 (절대 안 깨짐)
+        msgHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:${color}; font-size:1.2rem; font-weight:800; line-height:1.2;">${title}</span>
+            
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin: 4px 0;">
+              <span style="color:#fff; font-size:1rem; font-weight:700;">${cnt} x</span>
+              <img src="${imgUrl}" style="width:30px; height:30px; object-fit:contain; display:block;">
+              <span style="color:#fff; font-size:1rem; font-weight:700;">${symName}</span>
+            </div>
+            
+            <span style="color:${color}; font-weight:900; font-size:1.1rem; line-height:1;">+${amt} UT</span>
+          </div>
+        `;
+
+        // 사운드 재생
         if(spin.kind === "jackpot"){
           showJackpotOverlay(Number(spin.payout));
           if(state.audioEnabled) audios.jackpot.play().catch(()=>{});
         } else {
           if(state.audioEnabled) audios.win.play().catch(()=>{});
         }
+
       } else {
+        // 꽝일 때
         if(state.audioEnabled) audios.lose.play().catch(()=>{});
+        msgHTML = `<span style="color:#555; font-weight:700; font-size:1.1rem;">TRY AGAIN</span>`;
       }
 
-      setStatus(msg, isWin);
+      els.statusMsg.innerHTML = msgHTML; 
+      els.statusMsg.className = isWin ? "msg-area win" : "msg-area";
       
       const newBal = Number(data.user.balance);
       if(state.wallet !== newBal) animateValue(els.walletSpan, state.wallet, newBal, 1000);
@@ -719,7 +815,7 @@
       if(state.isAuto){
         setTimeout(() => {
           if(state.isAuto && state.wallet >= state.bet) onSpinClick();
-          else toggleAuto();
+          else if(state.isAuto) toggleAuto();
         }, 1500);
       }
     }
