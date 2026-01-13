@@ -206,13 +206,12 @@
       <div style="padding:14px">
         <div class="kpi">
           <div class="box"><div class="k">TOTAL USERS</div><div class="v" id="kUsers">-</div></div>
-          <div class="box"><div class="k">TOTAL UT (SUPPLY)</div><div class="v"><b id="kSupply">-</b></div></div>
-          <div class="box"><div class="k">CASINO TOTAL</div><div class="v" id="kCasino">-</div></div>
-          <div class="box"><div class="k">JACKPOT TOTAL</div><div class="v" id="kJackpot">-</div></div>
+          <div class="box"><div class="k">TOTAL UT (USER)</div><div class="v"><b id="kSupply">-</b></div></div>
+          <div class="box"><div class="k">CASINO POOL</div><div class="v" id="kCasino">-</div></div>
+          <div class="box"><div class="k">JACKPOT POOL</div><div class="v" id="kJackpot">-</div></div>
         </div>
 
         <div class="grid">
-          <!-- LEFT: CONFIG -->
           <div class="panel">
             <div class="h">
               <h3>CONFIG</h3>
@@ -220,10 +219,6 @@
             </div>
 
             <div class="row">
-              <div class="field">
-                <div class="label">ADMIN KEY</div>
-                <input id="adminKey" placeholder="(서버에 저장된 ADMIN_KEY 입력)" />
-              </div>
               <div class="field">
                 <div class="label">ODDS PROFILE</div>
                 <select id="oddsProfile">
@@ -242,15 +237,15 @@
               </div>
               <div class="field">
                 <div class="label">FEE RATE (% of bet)</div>
-                <input id="feeRate" type="number" step="0.01" placeholder="예: 2 = 2%" />
+                <input id="feeRate" type="number" step="0.01" placeholder="예: 0.02 = 2%" />
               </div>
             </div>
 
             <div class="row">
               <div class="field" style="min-width:100%">
                 <div class="label">CUSTOM ODDS (JSON)</div>
-                <textarea id="oddsCustom" placeholder='예: {"lose":0.28,"even":0.64,"win3":0.075,"win4":0.005}'></textarea>
-                <div class="muted">lose/even/win3/win4 합이 1이어야 함. jackpot은 운영자 수동.</div>
+                <textarea id="oddsCustom" placeholder='예: {"lose":0.62,"even":0.28,"win3":0.08,"win4":0.02,"mega":0}'></textarea>
+                <div class="muted">lose/even/win3/win4/mega 합이 1 근사치</div>
               </div>
             </div>
 
@@ -260,7 +255,6 @@
             </div>
           </div>
 
-          <!-- RIGHT: JACKPOT + USERS -->
           <div class="panel">
             <div class="h">
               <h3>JACKPOT / USERS</h3>
@@ -283,16 +277,16 @@
                 <input id="jpMonth" placeholder="예: 2026-01" />
               </div>
               <div class="field">
-                <div class="label">REMAINING (이번달 잭팟 횟수)</div>
+                <div class="label">REMAINING (횟수)</div>
                 <input id="jpRemaining" type="number" step="1" />
               </div>
             </div>
 
             <div class="row">
               <div class="field" style="min-width:100%">
-                <div class="label">TARGET USER IDs (콤마/줄바꿈 가능)</div>
-                <textarea id="jpTargets" placeholder="예: user01,user02,user03"></textarea>
-                <div class="muted">여기에 넣은 ID만 잭팟 대상으로 인정됨(운영자 수동).</div>
+                <div class="label">TARGET USER IDs (콤마로 구분)</div>
+                <textarea id="jpTargets" placeholder="예: user01,user02"></textarea>
+                <div class="muted">수동 모드에서 타겟 ID만 잭팟 당첨 가능</div>
               </div>
             </div>
 
@@ -304,20 +298,21 @@
             <hr style="border:0;border-top:1px solid rgba(110,170,255,.12); margin:14px 0;">
 
             <div class="h">
-              <h3>USERS</h3>
-              <div class="row">
-                <input id="q" placeholder="검색: id / name / nickname" style="min-width:240px" />
-              </div>
+              <h3>USERS SEARCH</h3>
             </div>
-
-            <div style="overflow:auto; max-height: 420px; border-radius:16px;">
+            <div class="row">
+               <input id="q" placeholder="검색할 ID 입력 후 엔터 (정확한 ID)" style="min-width:240px" />
+               <button class="btn" id="btnSearchUser">SEARCH</button>
+            </div>
+            
+            <div style="margin-top:10px; overflow:auto; border-radius:16px;">
               <table>
                 <thead>
                   <tr>
-                    <th style="width:32%">ID</th>
-                    <th style="width:28%">NAME/NICK</th>
-                    <th class="right" style="width:18%">BALANCE</th>
-                    <th style="width:22%">ACTION</th>
+                    <th>ID</th>
+                    <th>NAME</th>
+                    <th class="right">BALANCE</th>
+                    <th>ACTION</th>
                   </tr>
                 </thead>
                 <tbody id="userTbody"></tbody>
@@ -329,7 +324,6 @@
     </div>
   </div>
 
-  <!-- adjust modal -->
   <div class="overlay" id="ov">
     <div class="modal">
       <h2>UT 조정</h2>
@@ -339,10 +333,6 @@
         <div class="field" style="min-width:100%">
           <div class="label">DELTA (예: +10 또는 -5)</div>
           <input id="mDelta" placeholder="+10" />
-        </div>
-        <div class="field" style="min-width:100%">
-          <div class="label">REASON</div>
-          <input id="mReason" placeholder="예: 운영자 조정" />
         </div>
       </div>
       <div class="row">
@@ -355,19 +345,16 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // ✅ 너의 Apps Script URL로 유지
+    // ✅ 배포한 Apps Script URL을 여기에 꼭 넣어주세요!
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
     const el = {
-      adminKey: document.getElementById("adminKey"),
       btnRefresh: document.getElementById("btnRefresh"),
       btnLogout: document.getElementById("btnLogout"),
-
       kUsers: document.getElementById("kUsers"),
       kSupply: document.getElementById("kSupply"),
       kCasino: document.getElementById("kCasino"),
       kJackpot: document.getElementById("kJackpot"),
-
       cfgStatus: document.getElementById("cfgStatus"),
       oddsProfile: document.getElementById("oddsProfile"),
       feeFlat: document.getElementById("feeFlat"),
@@ -375,7 +362,6 @@
       oddsCustom: document.getElementById("oddsCustom"),
       btnLoadCfg: document.getElementById("btnLoadCfg"),
       btnSaveCfg: document.getElementById("btnSaveCfg"),
-
       jpMode: document.getElementById("jpMode"),
       jpMonth: document.getElementById("jpMonth"),
       jpRemaining: document.getElementById("jpRemaining"),
@@ -384,26 +370,18 @@
       btnSaveJp: document.getElementById("btnSaveJp"),
       tagMode: document.getElementById("tagMode"),
       tagArmed: document.getElementById("tagArmed"),
-
       q: document.getElementById("q"),
+      btnSearchUser: document.getElementById("btnSearchUser"),
       userTbody: document.getElementById("userTbody"),
-
       ov: document.getElementById("ov"),
       mUser: document.getElementById("mUser"),
       mDelta: document.getElementById("mDelta"),
-      mReason: document.getElementById("mReason"),
       mCancel: document.getElementById("mCancel"),
       mOk: document.getElementById("mOk"),
-
       toast: document.getElementById("toast"),
     };
 
-    const S = {
-      key: sessionStorage.getItem("casino_admin_key") || "",
-      users: [],
-      cfg: {},
-      selectedUserId: ""
-    };
+    let S = { selectedUserId: "", armed: false };
 
     function toast(msg){
       el.toast.textContent = msg;
@@ -411,229 +389,164 @@
       setTimeout(()=>el.toast.classList.remove("on"), 1400);
     }
 
-    function safeKey(){
-      const k = (el.adminKey.value || S.key || "").trim();
-      return k;
-    }
-
-    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
     function fmt(n){
       const x = Number(n||0);
-      if (!Number.isFinite(x)) return "0";
-      if (Math.abs(x) >= 1000) return x.toLocaleString("en-US");
-      return (Math.round(x*100)/100).toString();
+      return Math.abs(x)>=1000 ? x.toLocaleString("en-US") : x;
     }
 
     function jsonp(url, params){
       return new Promise((resolve, reject)=>{
-        const cb = "__admin_cb_" + Math.random().toString(36).slice(2);
-        params = Object.assign({}, params, { callback: cb });
-        const qs = new URLSearchParams(params);
-        const src = url + (url.includes("?") ? "&" : "?") + qs.toString();
-
-        const script = document.createElement("script");
-        let done = false;
-
-        const t = setTimeout(()=>{
-          if (done) return;
-          done = true;
-          cleanup();
-          reject(new Error("timeout"));
-        }, 12000);
-
-        function cleanup(){
-          clearTimeout(t);
-          try{ delete window[cb]; }catch(_){}
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-        }
-
+        const cb = "cb_" + Math.round(Math.random()*100000);
         window[cb] = (data)=>{
-          if (done) return;
-          done = true;
-          cleanup();
+          delete window[cb]; document.body.removeChild(script);
           resolve(data);
         };
-
-        script.onerror = ()=>{
-          if (done) return;
-          done = true;
-          cleanup();
-          reject(new Error("jsonp_failed"));
-        };
-
-        script.src = src;
-        document.head.appendChild(script);
+        const script = document.createElement("script");
+        params.callback = cb;
+        script.src = url + (url.includes("?")?"&":"?") + new URLSearchParams(params);
+        script.onerror = ()=>{ delete window[cb]; document.body.removeChild(script); reject(); };
+        document.body.appendChild(script);
       });
     }
 
     async function api(action, params={}){
-      const adminKey = safeKey();
-      const res = await jsonp(SCRIPT_URL, Object.assign({ action, adminKey }, params));
-      if (!res || res.ok !== true){
-        throw new Error((res && (res.message||res.error)) ? (res.message||res.error) : "api_error");
-      }
+      const res = await jsonp(SCRIPT_URL, Object.assign({ action }, params));
+      if(!res.ok) throw new Error(res.error || "Error");
       return res;
     }
 
-    function monthNow(){
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      return `${y}-${m}`;
-    }
-
-    function renderUsers(){
-      const q = (el.q.value||"").trim().toLowerCase();
-      const rows = S.users
-        .filter(u=>{
-          if (!q) return true;
-          return (String(u.id||"").toLowerCase().includes(q)
-            || String(u.name||"").toLowerCase().includes(q)
-            || String(u.nickname||"").toLowerCase().includes(q));
-        })
-        .sort((a,b)=>(Number(b.balance||0) - Number(a.balance||0)));
-
-      el.userTbody.innerHTML = "";
-      for (const u of rows){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${u.id || "-"}</td>
-          <td>${(u.nickname || u.name || "-")}</td>
-          <td class="right">${fmt(u.balance||0)}</td>
-          <td>
-            <button class="btn" data-id="${u.id}">ADJUST</button>
-          </td>
-        `;
-        el.userTbody.appendChild(tr);
-      }
-
-      el.userTbody.querySelectorAll("button[data-id]").forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          const id = btn.getAttribute("data-id");
-          const u = S.users.find(x=>String(x.id)===String(id));
-          S.selectedUserId = id;
-          el.mUser.textContent = `${id} / ${(u && (u.nickname||u.name)) || "-"}`;
-          el.mDelta.value = "";
-          el.mReason.value = "운영자 조정";
-          el.ov.classList.add("on");
-        });
-      });
-    }
-
-    function renderCfg(){
-      const c = S.cfg || {};
-      el.oddsProfile.value = c.oddsProfile || "MID";
-      el.feeFlat.value = (c.feeFlat ?? 0);
-      el.feeRate.value = (c.feeRatePercent ?? 0);
-      el.oddsCustom.value = c.oddsCustomJson || "";
-
-      el.jpMode.value = c.jackpotMode || "OFF";
-      el.jpMonth.value = c.jackpotMonth || monthNow();
-      el.jpRemaining.value = (c.jackpotRemaining ?? 0);
-      el.jpTargets.value = (c.jackpotTargets || "").split(",").join("\n");
-
-      el.tagMode.textContent = `MODE: ${(c.jackpotMode||"-")}`;
-      el.tagMode.className = "tag " + ((c.jackpotMode==="MANUAL") ? "on" : "off");
-
-      el.tagArmed.textContent = `ARMED: ${(c.jackpotArmed ? "ON":"OFF")}`;
-      el.tagArmed.className = "tag " + (c.jackpotArmed ? "on" : "off");
-    }
+    // --- Actions ---
 
     async function loadAll(){
-      const k = safeKey();
-      if (!k){
-        toast("ADMIN KEY 입력");
-        return;
-      }
-      sessionStorage.setItem("casino_admin_key", k);
-      S.key = k;
-
       el.cfgStatus.textContent = "loading...";
-      const dash = await api("adminGetDashboard");
-      const cfg = await api("adminGetConfig");
+      try {
+        const res = await api("adminInfo");
+        const d = res.admin;
+        
+        // Stats
+        el.kUsers.textContent = d.stats.totalUsers;
+        el.kSupply.textContent = fmt(d.stats.totalUserUt);
+        el.kCasino.textContent = fmt(d.stats.casinoPool);
+        el.kJackpot.textContent = fmt(d.stats.jackpotPool);
 
-      S.users = dash.users || [];
-      S.cfg = cfg.config || {};
+        // Config
+        const c = d.config;
+        el.oddsProfile.value = c.oddsProfile || "LOW";
+        el.feeFlat.value = c.feeFlat;
+        el.feeRate.value = c.feeRate;
+        el.oddsCustom.value = c.customOddsJson;
 
-      el.kUsers.textContent = String(dash.totalUsers ?? "-");
-      el.kSupply.textContent = fmt(dash.totalSupply ?? 0);
-      el.kCasino.textContent = fmt(dash.casinoTotal ?? 0);
-      el.kJackpot.textContent = fmt(dash.jackpotTotal ?? 0);
+        // Jackpot
+        const j = d.jackpot;
+        el.jpMode.value = j.mode;
+        el.jpMonth.value = j.month;
+        el.jpRemaining.value = j.remaining;
+        el.jpTargets.value = j.targetIds;
+        S.armed = !!j.armed;
+        
+        el.tagMode.textContent = "MODE: " + j.mode;
+        el.tagMode.className = "tag " + (j.mode==="MANUAL"?"on":"off");
+        el.tagArmed.textContent = "ARMED: " + (S.armed?"ON":"OFF");
+        el.tagArmed.className = "tag " + (S.armed?"on":"off");
 
-      renderCfg();
-      renderUsers();
-      el.cfgStatus.textContent = "ok";
-      toast("SYNC OK");
+        el.cfgStatus.textContent = "ok";
+      } catch(e){
+        el.cfgStatus.textContent = "error";
+        toast("LOAD FAIL");
+        console.error(e);
+      }
     }
 
-    async function saveCfg(){
-      const cfg = {
-        oddsProfile: el.oddsProfile.value,
-        feeFlat: Number(el.feeFlat.value || 0),
-        feeRatePercent: Number(el.feeRate.value || 0),
-        oddsCustomJson: String(el.oddsCustom.value || "").trim()
-      };
-      await api("adminSetConfig", { json: JSON.stringify(cfg) });
-      toast("CONFIG SAVED");
-      await loadAll();
+    async function saveConfig(){
+      try {
+        await api("adminSave", {
+          feeFlat: el.feeFlat.value,
+          feeRate: el.feeRate.value,
+          oddsProfile: el.oddsProfile.value,
+          customOddsJson: el.oddsCustom.value
+        });
+        toast("CONFIG SAVED");
+        loadAll();
+      } catch(e){ toast("SAVE FAIL"); }
     }
 
     async function saveJackpot(){
-      const targets = String(el.jpTargets.value || "")
-        .split(/[\n,]+/g).map(s=>s.trim()).filter(Boolean);
-
-      const payload = {
-        jackpotMode: el.jpMode.value,
-        jackpotMonth: String(el.jpMonth.value || monthNow()).trim(),
-        jackpotRemaining: Number(el.jpRemaining.value || 0),
-        jackpotTargets: targets.join(",")
-      };
-      await api("adminSetJackpot", { json: JSON.stringify(payload) });
-      toast("JACKPOT SAVED");
-      await loadAll();
+      try {
+        await api("adminSave", {
+          jMode: el.jpMode.value,
+          jMonth: el.jpMonth.value,
+          jRemaining: el.jpRemaining.value,
+          jTargets: el.jpTargets.value
+        });
+        toast("JACKPOT SAVED");
+        loadAll();
+      } catch(e){ toast("SAVE FAIL"); }
     }
 
     async function toggleArm(){
-      await api("adminToggleJackpotArmed");
-      toast("ARM TOGGLED");
-      await loadAll();
+      try {
+        await api("adminSave", { jArmed: S.armed ? 0 : 1 }); // toggle
+        toast("ARM TOGGLED");
+        loadAll();
+      } catch(e){ toast("FAIL"); }
     }
 
-    async function adjustBalance(){
-      const id = S.selectedUserId;
-      const delta = Number(String(el.mDelta.value||"").trim());
-      if (!id || !Number.isFinite(delta) || delta === 0){
-        toast("delta 숫자 입력");
-        return;
+    async function searchUser(){
+      const q = el.q.value.trim();
+      if(!q) return;
+      el.userTbody.innerHTML = "<tr><td colspan='4'>Searching...</td></tr>";
+      try {
+        // getUser action (single user)
+        const res = await api("getUser", { id: q }); 
+        const u = res.user;
+        el.userTbody.innerHTML = `
+          <tr>
+            <td>${u.id}</td>
+            <td>${u.name}</td>
+            <td class="right">${fmt(u.balance)}</td>
+            <td><button class="btn" onclick="openAdjust('${u.id}')">ADJUST</button></td>
+          </tr>
+        `;
+      } catch(e){
+        el.userTbody.innerHTML = "<tr><td colspan='4'>Not Found</td></tr>";
       }
-      const reason = String(el.mReason.value || "운영자 조정").trim();
-      await api("adminAdjustBalance", { id, delta: String(delta), reason });
-      toast("APPLIED");
-      el.ov.classList.remove("on");
-      await loadAll();
     }
 
+    window.openAdjust = function(id){
+      S.selectedUserId = id;
+      el.mUser.textContent = "USER: " + id;
+      el.mDelta.value = "";
+      el.ov.classList.add("on");
+    }
+
+    async function applyAdjust(){
+      const delta = el.mDelta.value.trim();
+      if(!delta) return;
+      try {
+        // Use addBalance action
+        await api("addBalance", { id: S.selectedUserId, delta: delta });
+        toast("APPLIED");
+        el.ov.classList.remove("on");
+        searchUser(); // refresh user row
+        loadAll();    // refresh stats
+      } catch(e){ toast("ADJUST FAIL"); }
+    }
+
+    // Events
     el.btnRefresh.addEventListener("click", loadAll);
-    el.btnLogout.addEventListener("click", ()=>{
-      sessionStorage.removeItem("casino_admin_key");
-      S.key = "";
-      el.adminKey.value = "";
-      toast("LOGOUT");
-    });
     el.btnLoadCfg.addEventListener("click", loadAll);
-    el.btnSaveCfg.addEventListener("click", saveCfg);
+    el.btnSaveCfg.addEventListener("click", saveConfig);
     el.btnSaveJp.addEventListener("click", saveJackpot);
     el.btnArm.addEventListener("click", toggleArm);
-    el.q.addEventListener("input", renderUsers);
+    el.btnSearchUser.addEventListener("click", searchUser);
+    el.q.addEventListener("keydown", e=>{ if(e.key==="Enter") searchUser(); });
+    
+    el.mCancel.addEventListener("click", ()=>el.ov.classList.remove("on"));
+    el.mOk.addEventListener("click", applyAdjust);
+    el.btnLogout.addEventListener("click", ()=>location.reload());
 
-    el.mCancel.addEventListener("click", ()=> el.ov.classList.remove("on"));
-    el.mOk.addEventListener("click", adjustBalance);
-
-    // boot
-    (function(){
-      if (S.key) el.adminKey.value = S.key;
-      el.jpMonth.value = monthNow();
-    })();
+    // Init
+    loadAll();
   </script>
 </body>
 </html>
