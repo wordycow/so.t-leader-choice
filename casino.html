@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>THE UNIQUE CASINO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #050714;
+            --slot-bg: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); /* 화려한 그라데이션 */
+            --roulette-bg: linear-gradient(135deg, #FF0055, #222, #444); /* 강렬한 레드/블랙 */
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Pretendard', sans-serif;
+            height: 100vh;
+            overflow: hidden; /* 스크롤 없애고 화면 꽉 채움 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 상단 타이틀 (화면 위에 띄움) */
+        .header-overlay {
+            position: absolute;
+            top: 30px; left: 0; width: 100%;
+            text-align: center;
+            z-index: 100;
+            pointer-events: none; /* 클릭 통과 */
+        }
+        h1 {
+            font-size: 4rem; margin: 0;
+            font-weight: 900;
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background: linear-gradient(to bottom, #fff, #aaa);
+            -webkit-background-clip: text; color: transparent;
+        }
+        p { 
+            font-size: 1.2rem; color: rgba(255,255,255,0.8); 
+            margin-top: 10px; font-weight: 300; letter-spacing: 2px;
+            text-shadow: 0 2px 5px rgba(0,0,0,1);
+        }
+
+        /* 메인 컨테이너 (화면 분할) */
+        .split-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 공통 카드 스타일 */
+        .game-panel {
+            flex: 1; /* 화면 반반 차지 */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            transition: all 0.5s ease;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        /* 배경 이미지/효과 */
+        .game-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.4;
+            transition: 0.5s;
+            z-index: 0;
+        }
+
+        /* 1. 슬롯 (왼쪽) */
+        .slot-panel {
+            background: #111;
+            border-right: 2px solid rgba(255,255,255,0.1);
+        }
+        .slot-panel::before { background-image: linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-size: 60px 60px; background-color: #1a0b2e; }
+        .slot-panel:hover { flex: 1.5; background-color: #2a1f3d; } /* 호버시 더 커짐 */
+        .slot-panel:hover::before { opacity: 0.2; transform: scale(1.1); }
+
+        /* 2. 룰렛 (오른쪽) */
+        .roulette-panel {
+            background: #1a0505;
+        }
+        .roulette-panel::before { background: radial-gradient(circle, #500 0%, #000 80%); }
+        .roulette-panel:hover { flex: 1.5; background-color: #3d0a0a; }
+        .roulette-panel:hover::before { opacity: 0.6; transform: scale(1.1); }
+
+
+        /* 내용물 (아이콘, 텍스트) */
+        .content {
+            position: relative; z-index: 10;
+            text-align: center;
+            transform: translateY(0);
+            transition: 0.4s;
+        }
+        .game-panel:hover .content { transform: scale(1.1); }
+
+        .icon {
+            font-size: 10rem; /* 아이콘 엄청 크게 */
+            margin-bottom: 20px;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            transition: 0.4s;
+        }
+        /* 슬롯 아이콘 애니메이션 */
+        .slot-panel:hover .icon { animation: shake 0.5s infinite; }
+        /* 룰렛 아이콘 애니메이션 */
+        .roulette-panel:hover .icon { animation: spin 2s infinite linear; }
+
+        .title {
+            font-size: 4rem; font-weight: 900;
+            text-transform: uppercase;
+            margin: 0;
+            text-shadow: 0 0 30px currentColor;
+        }
+        .desc {
+            font-size: 1.2rem; color: #ccc; margin-top: 15px; opacity: 0.7;
+        }
+
+        /* 색상 포인트 */
+        .slot-panel .title { color: #00d2ff; }
+        .roulette-panel .title { color: #ff0055; }
+
+
+        /* 나가기 버튼 (하단 중앙) */
+        .back-btn {
+            position: absolute;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: white; color: black; box-shadow: 0 0 20px white; }
+
+        /* 애니메이션 키프레임 */
+        @keyframes shake {
+            0% { transform: translateY(0); }
+            25% { transform: translateY(-5px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateY(5px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* 모바일 대응 (세로 배치) */
+        @media (max-width: 768px) {
+            .split-container { flex-direction: column; }
+            h1 { font-size: 2.5rem; }
+            .icon { font-size: 6rem; }
+            .title { font-size: 2.5rem; }
+            .slot-panel:hover, .roulette-panel:hover { flex: 1; /* 모바일은 크기 변화 X */ }
+            .back-btn { bottom: 20px; padding: 10px 30px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-overlay">
+        <h1>THE CASINO</h1>
+        <p>CHOOSE YOUR DESTINY</p>
+    </div>
+
+    <div class="split-container">
+        
+        <a href="games/slot.html" class="game-panel slot-panel">
+            <div class="content">
+                <div class="icon">🎰</div>
+                <div class="title">SLOT</div>
+                <div class="desc">JACKPOT MACHINE</div>
+            </div>
+        </a>
+
+        <a href="games/roulette.html" class="game-panel roulette-panel">
+            <div class="content">
+                <div class="icon">🎡</div>
+                <div class="title">ROULETTE</div>
+                <div class="desc">EQUITY SPIN</div>
+            </div>
+        </a>
+
+    </div>
+
+    <a href="the-unique-main.html" class="back-btn">EXIT CASINO</a>
+
+</body>
+</html>
