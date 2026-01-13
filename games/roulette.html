@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>THE UNIQUE: COMPANY ROULETTE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* =========================================
+           CSS STYLES (다크 테마 & 반응형)
+           ========================================= */
+        :root {
+            --bg-color: #120c1f;
+            --gold: #ffd700;
+            --company-color: #ff0055; /* Company 전용 색상 */
+            --panel-bg: rgba(255, 255, 255, 0.08);
+            --text-gray: #aaa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden; /* 스크롤 방지 */
+        }
+
+        /* --- 상단 헤더 --- */
+        .header {
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4), transparent);
+            flex-shrink: 0;
+        }
+        .title {
+            margin: 0;
+            color: var(--gold);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            font-weight: 900;
+        }
+
+        /* --- 메인 게임 컨테이너 --- */
+        .game-container {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            max-width: 900px;
+            padding: 10px;
+            box-sizing: border-box;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 1. 왼쪽: 룰렛 휠 */
+        .roulette-section {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 30px rgba(0,0,0,0.6));
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transform-origin: center;
+        }
+        /* 룰렛 화살표 (Pointer) */
+        .pointer {
+            position: absolute;
+            top: 50%;
+            left: -18px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            z-index: 10;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 30px solid #fff;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+        }
+
+        /* 2. 오른쪽: 정보창 & 리스트 */
+        .info-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 400px;
+            gap: 15px;
+            min-width: 280px;
+        }
+
+        /* 정보 카드 (타이머, 총액) */
+        .status-card {
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .label { font-size: 0.85rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; }
+        .total-amount { font-size: 2rem; font-weight: 800; color: var(--gold); margin: 5px 0 10px 0; }
+        .timer { color: #ff4757; font-weight: bold; font-size: 1.4rem; font-family: monospace; }
+        .message { font-size: 0.9rem; margin-top: 5px; height: 20px; color: #ffdd59; font-weight: bold; }
+
+        /* 참여자 리스트 (스크롤) */
+        .list-panel {
+            flex: 1;
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 10px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .list-header {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+        
+        /* 스크롤바 커스텀 */
+        .list-panel::-webkit-scrollbar { width: 6px; }
+        .list-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+        /* 리스트 아이템 */
+        .p-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .p-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 12px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .p-money { font-weight: bold; color: #eee; font-family: monospace; font-size: 1.1em;}
+
+        /* --- 하단 컨트롤 패널 --- */
+        .controls {
+            width: 100%;
+            max-width: 900px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 25px 25px 0 0;
+            border-top: 2px solid #333;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .bet-box { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        .btn-bet {
+            padding: 10px 15px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .btn-bet:hover { background: #555; transform: translateY(-2px); }
+        .btn-bet:active { transform: translateY(0); }
+        
+        .input-bet {
+            width: 110px;
+            background: #000;
+            border: 1px solid #555;
+            color: var(--gold);
+            text-align: center;
+            font-size: 1.3rem;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .btn-join {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.3rem;
+            font-weight: 900;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #f39c12, #e74c3c);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #c0392b;
+            text-transform: uppercase;
+            transition: 0.1s;
+        }
+        .btn-join:active { transform: translateY(4px); box-shadow: none; }
+        .btn-join:disabled { filter: grayscale(1); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.5; }
+
+        /* --- 모바일 반응형 --- */
+        @media (max-width: 768px) {
+            .game-container { flex-direction: column; overflow-y: auto; padding-bottom: 0; }
+            .roulette-section { width: 280px; height: 280px; margin-bottom: 10px; }
+            .info-section { width: 100%; min-width: auto; }
+            .list-panel { max-height: 200px; }
+            .title { font-size: 1.4rem; }
+            .controls { padding: 15px; }
+            .btn-join { font-size: 1.1rem; padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="title">THE UNIQUE CASINO</h1>
+    </div>
+
+    <div class="game-container">
+        <div class="roulette-section">
+            <div class="pointer"></div>
+            <canvas id="canvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="info-section">
+            <div class="status-card">
+                <div class="label">TOTAL EQUITY (총 판돈)</div>
+                <div class="total-amount" id="poolDisplay">0 UT</div>
+                <div class="timer" id="timerDisplay">30:00</div>
+                <div class="message" id="statusMsg"></div>
+            </div>
+
+            <div class="list-panel">
+                <div class="list-header">실시간 지분 현황 (Live Equity)</div>
+                <div id="participantList">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="bet-box">
+            <button class="btn-bet" onclick="changeBet(-10)">-10</button>
+            <input type="number" id="betInput" class="input-bet" value="10" readonly>
+            <button class="btn-bet" onclick="changeBet(10)">+10</button>
+            <button class="btn-bet" style="color:var(--gold)" onclick="setMaxBet()">MAX</button>
+        </div>
+        <button id="joinBtn" class="btn-join" onclick="joinGame()">참여하기 (BET)</button>
+    </div>
+
+    <script>
+    // --- 설정 ---
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; // 제공해주신 URL
+    const HOUSE_NAME = "Company";
+    const HOUSE_COLOR = "#ff0055";
+    const HOUSE_BET = 100;
+    
+    // --- 유저 정보 (로그인 연동) ---
+    // 기존 사이트에서 로그인 시 localStorage에 'username'이나 'userId'를 저장한다고 가정합니다.
+    const myId = localStorage.getItem("username") || localStorage.getItem("userId") || "Guest"; 
+    let myWallet = 0; // 서버에서 받아올 예정
+
+    // --- 게임 상태 ---
+    let gameState = {
+        participants: [],
+        totalPool: 0,
+        timeLeft: 30 * 60, // 30분
+        isRunning: false,
+        isSpinning: false,
+        roundCount: 1
+    };
+    
+    let timerInterval = null;
+    let rotationAngle = 0;
+    const userColors = ['#3498db', '#2ecc71', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c'];
+
+    // --- 초기화 ---
+    window.onload = function() {
+        // 1. 내 잔액 불러오기
+        fetchUserData();
+        
+        // 2. 게임 시작
+        initGame();
+        renderLoop();
+    };
+
+    function fetchUserData() {
+        if(myId === "Guest") {
+            alert("로그인이 필요합니다!");
+            return; // 또는 로그인 페이지로 이동
+        }
+        
+        fetch(`${GAS_URL}?action=getUserInfo&id=${myId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.result === "success") {
+                myWallet = data.balance;
+                console.log("잔액 로드 완료: " + myWallet);
+                // 화면 업데이트 등 필요시 추가
+            } else {
+                alert("유저 정보를 불러오지 못했습니다.");
+            }
+        });
+    }
+
+    // --- 게임 로직 (수정된 부분) ---
+    
+    // [배팅 시 서버 통신]
+    function tryJoinGame() {
+        const amount = parseInt(document.getElementById('betInput').value);
+        if(amount > myWallet) return alert("잔액 부족!");
+        
+        // 1. 서버에 배팅 요청 (돈 차감)
+        fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.result === "success") {
+                myWallet = data.newBalance; // 잔액 갱신
+                
+                // 2. 게임 참여 처리 (성공 시에만)
+                const colorIdx = (gameState.participants.length - 1) % userColors.length;
+                
+                // 내 이름(ID)으로 참여
+                addParticipant(myId, amount, userColors[colorIdx]);
+                
+                // 모달 닫기 등 UI 처리
+                closeModal();
+                updateUI();
+                alert("배팅 완료! 남은 잔액: " + myWallet);
+            } else {
+                alert("배팅 실패: " + data.msg);
+            }
+        });
+    }
+
+    // [결과 발표 및 수익 분배]
+    function determineWinner() {
+        // ... (기존 승자 추첨 로직 동일) ...
+        const lucky = Math.random() * gameState.totalPool;
+        let stack = 0;
+        let winner = null;
+
+        for(let p of gameState.participants) {
+            stack += p.amount;
+            if(lucky <= stack) {
+                winner = p;
+                break;
+            }
+        }
+        
+        const totalPrize = gameState.totalPool;
+        const winnerPrize = Math.floor(totalPrize * 0.9); // 90%
+        const companyFee = Math.floor(totalPrize * 0.1);  // 10%
+
+        // 알림
+        alert(`🎉 당첨: ${winner.name}! \n상금: ${winnerPrize} UT (수수료 10% 제외)`);
+
+        // ★ 중요: 내가 당첨자일 때만 서버에 '돈 주세요' 요청 보냄
+        if (winner.name === myId) {
+            fetch(`${GAS_URL}?action=rouletteResult&type=win&id=${myId}&amount=${winnerPrize}`)
+            .then(res => res.json())
+            .then(data => {
+                myWallet = data.newBalance;
+                alert("상금이 지갑으로 입금되었습니다!");
+            });
+        }
+        
+        // ★ 중요: 게임 종료 시 '방장(클라이언트 중 한 명)' 혹은 로직상
+        // 본사 수익 10%를 서버에 기록 요청 (여기선 편의상 내가 당첨됐거나, 본사가 당첨됐을 때 보냄)
+        // 안전하게 하려면 매 판 끝날 때 그냥 한번 보냅니다.
+        fetch(`${GAS_URL}?action=rouletteResult&type=fee&id=Company&amount=${companyFee}`);
+
+        // 게임 리셋
+        setTimeout(initGame, 5000);
+    }
+
+    // ... (나머지 캔버스 드로잉, 타이머 함수들은 기존 코드 유지) ...
+</script>
+</body>
+</html>
