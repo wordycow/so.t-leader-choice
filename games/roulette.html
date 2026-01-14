@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>THE UNIQUE: 3D WALL ROULETTE</title>
+    <title>THE UNIQUE: 2D GIANT ROULETTE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         /* =========================================
-           CSS STYLES (Titanium Theme)
+           CSS STYLES (Titanium Theme) - 변경 없음
            ========================================= */
         :root {
             --bg-color: #050714;
@@ -44,6 +44,7 @@
         .game-stage { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
+        /* 화살표 포인터 */
         .pointer { 
             position: absolute; top: 50%; left: 30px; transform: translateY(-50%);
             width: 0; height: 0; z-index: 50; 
@@ -187,18 +188,15 @@
             
             await fetchUserData();
             
-            // 색상 복구 로직 (새로고침 대응)
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
             if (savedColor) {
                 myColor = savedColor;
-                document.getElementById('ruleModal').style.display = 'none'; // 색상 있으면 모달 패스
+                document.getElementById('ruleModal').style.display = 'none'; 
             } else {
-                initColorPicker(); // 색상 없으면 선택창 띄움
+                initColorPicker(); 
             }
 
             addParticipant("Company", 100, '#ff0055'); 
-            
-            // 만약 이미 색상이 있으면 바로 참여자 목록에 추가
             if (myColor) addParticipant(myId, 0, myColor);
 
             requestAnimationFrame(drawGiantWheel);
@@ -235,9 +233,7 @@
 
         function selectColorAndStart() {
             if (!myColor) return;
-            // 색상 저장 (30분 라운드 동안 유지하고 싶다면 로직 추가 가능하지만, 일단 브라우저 저장)
             localStorage.setItem('rouletteColor_' + myId, myColor);
-            
             const existing = gameState.participants.find(p => p.name === myId);
             if (!existing) { addParticipant(myId, 0, myColor); }
             closeModal('ruleModal');
@@ -388,90 +384,88 @@
         function resetGame() { location.reload(); }
         function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
         
-        // --- [복구된 + 3D 효과 추가] Giant Wheel 로직 ---
+        // --- [수정된 부분] 2D 룰렛 + 이름 위치 변경 ---
         function drawGiantWheel() {
-            const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d');
+            const canvas = document.getElementById('canvas'); 
+            const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             const w = canvas.width; const h = canvas.height;
             
-            // [중요] 2D 구조를 유지하되 높이(radiusY)를 줄여서 타원형으로 만듦 -> 3D 효과
-            // CenterX를 오른쪽 끝(w + 50)으로 보내서 왼쪽 곡선만 보이게 함
-            const radiusX = h * 2.5; 
-            const radiusY = h * 2.2; // Y를 X보다 약간 줄이면 '기울어진' 원근감이 생김
-            const centerX = radiusX + 50; 
+            // 1. 완전한 2D 원 (타원 아님)
+            const radius = h * 2.5; 
+            const centerX = radius + 50; // 중심을 화면 오른쪽 밖으로
             const centerY = h / 2;
 
             gameState.rotation += 0.0035; 
             ctx.clearRect(0, 0, w, h); ctx.save();
+            
             let startAngle = gameState.rotation;
             
-            // 룰렛 배경 (타원)
+            // 룰렛 배경 (정원)
             ctx.beginPath(); 
-            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#0a0a0a"; ctx.fill(); 
             ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
-            
-            // 그림자 제거
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0; // 3D 그림자 제거
 
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
                     const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
                     const endAngle = startAngle + sliceAngle;
                     
-                    // 파이 조각 (ellipse 이용)
+                    // 조각 그리기 (arc 사용)
                     ctx.beginPath(); 
                     ctx.moveTo(centerX, centerY);
-                    ctx.ellipse(centerX, centerY, radiusX - 20, radiusY - 20, 0, startAngle, endAngle);
+                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle);
                     ctx.closePath(); 
                     
                     ctx.fillStyle = p.color; 
                     ctx.fill(); 
                     ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
                     
-                    // [핵심] 3D 텍스트 스케일링
+                    // [핵심 수정] 텍스트 위치를 바깥쪽 가장자리(화살표 쪽)로 이동
                     if (sliceAngle > 0.05) {
                         const midAngle = startAngle + sliceAngle / 2;
                         
-                        // 텍스트 위치 계산
-                        const textRadiusX = radiusX - 350; 
-                        const textRadiusY = radiusY - 300; // Y반경을 더 줄임
-                        const tx = centerX + Math.cos(midAngle) * textRadiusX;
-                        const ty = centerY + Math.sin(midAngle) * textRadiusY;
+                        // 텍스트 위치 계산: 중심에서 반지름만큼 떨어진 가장자리 좌표
+                        const textRadius = radius - 120; // 가장자리에서 살짝 안쪽
+                        const tx = centerX + Math.cos(midAngle) * textRadius;
+                        const ty = centerY + Math.sin(midAngle) * textRadius;
 
-                        // 3D 효과: 화면 중앙(눈높이)에서 멀어질수록 작아지게
-                        const distFromCenter = Math.abs(ty - h/2);
-                        const depthScale = 1.0 - (distFromCenter / h) * 0.4; // 0.6 ~ 1.0 배율
-
-                        ctx.save(); 
-                        ctx.translate(tx, ty); 
-                        ctx.scale(depthScale, depthScale); // 원근감 적용
+                        ctx.save();
+                        ctx.translate(tx, ty);
+                        // 텍스트 회전: 조각의 각도에 맞춤
                         ctx.rotate(midAngle + Math.PI); 
                         
+                        // 텍스트 정렬: 오른쪽 정렬 (가장자리에서 안쪽으로 글씨가 써지도록)
+                        ctx.textAlign = "right"; 
+                        ctx.textBaseline = "middle";
+
                         // 이름
                         ctx.fillStyle = "#fff"; 
-                        ctx.font = "bold 50px Pretendard"; 
-                        ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 5; 
-                        ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
-                        ctx.fillText(p.name, 0, -25); 
+                        ctx.font = "bold 40px Pretendard"; 
+                        ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; 
+                        ctx.fillText(p.name, 0, -20); // 기준점에서 약간 위
                         
                         // 금액
                         ctx.fillStyle = "#ffd700"; 
-                        ctx.font = "bold 28px monospace"; 
-                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
+                        ctx.font = "bold 24px monospace"; 
+                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 20); // 기준점에서 약간 아래
                         
                         ctx.restore();
                     }
                     startAngle = endAngle;
                 });
             } else {
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center";
-                ctx.fillText("WAITING FOR PLAYERS...", w/2, h/2);
+                // 대기 화면
+                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; 
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
             }
             
-            // 중앙 그라데이션 (살짝만)
-            const grad = ctx.createRadialGradient(centerX, centerY, radiusX * 0.9, centerX, centerY, radiusX);
-            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.4)");
+            // 중앙 그라데이션 (약하게)
+            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
+            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.3)");
             ctx.fillStyle = grad; ctx.fill();
             
             ctx.restore(); requestAnimationFrame(drawGiantWheel);
