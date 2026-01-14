@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* =========================================
-           THE UNIQUE: TITANIUM THEME (FIXED & FULL)
+           THE UNIQUE: TITANIUM THEME (FINAL FIX)
            ========================================= */
         :root {
             --bg-color: #050714;
@@ -37,7 +37,7 @@
         .hud-value { font-size: 1.3rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.3rem; font-weight: bold; color: #ff4757; font-family: monospace; }
 
-        /* UI: Countdown */
+        /* UI: Countdown (Center) */
         .center-countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 20rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 100px rgba(255, 0, 85, 0.8); display: none; line-height: 1; }
         .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
         @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } }
@@ -78,7 +78,7 @@
         .jukebox-container.playing .jukebox-icon { animation: beat 0.8s infinite alternate; }
         @keyframes beat { 0% { transform: scale(1); } 100% { transform: scale(1.2); } }
 
-        /* [수정됨] 배팅 박스 & 버튼 (짤림 방지) */
+        /* [수정] 배팅 박스 & 버튼 (짤림 방지 최적화) */
         .bet-box { 
             display: flex; gap: 0; width: 100%; max-width: 400px;
             align-items: stretch; justify-content: center;
@@ -86,17 +86,18 @@
             border-radius: 12px; 
             border: 1px solid rgba(255,255,255,0.2); 
             overflow: hidden; 
-            height: 48px; /* 높이 약간 조정 */
+            height: 48px;
         }
         .btn-bet { 
-            flex: 1; /* 비율대로 공간 차지 */
+            flex: 1; /* 비율 균등 분배 */
             background: #333; color: white; border: none; 
-            cursor: pointer; font-weight: bold; font-size: 0.85rem; /* 폰트 약간 축소 */
-            padding: 0; /* 내부 패딩 제거 (중앙 정렬) */
+            cursor: pointer; font-weight: bold; font-size: 0.8rem; /* 폰트 약간 축소 */
+            padding: 0; /* 내부 패딩 제거 */
             transition: 0.2s; 
             border-right: 1px solid rgba(255,255,255,0.1); 
             border-radius: 0; 
             display: flex; align-items: center; justify-content: center;
+            white-space: nowrap; /* 줄바꿈 방지 */
         }
         .btn-bet:last-child { border-right: none; }
         .btn-bet:hover { background: #444; }
@@ -104,7 +105,7 @@
         .btn-max { color: var(--gold); font-weight: 900; }
         
         .input-bet { 
-            flex: 1.2; /* 입력창은 조금 더 넓게 */
+            flex: 1.5; /* 입력창을 버튼보다 넓게 */
             width: auto; background: #222; border: none; 
             color: var(--gold); text-align: center; font-size: 1.2rem; font-weight: bold; 
             border-right: 1px solid rgba(255,255,255,0.1);
@@ -132,10 +133,12 @@
         .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
 
-        /* [PC VERSION] */
+        /* =========================================
+           [PC VERSION: 리스트 패널 고정 위치]
+           ========================================= */
         @media (min-width: 769px) {
             .list-panel { 
-                position: absolute; top: 140px; right: 20px; 
+                position: absolute; top: 140px; right: 20px; /* Time Left 밑 고정 */
                 width: 250px; max-height: 400px;
             }
             .bottom-container {
@@ -147,7 +150,9 @@
             }
         }
 
-        /* [MOBILE VERSION] */
+        /* =========================================
+           [MOBILE VERSION: 하단 플로우 배치]
+           ========================================= */
         @media (max-width: 768px) {
             .pointer { left: 10px; }
             .bottom-container {
@@ -156,7 +161,7 @@
                 display: flex; flex-direction: column; align-items: center;
                 background: linear-gradient(to top, #050714 95%, transparent);
                 padding-bottom: 20px;
-                overflow-y: auto; /* 전체 스크롤 */
+                overflow-y: auto; 
                 -webkit-overflow-scrolling: touch;
             }
             .controls { width: 100%; flex-shrink: 0; padding-bottom: 0; }
@@ -166,7 +171,7 @@
             }
         }
 
-        /* 모달 (z-index 최상위 확인) */
+        /* 모달 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); display: none; }
         .modal-overlay.active { display: flex; animation: popIn 0.3s ease; }
         .modal-box { background: linear-gradient(135deg, #1a0b2e, #050714); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 60px rgba(255, 215, 0, 0.5); }
@@ -193,7 +198,7 @@
     <div id="ruleModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">PICK YOUR COLOR</div>
-            <div class="modal-sub">게임판에 표시될 나의 색상을 선택하세요.</div>
+            <div class="modal-sub">이 색상으로 게임판에 표시됩니다.<br>(이미 선택된 색상은 사용할 수 없습니다)</div>
             <div id="colorGrid" class="color-grid"></div>
             <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.9rem;"></div>
             <button id="btnStart" class="btn-confirm" onclick="confirmColorAndBet()" disabled>CONFIRM & BET</button>
@@ -253,11 +258,12 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
+        // [중요] 최신 배포된 URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; 
         
         let myId = ""; let myWallet = 0; let myColor = null;
-        
-        // [핵심] Company 기본값 (빨강)
+        let tickSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg"); // 10초 사운드
+
         let gameState = { 
             participants: [{ name: "Company", amount: 100, color: "#ff0055" }], 
             totalPool: 100, 
@@ -272,7 +278,6 @@
             '#cc0000', '#006600', '#000099', '#663300', '#666666', '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
         ];
 
-        // ----------------- Jukebox (YouTube) -----------------
         var player;
         var isPlaying = false;
         function onYouTubeIframeAPIReady() {
@@ -301,8 +306,6 @@
             if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
             
             await fetchUserData();
-            
-            // 색상이 저장되어 있어도 나중에 바꿀 수 있게 변수엔 넣되, UI엔 반영 안함 (모달 유도)
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
             if (savedColor) myColor = savedColor;
 
@@ -321,7 +324,6 @@
                     if (data.participants && data.participants.length > 0) {
                         gameState.participants = data.participants;
                     } else {
-                        // Company 기본값 유지 (빨강)
                         gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
                     }
                     updateGameState();
@@ -369,7 +371,7 @@
             if (!myColor) return;
             localStorage.setItem('rouletteColor_' + myId, myColor);
             closeModal('ruleModal');
-            joinGame(true); // true = 색상 선택 완료 후 재호출
+            joinGame(true); 
         }
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -416,12 +418,7 @@
 
         function joinGame(forceProceed = false) {
             if (isBettingProcessing) return;
-            
-            // [수정] 참여 버튼 누르면 무조건 색상 선택창 띄움 (단, confirmColorAndBet에서 재호출할 땐 통과)
-            if (!forceProceed) { 
-                openColorPicker(); 
-                return; 
-            }
+            if (!forceProceed) { openColorPicker(); return; }
             if (!myColor) { alert("색상을 선택해야 합니다."); return; }
 
             const amount = parseInt(document.getElementById('betInput').value);
@@ -442,8 +439,20 @@
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
                         btn.innerText = "배팅 성공!";
                         
-                        // [핵심] 배팅 성공 직후 즉시 동기화 실행
-                        syncGameState(); 
+                        // [즉시 반영 로직]
+                        let exists = false;
+                        gameState.participants.forEach(p => {
+                            if(p.name.toLowerCase() === myId.toLowerCase()) {
+                                p.amount += amount;
+                                exists = true;
+                            }
+                        });
+                        if(!exists) {
+                            gameState.participants.push({ name: myId, amount: amount, color: myColor });
+                        }
+                        updateGameState(); // 화면 즉시 갱신
+                        syncGameState(); // 서버 확인
+                        
                     } else { alert(data.msg); btn.innerText = originalText; }
                 })
                 .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
@@ -479,8 +488,10 @@
                 document.getElementById('timerDisplay').innerText = `${dMin}:${dSec < 10 ? '0'+dSec : dSec}`;
                 
                 const countEl = document.getElementById('centerCount');
-                if (remain <= 10 && remain > 0) {
+                if (remain <= 60 && remain > 0) {
                     countEl.innerText = remain; countEl.classList.add('active');
+                    // [10초 사운드]
+                    if (remain <= 10) { tickSound.play().catch(()=>{}); }
                 } else {
                     countEl.classList.remove('active'); 
                 }
@@ -500,7 +511,6 @@
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke(); ctx.shadowBlur = 0;
 
-            // [FIXED] startAngle 선언 (이게 없어서 멈췄던 것)
             let startAngle = gameState.rotation; 
 
             if (gameState.participants.length > 0) {
@@ -525,7 +535,6 @@
                         
                         ctx.restore();
                     }
-                    // [FIXED] 다음 슬라이스 각도 업데이트
                     startAngle = endAngle; 
                 });
             }
