@@ -106,16 +106,22 @@
             border-radius: 50%; box-shadow: 0 0 15px var(--company-color);
         }
 
-        /* --- 참여자 리스트 (하단 중앙) --- */
+        /* --- [핵심 수정] 참여자 리스트 위치: 오른쪽 빈 공간으로 이동 --- */
         .list-panel {
             position: absolute;
-            top: auto;
-            bottom: 170px; /* 컨트롤 패널 바로 위로 배치 */
-            left: 50%; /* 가로 중앙 */
-            transform: translateX(-50%); /* 정확히 중앙 정렬 */
-            right: auto;
+            
+            /* 수직 중앙 정렬 */
+            top: 50%;
+            transform: translateY(-50%);
+            
+            /* 오른쪽 벽에 붙이기 */
+            right: 20px;
+            left: auto; 
+            bottom: auto;
 
-            width: 320px; max-height: 220px;
+            width: 260px; 
+            max-height: 400px;
+            
             background: rgba(0, 0, 0, 0.5); 
             backdrop-filter: blur(5px);
             
@@ -137,6 +143,7 @@
         .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
 
+        /* --- 모달 --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px); display: none; }
         .modal-overlay.active { display: flex; animation: popIn 0.4s ease; }
         .modal-box { background: linear-gradient(135deg, #1a0b2e, #050714); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 0 60px rgba(255, 215, 0, 0.3); max-height: 85vh; overflow-y: auto; }
@@ -151,6 +158,7 @@
         .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-close:hover { background: #fff; transform: scale(1.05); }
 
+        /* --- 하단 컨트롤 --- */
         .controls { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px 20px 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
         .bet-box { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); }
         .btn-bet { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s; }
@@ -160,13 +168,30 @@
         .btn-join { width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: white; border: none; border-radius: 12px; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); cursor: pointer; text-transform: uppercase; }
         .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; background: #333; }
 
+        /* --- 모바일 반응형 수정 (우측 중앙 배치) --- */
         @media (max-width: 600px) {
             .hud-value { font-size: 1.2rem; }
             .pointer { left: 15px; }
-            .list-panel { width: 85%; max-width: 320px; }
-            .list-header { font-size: 0.8rem; }
-            .list-item { font-size: 0.85rem; padding: 6px 0; }
+            
+            /* [수정] 모바일에서도 우측 중앙 (빈 공간)으로 배치 */
+            .list-panel {
+                top: 55%; /* 화면 중간보다 살짝 아래 */
+                right: 15px; /* 오른쪽 벽에 붙임 */
+                left: auto;
+                bottom: auto;
+                transform: translateY(-50%);
+                
+                width: 170px; /* 너비 적절히 조절 */
+                max-height: 250px;
+                
+                background: rgba(0,0,0,0.6); 
+                backdrop-filter: blur(4px);
+            }
+            
+            .list-header { font-size: 0.7rem; }
+            .list-item { font-size: 0.8rem; padding: 6px 0; }
             .p-color { width: 10px; height: 10px; }
+
             .controls { padding-bottom: 20px; }
             .center-countdown { font-size: 8rem; top: 40%; } 
             .modal-box { padding: 20px; width: 85%; }
@@ -200,10 +225,12 @@
         <div class="hud-box"><div class="hud-label">TIME LEFT</div><div class="hud-timer" id="timerDisplay">30:00</div></div>
     </div>
     <div class="game-stage"><div class="pointer"></div><canvas id="canvas"></canvas></div>
+    
     <div class="list-panel">
         <div class="list-header">실시간 지분 현황 (Live Rank)</div>
         <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div></div>
     </div>
+    
     <div class="controls">
         <div class="bet-box">
             <button class="btn-bet btn-min" onclick="setMinBet()">MIN</button>
@@ -279,10 +306,7 @@
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
             if (amount <= 0) return alert("배팅 금액을 확인하세요.");
-            
-            // [수정] 60초 미만 남았을 때 배팅 차단
             if (gameState.timeLeft <= 60) return alert("마감 1분 전입니다. 참여 불가!");
-            
             isBettingProcessing = true;
             const btn = document.getElementById('joinBtn');
             const originalText = btn.innerText;
@@ -303,61 +327,39 @@
                 .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000); });
         }
         function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
-        
-        // [핵심 수정] 현실 시간 기반 타이머 (30분 단위)
         function startTimer() {
             const timerInterval = setInterval(() => {
-                // 1. 현재 시간 구하기
                 const now = new Date();
                 const minutes = now.getMinutes();
                 const seconds = now.getSeconds();
-                
-                // 2. 남은 시간 계산 (30분 단위)
-                // 현재 분이 0~29분이면 -> 30분까지 남은 시간
-                // 현재 분이 30~59분이면 -> 60분(다음 00분)까지 남은 시간
                 const targetMinute = minutes < 30 ? 30 : 60;
-                const remainMinutes = targetMinute - minutes - 1; // 1을 빼는 이유는 초 단위 계산 때문
+                const remainMinutes = targetMinute - minutes - 1;
                 const remainSeconds = 60 - seconds;
-                
-                // 전체 남은 초 (gameState.timeLeft 갱신)
                 const totalSecondsLeft = (remainMinutes * 60) + remainSeconds;
                 gameState.timeLeft = totalSecondsLeft;
-
-                // 3. 화면 표시 (MM:SS)
-                // 만약 60분 타겟인데 계산상 60초(00초)가 되면 딱 00:00이 됨
                 const displayMin = Math.floor(gameState.timeLeft / 60);
                 const displaySec = gameState.timeLeft % 60;
                 document.getElementById('timerDisplay').innerText = `${displayMin}:${displaySec < 10 ? '0'+displaySec : displaySec}`;
-
-                // --- 이벤트 로직 (기존과 동일) ---
                 const countEl = document.getElementById('centerCount');
                 if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
                     countEl.innerText = gameState.timeLeft; countEl.classList.add('active');
                     const btn = document.getElementById('joinBtn');
                     if(!btn.disabled) { btn.disabled = true; btn.innerText = "마감됨 (CLOSED)"; document.getElementById('timerDisplay').style.color = "red"; }
                 } else {
-                    // 시간이 넉넉하면 버튼 다시 활성화 (새 라운드 시작 시)
                     const btn = document.getElementById('joinBtn');
                     if(btn.disabled && !isBettingProcessing && gameState.timeLeft > 60) {
                         btn.disabled = false; btn.innerText = "참여하기 (BET)"; document.getElementById('timerDisplay').style.color = "#ff4757";
                         countEl.classList.remove('active');
                     }
                 }
-
                 if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) { const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"]; speak(words[10 - gameState.timeLeft]); }
-                
-                // [게임 종료] 정확히 0초가 되었을 때
                 if (gameState.timeLeft <= 0 || (minutes % 30 === 0 && seconds === 0)) {
-                    // 중복 실행 방지: 이미 모달이 떠있으면 실행 안 함
                     if (!document.getElementById('resultModal').classList.contains('active')) {
-                        countEl.classList.remove('active'); 
-                        speak("Time's up!"); 
-                        finishRound();
+                        countEl.classList.remove('active'); speak("Time's up!"); finishRound();
                     }
                 }
             }, 1000);
         }
-
         function finishRound() {
             let rand = Math.random() * gameState.totalPool;
             let runningTotal = 0; let winner = null;
