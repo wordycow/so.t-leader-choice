@@ -17,156 +17,210 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            color: white;
-            font-family: 'Pretendard', sans-serif;
             margin: 0;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Pretendard', sans-serif;
+            color: white;
+            display: flex; 
+            flex-direction: column; 
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            background: linear-gradient(-45deg, #050714, #1a0b2e, #3d0000, #0f0c29);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* --- 상단 정보창 (플로팅) --- */
+        /* --- 전광판 (Marquee) --- */
+        .marquee-wrap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 35px;
+            background: rgba(255, 0, 85, 0.2);
+            border-bottom: 1px solid var(--company-color);
+            overflow: hidden; white-space: nowrap; z-index: 150;
+            display: flex; align-items: center;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 20s linear infinite;
+            color: #fff; font-weight: bold; font-size: 0.9rem;
+            text-shadow: 0 0 5px var(--company-color);
+        }
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* --- 상단 정보창 (HUD) --- */
         .top-hud {
             position: absolute;
-            top: 20px; left: 20px; right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 100;
-            pointer-events: none; /* 클릭 통과 */
+            top: 50px; 
+            left: 20px; right: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 100; pointer-events: none;
         }
-
         .hud-box {
             background: var(--panel-bg);
-            padding: 15px 25px;
-            border-radius: 16px;
+            padding: 10px 20px; border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            text-align: center;
-            backdrop-filter: blur(10px);
+            text-align: center; backdrop-filter: blur(10px);
             pointer-events: auto;
         }
+        .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
+        .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
+        .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
 
-        .hud-label { font-size: 0.8rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 5px; }
-        .hud-value { font-size: 1.8rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
-        .hud-timer { font-size: 1.5rem; font-weight: bold; color: #ff4757; font-family: monospace; }
-
-        /* --- 메인 게임 영역 (거대 룰렛) --- */
+        /* --- 메인 게임 영역 --- */
         .game-stage {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
+            position: relative; width: 100%; height: 100%;
+            overflow: hidden; display: flex; align-items: center;
         }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 캔버스 (전체 화면) */
-        canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-        }
-
-        /* 룰렛 포인터 (화면 왼쪽 중앙 고정) */
         .pointer {
-            position: absolute;
-            top: 50%; left: 40px; /* 왼쪽에서 약간 떨어짐 */
-            transform: translateY(-50%);
-            width: 0; height: 0;
-            z-index: 50;
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            border-left: 50px solid #fff; /* 흰색 화살표 */
+            position: absolute; top: 50%; left: 40px; transform: translateY(-50%);
+            width: 0; height: 0; z-index: 50;
+            border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff;
             filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8));
         }
-        /* 포인터 장식 (보석 느낌) */
         .pointer::after {
-            content: ''; position: absolute;
-            top: -10px; left: -60px;
-            width: 20px; height: 20px;
-            background: var(--company-color);
-            border-radius: 50%;
-            box-shadow: 0 0 15px var(--company-color);
+            content: ''; position: absolute; top: -10px; left: -60px;
+            width: 20px; height: 20px; background: var(--company-color);
+            border-radius: 50%; box-shadow: 0 0 15px var(--company-color);
         }
 
-        /* --- 하단 컨트롤 패널 --- */
-        .controls {
+        /* --- 참여자 리스트 (스크롤 적용) --- */
+        .list-panel {
             position: absolute;
-            bottom: 0; left: 0; width: 100%;
+            right: 20px; top: 50%; transform: translateY(-50%);
+            width: 260px; 
+            max-height: 400px; /* 최대 높이 고정 */
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 16px; padding: 15px;
+            
+            /* [핵심] 스크롤 기능 추가 */
+            overflow-y: auto; 
+            
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            z-index: 90;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        
+        /* 스크롤바 디자인 커스텀 */
+        .list-panel::-webkit-scrollbar { width: 6px; }
+        .list-panel::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+        .list-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+
+        .list-header { text-align: center; color: var(--text-gray); font-size: 0.8rem; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .list-item {
+            display: flex; align-items: center; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;
+        }
+        .rank-num { width: 25px; font-weight: bold; color: #555; font-size: 0.8rem; }
+        .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; }
+        
+        .p-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 10px; }
+        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd; }
+        .p-amt { font-weight: bold; color: var(--gold); }
+
+        /* --- 규칙 설명 팝업 (Modal) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-box {
+            background: linear-gradient(135deg, #1a0b2e, #050714);
+            border: 2px solid var(--gold);
+            border-radius: 20px; padding: 30px;
+            width: 90%; max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn { from{transform:scale(0.8); opacity:0;} to{transform:scale(1); opacity:1;} }
+        
+        .modal-title { font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        .modal-text { text-align: left; font-size: 1rem; color: #ddd; line-height: 1.6; margin-bottom: 25px; }
+        .modal-text strong { color: var(--company-color); }
+        .btn-close {
+            background: var(--gold); color: #000; border: none; padding: 12px 30px;
+            font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-close:hover { background: #fff; transform: scale(1.05); }
+
+        /* --- 하단 컨트롤 --- */
+        .controls {
+            position: absolute; bottom: 0; left: 0; width: 100%;
             background: linear-gradient(to top, #000, transparent);
             padding: 20px 20px 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
             z-index: 100;
         }
-
         .bet-box {
-            display: flex; gap: 10px; align-items: center;
-            background: rgba(0,0,0,0.6);
-            padding: 10px 20px;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; gap: 8px; align-items: center;
+            background: rgba(0,0,0,0.7); padding: 10px 20px;
+            border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
         }
-
         .btn-bet {
             background: #333; color: white; border: none;
             padding: 10px 15px; border-radius: 8px; cursor: pointer;
-            font-weight: bold; transition: 0.2s;
+            font-weight: bold; font-size: 0.8rem; transition: 0.2s;
         }
         .btn-bet:hover { background: #555; }
+        .btn-min { color: #ff9f43; } 
+        .btn-max { color: var(--gold); }
         
         .input-bet {
-            width: 100px; background: transparent; border: none;
-            color: var(--gold); text-align: center; font-size: 1.5rem; font-weight: bold;
+            width: 90px; background: transparent; border: none;
+            color: var(--gold); text-align: center; font-size: 1.4rem; font-weight: bold;
         }
-
         .btn-join {
-            width: 100%; max-width: 400px;
-            padding: 18px; font-size: 1.4rem; font-weight: 900;
+            width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900;
             background: linear-gradient(90deg, #ff9f43, #ff6b6b);
             color: white; border: none; border-radius: 12px;
             box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
             cursor: pointer; text-transform: uppercase;
-            transition: transform 0.1s;
         }
-        .btn-join:active { transform: scale(0.98); }
-        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; background: #333; }
 
-        /* 참여자 리스트 (오른쪽 하단 플로팅) */
-        .list-panel {
-            position: absolute;
-            right: 20px; bottom: 120px;
-            width: 220px; max-height: 300px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 12px;
-            padding: 10px;
-            overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
-            z-index: 90;
-        }
-        .list-item {
-            display: flex; align-items: center; padding: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;
-        }
-        .p-color { width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; }
-        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd; }
-        .p-amt { font-weight: bold; color: var(--gold); }
-
-        /* 반응형 */
         @media (max-width: 600px) {
-            .hud-value { font-size: 1.4rem; }
+            .hud-value { font-size: 1.2rem; }
             .pointer { left: 20px; }
-            .list-panel { bottom: 160px; right: 10px; width: 180px; }
+            .list-panel {
+                top: 45%; left: 20px; right: auto; transform: translateY(-50%);
+                width: 200px; max-height: 250px;
+                background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            }
+            .controls { padding-bottom: 30px; }
         }
     </style>
 </head>
 <body>
+
+    <div id="ruleModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">GAME RULES</div>
+            <div class="modal-text">
+                1. <strong>30분</strong>마다 라운드가 진행됩니다.<br>
+                2. 배팅 금액만큼 룰렛의 <strong>내 지분(영역)</strong>이 커집니다.<br>
+                3. 추첨 시 내 영역에 멈추면 <strong>승리!</strong><br>
+                4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>
+                (본사 수수료 10% 제외)
+            </div>
+            <button class="btn-close" onclick="closeModal()">I UNDERSTAND</button>
+        </div>
+    </div>
+
+    <div class="marquee-wrap">
+        <div class="marquee-text" id="marqueeText">
+            🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥
+        </div>
+    </div>
 
     <div class="top-hud">
         <div class="hud-box">
@@ -184,68 +238,58 @@
         <canvas id="canvas"></canvas>
     </div>
 
-    <div class="list-panel" id="participantList">
-        <div style="text-align:center; color:#888; font-size:0.8rem; padding:5px;">참여자 대기중...</div>
+    <div class="list-panel">
+        <div class="list-header">실시간 지분 현황 (Live Rank)</div>
+        <div id="participantList">
+            <div style="text-align:center; color:#888; font-size:0.8rem; padding:5px;">대기중...</div>
+        </div>
     </div>
 
     <div class="controls">
         <div class="bet-box">
+            <button class="btn-bet btn-min" onclick="setMinBet()">MIN</button>
             <button class="btn-bet" onclick="changeBet(-10)">-10</button>
             <input type="number" id="betInput" class="input-bet" value="10" readonly>
             <button class="btn-bet" onclick="changeBet(10)">+10</button>
-            <button class="btn-bet" style="color:var(--gold)" onclick="setMaxBet()">MAX</button>
+            <button class="btn-bet btn-max" onclick="setMaxBet()">MAX</button>
         </div>
         <button id="joinBtn" class="btn-join" onclick="joinGame()">참여하기 (BET)</button>
-        <div style="font-size:0.9rem; color:#aaa;">내 보유 자산: <span id="myBalance" style="color:white; font-weight:bold;">Loading...</span></div>
+        <div style="font-size:0.8rem; color:#aaa;">내 자산: <span id="myBalance" style="color:white;">Loading...</span></div>
     </div>
 
     <script>
-        // === 설정값 ===
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-        const ROUND_TIME = 30 * 60; // 30분
-        const SPIN_SPEED = (Math.PI * 4) / 60; // 1분에 2바퀴 (약 0.0035 rad/frame)
-
-        // === 상태 변수 ===
+        const ROUND_TIME = 30 * 60;
+        
         let myId = "";
         let myWallet = 0;
+        let gameState = { participants: [], totalPool: 0, timeLeft: ROUND_TIME, rotation: 0, isRunning: true };
         
-        let gameState = {
-            participants: [],
-            totalPool: 0,
-            timeLeft: ROUND_TIME,
-            rotation: 0,
-            isRunning: true
-        };
-
+        let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
+        const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
         const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#34495e'];
 
-        // === 초기화 ===
         window.onload = async function() {
-            // 1. URL에서 ID 파싱
             const params = new URLSearchParams(window.location.search);
-            myId = params.get('id');
-
-            // ID 없으면 로컬스토리지 확인
-            if (!myId) myId = localStorage.getItem('user_id') || localStorage.getItem('loginId');
+            myId = params.get('id') || localStorage.getItem('user_id') || localStorage.getItem('loginId');
 
             if (!myId) {
                 alert("로그인이 필요합니다.");
-                window.location.href = "../the-unique-main.html"; // 메인으로 쫓아냄
+                window.location.href = "../the-unique-main.html";
                 return;
             }
 
-            console.log("Logged in as:", myId);
-
-            // 2. 내 잔액 불러오기
             await fetchUserData();
-
-            // 3. 게임 시작 (Company 자동 참여)
             addParticipant("Company", 100, "#ff0055"); 
-            
-            // 4. 애니메이션 & 타이머 시작
+
             requestAnimationFrame(drawGiantWheel);
             startTimer();
+            startMarqueeScheduler();
         };
+
+        function closeModal() {
+            document.getElementById('ruleModal').style.display = 'none';
+        }
 
         async function fetchUserData() {
             try {
@@ -254,25 +298,37 @@
                 if (data.result === "success") {
                     myWallet = Number(data.balance);
                     document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                } else {
-                    document.getElementById('myBalance').innerText = "0 UT";
                 }
-            } catch (e) {
-                console.error("Data Load Error:", e);
-                document.getElementById('myBalance').innerText = "Error";
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // === 게임 로직 ===
         function addParticipant(name, amount, color) {
-            gameState.participants.push({ name, amount, color });
-            calculatePool();
+            const existing = gameState.participants.find(p => p.name === name);
+            if (existing) { existing.amount += amount; } 
+            else { gameState.participants.push({ name, amount, color }); }
+            updateGameState();
+        }
+
+        function updateGameState() {
+            gameState.totalPool = gameState.participants.reduce((acc, p) => acc + p.amount, 0);
+            document.getElementById('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
+            gameState.participants.sort((a, b) => b.amount - a.amount);
             updateListUI();
         }
 
-        function calculatePool() {
-            gameState.totalPool = gameState.participants.reduce((acc, p) => acc + p.amount, 0);
-            document.getElementById('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
+        function updateListUI() {
+            const list = document.getElementById('participantList');
+            list.innerHTML = "";
+            gameState.participants.forEach((p, index) => {
+                const rankClass = index < 3 ? `rank-${index+1}` : "";
+                list.innerHTML += `
+                    <div class="list-item">
+                        <div class="rank-num ${rankClass}">${index + 1}</div>
+                        <div class="p-color" style="background:${p.color}"></div>
+                        <div class="p-name" style="${p.name === myId ? 'color:#ffd700':''}">${p.name}</div>
+                        <div class="p-amt">${p.amount.toLocaleString()}</div>
+                    </div>`;
+            });
         }
 
         function changeBet(val) {
@@ -281,29 +337,24 @@
             if (v < 10) v = 10;
             el.value = v;
         }
-
+        function setMinBet() { document.getElementById('betInput').value = 10; }
         function setMaxBet() { document.getElementById('betInput').value = myWallet; }
 
         function joinGame() {
             const amount = parseInt(document.getElementById('betInput').value);
-            if (amount > myWallet) return alert("잔액이 부족합니다!");
-            if (amount <= 0) return alert("금액을 확인해주세요.");
+            if (amount > myWallet) return alert("잔액이 부족합니다.");
+            if (gameState.timeLeft <= 60) return alert("마감 1분 전입니다. 참여 불가!");
 
-            // 서버 통신 (돈 차감)
             fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.result === "success") {
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                        
-                        // 게임 참여
-                        const color = colors[gameState.participants.length % colors.length];
-                        addParticipant(myId, amount, color);
+                        const myColor = colors[Math.floor(Math.random() * colors.length)];
+                        addParticipant(myId, amount, myColor);
                         alert("배팅 완료!");
-                    } else {
-                        alert("배팅 실패: " + data.msg);
-                    }
+                    } else { alert(data.msg); }
                 });
         }
 
@@ -313,99 +364,86 @@
                 const min = Math.floor(gameState.timeLeft / 60);
                 const sec = gameState.timeLeft % 60;
                 document.getElementById('timerDisplay').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+                if (gameState.timeLeft <= 60) {
+                    const btn = document.getElementById('joinBtn');
+                    btn.disabled = true;
+                    btn.innerText = "마감됨 (CLOSED)";
+                    document.getElementById('timerDisplay').style.color = "red";
+                }
             }, 1000);
         }
 
-        function updateListUI() {
-            const list = document.getElementById('participantList');
-            list.innerHTML = "";
-            gameState.participants.forEach(p => {
-                list.innerHTML += `
-                    <div class="list-item">
-                        <div class="p-color" style="background:${p.color}"></div>
-                        <div class="p-name">${p.name}</div>
-                        <div class="p-amt">${p.amount}</div>
-                    </div>`;
-            });
+        function startMarqueeScheduler() {
+            const marquee = document.getElementById('marqueeText');
+            setInterval(() => {
+                marquee.innerText = warningMsg;
+                marquee.style.color = "#ffdd59";
+                setTimeout(() => {
+                    marquee.innerText = lastWinnerMsg;
+                    marquee.style.color = "#fff";
+                }, 15000);
+            }, 120000);
         }
 
-        // === ✨ 핵심: 거대 룰렛 그리기 (Giant Wheel Render) ===
         function drawGiantWheel() {
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            
-            // 캔버스 크기 맞춤
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            const w = canvas.width; const h = canvas.height;
+            const radius = h * 2.5; 
+            const centerX = radius + 60; 
+            const centerY = h / 2;
 
-            const w = canvas.width;
-            const h = canvas.height;
-
-            // 1. 거대한 룰렛 설정
-            // 화면 오른쪽 바깥 멀리에 중심점을 둡니다.
-            // 반지름을 엄청 크게(화면 높이의 2배 정도) 잡아서 곡선이 완만하게 보이게 합니다.
-            const radius = h * 1.5; 
-            const centerX = w + radius - 100; // 오른쪽 바깥으로 밀어냄 (100px 정도만 화면에 들어오게)
-            const centerY = h / 2; // 세로 중앙
-
-            // 2. 회전 업데이트 (1분에 2바퀴)
-            // 60fps 기준 프레임당 회전각
             gameState.rotation += 0.0035; 
-
             ctx.clearRect(0, 0, w, h);
             ctx.save();
 
-            // 3. 룰렛 그리기
             let startAngle = gameState.rotation;
-
-            // 배경 원 (어두운 판)
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#111";
-            ctx.fill();
-            ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 10;
-            ctx.stroke();
+            ctx.fillStyle = "#0a0a0a"; ctx.fill();
+            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
+            ctx.shadowBlur = 20; ctx.shadowColor = "#ff0055"; ctx.stroke(); ctx.shadowBlur = 0;
 
-            // 파이 조각 그리기
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
                     const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI;
                     const endAngle = startAngle + sliceAngle;
-
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
-                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); // 테두리 안쪽
+                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); 
                     ctx.closePath();
-                    ctx.fillStyle = p.color;
-                    ctx.fill();
-                    
-                    // 경계선
-                    ctx.strokeStyle = "rgba(0,0,0,0.5)";
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    ctx.fillStyle = p.color; ctx.fill();
+                    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
 
+                    if (sliceAngle > 0.05) {
+                        ctx.save();
+                        const textAngle = startAngle + sliceAngle / 2;
+                        ctx.translate(centerX, centerY); ctx.rotate(textAngle);
+                        ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#fff"; ctx.font = "bold 40px Pretendard";
+                        ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4;
+                        ctx.fillText(p.name, -radius + 350, -20);
+                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 24px monospace";
+                        ctx.fillText(p.amount.toLocaleString() + " UT", -radius + 350, 20);
+                        ctx.restore();
+                    }
                     startAngle = endAngle;
                 });
             } else {
-                // 참여자 없을 때 기본 회색 판
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius - 20, 0, Math.PI * 2);
-                ctx.fillStyle = "#222";
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(centerX, centerY, radius - 20, 0, Math.PI * 2);
+                ctx.fillStyle = "#1a1a1a"; ctx.fill();
+                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center";
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(Math.PI);
+                ctx.fillText("WAITING FOR PLAYERS...", radius - 200, 0); ctx.restore();
             }
-
-            // 4. 광택 효과 (Gradient Overlay) - 입체감
-            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.8, centerX, centerY, radius);
-            grad.addColorStop(0, "rgba(0,0,0,0)");
-            grad.addColorStop(1, "rgba(0,0,0,0.6)");
-            ctx.fillStyle = grad;
-            ctx.fill();
-
+            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius);
+            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.5)");
+            ctx.fillStyle = grad; ctx.fill();
             ctx.restore();
             requestAnimationFrame(drawGiantWheel);
         }
-
     </script>
 </body>
 </html>
