@@ -157,338 +157,535 @@
         <div style="font-size:0.8rem; color:#aaa;">내 자산: <span id="myBalance" style="color:white;">Loading...</span></div>
     </div>
     
-    <script>
-        // ✅ [수정완료] 유저가 제공한 정확한 배포 URL 적용
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-        
-        let myId = ""; let myWallet = 0;
-        let myColor = null; 
-        
-        let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0 };
-        let isBettingProcessing = false;
-        let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
-        const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
-        const synth = window.speechSynthesis;
+   <script>
+  // ✅ GAS URL
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-        const availableColors = [
-            '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff',
-            '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
-            '#cc0000', '#006600', '#000099', '#663300', '#666666',
-            '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
-        ];
+  let myId = "";
+  let myWallet = 0;
+  let myColor = null;
 
-        function generateRandomNeonColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsl(${hue}, 100%, 60%)`;
-        }
+  // 서버 roundKey 추적 (라운드가 바뀌면 로컬 잔상 제거)
+  let currentRoundKey = null;
 
-        window.onload = async function() {
-            const params = new URLSearchParams(window.location.search);
-            myId = params.get('id') || localStorage.getItem('user_id') || localStorage.getItem('loginId');
-            if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
-            
-            await fetchUserData();
-            
-            const savedColor = localStorage.getItem('rouletteColor_' + myId);
-            if (savedColor) {
-                myColor = savedColor;
-                document.getElementById('ruleModal').style.display = 'none'; 
-            } else {
-                initColorPicker(); 
-            }
+  // 동기화 지연 보정용(같은 라운드에서만 10초 유지)
+  let pendingBet = null; // { roundKey, potAmount, ts }
 
-            addParticipant("Company", 100, '#ff0055'); 
-            if (myColor) addParticipant(myId, 0, myColor);
+  let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0 };
+  let isBettingProcessing = false;
 
-            requestAnimationFrame(drawGiantWheel);
-            startTimer();
-            startMarqueeScheduler();
+  let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
+  const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
+  const synth = window.speechSynthesis;
 
-            // ✅ [추가완료] 5초마다 실시간 데이터 동기화 (누락되었던 부분)
-            setInterval(fetchGameState, 5000);
+  const availableColors = [
+    '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff',
+    '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
+    '#cc0000', '#006600', '#000099', '#663300', '#666666',
+    '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
+  ];
+
+  function el(id){ return document.getElementById(id); }
+
+  function generateRandomNeonColor() {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 100%, 60%)`;
+  }
+
+  function speak(text) {
+    if (synth.speaking) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
+    synth.speak(utter);
+  }
+
+  function updateMarquee(text, color="#fff"){
+    const marquee = el('marqueeText');
+    marquee.innerText = text;
+    marquee.style.color = color;
+  }
+
+  function formatRoundKeyClient(dateObj){
+    const d = new Date(dateObj.getTime());
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = d.getMinutes();
+    const roundMin = (min < 30) ? "00" : "30";
+    return `${yyyy}-${mm}-${dd} ${hh}:${roundMin}`;
+  }
+
+  function getPreviousRoundKeyClient(){
+    const now = new Date();
+    const prev = new Date(now.getTime() - 30*60*1000);
+    return formatRoundKeyClient(prev);
+  }
+
+  window.onload = async function() {
+    const params = new URLSearchParams(window.location.search);
+    myId = params.get('id') || localStorage.getItem('user_id') || localStorage.getItem('loginId');
+    if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
+
+    // 1) 내 지갑
+    await fetchUserData();
+
+    // 2) 서버 상태 먼저 로드(usedColor 계산/라운드키 세팅)
+    await fetchGameState(true);
+
+    // 3) 내 컬러
+    const savedColor = localStorage.getItem('rouletteColor_' + myId);
+    if (savedColor) {
+      myColor = savedColor;
+      el('ruleModal').style.display = 'none';
+    } else {
+      initColorPicker();
+    }
+
+    requestAnimationFrame(drawGiantWheel);
+    startTimer();
+    startMarqueeScheduler();
+
+    // 5초마다 동기화
+    setInterval(fetchGameState, 5000);
+  };
+
+  function initColorPicker() {
+    const grid = el('colorGrid');
+    grid.innerHTML = "";
+
+    const usedColors = (gameState.participants || [])
+      .map(p => p.color)
+      .filter(Boolean);
+
+    availableColors.forEach(color => {
+      const btn = document.createElement('div');
+      btn.className = 'color-btn';
+      btn.style.backgroundColor = color;
+      btn.style.boxShadow = `0 0 10px ${color}`;
+
+      if (usedColors.includes(color)) {
+        btn.classList.add('disabled');
+      } else {
+        btn.onclick = () => pickColor(btn, color);
+      }
+      grid.appendChild(btn);
+    });
+  }
+
+  function pickColor(btn, color) {
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    myColor = color;
+    el('selectedColorName').innerText = "SELECTED: " + color;
+    el('btnStart').disabled = false;
+  }
+
+  function selectColorAndStart() {
+    if (!myColor) return;
+    localStorage.setItem('rouletteColor_' + myId, myColor);
+
+    // 컬러 선택 후 바로 서버 동기화 한번 더
+    fetchGameState();
+
+    closeModal('ruleModal');
+  }
+
+  function closeModal(id) { el(id).classList.remove('active'); }
+
+  async function fetchUserData() {
+    try {
+      const res = await fetch(`${GAS_URL}?action=getUserInfo&id=${encodeURIComponent(myId)}`);
+      const data = await res.json();
+      if (data.result === "success") {
+        myWallet = Number(data.balance || 0);
+        el('myBalance').innerText = myWallet.toLocaleString() + " UT";
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  // ✅ 서버 상태 동기화 (핵심 수정)
+  async function fetchGameState(isInitial=false) {
+    if (isBettingProcessing) return;
+    if (el('resultModal').classList.contains('active')) return;
+
+    try {
+      const res = await fetch(`${GAS_URL}?action=getRouletteState`);
+      const data = await res.json();
+      if (data.result !== "success") return;
+
+      // lastWinner 표시(서버 기준)
+      if (data.lastWinner && data.lastWinner.name) {
+        lastWinnerMsg = `🏆 지난 라운드 승자: ${data.lastWinner.name} (상금: ${Number(data.lastWinner.prize||0).toLocaleString()} UT) 🏆`;
+      } else {
+        lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
+      }
+      if (isInitial) updateMarquee(lastWinnerMsg, "#fff");
+
+      const rk = String(data.roundKey || "").trim();
+      const roundChanged = (currentRoundKey && rk && rk !== currentRoundKey);
+      if (!currentRoundKey && rk) currentRoundKey = rk;
+
+      // 라운드 바뀌었으면: 로컬 잔상 싹 정리
+      if (roundChanged) {
+        currentRoundKey = rk;
+        pendingBet = null;
+        // 라운드 바뀌면 베팅 입력도 기본값으로
+        el('betInput').value = 10;
+      } else {
+        if (rk) currentRoundKey = rk;
+      }
+
+      // 서버 참가자 -> 로컬 참가자 (색 보정)
+      let serverParticipants = (data.participants || []).map(sp => {
+        const name = sp.name;
+        let color = sp.color;
+
+        // Company 색 고정
+        if (name === "Company") color = "#ff0055";
+
+        // 내 컬러가 있으면 내 색 우선
+        if (name === myId && myColor) color = myColor;
+
+        // 색 없으면 네온 랜덤
+        if (!color) color = generateRandomNeonColor();
+
+        return {
+          name,
+          amount: Number(sp.amount || 0),
+          color
         };
+      });
 
-        function initColorPicker() {
-            const grid = document.getElementById('colorGrid');
-            grid.innerHTML = "";
-            const usedColors = gameState.participants.map(p => p.color);
-
-            availableColors.forEach(color => {
-                const btn = document.createElement('div');
-                btn.className = 'color-btn';
-                btn.style.backgroundColor = color;
-                btn.style.boxShadow = `0 0 10px ${color}`;
-                if (usedColors.includes(color)) {
-                    btn.classList.add('disabled');
-                } else {
-                    btn.onclick = () => pickColor(btn, color);
-                }
-                grid.appendChild(btn);
-            });
+      // 같은 라운드에서만 “내 배팅 임시 표시” (최대 10초)
+      if (pendingBet && pendingBet.roundKey === currentRoundKey && (Date.now() - pendingBet.ts) < 10000) {
+        if (!serverParticipants.find(p => p.name === myId)) {
+          serverParticipants.push({ name: myId, amount: pendingBet.potAmount, color: myColor || generateRandomNeonColor() });
         }
+      }
 
-        function pickColor(btn, color) {
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            myColor = color;
-            document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
-            document.getElementById('btnStart').disabled = false;
+      gameState.participants = serverParticipants;
+      updateGameState();
+
+      // 라운드가 바뀌면 마키도 lastWinner로 갱신
+      if (roundChanged) updateMarquee(lastWinnerMsg, "#00f3ff");
+
+    } catch (e) {
+      console.error("Sync Error:", e);
+    }
+  }
+
+  function updateGameState() {
+    gameState.totalPool = gameState.participants.reduce((acc, p) => acc + (Number(p.amount)||0), 0);
+    el('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
+    gameState.participants.sort((a, b) => b.amount - a.amount);
+    updateListUI();
+  }
+
+  function updateListUI() {
+    const list = el('participantList');
+    list.innerHTML = "";
+
+    if (!gameState.participants.length) {
+      list.innerHTML = `<div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div>`;
+      return;
+    }
+
+    gameState.participants.forEach((p, index) => {
+      const highlight = (p.name === myId && myColor) ? `color:${myColor}; font-weight:900;` : '';
+      list.innerHTML += `
+        <div class="list-item">
+          <div class="p-color" style="background:${p.color}; box-shadow: 0 0 5px ${p.color};"></div>
+          <div class="p-name" style="${highlight}">${p.name}</div>
+          <div class="p-amt">${Number(p.amount).toLocaleString()}</div>
+        </div>`;
+    });
+  }
+
+  function changeBet(val) {
+    const e = el('betInput');
+    let v = parseInt(e.value || "10", 10) + val;
+    if (v < 10) v = 10;
+    e.value = v;
+  }
+  function setMinBet() { el('betInput').value = 10; }
+  function setMaxBet() { el('betInput').value = Math.max(10, myWallet); }
+
+  // ✅ 베팅: 서버 응답의 potAmount를 UI에 반영 (수수료/정산 구조와 맞춤)
+  function joinGame() {
+    if (isBettingProcessing) return;
+
+    const amountGross = parseInt(el('betInput').value || "0", 10);
+    if (amountGross > myWallet) return alert("잔액이 부족합니다.");
+    if (amountGross <= 0) return alert("금액 확인 필요");
+    if (gameState.timeLeft <= 60) return alert("마감되었습니다.");
+
+    if (!myColor) {
+      // 컬러 선택 안 했으면 강제
+      el('ruleModal').classList.add('active');
+      el('ruleModal').style.display = '';
+      return;
+    }
+
+    isBettingProcessing = true;
+    const btn = el('joinBtn');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "처리중...";
+
+    const url = `${GAS_URL}?action=rouletteResult&type=bet&id=${encodeURIComponent(myId)}&amount=${encodeURIComponent(amountGross)}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(async data => {
+        if (data.result === "success") {
+          myWallet = Number(data.newBalance || 0);
+          el('myBalance').innerText = myWallet.toLocaleString() + " UT";
+
+          // 서버가 potAmount(수수료 제외 판돈)를 주면 그걸로 표시
+          const potAmount = Number(data.potAmount != null ? data.potAmount : amountGross);
+
+          pendingBet = { roundKey: currentRoundKey, potAmount, ts: Date.now() };
+
+          btn.innerText = "배팅 성공!";
+          await fetchGameState(); // 즉시 동기화
+        } else {
+          alert(data.msg || "베팅 실패");
+          btn.innerText = originalText;
         }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("통신 오류");
+        btn.innerText = originalText;
+      })
+      .finally(() => {
+        isBettingProcessing = false;
+        btn.disabled = false;
+        setTimeout(() => {
+          if (!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText;
+        }, 800);
+      });
+  }
 
-        function selectColorAndStart() {
-            if (!myColor) return;
-            localStorage.setItem('rouletteColor_' + myId, myColor);
-            const existing = gameState.participants.find(p => p.name === myId);
-            if (!existing) { addParticipant(myId, 0, myColor); }
-            closeModal('ruleModal');
+  // ✅ 타이머: 마감 시 “로컬 랜덤 추첨” 금지. 서버 정산 결과를 기다림.
+  function startTimer() {
+    setInterval(async () => {
+      const now = new Date();
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+
+      const targetMinute = minutes < 30 ? 30 : 60;
+      const remainMinutes = targetMinute - minutes - 1;
+      const remainSeconds = 60 - seconds;
+      gameState.timeLeft = (remainMinutes * 60) + remainSeconds;
+
+      const displayMin = Math.floor(gameState.timeLeft / 60);
+      const displaySec = gameState.timeLeft % 60;
+      el('timerDisplay').innerText = `${displayMin}:${displaySec < 10 ? '0'+displaySec : displaySec}`;
+
+      const countEl = el('centerCount');
+
+      if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
+        countEl.innerText = gameState.timeLeft;
+        countEl.classList.add('active');
+
+        const btn = el('joinBtn');
+        if (!btn.disabled) {
+          btn.disabled = true;
+          btn.innerText = "마감됨 (CLOSED)";
+          el('timerDisplay').style.color = "red";
         }
-
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        async function fetchUserData() {
-            try {
-                const res = await fetch(`${GAS_URL}?action=getUserInfo&id=${myId}`);
-                const data = await res.json();
-                if (data.result === "success") {
-                    myWallet = Number(data.balance);
-                    document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                }
-            } catch (e) { console.error(e); }
+      } else {
+        const btn = el('joinBtn');
+        if (btn.disabled && !isBettingProcessing && gameState.timeLeft > 60) {
+          btn.disabled = false;
+          btn.innerText = "참여하기 (BET)";
+          el('timerDisplay').style.color = "#ff4757";
+          countEl.classList.remove('active');
         }
+      }
 
-        // ✅ [추가완료] 서버 상태 동기화 함수 (Backend와 연결)
-        async function fetchGameState() {
-            if (isBettingProcessing || document.getElementById('resultModal').classList.contains('active')) return;
-            try {
-                const res = await fetch(`${GAS_URL}?action=getRouletteState`);
-                const data = await res.json();
-                if (data.result === "success" && data.participants) {
-                    const serverParticipants = data.participants;
-                    serverParticipants.forEach(sp => {
-                        const existing = gameState.participants.find(p => p.name === sp.name);
-                        if (existing && !sp.color) sp.color = existing.color;
-                        if (!sp.color) sp.color = generateRandomNeonColor();
-                    });
-                    // 서버 데이터로 참가자 리스트 업데이트 (내 배팅 화면 보존)
-                    const myEntry = gameState.participants.find(p => p.name === myId);
-                    gameState.participants = serverParticipants;
-                    
-                    // 만약 서버 리스트에 내가 없으면(아직 동기화 전 등) 로컬 유지
-                    if (myEntry && !gameState.participants.find(p => p.name === myId)) {
-                        gameState.participants.push(myEntry);
-                    }
-                    updateGameState();
-                }
-            } catch (e) { console.error("Sync Error:", e); }
+      if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) {
+        const words = ["Ten","Nine","Eight","Seven","Six","Five","Four","Three","Two","One"];
+        speak(words[10 - gameState.timeLeft]);
+      }
+
+      // 라운드 종료 시: 서버 정산/결과 표시
+      if (gameState.timeLeft <= 0 || (minutes % 30 === 0 && seconds === 0)) {
+        if (!el('resultModal').classList.contains('active')) {
+          countEl.classList.remove('active');
+          speak("Time's up!");
+          await finishRoundServerBased();
         }
+      }
+    }, 1000);
+  }
 
-        function addParticipant(name, amount, forceColor = null) {
-            const existing = gameState.participants.find(p => p.name === name);
-            if (existing) { 
-                existing.amount += amount; 
-                if(forceColor) existing.color = forceColor;
-            } else { 
-                let color;
-                if (forceColor) {
-                    color = forceColor;
-                } else {
-                    const usedColors = gameState.participants.map(p => p.color);
-                    const freeColors = availableColors.filter(c => !usedColors.includes(c));
-                    color = freeColors.length > 0 ? freeColors[Math.floor(Math.random() * freeColors.length)] : generateRandomNeonColor();
-                }
-                gameState.participants.push({ name, amount, color }); 
-            }
-            updateGameState();
+  // ✅ 서버 정산 기반 결과 표시
+  async function finishRoundServerBased() {
+    const prevKey = getPreviousRoundKeyClient();
+
+    // 1) (있으면) 서버에 정산 요청 한번 시도 (없으면 무시됨)
+    try { await fetch(`${GAS_URL}?action=settleRoulettePrev`); } catch(_) {}
+
+    // 2) 서버 lastWinner가 prevKey로 나올 때까지 잠깐 폴링
+    let winnerData = null;
+    for (let i=0; i<8; i++) { // 약 8초
+      try {
+        const res = await fetch(`${GAS_URL}?action=getRouletteState`);
+        const data = await res.json();
+        if (data && data.result === "success" && data.lastWinner && data.lastWinner.round) {
+          if (String(data.lastWinner.round) === String(prevKey)) {
+            winnerData = data.lastWinner;
+            break;
+          }
         }
+      } catch(_) {}
+      await new Promise(r => setTimeout(r, 1000));
+    }
 
-        function updateGameState() {
-            gameState.totalPool = gameState.participants.reduce((acc, p) => acc + p.amount, 0);
-            document.getElementById('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
-            gameState.participants.sort((a, b) => b.amount - a.amount);
-            updateListUI();
+    // 3) 결과 모달 표시
+    const modal = el('resultModal');
+    modal.classList.add('active');
+
+    if (!winnerData) {
+      el('resWinner').innerText = "SETTLING...";
+      el('resAmount').innerText = "-";
+      el('resMsg').innerText = "서버 정산 중입니다. 잠시 후 NEXT ROUND를 눌러주세요.";
+      el('resMsg').style.color = "#aaa";
+      return;
+    }
+
+    const winnerName = winnerData.name;
+    const prize = Number(winnerData.prize || 0);
+
+    el('resWinner').innerText = winnerName;
+    el('resAmount').innerText = prize.toLocaleString() + " UT";
+
+    const color = (gameState.participants.find(p => p.name === winnerName)?.color)
+      || (winnerName === "Company" ? "#ff0055" : "#fff");
+
+    el('resWinner').style.textShadow = `0 0 30px ${color}`;
+
+    const msgEl = el('resMsg');
+    if (winnerName === myId) {
+      msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉";
+      msgEl.style.color = myColor || "#fff";
+      speak("Congratulations! You won!");
+      await fetchUserData(); // 지급 반영
+    } else if (winnerName === "Company") {
+      msgEl.innerText = "이번 라운드는 본사가 승리했습니다.";
+      msgEl.style.color = "#ff0055";
+      speak("The House Wins.");
+    } else {
+      msgEl.innerText = `아쉽네요... 승자는 ${winnerName}님 입니다.`;
+      msgEl.style.color = "#aaa";
+      speak("Better luck next time.");
+    }
+
+    // 마키 업데이트
+    updateMarquee(`🏆 지난 라운드 승자: ${winnerName} (상금: ${prize.toLocaleString()} UT) 🏆`, "#00f3ff");
+  }
+
+  function resetGame() { location.reload(); }
+
+  function startMarqueeScheduler() {
+    setInterval(() => {
+      updateMarquee(warningMsg, "#ffdd59");
+      setTimeout(() => updateMarquee(lastWinnerMsg, "#fff"), 15000);
+    }, 120000);
+  }
+
+  function drawGiantWheel() {
+    const canvas = el('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const radius = h * 2.5;
+    const centerX = radius + 50;
+    const centerY = h / 2;
+
+    gameState.rotation += 0.0035;
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+
+    let startAngle = gameState.rotation;
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fill();
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 15;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    if (gameState.participants.length > 0 && gameState.totalPool > 0) {
+      gameState.participants.forEach(p => {
+        const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI;
+        const endAngle = startAngle + sliceAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle);
+        ctx.closePath();
+
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.3)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (sliceAngle > 0.05) {
+          const midAngle = startAngle + sliceAngle / 2;
+          const textRadius = radius - 120;
+          const tx = centerX + Math.cos(midAngle) * textRadius;
+          const ty = centerY + Math.sin(midAngle) * textRadius;
+
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(midAngle + Math.PI);
+
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 40px Pretendard";
+          ctx.shadowColor = "rgba(0,0,0,0.8)";
+          ctx.shadowBlur = 4;
+          ctx.fillText(p.name, 0, -20);
+
+          ctx.fillStyle = "#ffd700";
+          ctx.font = "bold 24px monospace";
+          ctx.fillText(p.amount.toLocaleString() + " UT", 0, 20);
+
+          ctx.restore();
         }
+        startAngle = endAngle;
+      });
+    } else {
+      ctx.font = "bold 50px Pretendard";
+      ctx.fillStyle = "#333";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
+    }
 
-        function updateListUI() {
-            const list = document.getElementById('participantList');
-            list.innerHTML = "";
-            gameState.participants.forEach((p, index) => {
-                const rankClass = index < 3 ? `rank-${index+1}` : "";
-                list.innerHTML += `
-                    <div class="list-item">
-                        <div class="rank-num ${rankClass}">${index + 1}</div>
-                        <div class="p-color" style="background:${p.color}; box-shadow: 0 0 5px ${p.color};"></div>
-                        <div class="p-name" style="${p.name === myId ? `color:${myColor}; font-weight:bold;`:''}">${p.name}</div>
-                        <div class="p-amt">${p.amount.toLocaleString()}</div>
-                    </div>`;
-            });
-        }
+    const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(1, "rgba(0,0,0,0.3)");
+    ctx.fillStyle = grad;
+    ctx.fill();
 
-        function changeBet(val) {
-            const el = document.getElementById('betInput');
-            let v = parseInt(el.value) + val;
-            if (v < 10) v = 10;
-            el.value = v;
-        }
-        function setMinBet() { document.getElementById('betInput').value = 10; }
-        function setMaxBet() { document.getElementById('betInput').value = myWallet; }
-
-        function joinGame() {
-            if (isBettingProcessing) return;
-            const amount = parseInt(document.getElementById('betInput').value);
-            if (amount > myWallet) return alert("잔액이 부족합니다.");
-            if (amount <= 0) return alert("금액 확인 필요");
-            if (gameState.timeLeft <= 60) return alert("마감되었습니다.");
-            
-            isBettingProcessing = true;
-            const btn = document.getElementById('joinBtn');
-            const originalText = btn.innerText;
-            btn.disabled = true; btn.innerText = "처리중...";
-            
-            fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.result === "success") {
-                        myWallet = data.newBalance;
-                        document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                        addParticipant(myId, amount, myColor);
-                        btn.innerText = "배팅 성공!";
-                        fetchGameState(); // 배팅 후 즉시 동기화 시도
-                    } else { alert(data.msg); btn.innerText = originalText; }
-                })
-                .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
-                .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000); });
-        }
-
-        function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
-        
-        function startTimer() {
-            setInterval(() => {
-                const now = new Date();
-                const minutes = now.getMinutes();
-                const seconds = now.getSeconds();
-                const targetMinute = minutes < 30 ? 30 : 60;
-                const remainMinutes = targetMinute - minutes - 1;
-                const remainSeconds = 60 - seconds;
-                gameState.timeLeft = (remainMinutes * 60) + remainSeconds;
-                
-                const displayMin = Math.floor(gameState.timeLeft / 60);
-                const displaySec = gameState.timeLeft % 60;
-                document.getElementById('timerDisplay').innerText = `${displayMin}:${displaySec < 10 ? '0'+displaySec : displaySec}`;
-                
-                const countEl = document.getElementById('centerCount');
-                if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
-                    countEl.innerText = gameState.timeLeft; countEl.classList.add('active');
-                    const btn = document.getElementById('joinBtn');
-                    if(!btn.disabled) { btn.disabled = true; btn.innerText = "마감됨 (CLOSED)"; document.getElementById('timerDisplay').style.color = "red"; }
-                } else {
-                    const btn = document.getElementById('joinBtn');
-                    if(btn.disabled && !isBettingProcessing && gameState.timeLeft > 60) {
-                        btn.disabled = false; btn.innerText = "참여하기 (BET)"; document.getElementById('timerDisplay').style.color = "#ff4757"; countEl.classList.remove('active');
-                    }
-                }
-                if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) { const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"]; speak(words[10 - gameState.timeLeft]); }
-                if (gameState.timeLeft <= 0 || (minutes % 30 === 0 && seconds === 0)) {
-                    if (!document.getElementById('resultModal').classList.contains('active')) {
-                        countEl.classList.remove('active'); speak("Time's up!"); finishRound();
-                    }
-                }
-            }, 1000);
-        }
-
-        function finishRound() {
-            let rand = Math.random() * gameState.totalPool;
-            let runningTotal = 0; let winner = null;
-            for (let p of gameState.participants) { runningTotal += p.amount; if (rand <= runningTotal) { winner = p; break; } }
-            if (!winner) winner = gameState.participants[0] || { name: "Company", amount: 0 };
-            const prize = Math.floor(gameState.totalPool * 0.9);
-            lastWinnerMsg = `🏆 지난 라운드 승자: ${winner.name} (상금: ${prize.toLocaleString()} UT) 🏆`;
-            const marquee = document.getElementById('marqueeText'); marquee.innerText = lastWinnerMsg; marquee.style.color = "#00f3ff";
-            const modal = document.getElementById('resultModal');
-            document.getElementById('resWinner').innerText = winner.name;
-            document.getElementById('resAmount').innerText = prize.toLocaleString() + " UT";
-            document.getElementById('resWinner').style.textShadow = `0 0 30px ${winner.color}`;
-            const msgEl = document.getElementById('resMsg');
-            if (winner.name === myId) { msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; msgEl.style.color = myColor; speak("Congratulations! You won!"); }
-            else if (winner.name === "Company") { msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; msgEl.style.color = "#ff0055"; speak("The House Wins."); }
-            else { msgEl.innerText = `아쉽네요... 승자는 ${winner.name}님 입니다.`; msgEl.style.color = "#aaa"; speak("Better luck next time."); }
-            modal.classList.add('active');
-        }
-        function resetGame() { location.reload(); }
-        function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
-        
-        function drawGiantWheel() {
-            const canvas = document.getElementById('canvas'); 
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            const w = canvas.width; const h = canvas.height;
-            
-            const radius = h * 2.5; 
-            const centerX = radius + 50; 
-            const centerY = h / 2;
-
-            gameState.rotation += 0.0035; 
-            ctx.clearRect(0, 0, w, h); ctx.save();
-            
-            let startAngle = gameState.rotation;
-            
-            ctx.beginPath(); 
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0a0a0a"; ctx.fill(); 
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
-            ctx.shadowBlur = 0; 
-
-            if (gameState.participants.length > 0) {
-                gameState.participants.forEach(p => {
-                    const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
-                    const endAngle = startAngle + sliceAngle;
-                    
-                    ctx.beginPath(); 
-                    ctx.moveTo(centerX, centerY);
-                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle);
-                    ctx.closePath(); 
-                    
-                    ctx.fillStyle = p.color; 
-                    ctx.fill(); 
-                    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
-                    
-                    if (sliceAngle > 0.05) {
-                        const midAngle = startAngle + sliceAngle / 2;
-                        
-                        const textRadius = radius - 120; 
-                        const tx = centerX + Math.cos(midAngle) * textRadius;
-                        const ty = centerY + Math.sin(midAngle) * textRadius;
-
-                        ctx.save();
-                        ctx.translate(tx, ty);
-                        ctx.rotate(midAngle + Math.PI); 
-                        
-                        ctx.textAlign = "right"; 
-                        ctx.textBaseline = "middle";
-
-                        ctx.fillStyle = "#fff"; 
-                        ctx.font = "bold 40px Pretendard"; 
-                        ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; 
-                        ctx.fillText(p.name, 0, -20); 
-                        
-                        ctx.fillStyle = "#ffd700"; 
-                        ctx.font = "bold 24px monospace"; 
-                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 20); 
-                        
-                        ctx.restore();
-                    }
-                    startAngle = endAngle;
-                });
-            } else {
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; 
-                ctx.textAlign = "right"; ctx.textBaseline = "middle";
-                ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
-            }
-            
-            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
-            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.3)");
-            ctx.fillStyle = grad; ctx.fill();
-            
-            ctx.restore(); requestAnimationFrame(drawGiantWheel);
-        }
-    </script>
+    ctx.restore();
+    requestAnimationFrame(drawGiantWheel);
+  }
+</script>
 </body>
 </html>
