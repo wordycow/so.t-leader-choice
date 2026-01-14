@@ -5,9 +5,7 @@
     <title>THE UNIQUE: GIANT ROULETTE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* =========================================
-           CSS STYLES (Titanium Theme)
-           ========================================= */
+        /* [기존 스타일 유지] */
         :root {
             --bg-color: #050714;
             --gold: #ffd700;
@@ -35,84 +33,34 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* --- 전광판 (Marquee) --- */
-        .marquee-wrap {
-            position: absolute; top: 0; left: 0; width: 100%; height: 35px;
-            background: rgba(255, 0, 85, 0.2);
-            border-bottom: 1px solid var(--company-color);
-            overflow: hidden; white-space: nowrap; z-index: 150;
-            display: flex; align-items: center;
-        }
-        .marquee-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-left 20s linear infinite;
-            color: #fff; font-weight: bold; font-size: 0.9rem;
-            text-shadow: 0 0 5px var(--company-color);
-        }
+        /* 전광판, 상단 HUD 등은 그대로 유지... */
+        .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.2); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        /* --- 상단 정보창 (HUD) --- */
-        .top-hud {
-            position: absolute; top: 50px; left: 20px; right: 20px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 100; pointer-events: none;
-        }
-        .hud-box {
-            background: var(--panel-bg);
-            padding: 10px 20px; border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            text-align: center; backdrop-filter: blur(10px);
-            pointer-events: auto;
-        }
+        .top-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; pointer-events: none; }
+        .hud-box { background: var(--panel-bg); padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; backdrop-filter: blur(10px); pointer-events: auto; }
         .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
         .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
 
-        /* --- 중앙 카운트다운 --- */
-        .center-countdown {
-            position: absolute; top: 40%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 15rem; font-weight: 900;
-            color: rgba(255, 0, 85, 0.1);
-            z-index: 80; pointer-events: none;
-            text-shadow: 0 0 50px rgba(255, 0, 85, 0.8);
-            display: none;
-        }
+        .center-countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 50px rgba(255, 0, 85, 0.8); display: none; }
         .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
-        @keyframes pulseCount {
-            0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
-        }
+        @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } }
 
-        /* --- 메인 게임 영역 --- */
-        .game-stage {
-            position: relative; width: 100%; height: 100%;
-            overflow: hidden; display: flex; align-items: center;
-        }
+        .game-stage { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .pointer {
-            position: absolute; top: 50%; left: 40px; transform: translateY(-50%);
-            width: 0; height: 0; z-index: 50;
-            border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff;
-            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8));
-        }
-        .pointer::after {
-            content: ''; position: absolute; top: -10px; left: -60px;
-            width: 20px; height: 20px; background: var(--company-color);
-            border-radius: 50%; box-shadow: 0 0 15px var(--company-color);
-        }
+        .pointer { position: absolute; top: 50%; left: 40px; transform: translateY(-50%); width: 0; height: 0; z-index: 50; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff; filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8)); }
+        .pointer::after { content: ''; position: absolute; top: -10px; left: -60px; width: 20px; height: 20px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
 
-        /* --- 참여자 리스트 (하단 중앙) --- */
+        /* [핵심 수정] 참여자 리스트 위치 변경 (하단 중앙) */
         .list-panel {
             position: absolute;
-            top: auto;
-            bottom: 170px; /* 컨트롤 패널 바로 위 */
-            left: 50%;
-            transform: translateX(-50%);
+            top: auto; /* 상단 기준 아님 */
+            bottom: 170px; /* 컨트롤 패널 바로 위로 배치 */
+            left: 50%; /* 가로 중앙 */
+            transform: translateX(-50%); /* 정확히 중앙 정렬 */
             right: auto;
 
             width: 320px; max-height: 220px;
@@ -130,104 +78,46 @@
         .list-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
 
         .list-header { text-align: center; color: #ddd; font-weight:bold; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; text-shadow: 0 1px 2px #000; }
-        .list-item {
-            display: flex; align-items: center; padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-        }
+        .list-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
         .rank-num { width: 25px; font-weight: bold; color: #ccc; font-size: 0.8rem; }
         .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; }
         .p-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.8); }
         .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
 
-        /* --- [수정] 모달 (규칙/결과) - 반응형 스크롤 추가 --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 200;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(8px); display: none;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px); display: none; }
         .modal-overlay.active { display: flex; animation: popIn 0.4s ease; }
-        
-        .modal-box {
-            background: linear-gradient(135deg, #1a0b2e, #050714);
-            border: 2px solid var(--gold); border-radius: 20px; padding: 30px;
-            width: 90%; max-width: 420px; text-align: center;
-            box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
-            
-            /* [핵심] 높이 초과시 스크롤 생김 (잘림 방지) */
-            max-height: 85vh; 
-            overflow-y: auto; 
-        }
+        .modal-box { background: linear-gradient(135deg, #1a0b2e, #050714); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 0 60px rgba(255, 215, 0, 0.3); max-height: 85vh; overflow-y: auto; }
         @keyframes popIn { from{transform:scale(0.8); opacity:0;} to{transform:scale(1); opacity:1;} }
-        
         .modal-title { font-size: 2rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
         .modal-text { text-align: left; font-size: 1rem; color: #ddd; line-height: 1.6; margin-bottom: 25px; }
         .modal-text strong { color: var(--company-color); }
-        
         .winner-name { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
         .winner-amt { font-size: 1.5rem; color: var(--gold); font-weight:bold; }
         .result-msg { font-size: 1.2rem; margin-top: 15px; font-weight:bold; }
         .msg-win { color: #2ecc71; } .msg-lose { color: #aaa; }
-        .btn-close {
-            background: var(--gold); color: #000; border: none; padding: 12px 30px;
-            font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer;
-            transition: 0.2s; margin-top: 10px;
-        }
+        .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-close:hover { background: #fff; transform: scale(1.05); }
 
-        /* --- 하단 컨트롤 --- */
-        .controls {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: linear-gradient(to top, #000, transparent);
-            padding: 20px 20px 40px 20px;
-            display: flex; flex-direction: column; align-items: center; gap: 15px;
-            z-index: 100;
-        }
-        .bet-box {
-            display: flex; gap: 8px; align-items: center;
-            background: rgba(0,0,0,0.7); padding: 10px 20px;
-            border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
-        }
-        .btn-bet {
-            background: #333; color: white; border: none;
-            padding: 10px 15px; border-radius: 8px; cursor: pointer;
-            font-weight: bold; font-size: 0.8rem; transition: 0.2s;
-        }
+        .controls { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px 20px 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
+        .bet-box { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-bet { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s; }
         .btn-bet:hover { background: #555; }
         .btn-min { color: #ff9f43; } .btn-max { color: var(--gold); }
-        .input-bet {
-            width: 90px; background: transparent; border: none;
-            color: var(--gold); text-align: center; font-size: 1.4rem; font-weight: bold;
-        }
-        .btn-join {
-            width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900;
-            background: linear-gradient(90deg, #ff9f43, #ff6b6b);
-            color: white; border: none; border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-            cursor: pointer; text-transform: uppercase;
-        }
+        .input-bet { width: 90px; background: transparent; border: none; color: var(--gold); text-align: center; font-size: 1.4rem; font-weight: bold; }
+        .btn-join { width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: white; border: none; border-radius: 12px; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); cursor: pointer; text-transform: uppercase; }
         .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; background: #333; }
 
-        /* --- 모바일 반응형 수정 --- */
         @media (max-width: 600px) {
             .hud-value { font-size: 1.2rem; }
             .pointer { left: 15px; }
-            
-            /* 리스트 패널 모바일 최적화 */
-            .list-panel {
-                width: 85%; max-width: 320px;
-                /* 위치는 PC와 동일하게 하단 중앙 유지 (CSS 상속) */
-            }
+            /* 모바일에서도 하단 중앙 유지 (너비만 조정) */
+            .list-panel { width: 85%; max-width: 320px; }
             .list-header { font-size: 0.8rem; }
             .list-item { font-size: 0.85rem; padding: 6px 0; }
             .p-color { width: 10px; height: 10px; }
-
             .controls { padding-bottom: 20px; }
             .center-countdown { font-size: 8rem; top: 40%; } 
-
-            /* [수정] 모달 팝업 모바일 최적화 (여백 줄임) */
             .modal-box { padding: 20px; width: 85%; }
             .modal-title { font-size: 1.5rem; margin-bottom: 15px; }
             .modal-text { font-size: 0.9rem; margin-bottom: 20px; }
@@ -235,23 +125,14 @@
     </style>
 </head>
 <body>
-
     <div id="centerCount" class="center-countdown">60</div>
-
     <div id="ruleModal" class="modal-overlay active">
         <div class="modal-box">
             <div class="modal-title">GAME RULES</div>
-            <div class="modal-text">
-                1. <strong>30분</strong>마다 라운드가 진행됩니다.<br>
-                2. 배팅 금액만큼 룰렛의 <strong>내 지분(영역)</strong>이 커집니다.<br>
-                3. 추첨 시 내 영역에 멈추면 <strong>승리!</strong><br>
-                4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>
-                (본사 수수료 10% 제외)
-            </div>
+            <div class="modal-text">1. <strong>30분</strong>마다 라운드가 진행됩니다.<br>2. 배팅 금액만큼 룰렛의 <strong>내 지분(영역)</strong>이 커집니다.<br>3. 추첨 시 내 영역에 멈추면 <strong>승리!</strong><br>4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>(본사 수수료 10% 제외)</div>
             <button class="btn-close" onclick="closeModal('ruleModal')">I UNDERSTAND</button>
         </div>
     </div>
-
     <div id="resultModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">ROUND FINISHED</div>
@@ -262,36 +143,16 @@
             <button class="btn-close" onclick="closeModal('resultModal'); resetGame();">NEXT ROUND</button>
         </div>
     </div>
-
-    <div class="marquee-wrap">
-        <div class="marquee-text" id="marqueeText">
-            🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥
-        </div>
-    </div>
-
+    <div class="marquee-wrap"><div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥</div></div>
     <div class="top-hud">
-        <div class="hud-box">
-            <div class="hud-label">TOTAL EQUITY</div>
-            <div class="hud-value" id="poolDisplay">0 UT</div>
-        </div>
-        <div class="hud-box">
-            <div class="hud-label">TIME LEFT</div>
-            <div class="hud-timer" id="timerDisplay">30:00</div>
-        </div>
+        <div class="hud-box"><div class="hud-label">TOTAL EQUITY</div><div class="hud-value" id="poolDisplay">0 UT</div></div>
+        <div class="hud-box"><div class="hud-label">TIME LEFT</div><div class="hud-timer" id="timerDisplay">30:00</div></div>
     </div>
-
-    <div class="game-stage">
-        <div class="pointer"></div>
-        <canvas id="canvas"></canvas>
-    </div>
-
+    <div class="game-stage"><div class="pointer"></div><canvas id="canvas"></canvas></div>
     <div class="list-panel">
         <div class="list-header">실시간 지분 현황 (Live Rank)</div>
-        <div id="participantList">
-            <div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div>
-        </div>
+        <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div></div>
     </div>
-
     <div class="controls">
         <div class="bet-box">
             <button class="btn-bet btn-min" onclick="setMinBet()">MIN</button>
@@ -303,17 +164,12 @@
         <button id="joinBtn" class="btn-join" onclick="joinGame()">참여하기 (BET)</button>
         <div style="font-size:0.8rem; color:#aaa;">내 자산: <span id="myBalance" style="color:white;">Loading...</span></div>
     </div>
-
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-        
         const ROUND_TIME = 30 * 60; 
-        
-        let myId = "";
-        let myWallet = 0;
+        let myId = ""; let myWallet = 0;
         let gameState = { participants: [], totalPool: 0, timeLeft: ROUND_TIME, rotation: 0, isRunning: true };
         let isBettingProcessing = false;
-        
         let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
         const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
         const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#34495e'];
@@ -322,25 +178,14 @@
         window.onload = async function() {
             const params = new URLSearchParams(window.location.search);
             myId = params.get('id') || localStorage.getItem('user_id') || localStorage.getItem('loginId');
-
-            if (!myId) {
-                alert("로그인이 필요합니다.");
-                window.location.href = "../the-unique-main.html";
-                return;
-            }
-
+            if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
             await fetchUserData();
             addParticipant("Company", 100, "#ff0055"); 
-
             requestAnimationFrame(drawGiantWheel);
             startTimer();
             startMarqueeScheduler();
         };
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         async function fetchUserData() {
             try {
                 const res = await fetch(`${GAS_URL}?action=getUserInfo&id=${myId}`);
@@ -351,36 +196,25 @@
                 }
             } catch (e) { console.error(e); }
         }
-
         function addParticipant(name, amount, color) {
             const existing = gameState.participants.find(p => p.name === name);
-            if (existing) { existing.amount += amount; } 
-            else { gameState.participants.push({ name, amount, color }); }
+            if (existing) { existing.amount += amount; } else { gameState.participants.push({ name, amount, color }); }
             updateGameState();
         }
-
         function updateGameState() {
             gameState.totalPool = gameState.participants.reduce((acc, p) => acc + p.amount, 0);
             document.getElementById('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
             gameState.participants.sort((a, b) => b.amount - a.amount);
             updateListUI();
         }
-
         function updateListUI() {
             const list = document.getElementById('participantList');
             list.innerHTML = "";
             gameState.participants.forEach((p, index) => {
                 const rankClass = index < 3 ? `rank-${index+1}` : "";
-                list.innerHTML += `
-                    <div class="list-item">
-                        <div class="rank-num ${rankClass}">${index + 1}</div>
-                        <div class="p-color" style="background:${p.color}"></div>
-                        <div class="p-name" style="${p.name === myId ? 'color:#ffd700':''}">${p.name}</div>
-                        <div class="p-amt">${p.amount.toLocaleString()}</div>
-                    </div>`;
+                list.innerHTML += `<div class="list-item"><div class="rank-num ${rankClass}">${index + 1}</div><div class="p-color" style="background:${p.color}"></div><div class="p-name" style="${p.name === myId ? 'color:#ffd700':''}">${p.name}</div><div class="p-amt">${p.amount.toLocaleString()}</div></div>`;
             });
         }
-
         function changeBet(val) {
             const el = document.getElementById('betInput');
             let v = parseInt(el.value) + val;
@@ -389,20 +223,16 @@
         }
         function setMinBet() { document.getElementById('betInput').value = 10; }
         function setMaxBet() { document.getElementById('betInput').value = myWallet; }
-
         function joinGame() {
             if (isBettingProcessing) return;
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
             if (amount <= 0) return alert("배팅 금액을 확인하세요.");
             if (gameState.timeLeft <= 60) return alert("마감 1분 전입니다. 참여 불가!");
-
             isBettingProcessing = true;
             const btn = document.getElementById('joinBtn');
             const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "처리중...";
-
+            btn.disabled = true; btn.innerText = "처리중...";
             fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
                 .then(res => res.json())
                 .then(data => {
@@ -413,193 +243,69 @@
                         const myColor = existingMe ? existingMe.color : colors[Math.floor(Math.random() * colors.length)];
                         addParticipant(myId, amount, myColor);
                         btn.innerText = "배팅 성공! (+" + amount + ")";
-                    } else {
-                        alert(data.msg);
-                        btn.innerText = originalText;
-                    }
+                    } else { alert(data.msg); btn.innerText = originalText; }
                 })
-                .catch(err => {
-                    console.error(err);
-                    alert("통신 오류가 발생했습니다.");
-                    btn.innerText = originalText;
-                })
-                .finally(() => {
-                    isBettingProcessing = false;
-                    btn.disabled = false;
-                    setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000);
-                });
+                .catch(err => { console.error(err); alert("통신 오류가 발생했습니다."); btn.innerText = originalText; })
+                .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000); });
         }
-
-        function speak(text) {
-            if (synth.speaking) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0;
-            synth.speak(utter);
-        }
-
+        function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
         function startTimer() {
             const timerInterval = setInterval(() => {
                 if(gameState.timeLeft > 0) gameState.timeLeft--;
                 const min = Math.floor(gameState.timeLeft / 60);
                 const sec = gameState.timeLeft % 60;
                 document.getElementById('timerDisplay').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
-
                 const countEl = document.getElementById('centerCount');
                 if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
-                    countEl.innerText = gameState.timeLeft;
-                    countEl.classList.add('active');
+                    countEl.innerText = gameState.timeLeft; countEl.classList.add('active');
                     const btn = document.getElementById('joinBtn');
-                    if(!btn.disabled) {
-                        btn.disabled = true;
-                        btn.innerText = "마감됨 (CLOSED)";
-                        document.getElementById('timerDisplay').style.color = "red";
-                    }
+                    if(!btn.disabled) { btn.disabled = true; btn.innerText = "마감됨 (CLOSED)"; document.getElementById('timerDisplay').style.color = "red"; }
                 }
-                if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) {
-                    const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"];
-                    speak(words[10 - gameState.timeLeft]);
-                }
-                if (gameState.timeLeft === 0) {
-                    clearInterval(timerInterval);
-                    countEl.classList.remove('active');
-                    speak("Time's up!");
-                    finishRound();
-                }
+                if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) { const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"]; speak(words[10 - gameState.timeLeft]); }
+                if (gameState.timeLeft === 0) { clearInterval(timerInterval); countEl.classList.remove('active'); speak("Time's up!"); finishRound(); }
             }, 1000);
         }
-
-        // === [수정] 라운드 종료 및 승자 처리 ===
         function finishRound() {
-            // 1. 승자 추첨 (지분율 기반 랜덤)
             let rand = Math.random() * gameState.totalPool;
-            let runningTotal = 0;
-            let winner = null;
-
-            // 룰렛 판을 돌며 당첨 구간 확인
-            for (let p of gameState.participants) {
-                runningTotal += p.amount;
-                if (rand <= runningTotal) {
-                    winner = p;
-                    break;
-                }
-            }
-
-            // 혹시라도 계산 오류로 승자가 없으면 (거의 없음)
-            if (!winner) {
-                // 가장 지분이 많은 1등에게 줌 (안전장치)
-                winner = gameState.participants[0] || { name: "Company", amount: 0 };
-            }
-
-            const prize = Math.floor(gameState.totalPool * 0.9); // 90% 상금
-
-            // 2. [핵심] 전광판 문구 업데이트 (이게 빠져 있었음!)
+            let runningTotal = 0; let winner = null;
+            for (let p of gameState.participants) { runningTotal += p.amount; if (rand <= runningTotal) { winner = p; break; } }
+            if (!winner) winner = gameState.participants[0] || { name: "Company", amount: 0 };
+            const prize = Math.floor(gameState.totalPool * 0.9);
             lastWinnerMsg = `🏆 지난 라운드 승자: ${winner.name} (상금: ${prize.toLocaleString()} UT) 🏆`;
-            
-            // 전광판 즉시 반영
-            const marquee = document.getElementById('marqueeText');
-            marquee.innerText = lastWinnerMsg;
-            marquee.style.color = "#00f3ff"; // 승자 나올땐 시안색으로 강조
-
-            // 3. 결과 모달(팝업) 표시
+            const marquee = document.getElementById('marqueeText'); marquee.innerText = lastWinnerMsg; marquee.style.color = "#00f3ff";
             const modal = document.getElementById('resultModal');
             document.getElementById('resWinner').innerText = winner.name;
             document.getElementById('resAmount').innerText = prize.toLocaleString() + " UT";
-            
             const msgEl = document.getElementById('resMsg');
-            
-            if (winner.name === myId) {
-                // 내가 이겼을 때
-                msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉";
-                msgEl.className = "result-msg msg-win";
-                speak("Congratulations! You won!");
-                // (여기서 실제 돈 지급 API 호출 가능)
-            } else if (winner.name === "Company") {
-                // 본사가 이겼을 때
-                msgEl.innerText = "이번 라운드는 본사가 승리했습니다.";
-                msgEl.className = "result-msg msg-lose";
-                speak("The House Wins.");
-            } else {
-                // 다른 유저가 이겼을 때
-                msgEl.innerText = `아쉽네요... 승자는 ${winner.name}님 입니다.`;
-                msgEl.className = "result-msg msg-lose";
-                speak("Better luck next time.");
-            }
-
+            if (winner.name === myId) { msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; msgEl.className = "result-msg msg-win"; speak("Congratulations! You won!"); }
+            else if (winner.name === "Company") { msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; msgEl.className = "result-msg msg-lose"; speak("The House Wins."); }
+            else { msgEl.innerText = `아쉽네요... 승자는 ${winner.name}님 입니다.`; msgEl.className = "result-msg msg-lose"; speak("Better luck next time."); }
             modal.classList.add('active');
         }
-
         function resetGame() { location.reload(); }
-
-        function startMarqueeScheduler() {
-            const marquee = document.getElementById('marqueeText');
-            setInterval(() => {
-                marquee.innerText = warningMsg;
-                marquee.style.color = "#ffdd59";
-                setTimeout(() => {
-                    marquee.innerText = lastWinnerMsg;
-                    marquee.style.color = "#fff";
-                }, 15000);
-            }, 120000);
-        }
-
+        function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
         function drawGiantWheel() {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             const w = canvas.width; const h = canvas.height;
-            const radius = h * 2.5; 
-            const centerX = radius + 60; 
-            const centerY = h / 2;
-
+            const radius = h * 2.5; const centerX = radius + 60; const centerY = h / 2;
             gameState.rotation += 0.0035; 
-            ctx.clearRect(0, 0, w, h);
-            ctx.save();
-
+            ctx.clearRect(0, 0, w, h); ctx.save();
             let startAngle = gameState.rotation;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0a0a0a"; ctx.fill();
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
-            ctx.shadowBlur = 20; ctx.shadowColor = "#ff0055"; ctx.stroke(); ctx.shadowBlur = 0;
-
+            ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke(); ctx.shadowBlur = 20; ctx.shadowColor = "#ff0055"; ctx.stroke(); ctx.shadowBlur = 0;
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
-                    const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI;
-                    const endAngle = startAngle + sliceAngle;
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY);
-                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); 
-                    ctx.closePath();
-                    ctx.fillStyle = p.color; ctx.fill();
-                    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
-
+                    const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; const endAngle = startAngle + sliceAngle;
+                    ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); ctx.closePath(); ctx.fillStyle = p.color; ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
                     if (sliceAngle > 0.05) {
-                        ctx.save();
-                        const textAngle = startAngle + sliceAngle / 2;
-                        ctx.translate(centerX, centerY); ctx.rotate(textAngle);
-                        ctx.textAlign = "right"; ctx.textBaseline = "middle";
-                        ctx.fillStyle = "#fff"; ctx.font = "bold 40px Pretendard";
-                        ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4;
-                        ctx.fillText(p.name, -radius + 350, -20);
-                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 24px monospace";
-                        ctx.fillText(p.amount.toLocaleString() + " UT", -radius + 350, 20);
-                        ctx.restore();
+                        ctx.save(); const textAngle = startAngle + sliceAngle / 2; ctx.translate(centerX, centerY); ctx.rotate(textAngle); ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff"; ctx.font = "bold 40px Pretendard"; ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; ctx.fillText(p.name, -radius + 350, -20); ctx.fillStyle = "#ffd700"; ctx.font = "bold 24px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", -radius + 350, 20); ctx.restore();
                     }
                     startAngle = endAngle;
                 });
             } else {
-                ctx.beginPath(); ctx.arc(centerX, centerY, radius - 20, 0, Math.PI * 2);
-                ctx.fillStyle = "#1a1a1a"; ctx.fill();
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center";
-                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(Math.PI);
-                ctx.fillText("WAITING FOR PLAYERS...", radius - 200, 0); ctx.restore();
+                ctx.beginPath(); ctx.arc(centerX, centerY, radius - 20, 0, Math.PI * 2); ctx.fillStyle = "#1a1a1a"; ctx.fill(); ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center"; ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(Math.PI); ctx.fillText("WAITING FOR PLAYERS...", radius - 200, 0); ctx.restore();
             }
-            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius);
-            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.5)");
-            ctx.fillStyle = grad; ctx.fill();
-            ctx.restore();
-            requestAnimationFrame(drawGiantWheel);
+            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius); grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.5)"); ctx.fillStyle = grad; ctx.fill(); ctx.restore(); requestAnimationFrame(drawGiantWheel);
         }
     </script>
 </body>
