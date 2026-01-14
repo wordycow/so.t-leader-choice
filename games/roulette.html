@@ -25,27 +25,29 @@
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* UI 요소들 */
+        /* UI: Marquee */
         .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.15); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
         .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 25s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
+        /* UI: Top HUD */
         .top-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; pointer-events: none; }
         .hud-box { background: var(--panel-bg); padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; backdrop-filter: blur(10px); pointer-events: auto; }
         .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
         .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
 
+        /* UI: Countdown */
         .center-countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 20rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 100px rgba(255, 0, 85, 0.8); display: none; line-height: 1; }
         .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
         @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } }
 
-        /* 게임 스테이지 */
+        /* GAME STAGE */
         .game-stage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
         canvas { display: block; width: 100%; height: 100%; }
 
         .pointer { 
-            position: absolute; top: 50%; left: 20px; transform: translateY(-50%);
+            position: absolute; top: 50%; left: 30px; transform: translateY(-50%);
             width: 0; height: 0; z-index: 50; 
             border-top: 15px solid transparent; border-bottom: 15px solid transparent; 
             border-left: 50px solid #fff; 
@@ -53,37 +55,30 @@
         }
         .pointer::after { content: ''; position: absolute; top: -8px; left: -60px; width: 16px; height: 16px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
 
-        /* --- [컨트롤 + 리스트 래퍼] --- */
-        /* PC와 모바일의 배치를 다르게 하기 위한 래퍼 */
-        .ui-wrapper {
-            z-index: 100;
+        /* --- [LAYOUT CONTAINER] --- */
+        .bottom-container { z-index: 100; }
+
+        .controls { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 20px; 
         }
 
-        /* --- [JUKEBOX STYLE] --- */
+        /* 쥬크박스 */
         .jukebox-container {
             width: 100%; max-width: 400px;
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            cursor: pointer; margin-bottom: 10px;
-            background: rgba(0,0,0,0.6); padding: 12px 0; border-radius: 12px;
+            cursor: pointer; margin-bottom: 5px;
+            background: rgba(0,0,0,0.6); padding: 10px 0; border-radius: 12px;
             border: 1px solid rgba(255, 215, 0, 0.3);
             transition: all 0.2s;
         }
         .jukebox-icon { font-size: 20px; }
         .jukebox-label { font-size: 1rem; color: #ffd700; font-weight: bold; letter-spacing: 2px; }
-        
-        .jukebox-container.playing {
-            border-color: #ff0055;
-            box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
-            background: rgba(255, 0, 85, 0.15);
-        }
+        .jukebox-container.playing { border-color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5); background: rgba(255, 0, 85, 0.15); }
         .jukebox-container.playing .jukebox-label { color: #ff0055; }
         .jukebox-container.playing .jukebox-icon { animation: beat 0.8s infinite alternate; }
         @keyframes beat { 0% { transform: scale(1); } 100% { transform: scale(1.2); } }
 
-        /* --- [CONTROLS STYLE] --- */
-        .controls { 
-            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 20px; 
-        }
+        /* 배팅 박스 (버튼 연결) */
         .bet-box { 
             display: flex; gap: 0; width: 100%; max-width: 400px;
             align-items: stretch; justify-content: center;
@@ -119,6 +114,7 @@
             display: flex; flex-direction: column;
         }
         .list-header { text-align: center; color: #ddd; font-weight:bold; font-size: 0.8rem; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; flex-shrink: 0; }
+        
         .list-content { overflow-y: auto; flex-grow: 1; }
         .list-content::-webkit-scrollbar { width: 4px; }
         .list-content::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
@@ -130,54 +126,51 @@
 
         /* =========================================
            [LAYOUT - PC VERSION]
-           리스트는 우측 상단 Time Left 밑에 고정
-           컨트롤은 하단 중앙 고정
+           리스트: 우측 상단 고정
+           컨트롤: 하단 중앙 고정
            ========================================= */
         @media (min-width: 769px) {
             .list-panel { 
-                position: absolute; top: 140px; right: 20px; /* Time Left 아래 */
+                position: absolute; top: 140px; right: 20px; 
                 width: 250px; max-height: 400px;
             }
-            .controls {
+            .bottom-container {
                 position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
                 padding-bottom: 20px;
                 background: linear-gradient(to top, #000 80%, transparent);
                 border-radius: 20px 20px 0 0;
-                width: auto;
+                width: auto; max-width: 500px;
             }
-            /* PC에서는 래퍼가 단순히 위치 잡는 역할 */
-            .ui-wrapper { position: static; }
         }
 
         /* =========================================
            [LAYOUT - MOBILE VERSION]
-           하단에 고정된 래퍼 안에 (쥬크박스 -> 컨트롤 -> 리스트) 순서로 배치
-           스크롤 가능하게 처리
+           컨테이너 하단 고정, 리스트는 버튼 아래 붙음 (스크롤)
            ========================================= */
         @media (max-width: 768px) {
             .pointer { left: 10px; }
             
-            .ui-wrapper {
+            .bottom-container {
                 position: absolute; bottom: 0; left: 0; width: 100%;
-                max-height: 70vh; /* 화면의 70%까지만 차지 */
+                max-height: 70vh; /* 화면의 70% 차지 */
                 display: flex; flex-direction: column; align-items: center;
                 background: linear-gradient(to top, #050714 95%, transparent);
                 padding-bottom: 20px;
-                overflow-y: auto; /* 내용 넘치면 스크롤 */
+                overflow-y: auto; /* 전체 스크롤 */
+                -webkit-overflow-scrolling: touch;
             }
 
             .controls { 
-                width: 100%; order: 1; /* 컨트롤이 위 */
-                background: transparent; /* 배경은 래퍼가 담당 */
+                width: 100%; flex-shrink: 0; 
                 padding-bottom: 0;
             }
 
             .list-panel {
                 width: 90%; 
                 margin-top: 15px; 
-                order: 2; /* 리스트가 컨트롤 아래 */
-                max-height: 200px; /* 리스트 자체 높이 제한 */
-                position: relative; top: auto; right: auto; left: auto;
+                position: relative; 
+                flex-shrink: 0; 
+                max-height: 250px; /* 리스트 너무 길어지면 내부 스크롤 */
             }
         }
 
@@ -196,12 +189,15 @@
         .btn-confirm:disabled { background: #555; cursor: not-allowed; }
         .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 10px; }
         #resWinner { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
+        
+        /* 유튜브 플레이어 (숨김) */
+        #player { position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; }
     </style>
 </head>
 <body>
     <div id="centerCount" class="center-countdown">60</div>
 
-    <div id="player" style="position:fixed; top:-9999px; visibility:hidden;"></div>
+    <div id="player"></div>
 
     <div id="ruleModal" class="modal-overlay">
         <div class="modal-box">
@@ -236,7 +232,7 @@
         <canvas id="canvas"></canvas>
     </div>
     
-    <div class="ui-wrapper">
+    <div class="bottom-container">
         <div class="controls">
             <div id="jukebox" class="jukebox-container" onclick="toggleAudio()">
                 <div class="jukebox-icon">🎵</div>
@@ -266,6 +262,7 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
+        // [중요] 배포 URL 확인
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; 
         
         let myId = ""; let myWallet = 0; let myColor = null;
@@ -518,7 +515,7 @@
                         ctx.save(); ctx.translate(tx, ty); ctx.rotate(midAngle + Math.PI); 
                         ctx.textAlign = "right"; ctx.textBaseline = "middle";
                         
-                        // 이름 (그림자 진하게)
+                        // [텍스트 가독성 강화]
                         ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
                         ctx.fillStyle = "#fff"; ctx.font = "bold 50px Pretendard"; ctx.fillText(p.name, 0, -25); 
                         ctx.fillStyle = "#ffd700"; ctx.font = "bold 30px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
