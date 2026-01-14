@@ -468,29 +468,63 @@
             }, 1000);
         }
 
+        // === [수정] 라운드 종료 및 승자 처리 ===
         function finishRound() {
+            // 1. 승자 추첨 (지분율 기반 랜덤)
             let rand = Math.random() * gameState.totalPool;
             let runningTotal = 0;
             let winner = null;
+
+            // 룰렛 판을 돌며 당첨 구간 확인
             for (let p of gameState.participants) {
                 runningTotal += p.amount;
-                if (rand <= runningTotal) { winner = p; break; }
+                if (rand <= runningTotal) {
+                    winner = p;
+                    break;
+                }
             }
-            if (!winner) winner = { name: "No One", amount: 0 };
 
+            // 혹시라도 계산 오류로 승자가 없으면 (거의 없음)
+            if (!winner) {
+                // 가장 지분이 많은 1등에게 줌 (안전장치)
+                winner = gameState.participants[0] || { name: "Company", amount: 0 };
+            }
+
+            const prize = Math.floor(gameState.totalPool * 0.9); // 90% 상금
+
+            // 2. [핵심] 전광판 문구 업데이트 (이게 빠져 있었음!)
+            lastWinnerMsg = `🏆 지난 라운드 승자: ${winner.name} (상금: ${prize.toLocaleString()} UT) 🏆`;
+            
+            // 전광판 즉시 반영
+            const marquee = document.getElementById('marqueeText');
+            marquee.innerText = lastWinnerMsg;
+            marquee.style.color = "#00f3ff"; // 승자 나올땐 시안색으로 강조
+
+            // 3. 결과 모달(팝업) 표시
             const modal = document.getElementById('resultModal');
             document.getElementById('resWinner').innerText = winner.name;
-            document.getElementById('resAmount').innerText = Math.floor(gameState.totalPool * 0.9).toLocaleString() + " UT";
+            document.getElementById('resAmount').innerText = prize.toLocaleString() + " UT";
+            
             const msgEl = document.getElementById('resMsg');
+            
             if (winner.name === myId) {
+                // 내가 이겼을 때
                 msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉";
                 msgEl.className = "result-msg msg-win";
                 speak("Congratulations! You won!");
+                // (여기서 실제 돈 지급 API 호출 가능)
+            } else if (winner.name === "Company") {
+                // 본사가 이겼을 때
+                msgEl.innerText = "이번 라운드는 본사가 승리했습니다.";
+                msgEl.className = "result-msg msg-lose";
+                speak("The House Wins.");
             } else {
-                msgEl.innerText = "아쉽네요... 다음엔 꼭 승리하세요! 😭";
+                // 다른 유저가 이겼을 때
+                msgEl.innerText = `아쉽네요... 승자는 ${winner.name}님 입니다.`;
                 msgEl.className = "result-msg msg-lose";
                 speak("Better luck next time.");
             }
+
             modal.classList.add('active');
         }
 
