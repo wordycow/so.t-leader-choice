@@ -54,9 +54,7 @@
 
         /* --- 상단 정보창 (HUD) --- */
         .top-hud {
-            position: absolute;
-            top: 50px; 
-            left: 20px; right: 20px;
+            position: absolute; top: 50px; left: 20px; right: 20px;
             display: flex; justify-content: space-between; align-items: flex-start;
             z-index: 100; pointer-events: none;
         }
@@ -71,6 +69,26 @@
         .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
         .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
+
+        /* --- 중앙 카운트다운 (마지막 60초) --- */
+        .center-countdown {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15rem; font-weight: 900;
+            color: rgba(255, 255, 255, 0.1); /* 평소엔 안보임 */
+            z-index: 80; pointer-events: none;
+            text-shadow: 0 0 50px rgba(255, 0, 85, 0.8);
+            display: none; /* JS로 제어 */
+        }
+        .center-countdown.active {
+            display: block;
+            animation: pulseCount 1s infinite;
+        }
+        @keyframes pulseCount {
+            0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
 
         /* --- 메인 게임 영역 --- */
         .game-stage {
@@ -91,65 +109,75 @@
             border-radius: 50%; box-shadow: 0 0 15px var(--company-color);
         }
 
-        /* --- 참여자 리스트 (스크롤 적용) --- */
+        /* --- 참여자 리스트 (투명도 개선) --- */
         .list-panel {
             position: absolute;
             right: 20px; top: 50%; transform: translateY(-50%);
-            width: 260px; 
-            max-height: 400px; /* 최대 높이 고정 */
-            background: rgba(0, 0, 0, 0.85);
+            width: 260px; max-height: 400px;
+            
+            /* [수정] 배경을 더 투명하고 옅게 */
+            background: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(4px); /* 뒤에 글씨 비치게 */
+            
             border-radius: 16px; padding: 15px;
-            
-            /* [핵심] 스크롤 기능 추가 */
-            overflow-y: auto; 
-            
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             z-index: 90;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        
-        /* 스크롤바 디자인 커스텀 */
         .list-panel::-webkit-scrollbar { width: 6px; }
         .list-panel::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
-        .list-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+        .list-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
 
-        .list-header { text-align: center; color: var(--text-gray); font-size: 0.8rem; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .list-header { text-align: center; color: #ddd; font-weight:bold; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; text-shadow: 0 1px 2px #000; }
+        
         .list-item {
             display: flex; align-items: center; padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem;
+            /* [수정] 글씨 잘 보이게 그림자 추가 */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
         }
-        .rank-num { width: 25px; font-weight: bold; color: #555; font-size: 0.8rem; }
+        .rank-num { width: 25px; font-weight: bold; color: #ccc; font-size: 0.8rem; }
         .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; }
         
-        .p-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 10px; }
-        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd; }
+        .p-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.8); }
+        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
 
-        /* --- 규칙 설명 팝업 (Modal) --- */
+        /* --- 결과/규칙 팝업 --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200;
             display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px); display: none; /* 기본 숨김 */
         }
+        .modal-overlay.active { display: flex; animation: popIn 0.4s ease; }
+        
         .modal-box {
             background: linear-gradient(135deg, #1a0b2e, #050714);
             border: 2px solid var(--gold);
             border-radius: 20px; padding: 30px;
-            width: 90%; max-width: 400px;
+            width: 90%; max-width: 420px;
             text-align: center;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
-            animation: popIn 0.3s ease;
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
         }
         @keyframes popIn { from{transform:scale(0.8); opacity:0;} to{transform:scale(1); opacity:1;} }
         
-        .modal-title { font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        .modal-title { font-size: 2rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
         .modal-text { text-align: left; font-size: 1rem; color: #ddd; line-height: 1.6; margin-bottom: 25px; }
         .modal-text strong { color: var(--company-color); }
+        
+        /* 결과 화면 전용 스타일 */
+        .winner-name { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
+        .winner-amt { font-size: 1.5rem; color: var(--gold); font-weight:bold; }
+        .result-msg { font-size: 1.2rem; margin-top: 15px; font-weight:bold; }
+        .msg-win { color: #2ecc71; }
+        .msg-lose { color: #aaa; }
+
         .btn-close {
             background: var(--gold); color: #000; border: none; padding: 12px 30px;
             font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s; margin-top: 10px;
         }
         .btn-close:hover { background: #fff; transform: scale(1.05); }
 
@@ -190,19 +218,42 @@
 
         @media (max-width: 600px) {
             .hud-value { font-size: 1.2rem; }
-            .pointer { left: 20px; }
+            
+            /* 화살표 위치 */
+            .pointer { left: 15px; }
+            
+            /* [핵심 수정] 리스트 패널 위치 이동 */
             .list-panel {
-                top: 45%; left: 20px; right: auto; transform: translateY(-50%);
-                width: 200px; max-height: 250px;
-                background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+                /* 중앙이 아니라 하단으로 내림 */
+                top: auto; 
+                bottom: 140px; /* 컨트롤 패널(약 130px) 바로 위 */
+                left: 15px;    /* 왼쪽 정렬 */
+                right: auto; 
+                transform: none; /* 중앙 정렬 해제 */
+                
+                width: 180px; /* 너비 조금 줄임 */
+                max-height: 200px; /* 높이 제한 */
+                
+                background: rgba(0,0,0,0.5); 
+                backdrop-filter: blur(4px);
+                border: 1px solid rgba(255,255,255,0.1);
             }
-            .controls { padding-bottom: 30px; }
+            
+            /* 폰트 사이즈 조금 축소 */
+            .list-header { font-size: 0.75rem; }
+            .list-item { font-size: 0.8rem; padding: 6px 0; }
+            .p-color { width: 10px; height: 10px; }
+
+            .controls { padding-bottom: 20px; }
+            .center-countdown { font-size: 8rem; } 
         }
     </style>
 </head>
 <body>
 
-    <div id="ruleModal" class="modal-overlay">
+    <div id="centerCount" class="center-countdown">60</div>
+
+    <div id="ruleModal" class="modal-overlay active">
         <div class="modal-box">
             <div class="modal-title">GAME RULES</div>
             <div class="modal-text">
@@ -212,7 +263,20 @@
                 4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>
                 (본사 수수료 10% 제외)
             </div>
-            <button class="btn-close" onclick="closeModal()">I UNDERSTAND</button>
+            <button class="btn-close" onclick="closeModal('ruleModal')">I UNDERSTAND</button>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">ROUND FINISHED</div>
+            <div style="font-size:0.9rem; color:#aaa;">WINNER</div>
+            <div id="resWinner" class="winner-name">USER</div>
+            <div id="resAmount" class="winner-amt">1,000,000 UT</div>
+            
+            <div id="resMsg" class="result-msg">축하합니다!</div>
+            
+            <button class="btn-close" onclick="closeModal('resultModal'); resetGame();">NEXT ROUND</button>
         </div>
     </div>
 
@@ -241,7 +305,7 @@
     <div class="list-panel">
         <div class="list-header">실시간 지분 현황 (Live Rank)</div>
         <div id="participantList">
-            <div style="text-align:center; color:#888; font-size:0.8rem; padding:5px;">대기중...</div>
+            <div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div>
         </div>
     </div>
 
@@ -259,15 +323,21 @@
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-        const ROUND_TIME = 30 * 60;
+        
+        // ★ 테스트를 위해 시간을 짧게 줄이고 싶으면 여기를 수정하세요 (초 단위)
+        const ROUND_TIME = 30 * 60; 
         
         let myId = "";
         let myWallet = 0;
         let gameState = { participants: [], totalPool: 0, timeLeft: ROUND_TIME, rotation: 0, isRunning: true };
+        let isBettingProcessing = false;
         
         let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
         const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
         const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#34495e'];
+
+        // TTS (음성) 객체
+        const synth = window.speechSynthesis;
 
         window.onload = async function() {
             const params = new URLSearchParams(window.location.search);
@@ -287,8 +357,8 @@
             startMarqueeScheduler();
         };
 
-        function closeModal() {
-            document.getElementById('ruleModal').style.display = 'none';
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
         }
 
         async function fetchUserData() {
@@ -341,9 +411,18 @@
         function setMaxBet() { document.getElementById('betInput').value = myWallet; }
 
         function joinGame() {
+            if (isBettingProcessing) return;
+            
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
+            if (amount <= 0) return alert("배팅 금액을 확인하세요.");
             if (gameState.timeLeft <= 60) return alert("마감 1분 전입니다. 참여 불가!");
+
+            isBettingProcessing = true;
+            const btn = document.getElementById('joinBtn');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "처리중...";
 
             fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
                 .then(res => res.json())
@@ -351,26 +430,116 @@
                     if (data.result === "success") {
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                        const myColor = colors[Math.floor(Math.random() * colors.length)];
+                        const existingMe = gameState.participants.find(p => p.name === myId);
+                        const myColor = existingMe ? existingMe.color : colors[Math.floor(Math.random() * colors.length)];
                         addParticipant(myId, amount, myColor);
-                        alert("배팅 완료!");
-                    } else { alert(data.msg); }
+                        btn.innerText = "배팅 성공! (+" + amount + ")";
+                    } else {
+                        alert(data.msg);
+                        btn.innerText = originalText;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("통신 오류가 발생했습니다.");
+                    btn.innerText = originalText;
+                })
+                .finally(() => {
+                    isBettingProcessing = false;
+                    btn.disabled = false;
+                    setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000);
                 });
         }
 
+        // === [핵심] 음성 안내 (TTS) 함수 ===
+        function speak(text) {
+            if (synth.speaking) return;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'en-US'; // 영어 발음
+            utter.rate = 1.0; 
+            utter.pitch = 1.0;
+            synth.speak(utter);
+        }
+
+        // === 타이머 및 이벤트 로직 ===
         function startTimer() {
-            setInterval(() => {
+            const timerInterval = setInterval(() => {
                 if(gameState.timeLeft > 0) gameState.timeLeft--;
+                
                 const min = Math.floor(gameState.timeLeft / 60);
                 const sec = gameState.timeLeft % 60;
                 document.getElementById('timerDisplay').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
-                if (gameState.timeLeft <= 60) {
+
+                // --- 이벤트: 마지막 60초 카운트다운 ---
+                const countEl = document.getElementById('centerCount');
+                if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
+                    countEl.innerText = gameState.timeLeft;
+                    countEl.classList.add('active');
+                    
                     const btn = document.getElementById('joinBtn');
-                    btn.disabled = true;
-                    btn.innerText = "마감됨 (CLOSED)";
-                    document.getElementById('timerDisplay').style.color = "red";
+                    if(!btn.disabled) {
+                        btn.disabled = true;
+                        btn.innerText = "마감됨 (CLOSED)";
+                        document.getElementById('timerDisplay').style.color = "red";
+                    }
                 }
+
+                // --- 이벤트: 마지막 10초 음성 안내 ---
+                if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) {
+                    const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"];
+                    speak(words[10 - gameState.timeLeft]);
+                }
+
+                // --- 이벤트: 게임 종료 (0초) ---
+                if (gameState.timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    countEl.classList.remove('active');
+                    speak("Time's up!");
+                    finishRound();
+                }
+
             }, 1000);
+        }
+
+        // === 라운드 종료 처리 ===
+        function finishRound() {
+            // 승자 추첨 (지분율 기반 랜덤 - 프론트 시뮬레이션)
+            // 실제 서비스에서는 서버에서 결과를 받아와야 합니다.
+            let rand = Math.random() * gameState.totalPool;
+            let runningTotal = 0;
+            let winner = null;
+
+            for (let p of gameState.participants) {
+                runningTotal += p.amount;
+                if (rand <= runningTotal) {
+                    winner = p;
+                    break;
+                }
+            }
+
+            if (!winner) winner = { name: "No One", amount: 0 };
+
+            // 결과 모달 표시
+            const modal = document.getElementById('resultModal');
+            document.getElementById('resWinner').innerText = winner.name;
+            document.getElementById('resAmount').innerText = Math.floor(gameState.totalPool * 0.9).toLocaleString() + " UT";
+            
+            const msgEl = document.getElementById('resMsg');
+            if (winner.name === myId) {
+                msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉";
+                msgEl.className = "result-msg msg-win";
+                speak("Congratulations! You won!");
+            } else {
+                msgEl.innerText = "아쉽네요... 다음엔 꼭 승리하세요! 😭";
+                msgEl.className = "result-msg msg-lose";
+                speak("Better luck next time.");
+            }
+
+            modal.classList.add('active');
+        }
+
+        function resetGame() {
+            location.reload(); // 간단히 새로고침으로 리셋
         }
 
         function startMarqueeScheduler() {
