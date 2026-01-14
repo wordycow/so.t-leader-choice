@@ -6,170 +6,231 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* =========================================
-           CSS STYLES (Titanium Theme)
+           THE UNIQUE: PREMIUM TITANIUM THEME (RESTORED)
            ========================================= */
         :root {
-            --bg-color: #050714;
+            --bg-deep: #050714;
             --gold: #ffd700;
-            --company-color: #ff0055;
-            --panel-bg: rgba(20, 20, 35, 0.95);
-            --text-gray: #aaa;
+            --neon-red: #ff0055;
+            --glass-bg: rgba(20, 20, 35, 0.85);
+            --border-light: rgba(255, 255, 255, 0.15);
         }
 
         body {
             margin: 0; font-family: 'Pretendard', sans-serif; color: white;
             display: flex; flex-direction: column; align-items: center;
             height: 100vh; overflow: hidden;
-            background: linear-gradient(-45deg, #050714, #1a0b2e, #2b0000, #0f0c29);
-            background-size: 400% 400%; animation: gradientBG 20s ease infinite;
+            background: linear-gradient(135deg, #050714 0%, #1a0b2e 50%, #000000 100%);
+            background-size: 200% 200%; animation: gradientBG 30s ease infinite;
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* UI 요소들 */
-        .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.15); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 25s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
+        /* --- UI: TOP HUD --- */
+        .marquee-wrap { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 32px; 
+            background: rgba(255, 0, 85, 0.1); 
+            border-bottom: 1px solid var(--neon-red); 
+            backdrop-filter: blur(5px);
+            overflow: hidden; white-space: nowrap; z-index: 150; 
+            display: flex; align-items: center; 
+        }
+        .marquee-text { 
+            display: inline-block; padding-left: 100%; 
+            animation: scroll-left 25s linear infinite; 
+            color: #fff; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px;
+            text-shadow: 0 0 10px var(--neon-red); 
+        }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        .top-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; pointer-events: none; }
-        .hud-box { background: var(--panel-bg); padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; backdrop-filter: blur(10px); pointer-events: auto; }
-        .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
-        .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
-        .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
+        .top-hud { 
+            position: absolute; top: 50px; left: 20px; right: 20px; 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            z-index: 100; pointer-events: none; 
+        }
+        .hud-box { 
+            background: var(--glass-bg); padding: 8px 20px; 
+            border-radius: 12px; border: 1px solid var(--border-light); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            text-align: center; backdrop-filter: blur(10px); 
+            pointer-events: auto; 
+        }
+        .hud-label { font-size: 0.65rem; color: #aaa; letter-spacing: 2px; margin-bottom: 2px; text-transform: uppercase; }
+        .hud-value { font-size: 1.4rem; font-weight: 800; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+        .hud-timer { font-size: 1.4rem; font-weight: 700; color: #ff4757; font-family: monospace; letter-spacing: 1px; }
 
-        .center-countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 20rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 100px rgba(255, 0, 85, 0.8); display: none; line-height: 1; }
-        .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
-        @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } }
+        .center-countdown { 
+            position: absolute; top: 45%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 18rem; font-weight: 900; 
+            color: rgba(255, 255, 255, 0.03); 
+            z-index: 80; pointer-events: none; 
+            display: none; line-height: 1; 
+        }
+        .center-countdown.active { display: block; animation: pulseCount 1s infinite; color: rgba(255, 0, 85, 0.1); }
+        @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0; } }
 
-        /* 게임 스테이지 */
+        /* --- GAME STAGE --- */
         .game-stage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
         canvas { display: block; width: 100%; height: 100%; }
 
         .pointer { 
-            position: absolute; top: 50%; left: 20px; transform: translateY(-50%);
+            position: absolute; top: 50%; left: 30px; transform: translateY(-50%);
             width: 0; height: 0; z-index: 50; 
             border-top: 15px solid transparent; border-bottom: 15px solid transparent; 
             border-left: 50px solid #fff; 
-            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.8));
         }
         .pointer::after { content: ''; position: absolute; top: -8px; left: -60px; width: 16px; height: 16px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
 
-        /* --- [JUKEBOX STYLE] 배팅 박스 위로 이동 --- */
-        .jukebox-container {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            cursor: pointer; margin-bottom: 10px;
-            background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 30px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            transition: all 0.2s;
-        }
-        .jukebox-icon { font-size: 20px; }
-        .jukebox-label { font-size: 0.9rem; color: #ffd700; font-weight: bold; }
-        
-        .jukebox-container.playing {
-            border-color: #ff0055;
-            box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
-            background: rgba(255, 0, 85, 0.1);
-        }
-        .jukebox-container.playing .jukebox-label { color: #ff0055; }
-        .jukebox-container.playing .jukebox-icon { animation: beat 0.8s infinite alternate; }
-        @keyframes beat { 0% { transform: scale(1); } 100% { transform: scale(1.2); } }
-
-        /* --- 하단 컨테이너 (공통) --- */
+        /* --- CONTROLS & LAYOUT --- */
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; flex-direction: column; align-items: center;
-            padding-bottom: 20px;
-            background: linear-gradient(to top, #000 90%, transparent);
+            padding-bottom: 30px;
+            background: linear-gradient(to top, #000 70%, transparent);
             z-index: 100;
         }
 
-        .controls { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 20px; }
-        
-        /* 배팅 박스 (버튼들 붙이기) */
-        .bet-box { 
-            display: flex; gap: 0; /* 간격 없앰 (붙이기) */
-            align-items: center; 
-            background: rgba(20, 20, 35, 0.9); 
-            border-radius: 12px; 
-            border: 1px solid rgba(255,255,255,0.2); 
-            overflow: hidden; /* 자식 요소 둥글게 */
+        .control-group { 
+            width: 100%; max-width: 420px; 
+            padding: 0 20px; 
+            display: flex; flex-direction: column; gap: 12px; 
         }
-        .btn-bet { 
-            background: #333; color: white; border: none; padding: 12px 15px; 
-            cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s; 
+
+        /* 1. JUKEBOX (Wide & Stylish) */
+        .jukebox-container {
+            width: 100%;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .jukebox-icon { font-size: 1.2rem; filter: grayscale(1); transition: 0.3s; }
+        .jukebox-label { font-size: 0.85rem; color: #888; font-weight: 700; letter-spacing: 2px; transition: 0.3s; }
+        
+        /* Playing State */
+        .jukebox-container.playing {
+            border-color: var(--neon-red);
+            background: linear-gradient(90deg, rgba(255,0,85,0.1), rgba(0,0,0,0.8), rgba(255,0,85,0.1));
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+        }
+        .jukebox-container.playing .jukebox-icon { filter: grayscale(0); animation: bounce 0.6s infinite alternate; }
+        .jukebox-container.playing .jukebox-label { color: #fff; text-shadow: 0 0 10px var(--neon-red); }
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
+
+        /* 2. BETTING BAR (Connected Buttons) */
+        .bet-bar {
+            display: flex; width: 100%; height: 50px;
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        .bet-btn {
+            flex: 1; border: none; background: transparent;
+            color: #ddd; font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; transition: 0.2s;
             border-right: 1px solid rgba(255,255,255,0.1);
-            border-radius: 0; /* 각지게 */
         }
-        .btn-bet:last-child { border-right: none; }
-        .btn-bet:hover { background: #444; }
-        .btn-min { color: #ff9f43; } .btn-max { color: var(--gold); }
+        .bet-btn:last-child { border-right: none; }
+        .bet-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .bet-btn.accent { color: var(--gold); }
         
-        .input-bet { 
-            width: 70px; background: #222; border: none; 
-            color: var(--gold); text-align: center; font-size: 1.2rem; font-weight: bold; 
-            height: 40px; border-right: 1px solid rgba(255,255,255,0.1);
+        .bet-input {
+            width: 80px; border: none; background: rgba(0,0,0,0.3);
+            color: var(--gold); font-weight: 800; font-size: 1.2rem;
+            text-align: center; border-right: 1px solid rgba(255,255,255,0.1);
         }
+        .bet-input:focus { outline: none; background: rgba(255,215,0,0.1); }
 
-        .btn-join { width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: white; border: none; border-radius: 12px; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); cursor: pointer; text-transform: uppercase; }
-        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; background: #333; }
-
-        /* 리스트 패널 */
-        .list-panel { 
-            background: rgba(0, 0, 0, 0.6); 
-            backdrop-filter: blur(5px); border-radius: 12px; 
-            padding: 10px; 
-            border: 1px solid rgba(255, 215, 0, 0.3); 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
+        /* 3. JOIN BUTTON */
+        .btn-join {
+            width: 100%; padding: 16px;
+            border-radius: 12px; border: none;
+            background: linear-gradient(90deg, #ff9f43, #ff6b6b);
+            color: white; font-size: 1.2rem; font-weight: 900; letter-spacing: 1px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+            transition: 0.2s; text-transform: uppercase;
         }
-        .list-panel::-webkit-scrollbar { width: 4px; }
-        .list-panel::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
-        .list-header { text-align: center; color: #ddd; font-weight:bold; font-size: 0.8rem; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
-        .list-item { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
-        .p-color { width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.8); }
-        .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
-        .p-amt { font-weight: bold; color: var(--gold); }
+        .btn-join:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-join:active { transform: translateY(0); }
+        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
 
-        /* [PC 화면 배치] */
+        .my-balance { text-align: center; font-size: 0.8rem; color: #888; margin-top: -5px; }
+        .my-balance span { color: var(--gold); font-weight: bold; margin-left: 5px; }
+
+        /* 4. LIST PANEL (Live Status) */
+        .list-panel {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .list-header { 
+            text-align: center; color: #ddd; font-weight: 700; font-size: 0.75rem; 
+            padding-bottom: 8px; margin-bottom: 5px; letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+        .list-scroll { overflow-y: auto; }
+        .list-scroll::-webkit-scrollbar { width: 3px; }
+        .list-scroll::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+        
+        .list-item { display: flex; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+        .p-color { width: 8px; height: 8px; border-radius: 2px; margin-right: 10px; box-shadow: 0 0 5px currentColor; }
+        .p-name { flex: 1; color: #eee; font-weight: 500; }
+        .p-amt { font-weight: 700; color: var(--gold); font-family: monospace; }
+
+        /* === RESPONSIVE LAYOUT === */
+        
+        /* PC: 리스트 우측 상단 고정 */
         @media (min-width: 769px) {
-            .list-panel { 
-                position: absolute; top: 140px; right: 20px; /* Time Left 아래 */
-                width: 250px; max-height: 400px; 
-                overflow-y: auto; 
+            .list-panel {
+                position: absolute; top: 140px; right: 20px;
+                width: 240px; height: auto; max-height: 400px;
             }
-            .bottom-container {
-                max-width: 500px; left: 50%; transform: translateX(-50%); 
-                border-radius: 20px 20px 0 0;
-            }
+            .list-scroll { max-height: 350px; }
+            .bottom-container { max-width: 500px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; }
         }
 
-        /* [모바일 화면 배치] */
+        /* MOBILE: 리스트 하단 배치 (스크롤) */
         @media (max-width: 768px) {
             .pointer { left: 10px; }
             .bottom-container { 
-                max-height: 60vh; /* 화면 절반 좀 넘게 */
-                background: linear-gradient(to top, #050714 95%, transparent); 
+                max-height: 70vh; 
+                padding-bottom: 30px;
+                overflow-y: auto; /* 전체 스크롤 */
             }
-            .list-panel { 
-                width: 90%; margin: 10px auto 0; /* 버튼 아래로 배치 */
-                max-height: 200px; overflow-y: auto; /* 스크롤 */
-                position: relative; top: auto; right: auto;
+            .list-panel {
+                width: 90%; max-width: 420px;
+                margin-top: 20px; /* 버튼 아래 */
             }
+            .list-scroll { max-height: 200px; }
         }
 
-        /* 모달 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); display: none; }
-        .modal-overlay.active { display: flex; animation: popIn 0.4s ease; }
-        .modal-box { background: linear-gradient(135deg, #1a0b2e, #050714); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 0 60px rgba(255, 215, 0, 0.3); }
-        .modal-title { font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 10px; }
-        .modal-sub { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
-        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; max-height: 200px; overflow-y: auto; }
-        .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.2s; position: relative; }
-        .color-btn:hover { transform: scale(1.1); border-color: #fff; }
-        .color-btn.selected { border: 3px solid #fff; box-shadow: 0 0 15px currentColor; transform: scale(1.2); }
-        .color-btn.disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
-        .btn-confirm { background: var(--gold); color: #000; border: none; padding: 12px 40px; font-size: 1.2rem; font-weight: 900; border-radius: 50px; cursor: pointer; margin-top: 10px; width: 100%; }
-        .btn-confirm:disabled { background: #555; cursor: not-allowed; }
-        .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 10px; }
-        #resWinner { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px); display: none; }
+        .modal-overlay.active { display: flex; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-box { background: linear-gradient(145deg, #1a1a2e, #0f0f1a); border: 1px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 50px rgba(255, 215, 0, 0.15); }
+        .modal-title { font-size: 1.5rem; font-weight: 900; color: var(--gold); margin-bottom: 5px; letter-spacing: 2px; }
+        .modal-sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
+        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 20px 0; }
+        .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.2s; }
+        .color-btn:hover { transform: scale(1.15); border-color: #fff; }
+        .color-btn.selected { border: 3px solid #fff; box-shadow: 0 0 15px currentColor; transform: scale(1.1); }
+        .color-btn.disabled { opacity: 0.2; filter: grayscale(1); cursor: not-allowed; }
+        .btn-confirm, .btn-close { width: 100%; padding: 14px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; font-size: 1rem; margin-top: 10px; text-transform: uppercase; }
+        .btn-confirm { background: var(--gold); color: #000; }
+        .btn-close { background: #333; color: #fff; }
+        #resWinner { font-size: 2.2rem; color: #fff; margin: 15px 0; font-weight: 900; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -180,20 +241,20 @@
     <div id="ruleModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">PICK YOUR COLOR</div>
-            <div class="modal-sub">이 색상으로 게임판에 표시됩니다.<br>(이미 선택된 색상은 사용할 수 없습니다)</div>
+            <div class="modal-sub">게임판에 표시될 나의 색상을 선택하세요.</div>
             <div id="colorGrid" class="color-grid"></div>
-            <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.9rem;"></div>
+            <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.8rem;"></div>
             <button id="btnStart" class="btn-confirm" onclick="confirmColorAndBet()" disabled>CONFIRM & BET</button>
         </div>
     </div>
 
     <div id="resultModal" class="modal-overlay">
         <div class="modal-box">
-            <div style="font-size:2rem; font-weight:900; color:#ffd700;">ROUND FINISHED</div>
-            <div style="font-size:0.9rem; color:#aaa; margin-top:10px;">WINNER</div>
-            <div id="resWinner">Checking...</div>
-            <div id="resAmount">Calculating...</div>
-            <div id="resMsg" style="font-size:1.2rem; margin-top:15px; font-weight:bold;">결과를 불러오는 중입니다.</div>
+            <div style="font-size:1.5rem; font-weight:900; color:#ffd700;">ROUND FINISHED</div>
+            <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">WINNER</div>
+            <div id="resWinner">Loading...</div>
+            <div id="resAmount" style="font-size:1.2rem; color:#fff;">Calculating...</div>
+            <div id="resMsg" style="font-size:1rem; margin-top:15px; font-weight:bold; color:#888;">잠시만 기다려주세요.</div>
             <button class="btn-close" onclick="closeModal('resultModal'); resetGame();">NEXT ROUND</button>
         </div>
     </div>
@@ -211,36 +272,41 @@
     </div>
     
     <div class="bottom-container">
-        <div class="controls">
+        <div class="control-group">
             <div id="jukebox" class="jukebox-container" onclick="toggleAudio()">
                 <div class="jukebox-icon">🎵</div>
                 <div class="jukebox-label">JUKEBOX OFF</div>
             </div>
 
-            <div class="bet-box">
-                <button class="btn-bet btn-min" onclick="setMinBet()">MIN</button>
-                <button class="btn-bet" onclick="changeBet(-10)">-10</button>
-                <input type="number" id="betInput" class="input-bet" value="10" readonly>
-                <button class="btn-bet" onclick="changeBet(10)">+10</button>
-                <button class="btn-bet btn-max" onclick="setMaxBet()">MAX</button>
+            <div class="bet-bar">
+                <button class="bet-btn accent" onclick="setMinBet()">MIN</button>
+                <button class="bet-btn" onclick="changeBet(-10)">-10</button>
+                <input type="number" id="betInput" class="bet-input" value="10" readonly>
+                <button class="bet-btn" onclick="changeBet(10)">+10</button>
+                <button class="bet-btn accent" onclick="setMaxBet()">MAX</button>
             </div>
             
             <button id="joinBtn" class="btn-join" onclick="joinGame()">참여하기 (BET)</button>
-            <div style="font-size:0.8rem; color:#aaa;">내 자산: <span id="myBalance" style="color:white;">Loading...</span></div>
+            
+            <div class="my-balance">내 자산:<span id="myBalance">Loading...</span></div>
         </div>
 
         <div class="list-panel">
             <div class="list-header">실시간 지분 현황 (Live)</div>
-            <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">로딩중...</div></div>
+            <div class="list-scroll">
+                <div id="participantList"><div style="text-align:center; color:#666; font-size:0.8rem; padding:10px;">Loading...</div></div>
+            </div>
         </div>
     </div>
     
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
+        // [중요] 최신 배포 URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; 
         
         let myId = ""; let myWallet = 0; let myColor = null;
+        // Company Default Setup
         let gameState = { 
             participants: [{ name: "Company", amount: 100, color: "#ff0055" }], 
             totalPool: 100, 
@@ -261,32 +327,19 @@
             player = new YT.Player('player', {
                 height: '315', width: '560',
                 videoId: '',
-                playerVars: {
-                    'listType': 'playlist',
-                    'list': 'PLFq6335YyVBsKhW_W7WjXgTPlV4UjZ6sF',
-                    'autoplay': 0, 'controls': 0, 'loop': 1
-                },
+                playerVars: { 'listType': 'playlist', 'list': 'PLFq6335YyVBsKhW_W7WjXgTPlV4UjZ6sF', 'autoplay': 0, 'controls': 0, 'loop': 1 },
                 events: { 'onReady': onPlayerReady }
             });
         }
-        function onPlayerReady(event) {
-            event.target.setVolume(50);
-        }
+        function onPlayerReady(event) { event.target.setVolume(50); }
         function toggleAudio() {
             if (!player) return;
             const juke = document.getElementById('jukebox');
             const label = juke.querySelector('.jukebox-label');
-            
             if (isPlaying) {
-                player.pauseVideo();
-                juke.classList.remove('playing');
-                label.innerText = "JUKEBOX OFF";
-                isPlaying = false;
+                player.pauseVideo(); juke.classList.remove('playing'); label.innerText = "JUKEBOX OFF"; isPlaying = false;
             } else {
-                player.playVideo();
-                juke.classList.add('playing');
-                label.innerText = "JUKEBOX ON ♫";
-                isPlaying = true;
+                player.playVideo(); juke.classList.add('playing'); label.innerText = "JUKEBOX ON ♫"; isPlaying = true;
             }
         }
 
@@ -296,7 +349,6 @@
             if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
             
             await fetchUserData();
-            
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
             if (savedColor) myColor = savedColor;
 
@@ -311,16 +363,13 @@
             try {
                 const res = await fetch(`${GAS_URL}?action=getRouletteState`);
                 const data = await res.json();
-                
                 if (data.result === "success") {
                     if (data.participants && data.participants.length > 0) {
                         gameState.participants = data.participants;
                     } else {
-                        // Company 기본값 유지
                         gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
                     }
                     updateGameState();
-
                     if (data.lastWinner && data.lastWinner.round !== lastDisplayedWinner) {
                         lastDisplayedWinner = data.lastWinner.round; 
                         showWinnerModal(data.lastWinner);
@@ -328,7 +377,6 @@
                 }
             } catch (e) { 
                 console.error("Sync Error:", e);
-                // 에러시에도 Company 유지
                 if(gameState.participants.length === 0) {
                     gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
                     updateGameState();
@@ -336,29 +384,24 @@
             }
         }
 
-        function startPolling() {
-            syncGameState();
-            setInterval(syncGameState, 3000); 
-        }
+        function startPolling() { syncGameState(); setInterval(syncGameState, 3000); }
 
         function openColorPicker() {
             const grid = document.getElementById('colorGrid');
             grid.innerHTML = "";
             const usedColors = gameState.participants.map(p => p.color);
-
             availableColors.forEach(color => {
                 const btn = document.createElement('div');
                 btn.className = 'color-btn';
                 btn.style.backgroundColor = color;
                 btn.style.boxShadow = `0 0 10px ${color}`;
-                if (usedColors.includes(color)) {
-                    btn.classList.add('disabled');
-                } else {
+                if (usedColors.includes(color)) btn.classList.add('disabled');
+                else {
                     btn.onclick = () => {
                         document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
                         btn.classList.add('selected');
                         myColor = color;
-                        document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
+                        document.getElementById('selectedColorName').innerText = "SELECTED";
                         document.getElementById('btnStart').disabled = false;
                     };
                 }
@@ -401,8 +444,7 @@
 
                 list.innerHTML += `
                     <div class="list-item">
-                        <div class="rank-num">${index + 1}</div>
-                        <div class="p-color" style="background:${displayColor}; box-shadow: 0 0 5px ${displayColor};"></div>
+                        <div class="p-color" style="background:${displayColor}; box-shadow: 0 0 8px ${displayColor};"></div>
                         <div class="p-name" style="${isMe ? `color:${displayColor}; font-weight:bold;` : ''}">${p.name}</div>
                         <div class="p-amt">${p.amount.toLocaleString()}</div>
                     </div>`;
@@ -419,12 +461,7 @@
 
         function joinGame() {
             if (isBettingProcessing) return;
-            
-            if (!myColor) {
-                openColorPicker();
-                return;
-            }
-
+            if (!myColor) { openColorPicker(); return; }
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
             if (amount <= 0) return alert("금액 확인 필요");
@@ -445,11 +482,7 @@
                         syncGameState(); 
                     } else { alert(data.msg); btn.innerText = originalText; }
                 })
-                .catch(err => { 
-                    console.error(err); 
-                    alert("통신 오류"); 
-                    btn.innerText = originalText; 
-                })
+                .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
                 .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 2000); });
         }
 
@@ -457,10 +490,14 @@
             const modal = document.getElementById('resultModal');
             document.getElementById('resWinner').innerText = winnerData.name;
             document.getElementById('resAmount').innerText = parseInt(winnerData.prize).toLocaleString() + " UT";
+            
             const msgEl = document.getElementById('resMsg');
-            if (winnerData.name.toLowerCase() === myId.toLowerCase()) {
+            const wName = winnerData.name.toLowerCase();
+            const mName = myId.toLowerCase();
+            
+            if (wName === mName) {
                 msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; msgEl.style.color = "#00ff44";
-            } else if (winnerData.name === "Company") {
+            } else if (wName === "company") {
                 msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; msgEl.style.color = "#ff0055";
             } else {
                 msgEl.innerText = `아쉽네요... 승자는 ${winnerData.name}님 입니다.`; msgEl.style.color = "#aaa";
@@ -489,7 +526,6 @@
                 }
             }, 1000);
         }
-        
         function resetGame() { location.reload(); }
         function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨"; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = "🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 🔥"; marquee.style.color = "#fff"; }, 15000); }, 60000); }
 
@@ -501,7 +537,6 @@
 
             gameState.rotation += 0.0035; 
             ctx.clearRect(0, 0, w, h); ctx.save();
-            
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke(); ctx.shadowBlur = 0;
 
@@ -521,23 +556,15 @@
                         ctx.save(); ctx.translate(tx, ty); ctx.rotate(midAngle + Math.PI); 
                         ctx.textAlign = "right"; ctx.textBaseline = "middle";
                         
-                        // 이름 (그림자 진하게 넣어서 가독성 확보)
-                        ctx.fillStyle = "#fff"; ctx.font = "bold 50px Pretendard"; 
-                        ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
-                        ctx.fillText(p.name, 0, -25); 
-                        
-                        // 금액
-                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 30px monospace"; 
-                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
+                        // [텍스트 가독성 강화]
+                        ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                        ctx.fillStyle = "#fff"; ctx.font = "bold 50px Pretendard"; ctx.fillText(p.name, 0, -25); 
+                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 30px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
                         
                         ctx.restore();
                     }
                     startAngle = endAngle;
                 });
-            } else {
-                // 대기 화면
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-                ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
             }
             
             const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
