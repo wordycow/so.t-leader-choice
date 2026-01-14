@@ -2,29 +2,58 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>THE UNIQUE: GIANT ROULETTE</title>
+    <title>THE UNIQUE: 3D WALL ROULETTE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* ... (CSS 스타일은 기존과 동일하므로 그대로 둡니다) ... */
-        /* 생략: 위쪽 CSS 코드는 그대로 유지하세요 */
-        :root { --bg-color: #050714; --gold: #ffd700; --company-color: #ff0055; --panel-bg: rgba(20, 20, 35, 0.9); --text-gray: #aaa; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; background: linear-gradient(-45deg, #050714, #1a0b2e, #3d0000, #0f0c29); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
+        /* =========================================
+           CSS STYLES (Titanium Theme)
+           ========================================= */
+        :root {
+            --bg-color: #050714;
+            --gold: #ffd700;
+            --company-color: #ff0055;
+            --panel-bg: rgba(20, 20, 35, 0.9);
+            --text-gray: #aaa;
+        }
+
+        body {
+            margin: 0; font-family: 'Pretendard', sans-serif; color: white;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+            background: linear-gradient(-45deg, #050714, #1a0b2e, #2b0000, #0f0c29);
+            background-size: 400% 400%; animation: gradientBG 20s ease infinite;
+        }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.2); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
+
+        /* UI 요소들 */
+        .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.15); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 25s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
         .top-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; pointer-events: none; }
         .hud-box { background: var(--panel-bg); padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; backdrop-filter: blur(10px); pointer-events: auto; }
         .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
         .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
+
         .center-countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 25rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 100px rgba(255, 0, 85, 0.8); display: none; line-height: 1; }
         .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
         @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } }
-        .game-stage { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; }
+
+        /* 게임 스테이지 */
+        .game-stage { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .pointer { position: absolute; top: 50%; left: 40px; transform: translateY(-50%); width: 0; height: 0; z-index: 50; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff; filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8)); }
-        .pointer::after { content: ''; position: absolute; top: -10px; left: -60px; width: 20px; height: 20px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
+
+        .pointer { 
+            position: absolute; top: 50%; left: 30px; transform: translateY(-50%);
+            width: 0; height: 0; z-index: 50; 
+            border-top: 15px solid transparent; border-bottom: 15px solid transparent; 
+            border-left: 50px solid #fff; 
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));
+        }
+        .pointer::after { content: ''; position: absolute; top: -8px; left: -60px; width: 16px; height: 16px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
+
+        /* 리스트 패널 */
         .list-panel { position: absolute; top: 140px; right: 20px; width: 220px; max-height: 300px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); border-radius: 12px; padding: 10px; overflow-y: auto; border: 1px solid rgba(255, 215, 0, 0.3); z-index: 90; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .list-panel::-webkit-scrollbar { width: 4px; }
         .list-panel::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
@@ -33,6 +62,18 @@
         .p-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.8); }
         .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
+
+        /* 컨트롤 패널 */
+        .controls { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px 20px 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
+        .bet-box { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-bet { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s; }
+        .btn-bet:hover { background: #555; }
+        .btn-min { color: #ff9f43; } .btn-max { color: var(--gold); }
+        .input-bet { width: 90px; background: transparent; border: none; color: var(--gold); text-align: center; font-size: 1.4rem; font-weight: bold; }
+        .btn-join { width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: white; border: none; border-radius: 12px; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); cursor: pointer; text-transform: uppercase; }
+        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; background: #333; }
+
+        /* 모달 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); display: none; }
         .modal-overlay.active { display: flex; animation: popIn 0.4s ease; }
         .modal-box { background: linear-gradient(135deg, #1a0b2e, #050714); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 0 60px rgba(255, 215, 0, 0.3); }
@@ -45,15 +86,9 @@
         .color-btn.disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
         .btn-confirm { background: var(--gold); color: #000; border: none; padding: 12px 40px; font-size: 1.2rem; font-weight: 900; border-radius: 50px; cursor: pointer; transition: 0.2s; margin-top: 10px; width: 100%; }
         .btn-confirm:disabled { background: #555; cursor: not-allowed; }
+        .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 10px; }
         #resWinner { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
-        .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
-        .controls { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px 20px 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
-        .bet-box { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); }
-        .btn-bet { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s; }
-        .btn-min { color: #ff9f43; } .btn-max { color: var(--gold); }
-        .input-bet { width: 90px; background: transparent; border: none; color: var(--gold); text-align: center; font-size: 1.4rem; font-weight: bold; }
-        .btn-join { width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem; font-weight: 900; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: white; border: none; border-radius: 12px; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); cursor: pointer; text-transform: uppercase; }
-        .btn-join:disabled { filter: grayscale(1); opacity: 0.5; background: #333; }
+
         @media (max-width: 600px) {
             body { overflow-y: auto; height: auto; padding-bottom: 250px; }
             .game-stage { height: 60vh; margin-top: 80px; }
@@ -72,15 +107,11 @@
         <div class="modal-box">
             <div class="modal-title">WELCOME TO CASINO</div>
             <div class="modal-sub">30분마다 진행되는 승부! 당신의 컬러를 선택하세요.</div>
-            
             <div style="text-align:left; font-size:0.9rem; color:#ddd; margin-bottom:10px;">
                 🎨 <strong>CHOOSE YOUR COLOR</strong>
             </div>
-            
             <div id="colorGrid" class="color-grid"></div>
-            
             <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.9rem;"></div>
-
             <button id="btnStart" class="btn-confirm" onclick="selectColorAndStart()" disabled>GAME START</button>
         </div>
     </div>
@@ -137,7 +168,6 @@
         const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
         const synth = window.speechSynthesis;
 
-        // [기본 20색 팔레트]
         const availableColors = [
             '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff',
             '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
@@ -145,10 +175,7 @@
             '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
         ];
 
-        // --- [핵심] 무한 랜덤 색상 생성기 ---
-        // 20명 넘어가면 자동으로 겹치지 않는 밝은 형광색을 만들어냅니다.
         function generateRandomNeonColor() {
-            // HSL 색상 모델 사용 (채도 100%, 명도 60% 고정 -> 무조건 밝은색 나옴)
             const hue = Math.floor(Math.random() * 360);
             return `hsl(${hue}, 100%, 60%)`;
         }
@@ -159,8 +186,21 @@
             if (!myId) { alert("로그인이 필요합니다."); window.location.href = "../the-unique-main.html"; return; }
             
             await fetchUserData();
-            addParticipant("Company", 100, '#ff0055'); // 본사 초기화
-            initColorPicker();
+            
+            // 색상 복구 로직 (새로고침 대응)
+            const savedColor = localStorage.getItem('rouletteColor_' + myId);
+            if (savedColor) {
+                myColor = savedColor;
+                document.getElementById('ruleModal').style.display = 'none'; // 색상 있으면 모달 패스
+            } else {
+                initColorPicker(); // 색상 없으면 선택창 띄움
+            }
+
+            addParticipant("Company", 100, '#ff0055'); 
+            
+            // 만약 이미 색상이 있으면 바로 참여자 목록에 추가
+            if (myColor) addParticipant(myId, 0, myColor);
+
             requestAnimationFrame(drawGiantWheel);
             startTimer();
             startMarqueeScheduler();
@@ -195,6 +235,9 @@
 
         function selectColorAndStart() {
             if (!myColor) return;
+            // 색상 저장 (30분 라운드 동안 유지하고 싶다면 로직 추가 가능하지만, 일단 브라우저 저장)
+            localStorage.setItem('rouletteColor_' + myId, myColor);
+            
             const existing = gameState.participants.find(p => p.name === myId);
             if (!existing) { addParticipant(myId, 0, myColor); }
             closeModal('ruleModal');
@@ -212,29 +255,19 @@
             } catch (e) { console.error(e); }
         }
 
-        // [수정] 20명 초과 대응 로직 추가
         function addParticipant(name, amount, forceColor = null) {
             const existing = gameState.participants.find(p => p.name === name);
             if (existing) { 
                 existing.amount += amount; 
                 if(forceColor) existing.color = forceColor;
             } else { 
-                // 색상 결정 로직
                 let color;
                 if (forceColor) {
                     color = forceColor;
                 } else {
-                    // 남은 기본 색상 찾기
                     const usedColors = gameState.participants.map(p => p.color);
                     const freeColors = availableColors.filter(c => !usedColors.includes(c));
-                    
-                    if (freeColors.length > 0) {
-                        // 남은 색이 있으면 랜덤 배정
-                        color = freeColors[Math.floor(Math.random() * freeColors.length)];
-                    } else {
-                        // 20명 넘어서 색이 없으면 -> 무한 랜덤 생성
-                        color = generateRandomNeonColor();
-                    }
+                    color = freeColors.length > 0 ? freeColors[Math.floor(Math.random() * freeColors.length)] : generateRandomNeonColor();
                 }
                 gameState.participants.push({ name, amount, color }); 
             }
@@ -290,7 +323,6 @@
                     if (data.result === "success") {
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                        // 내가 고른 색상(myColor)으로 참여
                         addParticipant(myId, amount, myColor);
                         btn.innerText = "배팅 성공!";
                     } else { alert(data.msg); btn.innerText = originalText; }
@@ -355,39 +387,93 @@
         }
         function resetGame() { location.reload(); }
         function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
+        
+        // --- [복구된 + 3D 효과 추가] Giant Wheel 로직 ---
         function drawGiantWheel() {
             const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             const w = canvas.width; const h = canvas.height;
-            const centerX = w * 0.1; const centerY = h / 2;
-            const radiusX = h * 2.5; const radiusY = h * 1.5;
+            
+            // [중요] 2D 구조를 유지하되 높이(radiusY)를 줄여서 타원형으로 만듦 -> 3D 효과
+            // CenterX를 오른쪽 끝(w + 50)으로 보내서 왼쪽 곡선만 보이게 함
+            const radiusX = h * 2.5; 
+            const radiusY = h * 2.2; // Y를 X보다 약간 줄이면 '기울어진' 원근감이 생김
+            const centerX = radiusX + 50; 
+            const centerY = h / 2;
+
             gameState.rotation += 0.0035; 
             ctx.clearRect(0, 0, w, h); ctx.save();
             let startAngle = gameState.rotation;
-            ctx.beginPath(); ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-            ctx.fillStyle = "#050505"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
+            
+            // 룰렛 배경 (타원)
+            ctx.beginPath(); 
+            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "#0a0a0a"; ctx.fill(); 
+            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
+            
+            // 그림자 제거
+            ctx.shadowBlur = 0;
+
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
-                    const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; const endAngle = startAngle + sliceAngle;
-                    ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.ellipse(centerX, centerY, radiusX - 20, radiusY - 20, 0, startAngle, endAngle); ctx.closePath(); 
-                    ctx.fillStyle = p.color; ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+                    const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
+                    const endAngle = startAngle + sliceAngle;
+                    
+                    // 파이 조각 (ellipse 이용)
+                    ctx.beginPath(); 
+                    ctx.moveTo(centerX, centerY);
+                    ctx.ellipse(centerX, centerY, radiusX - 20, radiusY - 20, 0, startAngle, endAngle);
+                    ctx.closePath(); 
+                    
+                    ctx.fillStyle = p.color; 
+                    ctx.fill(); 
+                    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+                    
+                    // [핵심] 3D 텍스트 스케일링
                     if (sliceAngle > 0.05) {
                         const midAngle = startAngle + sliceAngle / 2;
-                        const textRadiusX = radiusX - 350; const textRadiusY = radiusY - 200;
-                        const tx = centerX + Math.cos(midAngle) * textRadiusX; const ty = centerY + Math.sin(midAngle) * textRadiusY;
-                        const depthScale = 0.6 + ((ty / h) * 0.8);
-                        ctx.save(); ctx.translate(tx, ty); ctx.scale(depthScale, depthScale); ctx.rotate(midAngle + Math.PI);
-                        ctx.fillStyle = "#fff"; ctx.font = "bold 60px Pretendard"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                        ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 10; ctx.fillText(p.name, 0, 0); 
-                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 30px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", 0, 50); ctx.restore();
+                        
+                        // 텍스트 위치 계산
+                        const textRadiusX = radiusX - 350; 
+                        const textRadiusY = radiusY - 300; // Y반경을 더 줄임
+                        const tx = centerX + Math.cos(midAngle) * textRadiusX;
+                        const ty = centerY + Math.sin(midAngle) * textRadiusY;
+
+                        // 3D 효과: 화면 중앙(눈높이)에서 멀어질수록 작아지게
+                        const distFromCenter = Math.abs(ty - h/2);
+                        const depthScale = 1.0 - (distFromCenter / h) * 0.4; // 0.6 ~ 1.0 배율
+
+                        ctx.save(); 
+                        ctx.translate(tx, ty); 
+                        ctx.scale(depthScale, depthScale); // 원근감 적용
+                        ctx.rotate(midAngle + Math.PI); 
+                        
+                        // 이름
+                        ctx.fillStyle = "#fff"; 
+                        ctx.font = "bold 50px Pretendard"; 
+                        ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 5; 
+                        ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
+                        ctx.fillText(p.name, 0, -25); 
+                        
+                        // 금액
+                        ctx.fillStyle = "#ffd700"; 
+                        ctx.font = "bold 28px monospace"; 
+                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
+                        
+                        ctx.restore();
                     }
                     startAngle = endAngle;
                 });
             } else {
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center"; ctx.fillText("WAITING FOR PLAYERS...", w/2, h/2);
+                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "center";
+                ctx.fillText("WAITING FOR PLAYERS...", w/2, h/2);
             }
-            const grad = ctx.createRadialGradient(centerX, centerY, radiusX * 0.8, centerX, centerY, radiusX);
-            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.5)"); ctx.fillStyle = grad; ctx.fill();
+            
+            // 중앙 그라데이션 (살짝만)
+            const grad = ctx.createRadialGradient(centerX, centerY, radiusX * 0.9, centerX, centerY, radiusX);
+            grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.4)");
+            ctx.fillStyle = grad; ctx.fill();
+            
             ctx.restore(); requestAnimationFrame(drawGiantWheel);
         }
     </script>
