@@ -188,58 +188,87 @@
   <div class="toast" id="toast">Saved!</div>
 
   <script>
+    // ✅ GAS URL (본인의 스크립트 주소가 맞는지 확인하세요)
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
     const el = (id) => document.getElementById(id);
     const val = (id) => el(id).value;
 
+    // 토스트 메시지 띄우기
     function toast(msg){
       const t = el('toast'); t.innerText = msg; t.classList.add('on');
-      setTimeout(()=>t.classList.remove('on'), 2000);
+      setTimeout(()=>t.classList.remove('on'), 2500);
     }
 
+    // ✅ API 요청 함수 (캐시 방지 코드 추가됨: &_t=...)
     async function api(action, params={}){
-      const url = `${SCRIPT_URL}?action=${action}&` + new URLSearchParams(params);
+      const qs = new URLSearchParams(params).toString();
+      const url = `${SCRIPT_URL}?action=${action}&${qs}&_t=${Date.now()}`; 
+      
       try {
         const res = await fetch(url);
         return await res.json();
-      } catch(e) { console.error(e); return {ok:false}; }
+      } catch(e) { 
+        console.error(e); 
+        toast("❌ 통신 오류 발생");
+        return {ok:false}; 
+      }
     }
 
+    // 데이터 불러오기
     async function loadAll(){
+      const btn = el('btnRefresh');
+      btn.innerText = "LOADING...";
+      
       const res = await api("adminInfo");
-      if(!res.ok) return toast("Load Error");
+      
+      if(!res.ok) {
+        btn.innerText = "REFRESH";
+        return toast("Load Error");
+      }
 
       const d = res.admin;
 
+      // 상단 KPI
       el('kUsers').innerText = d.stats.totalUsers;
       el('kSupply').innerText = Number(d.stats.totalUserUt).toLocaleString();
       el('kCasino').innerText = Number(d.stats.casinoPool).toLocaleString();
       el('kJackpot').innerText = Number(d.stats.jackpotPool).toLocaleString();
-
-      // ✅ 누적 룰렛 수수료 표시
+      
+      // 수수료 표시
       const feeTotal = Number(d.stats.rouletteFeeTotal || 0);
       el('rouletteRevenue').innerText = feeTotal.toLocaleString();
-
-      // (선택) title에 Company 잔액도 표시해두면 편함
       el('rouletteRevenue').title = `Company Balance: ${Number(d.stats.companyBalance||0).toLocaleString()} UT`;
 
       const c = d.config;
 
-      // weights
+      // 확률(Weights) 값 채우기
       el('w_star1').value = c.SLOT_W_STAR1 || 40; el('w_star2').value = c.SLOT_W_STAR2 || 35; el('w_star3').value = c.SLOT_W_STAR3 || 30;
       el('w_pro1').value = c.SLOT_W_PRO1 || 20;   el('w_pro2').value = c.SLOT_W_PRO2 || 18;   el('w_pro3').value = c.SLOT_W_PRO3 || 16;
       el('w_pro4').value = c.SLOT_W_PRO4 || 14;   el('w_pro5').value = c.SLOT_W_PRO5 || 12;
       el('w_pro6').value = c.SLOT_W_PRO6 || 8;    el('w_pro7').value = c.SLOT_W_PRO7 || 6;    el('w_pro8').value = c.SLOT_W_PRO8 || 4;
       el('w_pro9').value = c.SLOT_W_PRO9 || 3;    el('w_pro10').value = c.SLOT_W_PRO10 || 1;
 
+      // 잭팟 설정 값 채우기
       const j = d.jackpot;
-      el('jpMode').value = j.mode; el('jpMonth').value = j.month; el('jpRemaining').value = j.remaining; el('jpTargets').value = j.targetIds;
+      el('jpMode').value = j.mode; 
+      el('jpMonth').value = j.month; 
+      el('jpRemaining').value = j.remaining; 
+      el('jpTargets').value = j.targetIds;
+
+      // 버튼 상태 업데이트
       el('btnArm').innerText = j.armed ? "ARMED (ON)" : "DISARMED (OFF)";
       el('btnArm').style.color = j.armed ? "#ff6bf2" : "#fff";
+      
+      btn.innerText = "REFRESH";
     }
 
+    // 1️⃣ 확률 저장
     async function saveWeights(){
+      const btn = el('btnSaveWeights');
+      btn.innerText = "SAVING...";
+      btn.disabled = true;
+
       const params = {
         SLOT_W_STAR1: val('w_star1'), SLOT_W_STAR2: val('w_star2'), SLOT_W_STAR3: val('w_star3'),
         SLOT_W_PRO1: val('w_pro1'),   SLOT_W_PRO2: val('w_pro2'),   SLOT_W_PRO3: val('w_pro3'),
@@ -247,20 +276,40 @@
         SLOT_W_PRO6: val('w_pro6'),   SLOT_W_PRO7: val('w_pro7'),   SLOT_W_PRO8: val('w_pro8'),
         SLOT_W_PRO9: val('w_pro9'),   SLOT_W_PRO10: val('w_pro10')
       };
+      
       await api("adminSave", params);
       toast("✅ 확률 설정이 저장되었습니다!");
+      
+      btn.innerText = "SAVE WEIGHTS";
+      btn.disabled = false;
       loadAll();
     }
 
+    // 2️⃣ 잭팟 저장 (핵심 수정 부분)
     async function saveJackpot(){
+      const btn = el('btnSaveJp');
+      btn.innerText = "SAVING...";
+      btn.disabled = true;
+
+      // ✅ 입력값 정제: 엔터(\n)를 콤마(,)로 바꾸고, 빈칸 제거
+      let rawTargets = val('jpTargets');
+      let cleanTargets = rawTargets.replace(/[\r\n]+/g, ',').replace(/\s+/g, '');
+
       await api("adminSave", {
-        jMode: val('jpMode'), jMonth: val('jpMonth'),
-        jRemaining: val('jpRemaining'), jTargets: val('jpTargets')
+        jMode: val('jpMode'), 
+        jMonth: val('jpMonth'),
+        jRemaining: val('jpRemaining'), 
+        jTargets: cleanTargets // 정제된 값 전송
       });
+      
       toast("✅ 잭팟 설정이 저장되었습니다!");
+      
+      btn.innerText = "SAVE JACKPOT";
+      btn.disabled = false;
       loadAll();
     }
 
+    // 3️⃣ 잭팟 활성/비활성 토글
     async function toggleArm(){
       const isArmed = el('btnArm').innerText.includes("ON");
       await api("adminSave", { jArmed: isArmed ? 0 : 1 });
@@ -268,6 +317,7 @@
       loadAll();
     }
 
+    // 유저 검색
     async function searchUser(){
       const id = val('q');
       if(!id) return;
@@ -290,14 +340,18 @@
       }
     }
 
+    // 잔액 조정
     async function adjust(id){
       const amt = el('adjAmt').value;
       if(!amt) return;
+      if(!confirm(`${id} 님에게 ${amt} UT를 반영하시겠습니까?`)) return;
+
       await api("addBalance", {id, delta: amt});
       toast("✅ 잔액이 조정되었습니다.");
       searchUser(); loadAll();
     }
 
+    // 이벤트 연결
     el('btnRefresh').onclick = loadAll;
     el('btnSaveWeights').onclick = saveWeights;
     el('btnSaveJp').onclick = saveJackpot;
@@ -305,6 +359,7 @@
     el('btnSearch').onclick = searchUser;
     el('q').addEventListener("keydown", e=>{ if(e.key==="Enter") searchUser(); });
 
+    // 시작 시 로드
     loadAll();
   </script>
 </body>
