@@ -5,7 +5,9 @@
     <title>THE UNIQUE: GIANT ROULETTE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* [기존 스타일 유지] */
+        /* =========================================
+           CSS STYLES (Titanium Theme)
+           ========================================= */
         :root {
             --bg-color: #050714;
             --gold: #ffd700;
@@ -33,31 +35,81 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* 전광판, 상단 HUD 등은 그대로 유지... */
-        .marquee-wrap { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background: rgba(255, 0, 85, 0.2); border-bottom: 1px solid var(--company-color); overflow: hidden; white-space: nowrap; z-index: 150; display: flex; align-items: center; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite; color: #fff; font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--company-color); }
+        /* --- 전광판 (Marquee) --- */
+        .marquee-wrap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 35px;
+            background: rgba(255, 0, 85, 0.2);
+            border-bottom: 1px solid var(--company-color);
+            overflow: hidden; white-space: nowrap; z-index: 150;
+            display: flex; align-items: center;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 20s linear infinite;
+            color: #fff; font-weight: bold; font-size: 0.9rem;
+            text-shadow: 0 0 5px var(--company-color);
+        }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        .top-hud { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; pointer-events: none; }
-        .hud-box { background: var(--panel-bg); padding: 10px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; backdrop-filter: blur(10px); pointer-events: auto; }
+        /* --- 상단 정보창 (HUD) --- */
+        .top-hud {
+            position: absolute; top: 50px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 100; pointer-events: none;
+        }
+        .hud-box {
+            background: var(--panel-bg);
+            padding: 10px 20px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center; backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
         .hud-label { font-size: 0.7rem; color: var(--text-gray); letter-spacing: 1px; margin-bottom: 3px; }
         .hud-value { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
         .hud-timer { font-size: 1.4rem; font-weight: bold; color: #ff4757; font-family: monospace; }
 
-        .center-countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; font-weight: 900; color: rgba(255, 0, 85, 0.1); z-index: 80; pointer-events: none; text-shadow: 0 0 50px rgba(255, 0, 85, 0.8); display: none; }
+        /* --- 중앙 카운트다운 --- */
+        .center-countdown {
+            position: absolute; top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15rem; font-weight: 900;
+            color: rgba(255, 0, 85, 0.1);
+            z-index: 80; pointer-events: none;
+            text-shadow: 0 0 50px rgba(255, 0, 85, 0.8);
+            display: none;
+        }
         .center-countdown.active { display: block; animation: pulseCount 1s infinite; }
-        @keyframes pulseCount { 0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; } 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } }
+        @keyframes pulseCount {
+            0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff0055; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
 
-        .game-stage { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; }
+        /* --- 메인 게임 영역 --- */
+        .game-stage {
+            position: relative; width: 100%; height: 100%;
+            overflow: hidden; display: flex; align-items: center;
+        }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .pointer { position: absolute; top: 50%; left: 40px; transform: translateY(-50%); width: 0; height: 0; z-index: 50; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff; filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8)); }
-        .pointer::after { content: ''; position: absolute; top: -10px; left: -60px; width: 20px; height: 20px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
+        .pointer {
+            position: absolute; top: 50%; left: 40px; transform: translateY(-50%);
+            width: 0; height: 0; z-index: 50;
+            border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 50px solid #fff;
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.8));
+        }
+        .pointer::after {
+            content: ''; position: absolute; top: -10px; left: -60px;
+            width: 20px; height: 20px; background: var(--company-color);
+            border-radius: 50%; box-shadow: 0 0 15px var(--company-color);
+        }
 
-        /* [핵심 수정] 참여자 리스트 위치 변경 (하단 중앙) */
+        /* --- 참여자 리스트 (하단 중앙) --- */
         .list-panel {
             position: absolute;
-            top: auto; /* 상단 기준 아님 */
+            top: auto;
             bottom: 170px; /* 컨트롤 패널 바로 위로 배치 */
             left: 50%; /* 가로 중앙 */
             transform: translateX(-50%); /* 정확히 중앙 정렬 */
@@ -111,7 +163,6 @@
         @media (max-width: 600px) {
             .hud-value { font-size: 1.2rem; }
             .pointer { left: 15px; }
-            /* 모바일에서도 하단 중앙 유지 (너비만 조정) */
             .list-panel { width: 85%; max-width: 320px; }
             .list-header { font-size: 0.8rem; }
             .list-item { font-size: 0.85rem; padding: 6px 0; }
@@ -129,7 +180,7 @@
     <div id="ruleModal" class="modal-overlay active">
         <div class="modal-box">
             <div class="modal-title">GAME RULES</div>
-            <div class="modal-text">1. <strong>30분</strong>마다 라운드가 진행됩니다.<br>2. 배팅 금액만큼 룰렛의 <strong>내 지분(영역)</strong>이 커집니다.<br>3. 추첨 시 내 영역에 멈추면 <strong>승리!</strong><br>4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>(본사 수수료 10% 제외)</div>
+            <div class="modal-text">1. <strong>30분</strong>마다 라운드가 진행됩니다.<br>(매시 00분, 30분 마감)<br>2. 배팅 금액만큼 룰렛의 <strong>내 지분(영역)</strong>이 커집니다.<br>3. 추첨 시 내 영역에 멈추면 <strong>승리!</strong><br>4. 승자는 총 모인 금액의 <strong>90%</strong>를 독식합니다.<br>(본사 수수료 10% 제외)</div>
             <button class="btn-close" onclick="closeModal('ruleModal')">I UNDERSTAND</button>
         </div>
     </div>
@@ -166,9 +217,9 @@
     </div>
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-        const ROUND_TIME = 30 * 60; 
+        
         let myId = ""; let myWallet = 0;
-        let gameState = { participants: [], totalPool: 0, timeLeft: ROUND_TIME, rotation: 0, isRunning: true };
+        let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0, isRunning: true };
         let isBettingProcessing = false;
         let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
         const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
@@ -228,7 +279,10 @@
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
             if (amount <= 0) return alert("배팅 금액을 확인하세요.");
+            
+            // [수정] 60초 미만 남았을 때 배팅 차단
             if (gameState.timeLeft <= 60) return alert("마감 1분 전입니다. 참여 불가!");
+            
             isBettingProcessing = true;
             const btn = document.getElementById('joinBtn');
             const originalText = btn.innerText;
@@ -249,22 +303,61 @@
                 .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000); });
         }
         function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
+        
+        // [핵심 수정] 현실 시간 기반 타이머 (30분 단위)
         function startTimer() {
             const timerInterval = setInterval(() => {
-                if(gameState.timeLeft > 0) gameState.timeLeft--;
-                const min = Math.floor(gameState.timeLeft / 60);
-                const sec = gameState.timeLeft % 60;
-                document.getElementById('timerDisplay').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+                // 1. 현재 시간 구하기
+                const now = new Date();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+                
+                // 2. 남은 시간 계산 (30분 단위)
+                // 현재 분이 0~29분이면 -> 30분까지 남은 시간
+                // 현재 분이 30~59분이면 -> 60분(다음 00분)까지 남은 시간
+                const targetMinute = minutes < 30 ? 30 : 60;
+                const remainMinutes = targetMinute - minutes - 1; // 1을 빼는 이유는 초 단위 계산 때문
+                const remainSeconds = 60 - seconds;
+                
+                // 전체 남은 초 (gameState.timeLeft 갱신)
+                const totalSecondsLeft = (remainMinutes * 60) + remainSeconds;
+                gameState.timeLeft = totalSecondsLeft;
+
+                // 3. 화면 표시 (MM:SS)
+                // 만약 60분 타겟인데 계산상 60초(00초)가 되면 딱 00:00이 됨
+                const displayMin = Math.floor(gameState.timeLeft / 60);
+                const displaySec = gameState.timeLeft % 60;
+                document.getElementById('timerDisplay').innerText = `${displayMin}:${displaySec < 10 ? '0'+displaySec : displaySec}`;
+
+                // --- 이벤트 로직 (기존과 동일) ---
                 const countEl = document.getElementById('centerCount');
                 if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
                     countEl.innerText = gameState.timeLeft; countEl.classList.add('active');
                     const btn = document.getElementById('joinBtn');
                     if(!btn.disabled) { btn.disabled = true; btn.innerText = "마감됨 (CLOSED)"; document.getElementById('timerDisplay').style.color = "red"; }
+                } else {
+                    // 시간이 넉넉하면 버튼 다시 활성화 (새 라운드 시작 시)
+                    const btn = document.getElementById('joinBtn');
+                    if(btn.disabled && !isBettingProcessing && gameState.timeLeft > 60) {
+                        btn.disabled = false; btn.innerText = "참여하기 (BET)"; document.getElementById('timerDisplay').style.color = "#ff4757";
+                        countEl.classList.remove('active');
+                    }
                 }
+
                 if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) { const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"]; speak(words[10 - gameState.timeLeft]); }
-                if (gameState.timeLeft === 0) { clearInterval(timerInterval); countEl.classList.remove('active'); speak("Time's up!"); finishRound(); }
+                
+                // [게임 종료] 정확히 0초가 되었을 때
+                if (gameState.timeLeft <= 0 || (minutes % 30 === 0 && seconds === 0)) {
+                    // 중복 실행 방지: 이미 모달이 떠있으면 실행 안 함
+                    if (!document.getElementById('resultModal').classList.contains('active')) {
+                        countEl.classList.remove('active'); 
+                        speak("Time's up!"); 
+                        finishRound();
+                    }
+                }
             }, 1000);
         }
+
         function finishRound() {
             let rand = Math.random() * gameState.totalPool;
             let runningTotal = 0; let winner = null;
