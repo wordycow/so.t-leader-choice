@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>THE UNIQUE: 2D GIANT ROULETTE</title>
+    <title>THE UNIQUE: LIVE ROULETTE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         /* =========================================
-           CSS STYLES (Titanium Theme) - 변경 없음
+           CSS STYLES (Titanium Theme)
            ========================================= */
         :root {
             --bg-color: #050714;
@@ -106,8 +106,8 @@
 
     <div id="ruleModal" class="modal-overlay active">
         <div class="modal-box">
-            <div class="modal-title">WELCOME TO CASINO</div>
-            <div class="modal-sub">30분마다 진행되는 승부! 당신의 컬러를 선택하세요.</div>
+            <div class="modal-title">WELCOME</div>
+            <div class="modal-sub">30분마다 진행되는 실시간 승부!<br>당신의 컬러를 선택하세요.</div>
             <div style="text-align:left; font-size:0.9rem; color:#ddd; margin-bottom:10px;">
                 🎨 <strong>CHOOSE YOUR COLOR</strong>
             </div>
@@ -128,21 +128,18 @@
         </div>
     </div>
 
-    <div class="marquee-wrap"><div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥</div></div>
+    <div class="marquee-wrap"><div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 실시간 접속 유저들과 승부하세요! 🔥</div></div>
     
     <div class="top-hud">
         <div class="hud-box"><div class="hud-label">TOTAL EQUITY</div><div class="hud-value" id="poolDisplay">0 UT</div></div>
         <div class="hud-box"><div class="hud-label">TIME LEFT</div><div class="hud-timer" id="timerDisplay">30:00</div></div>
     </div>
     
-    <div class="game-stage">
-        <div class="pointer"></div>
-        <canvas id="canvas"></canvas>
-    </div>
+    <div class="game-stage"><div class="pointer"></div><canvas id="canvas"></canvas></div>
     
     <div class="list-panel">
-        <div class="list-header">실시간 지분 현황 (Live Rank)</div>
-        <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div></div>
+        <div class="list-header">실시간 지분 현황 (Live)</div>
+        <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">로딩중...</div></div>
     </div>
     
     <div class="controls">
@@ -160,9 +157,7 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
         
-        let myId = ""; let myWallet = 0;
-        let myColor = null; 
-        
+        let myId = ""; let myWallet = 0; let myColor = null;
         let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0 };
         let isBettingProcessing = false;
         let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
@@ -176,11 +171,6 @@
             '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
         ];
 
-        function generateRandomNeonColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsl(${hue}, 100%, 60%)`;
-        }
-
         window.onload = async function() {
             const params = new URLSearchParams(window.location.search);
             myId = params.get('id') || localStorage.getItem('user_id') || localStorage.getItem('loginId');
@@ -188,6 +178,7 @@
             
             await fetchUserData();
             
+            // 저장된 색상 불러오기 또는 선택창 띄우기
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
             if (savedColor) {
                 myColor = savedColor;
@@ -196,47 +187,54 @@
                 initColorPicker(); 
             }
 
-            addParticipant("Company", 100, '#ff0055'); 
-            if (myColor) addParticipant(myId, 0, myColor);
-
             requestAnimationFrame(drawGiantWheel);
             startTimer();
             startMarqueeScheduler();
+            startPolling(); // [핵심] 서버 동기화 시작 (3초 주기)
         };
+
+        // --- [NEW] 실시간 서버 동기화 함수 ---
+        async function syncGameState() {
+            try {
+                const res = await fetch(`${GAS_URL}?action=getRouletteState`);
+                const data = await res.json();
+                if (data.result === "success") {
+                    gameState.participants = data.participants;
+                    updateGameState();
+                }
+            } catch (e) { console.error("Sync Error:", e); }
+        }
+
+        function startPolling() {
+            syncGameState(); // 즉시 1회 실행
+            setInterval(syncGameState, 3000); // 이후 3초마다 반복 실행
+        }
 
         function initColorPicker() {
             const grid = document.getElementById('colorGrid');
             grid.innerHTML = "";
-            const usedColors = gameState.participants.map(p => p.color);
-
             availableColors.forEach(color => {
                 const btn = document.createElement('div');
                 btn.className = 'color-btn';
                 btn.style.backgroundColor = color;
                 btn.style.boxShadow = `0 0 10px ${color}`;
-                if (usedColors.includes(color)) {
-                    btn.classList.add('disabled');
-                } else {
-                    btn.onclick = () => pickColor(btn, color);
-                }
+                btn.onclick = () => {
+                    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    myColor = color;
+                    document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
+                    document.getElementById('btnStart').disabled = false;
+                };
                 grid.appendChild(btn);
             });
-        }
-
-        function pickColor(btn, color) {
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            myColor = color;
-            document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
-            document.getElementById('btnStart').disabled = false;
         }
 
         function selectColorAndStart() {
             if (!myColor) return;
             localStorage.setItem('rouletteColor_' + myId, myColor);
-            const existing = gameState.participants.find(p => p.name === myId);
-            if (!existing) { addParticipant(myId, 0, myColor); }
             closeModal('ruleModal');
+            // 색상을 골랐으니 즉시 서버와 동기화 시도
+            syncGameState();
         }
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -251,42 +249,24 @@
             } catch (e) { console.error(e); }
         }
 
-        function addParticipant(name, amount, forceColor = null) {
-            const existing = gameState.participants.find(p => p.name === name);
-            if (existing) { 
-                existing.amount += amount; 
-                if(forceColor) existing.color = forceColor;
-            } else { 
-                let color;
-                if (forceColor) {
-                    color = forceColor;
-                } else {
-                    const usedColors = gameState.participants.map(p => p.color);
-                    const freeColors = availableColors.filter(c => !usedColors.includes(c));
-                    color = freeColors.length > 0 ? freeColors[Math.floor(Math.random() * freeColors.length)] : generateRandomNeonColor();
-                }
-                gameState.participants.push({ name, amount, color }); 
-            }
-            updateGameState();
-        }
-
         function updateGameState() {
             gameState.totalPool = gameState.participants.reduce((acc, p) => acc + p.amount, 0);
             document.getElementById('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
             gameState.participants.sort((a, b) => b.amount - a.amount);
-            updateListUI();
-        }
-
-        function updateListUI() {
+            
             const list = document.getElementById('participantList');
             list.innerHTML = "";
             gameState.participants.forEach((p, index) => {
-                const rankClass = index < 3 ? `rank-${index+1}` : "";
+                const isMe = p.name.toLowerCase() === myId.toLowerCase();
+                // 내가 선택한 색상이 있다면 내 건 내 색상으로, 아니면 서버 색상
+                const displayColor = isMe && myColor ? myColor : (p.color || '#999');
+                p.color = displayColor; // 그리기용으로 저장
+
                 list.innerHTML += `
                     <div class="list-item">
-                        <div class="rank-num ${rankClass}">${index + 1}</div>
-                        <div class="p-color" style="background:${p.color}; box-shadow: 0 0 5px ${p.color};"></div>
-                        <div class="p-name" style="${p.name === myId ? `color:${myColor}; font-weight:bold;`:''}">${p.name}</div>
+                        <div class="rank-num">${index + 1}</div>
+                        <div class="p-color" style="background:${displayColor}; box-shadow: 0 0 5px ${displayColor};"></div>
+                        <div class="p-name" style="${isMe ? `color:${displayColor}; font-weight:bold;` : ''}">${p.name}</div>
                         <div class="p-amt">${p.amount.toLocaleString()}</div>
                     </div>`;
             });
@@ -313,18 +293,20 @@
             const originalText = btn.innerText;
             btn.disabled = true; btn.innerText = "처리중...";
             
-            fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}`)
+            // 배팅 시 색상 정보도 같이 전송
+            fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}&color=${encodeURIComponent(myColor)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.result === "success") {
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
-                        addParticipant(myId, amount, myColor);
                         btn.innerText = "배팅 성공!";
+                        // 배팅 후 즉시 서버 데이터 갱신
+                        syncGameState();
                     } else { alert(data.msg); btn.innerText = originalText; }
                 })
                 .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
-                .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 1000); });
+                .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 2000); });
         }
 
         function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
@@ -384,90 +366,47 @@
         function resetGame() { location.reload(); }
         function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
         
-        // --- [수정된 부분] 2D 룰렛 + 이름 위치 변경 ---
         function drawGiantWheel() {
-            const canvas = document.getElementById('canvas'); 
-            const ctx = canvas.getContext('2d');
+            const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             const w = canvas.width; const h = canvas.height;
-            
-            // 1. 완전한 2D 원 (타원 아님)
-            const radius = h * 2.5; 
-            const centerX = radius + 50; // 중심을 화면 오른쪽 밖으로
-            const centerY = h / 2;
+            const radius = h * 2.5; const centerX = radius + 50; const centerY = h / 2;
 
             gameState.rotation += 0.0035; 
             ctx.clearRect(0, 0, w, h); ctx.save();
-            
             let startAngle = gameState.rotation;
             
-            // 룰렛 배경 (정원)
-            ctx.beginPath(); 
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0a0a0a"; ctx.fill(); 
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
-            ctx.shadowBlur = 0; // 3D 그림자 제거
+            ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
+            ctx.shadowBlur = 0;
 
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
                     const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
                     const endAngle = startAngle + sliceAngle;
-                    
-                    // 조각 그리기 (arc 사용)
-                    ctx.beginPath(); 
-                    ctx.moveTo(centerX, centerY);
-                    ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle);
-                    ctx.closePath(); 
-                    
-                    ctx.fillStyle = p.color; 
-                    ctx.fill(); 
-                    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
-                    
-                    // [핵심 수정] 텍스트 위치를 바깥쪽 가장자리(화살표 쪽)로 이동
+                    ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); ctx.closePath(); 
+                    ctx.fillStyle = p.color; ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
                     if (sliceAngle > 0.05) {
                         const midAngle = startAngle + sliceAngle / 2;
-                        
-                        // 텍스트 위치 계산: 중심에서 반지름만큼 떨어진 가장자리 좌표
-                        const textRadius = radius - 120; // 가장자리에서 살짝 안쪽
+                        const textRadius = radius - 120;
                         const tx = centerX + Math.cos(midAngle) * textRadius;
                         const ty = centerY + Math.sin(midAngle) * textRadius;
-
-                        ctx.save();
-                        ctx.translate(tx, ty);
-                        // 텍스트 회전: 조각의 각도에 맞춤
-                        ctx.rotate(midAngle + Math.PI); 
-                        
-                        // 텍스트 정렬: 오른쪽 정렬 (가장자리에서 안쪽으로 글씨가 써지도록)
-                        ctx.textAlign = "right"; 
-                        ctx.textBaseline = "middle";
-
-                        // 이름
-                        ctx.fillStyle = "#fff"; 
-                        ctx.font = "bold 40px Pretendard"; 
-                        ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; 
-                        ctx.fillText(p.name, 0, -20); // 기준점에서 약간 위
-                        
-                        // 금액
-                        ctx.fillStyle = "#ffd700"; 
-                        ctx.font = "bold 24px monospace"; 
-                        ctx.fillText(p.amount.toLocaleString() + " UT", 0, 20); // 기준점에서 약간 아래
-                        
+                        ctx.save(); ctx.translate(tx, ty); ctx.rotate(midAngle + Math.PI); 
+                        ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#fff"; ctx.font = "bold 40px Pretendard"; ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; ctx.fillText(p.name, 0, -20); 
+                        ctx.fillStyle = "#ffd700"; ctx.font = "bold 24px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", 0, 20); 
                         ctx.restore();
                     }
                     startAngle = endAngle;
                 });
             } else {
-                // 대기 화면
-                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; 
-                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                ctx.font = "bold 50px Pretendard"; ctx.fillStyle = "#333"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
                 ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
             }
             
-            // 중앙 그라데이션 (약하게)
             const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
             grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.3)");
             ctx.fillStyle = grad; ctx.fill();
-            
             ctx.restore(); requestAnimationFrame(drawGiantWheel);
         }
     </script>
