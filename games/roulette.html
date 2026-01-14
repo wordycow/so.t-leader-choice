@@ -55,14 +55,10 @@
         }
         .pointer::after { content: ''; position: absolute; top: -8px; left: -60px; width: 16px; height: 16px; background: var(--company-color); border-radius: 50%; box-shadow: 0 0 15px var(--company-color); }
 
-        /* --- [LAYOUT CONTAINER] --- */
-        .bottom-container { z-index: 100; }
+        /* --- [LAYOUT WRAPPER] --- */
+        .ui-wrapper { z-index: 100; }
 
-        .controls { 
-            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 20px; 
-        }
-
-        /* 쥬크박스 */
+        /* --- [JUKEBOX STYLE] --- */
         .jukebox-container {
             width: 100%; max-width: 400px;
             display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -78,7 +74,10 @@
         .jukebox-container.playing .jukebox-icon { animation: beat 0.8s infinite alternate; }
         @keyframes beat { 0% { transform: scale(1); } 100% { transform: scale(1.2); } }
 
-        /* 배팅 박스 (버튼 연결) */
+        /* --- [CONTROLS STYLE] --- */
+        .controls { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 20px; 
+        }
         .bet-box { 
             display: flex; gap: 0; width: 100%; max-width: 400px;
             align-items: stretch; justify-content: center;
@@ -114,7 +113,6 @@
             display: flex; flex-direction: column;
         }
         .list-header { text-align: center; color: #ddd; font-weight:bold; font-size: 0.8rem; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; flex-shrink: 0; }
-        
         .list-content { overflow-y: auto; flex-grow: 1; }
         .list-content::-webkit-scrollbar { width: 4px; }
         .list-content::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
@@ -124,53 +122,38 @@
         .p-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight:500; }
         .p-amt { font-weight: bold; color: var(--gold); }
 
-        /* =========================================
-           [LAYOUT - PC VERSION]
-           리스트: 우측 상단 고정
-           컨트롤: 하단 중앙 고정
-           ========================================= */
+        /* [PC VERSION] */
         @media (min-width: 769px) {
             .list-panel { 
-                position: absolute; top: 140px; right: 20px; 
+                position: absolute; top: 140px; right: 20px; /* Time Left 아래 고정 */
                 width: 250px; max-height: 400px;
             }
-            .bottom-container {
+            .controls {
                 position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
                 padding-bottom: 20px;
                 background: linear-gradient(to top, #000 80%, transparent);
                 border-radius: 20px 20px 0 0;
-                width: auto; max-width: 500px;
+                width: auto;
             }
+            .ui-wrapper { position: static; }
         }
 
-        /* =========================================
-           [LAYOUT - MOBILE VERSION]
-           컨테이너 하단 고정, 리스트는 버튼 아래 붙음 (스크롤)
-           ========================================= */
+        /* [MOBILE VERSION] */
         @media (max-width: 768px) {
             .pointer { left: 10px; }
-            
-            .bottom-container {
+            .ui-wrapper {
                 position: absolute; bottom: 0; left: 0; width: 100%;
-                max-height: 70vh; /* 화면의 70% 차지 */
+                max-height: 70vh; 
                 display: flex; flex-direction: column; align-items: center;
                 background: linear-gradient(to top, #050714 95%, transparent);
                 padding-bottom: 20px;
-                overflow-y: auto; /* 전체 스크롤 */
-                -webkit-overflow-scrolling: touch;
+                overflow-y: auto; /* 전체 스크롤 허용 */
             }
-
-            .controls { 
-                width: 100%; flex-shrink: 0; 
-                padding-bottom: 0;
-            }
-
+            .controls { width: 100%; order: 1; background: transparent; padding-bottom: 0; flex-shrink: 0; }
             .list-panel {
-                width: 90%; 
-                margin-top: 15px; 
-                position: relative; 
-                flex-shrink: 0; 
-                max-height: 250px; /* 리스트 너무 길어지면 내부 스크롤 */
+                width: 90%; margin-top: 15px; order: 2;
+                max-height: 250px; position: relative; top: auto; right: auto; left: auto;
+                flex-shrink: 0;
             }
         }
 
@@ -190,7 +173,6 @@
         .btn-close { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 10px; }
         #resWinner { font-size: 2.5rem; color: #fff; margin: 10px 0; text-shadow: 0 0 20px var(--company-color); }
         
-        /* 유튜브 플레이어 (숨김) */
         #player { position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; }
     </style>
 </head>
@@ -232,7 +214,7 @@
         <canvas id="canvas"></canvas>
     </div>
     
-    <div class="bottom-container">
+    <div class="ui-wrapper">
         <div class="controls">
             <div id="jukebox" class="jukebox-container" onclick="toggleAudio()">
                 <div class="jukebox-icon">🎵</div>
@@ -262,12 +244,11 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
-        // [중요] 배포 URL 확인
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; 
         
         let myId = ""; let myWallet = 0; let myColor = null;
         
-        // [핵심] Company 기본값 (빨강) - 초기화 시 무조건 설정
+        // [Company 기본값]
         let gameState = { 
             participants: [{ name: "Company", amount: 100, color: "#ff0055" }], 
             totalPool: 100, 
@@ -313,7 +294,7 @@
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
             if (savedColor) myColor = savedColor;
 
-            updateGameState(); // 초기 Company 그리기
+            updateGameState();
             requestAnimationFrame(drawGiantWheel);
             startTimer();
             startMarqueeScheduler();
@@ -328,7 +309,6 @@
                     if (data.participants && data.participants.length > 0) {
                         gameState.participants = data.participants;
                     } else {
-                        // 데이터가 비었어도 Company 기본값 유지 (빨강)
                         gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
                     }
                     updateGameState();
@@ -339,7 +319,6 @@
                 }
             } catch (e) { 
                 console.error("Sync Error:", e);
-                // 에러시에도 Company 유지
                 if(gameState.participants.length === 0) {
                     gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
                     updateGameState();
@@ -442,7 +421,7 @@
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
                         btn.innerText = "배팅 성공!";
-                        syncGameState(); // 즉시 동기화
+                        syncGameState(); 
                     } else { alert(data.msg); btn.innerText = originalText; }
                 })
                 .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
@@ -499,6 +478,9 @@
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke(); ctx.shadowBlur = 0;
 
+            // [FIXED] startAngle 선언 (이게 없어서 멈췄던 것)
+            let startAngle = gameState.rotation; 
+
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
                     const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
@@ -515,14 +497,14 @@
                         ctx.save(); ctx.translate(tx, ty); ctx.rotate(midAngle + Math.PI); 
                         ctx.textAlign = "right"; ctx.textBaseline = "middle";
                         
-                        // [텍스트 가독성 강화]
                         ctx.shadowColor = "rgba(0,0,0,1)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
                         ctx.fillStyle = "#fff"; ctx.font = "bold 50px Pretendard"; ctx.fillText(p.name, 0, -25); 
                         ctx.fillStyle = "#ffd700"; ctx.font = "bold 30px monospace"; ctx.fillText(p.amount.toLocaleString() + " UT", 0, 25); 
                         
                         ctx.restore();
                     }
-                    startAngle = endAngle;
+                    // [FIXED] 다음 슬라이스 각도 업데이트
+                    startAngle = endAngle; 
                 });
             }
             
