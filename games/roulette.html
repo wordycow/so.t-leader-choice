@@ -435,7 +435,7 @@
     btn.disabled = true;
     btn.innerText = "처리중...";
 
-    const url = `${GAS_URL}?action=rouletteResult&type=bet&id=${encodeURIComponent(myId)}&amount=${encodeURIComponent(amountGross)}`;
+    const url = `${GAS_URL}?action=rouletteResult&type=bet&id=${encodeURIComponent(myId)}&amount=${encodeURIComponent(amountGross)}&color=${encodeURIComponent(myColor || "")}`;
 
     fetch(url)
       .then(res => res.json())
@@ -445,9 +445,9 @@
           el('myBalance').innerText = myWallet.toLocaleString() + " UT";
 
           // 서버가 potAmount(수수료 제외 판돈)를 주면 그걸로 표시
-          const potAmount = Number(data.potAmount != null ? data.potAmount : amountGross);
+         const gross = Number(data.gross != null ? data.gross : amountGross);
+pendingBet = { roundKey: (data.roundKey || currentRoundKey), potAmount: gross, ts: Date.now() };
 
-          pendingBet = { roundKey: currentRoundKey, potAmount, ts: Date.now() };
 
           btn.innerText = "배팅 성공!";
           await fetchGameState(); // 즉시 동기화
