@@ -104,16 +104,13 @@
 <body>
     <div id="centerCount" class="center-countdown">60</div>
 
-    <div id="ruleModal" class="modal-overlay active">
+    <div id="ruleModal" class="modal-overlay">
         <div class="modal-box">
-            <div class="modal-title">WELCOME</div>
-            <div class="modal-sub">30분마다 진행되는 실시간 승부!<br>당신의 컬러를 선택하세요.</div>
-            <div style="text-align:left; font-size:0.9rem; color:#ddd; margin-bottom:10px;">
-                🎨 <strong>CHOOSE YOUR COLOR</strong>
-            </div>
+            <div class="modal-title">PICK YOUR COLOR</div>
+            <div class="modal-sub">이 색상으로 게임판에 표시됩니다.<br>(이미 선택된 색상은 사용할 수 없습니다)</div>
             <div id="colorGrid" class="color-grid"></div>
             <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.9rem;"></div>
-            <button id="btnStart" class="btn-confirm" onclick="selectColorAndStart()" disabled>GAME START</button>
+            <button id="btnStart" class="btn-confirm" onclick="confirmColorAndBet()" disabled>CONFIRM & BET</button>
         </div>
     </div>
 
@@ -121,9 +118,9 @@
         <div class="modal-box">
             <div style="font-size:2rem; font-weight:900; color:#ffd700;">ROUND FINISHED</div>
             <div style="font-size:0.9rem; color:#aaa; margin-top:10px;">WINNER</div>
-            <div id="resWinner">USER</div>
-            <div id="resAmount">1,000 UT</div>
-            <div id="resMsg" style="font-size:1.2rem; margin-top:15px; font-weight:bold;">축하합니다!</div>
+            <div id="resWinner">Checking...</div>
+            <div id="resAmount">Calculating...</div>
+            <div id="resMsg" style="font-size:1.2rem; margin-top:15px; font-weight:bold;">결과를 불러오는 중입니다.</div>
             <button class="btn-close" onclick="closeModal('resultModal'); resetGame();">NEXT ROUND</button>
         </div>
     </div>
@@ -155,20 +152,17 @@
     </div>
     
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
+        // ▼▼▼ 여기에 반드시 최신 배포 URL을 넣어주세요! ▼▼▼
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; 
         
         let myId = ""; let myWallet = 0; let myColor = null;
         let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0 };
         let isBettingProcessing = false;
-        let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
-        const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
-        const synth = window.speechSynthesis;
+        let lastDisplayedWinner = ""; 
 
         const availableColors = [
-            '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff',
-            '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
-            '#cc0000', '#006600', '#000099', '#663300', '#666666',
-            '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
+            '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff', '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
+            '#cc0000', '#006600', '#000099', '#663300', '#666666', '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
         ];
 
         window.onload = async function() {
@@ -178,66 +172,92 @@
             
             await fetchUserData();
             
-            // 저장된 색상 불러오기 또는 선택창 띄우기
+            // 저장된 색상이 있으면 불러오되, 모달은 띄우지 않음 (입장 시에는 그냥 구경)
             const savedColor = localStorage.getItem('rouletteColor_' + myId);
-            if (savedColor) {
-                myColor = savedColor;
-                document.getElementById('ruleModal').style.display = 'none'; 
-            } else {
-                initColorPicker(); 
-            }
+            if (savedColor) myColor = savedColor;
 
             requestAnimationFrame(drawGiantWheel);
             startTimer();
             startMarqueeScheduler();
-            startPolling(); // [핵심] 서버 동기화 시작 (3초 주기)
+            startPolling(); // 서버 동기화 시작
         };
 
-        // --- [NEW] 실시간 서버 동기화 함수 ---
+        // --- 실시간 동기화 ---
         async function syncGameState() {
             try {
                 const res = await fetch(`${GAS_URL}?action=getRouletteState`);
                 const data = await res.json();
+                
                 if (data.result === "success") {
                     gameState.participants = data.participants;
                     updateGameState();
+                    if (data.lastWinner && data.lastWinner.round !== lastDisplayedWinner) {
+                        lastDisplayedWinner = data.lastWinner.round; 
+                        showWinnerModal(data.lastWinner);
+                    }
+                } else {
+                     // 데이터가 없으면 기본값
+                    if(gameState.participants.length === 0) {
+                        gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
+                        updateGameState();
+                    }
                 }
-            } catch (e) { console.error("Sync Error:", e); }
+            } catch (e) { 
+                console.error("Sync Error:", e);
+                if(gameState.participants.length === 0) {
+                    gameState.participants = [{ name: "Company", amount: 100, color: "#ff0055" }];
+                    updateGameState();
+                }
+            }
         }
 
         function startPolling() {
-            syncGameState(); // 즉시 1회 실행
-            setInterval(syncGameState, 3000); // 이후 3초마다 반복 실행
+            syncGameState();
+            setInterval(syncGameState, 3000); 
         }
 
-        function initColorPicker() {
+        // --- 색상 선택 로직 (참여하기 누를 때만 실행) ---
+        function openColorPicker() {
             const grid = document.getElementById('colorGrid');
             grid.innerHTML = "";
+            
+            // 현재 참여자들의 색상 확인 (중복 방지)
+            const usedColors = gameState.participants.map(p => p.color);
+
             availableColors.forEach(color => {
                 const btn = document.createElement('div');
                 btn.className = 'color-btn';
                 btn.style.backgroundColor = color;
                 btn.style.boxShadow = `0 0 10px ${color}`;
-                btn.onclick = () => {
-                    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    myColor = color;
-                    document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
-                    document.getElementById('btnStart').disabled = false;
-                };
+                
+                // 이미 쓰이고 있는 색상은 비활성화
+                if (usedColors.includes(color)) {
+                    btn.classList.add('disabled');
+                } else {
+                    btn.onclick = () => {
+                        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        myColor = color;
+                        document.getElementById('selectedColorName').innerText = "SELECTED: " + color;
+                        document.getElementById('btnStart').disabled = false;
+                    };
+                }
                 grid.appendChild(btn);
             });
+            
+            document.getElementById('ruleModal').classList.add('active'); // 모달 띄우기
         }
 
-        function selectColorAndStart() {
+        // 모달에서 'CONFIRM & BET' 눌렀을 때 실행
+        function confirmColorAndBet() {
             if (!myColor) return;
             localStorage.setItem('rouletteColor_' + myId, myColor);
             closeModal('ruleModal');
-            // 색상을 골랐으니 즉시 서버와 동기화 시도
-            syncGameState();
+            joinGame(); // 색상 정했으니 다시 배팅 시도
         }
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        
         async function fetchUserData() {
             try {
                 const res = await fetch(`${GAS_URL}?action=getUserInfo&id=${myId}`);
@@ -258,9 +278,8 @@
             list.innerHTML = "";
             gameState.participants.forEach((p, index) => {
                 const isMe = p.name.toLowerCase() === myId.toLowerCase();
-                // 내가 선택한 색상이 있다면 내 건 내 색상으로, 아니면 서버 색상
                 const displayColor = isMe && myColor ? myColor : (p.color || '#999');
-                p.color = displayColor; // 그리기용으로 저장
+                p.color = displayColor; 
 
                 list.innerHTML += `
                     <div class="list-item">
@@ -273,16 +292,22 @@
         }
 
         function changeBet(val) {
-            const el = document.getElementById('betInput');
-            let v = parseInt(el.value) + val;
+            let v = parseInt(document.getElementById('betInput').value) + val;
             if (v < 10) v = 10;
-            el.value = v;
+            document.getElementById('betInput').value = v;
         }
         function setMinBet() { document.getElementById('betInput').value = 10; }
         function setMaxBet() { document.getElementById('betInput').value = myWallet; }
 
         function joinGame() {
             if (isBettingProcessing) return;
+            
+            // [핵심] 색상이 없으면 배팅 중단하고 모달 띄움
+            if (!myColor) {
+                openColorPicker();
+                return;
+            }
+
             const amount = parseInt(document.getElementById('betInput').value);
             if (amount > myWallet) return alert("잔액이 부족합니다.");
             if (amount <= 0) return alert("금액 확인 필요");
@@ -293,7 +318,6 @@
             const originalText = btn.innerText;
             btn.disabled = true; btn.innerText = "처리중...";
             
-            // 배팅 시 색상 정보도 같이 전송
             fetch(`${GAS_URL}?action=rouletteResult&type=bet&id=${myId}&amount=${amount}&color=${encodeURIComponent(myColor)}`)
                 .then(res => res.json())
                 .then(data => {
@@ -301,71 +325,61 @@
                         myWallet = data.newBalance;
                         document.getElementById('myBalance').innerText = myWallet.toLocaleString() + " UT";
                         btn.innerText = "배팅 성공!";
-                        // 배팅 후 즉시 서버 데이터 갱신
-                        syncGameState();
+                        syncGameState(); // 배팅 성공 즉시 갱신
                     } else { alert(data.msg); btn.innerText = originalText; }
                 })
-                .catch(err => { console.error(err); alert("통신 오류"); btn.innerText = originalText; })
+                .catch(err => { 
+                    console.error(err); 
+                    alert("통신 오류"); 
+                    btn.innerText = originalText; 
+                })
                 .finally(() => { isBettingProcessing = false; btn.disabled = false; setTimeout(() => { if(!isBettingProcessing && gameState.timeLeft > 60) btn.innerText = originalText; }, 2000); });
         }
 
-        function speak(text) { if (synth.speaking) return; const utter = new SpeechSynthesisUtterance(text); utter.lang = 'en-US'; utter.rate = 1.0; utter.pitch = 1.0; synth.speak(utter); }
-        
+        function showWinnerModal(winnerData) {
+            const modal = document.getElementById('resultModal');
+            document.getElementById('resWinner').innerText = winnerData.name;
+            document.getElementById('resAmount').innerText = parseInt(winnerData.prize).toLocaleString() + " UT";
+            
+            const msgEl = document.getElementById('resMsg');
+            if (winnerData.name.toLowerCase() === myId.toLowerCase()) {
+                msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; 
+                msgEl.style.color = "#00ff44";
+            } else if (winnerData.name === "Company") {
+                msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; 
+                msgEl.style.color = "#ff0055";
+            } else {
+                msgEl.innerText = `아쉽네요... 승자는 ${winnerData.name}님 입니다.`; 
+                msgEl.style.color = "#aaa";
+            }
+            modal.classList.add('active');
+        }
+
         function startTimer() {
             setInterval(() => {
                 const now = new Date();
-                const minutes = now.getMinutes();
-                const seconds = now.getSeconds();
-                const targetMinute = minutes < 30 ? 30 : 60;
-                const remainMinutes = targetMinute - minutes - 1;
-                const remainSeconds = 60 - seconds;
-                gameState.timeLeft = (remainMinutes * 60) + remainSeconds;
+                const min = now.getMinutes();
+                const sec = now.getSeconds();
+                const target = min < 30 ? 30 : 60;
+                const remain = ((target - min - 1) * 60) + (60 - sec);
+                gameState.timeLeft = remain;
                 
-                const displayMin = Math.floor(gameState.timeLeft / 60);
-                const displaySec = gameState.timeLeft % 60;
-                document.getElementById('timerDisplay').innerText = `${displayMin}:${displaySec < 10 ? '0'+displaySec : displaySec}`;
+                const dMin = Math.floor(remain / 60);
+                const dSec = remain % 60;
+                document.getElementById('timerDisplay').innerText = `${dMin}:${dSec < 10 ? '0'+dSec : dSec}`;
                 
                 const countEl = document.getElementById('centerCount');
-                if (gameState.timeLeft <= 60 && gameState.timeLeft > 0) {
-                    countEl.innerText = gameState.timeLeft; countEl.classList.add('active');
-                    const btn = document.getElementById('joinBtn');
-                    if(!btn.disabled) { btn.disabled = true; btn.innerText = "마감됨 (CLOSED)"; document.getElementById('timerDisplay').style.color = "red"; }
+                if (remain <= 10 && remain > 0) {
+                    countEl.innerText = remain; countEl.classList.add('active');
                 } else {
-                    const btn = document.getElementById('joinBtn');
-                    if(btn.disabled && !isBettingProcessing && gameState.timeLeft > 60) {
-                        btn.disabled = false; btn.innerText = "참여하기 (BET)"; document.getElementById('timerDisplay').style.color = "#ff4757"; countEl.classList.remove('active');
-                    }
-                }
-                if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) { const words = ["Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One"]; speak(words[10 - gameState.timeLeft]); }
-                if (gameState.timeLeft <= 0 || (minutes % 30 === 0 && seconds === 0)) {
-                    if (!document.getElementById('resultModal').classList.contains('active')) {
-                        countEl.classList.remove('active'); speak("Time's up!"); finishRound();
-                    }
+                    countEl.classList.remove('active'); 
                 }
             }, 1000);
         }
-
-        function finishRound() {
-            let rand = Math.random() * gameState.totalPool;
-            let runningTotal = 0; let winner = null;
-            for (let p of gameState.participants) { runningTotal += p.amount; if (rand <= runningTotal) { winner = p; break; } }
-            if (!winner) winner = gameState.participants[0] || { name: "Company", amount: 0 };
-            const prize = Math.floor(gameState.totalPool * 0.9);
-            lastWinnerMsg = `🏆 지난 라운드 승자: ${winner.name} (상금: ${prize.toLocaleString()} UT) 🏆`;
-            const marquee = document.getElementById('marqueeText'); marquee.innerText = lastWinnerMsg; marquee.style.color = "#00f3ff";
-            const modal = document.getElementById('resultModal');
-            document.getElementById('resWinner').innerText = winner.name;
-            document.getElementById('resAmount').innerText = prize.toLocaleString() + " UT";
-            document.getElementById('resWinner').style.textShadow = `0 0 30px ${winner.color}`;
-            const msgEl = document.getElementById('resMsg');
-            if (winner.name === myId) { msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; msgEl.style.color = myColor; speak("Congratulations! You won!"); }
-            else if (winner.name === "Company") { msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; msgEl.style.color = "#ff0055"; speak("The House Wins."); }
-            else { msgEl.innerText = `아쉽네요... 승자는 ${winner.name}님 입니다.`; msgEl.style.color = "#aaa"; speak("Better luck next time."); }
-            modal.classList.add('active');
-        }
-        function resetGame() { location.reload(); }
-        function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = warningMsg; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = lastWinnerMsg; marquee.style.color = "#fff"; }, 15000); }, 120000); }
         
+        function resetGame() { location.reload(); }
+        function startMarqueeScheduler() { const marquee = document.getElementById('marqueeText'); setInterval(() => { marquee.innerText = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨"; marquee.style.color = "#ffdd59"; setTimeout(() => { marquee.innerText = "🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 🔥"; marquee.style.color = "#fff"; }, 15000); }, 60000); }
+
         function drawGiantWheel() {
             const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -374,18 +388,17 @@
 
             gameState.rotation += 0.0035; 
             ctx.clearRect(0, 0, w, h); ctx.save();
-            let startAngle = gameState.rotation;
             
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke();
-            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#0a0a0a"; ctx.fill(); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 15; ctx.stroke(); ctx.shadowBlur = 0;
 
             if (gameState.participants.length > 0) {
                 gameState.participants.forEach(p => {
                     const sliceAngle = (p.amount / gameState.totalPool) * 2 * Math.PI; 
                     const endAngle = startAngle + sliceAngle;
                     ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius - 20, startAngle, endAngle); ctx.closePath(); 
-                    ctx.fillStyle = p.color; ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = p.color || '#555'; ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+                    
                     if (sliceAngle > 0.05) {
                         const midAngle = startAngle + sliceAngle / 2;
                         const textRadius = radius - 120;
