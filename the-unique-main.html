@@ -23,11 +23,38 @@
     .scene{position:fixed; inset:0; overflow:hidden; pointer-events:none;}
     .scene-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; mix-blend-mode:screen;}
  
+    /* 전광판 스타일 */
+    .marquee-bar {
+        position: relative; 
+        width: 100%; 
+        height: 32px; 
+        background: linear-gradient(90deg, #ff0055, #222); 
+        overflow: hidden; 
+        z-index: 20; 
+        display: flex; 
+        align-items: center; 
+        border-bottom: 1px solid #ffd700;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .marquee-content {
+        white-space: nowrap; 
+        padding-left: 100%; 
+        animation: scrollMain 25s linear infinite; 
+        color: #fff; 
+        font-weight: bold; 
+        font-size: 0.85rem; 
+        font-family: 'Pretendard', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    @keyframes scrollMain { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
     .page-wrap{
       position:relative;
       z-index:10;
       max-width:1200px;
-      margin:72px auto 40px;
+      margin:40px auto 40px;
       padding:0 16px;
       width:100%;
     }
@@ -155,7 +182,7 @@
     .tb-title { font-family:"Cinzel",serif; font-size:20px; color:#fff; font-weight:700; letter-spacing:0.05em; }
     .tb-user  { font-size:20px; color:#fbbf24; font-weight:800; text-shadow:0 0 10px rgba(251,191,36,0.4); }
 
-    /* ✅ GAME 버튼 (원래대로 유지) */
+    /* ✅ 상단 GAME 버튼 -> game.html (기존 게임) */
     .tb-header-right{ display:flex; align-items:center; gap:10px; }
     .game-btn{
       border-radius: 14px;
@@ -174,6 +201,7 @@
       box-shadow: 0 12px 26px rgba(0,0,0,0.55);
       transition: transform .12s ease, filter .12s ease, border-color .12s ease;
       user-select:none;
+      text-decoration: none; 
     }
     .game-btn:hover{
       transform: translateY(-1px);
@@ -258,7 +286,7 @@
     :root{
       --wallet-tab-h: 520px;
       --video-h: 260px;
-      --slot-h-pc: 70px;     /* PC에서 안 짤리는 높이 */
+      --slot-h-pc: 70px;      /* PC에서 안 짤리는 높이 */
       --slot-h-mobile: 86px; /* 모바일에서 더 크게 */
     }
 
@@ -298,64 +326,53 @@
     .mining-status{ font-size:13px; font-weight:700; color:#94a3b8; margin-top:10px; text-align:center; }
     .mining-status.done{ color:#4ade80; }
 
-    /* ✅ 슬롯 이미지 버튼: PC/모바일 공통(자리 = 유튜브 아래) */
-   /* ✅ CASINO FOR FUN (슬롯) CTA 버튼 - PC/모바일 공통 */
-/* ✅ CASINO FOR FUN (슬롯) CTA 버튼 - 수정됨 (이미지 전용) */
-    /* ✅ CASINO FOR FUN (슬롯) CTA 버튼 - PC/모바일 최적화 수정본 */
+    /* ✅ CASINO FOR FUN 배너 -> casino.html */
     .slot-cta {
       display: block;
       width: 100%;
       margin-top: 14px;
-      
-      /* 배경/테두리/패딩 전부 제거 (이미지만 깔끔하게) */
       background: transparent;
       border: none;
       padding: 0;
       box-shadow: none; 
-      
       text-decoration: none;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      
-      /* 컨테이너 넘침 방지 */
       box-sizing: border-box;
       overflow: hidden; 
-      border-radius: 18px; /* 이미지 둥글기랑 맞춤 */
+      border-radius: 18px; 
     }
 
     .slot-cta img {
       display: block;
-      width: 100%;        /* 부모 넓이에 꽉 차게 강제 */
-      max-width: 100%;    /* 절대 튀어나가지 않게 */
-      height: auto;       /* 비율 유지 */
-      object-fit: cover;  /* 빈 공간 없이 꽉 채움 */
-      
+      width: 100%;        
+      max-width: 100%;    
+      height: auto;       
+      object-fit: cover;  
       border-radius: 18px; 
-      box-shadow: 0 10px 20px rgba(0,0,0,0.5); /* 그림자 살짝 */
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
       transition: transform .2s ease, filter .2s ease;
     }
 
-    /* 마우스 올렸을 때 효과 */
     .slot-cta:hover img {
-      transform: scale(1.02); /* 살짝 커짐 */
-      filter: brightness(1.1); /* 살짝 밝게 */
+      transform: scale(1.02); 
+      filter: brightness(1.1); 
     }
     .slot-cta:active img {
       transform: scale(0.98);
     }
 
-    /* 📱 모바일 전용 (화면 밖으로 터지는 것 방지) */
+    /* 📱 모바일 전용 */
     @media (max-width: 768px){
       .slot-cta {
         margin-top: 12px;
-        width: 100%;      /* 모바일 꽉 채우기 */
+        width: 100%;      
       }
-      
       .slot-cta img {
-        width: 100% !important;     /* 강제로 너비 맞춤 */
-        height: auto !important;    /* 비율 깨지지 않게 */
-        max-width: 100% !important; /* 삐져나감 절대 방지 */
-        border-radius: 14px;        /* 모바일에선 둥글기 약간 줄임 */
+        width: 100% !important;      
+        height: auto !important;    
+        max-width: 100% !important; 
+        border-radius: 14px;        
       }
     }
 
@@ -754,33 +771,12 @@
   <div class="scene">
     <img src="img/bg-unique-main.jpg" class="scene-bg" alt="The Unique main background" />
   </div>
-  <div style="
-    position: relative; 
-    width: 100%; 
-    height: 30px; 
-    background: linear-gradient(90deg, #ff0055, #222); 
-    overflow: hidden; 
-    z-index: 20; 
-    display: flex; 
-    align-items: center; 
-    border-bottom: 1px solid #ffd700;">
-    
-    <div style="
-        white-space: nowrap; 
-        padding-left: 100%; 
-        animation: scrollMain 25s linear infinite; 
-        color: #fff; 
-        font-weight: bold; 
-        font-size: 0.85rem; 
-        font-family: 'Pretendard', sans-serif;">
-        
-        📢 [CASINO NEWS] 30분마다 펼쳐지는 승부! ROULETTE에서 승리의 주인공이 되세요! (90% 상금 독식) 🏆
-    </div>
-</div>
 
-<style>
-    @keyframes scrollMain { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-</style>
+  <div class="marquee-bar">
+    <div class="marquee-content">
+      📢 [CASINO NEWS] 30분마다 펼쳐지는 승부! ROULETTE에서 승리의 주인공이 되세요! (90% 상금 독식) 🏆
+    </div>
+  </div>
 
   <div class="page-wrap">
     <main class="main-card">
@@ -813,7 +809,6 @@
               <div class="tb-user" id="tb-user-name">User</div>
             </div>
 
-            <!-- ✅ GAME 버튼은 원래대로 -->
             <div class="tb-header-right">
               <button class="game-btn" type="button" onclick="window.open('game.html','_blank')">GAME</button>
             </div>
@@ -825,7 +820,6 @@
             <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
           </div>
 
-          <!-- ===== tab-main ===== -->
           <div id="tab-main" class="tb-content active">
             <div class="wallet-mining-grid">
               <div class="wm-card wallet">
@@ -860,16 +854,14 @@
                 </div>
                 <div id="yt-status-text" class="mining-status">▶ 재생 버튼을 눌러 시청하세요 (매일 00:00 초기화)</div>
 
-              
-                <a class="slot-cta" id="slotBtn" href="casino.html">
-  <img src="img/slot-btn.png" alt="CASINO FOR FUN">
-</a>
+                <a class="slot-cta" id="slotBtn" href="casino.html" target="_blank">
+                  <img src="img/slot-btn.png" alt="CASINO FOR FUN">
+                </a>
 
               </div>
             </div>
           </div>
 
-          <!-- ===== tab-transfer ===== -->
           <div id="tab-transfer" class="tb-content">
             <div class="wallet-mining-grid">
               <div class="wm-card wallet">
@@ -1001,7 +993,6 @@
   <div class="promo-section" id="promo-section"></div>
   <div class="footer-note">The Unique &copy; 2025 · internal use only</div>
 
-  <!-- JS 로드 순서 -->
   <script src="js/unique.config.js"></script>
   <script src="js/unique.state.js"></script>
   <script src="js/unique.utils.js"></script>
