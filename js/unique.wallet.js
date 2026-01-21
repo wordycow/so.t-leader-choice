@@ -28,7 +28,7 @@
     saveHistory(arr);
   }
 
-    function renderHistory() {
+  function renderHistory() {
     const el = document.getElementById("history-container");
     if (!el) return;
 
@@ -85,10 +85,47 @@
       const btn = e.target && e.target.closest && e.target.closest(".tb-tab-btn");
       if (!btn) return;
 
-      // UT 송금 탭은 openTab(event,'tab-transfer')로 열리므로,
-      // 클릭 후 약간 늦게 렌더해서 DOM active 반영 기다림
-      setTimeout(renderHistory, 50);
+      // 탭 전환 DOM 반영 이후 갱신
+      setTimeout(() => {
+        try { renderHistory(); } catch(_) {}
+        try { updateUtViz(); } catch(_) {}
+      }, 60);
     }, true);
+  }
+
+  // =========================
+  // ✅ 3D UT 점유 도표 (총 발행 vs 내 보유) 연결
+  // =========================
+  function fmtNum(n, digits) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "0";
+    return x.toLocaleString("en-US", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits
+    });
+  }
+
+  function updateUtViz() {
+    const root = document.querySelector("[data-ut-viz]");
+    if (!root) return;
+
+    const ring = root.querySelector("[data-ut-ring]");
+    const pctEl = root.querySelector("[data-ut-pct]");
+    const totalEl = root.querySelector("[data-ut-total]");
+    const myEl = root.querySelector("[data-ut-my]");
+
+    const my = Number((U.STATE && U.STATE.user && U.STATE.user.balance) ?? localStorage.getItem("myUtPoints") ?? 0);
+    const total = Number((U.STATE && U.STATE.totalUT) ?? 0);
+
+    const pct = (total > 0 && Number.isFinite(my))
+      ? Math.max(0, Math.min(100, (my / total) * 100))
+      : 0;
+
+    if (ring) ring.style.setProperty("--p", pct.toFixed(2));
+    if (pctEl) pctEl.textContent = pct.toFixed(2);
+
+    if (totalEl) totalEl.textContent = `${fmtNum(total, 0)} UT`;
+    if (myEl) myEl.textContent = `${fmtNum(my, 2)} UT`;
   }
 
   // =========================
@@ -136,6 +173,9 @@
     const nickKey = "myNickname_" + idLower;
     if ((payload.nickname || "").trim()) localStorage.setItem(nickKey, payload.nickname.trim());
     else localStorage.removeItem(nickKey);
+
+    // ✅ 유저 갱신될 때 도표도 즉시 갱신
+    try { updateUtViz(); } catch(_) {}
   }
 
   // ✅ 정산가 저장 키
@@ -181,10 +221,14 @@
         if (r && r.ok && r.stats) {
           const total = Number(r.stats.total_ut_supply ?? r.stats.total_ut ?? 0);
           U.STATE.totalUT = Number.isFinite(total) ? total : 0;
+
+          // ✅ 총 발행 갱신될 때 도표 갱신
+          try { updateUtViz(); } catch(_) {}
         }
       } catch (e) {
         console.warn("getStats fail:", e);
         U.STATE.totalUT = 0;
+        try { updateUtViz(); } catch(_) {}
       }
     },
 
@@ -233,6 +277,9 @@
         const p = getSettlementPrice();
         U.STATE.utPrice = p || settlePrice;
       }
+
+      // ✅ 가격/총발행 갱신 끝나면 도표도 갱신
+      try { updateUtViz(); } catch(_) {}
     },
 
     async addUt(delta) {
@@ -250,6 +297,8 @@
         U.ui.updateNicknameButton();
         U.ui.updateWalletUI();
       }
+
+      try { updateUtViz(); } catch(_) {}
     },
 
     async sendP2P(receiver, amount) {
@@ -274,6 +323,8 @@
         U.ui.updateNicknameButton();
         U.ui.updateWalletUI();
       }
+
+      try { updateUtViz(); } catch(_) {}
     }
   };
 
@@ -309,6 +360,8 @@
         U.ui.updateNicknameButton();
         U.ui.updateWalletUI();
       }
+
+      try { updateUtViz(); } catch(_) {}
 
       alert("닉네임이 저장되었습니다.");
     } catch (e) {
@@ -348,6 +401,9 @@
       });
       renderHistory();
 
+      // ✅ 송금 후 도표 반영
+      try { updateUtViz(); } catch(_) {}
+
       alert("송금 완료");
       const amtEl = document.getElementById("p2p-amount");
       if (amtEl) amtEl.value = "";
@@ -360,10 +416,11 @@
     }
   };
 
-  // ✅ 페이지 로드 시: 탭 클릭 훅 + 초기 렌더(transfer 탭에서 바로 보이게)
+  // ✅ 페이지 로드 시: 탭 클릭 훅 + 초기 렌더
   hookTabRenderOnce();
   document.addEventListener("DOMContentLoaded", () => {
     try { renderHistory(); } catch(_) {}
+    try { updateUtViz(); } catch(_) {}
   });
 
 })();
