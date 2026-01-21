@@ -279,123 +279,248 @@
     .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
     /* ===== 3D UT 점유 도표 ===== */
 .ut-viz{
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 14px;
-  background: rgba(2,6,23,0.28);
-  border: 1px solid rgba(148,163,184,0.18);
+  --viz-size: clamp(230px, 22vw, 295px);
+  --thick: 26px;
+  --r: calc((var(--viz-size) - var(--thick)) / 2);
+  margin: 18px 0 10px;
   display:flex;
-  gap:14px;
+  gap:18px;
   align-items:center;
   justify-content:space-between;
-  min-height: 170px;
 }
 
+@media (max-width: 768px){
+  .ut-viz{
+    --viz-size: 270px; /* 모바일은 더 크게 */
+    --thick: 28px;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:14px;
+  }
+}
+
+/* ===== 공통: 디스크 베이스(입체 바디) ===== */
 .ut-donut{
-  position: relative;
-  width: 150px;
-  height: 150px;
-  flex: 0 0 auto;
+  width: var(--viz-size);
+  height: var(--viz-size);
+  position:relative;
+  border-radius:50%;
   display:grid;
   place-items:center;
-  transform: perspective(900px) rotateX(58deg);
-  transform-origin: center;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255,0.10), transparent 52%),
+    radial-gradient(circle at 55% 70%, rgba(0,0,0,0.45), transparent 55%),
+    rgba(2,6,23,0.42);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.88),
+    0 0 0 1px rgba(148,163,184,0.14) inset;
+  overflow: visible;
 }
 
-.ut-donut::before{
+/* 디스크 안쪽 광택/깊이 */
+.ut-donut::after{
   content:"";
   position:absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(
-    from -90deg,
-    rgba(251,191,36,0.45) calc(var(--p,0) * 1%),
-    rgba(148,163,184,0.10) 0
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(50% - 16px), #000 calc(50% - 15px));
-  mask: radial-gradient(farthest-side, transparent calc(50% - 16px), #000 calc(50% - 15px));
-  transform: translateY(14px) scaleY(0.92);
-  filter: brightness(0.65);
+  inset: 12px;
+  border-radius:50%;
+  background: radial-gradient(circle at 50% 14%, rgba(255,255,255,0.10), transparent 58%);
+  box-shadow:
+    0 14px 28px rgba(0,0,0,0.45) inset,
+    0 -10px 22px rgba(0,0,0,0.25) inset;
+  pointer-events:none;
   opacity: .95;
 }
 
+/* ===== 링(진행률) ===== */
 .ut-donut-ring{
   position:absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(
-    from -90deg,
-    rgba(251,191,36,0.95) calc(var(--p,0) * 1%),
-    rgba(148,163,184,0.20) 0
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(50% - 16px), #000 calc(50% - 15px));
-  mask: radial-gradient(farthest-side, transparent calc(50% - 16px), #000 calc(50% - 15px));
-  box-shadow:
-    0 18px 34px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(251,191,36,0.18) inset;
+  inset:0;
+  border-radius:50%;
+  background:
+    conic-gradient(from -90deg,
+      rgba(251,191,36,0.98) 0 calc(var(--p)*1%),
+      rgba(148,163,184,0.18) 0 100%);
+  -webkit-mask: radial-gradient(farthest-side,
+      transparent calc(50% - var(--thick)),
+      #000 calc(50% - var(--thick) + 1px));
+          mask: radial-gradient(farthest-side,
+      transparent calc(50% - var(--thick)),
+      #000 calc(50% - var(--thick) + 1px));
+  filter: drop-shadow(0 0 18px rgba(251,191,36,0.28));
 }
 
+/* 진행 끝부분만 살짝 더 밝게(가시성 업) */
+.ut-donut-ring::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    conic-gradient(from -90deg,
+      rgba(251,191,36,0.00) 0 calc(var(--p)*1% - 2%),
+      rgba(251,191,36,0.55) calc(var(--p)*1% - 2%) calc(var(--p)*1% + 2%),
+      rgba(251,191,36,0.00) calc(var(--p)*1% + 2%) 100%);
+  -webkit-mask: inherit;
+          mask: inherit;
+  filter: blur(2px);
+  opacity: .95;
+}
+
+/* 끝점 마커(작은 %도 “어디까지 왔는지” 확실) */
+.ut-donut-ring::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background: rgba(251,191,36,0.98);
+  box-shadow:
+    0 0 0 7px rgba(251,191,36,0.14),
+    0 0 26px rgba(251,191,36,0.55);
+  transform: translate(-50%, -50%) rotate(var(--deg)) translateY(calc(-1 * var(--r)));
+  transform-origin:center;
+}
+
+/* ===== 센터(숫자) ===== */
 .ut-donut-center{
-  position: relative;
-  z-index: 2;
-  width: 86px;
-  height: 86px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.14), rgba(2,6,23,0.55));
-  border: 1px solid rgba(148,163,184,0.18);
+  position:relative;
+  z-index:3;
+  width: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
+  height: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
+  border-radius:50%;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.08), transparent 55%),
+    rgba(2,6,23,0.72);
+  border: 1px solid rgba(148,163,184,0.18);
+  box-shadow:
+    0 16px 34px rgba(0,0,0,0.65),
+    0 0 0 1px rgba(0,0,0,0.35) inset;
   text-align:center;
-  transform: rotateX(-58deg);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.55);
 }
 
 .ut-viz-pct{
-  font-weight: 900;
-  font-size: 16px;
-  color: #fbbf24;
-  text-shadow: 0 0 10px rgba(251,191,36,0.35);
-  line-height: 1.1;
+  font-size: 26px;  /* ✅ 더 크게 */
+  font-weight: 1000;
+  color:#fff;
+  text-shadow: 0 0 18px rgba(251,191,36,0.22);
+  letter-spacing: .02em;
 }
+
 .ut-viz-sub{
   margin-top: 4px;
-  font-size: 10px;
-  color: rgba(226,232,240,0.8);
+  font-size: 12px;
+  color: rgba(203,213,225,0.9);
+  font-weight: 800;
 }
 
+/* 오른쪽 정보 */
 .ut-viz-info{
-  flex:1 1 auto;
+  flex:1;
+  min-width: 180px;
   display:flex;
   flex-direction:column;
-  gap:8px;
-  min-width: 0;
+  gap:10px;
 }
+
+@media (max-width: 768px){
+  .ut-viz-info{
+    width:100%;
+    max-width: 420px;
+  }
+}
+
 .ut-info-row{
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  gap:10px;
+  align-items:center;
+  gap:12px;
   padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(15,23,42,0.55);
-  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 14px;
+  background: rgba(2,6,23,0.35);
+  border: 1px solid rgba(148,163,184,0.14);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.35);
 }
-.ut-info-row .k{ font-size: 12px; color: rgba(226,232,240,0.75); font-weight: 700; }
-.ut-info-row .v{ font-size: 12px; color: #fff; font-weight: 900; white-space: nowrap; }
 
-@media (max-width: 520px){
-  .ut-viz{
-    flex-direction: column;
-    align-items: stretch;
-    min-height: 0;
-  }
-  .ut-donut{
-    margin: 0 auto;
-    width: 130px;
-    height: 130px;
-  }
+.ut-info-row .k{
+  font-size: 12px;
+  color: rgba(203,213,225,0.85);
+  font-weight: 800;
+}
+
+.ut-info-row .v{
+  font-size: 13px;
+  color:#fff;
+  font-weight: 1000;
+}
+
+/* =========================
+   모드2: 다이얼(계기판) 형태
+   - 도넛보다 “작은 비율”이 더 직관적
+========================= */
+
+.ut-viz.ut-viz--dial{
+  align-items:flex-end;
+}
+
+.ut-viz--dial .ut-donut{
+  height: calc(var(--viz-size) * 0.62);
+  overflow:hidden;
+  border-radius: 26px;
+}
+
+/* 링을 위로 끌어올려서 반원만 보이게 */
+.ut-viz--dial .ut-donut-ring{
+  top: calc(-1 * (var(--viz-size) * 0.38));
+  height: var(--viz-size);
+  width: var(--viz-size);
+  position:absolute;
+  left:0;
+  right:0;
+  margin:auto;
+  /* 반원 진행은 180도 범위로 매핑 */
+  background:
+    conic-gradient(from 180deg,
+      rgba(251,191,36,0.98) 0deg calc(var(--p) * 1.8deg),
+      rgba(148,163,184,0.18) 0deg 180deg,
+      rgba(148,163,184,0.00) 180deg 360deg);
+}
+
+/* 다이얼은 마커도 -90~+90에 맞춰 회전 */
+.ut-viz--dial .ut-donut-ring::after{
+  transform: translate(-50%, -50%) rotate(var(--dial)) translateY(calc(-1 * var(--r)));
+}
+
+/* 바늘(needle) */
+.ut-viz--dial .ut-donut::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom: 18px;
+  width: 3px;
+  height: calc(var(--viz-size) * 0.28);
+  background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(251,191,36,0.0));
+  transform: translateX(-50%) rotate(var(--dial));
+  transform-origin: bottom center;
+  filter: drop-shadow(0 0 10px rgba(251,191,36,0.35));
+  border-radius: 999px;
+}
+
+/* 다이얼 센터 위치 조정 */
+.ut-viz--dial .ut-donut-center{
+  position:absolute;
+  left:50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  width: calc(var(--viz-size) * 0.62);
+  height: calc(var(--viz-size) * 0.38);
+  border-radius: 22px;
 }
 
     .wm-card.mining{ border:1px solid rgba(251,191,36,0.2); justify-content:flex-start; }
@@ -1069,7 +1194,7 @@
                   <div class="fund-rate" id="ut-rate-line">1 UT = ... USDT (정산가)</div>
                 </div>
                 <!-- ✅ 3D UT 점유 도표 -->
-<div class="ut-viz" data-ut-viz>
+<div class="ut-viz ut-viz--donut" data-ut-viz>
   <div class="ut-donut" aria-hidden="true">
     <div class="ut-donut-ring" data-ut-ring style="--p:0"></div>
     <div class="ut-donut-center">
