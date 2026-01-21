@@ -279,29 +279,27 @@
     .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
     /* ===== 3D UT 점유 도표 ===== */
 .ut-viz{
-  --p: 0;
-  --deg: 0deg;
-  --dial: -90deg;
-  --viz-size: clamp(230px, 22vw, 295px);
-  --thick: 26px;
-  --r: calc((var(--viz-size) - var(--thick)) / 2);
-  margin: 18px 0 10px;
+  --viz-size: clamp(200px, 16vw, 245px); /* ✅ PC 최대 크기 살짝 다운 */
+  --thick: 24px;
+  margin: 12px 0 8px;
   display:flex;
-  gap:18px;
+  gap:14px;
   align-items:center;
   justify-content:space-between;
+  flex-wrap: wrap; /* ✅ 공간 부족하면 아래로 자연스럽게 */
 }
 
 @media (max-width: 768px){
   .ut-viz{
-    --viz-size: 270px; /* 모바일은 더 크게 */
+    --viz-size: min(86vw, 320px); /* ✅ 모바일은 화면폭 기반으로 크게 */
     --thick: 28px;
     flex-direction:column;
     align-items:center;
     justify-content:flex-start;
-    gap:14px;
+    gap:12px;
   }
 }
+
 
 /* ===== 공통: 디스크 베이스(입체 바디) ===== */
 .ut-donut{
@@ -544,16 +542,18 @@
     #tab-main, #tab-transfer{ min-height: var(--wallet-tab-h); }
 
     #tab-main .wallet-mining-grid,
-    #tab-transfer .wallet-mining-grid{
-      height: var(--wallet-tab-h);
-      align-items: stretch;
-    }
+#tab-transfer .wallet-mining-grid{
+  min-height: var(--wallet-tab-h);
+  height: auto;          /* ✅ 고정 height 제거 */
+  align-items: stretch;
+}
 
-    #tab-main .wm-card,
-    #tab-transfer .wm-card{
-      height: 100%;
-      min-height: 0;
-    }
+#tab-main .wm-card,
+#tab-transfer .wm-card{
+  height: auto;          /* ✅ 내용만큼 늘어나게 */
+  min-height: 0;
+}
+
 
     .video-frame{
       position:relative;
