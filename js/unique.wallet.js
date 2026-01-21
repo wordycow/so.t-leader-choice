@@ -105,7 +105,7 @@
     });
   }
 
- function updateUtViz() {
+function updateUtViz() {
   const root = document.querySelector("[data-ut-viz]");
   if (!root) return;
 
@@ -114,8 +114,8 @@
   const totalEl = root.querySelector("[data-ut-total]");
   const myEl = root.querySelector("[data-ut-my]");
 
-  let my = Number((U.STATE && U.STATE.user && U.STATE.user.balance) ?? localStorage.getItem("myUtPoints") ?? 0);
-  let total = Number((U.STATE && U.STATE.totalUT) ?? 0);
+  let my = Number((U.STATE?.user?.balance) ?? localStorage.getItem("myUtPoints") ?? 0);
+  let total = Number(U.STATE?.totalUT ?? 0);
 
   if (!Number.isFinite(my) || my < 0) my = 0;
   if (!Number.isFinite(total) || total < 0) total = 0;
@@ -123,22 +123,24 @@
   const pct = total > 0 ? Math.max(0, Math.min(100, (my / total) * 100)) : 0;
 
   const deg = pct * 3.6;
-  const dialDeg = total > 0 ? (pct * 1.8) - 90 : -90; // 0% 기본 위치(왼쪽끝). 원하면 0으로 바꿔도 됨
+  const dialDeg = total > 0 ? (pct * 1.8) - 90 : -90;
+
+  const p = pct.toFixed(2);
 
   if (ring) {
-    ring.style.setProperty("--p", pct.toFixed(2));
+    ring.style.setProperty("--p", p);
     ring.style.setProperty("--deg", deg.toFixed(2) + "deg");
     ring.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
   }
 
   const donut = root.querySelector(".ut-donut");
   if (donut) {
-    donut.style.setProperty("--p", pct.toFixed(2));
+    donut.style.setProperty("--p", p);
     donut.style.setProperty("--deg", deg.toFixed(2) + "deg");
     donut.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
   }
 
-  if (pctEl) pctEl.textContent = pct.toFixed(2);
+  if (pctEl) pctEl.textContent = p;
   if (totalEl) totalEl.textContent = `${fmtNum(total, 0)} UT`;
   if (myEl) myEl.textContent = `${fmtNum(my, 2)} UT`;
 }
