@@ -24,20 +24,19 @@
     return {};
   }
 
-  function openTab(evt, tabName) {
-    const content = document.getElementsByClassName("tb-content");
-    for (let i = 0; i < content.length; i++) content[i].classList.remove("active");
+  function openTab(evtOrEl, tabName){
+  const content = document.getElementsByClassName("tb-content");
+  for (let i=0;i<content.length;i++) content[i].classList.remove("active");
 
-    const tablinks = document.getElementsByClassName("tb-tab-btn");
-    for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
+  const tablinks = document.getElementsByClassName("tb-tab-btn");
+  for (let i=0;i<tablinks.length;i++) tablinks[i].classList.remove("active");
 
-    const target = document.getElementById(tabName);
-    if (target) target.classList.add("active");
-    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
+  const target = document.getElementById(tabName);
+  if (target) target.classList.add("active");
 
-    // 지갑 UI는 있으면 갱신, 없어도 조용히 무시
-    try { updateWalletUI(); } catch (_) {}
-  }
+  const el = (evtOrEl && evtOrEl.currentTarget) ? evtOrEl.currentTarget : evtOrEl; // ✅ 핵심
+  if (el && el.classList) el.classList.add("active");
+}
 
   function updateHeaderUI() {
     const u = safeGetUser();
