@@ -121,7 +121,22 @@
       ? Math.max(0, Math.min(100, (my / total) * 100))
       : 0;
 
-    if (ring) ring.style.setProperty("--p", pct.toFixed(2));
+    const deg = (pct * 3.6);
+const dialDeg = (pct * 1.8) - 90;
+
+if (ring) {
+  ring.style.setProperty("--p", pct.toFixed(2));
+  ring.style.setProperty("--deg", deg.toFixed(2) + "deg");
+  ring.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
+}
+
+const donut = root.querySelector(".ut-donut");
+if (donut) {
+  donut.style.setProperty("--p", pct.toFixed(2));
+  donut.style.setProperty("--deg", deg.toFixed(2) + "deg");
+  donut.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
+}
+
     if (pctEl) pctEl.textContent = pct.toFixed(2);
 
     if (totalEl) totalEl.textContent = `${fmtNum(total, 0)} UT`;
