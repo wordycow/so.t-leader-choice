@@ -1,170 +1,204 @@
 (function () {
+  "use strict";
+
   window.UNIQUE = window.UNIQUE || {};
   const U = window.UNIQUE;
 
-  U.ui = {
-    // ✅ 경고(aria-hidden + focus) 방지 버전
-    openTab(evt, tabName) {
-      const tabs = Array.from(document.getElementsByClassName("tb-content"));
-      const activeEl = document.activeElement;
+  // 네임스페이스 안전장치
+  U.STATE = U.STATE || {};
+  U.ui = U.ui || {};
 
-      // 1) 숨길 탭 안에 포커스가 있으면 먼저 blur (유튜브/버튼 포커스 경고 방지)
-      if (activeEl) {
-        for (const t of tabs) {
-          const willHide = (t.id !== tabName) && t.classList.contains("active");
-          if (willHide && t.contains(activeEl) && typeof activeEl.blur === "function") {
-            activeEl.blur();
-            break;
-          }
-        }
-      }
+  function safeIsHQ() {
+    try {
+      return !!(U.auth && typeof U.auth.isHQ === "function" && U.auth.isHQ());
+    } catch (_) {
+      return false;
+    }
+  }
 
-      // 2) 탭 show/hide + aria-hidden/inert 정리
-      for (const t of tabs) {
-        const isOn = (t.id === tabName);
+  function safeGetUser() {
+    try {
+      if (U.STATE && U.STATE.user) return U.STATE.user;
+      if (U.auth && typeof U.auth.getUser === "function") return U.auth.getUser();
+    } catch (_) {}
+    return {};
+  }
 
-        t.classList.toggle("active", isOn);
+  function openTab(evt, tabName) {
+    const content = document.getElementsByClassName("tb-content");
+    for (let i = 0; i < content.length; i++) content[i].classList.remove("active");
 
-        // 접근성 속성 정리
-        t.setAttribute("aria-hidden", isOn ? "false" : "true");
-        if (isOn) t.removeAttribute("inert");
-        else t.setAttribute("inert", "");
-      }
+    const tablinks = document.getElementsByClassName("tb-tab-btn");
+    for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
 
-      // 3) 탭 버튼 active 처리
-      const tablinks = Array.from(document.getElementsByClassName("tb-tab-btn"));
-      tablinks.forEach((b) => b.classList.remove("active"));
-      if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
+    const target = document.getElementById(tabName);
+    if (target) target.classList.add("active");
+    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 
-      try { U.ui.updateWalletUI(); } catch (_) {}
-    },
+    // 지갑 UI는 있으면 갱신, 없어도 조용히 무시
+    try { updateWalletUI(); } catch (_) {}
+  }
 
-    updateHeaderUI() {
-      const u = U.STATE.user || (U.auth && U.auth.getUser ? U.auth.getUser() : {}) || {};
-      const id = String(u.id || "").trim();
-      const name = String(u.name || "").trim();
-      const team = String(u.team || "").trim();
+  function updateHeaderUI() {
+    const u = safeGetUser();
+    const id = String(u.id || "").trim();
+    const name = String(u.name || "").trim();
+    const team = String(u.team || "").trim();
 
-      const hello = document.getElementById("member-hello");
-      if (hello) hello.textContent = (name || id || "멤버") + "님, 오늘도 성장하러 오셨군요.";
+    const hello = document.getElementById("member-hello");
+    if (hello) hello.textContent = (name || id || "멤버") + "님, 오늘도 성장하러 오셨군요.";
 
-      const memberName = document.getElementById("member-name");
-      if (memberName) memberName.textContent = id || "Unknown";
+    const memberName = document.getElementById("member-name");
+    if (memberName) memberName.textContent = id || "Unknown";
 
-      const teamEl = document.getElementById("member-team");
-      if (teamEl) {
-        const isHQ = (U.auth && U.auth.isHQ) ? U.auth.isHQ() : false;
-        teamEl.textContent = isHQ ? "소속: HQ" : (team ? "소속: " + team : "소속: -");
-      }
+    const teamEl = document.getElementById("member-team");
+    if (teamEl) teamEl.textContent = safeIsHQ() ? "소속: HQ" : (team ? "소속: " + team : "소속: -");
 
-      const tbUser = document.getElementById("tb-user-name");
-      if (tbUser) tbUser.textContent = name || id || "User";
+    const tbUser = document.getElementById("tb-user-name");
+    if (tbUser) tbUser.textContent = name || id || "User";
 
-      const adminLink = document.getElementById("ebook-admin-link");
-      if (adminLink) {
-        const isHQ = (U.auth && U.auth.isHQ) ? U.auth.isHQ() : false;
-        if (!isHQ) adminLink.style.display = "none";
-      }
-    },
+    const adminLink = document.getElementById("ebook-admin-link");
+    if (adminLink && !safeIsHQ()) adminLink.style.display = "none";
+  }
 
-    updateNicknameButton() {
-      const btn = document.getElementById("btn-nick-reg");
-      if (!btn) return;
+  function updateNicknameButton() {
+    const btn = document.getElementById("btn-nick-reg");
+    if (!btn) return;
 
-      const u = U.STATE.user || (U.auth && U.auth.getUser ? U.auth.getUser() : {}) || {};
-      const id = String(u.id || "").toLowerCase().trim();
-      const savedNick = (id ? localStorage.getItem("myNickname_" + id) : "") || "";
+    const u = safeGetUser();
+    const id = String(u.id || "").toLowerCase().trim();
+    const savedNick = (id ? localStorage.getItem("myNickname_" + id) : "") || "";
 
-      if (savedNick) {
-        btn.textContent = "닉네임: " + savedNick;
-        btn.classList.add("done");
-        btn.onclick = null;
-      } else {
-        btn.textContent = "닉네임 등록";
-        btn.classList.remove("done");
-        btn.onclick = window.registerNickname || null;
-      }
-    },
+    if (savedNick) {
+      btn.textContent = "닉네임: " + savedNick;
+      btn.classList.add("done");
+      btn.onclick = null;
+    } else {
+      btn.textContent = "닉네임 등록";
+      btn.classList.remove("done");
+      // inline onclick이 있어도, 여기선 안전하게 전역 래퍼 연결
+      btn.onclick = window.registerNickname || null;
+    }
+  }
 
-    updateWalletUI() {
-      const ut = parseFloat(localStorage.getItem("myUtPoints") || "0");
-      const price =
-        (Number.isFinite(U.STATE && U.STATE.utPrice) && U.STATE.utPrice > 0)
-          ? U.STATE.utPrice
-          : 0.02;
+  function updateWalletUI() {
+    const rawUt = Number.parseFloat(localStorage.getItem("myUtPoints") || "0");
+    const ut = Number.isFinite(rawUt) ? rawUt : 0;
 
-      // tab-main
-      const myUtEl = document.getElementById("my-ut-display");
-      if (myUtEl) myUtEl.textContent = ut.toFixed(2);
+    const rawPrice = Number(U.STATE && U.STATE.utPrice);
+    const price = (Number.isFinite(rawPrice) && rawPrice > 0) ? rawPrice : 0.02;
 
-      const myUsdtEl = document.getElementById("my-usdt-display");
-      if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut * price).toFixed(2)} USDT 환산(정산가)`;
+    // tab-main
+    const myUtEl = document.getElementById("my-ut-display");
+    if (myUtEl) myUtEl.textContent = ut.toFixed(2);
 
-      const rateLine = document.getElementById("ut-rate-line");
-      if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (정산가 · 매일 00:00 KST 갱신)`;
+    const myUsdtEl = document.getElementById("my-usdt-display");
+    if (myUsdtEl) myUsdtEl.textContent = `≈ ${(ut * price).toFixed(2)} USDT 환산(정산가)`;
 
-      // tab-transfer (좌측 자산)
-      const myUtTransfer = document.getElementById("my-ut-display-transfer");
-      if (myUtTransfer) myUtTransfer.textContent = ut.toFixed(2);
+    const rateLine = document.getElementById("ut-rate-line");
+    if (rateLine) rateLine.textContent = `1 UT = ${price.toFixed(6)} USDT (정산가 · 매일 00:00 KST 갱신)`;
 
-      const myUsdtTransfer = document.getElementById("my-usdt-display-transfer");
-      if (myUsdtTransfer) myUsdtTransfer.textContent = `≈ ${(ut * price).toFixed(2)} USDT 환산(정산가)`;
+    // tab-transfer (좌측 자산)
+    const myUtTransfer = document.getElementById("my-ut-display-transfer");
+    if (myUtTransfer) myUtTransfer.textContent = ut.toFixed(2);
 
-      const rateTransfer = document.getElementById("ut-rate-line-transfer");
-      if (rateTransfer) rateTransfer.textContent = `1 UT = ${price.toFixed(6)} USDT (정산가 · 매일 00:00 KST 갱신)`;
+    const myUsdtTransfer = document.getElementById("my-usdt-display-transfer");
+    if (myUsdtTransfer) myUsdtTransfer.textContent = `≈ ${(ut * price).toFixed(2)} USDT 환산(정산가)`;
 
-      // tab-transfer (우측 뱃지)
-      const badge = document.getElementById("my-ut-transfer-badge");
-      if (badge) badge.textContent = `보유: ${Math.floor(ut).toLocaleString()} UT`;
-    },
+    const rateTransfer = document.getElementById("ut-rate-line-transfer");
+    if (rateTransfer) rateTransfer.textContent = `1 UT = ${price.toFixed(6)} USDT (정산가 · 매일 00:00 KST 갱신)`;
 
-    bindBasicButtons() {
-      const bindOnce = (el, key, fn) => {
-        if (!el) return;
-        if (el.dataset.bound === "1") return;
-        el.dataset.bound = "1";
-        el.addEventListener("click", fn);
-      };
+    // tab-transfer (우측 뱃지)
+    const badge = document.getElementById("my-ut-transfer-badge");
+    if (badge) badge.textContent = `보유: ${Math.floor(ut).toLocaleString()} UT`;
+  }
 
-      bindOnce(document.getElementById("work-btn"), "work", () =>
-        window.open("the-unique-work-tool.html", "_blank")
-      );
+  function bindBasicButtons() {
+    const workBtn = document.getElementById("work-btn");
+    if (workBtn && workBtn.dataset.bound !== "1") {
+      workBtn.dataset.bound = "1";
+      workBtn.addEventListener("click", () => window.open("the-unique-work-tool.html", "_blank"));
+    }
 
-      bindOnce(document.getElementById("sot-btn"), "sot", () =>
-        window.open("https://www.ssoti.com/", "_blank")
-      );
+    const sotBtn = document.getElementById("sot-btn");
+    if (sotBtn && sotBtn.dataset.bound !== "1") {
+      sotBtn.dataset.bound = "1";
+      sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
+    }
 
-      bindOnce(document.getElementById("travel-btn"), "travel", () =>
-        window.open("index.html", "_blank")
-      );
+    const travelBtn = document.getElementById("travel-btn");
+    if (travelBtn && travelBtn.dataset.bound !== "1") {
+      travelBtn.dataset.bound = "1";
+      travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
+    }
 
-      bindOnce(document.getElementById("ppt-form-btn"), "linkon", () =>
-        window.open("https://linkon.gift/", "_blank")
-      );
+    const linkonBtn = document.getElementById("ppt-form-btn");
+    if (linkonBtn && linkonBtn.dataset.bound !== "1") {
+      linkonBtn.dataset.bound = "1";
+      linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+    }
 
-      bindOnce(document.getElementById("market-btn"), "market", () =>
-        window.open("market.html", "_blank")
-      );
+    const marketBtn = document.getElementById("market-btn");
+    if (marketBtn && marketBtn.dataset.bound !== "1") {
+      marketBtn.dataset.bound = "1";
+      marketBtn.addEventListener("click", () => window.open("market.html", "_blank"));
+    }
 
-      bindOnce(document.getElementById("logout-btn"), "logout", () => {
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn && logoutBtn.dataset.bound !== "1") {
+      logoutBtn.dataset.bound = "1";
+      logoutBtn.addEventListener("click", () => {
         if (confirm("로그아웃 하시겠습니까?")) {
           localStorage.removeItem("uniqueCurrentUser");
           window.location.href = "the-unique-gate.html";
         }
       });
     }
-  };
+  }
 
-  // ✅ 초기 상태에서도 aria-hidden/inert 정리(첫 로딩 안정화)
-  try {
-    const tabs = Array.from(document.getElementsByClassName("tb-content"));
-    tabs.forEach((t) => {
-      const isOn = t.classList.contains("active");
-      t.setAttribute("aria-hidden", isOn ? "false" : "true");
-      if (isOn) t.removeAttribute("inert");
-      else t.setAttribute("inert", "");
-    });
-  } catch (_) {}
+  // ✅ inline onclick 방지용 전역 래퍼 (로딩 순서 때문에 "not defined" 에러 뜨는 거 막음)
+  function bindGlobals() {
+    window.openTab = openTab;
 
-  window.openTab = U.ui.openTab;
+    if (typeof window.registerNickname !== "function") {
+      window.registerNickname = function () {
+        // 나중에 실제 구현이 로딩되면 그걸 쓰게끔 유도
+        if (U.nick && typeof U.nick.registerNickname === "function") return U.nick.registerNickname();
+        alert("닉네임 기능 로딩중입니다. 잠시 후 다시 시도해주세요.");
+      };
+    }
+
+    if (typeof window.sendP2P !== "function") {
+      window.sendP2P = function () {
+        if (U.wallet && typeof U.wallet.sendP2P === "function") return U.wallet.sendP2P();
+        alert("송금 기능 로딩중입니다. 잠시 후 다시 시도해주세요.");
+      };
+    }
+  }
+
+  function init() {
+    bindGlobals();
+    bindBasicButtons();
+    try { updateHeaderUI(); } catch (_) {}
+    try { updateNicknameButton(); } catch (_) {}
+    try { updateWalletUI(); } catch (_) {}
+  }
+
+  // 외부에서 호출 가능하게 노출
+  U.ui.openTab = openTab;
+  U.ui.updateHeaderUI = updateHeaderUI;
+  U.ui.updateNicknameButton = updateNicknameButton;
+  U.ui.updateWalletUI = updateWalletUI;
+  U.ui.bindBasicButtons = bindBasicButtons;
+  U.ui.init = init;
+
+  // 중복 init 방지
+  if (!window.__UNIQUE_UI_INIT__) {
+    window.__UNIQUE_UI_INIT__ = true;
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  }
 })();
