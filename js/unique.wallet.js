@@ -105,43 +105,44 @@
     });
   }
 
-  function updateUtViz() {
-    const root = document.querySelector("[data-ut-viz]");
-    if (!root) return;
+ function updateUtViz() {
+  const root = document.querySelector("[data-ut-viz]");
+  if (!root) return;
 
-    const ring = root.querySelector("[data-ut-ring]");
-    const pctEl = root.querySelector("[data-ut-pct]");
-    const totalEl = root.querySelector("[data-ut-total]");
-    const myEl = root.querySelector("[data-ut-my]");
+  const ring = root.querySelector("[data-ut-ring]");
+  const pctEl = root.querySelector("[data-ut-pct]");
+  const totalEl = root.querySelector("[data-ut-total]");
+  const myEl = root.querySelector("[data-ut-my]");
 
-    const my = Number((U.STATE && U.STATE.user && U.STATE.user.balance) ?? localStorage.getItem("myUtPoints") ?? 0);
-    const total = Number((U.STATE && U.STATE.totalUT) ?? 0);
+  let my = Number((U.STATE && U.STATE.user && U.STATE.user.balance) ?? localStorage.getItem("myUtPoints") ?? 0);
+  let total = Number((U.STATE && U.STATE.totalUT) ?? 0);
 
-    const pct = (total > 0 && Number.isFinite(my))
-      ? Math.max(0, Math.min(100, (my / total) * 100))
-      : 0;
+  if (!Number.isFinite(my) || my < 0) my = 0;
+  if (!Number.isFinite(total) || total < 0) total = 0;
 
-    const deg = (pct * 3.6);
-const dialDeg = (pct * 1.8) - 90;
+  const pct = total > 0 ? Math.max(0, Math.min(100, (my / total) * 100)) : 0;
 
-if (ring) {
-  ring.style.setProperty("--p", pct.toFixed(2));
-  ring.style.setProperty("--deg", deg.toFixed(2) + "deg");
-  ring.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
-}
+  const deg = pct * 3.6;
+  const dialDeg = total > 0 ? (pct * 1.8) - 90 : -90; // 0% 기본 위치(왼쪽끝). 원하면 0으로 바꿔도 됨
 
-const donut = root.querySelector(".ut-donut");
-if (donut) {
-  donut.style.setProperty("--p", pct.toFixed(2));
-  donut.style.setProperty("--deg", deg.toFixed(2) + "deg");
-  donut.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
-}
-
-    if (pctEl) pctEl.textContent = pct.toFixed(2);
-
-    if (totalEl) totalEl.textContent = `${fmtNum(total, 0)} UT`;
-    if (myEl) myEl.textContent = `${fmtNum(my, 2)} UT`;
+  if (ring) {
+    ring.style.setProperty("--p", pct.toFixed(2));
+    ring.style.setProperty("--deg", deg.toFixed(2) + "deg");
+    ring.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
   }
+
+  const donut = root.querySelector(".ut-donut");
+  if (donut) {
+    donut.style.setProperty("--p", pct.toFixed(2));
+    donut.style.setProperty("--deg", deg.toFixed(2) + "deg");
+    donut.style.setProperty("--dial", dialDeg.toFixed(2) + "deg");
+  }
+
+  if (pctEl) pctEl.textContent = pct.toFixed(2);
+  if (totalEl) totalEl.textContent = `${fmtNum(total, 0)} UT`;
+  if (myEl) myEl.textContent = `${fmtNum(my, 2)} UT`;
+}
+
 
   // =========================
   // Auth
@@ -234,8 +235,15 @@ if (donut) {
       try {
         const r = await U.api.jsonp("getStats", {});
         if (r && r.ok && r.stats) {
-          const total = Number(r.stats.total_ut_supply ?? r.stats.total_ut ?? 0);
-          U.STATE.totalUT = Number.isFinite(total) ? total : 0;
+          const total = Number(
+  r.stats.total_earned_ut ??
+  r.stats.total_ut_minted ??
+  r.stats.total_ut_supply ??
+  r.stats.total_ut ??
+  0
+);
+U.STATE.totalUT = Number.isFinite(total) ? total : 0;
+
 
           // ✅ 총 발행 갱신될 때 도표 갱신
           try { updateUtViz(); } catch(_) {}
