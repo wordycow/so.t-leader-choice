@@ -3,22 +3,44 @@
   const U = window.UNIQUE;
 
   U.ui = {
+    // ✅ 경고(aria-hidden + focus) 방지 버전
     openTab(evt, tabName) {
-      const content = document.getElementsByClassName("tb-content");
-      for (let i = 0; i < content.length; i++) content[i].classList.remove("active");
+      const tabs = Array.from(document.getElementsByClassName("tb-content"));
+      const activeEl = document.activeElement;
 
-      const tablinks = document.getElementsByClassName("tb-tab-btn");
-      for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
+      // 1) 숨길 탭 안에 포커스가 있으면 먼저 blur (유튜브/버튼 포커스 경고 방지)
+      if (activeEl) {
+        for (const t of tabs) {
+          const willHide = (t.id !== tabName) && t.classList.contains("active");
+          if (willHide && t.contains(activeEl) && typeof activeEl.blur === "function") {
+            activeEl.blur();
+            break;
+          }
+        }
+      }
 
-      const target = document.getElementById(tabName);
-      if (target) target.classList.add("active");
+      // 2) 탭 show/hide + aria-hidden/inert 정리
+      for (const t of tabs) {
+        const isOn = (t.id === tabName);
+
+        t.classList.toggle("active", isOn);
+
+        // 접근성 속성 정리
+        t.setAttribute("aria-hidden", isOn ? "false" : "true");
+        if (isOn) t.removeAttribute("inert");
+        else t.setAttribute("inert", "");
+      }
+
+      // 3) 탭 버튼 active 처리
+      const tablinks = Array.from(document.getElementsByClassName("tb-tab-btn"));
+      tablinks.forEach((b) => b.classList.remove("active"));
       if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 
       try { U.ui.updateWalletUI(); } catch (_) {}
     },
 
     updateHeaderUI() {
-      const u = U.STATE.user || U.auth.getUser() || {};
+      const u = U.STATE.user || (U.auth && U.auth.getUser ? U.auth.getUser() : {}) || {};
       const id = String(u.id || "").trim();
       const name = String(u.name || "").trim();
       const team = String(u.team || "").trim();
@@ -30,20 +52,26 @@
       if (memberName) memberName.textContent = id || "Unknown";
 
       const teamEl = document.getElementById("member-team");
-      if (teamEl) teamEl.textContent = U.auth.isHQ() ? "소속: HQ" : (team ? "소속: " + team : "소속: -");
+      if (teamEl) {
+        const isHQ = (U.auth && U.auth.isHQ) ? U.auth.isHQ() : false;
+        teamEl.textContent = isHQ ? "소속: HQ" : (team ? "소속: " + team : "소속: -");
+      }
 
       const tbUser = document.getElementById("tb-user-name");
       if (tbUser) tbUser.textContent = name || id || "User";
 
       const adminLink = document.getElementById("ebook-admin-link");
-      if (adminLink && !U.auth.isHQ()) adminLink.style.display = "none";
+      if (adminLink) {
+        const isHQ = (U.auth && U.auth.isHQ) ? U.auth.isHQ() : false;
+        if (!isHQ) adminLink.style.display = "none";
+      }
     },
 
     updateNicknameButton() {
       const btn = document.getElementById("btn-nick-reg");
       if (!btn) return;
 
-      const u = U.STATE.user || U.auth.getUser() || {};
+      const u = U.STATE.user || (U.auth && U.auth.getUser ? U.auth.getUser() : {}) || {};
       const id = String(u.id || "").toLowerCase().trim();
       const savedNick = (id ? localStorage.getItem("myNickname_" + id) : "") || "";
 
@@ -60,7 +88,10 @@
 
     updateWalletUI() {
       const ut = parseFloat(localStorage.getItem("myUtPoints") || "0");
-      const price = (Number.isFinite(U.STATE.utPrice) && U.STATE.utPrice > 0) ? U.STATE.utPrice : 0.02;
+      const price =
+        (Number.isFinite(U.STATE && U.STATE.utPrice) && U.STATE.utPrice > 0)
+          ? U.STATE.utPrice
+          : 0.02;
 
       // tab-main
       const myUtEl = document.getElementById("my-ut-display");
@@ -88,48 +119,52 @@
     },
 
     bindBasicButtons() {
-      const workBtn = document.getElementById("work-btn");
-      if (workBtn && workBtn.dataset.bound !== "1") {
-        workBtn.dataset.bound = "1";
-        workBtn.addEventListener("click", () => window.open("the-unique-work-tool.html", "_blank"));
-      }
+      const bindOnce = (el, key, fn) => {
+        if (!el) return;
+        if (el.dataset.bound === "1") return;
+        el.dataset.bound = "1";
+        el.addEventListener("click", fn);
+      };
 
-      const sotBtn = document.getElementById("sot-btn");
-      if (sotBtn && sotBtn.dataset.bound !== "1") {
-        sotBtn.dataset.bound = "1";
-        sotBtn.addEventListener("click", () => window.open("https://www.ssoti.com/", "_blank"));
-      }
+      bindOnce(document.getElementById("work-btn"), "work", () =>
+        window.open("the-unique-work-tool.html", "_blank")
+      );
 
-      const travelBtn = document.getElementById("travel-btn");
-      if (travelBtn && travelBtn.dataset.bound !== "1") {
-        travelBtn.dataset.bound = "1";
-        travelBtn.addEventListener("click", () => window.open("index.html", "_blank"));
-      }
+      bindOnce(document.getElementById("sot-btn"), "sot", () =>
+        window.open("https://www.ssoti.com/", "_blank")
+      );
 
-      const linkonBtn = document.getElementById("ppt-form-btn");
-      if (linkonBtn && linkonBtn.dataset.bound !== "1") {
-        linkonBtn.dataset.bound = "1";
-        linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
-      }
+      bindOnce(document.getElementById("travel-btn"), "travel", () =>
+        window.open("index.html", "_blank")
+      );
 
-      const marketBtn = document.getElementById("market-btn");
-      if (marketBtn && marketBtn.dataset.bound !== "1") {
-        marketBtn.dataset.bound = "1";
-        marketBtn.addEventListener("click", () => window.open("market.html", "_blank"));
-      }
+      bindOnce(document.getElementById("ppt-form-btn"), "linkon", () =>
+        window.open("https://linkon.gift/", "_blank")
+      );
 
-      const logoutBtn = document.getElementById("logout-btn");
-      if (logoutBtn && logoutBtn.dataset.bound !== "1") {
-        logoutBtn.dataset.bound = "1";
-        logoutBtn.addEventListener("click", () => {
-          if (confirm("로그아웃 하시겠습니까?")) {
-            localStorage.removeItem("uniqueCurrentUser");
-            window.location.href = "the-unique-gate.html";
-          }
-        });
-      }
+      bindOnce(document.getElementById("market-btn"), "market", () =>
+        window.open("market.html", "_blank")
+      );
+
+      bindOnce(document.getElementById("logout-btn"), "logout", () => {
+        if (confirm("로그아웃 하시겠습니까?")) {
+          localStorage.removeItem("uniqueCurrentUser");
+          window.location.href = "the-unique-gate.html";
+        }
+      });
     }
   };
+
+  // ✅ 초기 상태에서도 aria-hidden/inert 정리(첫 로딩 안정화)
+  try {
+    const tabs = Array.from(document.getElementsByClassName("tb-content"));
+    tabs.forEach((t) => {
+      const isOn = t.classList.contains("active");
+      t.setAttribute("aria-hidden", isOn ? "false" : "true");
+      if (isOn) t.removeAttribute("inert");
+      else t.setAttribute("inert", "");
+    });
+  } catch (_) {}
 
   window.openTab = U.ui.openTab;
 })();
