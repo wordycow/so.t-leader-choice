@@ -2,1136 +2,685 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>THE UNIQUE: 2D GIANT ROULETTE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THE UNIQUE: So.T ROYAL ROULETTE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
     :root{
-      --bg1:#090014;
-      --bg2:#1a001f;
-      --pink:#ff0055;
-      --gold:#ffd700;
-      --cyan:#00f3ff;
-      --panel: rgba(0,0,0,0.35);
-      --panel2: rgba(0,0,0,0.55);
-      --stroke: rgba(255,255,255,0.10);
-      --txt:#ffffff;
-      --muted: rgba(255,255,255,0.70);
-      --danger:#ff4757;
-      --ok:#00ff44;
+      /* So.T Branding Colors */
+      --bg-dark: #050510;
+      --bg-panel: rgba(20, 20, 35, 0.65);
+      --so-gradient: linear-gradient(135deg, #00f260 0%, #0575e6 100%); /* Green to Blue */
+      --accent-gold: #ffd700;
+      --accent-pink: #ff0055;
+      --text-main: #ffffff;
+      --text-muted: rgba(255,255,255,0.6);
+      --stroke-light: rgba(255,255,255,0.1);
+      --danger: #ff4757;
     }
 
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,"Noto Sans KR",sans-serif;color:var(--txt);}
-    body{
-      background:
-        radial-gradient(circle at 30% 20%, rgba(255,0,85,0.45), rgba(0,0,0,0) 45%),
-        radial-gradient(circle at 70% 80%, rgba(0,243,255,0.18), rgba(0,0,0,0) 55%),
-        linear-gradient(135deg, var(--bg1), var(--bg2));
+    /* Reset & Base */
+    *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+    html,body{
+      margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+      font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+    }
+    
+    /* Background Aurora Effect */
+    body::before {
+      content:""; position:fixed; inset:0; z-index:-1;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(5, 117, 230, 0.15), transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 242, 96, 0.1), transparent 40%);
     }
 
-    /* 상단 마키 */
+    /* Top Marquee */
     .marquee-wrap{
-      position:fixed; left:0; right:0; top:0; z-index:50;
+      position:fixed; left:0; right:0; top:0; z-index:100;
       height:44px; display:flex; align-items:center;
-      background: linear-gradient(90deg, rgba(0,0,0,0.65), rgba(0,0,0,0.25), rgba(0,0,0,0.65));
-      border-bottom: 1px solid var(--stroke);
-      padding:0 14px;
-      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,0.4);
+      border-bottom: 1px solid var(--stroke-light);
+      backdrop-filter: blur(10px);
     }
     .marquee-text{
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      font-weight:800;
-      letter-spacing:0.2px;
-      font-size:14px;
-      color:#fff;
-      text-shadow:0 0 14px rgba(0,0,0,0.65);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      font-weight:700; font-size:14px; color: #fff;
+      padding: 0 16px; width: 100%; text-align: center;
+      text-shadow: 0 0 10px rgba(0,242,96,0.5);
     }
 
-    /* 레이아웃 */
+    /* Main Layout */
     .layout{
       position:fixed; inset:44px 0 0 0;
-      display:grid;
-      grid-template-columns: 1fr;
-      grid-template-rows: 1fr;
+      display:grid; 
+      grid-template-columns: 1fr; 
+      grid-template-rows: 1fr auto;
     }
 
-    /* 데스크탑: 오른쪽 사이드 패널 */
-    @media (min-width: 980px){
+    /* PC Layout override */
+    @media (min-width: 1024px){
       .layout{
-        grid-template-columns: 1fr 420px;
-      }
-      .side{
-        border-left: 1px solid var(--stroke);
-        background: rgba(0,0,0,0.18);
-        backdrop-filter: blur(10px);
+        grid-template-columns: 1fr 400px;
+        grid-template-rows: 1fr;
       }
     }
 
-    /* 게임 스테이지 */
+    /* GAME STAGE (Wheel Area) */
     .stage{
-      position:relative;
-      width:100%;
-      height:100%;
+      position:relative; width:100%; height:100%;
       overflow:hidden;
+      /* Remove random borders */
+      border:none; 
     }
+    
+    canvas{ display:block; width:100%; height:100%; }
 
-    /* 왼쪽 장식 스트립(기존 느낌 유지) */
-    .left-strip{
-      position:absolute; left:0; top:0; bottom:0; width:72px;
-      background: linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.35), rgba(0,0,0,0.75));
-      z-index:5;
-    }
-    .left-strip:before{
-      content:"";
-      position:absolute; left:62px; top:-20%; bottom:-20%; width:10px;
-      background: linear-gradient(180deg, var(--gold), rgba(0,0,0,0));
-      filter: drop-shadow(0 0 10px rgba(255,215,0,0.45));
-      transform: skewY(-12deg);
-      opacity:0.9;
-    }
-    .left-strip:after{
-      content:"";
-      position:absolute; left:52px; top:-20%; bottom:-20%; width:10px;
-      background: rgba(0,0,0,0.85);
-      transform: skewY(-12deg);
-      opacity:0.95;
-    }
-
-    /* 포인터(화살표) - 더 나이스하게 */
-    .pointer{
-      position:absolute;
-      left:18px;
-      top:50%;
+    /* Premium Pointer (Stopper Style) - Pointing INWARD */
+    .pointer-wrap {
+      position:absolute; left:0; top:50%;
       transform:translateY(-50%);
-      z-index:20;
-      width:42px;
-      height:42px;
-      filter: drop-shadow(0 0 14px rgba(255,215,0,0.55));
+      width: 60px; height: 80px;
+      z-index: 20;
+      display:flex; align-items:center;
     }
-    .pointer:before{
-      content:"";
-      position:absolute; inset:0;
-      clip-path: polygon(0 50%, 100% 0, 100% 100%);
-      background: linear-gradient(180deg, rgba(255,215,0,0.95), rgba(255,153,0,0.95));
-      border-radius:10px;
-      box-shadow: 0 0 18px rgba(255,215,0,0.45);
+    .pointer-body {
+      width: 50px; height: 30px;
+      background: linear-gradient(90deg, #ffd700, #b8860b);
+      clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
+      box-shadow: 0 0 20px rgba(255,215,0,0.6);
+      border-radius: 4px 0 0 4px;
     }
-    .pointer:after{
-      content:"";
-      position:absolute;
-      left:10px; top:50%;
-      transform:translateY(-50%);
-      width:10px; height:10px;
-      border-radius:999px;
-      background: rgba(0,0,0,0.85);
-      box-shadow: inset 0 0 8px rgba(255,255,255,0.15);
+    .pointer-glow {
+      position:absolute; left:40px; top:50%; transform:translateY(-50%);
+      width:10px; height:10px; background:#fff; border-radius:50%;
+      box-shadow: 0 0 15px #fff;
     }
 
-    /* 캔버스 */
-    canvas{position:absolute; inset:0; width:100%; height:100%; z-index:10;}
-
-    /* 중앙 카운트다운 */
+    /* Center Countdown (Last 10s) */
     .center-countdown{
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform: translate(-50%,-50%);
-      z-index:30;
-      width:90px; height:90px;
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5);
+      width:120px; height:120px;
       display:flex; align-items:center; justify-content:center;
-      border-radius:999px;
-      font-size:38px;
-      font-weight:900;
-      background: rgba(0,0,0,0.45);
-      border:1px solid rgba(255,255,255,0.10);
-      box-shadow: 0 0 30px rgba(0,0,0,0.6);
-      opacity:0;
-      pointer-events:none;
+      border-radius:50%;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid var(--danger);
+      color: var(--danger);
+      font-size: 50px; font-weight:900;
+      opacity:0; pointer-events:none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 50;
     }
-    .center-countdown.active{
-      opacity:1;
-      animation: pop 0.25s ease;
-    }
-    @keyframes pop{
-      from{transform:translate(-50%,-50%) scale(0.92); opacity:0.4;}
-      to{transform:translate(-50%,-50%) scale(1); opacity:1;}
-    }
+    .center-countdown.active{ opacity:1; transform:translate(-50%,-50%) scale(1); }
 
-    /* 사이드 패널 */
+    /* SIDE PANEL (UI) */
     .side{
       position:relative;
-      height:100%;
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      overflow:hidden;
+      background: var(--bg-panel);
+      backdrop-filter: blur(20px);
+      padding: 16px;
+      display:flex; flex-direction:column; gap:12px;
+      border-left: none; /* Removed ugly border */
+      box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+      z-index: 30;
     }
 
-    /* HUD(총판돈/시간) */
-    .hud{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
+    /* Total Equity HUD - Bigger & Better */
+    .hud-main {
+      text-align:center; padding: 15px;
+      background: rgba(0,0,0,0.3); border-radius:16px;
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    .hud-box{
-      background: rgba(0,0,0,0.35);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:16px;
-      padding:12px 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+    .hud-label { font-size:12px; color:var(--text-muted); margin-bottom:4px; font-weight:700; letter-spacing:1px; }
+    .hud-value { 
+      font-size:32px; font-weight:900; 
+      background: linear-gradient(to right, #fff, #ffd700);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .hud-label{font-size:12px;color:rgba(255,255,255,0.70);font-weight:800;letter-spacing:0.4px;}
-    .hud-value{margin-top:6px;font-size:20px;font-weight:900;color:var(--gold);}
-    .hud-timer{margin-top:6px;font-size:20px;font-weight:900;color:var(--danger);}
+    
+    .timer-bar {
+      display:flex; justify-content:space-between; align-items:center;
+      background: rgba(0,0,0,0.3); padding: 10px 16px; border-radius:12px;
+    }
+    .timer-val { font-size:20px; font-weight:800; color:var(--text-main); font-variant-numeric: tabular-nums; }
+    .timer-val.urgent { color: var(--danger); animation: pulse 1s infinite; }
 
-    /* 실시간 지분 현황(PC는 TIME LEFT 밑에 “붙는” 느낌) */
-    .list-panel{
-      background: rgba(0,0,0,0.35);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:16px;
-      padding:12px 12px;
-      overflow:hidden;
-      flex: 1 1 auto;
-      min-height: 220px;
+    @keyframes pulse { 0%{opacity:1;} 50%{opacity:0.5;} 100%{opacity:1;} }
+
+    /* Participant List */
+    .list-panel {
+      flex: 1; min-height: 150px;
+      background: rgba(0,0,0,0.2); border-radius:16px;
+      display:flex; flex-direction:column;
+      overflow:hidden; border: 1px solid rgba(255,255,255,0.05);
     }
-    .list-header{
-      font-weight:900;
-      font-size:14px;
-      margin-bottom:10px;
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+    .list-header { 
+      padding:12px; font-size:13px; font-weight:700; color:var(--text-muted); 
+      background:rgba(255,255,255,0.03); display:flex; justify-content:space-between;
     }
-    .list{
-      overflow:auto;
-      max-height: 100%;
-      padding-right:6px;
+    .list-content { flex:1; overflow-y:auto; padding:8px; }
+    
+    .p-row {
+      display:flex; align-items:center; gap:10px; padding:8px;
+      margin-bottom:4px; border-radius:8px;
+      background: rgba(255,255,255,0.02); transition:0.2s;
     }
-    .list::-webkit-scrollbar{width:8px}
-    .list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:999px}
-    .list-item{
-      display:grid;
-      grid-template-columns: 18px 1fr 90px;
-      gap:10px;
-      align-items:center;
-      padding:10px 10px;
-      border-radius:12px;
-      background: rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.08);
-      margin-bottom:8px;
+    .p-row:hover { background: rgba(255,255,255,0.05); }
+    .p-dot { width:8px; height:8px; border-radius:50%; box-shadow:0 0 8px currentColor;}
+    .p-name { flex:1; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .p-amt { font-size:14px; font-weight:700; color: var(--accent-gold); }
+
+    /* CONTROLS - FIXED LAYOUT */
+    .controls {
+      background: rgba(0,0,0,0.4); padding:16px; border-radius:20px 20px 0 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .p-color{
-      width:12px;height:12px;border-radius:999px;
-    }
-    .p-name{
-      font-weight:900;
-      font-size:14px;
-      color:#fff;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-    .p-amt{
-      text-align:right;
-      font-weight:900;
-      color:var(--gold);
-      font-variant-numeric: tabular-nums;
+    @media (min-width:1024px){ .controls { border-radius:16px; border: 1px solid rgba(255,255,255,0.1); } }
+
+    .bet-grid {
+      display:grid; 
+      grid-template-columns: auto auto 1fr auto auto; 
+      gap: 6px; 
+      margin-bottom: 12px;
     }
 
-    /* 컨트롤 */
-    .controls{
-      background: rgba(0,0,0,0.35);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:16px;
-      padding:12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+    .btn-ctrl {
+      background: rgba(255,255,255,0.1); border:none; color:#fff;
+      border-radius: 8px; font-weight:700; font-size:12px;
+      padding: 0 10px; height: 44px; cursor:pointer;
+      transition: all 0.1s;
+      min-width: 48px;
     }
-    .bet-box{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .btn-bet{
-      padding:10px 10px;
-      border:none;
-      border-radius:12px;
-      background: rgba(255,255,255,0.08);
-      color:#fff;
-      font-weight:900;
-      cursor:pointer;
-      transition: transform .08s ease, background .12s ease;
-      border:1px solid rgba(255,255,255,0.10);
-      min-width:56px;
-    }
-    .btn-bet:hover{background: rgba(255,255,255,0.12)}
-    .btn-bet:active{transform: scale(0.98)}
-    .btn-min{min-width:62px}
-    .btn-max{min-width:62px}
-
-    .input-bet{
-      flex:1;
-      text-align:center;
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.35);
-      color:#fff;
-      font-size:16px;
-      font-weight:900;
-      outline:none;
+    .btn-ctrl:active { transform:scale(0.96); background:rgba(255,255,255,0.2); }
+    
+    .inp-bet {
+      background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2);
+      color: #fff; text-align:center; font-size:16px; font-weight:700;
+      border-radius: 8px; width:100%; height:44px; outline:none;
     }
 
-    .btn-join{
-      width:100%;
-      padding:14px 12px;
-      border:none;
-      border-radius:14px;
-      background: linear-gradient(90deg, rgba(255,0,85,0.95), rgba(255,102,0,0.95));
-      color:#fff;
-      font-weight:900;
-      letter-spacing:0.2px;
-      cursor:pointer;
-      box-shadow: 0 16px 34px rgba(255,0,85,0.18);
-      border:1px solid rgba(255,255,255,0.10);
-      transition: transform .08s ease, filter .12s ease;
+    .btn-action {
+      width:100%; height:50px; border:none; border-radius:12px;
+      background: var(--so-gradient);
+      color:#fff; font-size:16px; font-weight:800;
+      cursor:pointer; box-shadow: 0 4px 15px rgba(0, 242, 96, 0.3);
+      transition: filter 0.2s, transform 0.1s;
     }
-    .btn-join:hover{filter: brightness(1.03)}
-    .btn-join:active{transform: scale(0.99)}
-    .btn-join:disabled{
-      opacity:0.55;
-      cursor:not-allowed;
-      filter: grayscale(0.15);
-    }
+    .btn-action:disabled { background: #333; color:#777; box-shadow:none; cursor:not-allowed; }
+    .btn-action:active { transform:scale(0.98); }
 
-    .mybal{
-      font-size:12px;
-      color: rgba(255,255,255,0.75);
+    .my-asset { 
+      text-align:right; font-size:12px; color:var(--text-muted); margin-top:8px; 
     }
-    .mybal span{color:#fff;font-weight:900}
+    .my-asset span { color:#fff; font-weight:700; margin-left:4px; }
 
-    /* 모바일: 사이드 패널을 하단 카드처럼 */
-    @media (max-width: 979px){
-      html,body{overflow:auto}
-      .layout{position:static; inset:auto; height:auto; overflow:auto;}
-      .stage{height:72vh; min-height:520px;}
-      .side{height:auto;}
-      .list-panel{min-height:180px;}
+    /* MODAL */
+    .modal-overlay {
+      position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.8);
+      display:none; align-items:center; justify-content:center; padding:20px;
     }
+    .modal-overlay.active { display:flex; }
+    .modal-box {
+      width:100%; max-width:400px;
+      background: #12121c; border:1px solid rgba(255,255,255,0.1);
+      border-radius:20px; padding:24px; text-align:center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    .modal-title { font-size:22px; font-weight:800; margin-bottom:8px; color:#fff; }
+    .modal-desc { font-size:14px; color:var(--text-muted); margin-bottom:20px; }
+    
+    .color-grid { display:grid; grid-template-columns: repeat(5,1fr); gap:8px; margin-bottom:20px; }
+    .c-btn {
+      aspect-ratio:1; border-radius:8px; cursor:pointer; 
+      border:2px solid transparent; transition:transform 0.1s;
+    }
+    .c-btn.selected { border-color:#fff; transform:scale(1.1); box-shadow:0 0 10px rgba(255,255,255,0.5); }
+    .c-btn.disabled { opacity:0.2; pointer-events:none; }
 
-    /* 모달 */
-    .modal-overlay{
-      position:fixed; inset:0;
-      display:none;
-      align-items:center; justify-content:center;
-      background: rgba(0,0,0,0.72);
-      z-index:200;
-      padding:16px;
-    }
-    .modal-overlay.active{display:flex}
-    .modal-box{
-      width:min(520px, 92vw);
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.55);
-      backdrop-filter: blur(10px);
-      padding:16px;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-    }
-    .modal-title{
-      font-weight:1000;
-      font-size:20px;
-      margin-bottom:6px;
-      color:#fff;
-    }
-    .modal-sub{color: rgba(255,255,255,0.75); margin-bottom:12px; font-weight:700;}
-    .color-grid{
-      display:grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap:10px;
-      margin-bottom:12px;
-    }
-    .color-btn{
-      height:42px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.18);
-      cursor:pointer;
-      transition: transform .08s ease, filter .12s ease, opacity .12s ease;
-    }
-    .color-btn:hover{filter: brightness(1.03)}
-    .color-btn:active{transform:scale(0.98)}
-    .color-btn.disabled{
-      opacity:0.25;
-      cursor:not-allowed;
-      filter: grayscale(0.25);
-    }
-    .color-btn.selected{
-      outline: 2px solid rgba(255,255,255,0.85);
-      transform: scale(1.02);
-    }
-
-    .btn-confirm, .btn-close{
-      width:100%;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.12);
-      font-weight:900;
-      cursor:pointer;
-      background: rgba(255,255,255,0.08);
-      color:#fff;
-    }
-    .btn-confirm{
-      background: linear-gradient(90deg, rgba(0,243,255,0.35), rgba(255,215,0,0.22));
-    }
-    .btn-confirm:disabled{opacity:0.45; cursor:not-allowed}
+    .result-amt { font-size:36px; font-weight:900; color:var(--accent-gold); margin:10px 0; }
   </style>
 </head>
-
 <body>
+
   <div class="marquee-wrap">
-    <div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 🔥</div>
+    <div class="marquee-text" id="marqueeText">So.T 프리미엄 룰렛에 오신 것을 환영합니다!</div>
   </div>
 
   <div class="layout">
-    <!-- LEFT: GAME -->
     <div class="stage">
-      <div class="left-strip"></div>
-      <div class="pointer"></div>
       <canvas id="canvas"></canvas>
-      <div id="centerCount" class="center-countdown">60</div>
+      
+      <div class="pointer-wrap">
+        <div class="pointer-body"></div>
+        <div class="pointer-glow"></div>
+      </div>
+      
+      <div id="centerCount" class="center-countdown"></div>
     </div>
 
-    <!-- RIGHT: SIDE PANEL (PC에서 TIME LEFT 밑에 Live Rank + BET) -->
     <aside class="side">
-      <div class="hud">
-        <div class="hud-box">
-          <div class="hud-label">TOTAL EQUITY</div>
-          <div class="hud-value" id="poolDisplay">0 UT</div>
-        </div>
-        <div class="hud-box">
-          <div class="hud-label">TIME LEFT</div>
-          <div class="hud-timer" id="timerDisplay">--:--</div>
-        </div>
+      
+      <div class="hud-main">
+        <div class="hud-label">TOTAL EQUITY</div>
+        <div class="hud-value" id="poolDisplay">0 UT</div>
+      </div>
+
+      <div class="timer-bar">
+        <div class="hud-label" style="margin:0;">TIME LEFT</div>
+        <div class="timer-val" id="timerDisplay">--:--</div>
       </div>
 
       <div class="list-panel">
         <div class="list-header">
-          <span>실시간 지분 현황 (Live Rank)</span>
-          <span id="roundBadge" style="font-size:12px; color:rgba(255,255,255,0.65); font-weight:900;">ROUND</span>
+          <span>LIVE RANK</span>
+          <span id="roundBadge">ROUND Loading...</span>
         </div>
-        <div class="list" id="participantList">
-          <div style="text-align:center; color:rgba(255,255,255,0.70); font-size:13px; padding:10px;">대기중...</div>
-        </div>
+        <div class="list-content" id="participantList">
+          </div>
       </div>
 
       <div class="controls">
-        <div class="bet-box">
-          <button class="btn-bet btn-min" id="minBtn" type="button">MIN</button>
-          <button class="btn-bet" id="minusBtn" type="button">-100</button>
-          <input type="number" id="betInput" class="input-bet" value="10" readonly />
-          <button class="btn-bet" id="plusBtn" type="button">+100</button>
-          <button class="btn-bet btn-max" id="maxBtn" type="button">MAX</button>
+        <div class="bet-grid">
+          <button class="btn-ctrl" id="btnMin">MIN</button>
+          <button class="btn-ctrl" id="btnM100">-100</button>
+          <input type="number" id="inpBet" class="inp-bet" value="100" readonly />
+          <button class="btn-ctrl" id="btnP100">+100</button>
+          <button class="btn-ctrl" id="btnMax">MAX</button>
         </div>
-        <button id="joinBtn" class="btn-join" type="button">참여하기 (BET)</button>
-        <div class="mybal">내 자산: <span id="myBalance">Loading...</span></div>
+        <button id="btnJoin" class="btn-action">참여하기 (BET)</button>
+        <div class="my-asset">내 자산: <span id="myBalance">Loading...</span></div>
       </div>
     </aside>
   </div>
 
-  <!-- COLOR MODAL -->
-  <div id="ruleModal" class="modal-overlay">
+  <div id="modalColor" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-title">WELCOME TO CASINO</div>
-      <div class="modal-sub">15분마다 진행되는 승부! 당신의 컬러를 선택하세요.</div>
-      <div style="text-align:left; font-size:14px; color:rgba(255,255,255,0.85); margin-bottom:10px; font-weight:900;">
-        🎨 CHOOSE YOUR COLOR
-      </div>
-      <div id="colorGrid" class="color-grid"></div>
-      <div id="selectedColorName" style="height:20px; color:#fff; font-weight:900; margin-bottom:12px; font-size:13px;"></div>
-      <button id="btnStart" class="btn-confirm" type="button" disabled>GAME START</button>
+      <div class="modal-title">CHOOSE YOUR COLOR</div>
+      <div class="modal-desc">당신을 상징할 컬러를 선택하세요.</div>
+      <div class="color-grid" id="colorGrid"></div>
+      <button id="btnColorConfirm" class="btn-action" disabled>START GAME</button>
     </div>
   </div>
 
-  <!-- RESULT MODAL -->
-  <div id="resultModal" class="modal-overlay">
+  <div id="modalResult" class="modal-overlay">
     <div class="modal-box">
-      <div style="font-size:26px; font-weight:1000; color:var(--gold);">ROUND FINISHED</div>
-      <div style="font-size:12px; color:rgba(255,255,255,0.65); margin-top:10px; font-weight:900;">WINNER</div>
-      <div id="resWinner" style="font-size:34px; font-weight:1000; margin-top:4px;">-</div>
-      <div id="resAmount" style="font-size:18px; font-weight:1000; color:var(--gold); margin-top:6px;">-</div>
-      <div id="resMsg" style="font-size:16px; margin-top:12px; font-weight:1000; color:rgba(255,255,255,0.85);">-</div>
-      <button id="nextRoundBtn" class="btn-close" type="button" style="margin-top:14px;">NEXT ROUND</button>
+      <div class="modal-title" style="color:var(--accent-gold);">ROUND FINISHED</div>
+      <div class="modal-desc">WINNER IS</div>
+      <div id="resWinnerName" style="font-size:24px; font-weight:800; color:#fff; margin-bottom:5px;">-</div>
+      <div id="resPrize" class="result-amt">- UT</div>
+      <div id="resMsg" style="font-size:14px; margin-top:10px; color:#aaa;">-</div>
+      <button id="btnCloseResult" class="btn-action" style="margin-top:20px; background:#444;">NEXT ROUND</button>
     </div>
   </div>
 
   <script>
     // ============================
-    // ✅ CONFIG
+    // ⚙️ CONFIG & STATE
     // ============================
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-    const SYNC_INTERVAL_MS = 1000;     // 1초 동기화
-    const WHEEL_RPM = 3;               // 회전 속도
-    const BET_STEP = 100;
-    const MIN_BET = 10;
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; // 본인 URL 확인 필요
+    
+    const BET_UNIT = 100;
+    const MIN_BET = 100;
+    const WHEEL_RPM = 2.5;
 
-    // ============================
-    // ✅ STATE
-    // ============================
     let myId = "";
     let myWallet = 0;
     let myColor = null;
 
     let currentRoundKey = null;
-    let pendingBet = null; // { roundKey, amountGross, ts }
-
     let gameState = { participants: [], totalPool: 0, rotation: 0 };
     let isBettingProcessing = false;
-    let isFinishing = false;
+    let isLocked = false;
 
-    let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
-    const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 🚨";
-
-    // 서버시간 동기화
-    let serverOffsetMs = 0;       // serverTs - Date.now()
-    let serverNextRoundAtMs = 0;  // 서버가 주는 nextRoundAtMs
+    // Server Sync
+    let serverOffsetMs = 0;
+    let serverNextRoundAtMs = 0;
 
     const synth = window.speechSynthesis;
-
-    const availableColors = [
+    const colors = [
       '#ff0055', '#00ff44', '#00ccff', '#ffdd00', '#aa00ff',
       '#ff6600', '#ffffff', '#ff99cc', '#99ff99', '#6666ff',
-      '#cc0000', '#006600', '#000099', '#663300', '#666666',
+      '#cc0000', '#006600', '#000099', '#663300', '#0575e6',
       '#00ff99', '#ff3399', '#ccff00', '#9900cc', '#33ccff'
     ];
 
     // ============================
-    // ✅ DOM HELPERS
+    // 🛠 UTILS
     // ============================
     const $ = (id) => document.getElementById(id);
-    const safeText = (id, text) => { const el = $(id); if (el) el.innerText = text; };
-    const safeSetDisabled = (id, v) => { const el = $(id); if (el) el.disabled = !!v; };
+    const safeText = (id, txt) => { const el=$(id); if(el) el.innerText=txt; };
 
     function speak(text) {
-      try{
-        if (!synth || synth.speaking) return;
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US';
-        utter.rate = 1.0;
-        utter.pitch = 1.0;
-        synth.speak(utter);
-      }catch(_){}
-    }
-
-    function updateMarquee(text, color="#fff"){
-      const m = $("marqueeText");
-      if (!m) return;
-      m.innerText = text;
-      m.style.color = color;
-    }
-
-    function openModal(id){
-      const m = $(id); if (!m) return;
-      m.classList.add("active");
-    }
-    function closeModal(id){
-      const m = $(id); if (!m) return;
-      m.classList.remove("active");
-    }
-
-    function applyServerClock_(data){
-      if (typeof data.serverTs === "number") {
-        serverOffsetMs = data.serverTs - Date.now();
-      }
-      if (typeof data.nextRoundAtMs === "number") {
-        serverNextRoundAtMs = data.nextRoundAtMs;
-      }
-      // badge
-      if (typeof data.roundMinutes === "number") {
-        safeText("roundBadge", `${data.roundMinutes}MIN`);
-      }
-    }
-
-    function getTimeLeftSec_(){
-      // nextRoundAtMs 기반(권장)
-      if (serverNextRoundAtMs) {
-        const nowServerish = Date.now() + serverOffsetMs;
-        const diff = Math.floor((serverNextRoundAtMs - nowServerish) / 1000);
-        return Math.max(0, diff);
-      }
-      // fallback
-      return 900;
+      if(!synth) return;
+      if(synth.speaking) synth.cancel(); // 말하고 있으면 끊고 새말
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      synth.speak(utter);
     }
 
     // ============================
-    // ✅ COLOR PICKER
+    // 🎨 COLOR PICKER
     // ============================
-    function initColorPicker() {
+    function initColorPicker(){
       const grid = $("colorGrid");
-      if (!grid) return;
       grid.innerHTML = "";
-
-      const usedColors = (gameState.participants || [])
-        .map(p => p.color)
-        .filter(Boolean);
-
-      availableColors.forEach(color => {
-        const btn = document.createElement('div');
-        btn.className = 'color-btn';
-        btn.style.backgroundColor = color;
-        btn.style.boxShadow = `0 0 10px ${color}`;
-
-        if (usedColors.includes(color)) {
-          btn.classList.add('disabled');
-        } else {
-          btn.addEventListener("click", () => pickColor(btn, color));
-        }
+      colors.forEach(c => {
+        const btn = document.createElement("div");
+        btn.className = "c-btn";
+        btn.style.backgroundColor = c;
+        btn.style.boxShadow = `0 0 10px ${c}`;
+        btn.onclick = () => {
+          document.querySelectorAll(".c-btn").forEach(b=>b.classList.remove("selected"));
+          btn.classList.add("selected");
+          myColor = c;
+          $("btnColorConfirm").disabled = false;
+        };
         grid.appendChild(btn);
       });
     }
 
-    function pickColor(btn, color) {
-      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      myColor = color;
-      safeText("selectedColorName", "SELECTED: " + color);
-      safeSetDisabled("btnStart", false);
-    }
-
-    function selectColorAndStart() {
-      if (!myColor) return;
-      localStorage.setItem('rouletteColor_' + myId, myColor);
-      closeModal("ruleModal");
-      fetchGameState(); // 바로 반영
-    }
-
     // ============================
-    // ✅ API
+    // 📡 API & LOGIC
     // ============================
-    async function fetchUserData() {
+    async function fetchUserData(){
       try {
         const url = `${GAS_URL}?action=getUserInfo&id=${encodeURIComponent(myId)}&_=${Date.now()}`;
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url);
         const data = await res.json();
-        if (data && data.result === "success") {
-          myWallet = Number(data.balance || 0);
-          safeText("myBalance", myWallet.toLocaleString() + " UT");
+        if(data.result === "success"){
+          myWallet = Number(data.balance||0);
+          $("myBalance").innerHTML = myWallet.toLocaleString() + " <span>UT</span>";
         }
-      } catch (e) {
-        console.error("fetchUserData:", e);
-      }
+      } catch(e){ console.error(e); }
     }
 
-    async function fetchGameState(isInitial=false) {
-      // 모달 떠있으면 동기화 너무 세게 하지 않음(결과 모달은 제외)
-      if (isBettingProcessing) return;
-
+    async function fetchGameState(){
+      if(isBettingProcessing) return; // 배팅중엔 동기화 스킵
       try {
         const url = `${GAS_URL}?action=getRouletteState&_=${Date.now()}`;
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url);
         const data = await res.json();
-        if (!data || data.result !== "success") return;
+        if(data.result !== "success") return;
 
-        applyServerClock_(data);
+        // 시간 동기화
+        if(data.serverTs) serverOffsetMs = data.serverTs - Date.now();
+        if(data.nextRoundAtMs) serverNextRoundAtMs = data.nextRoundAtMs;
 
-        // lastWinner 표시
-        if (data.lastWinner && data.lastWinner.name) {
-          lastWinnerMsg = `🏆 지난 라운드 승자: ${data.lastWinner.name} (상금: ${Number(data.lastWinner.prize||0).toLocaleString()} UT) 🏆`;
-        } else {
-          lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
+        // 라운드 변경 감지
+        const newKey = String(data.roundKey || "");
+        if(currentRoundKey && newKey !== currentRoundKey){
+          // 라운드 바뀜 -> 결과 확인 로직 (간단히 리로드 유도하거나 모달 띄움)
+          if(!$("modalResult").classList.contains("active")) checkResult(currentRoundKey);
         }
-        if (isInitial) updateMarquee(lastWinnerMsg, "#fff");
+        currentRoundKey = newKey;
+        safeText("roundBadge", `ROUND ${newKey.slice(-5)}`); // HH:mm 표시
 
-        const rk = String(data.roundKey || "").trim();
-        const prevKey = currentRoundKey;
-        const roundChanged = (prevKey && rk && rk !== prevKey);
+        // 참가자 & 지분 데이터
+        gameState.participants = (data.participants||[]).map(p => ({
+          name: p.name,
+          amount: Number(p.amount||0),
+          color: p.color || "#fff"
+        })).sort((a,b)=>b.amount - a.amount);
 
-        if (!currentRoundKey && rk) currentRoundKey = rk;
-
-        if (roundChanged) {
-          currentRoundKey = rk;
-          pendingBet = null;
-          safeText("roundBadge", "ROUND");
-          const betInput = $("betInput");
-          if (betInput) betInput.value = MIN_BET;
-
-          // ✅ 라운드 바뀌면 “바로 직전 라운드” 결과 모달(서버 기준)
-          if (!isFinishing && !$("resultModal")?.classList.contains("active")) {
-            finishRoundServerBased(prevKey);
-          }
-
-          updateMarquee(lastWinnerMsg, "#00f3ff");
-        } else {
-          if (rk) currentRoundKey = rk;
-        }
-
-        // 참가자 매핑
-        let serverParticipants = (data.participants || []).map(sp => {
-          const name = sp.name;
-          let color = sp.color;
-
-          if (name === "Company") color = "#ff0055";
-          if (name === myId && myColor) color = myColor;
-          if (!color) color = `hsl(${Math.floor(Math.random()*360)}, 100%, 60%)`;
-
-          return { name, amount: Number(sp.amount || 0), color };
-        });
-
-        // 같은 라운드에서만 임시 표시(10초)
-        if (pendingBet && pendingBet.roundKey === currentRoundKey && (Date.now() - pendingBet.ts) < 10000) {
-          if (!serverParticipants.find(p => p.name === myId)) {
-            serverParticipants.push({ name: myId, amount: pendingBet.amountGross, color: myColor || "#fff" });
-          }
-        }
-
-        // 정렬 안정화
-        serverParticipants.sort((a,b) => (b.amount - a.amount) || String(a.name).localeCompare(String(b.name)));
-
-        gameState.participants = serverParticipants;
-        gameState.totalPool = serverParticipants.reduce((acc,p)=> acc + (Number(p.amount)||0), 0);
-
+        gameState.totalPool = gameState.participants.reduce((acc,p)=>acc+p.amount,0);
         safeText("poolDisplay", gameState.totalPool.toLocaleString() + " UT");
+
         updateListUI();
 
-      } catch (e) {
-        console.error("fetchGameState:", e);
-      }
+        // 지난 우승자 Marquee
+        if(data.lastWinner && data.lastWinner.name){
+          const w = data.lastWinner;
+          $("marqueeText").innerText = `🏆 이전 라운드 승자: ${w.name} (${w.prize.toLocaleString()} UT) 🏆`;
+        }
+
+      } catch(e){ console.error(e); }
     }
 
-    // ============================
-    // ✅ UI
-    // ============================
-    function updateListUI() {
+    function updateListUI(){
       const list = $("participantList");
-      if (!list) return;
-
-      if (!gameState.participants.length) {
-        list.innerHTML = `<div style="text-align:center; color:rgba(255,255,255,0.70); font-size:13px; padding:10px;">대기중...</div>`;
-        return;
-      }
-
       list.innerHTML = "";
-      for (const p of gameState.participants) {
-        const highlight = (p.name === myId && myColor)
-          ? `color:${myColor}; font-weight:1000;`
-          : '';
-
+      gameState.participants.forEach(p => {
         const row = document.createElement("div");
-        row.className = "list-item";
+        row.className = "p-row";
         row.innerHTML = `
-          <div class="p-color" style="background:${p.color}; box-shadow:0 0 10px ${p.color};"></div>
-          <div class="p-name" style="${highlight}" title="${p.name}">${p.name}</div>
-          <div class="p-amt">${Number(p.amount).toLocaleString()}</div>
+          <div class="p-dot" style="background:${p.color}; box-shadow:0 0 8px ${p.color}"></div>
+          <div class="p-name">${p.name === myId ? `<span style="color:${myColor}">[ME]</span> ` : ''}${p.name}</div>
+          <div class="p-amt">${p.amount.toLocaleString()}</div>
         `;
         list.appendChild(row);
-      }
+      });
     }
 
-    function changeBet(delta){
-      const input = $("betInput");
-      if (!input) return;
-      let v = parseInt(input.value || String(MIN_BET), 10) + delta;
-      if (v < MIN_BET) v = MIN_BET;
-      input.value = v;
-    }
-    function setMinBet(){
-      const input = $("betInput");
-      if (input) input.value = MIN_BET;
-    }
-    function setMaxBet(){
-      const input = $("betInput");
-      if (!input) return;
-      input.value = Math.max(MIN_BET, myWallet);
-    }
+    // ============================
+    // 🎮 ACTIONS
+    // ============================
+    function setBet(val) { $("inpBet").value = val; }
+    
+    $("btnMin").onclick = () => setBet(MIN_BET);
+    $("btnM100").onclick = () => {
+      let v = parseInt($("inpBet").value) - BET_UNIT;
+      setBet(v < MIN_BET ? MIN_BET : v);
+    };
+    $("btnP100").onclick = () => {
+      let v = parseInt($("inpBet").value) + BET_UNIT;
+      setBet(v > myWallet ? myWallet : v);
+    };
+    $("btnMax").onclick = () => setBet(Math.floor(myWallet / 100) * 100); // 100단위 끊기
 
-    async function joinGame(){
-      if (isBettingProcessing) return;
-
-      const amountGross = parseInt($("betInput")?.value || "0", 10);
-      if (!Number.isFinite(amountGross) || amountGross <= 0) return alert("금액 확인 필요");
-      if (amountGross > myWallet) return alert("잔액이 부족합니다.");
-      if (getTimeLeftSec_() <= 60) return alert("마감되었습니다.");
-
-      if (!myColor) {
-        // 컬러 없으면 강제 선택
-        initColorPicker();
-        openModal("ruleModal");
-        return;
-      }
+    $("btnJoin").onclick = async () => {
+      if(isLocked) return alert("현재 배팅이 마감되었습니다.");
+      const amount = parseInt($("inpBet").value);
+      if(amount > myWallet) return alert("잔액이 부족합니다.");
+      if(amount < MIN_BET) return alert(`최소 배팅액은 ${MIN_BET} UT 입니다.`);
 
       isBettingProcessing = true;
-      const btn = $("joinBtn");
-      const originalText = btn ? btn.innerText : "참여하기 (BET)";
-      if (btn) { btn.disabled = true; btn.innerText = "처리중..."; }
+      const btn = $("btnJoin");
+      const orgTxt = btn.innerText;
+      btn.disabled = true; btn.innerText = "처리중...";
 
-      try{
-        // ✅ 기존 라우팅 유지: action=rouletteResult&type=bet
-        const url = `${GAS_URL}?action=rouletteResult&type=bet&id=${encodeURIComponent(myId)}&amount=${encodeURIComponent(amountGross)}&color=${encodeURIComponent(myColor)}&_=${Date.now()}`;
-        const res = await fetch(url, { cache: "no-store" });
+      try {
+        const url = `${GAS_URL}?action=rouletteResult&type=bet&id=${encodeURIComponent(myId)}&amount=${amount}&color=${encodeURIComponent(myColor)}&_=${Date.now()}`;
+        const res = await fetch(url);
         const data = await res.json();
-
-        if (data && data.result === "success") {
-          myWallet = Number(data.newBalance || 0);
-          safeText("myBalance", myWallet.toLocaleString() + " UT");
-
-          const gross = Number(data.gross != null ? data.gross : amountGross);
-          const rk = String(data.roundKey || currentRoundKey || "");
-          pendingBet = { roundKey: rk, amountGross: gross, ts: Date.now() };
-
-          if (btn) btn.innerText = "배팅 성공!";
-          await fetchGameState();
+        
+        if(data.result === "success"){
+          myWallet = data.newBalance;
+          $("myBalance").innerHTML = myWallet.toLocaleString() + " <span>UT</span>";
+          alert("배팅 성공!");
+          fetchGameState(); // 즉시 갱신
         } else {
-          alert(data?.msg || "베팅 실패");
-          if (btn) btn.innerText = originalText;
+          alert("배팅 실패: " + data.msg);
         }
-      }catch(e){
-        console.error("joinGame:", e);
-        alert("통신 오류");
-        if (btn) btn.innerText = originalText;
-      }finally{
-        isBettingProcessing = false;
-        if (btn) {
-          btn.disabled = false;
-          setTimeout(()=>{ if (!isBettingProcessing && getTimeLeftSec_() > 60) btn.innerText = originalText; }, 800);
+      } catch(e){ alert("통신 오류"); }
+      
+      isBettingProcessing = false;
+      btn.disabled = false; btn.innerText = orgTxt;
+    };
+
+    $("btnColorConfirm").onclick = () => {
+      if(!myColor) return;
+      localStorage.setItem(`rouletteColor_${myId}`, myColor);
+      $("modalColor").classList.remove("active");
+    };
+
+    $("btnCloseResult").onclick = () => {
+      $("modalResult").classList.remove("active");
+      location.reload(); // 새 라운드를 위해 상쾌하게 리로드
+    };
+
+    // 결과 확인 (서버에서 가져오기)
+    async function checkResult(roundKey){
+      // (간략화) 서버에 lastWinner가 떴는지 반복 체크 후 모달 표시
+      // 실제로는 fetchGameState안에서 lastWinner가 내 라운드와 맞는지 보고 띄움
+      $("modalResult").classList.add("active");
+      $("resWinnerName").innerText = "확인 중...";
+      
+      // 잠시 후 다시 로드해서 결과 표시 (fetchGameState가 해줌)
+      setTimeout(async ()=>{
+        await fetchGameState();
+        const mq = $("marqueeText").innerText;
+        if(mq.includes("승자")){
+           // Marquee 텍스트 파싱해서 보여주거나 서버 데이터 이용
+           $("resMsg").innerText = "결과가 집계되었습니다.";
+           // (상세 내용은 marqueeText 참고하거나 별도 API 호출)
+           $("resWinnerName").innerText = mq; 
         }
-      }
+      }, 3000);
     }
 
     // ============================
-    // ✅ RESULT (SERVER BASED)
-    // ============================
-    async function finishRoundServerBased(targetRoundKey){
-      if (isFinishing) return;
-      isFinishing = true;
-
-      try{
-        openModal("resultModal");
-        safeText("resWinner", "SETTLING...");
-        safeText("resAmount", "-");
-        safeText("resMsg", "서버 정산/동기화 중...");
-
-        let winnerData = null;
-
-        for (let i=0; i<12; i++){
-          try{
-            const url = `${GAS_URL}?action=getRouletteState&_=${Date.now()}`;
-            const res = await fetch(url, { cache: "no-store" });
-            const data = await res.json();
-            if (data && data.result === "success") {
-              applyServerClock_(data);
-              if (data.lastWinner && data.lastWinner.round) {
-                if (String(data.lastWinner.round).trim() === String(targetRoundKey || "").trim()) {
-                  winnerData = data.lastWinner;
-                  break;
-                }
-              }
-            }
-          }catch(_){}
-          await new Promise(r => setTimeout(r, 1000));
-        }
-
-        if (!winnerData) {
-          safeText("resWinner", "SETTLING...");
-          safeText("resAmount", "-");
-          safeText("resMsg", "정산 반영이 아직입니다. 잠시 후 NEXT ROUND를 누르세요.");
-          return;
-        }
-
-        const winnerName = winnerData.name;
-        const prize = Number(winnerData.prize || 0);
-
-        safeText("resWinner", winnerName);
-        safeText("resAmount", prize.toLocaleString() + " UT");
-
-        const color =
-          (gameState.participants.find(p => p.name === winnerName)?.color) ||
-          (winnerName === "Company" ? "#ff0055" : "#fff");
-
-        const wEl = $("resWinner");
-        if (wEl) wEl.style.textShadow = `0 0 30px ${color}`;
-
-        const msgEl = $("resMsg");
-        if (winnerName === myId) {
-          if (msgEl) { msgEl.innerText = "축하합니다! 당신이 승자입니다! 🎉"; msgEl.style.color = myColor || "#fff"; }
-          speak("Congratulations! You won!");
-          await fetchUserData();
-        } else if (winnerName === "Company") {
-          if (msgEl) { msgEl.innerText = "이번 라운드는 본사가 승리했습니다."; msgEl.style.color = "#ff0055"; }
-          speak("The House Wins.");
-        } else {
-          if (msgEl) { msgEl.innerText = `아쉽네요... 승자는 ${winnerName}님 입니다.`; msgEl.style.color = "rgba(255,255,255,0.75)"; }
-          speak("Better luck next time.");
-        }
-
-        updateMarquee(`🏆 지난 라운드 승자: ${winnerName} (상금: ${prize.toLocaleString()} UT) 🏆`, "#00f3ff");
-
-      }finally{
-        isFinishing = false;
-      }
-    }
-
-    // ============================
-    // ✅ TIMER (SERVER CLOCK)
+    // ⏱ TIMER & LOOP
     // ============================
     function startTimer(){
       setInterval(() => {
-        const left = getTimeLeftSec_();
-        const mm = Math.floor(left / 60);
-        const ss = left % 60;
-        safeText("timerDisplay", `${mm}:${ss < 10 ? "0"+ss : ss}`);
+        if(!serverNextRoundAtMs) return;
+        const now = Date.now() + serverOffsetMs;
+        const diff = Math.floor((serverNextRoundAtMs - now)/1000);
+        
+        const safeDiff = diff > 0 ? diff : 0;
+        const mm = Math.floor(safeDiff / 60);
+        const ss = safeDiff % 60;
+        
+        const tDisp = $("timerDisplay");
+        tDisp.innerText = `${mm}:${ss<10?'0'+ss:ss}`;
 
-        const countEl = $("centerCount");
-        const btn = $("joinBtn");
-
-        // 60초 이하: 마감
-        if (left <= 60 && left > 0) {
-          if (countEl){
-            countEl.innerText = String(left);
-            countEl.classList.add("active");
-          }
-          if (btn && !btn.disabled && !isBettingProcessing){
-            btn.disabled = true;
-            btn.innerText = "마감됨 (CLOSED)";
-          }
-          const t = $("timerDisplay");
-          if (t) t.style.color = "red";
+        // 마감 1분전 (60초)
+        if(safeDiff <= 60 && !isLocked){
+          isLocked = true;
+          $("btnJoin").disabled = true;
+          $("btnJoin").innerText = "배팅 마감 (CLOSED)";
+          tDisp.classList.add("urgent");
+          speak("Betting Closed");
+        }
+        
+        // 마지막 10초 카운트다운 & 음성
+        if(safeDiff <= 10 && safeDiff > 0){
+          const c = $("centerCount");
+          c.innerText = safeDiff;
+          c.classList.add("active");
+          speak(String(safeDiff));
         } else {
-          if (countEl) countEl.classList.remove("active");
-          if (btn && btn.disabled && !isBettingProcessing && left > 60 && !$("resultModal")?.classList.contains("active")){
-            btn.disabled = false;
-            btn.innerText = "참여하기 (BET)";
-          }
-          const t = $("timerDisplay");
-          if (t) t.style.color = "var(--danger)";
+          $("centerCount").classList.remove("active");
         }
 
-        // 타이머 0인데 결과 모달 없으면 시도
-        if (left === 0 && currentRoundKey && !$("resultModal")?.classList.contains("active") && !isFinishing) {
-          speak("Time's up!");
-          finishRoundServerBased(currentRoundKey);
+        if(safeDiff === 0 && currentRoundKey && !$("modalResult").classList.contains("active")){
+           // 라운드 종료 -> 서버 집계 기다림
+           checkResult(currentRoundKey);
         }
+
       }, 1000);
     }
 
-    function startMarqueeScheduler(){
-      setInterval(() => {
-        updateMarquee(warningMsg, "#ffdd59");
-        setTimeout(() => updateMarquee(lastWinnerMsg, "#fff"), 15000);
-      }, 120000);
-    }
-
     // ============================
-    // ✅ CANVAS (ID는 원 안쪽에)
+    // 🎡 CANVAS RENDERING
     // ============================
-    let lastFrameTs = 0;
-    let canvasW = 0, canvasH = 0;
-
-    function resizeCanvasIfNeeded(){
-      const canvas = $("canvas");
-      if (!canvas) return null;
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.floor(rect.width);
-      const h = Math.floor(rect.height);
-      if (w !== canvasW || h !== canvasH){
-        canvasW = w; canvasH = h;
-        canvas.width = w;
-        canvas.height = h;
-      }
-      return canvas;
-    }
-
-    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
-
-    function fitText(ctx, text, maxWidth, basePx){
-      let px = basePx;
-      ctx.font = `900 ${px}px system-ui, sans-serif`;
-      while (px > 10 && ctx.measureText(text).width > maxWidth){
-        px -= 2;
-        ctx.font = `900 ${px}px system-ui, sans-serif`;
-      }
-      return px;
-    }
-
-    function shortenIdForWheel(id, sliceAngle){
-      // sliceAngle이 작으면 글자 줄여서 “원 안”에 확실히 넣음
-      const maxChars =
-        sliceAngle > 0.55 ? 18 :
-        sliceAngle > 0.35 ? 14 :
-        sliceAngle > 0.22 ? 10 :
-        sliceAngle > 0.14 ? 8 : 0;
-
-      if (maxChars <= 0) return "";
-      const s = String(id || "");
-      if (s.length <= maxChars) return s;
-      return s.slice(0, Math.max(3, maxChars-1)) + "…";
-    }
-
-    function drawWheel(ts){
-      const canvas = resizeCanvasIfNeeded();
-      if (!canvas) return requestAnimationFrame(drawWheel);
-      const ctx = canvas.getContext("2d");
-
-      if (!lastFrameTs) lastFrameTs = ts;
-      const dt = Math.min(0.05, (ts - lastFrameTs) / 1000);
-      lastFrameTs = ts;
-
-      const w = canvas.width, h = canvas.height;
-
-      // ✅ 휠 크기/위치 (기존처럼 “왼쪽에 큰 원” 유지)
-      const radius = h * 2.2;
-      const centerX = radius + 60;  // 원 중심이 화면 밖(왼쪽)으로 크게
-      const centerY = h / 2;
-
-      // 회전 속도
-      const radPerSec = (WHEEL_RPM * 2 * Math.PI) / 60;
-      gameState.rotation += radPerSec * dt;
+    function drawWheel(){
+      const cvs = $("canvas");
+      const ctx = cvs.getContext("2d");
+      
+      // Resize
+      const w = cvs.clientWidth;
+      const h = cvs.clientHeight;
+      cvs.width = w; cvs.height = h;
 
       ctx.clearRect(0,0,w,h);
 
-      // 바닥 글로우
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI*2);
-      ctx.fillStyle = "#08000c";
-      ctx.fill();
-      ctx.lineWidth = 14;
-      ctx.strokeStyle = "rgba(255,215,0,0.85)";
-      ctx.shadowColor = "rgba(255,215,0,0.25)";
-      ctx.shadowBlur = 18;
-      ctx.stroke();
-      ctx.restore();
+      // Wheel Setting
+      const cx = 0; // 왼쪽 벽에 붙음
+      const cy = h/2;
+      const r = h * 0.9; // 화면 꽉 차게
 
-      // slices
-      const parts = gameState.participants || [];
-      const total = gameState.totalPool || 0;
+      // Rotation
+      gameState.rotation += (WHEEL_RPM * Math.PI / 1800); // 느린 회전
 
-      if (parts.length && total > 0){
-        let startAngle = gameState.rotation;
+      const total = gameState.totalPool;
+      let startAngle = gameState.rotation;
 
-        for (const p of parts){
-          const amt = Number(p.amount)||0;
-          if (amt <= 0) continue;
+      if(total > 0){
+        gameState.participants.forEach(p => {
+          const slice = (p.amount / total) * 2 * Math.PI;
+          const endAngle = startAngle + slice;
 
-          const sliceAngle = (amt / total) * 2 * Math.PI;
-          const endAngle = startAngle + sliceAngle;
-
-          // slice
-          ctx.save();
           ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          ctx.arc(centerX, centerY, radius - 18, startAngle, endAngle);
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, startAngle, endAngle);
           ctx.closePath();
-          ctx.fillStyle = p.color || "#fff";
-          ctx.globalAlpha = 0.95;
+          ctx.fillStyle = p.color;
           ctx.fill();
-          ctx.globalAlpha = 1;
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "rgba(0,0,0,0.25)";
+          
+          // Slice Border
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(0,0,0,0.5)";
           ctx.stroke();
-          ctx.restore();
 
-          // ✅ 텍스트(아이디/금액) - “원 안쪽”
-          const mid = startAngle + sliceAngle/2;
-          const label = shortenIdForWheel(p.name, sliceAngle);
-          if (label){
-            const textR = radius * 0.72;   // 원 안쪽으로 확실히
-            const tx = centerX + Math.cos(mid) * textR;
-            const ty = centerY + Math.sin(mid) * textR;
-
-            ctx.save();
-            ctx.translate(tx, ty);
-            ctx.rotate(mid + Math.PI); // 바깥을 향하도록
-
-            // label width 제한(부채꼴 폭에 맞춤)
-            const arcW = clamp((sliceAngle * textR), 80, 520);
-            const basePx = clamp(Math.floor(18 + sliceAngle * 26), 14, 34);
-            const px = fitText(ctx, label, arcW, basePx);
-
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-            ctx.shadowColor = "rgba(0,0,0,0.75)";
-            ctx.shadowBlur = 8;
-
-            ctx.fillStyle = "#fff";
-            ctx.font = `1000 ${px}px system-ui, sans-serif`;
-            ctx.fillText(label, 0, -12);
-
-            ctx.fillStyle = "rgba(255,215,0,0.95)";
-            ctx.font = `1000 ${Math.max(12, px-6)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`;
-            ctx.fillText(`${amt.toLocaleString()} UT`, 0, 14);
-
-            ctx.restore();
+          // Text (ID) - 원 안쪽에 그리기
+          if(slice > 0.1){
+             const mid = startAngle + slice/2;
+             const tx = cx + Math.cos(mid) * (r*0.8);
+             const ty = cy + Math.sin(mid) * (r*0.8);
+             
+             ctx.save();
+             ctx.translate(tx, ty);
+             ctx.rotate(mid);
+             ctx.fillStyle = "#fff";
+             ctx.font = "bold 14px sans-serif";
+             ctx.shadowColor="black"; ctx.shadowBlur=4;
+             ctx.fillText(p.name.substring(0,6), 0, 0);
+             ctx.restore();
           }
 
           startAngle = endAngle;
-        }
+        });
       } else {
-        ctx.save();
-        ctx.fillStyle = "rgba(255,255,255,0.18)";
-        ctx.font = "1000 28px system-ui, sans-serif";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText("WAITING FOR PLAYERS...", 90, centerY);
-        ctx.restore();
+        // Empty Wheel
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fillStyle = "#222";
+        ctx.fill();
+        ctx.strokeStyle = "#444";
+        ctx.stroke();
       }
+
+      // Wheel Gloss/Shadow (Overlay)
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.fillStyle = "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent)";
+      ctx.fill();
+
+      // Border Ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = "rgba(255,215,0,0.5)"; // Gold Ring
+      ctx.stroke();
 
       requestAnimationFrame(drawWheel);
     }
 
     // ============================
-    // ✅ INIT
+    // 🚀 INIT
     // ============================
-    document.addEventListener("DOMContentLoaded", async () => {
-      // 1) ID 확보
-      const params = new URLSearchParams(window.location.search);
-      myId = params.get("id") || localStorage.getItem("user_id") || localStorage.getItem("loginId") || "";
+    window.onload = async () => {
+      const p = new URLSearchParams(location.search);
+      myId = p.get("id") || "TestUser"; // 실제 연동시 수정
 
-      if (!myId) {
-        alert("로그인이 필요합니다.");
-        location.href = "../the-unique-main.html";
-        return;
-      }
-
-      // 버튼 바인딩(이게 있어야 버튼이 “안 사라짐”)
-      $("minBtn")?.addEventListener("click", setMinBet);
-      $("maxBtn")?.addEventListener("click", setMaxBet);
-      $("minusBtn")?.addEventListener("click", () => changeBet(-BET_STEP));
-      $("plusBtn")?.addEventListener("click", () => changeBet(BET_STEP));
-      $("joinBtn")?.addEventListener("click", joinGame);
-
-      $("btnStart")?.addEventListener("click", selectColorAndStart);
-      $("nextRoundBtn")?.addEventListener("click", () => {
-        closeModal("resultModal");
-        location.reload();
-      });
-
-      // 2) 내 잔고
-      await fetchUserData();
-
-      // 3) 서버 상태 먼저 로드(라운드키/타이머)
-      await fetchGameState(true);
-
-      // 4) 컬러
-      const savedColor = localStorage.getItem("rouletteColor_" + myId);
-      if (savedColor) {
-        myColor = savedColor;
-        closeModal("ruleModal");
+      if(!myId) return alert("ID가 필요합니다.");
+      
+      const savedC = localStorage.getItem(`rouletteColor_${myId}`);
+      if(savedC){
+        myColor = savedC;
       } else {
         initColorPicker();
-        openModal("ruleModal");
+        $("modalColor").classList.add("active");
       }
 
-      // 5) 루프 시작
-      requestAnimationFrame(drawWheel);
+      await fetchUserData();
+      await fetchGameState();
+      
+      setInterval(fetchGameState, 2000); // 2초마다 갱신
       startTimer();
-      startMarqueeScheduler();
-      setInterval(fetchGameState, SYNC_INTERVAL_MS);
-    });
+      drawWheel();
+    };
   </script>
 </body>
 </html>
