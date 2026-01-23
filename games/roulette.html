@@ -6,9 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
-    /* ===== So.T: Neon Hero Button Style (제공해주신 CSS) ===== */
+    /* =========================================
+       1. So.T Button Style (User Provided)
+       ========================================= */
     .action-btn.action-btn-sot{
-      position: relative; overflow: hidden; border: 0; padding: 0; /* 패딩 조정 */
+      position: relative; overflow: hidden; border: 0; padding: 0;
       min-height: 64px; border-radius: 999px; cursor: pointer; width: 100%;
       background: radial-gradient(circle at 30% 20%, rgba(0,247,255,0.18), transparent 45%),
                   radial-gradient(circle at 70% 70%, rgba(251,191,36,0.16), transparent 48%),
@@ -31,352 +33,374 @@
       gap:10px; width:100%; height: 100%; color: #fff; font-weight: 900; font-size: 18px;
       text-shadow: 0 0 10px rgba(251,191,36,0.5);
     }
-    /* 로고 이미지가 없을 때 텍스트로 대체 */
     .sot-text-logo {
         font-family: 'Cinzel', serif; background: linear-gradient(to right, #ffd700, #fff, #ffd700);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));
     }
-
     .action-btn.action-btn-sot:hover{ transform: translateY(-2px) scale(1.01); filter: brightness(1.06); box-shadow: 0 22px 48px rgba(0,0,0,0.98), 0 0 0 1px rgba(251,191,36,0.55) inset; }
     .action-btn.action-btn-sot:active{ transform: translateY(0) scale(0.995); }
     .action-btn.action-btn-sot:disabled { filter: grayscale(1) brightness(0.5); cursor: not-allowed; animation: none; }
-    .action-btn.action-btn-sot:disabled::before, .action-btn.action-btn-sot:disabled::after { animation: none; opacity: 0.2; }
 
     @keyframes sotGlowSpin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
     @keyframes sotShine{ 0%{ transform: translateX(-140%); } 45%{ transform: translateX(140%); } 100%{ transform: translateX(140%); } }
 
-    /* ===== 기본 스타일 ===== */
+    /* =========================================
+       2. Base & Layout
+       ========================================= */
     :root{
-      --bg-dark: #050510; --bg-panel: rgba(15, 15, 25, 0.95);
+      --bg-dark: #050510;
+      --panel-bg: rgba(10, 10, 15, 0.85); /* PC 패널 배경 */
       --gold-1: #ffd700; --gold-2: #bf953f; --danger: #ff0044;
     }
     body {
       margin: 0; padding: 0; background-color: var(--bg-dark);
-      background-image: radial-gradient(circle at 20% 30%, #1a1a2e 0%, #000000 100%);
+      /* 전체 화면 그라디언트 */
+      background: radial-gradient(circle at 30% 50%, #1a1a2e 0%, #000000 100%);
       color: #fff; font-family: 'Cinzel', serif, system-ui; overflow: hidden;
     }
 
-    /* 마키 */
+    /* Marquee (Top) */
     .marquee-wrap {
       position: fixed; top: 0; width: 100%; height: 40px;
-      background: linear-gradient(to right, rgba(0,0,0,0.8), rgba(20,20,40,0.8), rgba(0,0,0,0.8));
-      border-bottom: 1px solid rgba(255,215,0,0.3); display: flex; align-items: center; z-index: 100;
+      background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(255,215,0,0.3);
+      display: flex; align-items: center; z-index: 200;
       backdrop-filter: blur(5px);
     }
     .marquee-text {
       width: 100%; text-align: center; font-weight: 700; color: var(--gold-1);
-      text-shadow: 0 0 10px rgba(255, 215, 0, 0.7); font-size: 14px; letter-spacing: 1px;
+      font-size: 14px; letter-spacing: 1px;
     }
 
-    /* 레이아웃 */
-    .layout { position: fixed; top: 40px; bottom: 0; left: 0; right: 0; display: flex; }
-    .stage { position: relative; flex: 1; height: 100%; overflow: hidden; }
-    canvas { width: 100%; height: 100%; display: block; }
-
-    /* 🔥 블링블링 골든 포인터 (왼쪽 배치) 🔥 */
-    .pointer-container {
-      position: absolute;
-      left: -10px; /* 화면 왼쪽 끝에 걸치게 */
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 50;
-      /* 전체적인 황금빛 글로우 */
-      filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9));
+    /* Canvas (Full Screen Background) */
+    canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; display: block;
     }
-    /* CSS로 만든 럭셔리 화살표 모양 */
-    .golden-pointer {
-      width: 140px; height: 70px;
-      /* 황금 메탈 그라디언트 */
-      background: linear-gradient(to bottom, #fff7cc, #ffd700 40%, #b8860b 60%, #ffe066);
-      /* 화살표 모양 깎기 */
-      clip-path: polygon(0% 25%, 65% 25%, 65% 0%, 100% 50%, 65% 100%, 65% 75%, 0% 75%);
-      /* 입체감을 위한 내부 그림자와 하이라이트 */
-      box-shadow: inset 0 0 15px rgba(255,255,255,0.6), inset 0 0 5px rgba(0,0,0,0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    /* 포인터 표면을 흐르는 광택 애니메이션 */
-    .golden-pointer::after {
-        content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-        background: linear-gradient(to right, transparent, rgba(255,255,255,0.8), transparent);
-        transform: rotate(30deg); animation: pointerShine 3s infinite linear;
-    }
-    @keyframes pointerShine { from { transform: translateX(-100%) rotate(30deg); } to { transform: translateX(100%) rotate(30deg); } }
 
+    /* =========================================
+       3. Responsive Layout (PC vs Mobile)
+       ========================================= */
+    
+    /* [공통] UI 컨테이너 */
+    .ui-container {
+      position: fixed; z-index: 100;
+      /* PC 기본값 */
+      top: 40px; bottom: 0; right: 0; width: 420px;
+      background: var(--panel-bg);
+      border-left: 1px solid rgba(255,215,0,0.2);
+      backdrop-filter: blur(15px);
+      display: flex; flex-direction: column;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+    }
 
-    /* 카운트다운 */
+    /* [공통] 포인터 (화살표) */
+    .pointer-wrap {
+      position: absolute; z-index: 50;
+      /* JS로 위치 미세조정하지만 CSS로 기본 잡아둠 */
+      display: flex; align-items: center;
+      filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.8));
+    }
+    /* 화살표 이미지 대체 (CSS Shape) - 심플하고 명확하게 */
+    .pointer-arrow {
+      width: 0; height: 0;
+      border-top: 25px solid transparent;
+      border-bottom: 25px solid transparent;
+      border-left: 50px solid linear-gradient(to right, #ffdd00, #ffaa00); /* Not working on border */
+      /* 보더 그라디언트 흉내 */
+      border-left: 50px solid #ffd700; 
+    }
+    /* 조금 더 고급진 화살표 (CSS Gradient) */
+    .pointer-shape {
+      width: 80px; height: 50px;
+      background: linear-gradient(90deg, #ff8c00, #ffd700);
+      clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.5);
+    }
+
+    /* [모바일] 레이아웃 오버라이드 */
+    @media (max-width: 1023px) {
+      .ui-container {
+        width: 100%; height: 45%; /* 화면 하단 45% 차지 */
+        top: auto; bottom: 0; right: 0; left: 0;
+        border-left: none; border-top: 1px solid rgba(255,215,0,0.2);
+      }
+      /* 모바일 포인터 위치: 상단 휠 영역의 중앙 하단? 아니면 오른쪽? 
+         보통 모바일 세로모드는 휠이 위쪽에 있고 포인터가 아래(6시)나 위(12시)에 있음.
+         JS에서 다시 잡겠지만, 일단 숨김 처리 후 JS 제어 */
+    }
+
+    /* UI 요소들 */
+    .hud-row { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .label { font-size: 12px; color: #888; font-weight: 700; letter-spacing: 1px; }
+    .value-lg { font-size: 28px; font-weight: 900; color: var(--gold-1); }
+    .timer { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace; }
+    .timer.alert { color: var(--danger); animation: blink 0.8s infinite; }
+    
+    .list-wrap { flex: 1; overflow-y: auto; padding: 10px; min-height: 100px; }
+    .rank-item { display: flex; align-items: center; padding: 8px 12px; margin-bottom: 6px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+    .rank-item.me { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border: 1px solid rgba(255,215,0,0.2); }
+    .p-col { width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; box-shadow: 0 0 8px currentColor; }
+    .p-name { flex: 1; font-size: 14px; font-weight: 600; color: #e0e0e0; }
+    .p-amt { font-size: 14px; color: var(--gold-1); font-weight: 700; }
+
+    /* 컨트롤 (버튼 안 짤리게 패딩 조정) */
+    .ctrl-area { padding: 20px; background: rgba(0,0,0,0.4); }
+    .bet-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+    .btn-chip {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;
+      border-radius: 8px; height: 48px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;
+    }
+    .btn-chip:hover { background: rgba(255,255,255,0.2); }
+    .btn-chip:active { transform: scale(0.96); }
+    .inp-amt {
+      background: #000; border: 1px solid var(--gold-2); color: var(--gold-1);
+      text-align: center; font-size: 16px; font-weight: 700; border-radius: 8px; outline: none; width: 100%;
+    }
+
+    /* 카운트다운 (중앙) */
     .countdown-box {
-      position: absolute; top: 50%; left: 120px; transform: translateY(-50%);
-      text-align: center; pointer-events: none; z-index: 40;
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 150;
     }
     .cd-num {
-      font-size: 100px; font-weight: 900;
-      background: linear-gradient(to bottom, #ff0044, #ff5500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 20px rgba(255,0,0,0.8)); opacity: 0; transition: transform 0.2s;
+      font-size: 120px; font-weight: 900; color: #fff;
+      text-shadow: 0 0 30px var(--danger); opacity: 0; transition: transform 0.2s;
     }
-    .cd-num.active { opacity: 1; transform: scale(1.2); }
-
-    /* UI 패널 */
-    .ui-panel {
-      width: 380px; background: var(--bg-panel); border-left: 1px solid rgba(255,215,0,0.2);
-      display: flex; flex-direction: column; z-index: 60; box-shadow: -5px 0 20px rgba(0,0,0,0.5);
-      backdrop-filter: blur(10px);
-    }
-    @media (max-width: 900px) {
-      .layout { flex-direction: column; }
-      .ui-panel { width: 100%; height: auto; border-left: none; border-top: 1px solid rgba(255,215,0,0.2); }
-      .stage { height: 60vh; min-height: 400px; }
-      .countdown-box { left: 50%; top: 25%; transform: translate(-50%, -50%); }
-    }
-
-    .hud-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
-    .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 1px; }
-    .value-lg { font-size: 26px; font-weight: 900; color: var(--gold-1); text-shadow: 0 0 10px rgba(255,215,0,0.3); }
-    .timer { font-size: 22px; font-weight: 700; color: #fff; font-family: monospace; text-shadow: 0 0 5px #fff; }
-    .timer.alert { color: var(--danger); text-shadow: 0 0 10px var(--danger); animation: blink 0.8s infinite; }
-    @keyframes blink { 50% { opacity: 0.5; } }
-
-    /* 리스트 */
-    .list-wrap { flex: 1; overflow-y: auto; padding: 10px; min-height: 150px; }
-    .rank-item { display: flex; align-items: center; padding: 8px; margin-bottom: 5px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid transparent; }
-    .rank-item.me { background: linear-gradient(to right, rgba(255,215,0,0.1), transparent); border-color: rgba(255,215,0,0.3); }
-    .p-col { width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; box-shadow: 0 0 5px currentColor; }
-    .p-name { flex: 1; font-size: 13px; font-weight: 600; color: #ddd; }
-    .p-amt { font-size: 13px; color: var(--gold-1); font-weight: 700; }
-
-    /* 컨트롤 영역 */
-    .ctrl-area { padding: 15px; background: rgba(0,0,0,0.3); }
-    .bet-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-    .btn-chip {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;
-      border-radius: 8px; height: 44px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-chip:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
-    .btn-chip:active { transform: scale(0.95); }
-    .inp-amt {
-      background: rgba(0,0,0,0.5); border: 1px solid var(--gold-2); color: var(--gold-1);
-      text-align: center; font-size: 15px; font-weight: 700; border-radius: 8px; outline: none;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    }
+    .cd-num.active { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
 
     /* 모달 */
     .modal-mask {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
-      display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+      position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300;
+      display: none; justify-content: center; align-items: center;
     }
     .modal-mask.on { display: flex; }
     .modal-body {
-      width: 90%; max-width: 420px; background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
-      border: 2px solid var(--gold-2); border-radius: 16px; padding: 24px;
-      text-align: center; box-shadow: 0 0 50px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(0,0,0,0.5);
+      width: 90%; max-width: 400px; background: #151515; border: 2px solid var(--gold-2);
+      border-radius: 12px; padding: 30px; text-align: center;
     }
-    .color-opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 25px 0; }
-    .c-pick { height: 45px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; box-shadow: 0 0 5px currentColor; }
-    .c-pick.sel { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 15px currentColor; }
-    .modal-btn {
-        width: 100%; padding: 12px; border: none; border-radius: 8px;
-        background: linear-gradient(to right, var(--gold-2), var(--gold-1));
-        color: #000; font-weight: 900; cursor: pointer; font-size: 16px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    .modal-btn:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+    .c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+    .c-btn { height: 45px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+    .c-btn.sel { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px #fff; }
+
+    @keyframes blink { 50% { opacity: 0.5; } }
 
   </style>
 </head>
 <body>
-  <div class="marquee-wrap"><div class="marquee-text" id="mqText">♠ So.T ROYAL CASINO - High Stakes, Big Wins ♠</div></div>
+  <div class="marquee-wrap"><div class="marquee-text" id="mqText">♠ So.T ROYAL CASINO - High Stakes ♠</div></div>
 
-  <div class="layout">
-    <div class="stage">
-      <canvas id="cvs"></canvas>
-      
-      <div id="pointer" class="pointer-container">
-        <div class="golden-pointer"></div>
-      </div>
+  <canvas id="cvs"></canvas>
 
-      <div class="countdown-box"><div id="cdNum" class="cd-num"></div></div>
-    </div>
-
-    <aside class="ui-panel">
-      <div class="hud-row">
-        <div><div class="label">TOTAL POOL</div><div class="value-lg" id="poolDisp">0 UT</div></div>
-        <div style="text-align:right;"><div class="label">TIME LEFT</div><div class="timer" id="timerDisp">--:--</div></div>
-      </div>
-      <div class="list-wrap" id="pList"><div style="text-align:center; padding:20px; color:#777; font-style:italic;">Waiting for bets...</div></div>
-      
-      <div class="ctrl-area">
-        <div class="bet-inputs">
-          <button class="btn-chip" id="bMin">MIN</button>
-          <button class="btn-chip" id="bM100">-100</button>
-          <input type="number" id="inpBet" class="inp-amt" value="100" readonly />
-          <button class="btn-chip" id="bP100">+100</button>
-          <button class="btn-chip" id="bMax">MAX</button>
-        </div>
-
-        <button id="bJoin" class="action-btn action-btn-sot" type="button">
-          <span class="sot-inner" id="btnText">
-            <span class="sot-text-logo">So.T</span> BET NOW
-          </span>
-        </button>
-
-        <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:12px; color:#aaa;">
-          <span>MY WALLET</span><span style="color:#fff; font-weight:700; font-size:14px;" id="myBal">Loading...</span>
-        </div>
-      </div>
-    </aside>
+  <div id="pointer" class="pointer-wrap">
+    <div class="pointer-shape"></div>
   </div>
+
+  <div class="countdown-box"><div id="cdNum" class="cd-num"></div></div>
+
+  <aside class="ui-container">
+    <div class="hud-row">
+      <div><div class="label">TOTAL POOL</div><div class="value-lg" id="poolDisp">0 UT</div></div>
+      <div style="text-align:right;"><div class="label">TIME LEFT</div><div class="timer" id="timerDisp">--:--</div></div>
+    </div>
+    
+    <div class="list-wrap" id="pList">
+      <div style="text-align:center; padding:20px; color:#555;">Waiting...</div>
+    </div>
+    
+    <div class="ctrl-area">
+      <div class="bet-inputs">
+        <button class="btn-chip" id="bMin">MIN</button>
+        <button class="btn-chip" id="bM100">-100</button>
+        <input type="number" id="inpBet" class="inp-amt" value="100" readonly />
+        <button class="btn-chip" id="bP100">+100</button>
+        <button class="btn-chip" id="bMax">MAX</button>
+      </div>
+
+      <button id="bJoin" class="action-btn action-btn-sot" type="button">
+        <span class="sot-inner" id="btnText">
+          <span class="sot-text-logo">So.T</span> BET NOW
+        </span>
+      </button>
+
+      <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:13px; color:#aaa;">
+        <span>MY WALLET</span><span style="color:#fff; font-weight:700;" id="myBal">Loading...</span>
+      </div>
+    </div>
+  </aside>
 
   <div id="mdColor" class="modal-mask">
     <div class="modal-body">
-      <h2 style="color:var(--gold-1); margin:0; text-shadow:0 0 10px rgba(255,215,0,0.3);">SELECT YOUR COLOR</h2>
-      <p style="color:#ccc; font-size:13px;">당신의 행운을 상징할 컬러를 선택하세요.</p>
-      <div class="color-opts" id="cGrid"></div>
-      <button id="bColorOk" class="modal-btn" disabled>CONFIRM COLOR</button>
+      <h2 style="color:var(--gold-1); margin:0;">SELECT COLOR</h2>
+      <div class="c-grid" id="cGrid"></div>
+      <button id="bColorOk" class="action-btn action-btn-sot" style="min-height:50px; font-size:14px;" disabled><span class="sot-inner">CONFIRM</span></button>
     </div>
   </div>
 
   <div id="mdRes" class="modal-mask">
-    <div class="modal-body" style="border-color: var(--gold-1); background: radial-gradient(circle at center, #2a1a2e 0%, #0f0f1a 100%);">
-      <h2 style="color:var(--gold-1); font-size:32px; margin-bottom:5px; text-shadow:0 0 20px var(--gold-1);">🎉 ROUND RESULT 🎉</h2>
-      <div style="color:#aaa; font-size:13px; letter-spacing: 1px;">THE WINNER IS</div>
-      <div id="resName" style="font-size:36px; font-weight:900; color:#fff; margin:10px 0; text-shadow:0 0 10px #fff;">-</div>
+    <div class="modal-body">
+      <h2 style="color:var(--gold-1); font-size:30px; margin-bottom:10px;">RESULT</h2>
+      <div style="color:#888; font-size:12px;">WINNER</div>
+      <div id="resName" style="font-size:32px; font-weight:900; color:#fff; margin:10px 0;">-</div>
       <div id="resAmt" style="font-size:24px; color:var(--gold-1); font-weight:900;">-</div>
-      <div id="resDesc" style="margin-top:20px; color:#ccc; font-size:14px; font-style:italic;">잠시 후 다음 라운드가 시작됩니다.</div>
+      <div id="resDesc" style="margin-top:20px; color:#ccc;">다음 라운드 대기중...</div>
     </div>
   </div>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
     const MIN_BET = 100;
-    // 🔥 휠 속도 대폭 증가 (1분에 3바퀴 이상 = 60초에 3바퀴 = 초당 0.05바퀴 = 초당 18도)
-    // 매 프레임(약 1/60초)마다 더할 각도: 18 / 60 = 0.3도. 기존보다 훨씬 빠르게 설정.
-    const RPM_BASE = 2.5; 
+    const RPM_BASE = 2.0;
 
     let myId = "", myWallet = 0, myColor = null;
     let roundKey = null, participants = [], totalPool = 0;
     
-    let rotation = 0;
-    let wheelState = "SPINNING";
+    let rotation = 0, wheelState = "SPINNING";
     let stopTargetAngle = 0, stopStartTime = 0;
-    const STOP_DURATION = 8000;
+    const STOP_DURATION = 7000;
 
     let isLocked = false, isBetting = false;
     let serverOffset = 0, nextRoundMs = 0;
+    
+    // PC/Mobile 구분 플래그
+    let isPC = window.innerWidth >= 1024;
 
     const synth = window.speechSynthesis;
-    // 컬러 팔레트 (더 선명하고 고급스러운 색감으로 조정)
-    const colors = ['#ff0055','#00ffaa','#ffdd00','#00ccff','#ff3300','#aa00ff','#ffffff','#ff00cc','#33ff00','#0055ff','#ffaa00','#cc00ff','#00ff66','#0099ff','#ff6600','#aaaaaa'];
+    const colors = ['#ff0055','#00ffaa','#ffdd00','#00ccff','#ff3300','#aa00ff','#ffffff','#ff00cc','#33ff00','#0055ff','#ffaa00','#cc00ff','#0099ff','#ff6600','#aaaaaa'];
 
     const $ = (id) => document.getElementById(id);
     const toMoney = (n) => Number(n).toLocaleString();
     function speak(txt){ if(synth && !synth.speaking){ const u = new SpeechSynthesisUtterance(txt); u.lang='en-US'; u.rate=1.1; synth.speak(u); }}
 
     // ============================================
-    // 🎨 캔버스 드로잉 (하이엔드 퀄리티)
+    // 🎨 캔버스 & 레이아웃 로직 (핵심)
     // ============================================
+    function updateLayoutMetrics() {
+      isPC = window.innerWidth >= 1024;
+      const ptr = $("pointer");
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      if(isPC) {
+        // [PC] 화살표: 왼쪽 중앙 고정 (left: 50px)
+        ptr.style.left = "50px";
+        ptr.style.top = "50%";
+        ptr.style.transform = "translateY(-50%)"; // 회전 없음 (오른쪽 가리킴)
+        ptr.style.right = "auto";
+        ptr.style.bottom = "auto";
+        
+        // 휠 중심점 계산 (화살표 끝과 휠 왼쪽이 닿게)
+        // 화살표 너비 약 80px + 여백 50px = 130px 지점이 접점.
+        // 휠 반지름을 엄청 크게 해서(화면 꽉 차게) 접점이 130px에 오도록 함.
+        return {
+          r: h * 1.1, // 반지름을 화면 높이보다 크게
+          cx: 130 + (h * 1.1), // 접점(130) + 반지름 = 중심점 X
+          cy: h / 2,
+          pointerAngle: Math.PI // 휠 입장에선 9시 방향(PI)이 화살표 위치
+        };
+      } else {
+        // [Mobile] 화살표: 상단 휠 영역 중앙 상단 (top: 90px)
+        // 12시 방향에서 아래를 가리키게
+        ptr.style.left = "50%";
+        ptr.style.top = "80px"; // 마키바 아래
+        ptr.style.transform = "translateX(-50%) rotate(90deg)"; // 아래 가리킴
+        ptr.style.right = "auto";
+        ptr.style.bottom = "auto";
+
+        return {
+          r: w * 0.85,
+          cx: w / 2,
+          cy: w * 0.85 + 100, // 화면 위쪽 밖으로 중심을 밀어서 아랫부분만 보이게? 
+                              // 아니면 아래에 휠 두고 위를 보게?
+                              // 보통 모바일은 휠 전체가 보이거나, 위에 반원.
+                              // 여기선 화살표가 위에 있으므로, 휠 중심은 화살표보다 아래에 있어야 함.
+                              // 접점 Y = 80px + 화살표 길이(80) = 160px.
+                              // cy = 160 + r.
+          cy: 130 + (w * 0.85),
+          pointerAngle: -Math.PI / 2 // 12시 방향 (270도 = -90도)
+        };
+      }
+    }
+
     function draw() {
       const cvs = $("cvs");
       const ctx = cvs.getContext("2d");
-      const w = cvs.clientWidth, h = cvs.clientHeight;
+      const w = window.innerWidth, h = window.innerHeight;
       if(cvs.width !== w || cvs.height !== h){ cvs.width = w; cvs.height = h; }
 
       ctx.clearRect(0, 0, w, h);
 
-      // 🔥 휠 크기 확대: 화면 높이의 92% 사용
-      const r = h * 0.92; 
-      // 🔥 중심점: 오른쪽 화면 밖으로 더 밀어냄 (포인터가 왼쪽 끝을 가리키도록)
-      const cx = w + (r * 0.15); 
-      const cy = h / 2;
+      // 레이아웃 수치 계산
+      const m = updateLayoutMetrics(); 
+      const { cx, cy, r } = m;
 
-      // 회전 로직
+      // 회전
       if (wheelState === "SPINNING") {
         rotation += (RPM_BASE * Math.PI / 180);
       } else if (wheelState === "STOPPING") {
         const now = Date.now();
         const t = Math.min(1, (now - stopStartTime) / STOP_DURATION);
-        const ease = 1 - Math.pow(1 - t, 4); // Cubic Ease Out
+        const ease = 1 - Math.pow(1 - t, 4);
         rotation = window.startRotation + (stopTargetAngle - window.startRotation) * ease;
-        if (t >= 1) {
-          wheelState = "STOPPED";
-          showResultModal();
-        }
+        if (t >= 1) { wheelState = "STOPPED"; showResultModal(); }
       } 
 
-      // --- 휠 그리기 ---
+      // 1. 휠 테두리 (골드)
       ctx.save();
-      // 휠 자체에 그림자 줘서 입체감 더하기
-      ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 30; ctx.shadowOffsetX = -10;
+      ctx.shadowColor="rgba(0,0,0,0.8)"; ctx.shadowBlur=30;
+      const gradRim = ctx.createLinearGradient(cx-r, cy-r, cx+r, cy+r);
+      gradRim.addColorStop(0, '#ffd700'); gradRim.addColorStop(0.5, '#b8860b'); gradRim.addColorStop(1, '#ffd700');
+      ctx.beginPath(); ctx.arc(cx, cy, r+15, 0, Math.PI*2); ctx.fillStyle = gradRim; ctx.fill();
+      ctx.restore();
 
-      // 1. 바깥쪽 금속 림 (럭셔리 골드)
-      const gradRim = ctx.createLinearGradient(cx-r-20, cy-r-20, cx+r+20, cy+r+20);
-      gradRim.addColorStop(0, '#fff7cc'); gradRim.addColorStop(0.2, '#ffd700'); gradRim.addColorStop(0.5, '#b8860b'); gradRim.addColorStop(0.8, '#ffd700'); gradRim.addColorStop(1, '#ffe066');
-      ctx.beginPath(); ctx.arc(cx, cy, r+20, 0, Math.PI*2); ctx.fillStyle = gradRim; ctx.fill();
-      
-      ctx.restore(); // 그림자 해제
+      // 2. 휠 배경 (어두운 색)
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = '#1a1005'; ctx.fill();
 
-      // 2. 안쪽 어두운 배경 (가죽 질감 느낌)
-      const gradBg = ctx.createRadialGradient(cx, cy, r*0.5, cx, cy, r);
-      gradBg.addColorStop(0, '#2a1a10'); gradBg.addColorStop(1, '#1a0a00');
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = gradBg; ctx.fill();
-
-      // 3. 조각 그리기 (Slices)
+      // 3. 조각 (Slices)
       let startAng = rotation;
       const total = totalPool || 1; 
-
+      
       if(participants.length > 0) {
-        ctx.save();
-        // 조각들 전체에 은은한 내부 광택
-        ctx.globalCompositeOperation = 'overlay';
-        const gradShine = ctx.createRadialGradient(cx, cy, r*0.8, cx, cy, r);
-        gradShine.addColorStop(0, 'rgba(255,255,255,0)'); gradShine.addColorStop(1, 'rgba(255,255,255,0.2)');
-        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = gradShine; ctx.fill();
-        ctx.restore();
-
         participants.forEach(p => {
           const slice = (p.amount / total) * 2 * Math.PI;
           const endAng = startAng + slice;
 
           ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r-5, startAng, endAng);
           ctx.fillStyle = p.color; ctx.fill();
-          
-          // 조각 경계선 (빛나는 금색 실선)
-          ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,200,0.6)"; ctx.stroke();
+          ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,0.2)"; ctx.stroke();
 
-          // 텍스트
-          if(slice > 0.06) {
+          // 텍스트 (바깥쪽에 가깝게)
+          if(slice > 0.05) {
             const mid = startAng + slice/2;
-            const tx = cx + Math.cos(mid) * (r*0.82);
-            const ty = cy + Math.sin(mid) * (r*0.82);
-            ctx.save(); ctx.translate(tx, ty); ctx.rotate(mid + Math.PI); 
+            const tx = cx + Math.cos(mid) * (r*0.85);
+            const ty = cy + Math.sin(mid) * (r*0.85);
+            ctx.save(); ctx.translate(tx, ty); 
+            // 텍스트 각도: 중심에서 뻗어나가게 + 90도 (가로로 읽기 편하게)
+            // 혹은 중심을 바라보게: mid + Math.PI
+            ctx.rotate(mid + Math.PI); 
+            
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillStyle = "#fff"; ctx.font = "800 16px sans-serif"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
             
-            // ID (흰색 + 진한 그림자)
-            ctx.fillStyle = "#fff"; ctx.shadowColor="rgba(0,0,0,1)"; ctx.shadowBlur=8; ctx.font = "900 18px sans-serif";
-            let n = p.name; if(n.length>8) n=n.slice(0,7)+"..";
+            let n = p.name; if(n.length>6) n=n.slice(0,5)+"..";
             ctx.fillText(n, 0, -10);
-            
-            // 금액 (금색 + 빛남)
-            ctx.fillStyle = "#ffd700"; ctx.shadowColor="rgba(255,215,0,0.8)"; ctx.shadowBlur=10; ctx.font = "bold 14px monospace";
-            ctx.fillText(toMoney(p.amount), 0, 12);
+            ctx.fillStyle = "#ffd700"; ctx.font = "700 12px monospace";
+            ctx.fillText(toMoney(p.amount), 0, 10);
             ctx.restore();
           }
           startAng = endAng;
         });
       }
 
-      // 4. 중앙 캡 (센터피스) - 보석 박힌 금속 느낌
-      const capR = r * 0.2;
-      const gradCap = ctx.createRadialGradient(cx, cy, capR*0.1, cx, cy, capR);
-      gradCap.addColorStop(0, '#ffffdd'); gradCap.addColorStop(0.3, '#ffd700'); gradCap.addColorStop(0.8, '#aa771c'); gradCap.addColorStop(1, '#553300');
+      // 4. 중앙 캡
+      const capR = r * 0.15; // 너무 크면 내용 가림. 비율 조정.
+      // PC 모드에서 캡이 너무 크면 화면 다 가릴 수 있음. max값 제한.
+      const safeCapR = Math.min(capR, 150);
       
-      ctx.save();
-      ctx.shadowColor="rgba(0,0,0,0.9)"; ctx.shadowBlur=25;
-      ctx.beginPath(); ctx.arc(cx, cy, capR, 0, Math.PI*2); ctx.fillStyle = gradCap; ctx.fill();
+      const gradCap = ctx.createRadialGradient(cx, cy, 0, cx, cy, safeCapR);
+      gradCap.addColorStop(0, '#fff'); gradCap.addColorStop(0.3, '#ffd700'); gradCap.addColorStop(1, '#aa771c');
+      ctx.save(); ctx.shadowBlur=20; ctx.shadowColor="black";
+      ctx.beginPath(); ctx.arc(cx, cy, safeCapR, 0, Math.PI*2); ctx.fillStyle = gradCap; ctx.fill();
       ctx.restore();
-      
-      // 센터 장식 (로고 자리)
-      ctx.beginPath(); ctx.arc(cx, cy, capR*0.6, 0, Math.PI*2); ctx.fillStyle = "#110a05"; ctx.fill();
-      ctx.lineWidth = 5; ctx.strokeStyle = "#ffd700"; ctx.stroke();
 
       requestAnimationFrame(draw);
     }
@@ -386,7 +410,7 @@
       if (wheelState !== "SPINNING") return;
       const winIndices = [];
       participants.forEach((p, i) => { if(p.name === winnerName) winIndices.push(i); });
-      if(winIndices.length === 0) return;
+      if(winIndices.length === 0) return; // 당첨자 없음 (혹은 시드)
 
       const targetIndex = winIndices[Math.floor(Math.random() * winIndices.length)];
       let currentAngleSum = 0, targetSliceMid = 0;
@@ -398,9 +422,14 @@
       }
 
       const currentRot = rotation;
-      const extraSpins = Math.PI * 2 * 4; // 4바퀴 추가 회전
-      // 왼쪽 포인터(각도 PI)에 멈추기 위한 목표 각도
-      let dest = Math.PI - targetSliceMid;
+      const extraSpins = Math.PI * 2 * 3; 
+      
+      // 멈춰야 할 포인터 각도 가져오기
+      const m = updateLayoutMetrics();
+      // 공식: (최종회전각 + 조각중심각) % 2PI = 포인터각도
+      // => 최종회전각 = 포인터각도 - 조각중심각
+      let dest = m.pointerAngle - targetSliceMid;
+      
       while(dest < currentRot + extraSpins) dest += Math.PI * 2;
       
       stopTargetAngle = dest; window.startRotation = currentRot;
@@ -428,12 +457,12 @@
     function renderList(){
       const el=$("pList"); el.innerHTML="";
       participants.forEach(p=>{
-        el.innerHTML += `<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};box-shadow:0 0 8px ${p.color}"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;
+        el.innerHTML += `<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color}"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;
       });
       el.scrollTop = el.scrollHeight;
     }
     function resetGame(nk) {
-      wheelState = "SPINNING"; $("mdRes").classList.remove("on"); $("mqText").innerText = "♠ NEW ROUND STARTED ♠";
+      wheelState = "SPINNING"; $("mdRes").style.display="none"; 
       isLocked = false; $("bJoin").disabled = false; $("btnText").innerHTML = '<span class="sot-text-logo">So.T</span> BET NOW';
       $("timerDisp").classList.remove("alert"); $("pList").innerHTML = "<div style='text-align:center;padding:20px;color:#777;'>Waiting...</div>";
       participants = []; totalPool = 0;
@@ -447,7 +476,7 @@
          $("resAmt").innerText = toMoney(d.lastWinner.prize) + " UT";
        }
     }
-    function showResultModal(){ $("mdRes").classList.add("on"); }
+    function showResultModal(){ $("mdRes").style.display="flex"; }
 
     // Timer & Ctrl
     function startTimer(){
@@ -476,7 +505,6 @@
     $("bM100").onclick=()=>{let v=Number($("inpBet").value)-100; if(v<MIN_BET)v=MIN_BET; setB(v);};
     $("bP100").onclick=()=>{let v=Number($("inpBet").value)+100; if(v>myWallet)v=myWallet; setB(v);};
 
-    // 🔥 버튼 클릭 시 텍스트 변경 및 로직 적용 🔥
     $("bJoin").onclick = async () => {
       if(isLocked) return alert("마감되었습니다.");
       const amt=Number($("inpBet").value);
@@ -493,17 +521,18 @@
       btn.disabled=false; btnTxt.innerHTML='<span class="sot-text-logo">So.T</span> BET NOW';
     };
 
-    $("bColorOk").onclick=()=>{ if(!myColor)return; localStorage.setItem("c_"+myId,myColor); $("mdColor").classList.remove("on"); };
+    $("bColorOk").onclick=()=>{ if(!myColor)return; localStorage.setItem("c_"+myId,myColor); $("mdColor").style.display="none"; };
 
     window.onload = async () => {
       const p = new URLSearchParams(location.search); myId = p.get("id") || "Guest";
       const sc = localStorage.getItem("c_"+myId);
       if(sc) myColor=sc; 
       else {
-        const g=$("cGrid"); colors.forEach(c=>{ const d=document.createElement("div"); d.className="c-pick"; d.style.backgroundColor=c; d.style.boxShadow=`0 0 10px ${c}`; d.onclick=()=>{document.querySelectorAll(".c-pick").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c; $("bColorOk").disabled=false;}; g.appendChild(d); }); $("mdColor").classList.add("on");
+        const g=$("cGrid"); colors.forEach(c=>{ const d=document.createElement("div"); d.className="c-btn"; d.style.backgroundColor=c; d.style.boxShadow=`0 0 10px ${c}`; d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c; $("bColorOk").disabled=false;}; g.appendChild(d); }); $("mdColor").style.display="flex";
       }
       try{ const u=await api("getUserInfo",{id:myId}); if(u.result==="success") myWallet=u.balance; $("myBal").innerText=toMoney(myWallet)+" UT"; }catch(e){}
       updateState(); setInterval(updateState, 2000); startTimer(); draw();
+      window.addEventListener('resize', draw);
     };
   </script>
 </body>
