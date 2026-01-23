@@ -5,8 +5,344 @@
   <title>THE UNIQUE: 2D GIANT ROULETTE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- ✅ CSS 복구 (이게 빠져서 화면이 무너졌음) -->
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; padding:0; }
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
+      background: radial-gradient(circle at top, #050817 0, #020617 55%, #000 100%);
+      color:#fff;
+      overflow:hidden; /* 스크롤로 하얀 빈공간 나오는 거 방지 */
+    }
+
+    /* 상단 마키 */
+    .marquee-wrap{
+      position:fixed; left:0; top:0; width:100%;
+      z-index:6;
+      background: rgba(0,0,0,0.45);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow:hidden;
+      padding: 8px 0;
+      backdrop-filter: blur(6px);
+    }
+    .marquee-text{
+      white-space: nowrap;
+      display:inline-block;
+      padding-left: 100%;
+      animation: marquee 18s linear infinite;
+      font-weight: 800;
+      letter-spacing: .2px;
+      font-size: 13px;
+      opacity:.95;
+    }
+    @keyframes marquee{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-100%); }
+    }
+
+    /* 타이머 중앙 카운트다운 */
+    .center-countdown{
+      position:fixed;
+      z-index:7;
+      top: 52px;
+      left: 16px;
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      transform: scale(.9);
+      transition: .2s;
+      pointer-events:none;
+    }
+    .center-countdown.active{
+      opacity: 1;
+      transform: scale(1);
+      box-shadow: 0 0 22px rgba(255, 80, 80, .35);
+    }
+
+    /* 상단 HUD */
+    .top-hud{
+      position: fixed;
+      z-index:6;
+      top: 52px;
+      right: 12px;
+      display:flex;
+      gap:10px;
+    }
+    .hud-box{
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(6px);
+      padding: 10px 12px;
+      border-radius: 14px;
+      min-width: 140px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .hud-label{
+      font-size: 11px;
+      opacity:.75;
+      font-weight: 800;
+      letter-spacing: .4px;
+    }
+    .hud-value{
+      margin-top: 6px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 18px rgba(255, 215, 0, .25);
+    }
+    .hud-timer{
+      margin-top: 6px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #ff4757;
+      text-shadow: 0 0 18px rgba(255, 71, 87, .25);
+    }
+
+    /* 캔버스 스테이지 */
+    .game-stage{
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+    #canvas{
+      position:absolute;
+      inset:0;
+      display:block;
+    }
+    .pointer{
+      position:absolute;
+      z-index:2;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 18px solid transparent;
+      border-bottom: 18px solid transparent;
+      border-left: 28px solid #ffd700;
+      filter: drop-shadow(0 0 10px rgba(255,215,0,.35));
+    }
+
+    /* 실시간 지분 패널 */
+    .list-panel{
+      position: fixed;
+      z-index:6;
+      left: 12px;
+      bottom: 132px;
+      width: min(420px, calc(100% - 24px));
+      max-height: 240px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(6px);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .list-header{
+      padding: 10px 12px;
+      font-weight: 900;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      opacity:.95;
+    }
+    #participantList{
+      padding: 8px 10px;
+      max-height: 190px;
+      overflow:auto;
+    }
+    .list-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 7px 6px;
+      border-bottom: 1px dashed rgba(255,255,255,0.06);
+      font-size: 12px;
+    }
+    .list-item:last-child{ border-bottom:none; }
+    .p-color{
+      width: 10px; height: 10px; border-radius: 999px;
+      border:1px solid rgba(255,255,255,0.18);
+      flex: 0 0 auto;
+    }
+    .p-name{
+      flex: 1 1 auto;
+      font-weight: 800;
+      opacity: .95;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 190px;
+    }
+    .p-amt{
+      flex: 0 0 auto;
+      font-weight: 900;
+      color:#ffd700;
+      opacity:.95;
+    }
+
+    /* 하단 컨트롤 */
+    .controls{
+      position: fixed;
+      z-index:6;
+      left: 12px;
+      bottom: 12px;
+      width: min(420px, calc(100% - 24px));
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .bet-box{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-bet{
+      border:none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor:pointer;
+      background: rgba(255,255,255,0.10);
+      color:#fff;
+      transition: .15s;
+      min-width: 64px;
+    }
+    .btn-bet:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.14); }
+    .btn-min, .btn-max{ background: rgba(255,215,0,0.18); }
+    .input-bet{
+      flex: 1 1 auto;
+      min-width: 120px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+      color:#fff;
+      font-weight: 900;
+      text-align:center;
+    }
+    .btn-join{
+      width: 100%;
+      border:none;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 900;
+      font-size: 14px;
+      cursor:pointer;
+      background: linear-gradient(90deg, rgba(0,243,255,.85), rgba(255,215,0,.85));
+      color:#000;
+      box-shadow: 0 0 26px rgba(0,243,255,.18);
+      transition: .15s;
+    }
+    .btn-join:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter: grayscale(0.4);
+    }
+
+    /* 모달(오버레이) */
+    .modal-overlay{
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;           /* 기본 숨김 */
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.68);
+      backdrop-filter: blur(8px);
+      padding: 18px;
+    }
+    .modal-overlay.active{ display:flex; }
+
+    .modal-box{
+      width: min(420px, 100%);
+      background: rgba(10,10,18,0.85);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 18px 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+      text-align: center;
+    }
+    .modal-title{
+      font-weight: 900;
+      font-size: 20px;
+      color: #ffd700;
+      text-shadow: 0 0 18px rgba(255,215,0,.25);
+    }
+    .modal-sub{
+      margin-top: 10px;
+      font-size: 13px;
+      opacity:.85;
+      line-height: 1.4;
+    }
+    .color-grid{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin: 12px 0 14px;
+    }
+    .color-btn{
+      width: 100%;
+      aspect-ratio: 1/1;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.10);
+      cursor:pointer;
+      transition: .12s;
+    }
+    .color-btn:hover{ transform: translateY(-1px); }
+    .color-btn.disabled{
+      opacity: .25;
+      cursor:not-allowed;
+      filter: grayscale(0.8);
+    }
+    .color-btn.selected{
+      border-color: rgba(255,215,0,0.85);
+      box-shadow: 0 0 20px rgba(255,215,0,.25);
+    }
+    .btn-confirm, .btn-close{
+      width: 100%;
+      margin-top: 10px;
+      border:none;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 900;
+      cursor:pointer;
+    }
+    .btn-confirm{
+      background: rgba(255,215,0,0.9);
+      color:#000;
+    }
+    .btn-confirm:disabled{
+      opacity:.35;
+      cursor:not-allowed;
+    }
+    .btn-close{
+      background: rgba(255,255,255,0.10);
+      color:#fff;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+  </style>
+
   <script>
-    // ✅ GAS URL (딱 1번만 선언)
+    // ✅ GAS URL
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
     // ✅ 튜닝 값
@@ -17,10 +353,7 @@
     let myWallet = 0;
     let myColor = null;
 
-    // 서버 roundKey 추적
     let currentRoundKey = null;
-
-    // 같은 라운드에서만 10초 유지되는 “내 베팅 임시표시”
     let pendingBet = null; // { roundKey, potAmount, ts }
 
     let gameState = { participants: [], totalPool: 0, timeLeft: 1800, rotation: 0 };
@@ -31,9 +364,7 @@
     let lastWinnerMsg = "🏆 지난 라운드 우승자가 없습니다.";
     const warningMsg = "🚨 [안내] 마감 1분 전까지만 배팅 참여가 가능합니다! 서두르세요! 🚨";
 
-    // ✅ 서버시간 동기화(로컬 드리프트 제거)
     let serverOffsetMs = 0; // serverTs - Date.now()
-
     const synth = window.speechSynthesis;
 
     const availableColors = [
@@ -68,16 +399,8 @@
       marquee.style.color = color;
     }
 
-    function closeModal(id) {
-      const m = el(id);
-      if (!m) return;
-      m.classList.remove('active');
-    }
-    function openModal(id){
-      const m = el(id);
-      if (!m) return;
-      m.classList.add('active');
-    }
+    function closeModal(id) { el(id)?.classList.remove('active'); }
+    function openModal(id)  { el(id)?.classList.add('active'); }
 
     function applyServerClock_(data){
       if (typeof data.serverTs === "number") {
@@ -85,7 +408,6 @@
       }
     }
 
-    // ✅ 서버 기준 “현재 라운드키” 계산 (클라 시간 금지: serverOffsetMs 사용)
     function calcRoundKeyFromServerishMs_(msServerish){
       const d = new Date(msServerish);
       const yyyy = d.getFullYear();
@@ -97,7 +419,6 @@
       return `${yyyy}-${mm}-${dd} ${hh}:${roundMin}`;
     }
 
-    // ✅ 서버 기준 남은 시간(초) 계산
     function getTimeLeftSec_(){
       const nowServerish = Date.now() + serverOffsetMs;
       const now = new Date(nowServerish);
@@ -154,7 +475,6 @@
       if (!myColor) return;
       localStorage.setItem('rouletteColor_' + myId, myColor);
       closeModal('ruleModal');
-      // 컬러 선택 후 즉시 동기화 한번
       fetchGameState(true);
     }
 
@@ -172,7 +492,6 @@
       }
     }
 
-    // ✅ 서버 상태 동기화 (1초)
     async function fetchGameState(isInitial=false) {
       if (el('resultModal')?.classList.contains('active')) return;
 
@@ -184,7 +503,6 @@
 
         applyServerClock_(data);
 
-        // lastWinner 표시(서버 기준)
         if (data.lastWinner && data.lastWinner.name) {
           lastWinnerMsg = `🏆 지난 라운드 승자: ${data.lastWinner.name} (상금: ${Number(data.lastWinner.prize||0).toLocaleString()} UT) 🏆`;
         } else {
@@ -199,12 +517,10 @@
         if (!currentRoundKey && rk) currentRoundKey = rk;
 
         if (roundChanged) {
-          // 라운드 바뀌면 로컬 잔상 정리
           currentRoundKey = rk;
           pendingBet = null;
           el('betInput').value = 10;
 
-          // ✅ 라운드가 바뀐 순간에만 “이전 라운드키(prevKey)” 결과를 띄움
           if (!isFinishing && !el('resultModal').classList.contains('active')) {
             finishRoundServerBased(prevKey);
           }
@@ -213,19 +529,17 @@
           if (rk) currentRoundKey = rk;
         }
 
-        // 서버 참가자 -> 로컬 참가자 (색 보정)
         let serverParticipants = (data.participants || []).map(sp => {
           const name = sp.name;
           let color = sp.color;
 
-          if (name === "Company") color = "#ff0055";       // Company 색 고정
-          if (name === myId && myColor) color = myColor;   // 내 색 우선
+          if (name === "Company") color = "#ff0055";
+          if (name === myId && myColor) color = myColor;
           if (!color) color = generateRandomNeonColor();
 
           return { name, amount: Number(sp.amount || 0), color };
         });
 
-        // 같은 라운드에서만 “내 배팅 임시 표시”(최대 10초)
         if (pendingBet && pendingBet.roundKey === currentRoundKey && (Date.now() - pendingBet.ts) < 10000) {
           if (!serverParticipants.find(p => p.name === myId)) {
             serverParticipants.push({ name: myId, amount: pendingBet.potAmount, color: myColor || generateRandomNeonColor() });
@@ -244,9 +558,7 @@
       gameState.totalPool = gameState.participants.reduce((acc, p) => acc + (Number(p.amount)||0), 0);
       el('poolDisplay').innerText = gameState.totalPool.toLocaleString() + " UT";
 
-      // ✅ 정렬 안정화(클라별 표시 순서 흔들림 방지)
       gameState.participants.sort((a, b) => (b.amount - a.amount) || String(a.name).localeCompare(String(b.name)));
-
       updateListUI();
     }
 
@@ -261,10 +573,7 @@
       }
 
       gameState.participants.forEach((p) => {
-        const highlight = (p.name === myId && myColor)
-          ? `color:${myColor}; font-weight:900;`
-          : '';
-
+        const highlight = (p.name === myId && myColor) ? `color:${myColor}; font-weight:900;` : '';
         list.innerHTML += `
           <div class="list-item">
             <div class="p-color" style="background:${p.color}; box-shadow: 0 0 5px ${p.color};"></div>
@@ -284,23 +593,19 @@
     function setMinBet() { el('betInput').value = 10; }
     function setMaxBet() { el('betInput').value = Math.max(10, myWallet); }
 
-    // ✅ 베팅 호출: rouletteBet 우선 → 실패하면 rouletteResult(type=bet) fallback
     async function requestBet_(amountGross){
       const q = `id=${encodeURIComponent(myId)}&amount=${encodeURIComponent(amountGross)}&color=${encodeURIComponent(myColor || "")}&_=${Date.now()}`;
 
-      // 1) 권장: action=rouletteBet
       try{
         let r1 = await fetch(`${GAS_URL}?action=rouletteBet&${q}`, { cache:"no-store" });
         let j1 = await r1.json();
         if (j1 && j1.result === "success") return j1;
       }catch(_){}
 
-      // 2) 기존 호환: action=rouletteResult&type=bet
       let r2 = await fetch(`${GAS_URL}?action=rouletteResult&type=bet&${q}`, { cache:"no-store" });
       return await r2.json();
     }
 
-    // ✅ 베팅
     async function joinGame() {
       if (isBettingProcessing) return;
 
@@ -333,7 +638,7 @@
           pendingBet = { roundKey: (data.roundKey || currentRoundKey), potAmount: gross, ts: Date.now() };
 
           btn.innerText = "배팅 성공!";
-          await fetchGameState(true); // 즉시 동기화
+          await fetchGameState(true);
         } else {
           alert(data.msg || "베팅 실패");
           btn.innerText = originalText;
@@ -351,14 +656,12 @@
       }
     }
 
-    // ✅ 서버 정산 기반 결과 표시 (targetRoundKey가 lastWinner.round와 일치할 때만 확정 표시)
     async function finishRoundServerBased(targetRoundKey) {
       if (isFinishing) return;
       isFinishing = true;
 
       try {
-        const modal = el('resultModal');
-        modal.classList.add('active');
+        openModal('resultModal');
 
         el('resWinner').innerText = "SETTLING...";
         el('resAmount').innerText = "-";
@@ -367,7 +670,7 @@
 
         let winnerData = null;
 
-        for (let i=0; i<12; i++) { // 최대 12초
+        for (let i=0; i<12; i++) {
           try {
             const url = `${GAS_URL}?action=getRouletteState&_=${Date.now()}`;
             const res = await fetch(url, { cache: "no-store" });
@@ -436,7 +739,6 @@
       }, 120000);
     }
 
-    // ✅ 서버 기준 타이머 표시
     function startTimer() {
       setInterval(() => {
         gameState.timeLeft = getTimeLeftSec_();
@@ -471,18 +773,15 @@
           speak(words[10 - gameState.timeLeft]);
         }
 
-        // ✅ 안전장치: 정확히 0이 되었을 때 “방금 끝난 라운드키” 계산해서 결과 시도
         if (gameState.timeLeft === 0 && !el('resultModal').classList.contains('active') && !isFinishing) {
           const nowServerish = Date.now() + serverOffsetMs;
           const justFinishedKey = calcRoundKeyFromServerishMs_(nowServerish - 1000);
           speak("Time's up!");
           finishRoundServerBased(justFinishedKey);
         }
-
       }, 1000);
     }
 
-    // ✅ 3RPM 회전 (시간 기반)
     let lastFrameTs = 0;
     function drawGiantWheel(ts) {
       if (!lastFrameTs) lastFrameTs = ts;
@@ -545,7 +844,7 @@
             ctx.textBaseline = "middle";
 
             ctx.fillStyle = "#fff";
-            ctx.font = "bold 40px Pretendard";
+            ctx.font = "bold 40px Arial";
             ctx.shadowColor = "rgba(0,0,0,0.8)";
             ctx.shadowBlur = 4;
             ctx.fillText(p.name, 0, -20);
@@ -560,11 +859,11 @@
           startAngle = endAngle;
         });
       } else {
-        ctx.font = "bold 50px Pretendard";
+        ctx.font = "bold 44px Arial";
         ctx.fillStyle = "#333";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 400, centerY);
+        ctx.fillText("WAITING FOR PLAYERS...", centerX - radius + 420, centerY);
       }
 
       const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.95, centerX, centerY, radius);
@@ -588,11 +887,8 @@
       }
 
       await fetchUserData();
-
-      // 서버 상태 먼저 로드 (라운드키/서버타임 확보)
       await fetchGameState(true);
 
-      // 내 컬러
       const savedColor = localStorage.getItem('rouletteColor_' + myId);
       if (savedColor) {
         myColor = savedColor;
@@ -606,46 +902,25 @@
       startTimer();
       startMarqueeScheduler();
 
-      // ✅ 1초마다 동기화
       setInterval(() => fetchGameState(false), SYNC_INTERVAL_MS);
     };
   </script>
 </head>
 
 <body>
+  <div class="marquee-wrap"><div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥</div></div>
+
   <div id="centerCount" class="center-countdown">60</div>
 
-  <div id="ruleModal" class="modal-overlay active">
-    <div class="modal-box">
-      <div class="modal-title">WELCOME TO CASINO</div>
-      <div class="modal-sub">30분마다 진행되는 승부! 당신의 컬러를 선택하세요.</div>
-      <div style="text-align:left; font-size:0.9rem; color:#ddd; margin-bottom:10px;">
-        🎨 <strong>CHOOSE YOUR COLOR</strong>
-      </div>
-      <div id="colorGrid" class="color-grid"></div>
-      <div id="selectedColorName" style="height:20px; color:#fff; font-weight:bold; margin-bottom:15px; font-size:0.9rem;"></div>
-      <button id="btnStart" class="btn-confirm" onclick="selectColorAndStart()" disabled>GAME START</button>
-    </div>
-  </div>
-
-  <div id="resultModal" class="modal-overlay">
-    <div class="modal-box">
-      <div style="font-size:2rem; font-weight:900; color:#ffd700;">ROUND FINISHED</div>
-      <div style="font-size:0.9rem; color:#aaa; margin-top:10px;">WINNER</div>
-      <div id="resWinner">USER</div>
-      <div id="resAmount">1,000 UT</div>
-      <div id="resMsg" style="font-size:1.2rem; margin-top:15px; font-weight:bold;">축하합니다!</div>
-      <button class="btn-close" onclick="closeModal('resultModal'); resetGame();">NEXT ROUND</button>
-    </div>
-  </div>
-
-  <div class="marquee-wrap">
-    <div class="marquee-text" id="marqueeText">🔥 THE UNIQUE CASINO에 오신 것을 환영합니다! 대박의 기회를 잡으세요! 🔥</div>
-  </div>
-
   <div class="top-hud">
-    <div class="hud-box"><div class="hud-label">TOTAL EQUITY</div><div class="hud-value" id="poolDisplay">0 UT</div></div>
-    <div class="hud-box"><div class="hud-label">TIME LEFT</div><div class="hud-timer" id="timerDisplay">30:00</div></div>
+    <div class="hud-box">
+      <div class="hud-label">TOTAL EQUITY</div>
+      <div class="hud-value" id="poolDisplay">0 UT</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">TIME LEFT</div>
+      <div class="hud-timer" id="timerDisplay">30:00</div>
+    </div>
   </div>
 
   <div class="game-stage">
@@ -655,19 +930,4 @@
 
   <div class="list-panel">
     <div class="list-header">실시간 지분 현황 (Live Rank)</div>
-    <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem; padding:5px;">대기중...</div></div>
-  </div>
-
-  <div class="controls">
-    <div class="bet-box">
-      <button class="btn-bet btn-min" onclick="setMinBet()">MIN</button>
-      <button class="btn-bet" onclick="changeBet(-100)">-100</button>
-      <input type="number" id="betInput" class="input-bet" value="10" readonly>
-      <button class="btn-bet" onclick="changeBet(100)">+100</button>
-      <button class="btn-bet btn-max" onclick="setMaxBet()">MAX</button>
-    </div>
-    <button id="joinBtn" class="btn-join" onclick="joinGame()">참여하기 (BET)</button>
-    <div style="font-size:0.8rem; color:#aaa;">내 자산: <span id="myBalance" style="color:white;">Loading...</span></div>
-  </div>
-</body>
-</html>
+    <div id="participantList"><div style="text-align:center; color:#ddd; font-size:0.8rem;
