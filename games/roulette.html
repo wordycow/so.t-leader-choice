@@ -18,17 +18,16 @@
       --neon-orange: #ff6600;
     }
     body {
-      margin: 0; padding: 0; background-color: var(--bg-dark);
-      /* 모바일 스크롤 허용 */
+      margin: 0; padding: 0; 
+      background: transparent; /* 배경은 캔버스가 담당 */
       overflow-y: auto; overflow-x: hidden;
       color: #fff; font-family: 'Cinzel', serif;
     }
     
-    /* 캔버스: 배경에 고정 (z-index 0으로 올려서 검은 화면 방지 + 배경색 지정) */
+    /* 캔버스 (배경 역할) */
     canvas { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        z-index: -1; 
-        display: block; 
+        z-index: 0; display: block; 
         background-color: #050508; 
     }
     
@@ -93,9 +92,9 @@
     }
     .mb-btn:hover { color: #fff; background: rgba(255,255,255,0.2); transform: scale(1.1); }
     
-    #musicToggle { color: var(--gold-1); }
-    #musicToggle.playing { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); animation: pulseMusic 1.5s infinite; }
-    @keyframes pulseMusic { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    #playToggle { color: var(--gold-1); font-size: 18px; }
+    #playToggle.playing { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); }
+    #muteToggle.muted { color: var(--danger); }
     .v-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.2); margin: 0 4px; }
 
     /* =========================================
@@ -125,22 +124,16 @@
     /* 🔥 UI Panel (Mobile Fix) 🔥 */
     @media (max-width: 1023px) {
       .ui-container { 
-        position: relative; /* 스크롤 가능 */
-        width: 100%; min-height: 100vh; 
+        position: relative; width: 100%; min-height: 100vh; 
         top: auto; bottom: auto; right: auto; left: auto; 
         border-left: none; border-top: 1px solid rgba(255,215,0,0.25);
-        margin-top: 450px; /* 룰렛 캔버스가 보일 공간 확보 */
-        background: transparent; 
-        padding-bottom: 50px;
+        margin-top: 450px; background: transparent; padding-bottom: 50px;
       }
-      /* UI 배경색 */
-      .ui-container::before {
-          content:""; position: absolute; inset:0; background: #050508; z-index: -1;
-      }
+      .ui-container::before { content:""; position: absolute; inset:0; background: #050508; z-index: -1; }
       .list-wrap { min-height: 300px; flex: none; } 
     }
 
-    /* Pointer (고정 위치) */
+    /* Pointer */
     .pointer-wrap {
       position: fixed; z-index: 50; display: flex; align-items: center;
       filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.8));
@@ -151,21 +144,19 @@
       clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
     }
 
-    /* Countdown (Center Fixed) */
+    /* Countdown */
     .countdown-box { 
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-        pointer-events: none; z-index: 150; 
-        width: 100%; text-align: center; 
+        pointer-events: none; z-index: 150; width: 100%; text-align: center; 
     }
     .cd-num { 
-      font-size: 180px; font-weight: 900; color: #fff; -webkit-text-stroke: 4px var(--danger);
-      text-shadow: 0 0 60px var(--danger); opacity: 0; transition: transform 0.2s; 
-      display: inline-block; 
+      font-size: 250px; font-weight: 900; color: #fff; -webkit-text-stroke: 5px var(--danger);
+      text-shadow: 0 0 80px var(--danger); opacity: 0; transition: transform 0.1s, opacity 0.1s; display: inline-block; 
     }
     .cd-num.active { opacity: 1; transform: scale(1.1); }
 
     /* Controls */
-    .hud-row { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+    .hud-row { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
     .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
     .value-lg { font-size: 32px; font-weight: 900; color: var(--gold-1); }
     .timer { font-size: 26px; font-weight: 700; color: #fff; font-family: monospace; }
@@ -177,34 +168,25 @@
     .p-col { width: 12px; height: 12px; border-radius: 50%; margin-right: 15px; box-shadow: 0 0 10px currentColor; }
     .p-name { flex: 1; font-size: 15px; font-weight: 700; color: #e0e0e0; }
     .p-amt { font-size: 15px; color: var(--gold-1); font-weight: 800; }
-
     .ctrl-area { padding: 25px; background: rgba(0,0,0,0.5); }
     
-    /* 🔥 버튼 간격 강제 조정 (Gap Fix) 🔥 */
-    .bet-inputs { 
-        display: grid; grid-template-columns: repeat(5, 1fr); 
-        gap: 8px; margin-bottom: 20px; align-items: center;
-    }
+    /* 🔥 버튼 간격 완벽 고정 🔥 */
+    .bet-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; align-items:center; }
     .btn-chip { 
         background: linear-gradient(180deg, #2a2a35, #1a1a20); border: 1px solid #444; color: #ccc; 
-        border-radius: 8px; height: 50px; font-weight: 700; cursor: pointer; width: 100%;
-        margin: 0; box-sizing: border-box;
+        border-radius: 10px; height: 50px; font-weight: 700; cursor: pointer; width: 100%; margin: 0; box-sizing: border-box;
     }
     .btn-chip:hover { color: #fff; border-color: var(--gold-2); background: #333; }
     .inp-amt { 
         background: #000; border: 2px solid var(--gold-2); color: var(--gold-1); 
         text-align: center; font-size: 18px; font-weight: 900; 
-        border-radius: 8px; width: 100%; outline: none; height: 50px; 
-        box-sizing: border-box; margin: 0;
+        border-radius: 10px; width: 100%; outline: none; height: 50px; box-sizing: border-box; margin: 0;
     }
 
     /* Modals */
     .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; justify-content: center; align-items: center; backdrop-filter: blur(20px); }
     .modal-mask.on { display: flex; }
-    .modal-body { width: 90%; max-width: 450px; background: #12121a; border: 2px solid var(--gold-2); border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 0 80px rgba(0,0,0,0.8); }
-    .c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 30px 0; }
-    .c-btn { height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    .c-btn.sel { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 25px currentColor; }
+    .modal-body { width: 90%; max-width: 500px; background: radial-gradient(circle, #3a1a4a 0%, #000 100%); border: 3px solid var(--gold-1); border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 0 100px rgba(255,215,0,0.3); }
 
     @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
   </style>
@@ -212,7 +194,8 @@
 <body>
   <div class="music-bar">
     <button class="mb-btn" id="prevBtn" title="Previous">⏮</button>
-    <button class="mb-btn" id="musicToggle" title="Play/Pause">🔇</button>
+    <button class="mb-btn" id="playToggle" title="Play/Pause">▶</button>
+    <button class="mb-btn" id="muteToggle" title="Mute/Unmute">🔊</button>
     <button class="mb-btn" id="nextBtn" title="Next">⏭</button>
     <div class="v-sep"></div>
     <button class="mb-btn" id="volDown" title="Vol -">－</button>
@@ -257,19 +240,12 @@
     <div class="list-wrap" id="pList"><div style="text-align:center; padding:30px; color:#555;">Waiting for bets...</div></div>
   </aside>
 
-  <div id="mdColor" class="modal-mask">
-    <div class="modal-body">
-      <h2 style="color:var(--gold-1); margin:0; font-size:28px;">CHOOSE COLOR</h2>
-      <div class="c-grid" id="cGrid"></div>
-      <button id="bColorOk" class="action-btn action-btn-sot" style="min-height:55px;" disabled><span class="unique-inner">CONFIRM</span></button>
-    </div>
-  </div>
   <div id="mdRes" class="modal-mask">
-    <div class="modal-body" style="background: radial-gradient(circle, #2a1a3a 0%, #111 100%);">
-      <h2 style="color:var(--gold-1); font-size:40px; margin-bottom:10px; text-shadow:0 0 30px var(--gold-1);">WINNER!</h2>
-      <div id="resName" style="font-size:48px; font-weight:900; color:#fff; margin:10px 0; text-shadow:0 5px 15px rgba(0,0,0,0.8);">-</div>
-      <div id="resAmt" style="font-size:32px; color:var(--gold-3); font-weight:700;">-</div>
-      <div style="margin-top:30px; color:#ccc;">New round starting...</div>
+    <div class="modal-body">
+      <h2 style="color:var(--gold-1); font-size:50px; margin-bottom:20px; text-shadow:0 0 40px var(--gold-1);">🏆 WINNER! 🏆</h2>
+      <div id="resName" style="font-size:56px; font-weight:900; color:#fff; margin:20px 0; text-shadow:0 5px 25px rgba(0,247,255,0.8);">-</div>
+      <div id="resAmt" style="font-size:36px; color:var(--gold-3); font-weight:700;">-</div>
+      <div style="margin-top:40px; color:#ccc; font-size: 18px;">Next round in 30 seconds...</div>
     </div>
   </div>
 
@@ -280,11 +256,21 @@
     const $ = (id) => document.getElementById(id);
     const toMoney = (n) => Number(n).toLocaleString();
     const synth = window.speechSynthesis;
-    
-    function speak(txt){ 
-        if(synth && !synth.speaking){
+    let maleVoice = null;
+
+    // 🔥 남자 목소리 찾기 🔥
+    function initVoices() {
+        const voices = synth.getVoices();
+        maleVoice = voices.find(v => v.name.includes('Male') && v.lang.includes('en')) || voices.find(v => v.lang === 'en-US');
+    }
+    if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = initVoices; }
+
+    function speak(txt, pitch = 0.6, rate = 1.0){ // 중저음
+        if(synth && !synth.speaking && !isMuted){
             const u = new SpeechSynthesisUtterance(txt);
-            u.lang='en-US'; u.pitch = 0.8; synth.speak(u);
+            u.lang = 'en-US'; u.pitch = pitch; u.rate = rate;   
+            if (maleVoice) u.voice = maleVoice;
+            synth.speak(u);
         }
     }
 
@@ -297,77 +283,76 @@
     let rotation=0, wheelState="SPINNING", stopTargetAngle=0, stopStartTime=0;
     const STOP_DURATION=8000;
     let isLocked=false, serverOffset=0, nextRoundMs=0, isPC=window.innerWidth>=1024;
-    let bettingClosedAnnounced = false; // 소리 중복 방지
-    
-    const colors = ['#ff0055','#ffdd00','#00ffaa','#00ccff','#ff4400','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
+    let bettingClosedAnnounced = false; 
     let confetti = [];
 
-    // 🔥 사용자 플레이리스트 (Full) 🔥
+    // Playlist (Full 50)
     const ytPlaylist = ['-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q', 'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc', '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA', '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ', 'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc', 'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA', 'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk', 'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo', '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'];
-    
     var ytPlayer;
     var curVol = 20;
-    var currentVideoIndex = 0; // 현재 곡 인덱스
+    var isMuted = false;
+    var isPlaying = true;
+    var currentVideoIndex = 0;
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) { color += letters[Math.floor(Math.random() * 16)]; }
+        return color;
+    }
 
     function onYouTubeIframeAPIReady() {
       ytPlayer = new YT.Player('ytPlayer', {
         height: '0', width: '0',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'loop': 0 }, // loop: 0 (수동 제어 위해)
-        events: { 
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange 
-        }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'loop': 0 }, 
+        events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
       });
     }
-
     function onPlayerReady(event) { 
-        // 랜덤 시작
         currentVideoIndex = Math.floor(Math.random() * ytPlaylist.length);
         loadAndPlay(currentVideoIndex);
         event.target.setVolume(curVol); 
-        updateMusicUI(true); 
+        updateMusicUI(); 
     }
-
-    // 🔥 리스트 내 무한 반복 로직 🔥
     function onPlayerStateChange(event) {
-        // 영상이 끝났을 때 (ENDED = 0)
-        if (event.data === YT.PlayerState.ENDED) {
-            playNextVideo();
-        }
+        if (event.data === YT.PlayerState.ENDED) { playNextVideo(); }
     }
-
     function loadAndPlay(index) {
         if (!ytPlayer || !ytPlayer.loadVideoById) return;
         ytPlayer.loadVideoById(ytPlaylist[index]);
     }
-
     function playNextVideo() {
         currentVideoIndex = (currentVideoIndex + 1) % ytPlaylist.length;
         loadAndPlay(currentVideoIndex);
     }
-
     function playPrevVideo() {
         currentVideoIndex = (currentVideoIndex - 1 + ytPlaylist.length) % ytPlaylist.length;
         loadAndPlay(currentVideoIndex);
     }
     
     // Music Controls
-    const musicBtn = $("musicToggle");
-    musicBtn.onclick = () => {
-      if(!ytPlayer || !ytPlayer.getPlayerState) return;
-      if(ytPlayer.getPlayerState() === 1) { ytPlayer.pauseVideo(); updateMusicUI(false); }
-      else { ytPlayer.playVideo(); updateMusicUI(true); }
+    const playBtn = $("playToggle");
+    const muteBtn = $("muteToggle");
+    playBtn.onclick = () => {
+        if(!ytPlayer || !ytPlayer.getPlayerState) return;
+        if(isPlaying) { ytPlayer.pauseVideo(); isPlaying=false; } else { ytPlayer.playVideo(); isPlaying=true; }
+        updateMusicUI();
+    };
+    muteBtn.onclick = () => {
+        if(!ytPlayer) return;
+        if(isMuted) { ytPlayer.unMute(); isMuted=false; } else { ytPlayer.mute(); isMuted=true; }
+        updateMusicUI();
     };
     $("volUp").onclick = () => { if(ytPlayer){ curVol=Math.min(100,curVol+10); ytPlayer.setVolume(curVol); }};
     $("volDown").onclick = () => { if(ytPlayer){ curVol=Math.max(0,curVol-10); ytPlayer.setVolume(curVol); }};
-    
-    // 🔥 리스트 제어 버튼 연결 🔥
     $("prevBtn").onclick = playPrevVideo;
     $("nextBtn").onclick = playNextVideo;
 
-    function updateMusicUI(isPlaying) {
-      if(isPlaying) { musicBtn.classList.add("playing"); musicBtn.innerText="🔊"; }
-      else { musicBtn.classList.remove("playing"); musicBtn.innerText="🔇"; }
+    function updateMusicUI() {
+        playBtn.innerText = isPlaying ? "⏸" : "▶";
+        if(isPlaying) playBtn.classList.add("playing"); else playBtn.classList.remove("playing");
+        muteBtn.innerText = isMuted ? "🔇" : "🔊";
+        if(isMuted) muteBtn.classList.add("muted"); else muteBtn.classList.remove("muted");
     }
 
     function updateLayoutMetrics() {
@@ -378,13 +363,11 @@
         ptr.style.left="0px"; ptr.style.top="50%"; ptr.style.transform="translateY(-50%)";
         return { r: h*1.2, cx: 80+(h*1.2), cy: h/2, pointerAngle: Math.PI };
       } else {
-        // Mobile: Pointer Fixed Top Center
         ptr.style.left="50%"; ptr.style.top="80px"; ptr.style.transform="translateX(-50%) rotate(90deg)";
         return { r: w*0.9, cx: w/2, cy: 150+(w*0.9), pointerAngle: -Math.PI/2 };
       }
     }
 
-    // 🔥 정밀 속도 제어: 1 RPM 🔥
     let lastTime = 0;
     function getCurrentRPM(sec) {
         if(sec > 1170) return 0.2; 
@@ -396,8 +379,7 @@
     }
 
     function seededShuffle(arr, seedStr) {
-        let seed = 0;
-        for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
+        let seed = 0; for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
         let m = arr.length, t, i;
         const random = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
         while (m) { i = Math.floor(random() * m--); t = arr[m]; arr[m] = arr[i]; arr[i] = t; }
@@ -412,19 +394,20 @@
       const cvs=$("cvs"), ctx=cvs.getContext("2d");
       const w=window.innerWidth, h=window.innerHeight;
       if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
-      
-      // ✅ [Black Screen Fix] 배경을 딥 블랙으로 채움
-      ctx.fillStyle = "#050508";
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#050508"; ctx.fillRect(0, 0, w, h);
 
       const {cx,cy,r} = updateLayoutMetrics();
 
       if (wheelState === "SPINNING") {
         let sec = 0;
-        if(nextRoundMs) { const now = Date.now() + serverOffset; sec = Math.max(0, Math.floor((nextRoundMs - now)/1000)); }
-        const rpm = getCurrentRPM(sec);
-        const radPerMs = (rpm * 2 * Math.PI) / 60000;
-        rotation += (radPerMs * dt);
+        if(nextRoundMs) { 
+            const now = Date.now() + serverOffset; 
+            sec = Math.max(0, Math.floor((nextRoundMs - now)/1000)); 
+            
+            const rpm = getCurrentRPM(sec);
+            const radPerMs = (rpm * 2 * Math.PI) / 60000;
+            rotation += (radPerMs * dt);
+        }
       } else if (wheelState === "STOPPING") {
         const now = Date.now(); const t = Math.min(1, (now - stopStartTime) / STOP_DURATION); const ease = 1 - Math.pow(1 - t, 4);
         rotation = window.startRotation + (stopTargetAngle - window.startRotation) * ease;
@@ -528,7 +511,9 @@
         if(d.lastWinner && String(d.lastWinner.round)===String(roundKey)){
             spinToWin(d.lastWinner.name);
             $("resName").innerText=d.lastWinner.name;
-            $("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";
+            // 🔥 수수료 10% 제외 후 표시 (90%만 표시) 🔥
+            const realPrize = Math.floor(d.lastWinner.prize * 0.9);
+            $("resAmt").innerText=toMoney(realPrize)+" UT";
         }
     }
     function showResultModal(){$("mdRes").style.display="flex";}
@@ -540,15 +525,25 @@
         if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
         if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
         
-        // 🔥 소리 1회만 재생 🔥
-        if(d <= 60 && d > 0 && !bettingClosedAnnounced) {
-            speak("Betting Closed"); 
-            bettingClosedAnnounced = true;
-            $("timerDisp").classList.add("alert");
+        // 🔥 60초: 소리 + 버튼 즉시 잠금 (LOCK IMMEDIATE) 🔥
+        if(d <= 60 && d > 0) {
+             if(!isLocked) {
+                 isLocked = true; 
+                 $("bJoin").disabled = true; 
+                 $("btnText").innerText = "CLOSED";
+                 $("timerDisp").classList.add("alert");
+             }
+             if(!bettingClosedAnnounced) {
+                 speak("Betting Closed", 0.6, 1.1); 
+                 bettingClosedAnnounced = true;
+             }
         }
 
-        if(d<=0 && !isLocked){
-            isLocked=true; $("bJoin").disabled=true; $("btnText").innerText="CLOSED";
+        // 🔥 0초: 멈춤 시도 🔥
+        if(d<=0){
+            if(!isLocked) { 
+                isLocked=true; $("bJoin").disabled=true; $("btnText").innerText="CLOSED";
+            }
             checkWinnerAndStop(); 
             setTimeout(checkWinnerAndStop, 1000); 
         }
@@ -556,7 +551,7 @@
         const cd=$("cdNum"); 
         if(d<=60 && d>0 && wheelState==="SPINNING"){
             cd.innerText=d; cd.classList.add("active");
-            if(d<=10) speak(String(d));
+            if(d<=10) speak(String(d), 1.0, 1.2); 
         }else{
             cd.classList.remove("active");
         }
@@ -569,8 +564,12 @@
     $("bColorOk").onclick=()=>{if(!myColor)return;localStorage.setItem("c_"+myId,myColor);$("mdColor").style.display="none";};
 
     window.onload=async()=>{
+      initVoices(); 
       const p=new URLSearchParams(location.search);myId=p.get("id")||"Guest"; const sc=localStorage.getItem("c_"+myId);
-      if(sc)myColor=sc;else{const g=$("cGrid");colors.forEach(c=>{const d=document.createElement("div");d.className="c-btn";d.style.backgroundColor=c;d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c;$("bColorOk").disabled=false;};g.appendChild(d);});$("mdColor").style.display="flex";}
+      if(sc)myColor=sc;else{
+          myColor=getRandomColor(); 
+          localStorage.setItem("c_"+myId,myColor);
+      }
       try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
       updateState(); setInterval(updateState,2000); startTimer(); requestAnimationFrame(draw); window.addEventListener('resize',draw);
       
