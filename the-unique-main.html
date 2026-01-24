@@ -277,26 +277,121 @@
     .fund-sub{ font-size:13px; color:#cbd5e1; margin-top:4px; }
     .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
 
-    /* ===== 3D UT 점유 도표 (수정: 삐져나감 방지 자동 줄바꿈 적용) ===== */
+    /* ===== 3D UT 점유 도표 (PC: 좌우 배치 / Mobile: 상하 배치) ===== */
     .ut-viz {
-      /* ✅ 사이즈를 유동적으로 clamp 적용 */
-      --viz-size: clamp(150px, 13vw, 180px);
-      --thick: 22px;
-
-      margin: 12px 0 8px;
-      display: flex; /* Grid를 Flex로 변경하여 유연하게 처리 */
-      flex-wrap: wrap; /* ✅ 공간 부족하면 정보창이 아래로 내려감 (핵심) */
-      justify-content: center;
-      gap: 12px;
+      /* ✅ PC 기본 설정: 가로(Row) 배치 */
+      display: flex;
+      flex-direction: row; 
       align-items: center;
+      justify-content: center;
+      gap: 20px; /* 도넛과 정보창 사이 간격 */
       width: 100%;
+      margin: 15px 0;
+      
+      /* 도넛 크기 설정 */
+      --viz-size: 150px; 
+      --thick: 20px;
     }
 
-    @media (max-width: 768px){
-      .ut-viz{
-        --viz-size: min(70vw, 260px);
-        flex-direction: column;
+    /* ✅ 모바일 설정: 세로(Column) 배치 */
+    @media (max-width: 1023px){
+      .ut-viz {
+        flex-direction: column; /* 위아래로 쌓임 */
+        gap: 15px;
+        --viz-size: 200px; /* 모바일은 도넛을 좀 더 크게 */
+        --thick: 24px;
       }
+    }
+
+    /* 도넛 그래프 스타일 */
+    .ut-donut {
+      width: var(--viz-size);
+      height: var(--viz-size);
+      flex-shrink: 0;
+      position: relative;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 30% 18%, rgba(255,255,255,0.10), transparent 52%),
+                  rgba(2,6,23,0.42);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(148,163,184,0.14) inset;
+      
+      /* 마커 위치 계산 */
+      --r: calc((var(--viz-size) / 2) - (var(--thick) / 2) - 8px);
+    }
+
+    .ut-donut::after {
+      content:""; position:absolute; inset: 10px; border-radius:50%;
+      background: radial-gradient(circle at 50% 14%, rgba(255,255,255,0.10), transparent 58%);
+      pointer-events:none; opacity: .9;
+    }
+
+    .ut-donut-ring {
+      position:absolute; inset:0; border-radius:50%;
+      background: conic-gradient(from -90deg, rgba(251,191,36,0.98) 0 calc(var(--p)*1%), rgba(148,163,184,0.15) 0 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(50% - var(--thick)), #000 calc(50% - var(--thick) + 1px));
+      mask: radial-gradient(farthest-side, transparent calc(50% - var(--thick)), #000 calc(50% - var(--thick) + 1px));
+      filter: drop-shadow(0 0 10px rgba(251,191,36,0.3));
+    }
+
+    /* 링 앞부분 글로우 */
+    .ut-donut-ring::before {
+      content:""; position:absolute; inset:0; border-radius:50%;
+      background: conic-gradient(from -90deg, transparent 0 calc(var(--p)*1% - 3%), rgba(251,191,36,0.8) calc(var(--p)*1%), transparent calc(var(--p)*1% + 3%) 100%);
+      -webkit-mask: inherit; mask: inherit; filter: blur(4px); opacity: .8;
+    }
+
+    /* 링 끝부분 마커(동그라미) */
+    .ut-donut-ring::after {
+      content:""; position:absolute; left:50%; top:50%;
+      width:10px; height:10px; border-radius:50%;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(251,191,36,1), 0 0 20px rgba(251,191,36,0.8);
+      transform: translate(-50%, -50%) rotate(var(--deg)) translateY(calc(-1 * var(--r)));
+    }
+
+    .ut-donut-center {
+      position:relative; z-index:3;
+      width: calc(var(--viz-size) - (var(--thick) * 2) - 24px);
+      height: calc(var(--viz-size) - (var(--thick) * 2) - 24px);
+      border-radius:50%;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background: rgba(2,6,23,0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .ut-viz-pct { font-size: 24px; font-weight: 900; color:#fff; text-shadow: 0 0 10px rgba(251,191,36,0.5); }
+    .ut-viz-sub { margin-top: 2px; font-size: 11px; color: #94a3b8; }
+
+    /* ✅ 우측 정보창 (PC: 도넛 옆에 꽉 차게 / Mobile: 도넛 아래에 꽉 차게) */
+    .ut-viz-info {
+      flex: 1; /* 남은 공간 모두 차지 */
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 160px; /* 최소 너비 확보 */
+    }
+
+    @media (max-width: 1023px){
+      .ut-viz-info { width: 100%; max-width: 280px; } /* 모바일에서 너무 퍼지지 않게 중앙 정렬 */
+    }
+
+    .ut-info-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 12px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .ut-info-row .k { font-size:12px; color: #94a3b8; font-weight:600; }
+    .ut-info-row .v { font-size:13px; color: #fff; font-weight:800; letter-spacing:0.5px; }
+
+    /* 모바일용 도넛 표시 설정 */
+    @media (max-width: 768px){
+      .ut-viz.ut-viz--donut{ display:flex; }
+      .ut-viz.ut-viz--dial{ display:none; }
     }
 
     .ut-donut{
