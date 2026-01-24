@@ -293,15 +293,27 @@
 
 @media (max-width: 768px){
   .ut-viz{
-    /* ✅ 모바일에서 카드 padding 고려해서 더 여유 있게 */
-    --viz-size: min(78vw, 320px);
+    /* ✅ 카드(블럭) 안에서만: 도넛이 절대 밖으로 안나가게 */
+    width: 100%;
+    max-width: 100%;
+
+    /* ✅ vw 제거 → 카드 내부 폭(100%)을 상한으로 잡음 */
+    --viz-size: min(100%, 320px);
     --thick: 28px;
 
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 12px;
+
+    overflow: hidden; /* ✅ 글로우/그림자 튐 방지 */
+  }
+
+  /* ✅ 도넛 자체도 클리핑(링/마커 글로우가 밖으로 새는 것 방지) */
+  .ut-donut{
+    overflow: hidden;
   }
 }
+
 
 .ut-donut{
   width: var(--viz-size);
