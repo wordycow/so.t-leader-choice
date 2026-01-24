@@ -13,7 +13,7 @@
     :root {
       --bg-dark: #050508;
       --panel-bg: rgba(12, 14, 20, 0.95);
-      --gold-1: #ffd700; --gold-2: #d4af37; --gold-3: #fbf5b7;
+      --gold-1: #ffd700; --gold-2: #d4af37;
       --danger: #ff0044; --accent-blue: #00f0ff;
       --neon-orange: #ff6600;
     }
@@ -24,11 +24,12 @@
       color: #fff; font-family: 'Cinzel', serif;
     }
     
-    /* 캔버스: 배경에 고정 (스크롤해도 안 움직임) */
+    /* 캔버스: 배경에 고정 (z-index 0으로 올려서 검은 화면 방지 + 배경색 지정) */
     canvas { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         z-index: -1; 
         display: block; 
+        background-color: #050508; 
     }
     
     body.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
@@ -70,7 +71,7 @@
     }
     .action-btn.action-btn-sot:hover{ transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,255,170,0.2); }
     .action-btn.action-btn-sot:active{ transform: translateY(0) scale(0.995); }
-    .action-btn.action-btn-sot:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+    .action-btn.action-btn-sot:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; animation: none; }
     @keyframes sotGlowSpin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
     @keyframes sotShine{ 0%{ transform: translateX(-140%); } 45%{ transform: translateX(140%); } 100%{ transform: translateX(140%); } }
 
@@ -122,24 +123,26 @@
     }
 
     /* 🔥 UI Panel (Mobile Fix) 🔥 */
-    /* 모바일에서는 하단 고정이 아니라 스크롤 되는 영역으로 변경 */
     @media (max-width: 1023px) {
       .ui-container { 
-        position: relative; /* fixed 해제 -> 스크롤 가능 */
+        position: relative; /* 스크롤 가능 */
         width: 100%; min-height: 100vh; 
         top: auto; bottom: auto; right: auto; left: auto; 
         border-left: none; border-top: 1px solid rgba(255,215,0,0.25);
         margin-top: 450px; /* 룰렛 캔버스가 보일 공간 확보 */
-        background: #050508; /* 배경색 지정 (투명하면 겹쳐 보임) */
+        background: transparent; 
         padding-bottom: 50px;
+      }
+      /* UI 배경색 */
+      .ui-container::before {
+          content:""; position: absolute; inset:0; background: #050508; z-index: -1;
       }
       .list-wrap { min-height: 300px; flex: none; } 
     }
 
     /* Pointer (고정 위치) */
     .pointer-wrap {
-      position: fixed; /* absolute -> fixed 변경하여 스크롤해도 고정 */
-      z-index: 50; display: flex; align-items: center;
+      position: fixed; z-index: 50; display: flex; align-items: center;
       filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.8));
     }
     .pointer-real {
@@ -152,7 +155,7 @@
     .countdown-box { 
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
         pointer-events: none; z-index: 150; 
-        width: 100%; text-align: center; /* 모바일 중앙 정렬 보장 */
+        width: 100%; text-align: center; 
     }
     .cd-num { 
       font-size: 180px; font-weight: 900; color: #fff; -webkit-text-stroke: 4px var(--danger);
@@ -179,25 +182,20 @@
     
     /* 🔥 버튼 간격 강제 조정 (Gap Fix) 🔥 */
     .bet-inputs { 
-        display: grid; 
-        grid-template-columns: repeat(5, 1fr); 
-        gap: 8px; /* 명확한 간격 */
-        margin-bottom: 20px; 
-        align-items: center;
+        display: grid; grid-template-columns: repeat(5, 1fr); 
+        gap: 8px; margin-bottom: 20px; align-items: center;
     }
     .btn-chip { 
         background: linear-gradient(180deg, #2a2a35, #1a1a20); border: 1px solid #444; color: #ccc; 
         border-radius: 8px; height: 50px; font-weight: 700; cursor: pointer; width: 100%;
-        margin: 0; 
-        box-sizing: border-box; /* 패딩 포함 크기 계산 */
+        margin: 0; box-sizing: border-box;
     }
     .btn-chip:hover { color: #fff; border-color: var(--gold-2); background: #333; }
     .inp-amt { 
         background: #000; border: 2px solid var(--gold-2); color: var(--gold-1); 
         text-align: center; font-size: 18px; font-weight: 900; 
         border-radius: 8px; width: 100%; outline: none; height: 50px; 
-        box-sizing: border-box; 
-        margin: 0;
+        box-sizing: border-box; margin: 0;
     }
 
     /* Modals */
@@ -282,7 +280,13 @@
     const $ = (id) => document.getElementById(id);
     const toMoney = (n) => Number(n).toLocaleString();
     const synth = window.speechSynthesis;
-    function speak(txt){ if(synth&&!synth.speaking){const u=new SpeechSynthesisUtterance(txt);u.lang='en-US';synth.speak(u);}}
+    
+    function speak(txt){ 
+        if(synth && !synth.speaking){
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang='en-US'; u.pitch = 0.8; synth.speak(u);
+        }
+    }
 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
     const MIN_BET = 100;
@@ -293,28 +297,58 @@
     let rotation=0, wheelState="SPINNING", stopTargetAngle=0, stopStartTime=0;
     const STOP_DURATION=8000;
     let isLocked=false, serverOffset=0, nextRoundMs=0, isPC=window.innerWidth>=1024;
+    let bettingClosedAnnounced = false; // 소리 중복 방지
     
     const colors = ['#ff0055','#ffdd00','#00ffaa','#00ccff','#ff4400','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
     let confetti = [];
 
-    // 🔥 플레이리스트 완전 복구 (50곡) 🔥
+    // 🔥 사용자 플레이리스트 (Full) 🔥
     const ytPlaylist = ['-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q', 'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc', '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA', '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ', 'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc', 'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA', 'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk', 'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo', '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'];
+    
     var ytPlayer;
     var curVol = 20;
+    var currentVideoIndex = 0; // 현재 곡 인덱스
 
     function onYouTubeIframeAPIReady() {
       ytPlayer = new YT.Player('ytPlayer', {
         height: '0', width: '0',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'loop': 1, 'playlist': ytPlaylist.join(',') },
-        events: { 'onReady': onPlayerReady }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'loop': 0 }, // loop: 0 (수동 제어 위해)
+        events: { 
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange 
+        }
       });
     }
+
     function onPlayerReady(event) { 
-        // 🎵 랜덤 시작 기능
-        const randomStart = Math.floor(Math.random() * ytPlaylist.length);
-        event.target.playVideoAt(randomStart);
+        // 랜덤 시작
+        currentVideoIndex = Math.floor(Math.random() * ytPlaylist.length);
+        loadAndPlay(currentVideoIndex);
         event.target.setVolume(curVol); 
         updateMusicUI(true); 
+    }
+
+    // 🔥 리스트 내 무한 반복 로직 🔥
+    function onPlayerStateChange(event) {
+        // 영상이 끝났을 때 (ENDED = 0)
+        if (event.data === YT.PlayerState.ENDED) {
+            playNextVideo();
+        }
+    }
+
+    function loadAndPlay(index) {
+        if (!ytPlayer || !ytPlayer.loadVideoById) return;
+        ytPlayer.loadVideoById(ytPlaylist[index]);
+    }
+
+    function playNextVideo() {
+        currentVideoIndex = (currentVideoIndex + 1) % ytPlaylist.length;
+        loadAndPlay(currentVideoIndex);
+    }
+
+    function playPrevVideo() {
+        currentVideoIndex = (currentVideoIndex - 1 + ytPlaylist.length) % ytPlaylist.length;
+        loadAndPlay(currentVideoIndex);
     }
     
     // Music Controls
@@ -326,8 +360,10 @@
     };
     $("volUp").onclick = () => { if(ytPlayer){ curVol=Math.min(100,curVol+10); ytPlayer.setVolume(curVol); }};
     $("volDown").onclick = () => { if(ytPlayer){ curVol=Math.max(0,curVol-10); ytPlayer.setVolume(curVol); }};
-    $("prevBtn").onclick = () => { if(ytPlayer && ytPlayer.previousVideo) ytPlayer.previousVideo(); };
-    $("nextBtn").onclick = () => { if(ytPlayer && ytPlayer.nextVideo) ytPlayer.nextVideo(); };
+    
+    // 🔥 리스트 제어 버튼 연결 🔥
+    $("prevBtn").onclick = playPrevVideo;
+    $("nextBtn").onclick = playNextVideo;
 
     function updateMusicUI(isPlaying) {
       if(isPlaying) { musicBtn.classList.add("playing"); musicBtn.innerText="🔊"; }
@@ -348,26 +384,23 @@
       }
     }
 
-    // 🔥 정밀 속도 제어: Delta Time 적용 (1분에 1바퀴) 🔥
+    // 🔥 정밀 속도 제어: 1 RPM 🔥
     let lastTime = 0;
     function getCurrentRPM(sec) {
         if(sec > 1170) return 0.2; 
-        if(sec > 900) return 1.0;  // 1 RPM (기본)
+        if(sec > 900) return 1.0; 
         if(sec > 600) return 2.0;
         if(sec > 300) return 3.0;
         if(sec > 0) return 4.0;
         return 0;
     }
 
-    // 🌟 셔플 함수 (Deterministic) 🌟
     function seededShuffle(arr, seedStr) {
         let seed = 0;
         for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
         let m = arr.length, t, i;
         const random = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
-        while (m) {
-            i = Math.floor(random() * m--); t = arr[m]; arr[m] = arr[i]; arr[i] = t;
-        }
+        while (m) { i = Math.floor(random() * m--); t = arr[m]; arr[m] = arr[i]; arr[i] = t; }
         return arr;
     }
 
@@ -380,7 +413,7 @@
       const w=window.innerWidth, h=window.innerHeight;
       if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
       
-      // ✅ [Black Screen Fix] 배경을 매 프레임 강제로 그림
+      // ✅ [Black Screen Fix] 배경을 딥 블랙으로 채움
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
@@ -476,7 +509,18 @@
       }catch(e){}
     }
     function renderList(){const el=$("pList");el.innerHTML="";participants.forEach(p=>{el.innerHTML+=`<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;});el.scrollTop=el.scrollHeight;}
-    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="unique-logo-text">UNIQUE</span> &nbsp;BET NOW';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
+    
+    function resetGame(nk){
+        wheelState="SPINNING";
+        $("mdRes").style.display="none";
+        isLocked=false;
+        bettingClosedAnnounced = false; // 🔥 플래그 초기화
+        $("bJoin").disabled=false;
+        $("btnText").innerHTML='<span class="unique-logo-text">UNIQUE</span> &nbsp;BET NOW';
+        $("timerDisp").classList.remove("alert");
+        $("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";
+        participants=[]; totalPool=0; confetti=[];
+    }
     
     async function checkWinnerAndStop(){
         if(wheelState!=="SPINNING")return;
@@ -496,8 +540,10 @@
         if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
         if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
         
-        if(d <= 60 && d > 0 && !isLocked) {
-            speak("Betting Closed", 0.6, 1.1); 
+        // 🔥 소리 1회만 재생 🔥
+        if(d <= 60 && d > 0 && !bettingClosedAnnounced) {
+            speak("Betting Closed"); 
+            bettingClosedAnnounced = true;
             $("timerDisp").classList.add("alert");
         }
 
@@ -510,7 +556,7 @@
         const cd=$("cdNum"); 
         if(d<=60 && d>0 && wheelState==="SPINNING"){
             cd.innerText=d; cd.classList.add("active");
-            if(d<=10) speak(String(d), 1.0, 1.2);
+            if(d<=10) speak(String(d));
         }else{
             cd.classList.remove("active");
         }
@@ -528,11 +574,10 @@
       try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
       updateState(); setInterval(updateState,2000); startTimer(); requestAnimationFrame(draw); window.addEventListener('resize',draw);
       
-      // 🔥 상태 갱신 강화 🔥
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") updateState();
       });
-      window.addEventListener("focus", updateState); // 포커스 시 즉시 갱신
+      window.addEventListener("focus", updateState); 
 
       document.body.addEventListener('click', () => {
         if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
