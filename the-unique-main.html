@@ -1139,36 +1139,55 @@
     .ut-actions{ margin-top:auto; }
     .knowledge-bottom{ margin-top:auto; }
 
-   /* ✅ PC 전용: overflow 방지 + 줄바꿈 허용 */
+ /* =========================
+   ✅ PC 전용(모바일 영향 없음)
+   - 총발행/내보유: 도넛 오른쪽
+   - 좌측 카드(블럭) 더 크게
+   ========================= */
 @media (min-width: 1024px){
+
+  /* ✅ 왼쪽 카드 자체를 더 크게 (좌측:우측 비율 조정) */
+  #tab-main .wallet-mining-grid,
+  #tab-transfer .wallet-mining-grid{
+    grid-template-columns: 1.25fr 1.35fr; /* ← 왼쪽(지갑) 더 넓게 */
+  }
+
+  /* ✅ 도넛 + 우측 정보: 가로 배치 고정 */
   .ut-viz{
-    flex-wrap: wrap;          /* ✅ 카드 폭 넘으면 아래로 내려감 */
-    justify-content: center;  /* ✅ 중앙 정렬 */
+    flex-direction: row;
+    flex-wrap: nowrap;        /* PC에서는 오른쪽에 고정 */
+    align-items: center;
+    justify-content: center;
     gap: 18px;
 
-    /* 도넛은 조금만 줄여서 안정화 */
-    --viz-size: clamp(200px, 18vw, 280px);
-    --thick: clamp(18px, 1.8vw, 26px);
+    /* ✅ 블럭(도넛) 크게 */
+    --viz-size: 280px;
+    --thick: 26px;
   }
 
+  /* ✅ 총발행/내보유 박스를 도넛 오른쪽으로 */
   .ut-viz-info{
-    flex: 1 1 240px;  /* ✅ 고정폭 제거(줄어들 수 있게) */
-    max-width: 100%;
-    min-width: 0;     /* ✅ 텍스트가 밖으로 밀어내는 현상 방지 */
+    flex: 0 0 260px;          /* 오른쪽 박스 폭 */
+    max-width: 260px;
+    min-width: 240px;
+    width: 260px;
   }
 
-  /* 네가 원한 "밑줄 + 값" 스타일은 유지 */
+  /* ✅ 우측 박스(총발행/내보유) “가로 한 줄”로 보기 좋게 */
   .ut-info-row{
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
   }
+
   .ut-info-row .k{
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgba(148,163,184,0.28);
+    border-bottom: 0;         /* (이전에 밑줄 스타일 넣었으면 제거) */
+    padding-bottom: 0;
+    margin-bottom: 0;
+    font-size: 12px;
   }
+
   .ut-info-row .v{
     text-align: right;
     font-size: 14px;
