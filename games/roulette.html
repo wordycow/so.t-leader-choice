@@ -8,62 +8,87 @@
 
   <style>
     /* =========================================
-       1. Global & Background (럭셔리 다크)
+       1. Global Setting (Deep Dark Luxury)
        ========================================= */
     :root {
       --bg-dark: #050508;
       --panel-bg: rgba(12, 14, 20, 0.95);
-      --gold-1: #ffd700; --gold-2: #d4af37; --gold-3: #fbf5b7;
+      --gold-1: #ffd700; --gold-2: #d4af37;
       --danger: #ff0044; --accent-blue: #00f0ff;
-      --neon-orange: #ff6600; --neon-yellow: #ffcc00;
+      --neon-orange: #ff6600;
     }
     body {
       margin: 0; padding: 0; background-color: var(--bg-dark);
-      background-image: radial-gradient(circle at 70% 40%, #1a0b2e 0%, #000000 90%);
+      background-image: radial-gradient(circle at 70% 40%, #150a20 0%, #000000 90%);
       color: #fff; font-family: 'Cinzel', serif; overflow: hidden;
     }
     canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+    
+    /* 멈출 때 화면 흔들림 */
     body.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    @keyframes shake { 
+      10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } 
+    }
 
     /* =========================================
-       2. Music Control Bar (풀 패키지)
+       2. So.T Aurora Button (완벽 복원)
+       ========================================= */
+    .action-btn.action-btn-unique {
+      position: relative; overflow: hidden; border: 0; padding: 0;
+      min-height: 64px; border-radius: 999px; cursor: pointer; width: 100%;
+      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      transform: translateZ(0); transition: all 0.2s;
+    }
+    .action-btn.action-btn-unique::before {
+      content:""; position:absolute; inset:0;
+      background: radial-gradient(circle at 50% 150%, rgba(0,255,170,0.4), rgba(0,180,255,0.2), transparent 70%);
+      filter: blur(10px); opacity: 0.8;
+    }
+    .action-btn.action-btn-unique::after {
+      content:""; position:absolute; inset:0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+      transform: translateX(-140%); animation: auroraShine 4s ease-in-out infinite; mix-blend-mode: overlay;
+    }
+    .unique-inner {
+      position: relative; z-index: 2; display:flex; align-items:center; justify-content:center;
+      gap:10px; width:100%; height: 100%; color: #fff; font-weight: 700; font-size: 20px; letter-spacing: 1px;
+    }
+    .unique-text-logo {
+        font-family: 'Cinzel', serif; font-weight: 400; font-size: 26px;
+        color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    .action-btn.action-btn-unique:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,255,170,0.2); }
+    .action-btn.action-btn-unique:active { transform: translateY(0); }
+    .action-btn.action-btn-unique:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+    @keyframes auroraShine { 0% { transform: translateX(-140%); } 20%, 100% { transform: translateX(140%); } }
+
+    /* =========================================
+       3. Music Control Bar (Full Features)
        ========================================= */
     .music-bar {
       position: fixed; top: 60px; left: 20px; z-index: 250;
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(20, 20, 30, 0.6);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px;
-      padding: 8px 14px;
-      box-shadow: 0 5px 25px rgba(0,0,0,0.7);
-      transition: all 0.3s;
+      display: flex; align-items: center; gap: 4px;
+      background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 999px;
+      padding: 8px 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
     }
-    .music-bar:hover { border-color: rgba(255, 215, 0, 0.4); background: rgba(0, 0, 0, 0.8); }
-
     .mb-btn {
       width: 36px; height: 36px; border-radius: 50%; border: none;
       background: transparent; color: #bbb; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; transition: 0.2s;
+      font-size: 16px; transition: 0.2s;
     }
     .mb-btn:hover { color: #fff; background: rgba(255,255,255,0.15); transform: scale(1.1); }
-    .mb-btn:active { transform: scale(0.95); }
     
-    /* Play Toggle Highlight */
-    #musicToggle { color: var(--gold-1); font-size: 18px; margin: 0 6px; }
-    #musicToggle.playing { 
-      color: var(--accent-blue); text-shadow: 0 0 12px var(--accent-blue);
-      animation: pulseMusic 1.5s infinite;
-    }
-    @keyframes pulseMusic { 0% { opacity: 1; text-shadow: 0 0 10px var(--accent-blue); } 50% { opacity: 0.7; text-shadow: 0 0 20px var(--accent-blue); } 100% { opacity: 1; text-shadow: 0 0 10px var(--accent-blue); } }
-
-    /* Separator */
-    .v-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+    #musicToggle { color: var(--gold-1); font-size: 18px; margin: 0 4px; }
+    #musicToggle.playing { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); animation: pulseMusic 1.5s infinite; }
+    @keyframes pulseMusic { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    .v-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 4px; }
 
     /* =========================================
-       3. Main UI Layout & Design
+       4. UI Layout & Elements
        ========================================= */
     .marquee-wrap {
       position: fixed; top: 0; width: 100%; height: 40px;
@@ -77,107 +102,60 @@
     }
     @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-    /* UI Panel (Right) */
+    /* UI Panel */
     .ui-container {
       position: fixed; z-index: 100;
       top: 40px; bottom: 0; right: 0; width: 420px;
       background: var(--panel-bg); border-left: 1px solid rgba(255,215,0,0.25);
       display: flex; flex-direction: column;
-      box-shadow: -10px 0 80px rgba(0,0,0,0.9);
-      backdrop-filter: blur(20px);
+      box-shadow: -10px 0 80px rgba(0,0,0,0.9); backdrop-filter: blur(20px);
     }
     @media (max-width: 1023px) {
       .ui-container { width: 100%; height: 45%; top: auto; bottom: 0; right: 0; left: 0; border-left: none; border-top: 1px solid rgba(255,215,0,0.25); }
     }
 
-    /* 🔥 포인터 (왼쪽 벽 고정 - 딥 오렌지/골드) 🔥 */
+    /* 🔥 화살표 (왼쪽 고정, 네온 오렌지) 🔥 */
     .pointer-wrap {
       position: absolute; z-index: 50; display: flex; align-items: center;
-      /* 네온 글로우 */
-      filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.8));
+      filter: drop-shadow(0 0 20px rgba(255, 102, 0, 0.9)); /* 배경 없이 글로우만 */
     }
     .pointer-real {
-      width: 90px; height: 50px;
-      background: linear-gradient(90deg, #ff6600 0%, #ffcc00 60%, #ffeebb 100%);
-      clip-path: polygon(0% 15%, 70% 15%, 70% 0%, 100% 50%, 70% 100%, 70% 85%, 0% 85%);
-      box-shadow: inset 2px 2px 5px rgba(255,255,255,0.6);
+      width: 80px; height: 50px;
+      /* Neon Orange Gradient */
+      background: linear-gradient(90deg, #ff4d00 0%, #ff9900 60%, #ffcc00 100%);
+      clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
     }
 
-    /* Countdown (Center) */
+    /* Countdown */
     .countdown-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 150; }
     .cd-num { 
-      font-size: 200px; font-weight: 900; 
-      color: #fff; -webkit-text-stroke: 4px var(--danger);
+      font-size: 180px; font-weight: 900; color: #fff; -webkit-text-stroke: 4px var(--danger);
       text-shadow: 0 0 60px var(--danger); opacity: 0; transition: transform 0.2s; 
     }
     .cd-num.active { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 
-    /* UI Elements */
+    /* Controls */
     .hud-row { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
-    .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
-    .value-lg { font-size: 32px; font-weight: 900; color: var(--gold-1); text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+    .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 2px; }
+    .value-lg { font-size: 32px; font-weight: 900; color: var(--gold-1); }
     .timer { font-size: 26px; font-weight: 700; color: #fff; font-family: monospace; }
     .timer.alert { color: var(--danger); animation: blink 0.5s infinite alternate; }
     
     .list-wrap { flex: 1; overflow-y: auto; padding: 15px; }
-    .rank-item { display: flex; align-items: center; padding: 12px 15px; margin-bottom: 8px; background: rgba(255,255,255,0.04); border-radius: 12px; border: 1px solid transparent; }
-    .rank-item.me { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border-color: rgba(255,215,0,0.4); }
-    .p-col { width: 12px; height: 12px; border-radius: 50%; margin-right: 15px; box-shadow: 0 0 10px currentColor; border: 1px solid rgba(255,255,255,0.3); }
+    .rank-item { display: flex; align-items: center; padding: 12px 15px; margin-bottom: 8px; background: rgba(255,255,255,0.04); border-radius: 12px; }
+    .rank-item.me { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border: 1px solid rgba(255,215,0,0.4); }
+    .p-col { width: 12px; height: 12px; border-radius: 50%; margin-right: 15px; box-shadow: 0 0 10px currentColor; }
     .p-name { flex: 1; font-size: 15px; font-weight: 700; color: #e0e0e0; }
-    .p-amt { font-size: 15px; color: var(--gold-1); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .p-amt { font-size: 15px; color: var(--gold-1); font-weight: 800; }
 
     .ctrl-area { padding: 25px; background: rgba(0,0,0,0.5); }
     .bet-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
-    .btn-chip { 
-      background: linear-gradient(180deg, #2a2a35, #1a1a20); border: 1px solid #555; color: #ccc; 
-      border-radius: 10px; height: 48px; font-weight: 700; cursor: pointer; transition: 0.2s; 
-      box-shadow: 0 4px 0 #000;
-    }
-    .btn-chip:hover { color: #fff; border-color: var(--gold-2); transform: translateY(-1px); background: #333; }
-    .btn-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
-    .inp-amt { 
-      background: #000; border: 2px solid var(--gold-2); color: var(--gold-1); 
-      text-align: center; font-size: 18px; font-weight: 900; border-radius: 10px; width: 100%; outline: none; height: 48px; 
-    }
-
-    /* =========================================
-       4. So.T Style Main Button (완벽 복구)
-       ========================================= */
-    .action-btn.action-btn-unique {
-      position: relative; overflow: hidden; border: 0; padding: 0;
-      min-height: 64px; border-radius: 999px; cursor: pointer; width: 100%;
-      /* 오로라 배경 */
-      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1) inset;
-      transform: translateZ(0); transition: all 0.2s;
-    }
-    /* 오로라 글로우 */
-    .action-btn.action-btn-unique::before {
-      content:""; position:absolute; inset:0;
-      background: radial-gradient(circle at 50% 150%, rgba(0,255,170,0.4), rgba(0,180,255,0.2), transparent 70%);
-      filter: blur(10px); opacity: 0.8;
-    }
-    /* 빗살무늬 샤인 */
-    .action-btn.action-btn-unique::after {
-      content:""; position:absolute; inset:0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-      transform: translateX(-140%); animation: auroraShine 4s ease-in-out infinite; mix-blend-mode: overlay;
-    }
-    .unique-inner {
-      position: relative; z-index: 2; display:flex; align-items:center; justify-content:center;
-      gap:10px; width:100%; height: 100%; color: #fff; 
-    }
-    .logo-txt { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.6); }
-    .act-txt { font-size: 18px; font-weight: 900; letter-spacing: 2px; color: #ccc; }
-    
-    .action-btn.action-btn-unique:hover { transform: translateY(-2px); box-shadow: 0 15px 50px rgba(0,255,170,0.2); }
-    .action-btn.action-btn-unique:active { transform: translateY(0); }
-    .action-btn.action-btn-unique:disabled { filter: grayscale(1) brightness(0.5); cursor: not-allowed; }
-
-    @keyframes auroraShine { 0% { transform: translateX(-140%); } 20%, 100% { transform: translateX(140%); } }
+    .btn-chip { background: linear-gradient(180deg, #2a2a35, #1a1a20); border: 1px solid #444; color: #ccc; border-radius: 10px; height: 48px; font-weight: 700; cursor: pointer; }
+    .btn-chip:hover { color: #fff; border-color: var(--gold-2); background: #333; }
+    .inp-amt { background: #000; border: 2px solid var(--gold-2); color: var(--gold-1); text-align: center; font-size: 18px; font-weight: 900; border-radius: 10px; width: 100%; outline: none; height: 48px; }
 
     /* Modals */
-    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; justify-content: center; align-items: center; }
     .modal-mask.on { display: flex; }
     .modal-body { width: 90%; max-width: 450px; background: #12121a; border: 2px solid var(--gold-2); border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 0 80px rgba(0,0,0,0.8); }
     .c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 30px 0; }
@@ -189,9 +167,9 @@
 </head>
 <body>
   <div class="music-bar">
-    <button class="mb-btn" id="prevBtn" title="Previous Song">⏮</button>
+    <button class="mb-btn" id="prevBtn" title="Previous">⏮</button>
     <button class="mb-btn" id="musicToggle" title="Play/Pause">🔇</button>
-    <button class="mb-btn" id="nextBtn" title="Next Song">⏭</button>
+    <button class="mb-btn" id="nextBtn" title="Next">⏭</button>
     <div class="v-sep"></div>
     <button class="mb-btn" id="volDown" title="Vol -">－</button>
     <button class="mb-btn" id="volUp" title="Vol +">＋</button>
@@ -205,6 +183,7 @@
   </div>
 
   <canvas id="cvs"></canvas>
+  
   <div id="pointer" class="pointer-wrap"><div class="pointer-real"></div></div>
   <div class="countdown-box"><div id="cdNum" class="cd-num"></div></div>
 
@@ -224,7 +203,7 @@
       </div>
       <button id="bJoin" class="action-btn action-btn-unique" type="button">
         <span class="unique-inner" id="btnText">
-          <span class="logo-txt">So.T</span> <span class="act-txt">BET NOW</span>
+          <span class="unique-text-logo">So.T</span> &nbsp;BET NOW
         </span>
       </button>
       <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px; color:#aaa; font-weight:600;">
@@ -253,7 +232,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
-    // 🔥 [CRITICAL FIX] ReferenceError 방지: 헬퍼 함수 최상단 선언 🔥
+    // 🔥 [Critical] 헬퍼 함수 최상단 선언 (ReferenceError 해결) 🔥
     const $ = (id) => document.getElementById(id);
     const toMoney = (n) => Number(n).toLocaleString();
     const synth = window.speechSynthesis;
@@ -276,14 +255,14 @@
     const ytPlaylist = [
       '-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q',
       'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc',
-      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
+      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
       '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ',
       'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc',
       'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA',
       'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk',
-      'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw',
-      '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo',
-      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'
+      'F2AitTPI5U0', 'L7n5oXTQd2Q', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8',
+      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw',
+      'viIJYFSGq0o', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw', 'AVUeL6RMHoo'
     ]; 
     var ytPlayer;
     var curVol = 20;
@@ -297,7 +276,7 @@
     }
     function onPlayerReady(event) { event.target.setVolume(curVol); event.target.playVideo(); updateMusicUI(true); }
     
-    // Music Controls
+    // Controls
     const musicBtn = $("musicToggle");
     musicBtn.onclick = () => {
       if(!ytPlayer || !ytPlayer.getPlayerState) return;
@@ -327,35 +306,38 @@
       }
     }
 
-    // 🔥 1분(60초) = 1바퀴 = 360도 = 1.0 RPM
-    // frame당 각도: (1 * 360) / (60 * 60) = 0.1도
+    // 🔥 1분(60초) = 1바퀴(360도) = 6도/초
+    // 60프레임 기준 프레임당 0.1도
     function getCurrentRPM(sec) {
-        if(sec>1170) return 0.05; // 시작: 아주 천천히
-        if(sec>900) return 0.1;   // ~4분30초: 1 RPM (정확히 1분에 1바퀴)
-        if(sec>600) return 0.2;   // ~5분: 2 RPM
-        if(sec>300) return 0.3;   // ~5분: 3 RPM
-        if(sec>0) return 0.4;     // 마지막: 4 RPM
-        return 0; 
+        // 속도를 일정하게 1 RPM 유지 (0.1 degree per frame)
+        // 멈추기 전까진 무조건 이 속도
+        return 0.1; 
     }
 
     function draw() {
       const cvs=$("cvs"), ctx=cvs.getContext("2d");
       const w=window.innerWidth, h=window.innerHeight;
       if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
-      // 배경: 딥 다크 (흰 멍 완전 제거)
+      // 배경: 흰 멍 제거 (딥 블랙)
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
       const {cx,cy,r} = updateLayoutMetrics();
 
       if (wheelState === "SPINNING") {
-        let sec = 0;
-        if(nextRoundMs) { const now = Date.now() + serverOffset; sec = Math.max(0, Math.floor((nextRoundMs - now)/1000)); }
-        rotation += (getCurrentRPM(sec) * Math.PI / 180);
+        rotation += (getCurrentRPM(0) * Math.PI / 180);
       } else if (wheelState === "STOPPING") {
         const now = Date.now(); const t = Math.min(1, (now - stopStartTime) / STOP_DURATION); const ease = 1 - Math.pow(1 - t, 4);
         rotation = window.startRotation + (stopTargetAngle - window.startRotation) * ease;
-        if (t >= 1) { wheelState="STOPPED"; document.body.classList.add("shake"); setTimeout(()=>document.body.classList.remove("shake"),1000); showResultModal(); spawnConfetti(); }
+        if (t >= 1) { 
+            wheelState="STOPPED"; 
+            document.body.classList.add("shake"); 
+            setTimeout(()=>document.body.classList.remove("shake"),1000); 
+            showResultModal(); 
+            spawnConfetti(); 
+            // 30초 후 리셋 (자동)
+            setTimeout(() => { if(wheelState==="STOPPED") resetGame(roundKey); }, 30000);
+        }
       }
 
       // Rim
@@ -386,7 +368,7 @@
         });
       }
 
-      // Cap (Small & Classy)
+      // Cap (Small)
       const capR=Math.min(r*0.12, 140);
       const gradCap=ctx.createRadialGradient(cx,cy,capR*0.1, cx,cy,capR);
       gradCap.addColorStop(0,'#fff'); gradCap.addColorStop(0.3,'#ffd700'); gradCap.addColorStop(0.9,'#b8860b'); gradCap.addColorStop(1,'#5e4b25');
@@ -428,7 +410,7 @@
       }catch(e){}
     }
     function renderList(){const el=$("pList");el.innerHTML="";participants.forEach(p=>{el.innerHTML+=`<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;});el.scrollTop=el.scrollHeight;}
-    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="logo-txt">So.T</span> <span class="act-txt">BET NOW</span>';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
+    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="unique-text-logo">So.T</span> <span class="act-txt">BET NOW</span>';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
     async function checkWinnerAndStop(){if(wheelState!=="SPINNING")return;const d=await api("getRouletteState");if(d.lastWinner&&String(d.lastWinner.round)===String(roundKey)){spinToWin(d.lastWinner.name);$("resName").innerText=d.lastWinner.name;$("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";}}
     function showResultModal(){$("mdRes").style.display="flex";}
 
@@ -436,29 +418,4 @@
       setInterval(()=>{
         if(!nextRoundMs)return; const now=Date.now()+serverOffset; let diff=Math.floor((nextRoundMs-now)/1000);
         let d=diff; if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
-        if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
-        if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
-        const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
-      },1000);
-    }
-
-    const setB=v=>$("inpBet").value=v; $("bMin").onclick=()=>setB(MIN_BET); $("bMax").onclick=()=>setB(Math.floor(myWallet/100)*100);
-    $("bM100").onclick=()=>{let v=Number($("inpBet").value)-100;if(v<MIN_BET)v=MIN_BET;setB(v);}; $("bP100").onclick=()=>{let v=Number($("inpBet").value)+100;if(v>myWallet)v=myWallet;setB(v);};
-    $("bJoin").onclick=async()=>{if(isLocked)return alert("Closed.");const amt=Number($("inpBet").value);if(amt>myWallet)return alert("No Money");const btn=$("bJoin"),bt=$("btnText");btn.disabled=true;bt.innerText="...";try{const r=await api("rouletteResult",{type:"bet",id:myId,amount:amt,color:myColor});if(r.result==="success"){myWallet=r.newBalance;$("myBal").innerText=toMoney(myWallet)+" UT";updateState();}else alert(r.msg);}catch(e){}btn.disabled=false;bt.innerHTML='<span class="logo-txt">So.T</span> <span class="act-txt">BET NOW</span>';};
-    $("bColorOk").onclick=()=>{if(!myColor)return;localStorage.setItem("c_"+myId,myColor);$("mdColor").style.display="none";};
-
-    window.onload=async()=>{
-      const p=new URLSearchParams(location.search);myId=p.get("id")||"Guest"; const sc=localStorage.getItem("c_"+myId);
-      if(sc)myColor=sc;else{const g=$("cGrid");colors.forEach(c=>{const d=document.createElement("div");d.className="c-btn";d.style.backgroundColor=c;d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c;$("bColorOk").disabled=false;};g.appendChild(d);});$("mdColor").style.display="flex";}
-      try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
-      updateState(); setInterval(updateState,2000); startTimer(); draw(); window.addEventListener('resize',draw);
-      
-      document.body.addEventListener('click', () => {
-        if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
-           ytPlayer.playVideo(); updateMusicUI(true);
-        }
-      }, { once: true });
-    };
-  </script>
-</body>
-</html>
+        if(d<0)d=0
