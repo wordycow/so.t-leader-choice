@@ -8,12 +8,12 @@
 
   <style>
     /* =========================================
-       1. Global Setting
+       1. Global & Background
        ========================================= */
     :root {
       --bg-dark: #050508;
       --panel-bg: rgba(12, 14, 20, 0.95);
-      --gold-1: #ffd700; --gold-2: #d4af37;
+      --gold-1: #ffd700; --gold-2: #d4af37; --gold-3: #fbf5b7;
       --danger: #ff0044; --accent-blue: #00f0ff;
       --neon-orange: #ff6600;
     }
@@ -333,20 +333,12 @@
 
     // 🌟 셔플 함수 (Deterministic) 🌟
     function seededShuffle(arr, seedStr) {
-        // seedStr을 숫자로 변환
         let seed = 0;
         for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
-        
         let m = arr.length, t, i;
-        const random = () => {
-            var x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
+        const random = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
         while (m) {
-            i = Math.floor(random() * m--);
-            t = arr[m];
-            arr[m] = arr[i];
-            arr[i] = t;
+            i = Math.floor(random() * m--); t = arr[m]; arr[m] = arr[i]; arr[i] = t;
         }
         return arr;
     }
@@ -359,16 +351,13 @@
       const cvs=$("cvs"), ctx=cvs.getContext("2d");
       const w=window.innerWidth, h=window.innerHeight;
       if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
-      // 배경: 딥 블랙
-      ctx.fillStyle = "#050508";
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#050508"; ctx.fillRect(0, 0, w, h);
 
       const {cx,cy,r} = updateLayoutMetrics();
 
       if (wheelState === "SPINNING") {
         let sec = 0;
         if(nextRoundMs) { const now = Date.now() + serverOffset; sec = Math.max(0, Math.floor((nextRoundMs - now)/1000)); }
-        // RPM to Rad/ms
         const rpm = getCurrentRPM(sec);
         const radPerMs = (rpm * 2 * Math.PI) / 60000;
         rotation += (radPerMs * dt);
@@ -385,25 +374,18 @@
         }
       }
 
-      // Rim
       const gradRim = ctx.createLinearGradient(cx-r, cy-r, cx+r, cy+r);
       gradRim.addColorStop(0, '#fbf5b7'); gradRim.addColorStop(0.3, '#d4af37'); gradRim.addColorStop(0.5, '#ffd700'); gradRim.addColorStop(0.8, '#aa771c'); gradRim.addColorStop(1, '#fbf5b7');
       ctx.beginPath(); ctx.arc(cx,cy,r+18,0,Math.PI*2); ctx.fillStyle=gradRim; 
       ctx.shadowColor="rgba(0,0,0,0.8)"; ctx.shadowBlur=30; ctx.fill(); ctx.shadowBlur=0;
       ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#110000'; ctx.fill();
 
-      // Slices (그리기 전에는 셔플된 participants 사용해야 함)
-      // updateState에서 이미 셔플됨.
-      let startAng=rotation; 
-      // NaN 방지
-      const total = (totalPool && !isNaN(totalPool) && totalPool > 0) ? totalPool : 1;
-
+      let startAng=rotation; const total=(totalPool && !isNaN(totalPool) && totalPool > 0) ? totalPool : 1;
       if(participants.length>0 && totalPool > 0) {
         participants.forEach(p=>{
           const amount = p.amount || 0;
           const slice = (amount / total) * 2 * Math.PI;
           const endAng = startAng + slice;
-
           ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r-5,startAng,endAng); ctx.fillStyle=p.color; ctx.fill();
           ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.stroke(); 
           if(slice>0.03) {
@@ -420,7 +402,6 @@
         });
       }
 
-      // Cap
       const capR=Math.min(r*0.12, 140);
       const gradCap=ctx.createRadialGradient(cx,cy,capR*0.1, cx,cy,capR);
       gradCap.addColorStop(0,'#fff'); gradCap.addColorStop(0.3,'#ffd700'); gradCap.addColorStop(0.9,'#b8860b'); gradCap.addColorStop(1,'#5e4b25');
@@ -441,7 +422,6 @@
 
     function spinToWin(winnerName){
       if(wheelState!=="SPINNING")return; const winIndices=[]; 
-      // 셔플된 participants 배열에서 인덱스를 찾아야 함
       participants.forEach((p,i)=>{if(p.name===winnerName)winIndices.push(i);});
       if(winIndices.length===0)return; const targetIndex=winIndices[Math.floor(Math.random()*winIndices.length)];
       let sum=0, mid=0; const total=totalPool||1;
@@ -457,17 +437,8 @@
       try{ const d=await api("getRouletteState"); if(d.result!=="success")return;
         if(d.serverTs)serverOffset=d.serverTs-Date.now(); if(d.nextRoundAtMs)nextRoundMs=d.nextRoundAtMs;
         const nk=String(d.roundKey); if(roundKey&&nk!==roundKey)resetGame(nk); roundKey=nk;
-        
         let rawParts = (d.participants||[]).map(p=>({name:p.name,amount:Number(p.amount),color:p.color}));
-        
-        // 🔥 Deterministic Shuffle (모두가 똑같이 섞인 화면을 봄) 🔥
-        // roundKey를 시드로 사용
-        if (rawParts.length > 0) {
-            participants = seededShuffle(rawParts, roundKey || "default");
-        } else {
-            participants = [];
-        }
-
+        if (rawParts.length > 0) { participants = seededShuffle(rawParts, roundKey || "default"); } else { participants = []; }
         totalPool=participants.reduce((a,c)=>a+c.amount,0); $("poolDisp").innerText=toMoney(totalPool)+" UT"; renderList();
         const winTxt=d.lastWinner?`🏆 LAST WINNER: ${d.lastWinner.name} (${toMoney(d.lastWinner.prize)} UT) 🏆`:"";
         $("mqText1").innerHTML=`💎 UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎 <span>${winTxt}</span>`; $("mqText2").innerHTML=$("mqText1").innerHTML;
@@ -475,7 +446,16 @@
     }
     function renderList(){const el=$("pList");el.innerHTML="";participants.forEach(p=>{el.innerHTML+=`<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;});el.scrollTop=el.scrollHeight;}
     function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="unique-logo-text">UNIQUE</span> &nbsp;BET NOW';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
-    async function checkWinnerAndStop(){if(wheelState!=="SPINNING")return;const d=await api("getRouletteState");if(d.lastWinner&&String(d.lastWinner.round)===String(roundKey)){spinToWin(d.lastWinner.name);$("resName").innerText=d.lastWinner.name;$("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";}}
+    
+    async function checkWinnerAndStop(){
+        if(wheelState!=="SPINNING")return;
+        const d=await api("getRouletteState");
+        if(d.lastWinner && String(d.lastWinner.round)===String(roundKey)){
+            spinToWin(d.lastWinner.name);
+            $("resName").innerText=d.lastWinner.name;
+            $("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";
+        }
+    }
     function showResultModal(){$("mdRes").style.display="flex";}
 
     function startTimer(){
@@ -484,8 +464,25 @@
         let d=diff; 
         if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
         if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
-        if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
-        const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
+        
+        if(d <= 60 && d > 0 && !isLocked) {
+            speak("Betting Closed", 0.6, 1.1); 
+            $("timerDisp").classList.add("alert");
+        }
+
+        if(d<=0 && !isLocked){
+            isLocked=true; $("bJoin").disabled=true; $("btnText").innerText="CLOSED";
+            checkWinnerAndStop(); 
+            setTimeout(checkWinnerAndStop, 1000); 
+        }
+        
+        const cd=$("cdNum"); 
+        if(d<=60 && d>0 && wheelState==="SPINNING"){
+            cd.innerText=d; cd.classList.add("active");
+            if(d<=10) speak(String(d), 1.0, 1.2);
+        }else{
+            cd.classList.remove("active");
+        }
       },1000);
     }
 
@@ -500,7 +497,6 @@
       try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
       updateState(); setInterval(updateState,2000); startTimer(); requestAnimationFrame(draw); window.addEventListener('resize',draw);
       
-      // 모바일 등 탭 전환 시 강제 업데이트
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
             updateState();
@@ -509,7 +505,6 @@
 
       document.body.addEventListener('click', () => {
         if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
-           // 아직 재생 안됐으면 재생
            if (ytPlayer.getPlayerState() !== 1) {
                ytPlayer.playVideo(); updateMusicUI(true);
            }
