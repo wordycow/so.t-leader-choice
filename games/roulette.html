@@ -8,7 +8,7 @@
 
   <style>
     /* =========================================
-       1. Global Setting (Deep Dark Luxury)
+       1. Global Setting
        ========================================= */
     :root {
       --bg-dark: #050508;
@@ -282,7 +282,13 @@
         events: { 'onReady': onPlayerReady }
       });
     }
-    function onPlayerReady(event) { event.target.setVolume(curVol); event.target.playVideo(); updateMusicUI(true); }
+    function onPlayerReady(event) { 
+        // 🎵 랜덤 시작 기능
+        const randomStart = Math.floor(Math.random() * ytPlaylist.length);
+        event.target.playVideoAt(randomStart);
+        event.target.setVolume(curVol); 
+        updateMusicUI(true); 
+    }
     
     // Music Controls
     const musicBtn = $("musicToggle");
@@ -314,16 +320,35 @@
       }
     }
 
-    // 🔥 정밀 속도 제어: 1 RPM = 6 deg/sec
-    // Delta Time (dt)를 사용하여 프레임 드랍이나 주사율 차이에도 일정 속도 유지
+    // 🔥 정밀 속도 제어: Delta Time 적용 (1분에 1바퀴) 🔥
     let lastTime = 0;
     function getCurrentRPM(sec) {
-        if(sec > 1170) return 0.2; // 초반 대기 (느리게)
+        if(sec > 1170) return 0.2; 
         if(sec > 900) return 1.0;  // 1 RPM (기본)
         if(sec > 600) return 2.0;
         if(sec > 300) return 3.0;
         if(sec > 0) return 4.0;
         return 0;
+    }
+
+    // 🌟 셔플 함수 (Deterministic) 🌟
+    function seededShuffle(arr, seedStr) {
+        // seedStr을 숫자로 변환
+        let seed = 0;
+        for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
+        
+        let m = arr.length, t, i;
+        const random = () => {
+            var x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        };
+        while (m) {
+            i = Math.floor(random() * m--);
+            t = arr[m];
+            arr[m] = arr[i];
+            arr[i] = t;
+        }
+        return arr;
     }
 
     function draw(timestamp) {
@@ -334,8 +359,7 @@
       const cvs=$("cvs"), ctx=cvs.getContext("2d");
       const w=window.innerWidth, h=window.innerHeight;
       if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
-      
-      // 배경: 딥 블랙 (흰 멍 완전 제거)
+      // 배경: 딥 블랙
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
@@ -344,8 +368,7 @@
       if (wheelState === "SPINNING") {
         let sec = 0;
         if(nextRoundMs) { const now = Date.now() + serverOffset; sec = Math.max(0, Math.floor((nextRoundMs - now)/1000)); }
-        // 1 RPM = 360 deg / 60000 ms = 0.006 deg/ms
-        // rotation is in radians. 1 RPM = 2PI rad / 60000 ms
+        // RPM to Rad/ms
         const rpm = getCurrentRPM(sec);
         const radPerMs = (rpm * 2 * Math.PI) / 60000;
         rotation += (radPerMs * dt);
@@ -369,11 +392,18 @@
       ctx.shadowColor="rgba(0,0,0,0.8)"; ctx.shadowBlur=30; ctx.fill(); ctx.shadowBlur=0;
       ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#110000'; ctx.fill();
 
-      // Slices
-      let startAng=rotation; const total=totalPool||1;
-      if(participants.length>0) {
+      // Slices (그리기 전에는 셔플된 participants 사용해야 함)
+      // updateState에서 이미 셔플됨.
+      let startAng=rotation; 
+      // NaN 방지
+      const total = (totalPool && !isNaN(totalPool) && totalPool > 0) ? totalPool : 1;
+
+      if(participants.length>0 && totalPool > 0) {
         participants.forEach(p=>{
-          const slice=(p.amount/total)*2*Math.PI; const endAng=startAng+slice;
+          const amount = p.amount || 0;
+          const slice = (amount / total) * 2 * Math.PI;
+          const endAng = startAng + slice;
+
           ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r-5,startAng,endAng); ctx.fillStyle=p.color; ctx.fill();
           ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.stroke(); 
           if(slice>0.03) {
@@ -383,13 +413,14 @@
             ctx.fillStyle="#fff"; ctx.font="900 24px 'Cinzel', sans-serif"; ctx.shadowColor="rgba(0,0,0,1)"; ctx.shadowBlur=6;
             let n = p.name; if(n.length > 12) n = n.slice(0,10)+"..";
             ctx.fillText(n, 0, -14);
-            ctx.fillStyle="#ffd700"; ctx.font="700 18px monospace"; ctx.fillText(toMoney(p.amount), 0, 14); 
+            ctx.fillStyle="#ffd700"; ctx.font="700 18px monospace"; ctx.fillText(toMoney(amount), 0, 14); 
             ctx.restore();
           }
           startAng=endAng;
         });
       }
 
+      // Cap
       const capR=Math.min(r*0.12, 140);
       const gradCap=ctx.createRadialGradient(cx,cy,capR*0.1, cx,cy,capR);
       gradCap.addColorStop(0,'#fff'); gradCap.addColorStop(0.3,'#ffd700'); gradCap.addColorStop(0.9,'#b8860b'); gradCap.addColorStop(1,'#5e4b25');
@@ -409,7 +440,9 @@
     function drawConfetti(ctx,w,h){ confetti.forEach((c,i)=>{c.x+=c.vx;c.y+=c.vy;c.vy+=c.gravity;c.rotation+=c.rSpeed;c.vx*=0.96;c.vy*=0.96;ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.rotation*Math.PI/180);ctx.fillStyle=c.color;ctx.fillRect(-c.size/2,-c.size/2,c.size,c.size);ctx.restore();if(c.y>h)confetti.splice(i,1);}); }
 
     function spinToWin(winnerName){
-      if(wheelState!=="SPINNING")return; const winIndices=[]; participants.forEach((p,i)=>{if(p.name===winnerName)winIndices.push(i);});
+      if(wheelState!=="SPINNING")return; const winIndices=[]; 
+      // 셔플된 participants 배열에서 인덱스를 찾아야 함
+      participants.forEach((p,i)=>{if(p.name===winnerName)winIndices.push(i);});
       if(winIndices.length===0)return; const targetIndex=winIndices[Math.floor(Math.random()*winIndices.length)];
       let sum=0, mid=0; const total=totalPool||1;
       for(let i=0;i<participants.length;i++){ const s=(participants[i].amount/total)*2*Math.PI; if(i===targetIndex){mid=sum+s/2;break;} sum+=s; }
@@ -424,8 +457,17 @@
       try{ const d=await api("getRouletteState"); if(d.result!=="success")return;
         if(d.serverTs)serverOffset=d.serverTs-Date.now(); if(d.nextRoundAtMs)nextRoundMs=d.nextRoundAtMs;
         const nk=String(d.roundKey); if(roundKey&&nk!==roundKey)resetGame(nk); roundKey=nk;
-        // 🔥 분리 배팅 (Split) 🔥
-        participants=(d.participants||[]).map(p=>({name:p.name,amount:Number(p.amount),color:p.color}));
+        
+        let rawParts = (d.participants||[]).map(p=>({name:p.name,amount:Number(p.amount),color:p.color}));
+        
+        // 🔥 Deterministic Shuffle (모두가 똑같이 섞인 화면을 봄) 🔥
+        // roundKey를 시드로 사용
+        if (rawParts.length > 0) {
+            participants = seededShuffle(rawParts, roundKey || "default");
+        } else {
+            participants = [];
+        }
+
         totalPool=participants.reduce((a,c)=>a+c.amount,0); $("poolDisp").innerText=toMoney(totalPool)+" UT"; renderList();
         const winTxt=d.lastWinner?`🏆 LAST WINNER: ${d.lastWinner.name} (${toMoney(d.lastWinner.prize)} UT) 🏆`:"";
         $("mqText1").innerHTML=`💎 UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎 <span>${winTxt}</span>`; $("mqText2").innerHTML=$("mqText1").innerHTML;
@@ -439,7 +481,8 @@
     function startTimer(){
       setInterval(()=>{
         if(!nextRoundMs)return; const now=Date.now()+serverOffset; let diff=Math.floor((nextRoundMs-now)/1000);
-        let d=diff; if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
+        let d=diff; 
+        if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
         if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
         if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
         const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
@@ -457,9 +500,19 @@
       try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
       updateState(); setInterval(updateState,2000); startTimer(); requestAnimationFrame(draw); window.addEventListener('resize',draw);
       
+      // 모바일 등 탭 전환 시 강제 업데이트
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            updateState();
+        }
+      });
+
       document.body.addEventListener('click', () => {
         if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
-           ytPlayer.playVideo(); updateMusicUI(true);
+           // 아직 재생 안됐으면 재생
+           if (ytPlayer.getPlayerState() !== 1) {
+               ytPlayer.playVideo(); updateMusicUI(true);
+           }
         }
       }, { once: true });
     };
