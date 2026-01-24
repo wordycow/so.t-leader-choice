@@ -8,7 +8,27 @@
 
   <style>
     /* =========================================
-       1. So.T Neon Hero Button Style (User Code Restored)
+       1. Global Setting (Deep Dark Luxury)
+       ========================================= */
+    :root {
+      --bg-dark: #050508;
+      --panel-bg: rgba(12, 14, 20, 0.95);
+      --gold-1: #ffd700; --gold-2: #d4af37;
+      --danger: #ff0044; --accent-blue: #00f0ff;
+      --neon-orange: #ff6600;
+    }
+    body {
+      margin: 0; padding: 0; background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at 70% 40%, #150a20 0%, #000000 90%);
+      color: #fff; font-family: 'Cinzel', serif; overflow: hidden;
+    }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+    
+    body.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+    /* =========================================
+       2. So.T Aurora Button (Restore)
        ========================================= */
     .action-btn.action-btn-sot{
       position: relative; overflow: hidden; border: 0; padding: 12px 14px;
@@ -34,61 +54,44 @@
       gap:10px; width:100%; color: #fff; font-size: 20px; font-weight: 900;
       text-shadow: 0 0 10px rgba(251,191,36,0.5);
     }
-    /* "UNIQUE" Text Logo Style */
     .unique-logo-text {
         font-family: 'Cinzel', serif; font-weight: 900; letter-spacing: 2px;
         background: linear-gradient(to bottom, #fff, #ffd700);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         filter: drop-shadow(0 0 5px rgba(255,215,0,0.8));
     }
-
     .action-btn.action-btn-sot:hover{ transform: translateY(-2px) scale(1.01); filter: brightness(1.06); box-shadow: 0 22px 48px rgba(0,0,0,0.98), 0 0 0 1px rgba(251,191,36,0.55) inset; }
     .action-btn.action-btn-sot:active{ transform: translateY(0) scale(0.995); }
     .action-btn.action-btn-sot:disabled { filter: grayscale(1) brightness(0.5); cursor: not-allowed; animation: none; }
-
     @keyframes sotGlowSpin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
     @keyframes sotShine{ 0%{ transform: translateX(-140%); } 45%{ transform: translateX(140%); } 100%{ transform: translateX(140%); } }
 
     /* =========================================
-       2. Global Setting
+       3. Music Control Bar (Redesigned)
        ========================================= */
-    :root {
-      --bg-dark: #050508;
-      --panel-bg: rgba(12, 14, 20, 0.95);
-      --gold-1: #ffd700; --gold-2: #d4af37;
-      --danger: #ff0044; --accent-blue: #00f0ff;
-      --neon-orange: #ff6600;
-    }
-    body {
-      margin: 0; padding: 0; background-color: var(--bg-dark);
-      background-image: radial-gradient(circle at 70% 40%, #150a20 0%, #000000 90%);
-      color: #fff; font-family: 'Cinzel', serif; overflow: hidden;
-    }
-    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: block; }
-    body.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-
-    /* Music Bar */
     .music-bar {
       position: fixed; top: 60px; left: 20px; z-index: 250;
-      display: flex; align-items: center; gap: 4px;
-      background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(15px);
+      display: flex; align-items: center; gap: 8px; /* 간격 넓힘 */
+      background: rgba(20, 20, 30, 0.7); backdrop-filter: blur(15px);
       border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 999px;
-      padding: 8px 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
+      padding: 8px 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.8);
     }
     .mb-btn {
-      width: 36px; height: 36px; border-radius: 50%; border: none;
-      background: transparent; color: #bbb; cursor: pointer;
+      width: 38px; height: 38px; border-radius: 50%; border: none; /* 버튼 크기 증가 */
+      background: rgba(255,255,255,0.05); color: #bbb; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       font-size: 16px; transition: 0.2s;
     }
-    .mb-btn:hover { color: #fff; background: rgba(255,255,255,0.15); transform: scale(1.1); }
-    #musicToggle { color: var(--gold-1); font-size: 18px; margin: 0 4px; }
-    #musicToggle.playing { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); animation: pulseMusic 1.5s infinite; }
-    @keyframes pulseMusic { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-    .v-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+    .mb-btn:hover { color: #fff; background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    
+    #playToggle { color: var(--gold-1); font-size: 18px; }
+    #playToggle.playing { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); }
+    #muteToggle.muted { color: var(--danger); }
+    .v-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.2); margin: 0 4px; }
 
-    /* Marquee */
+    /* =========================================
+       4. UI Layout & Elements
+       ========================================= */
     .marquee-wrap {
       position: fixed; top: 0; width: 100%; height: 40px;
       background: rgba(0,0,0,0.95); border-bottom: 1px solid rgba(255,215,0,0.2);
@@ -113,22 +116,24 @@
       .ui-container { width: 100%; height: 45%; top: auto; bottom: 0; right: 0; left: 0; border-left: none; border-top: 1px solid rgba(255,215,0,0.25); }
     }
 
-    /* Pointer */
+    /* Pointer (Neon Orange) */
     .pointer-wrap {
       position: absolute; z-index: 50; display: flex; align-items: center;
-      filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.8));
+      filter: drop-shadow(0 0 20px rgba(255, 102, 0, 0.9));
     }
     .pointer-real {
-      width: 90px; height: 50px;
-      background: linear-gradient(90deg, #ff6600 0%, #ffcc00 60%, #ffeebb 100%);
-      clip-path: polygon(0% 15%, 70% 15%, 70% 0%, 100% 50%, 70% 100%, 70% 85%, 0% 85%);
-      box-shadow: inset 2px 2px 5px rgba(255,255,255,0.6);
+      width: 80px; height: 50px;
+      background: linear-gradient(90deg, #ff4d00 0%, #ff9900 60%, #ffcc00 100%);
+      clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
     }
 
-    /* Countdown */
+    /* Countdown (Huge) */
     .countdown-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 150; }
-    .cd-num { font-size: 200px; font-weight: 900; color: #fff; -webkit-text-stroke: 4px var(--danger); text-shadow: 0 0 60px var(--danger); opacity: 0; transition: transform 0.2s; }
-    .cd-num.active { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    .cd-num { 
+      font-size: 250px; font-weight: 900; color: #fff; -webkit-text-stroke: 5px var(--danger);
+      text-shadow: 0 0 80px var(--danger); opacity: 0; transition: transform 0.1s, opacity 0.1s; 
+    }
+    .cd-num.active { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
 
     /* Controls */
     .hud-row { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
@@ -149,9 +154,9 @@
     .inp-amt { background: #000; border: 2px solid var(--gold-2); color: var(--gold-1); text-align: center; font-size: 18px; font-weight: 900; border-radius: 10px; width: 100%; outline: none; height: 48px; }
 
     /* Modals */
-    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; justify-content: center; align-items: center; }
+    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; justify-content: center; align-items: center; backdrop-filter: blur(20px); }
     .modal-mask.on { display: flex; }
-    .modal-body { width: 90%; max-width: 450px; background: #12121a; border: 2px solid var(--gold-2); border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 0 80px rgba(0,0,0,0.8); }
+    .modal-body { width: 90%; max-width: 500px; background: #12121a; border: 3px solid var(--gold-1); border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 0 100px rgba(255,215,0,0.3); }
     .c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 30px 0; }
     .c-btn { height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
     .c-btn.sel { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 25px currentColor; }
@@ -161,9 +166,8 @@
 </head>
 <body>
   <div class="music-bar">
-    <button class="mb-btn" id="prevBtn" title="Previous">⏮</button>
-    <button class="mb-btn" id="musicToggle" title="Play/Pause">🔇</button>
-    <button class="mb-btn" id="nextBtn" title="Next">⏭</button>
+    <button class="mb-btn" id="prevBtn" title="PreviousSong">⏮</button>
+    <button class="mb-btn" id="playToggle" title="Play/Pause">▶</button> <button class="mb-btn" id="muteToggle" title="Mute/Unmute">🔊</button> <button class="mb-btn" id="nextBtn" title="NextSong">⏭</button>
     <div class="v-sep"></div>
     <button class="mb-btn" id="volDown" title="Vol -">－</button>
     <button class="mb-btn" id="volUp" title="Vol +">＋</button>
@@ -215,11 +219,11 @@
     </div>
   </div>
   <div id="mdRes" class="modal-mask">
-    <div class="modal-body" style="background: radial-gradient(circle, #2a1a3a 0%, #111 100%);">
-      <h2 style="color:var(--gold-1); font-size:40px; margin-bottom:10px; text-shadow:0 0 30px var(--gold-1);">WINNER!</h2>
-      <div id="resName" style="font-size:48px; font-weight:900; color:#fff; margin:10px 0; text-shadow:0 5px 15px rgba(0,0,0,0.8);">-</div>
-      <div id="resAmt" style="font-size:32px; color:var(--gold-3); font-weight:700;">-</div>
-      <div style="margin-top:30px; color:#ccc;">New round starting...</div>
+    <div class="modal-body" style="background: radial-gradient(circle, #3a1a4a 0%, #000 100%); border-color: var(--accent-blue);">
+      <h2 style="color:var(--gold-1); font-size:50px; margin-bottom:20px; text-shadow:0 0 40px var(--gold-1);">🏆 WINNER! 🏆</h2>
+      <div id="resName" style="font-size:56px; font-weight:900; color:#fff; margin:20px 0; text-shadow:0 5px 25px rgba(0,247,255,0.8);">-</div>
+      <div id="resAmt" style="font-size:36px; color:var(--gold-3); font-weight:700;">-</div>
+      <div style="margin-top:40px; color:#ccc; font-size: 18px;">Next round in 30 seconds...</div>
     </div>
   </div>
 
@@ -227,11 +231,29 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
-    // 🔥 헬퍼 함수 최상단 선언
     const $ = (id) => document.getElementById(id);
     const toMoney = (n) => Number(n).toLocaleString();
+    
+    // 🔥 중저음 남자 목소리 설정 시도 (브라우저 지원 한계 있음) 🔥
     const synth = window.speechSynthesis;
-    function speak(txt){ if(synth&&!synth.speaking){const u=new SpeechSynthesisUtterance(txt);u.lang='en-US';synth.speak(u);}}
+    let maleVoice = null;
+    function initVoices() {
+        const voices = synth.getVoices();
+        // 최대한 중저음 남자 목소리 찾기 (Google US English Male 등)
+        maleVoice = voices.find(v => v.name.includes('Male') && v.lang.includes('en')) || voices.find(v => v.lang === 'en-US');
+    }
+    if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = initVoices; }
+
+    function speak(txt, pitch = 1.0, rate = 1.0){ 
+        if(synth && !synth.speaking && !isMuted){
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang = 'en-US';
+            u.pitch = pitch; // 낮을수록 중저음 (0.1 ~ 2.0)
+            u.rate = rate;   // 속도
+            if (maleVoice) u.voice = maleVoice;
+            synth.speak(u);
+        }
+    }
 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
     const MIN_BET = 100;
@@ -242,25 +264,17 @@
     let rotation=0, wheelState="SPINNING", stopTargetAngle=0, stopStartTime=0;
     const STOP_DURATION=8000;
     let isLocked=false, serverOffset=0, nextRoundMs=0, isPC=window.innerWidth>=1024;
+    let bettingClosedAnnounced = false;
     
     const colors = ['#ff0055','#ffdd00','#00ffaa','#00ccff','#ff4400','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
     let confetti = [];
 
-    // 🔥 플레이리스트 완전 복구 (50곡) 🔥
-    const ytPlaylist = [
-      '-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q',
-      'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc',
-      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
-      '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ',
-      'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc',
-      'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA',
-      'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk',
-      'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw',
-      '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo',
-      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'
-    ]; 
+    // Playlist (Full 50)
+    const ytPlaylist = ['-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q', 'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc', '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA', '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ', 'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc', 'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA', 'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk', 'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo', '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'];
     var ytPlayer;
     var curVol = 20;
+    var isMuted = false;
+    var isPlaying = true;
 
     function onYouTubeIframeAPIReady() {
       ytPlayer = new YT.Player('ytPlayer', {
@@ -269,23 +283,32 @@
         events: { 'onReady': onPlayerReady }
       });
     }
-    function onPlayerReady(event) { event.target.setVolume(curVol); event.target.playVideo(); updateMusicUI(true); }
+    function onPlayerReady(event) { event.target.setVolume(curVol); event.target.playVideo(); updateMusicUI(); }
     
-    // Controls
-    const musicBtn = $("musicToggle");
-    musicBtn.onclick = () => {
-      if(!ytPlayer || !ytPlayer.getPlayerState) return;
-      if(ytPlayer.getPlayerState() === 1) { ytPlayer.pauseVideo(); updateMusicUI(false); }
-      else { ytPlayer.playVideo(); updateMusicUI(true); }
+    // 🔥 New Music Controls 🔥
+    const playBtn = $("playToggle");
+    const muteBtn = $("muteToggle");
+    
+    playBtn.onclick = () => {
+        if(!ytPlayer || !ytPlayer.getPlayerState) return;
+        if(isPlaying) { ytPlayer.pauseVideo(); isPlaying=false; } else { ytPlayer.playVideo(); isPlaying=true; }
+        updateMusicUI();
+    };
+    muteBtn.onclick = () => {
+        if(!ytPlayer) return;
+        if(isMuted) { ytPlayer.unMute(); isMuted=false; } else { ytPlayer.mute(); isMuted=true; }
+        updateMusicUI();
     };
     $("volUp").onclick = () => { if(ytPlayer){ curVol=Math.min(100,curVol+10); ytPlayer.setVolume(curVol); }};
     $("volDown").onclick = () => { if(ytPlayer){ curVol=Math.max(0,curVol-10); ytPlayer.setVolume(curVol); }};
     $("prevBtn").onclick = () => { if(ytPlayer && ytPlayer.previousVideo) ytPlayer.previousVideo(); };
     $("nextBtn").onclick = () => { if(ytPlayer && ytPlayer.nextVideo) ytPlayer.nextVideo(); };
 
-    function updateMusicUI(isPlaying) {
-      if(isPlaying) { musicBtn.classList.add("playing"); musicBtn.innerText="🔊"; }
-      else { musicBtn.classList.remove("playing"); musicBtn.innerText="🔇"; }
+    function updateMusicUI() {
+        playBtn.innerText = isPlaying ? "⏸" : "▶";
+        if(isPlaying) playBtn.classList.add("playing"); else playBtn.classList.remove("playing");
+        muteBtn.innerText = isMuted ? "🔇" : "🔊";
+        if(isMuted) muteBtn.classList.add("muted"); else muteBtn.classList.remove("muted");
     }
 
     function updateLayoutMetrics() {
@@ -322,6 +345,7 @@
             setTimeout(()=>document.body.classList.remove("shake"),1000); 
             showResultModal(); 
             spawnConfetti(); 
+            // 🔥 30초 후 리셋 (정확히 30000ms) 🔥
             setTimeout(() => { if(wheelState==="STOPPED") resetGame(roundKey); }, 30000);
         }
       }
@@ -393,17 +417,52 @@
       }catch(e){}
     }
     function renderList(){const el=$("pList");el.innerHTML="";participants.forEach(p=>{el.innerHTML+=`<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;});el.scrollTop=el.scrollHeight;}
-    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="unique-logo-text">UNIQUE</span> &nbsp;BET NOW';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
-    async function checkWinnerAndStop(){if(wheelState!=="SPINNING")return;const d=await api("getRouletteState");if(d.lastWinner&&String(d.lastWinner.round)===String(roundKey)){spinToWin(d.lastWinner.name);$("resName").innerText=d.lastWinner.name;$("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";}}
+    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;bettingClosedAnnounced=false;$("bJoin").disabled=false;$("btnText").innerHTML='<span class="unique-logo-text">UNIQUE</span> &nbsp;BET NOW';$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:30px;color:#555;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
+    
+    // 🔥 0초에 즉시 멈추도록 수정 🔥
+    async function checkWinnerAndStop(){
+        if(wheelState!=="SPINNING")return;
+        const d=await api("getRouletteState");
+        // 현재 라운드의 승자가 결정되었으면 즉시 멈춤
+        if(d.lastWinner && String(d.lastWinner.round)===String(roundKey)){
+            spinToWin(d.lastWinner.name);
+            $("resName").innerText=d.lastWinner.name;
+            $("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";
+        }
+    }
     function showResultModal(){$("mdRes").style.display="flex";}
 
     function startTimer(){
       setInterval(()=>{
         if(!nextRoundMs)return; const now=Date.now()+serverOffset; let diff=Math.floor((nextRoundMs-now)/1000);
-        let d=diff; if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
+        let d=diff; 
+        if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
         if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
-        if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
-        const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
+        
+        // 🔥 60초 전 "Betting Closed" 중저음 발사 (pitch 0.6) 🔥
+        if(d <= 60 && d > 0 && !bettingClosedAnnounced) {
+            speak("Betting Closed", 0.6, 1.1); 
+            bettingClosedAnnounced = true;
+            $("timerDisp").classList.add("alert");
+        }
+
+        // 🔥 0초가 되면 즉시 잠그고 멈춤 시도 🔥
+        if(d<=0 && !isLocked){
+            isLocked=true; $("bJoin").disabled=true; $("btnText").innerText="CLOSED";
+            // 즉시 승자 확인 및 정지 시도 (0초 딜레이)
+            checkWinnerAndStop(); 
+            // 혹시 모르니 1초 뒤 재시도
+            setTimeout(checkWinnerAndStop, 1000); 
+        }
+        
+        // 🔥 60초부터 화면 표시, 10초부터 소리 카운트 (박자 맞춤) 🔥
+        const cd=$("cdNum"); 
+        if(d<=60 && d>0 && wheelState==="SPINNING"){
+            cd.innerText=d; cd.classList.add("active");
+            if(d<=10) speak(String(d), 1.0, 1.2); // 10초부터 소리 (속도 약간 빠르게)
+        }else{
+            cd.classList.remove("active");
+        }
       },1000);
     }
 
@@ -413,6 +472,7 @@
     $("bColorOk").onclick=()=>{if(!myColor)return;localStorage.setItem("c_"+myId,myColor);$("mdColor").style.display="none";};
 
     window.onload=async()=>{
+      initVoices(); // 목소리 로드
       const p=new URLSearchParams(location.search);myId=p.get("id")||"Guest"; const sc=localStorage.getItem("c_"+myId);
       if(sc)myColor=sc;else{const g=$("cGrid");colors.forEach(c=>{const d=document.createElement("div");d.className="c-btn";d.style.backgroundColor=c;d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c;$("bColorOk").disabled=false;};g.appendChild(d);});$("mdColor").style.display="flex";}
       try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
@@ -420,7 +480,7 @@
       
       document.body.addEventListener('click', () => {
         if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
-           ytPlayer.playVideo(); updateMusicUI(true);
+           ytPlayer.playVideo(); updateMusicUI();
         }
       }, { once: true });
     };
