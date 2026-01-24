@@ -136,7 +136,7 @@
 
     /* Controls */
     .hud-row { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
-    .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 2px; }
+    .label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
     .value-lg { font-size: 32px; font-weight: 900; color: var(--gold-1); }
     .timer { font-size: 26px; font-weight: 700; color: #fff; font-family: monospace; }
     .timer.alert { color: var(--danger); animation: blink 0.5s infinite alternate; }
@@ -220,7 +220,7 @@
     </div>
   </div>
   <div id="mdRes" class="modal-mask">
-    <div class="modal-body" style="background: radial-gradient(circle, #2a1a3a 0%, #111 100%);">
+    <div class="modal-body">
       <h2 style="color:var(--gold-1); font-size:40px; margin-bottom:10px; text-shadow:0 0 30px var(--gold-1);">WINNER!</h2>
       <div id="resName" style="font-size:48px; font-weight:900; color:#fff; margin:10px 0; text-shadow:0 5px 15px rgba(0,0,0,0.8);">-</div>
       <div id="resAmt" style="font-size:32px; color:var(--gold-3); font-weight:700;">-</div>
@@ -255,14 +255,14 @@
     const ytPlaylist = [
       '-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q',
       'Ge9OgkOayQs', 'dDxWoKcOmsA', 'aGpOcVy2A8I', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc',
-      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
+      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'viIJYFSGq0o', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
       '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ',
       'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc',
       'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA',
       'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk',
-      'F2AitTPI5U0', 'L7n5oXTQd2Q', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8',
-      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw',
-      'viIJYFSGq0o', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw', 'AVUeL6RMHoo'
+      'F2AitTPI5U0', 'L7n5oXTQd2Q', 'Ijq-zNn-GWU', 'kP2ocLMNUnw', 'Ikbj54iFTdw',
+      '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8', 'AVUeL6RMHoo',
+      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'
     ]; 
     var ytPlayer;
     var curVol = 20;
@@ -309,8 +309,6 @@
     // 🔥 1분(60초) = 1바퀴(360도) = 6도/초
     // 60프레임 기준 프레임당 0.1도
     function getCurrentRPM(sec) {
-        // 속도를 일정하게 1 RPM 유지 (0.1 degree per frame)
-        // 멈추기 전까진 무조건 이 속도
         return 0.1; 
     }
 
@@ -368,7 +366,7 @@
         });
       }
 
-      // Cap (Small)
+      // Cap (Small & Classy)
       const capR=Math.min(r*0.12, 140);
       const gradCap=ctx.createRadialGradient(cx,cy,capR*0.1, cx,cy,capR);
       gradCap.addColorStop(0,'#fff'); gradCap.addColorStop(0.3,'#ffd700'); gradCap.addColorStop(0.9,'#b8860b'); gradCap.addColorStop(1,'#5e4b25');
@@ -418,4 +416,29 @@
       setInterval(()=>{
         if(!nextRoundMs)return; const now=Date.now()+serverOffset; let diff=Math.floor((nextRoundMs-now)/1000);
         let d=diff; if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
-        if(d<0)d=0
+        if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
+        if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
+        const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
+      },1000);
+    }
+
+    const setB=v=>$("inpBet").value=v; $("bMin").onclick=()=>setB(MIN_BET); $("bMax").onclick=()=>setB(Math.floor(myWallet/100)*100);
+    $("bM100").onclick=()=>{let v=Number($("inpBet").value)-100;if(v<MIN_BET)v=MIN_BET;setB(v);}; $("bP100").onclick=()=>{let v=Number($("inpBet").value)+100;if(v>myWallet)v=myWallet;setB(v);};
+    $("bJoin").onclick=async()=>{if(isLocked)return alert("Closed.");const amt=Number($("inpBet").value);if(amt>myWallet)return alert("No Money");const btn=$("bJoin"),bt=$("btnText");btn.disabled=true;bt.innerText="...";try{const r=await api("rouletteResult",{type:"bet",id:myId,amount:amt,color:myColor});if(r.result==="success"){myWallet=r.newBalance;$("myBal").innerText=toMoney(myWallet)+" UT";updateState();}else alert(r.msg);}catch(e){}btn.disabled=false;bt.innerHTML='<span class="unique-text-logo">So.T</span> <span class="act-txt">BET NOW</span>';};
+    $("bColorOk").onclick=()=>{if(!myColor)return;localStorage.setItem("c_"+myId,myColor);$("mdColor").style.display="none";};
+
+    window.onload=async()=>{
+      const p=new URLSearchParams(location.search);myId=p.get("id")||"Guest"; const sc=localStorage.getItem("c_"+myId);
+      if(sc)myColor=sc;else{const g=$("cGrid");colors.forEach(c=>{const d=document.createElement("div");d.className="c-btn";d.style.backgroundColor=c;d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c;$("bColorOk").disabled=false;};g.appendChild(d);});$("mdColor").style.display="flex";}
+      try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
+      updateState(); setInterval(updateState,2000); startTimer(); draw(); window.addEventListener('resize',draw);
+      
+      document.body.addEventListener('click', () => {
+        if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+           ytPlayer.playVideo(); updateMusicUI(true);
+        }
+      }, { once: true });
+    };
+  </script>
+</body>
+</html>
