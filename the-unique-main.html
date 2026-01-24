@@ -258,17 +258,17 @@
     }
 
     .wm-card{
-  background:#1e293b;
-  border-radius:12px;
-  padding:20px;
-  border:1px solid rgba(255,255,255,0.05);
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  min-height:0;
-  min-width:0; /* ✅ 그리드에서 내용이 밖으로 삐져나가는 거 방지 */
-}
+      background:#1e293b;
+      border-radius:12px;
+      padding:20px;
+      border:1px solid rgba(255,255,255,0.05);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      min-height:0;
+      min-width:0; /* ✅ 그리드에서 내용이 밖으로 삐져나가는 거 방지 */
+    }
 
     .wm-card.wallet{ border-color:#fbbf24; justify-content:space-between; }
     .fund-label{ font-size:13px; color:#fbbf24; margin-bottom:8px; display:block; font-weight:700; }
@@ -1138,6 +1138,48 @@
     .ut-card, .knowledge-card{ display:flex; flex-direction:column; }
     .ut-actions{ margin-top:auto; }
     .knowledge-bottom{ margin-top:auto; }
+
+    /* ================================
+       ✅ PC 전용: "밑줄 + 값" 형태 + 도넛 반응형 확대
+       (모바일 영향 없음)
+    ================================= */
+    @media (min-width: 1024px){
+      /* 도넛 크게(반응형) */
+      .ut-viz{
+        align-items: center;
+        justify-content: flex-start;
+        gap: 22px;
+        --viz-size: clamp(220px, 22vw, 320px);
+        --thick: clamp(20px, 2vw, 28px);
+      }
+
+      /* 우측 정보 폭 안정 */
+      .ut-viz-info{
+        flex: 0 0 clamp(210px, 18vw, 290px);
+        max-width: clamp(210px, 18vw, 290px);
+        gap: 14px;
+      }
+
+      /* 라벨(총발행/내보유) 위, 밑줄, 값 아래 */
+      .ut-info-row{
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 12px 14px;
+      }
+      .ut-info-row .k{
+        width: 100%;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid rgba(148,163,184,0.28);
+      }
+      .ut-info-row .v{
+        width: 100%;
+        text-align: right;
+        font-size: 14px;
+        font-weight: 900;
+      }
+    }
   </style>
 </head>
 
@@ -1299,8 +1341,8 @@
                 </div>
 
                 <div id="history-container">
-  <div class="history-empty">거래 내역이 없습니다.</div>
-</div>
+                  <div class="history-empty">거래 내역이 없습니다.</div>
+                </div>
               </div>
             </div>
           </div>
