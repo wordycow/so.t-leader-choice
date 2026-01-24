@@ -7,145 +7,474 @@
 
   <style>
     /* =========================================
-       1. UNIQUE Aurora Button (Based on image_69f060.png)
+       1. UNIQUE Neon Hero Button (복구됨)
        ========================================= */
     .action-btn.action-btn-unique {
-      position: relative; overflow: hidden; border: 0; padding: 0;
-      min-height: 64px; border-radius: 999px; cursor: pointer; width: 100%;
-      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1) inset;
-      transform: translateZ(0); transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      border: 0;
+      padding: 0;
+      min-height: 64px;
+      border-radius: 999px;
+      cursor: pointer;
+      width: 100%;
+      /* 배경: 딥 다크 오로라 */
+      background: radial-gradient(circle at 30% 20%, rgba(0,247,255,0.15), transparent 45%),
+                  radial-gradient(circle at 70% 70%, rgba(251,191,36,0.15), transparent 48%),
+                  linear-gradient(180deg, #020617, #0f172a);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      transform: translateZ(0);
+      transition: all 0.2s;
     }
-    .action-btn.action-btn-unique::before {
-      content:""; position:absolute; inset:0;
-      background: radial-gradient(circle at 50% 150%, rgba(0,255,170,0.4), rgba(0,180,255,0.2), transparent 70%);
-      filter: blur(10px); opacity: 0.8; transition: opacity 0.3s;
-    }
-    .action-btn.action-btn-unique::after {
-      content:""; position:absolute; inset:0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-      transform: translateX(-140%); animation: auroraShine 4s ease-in-out infinite; mix-blend-mode: overlay;
-    }
-    .unique-inner {
-      position: relative; z-index: 2; display:flex; align-items:center; justify-content:center;
-      gap:10px; width:100%; height: 100%; color: #fff; font-weight: 700; font-size: 18px; letter-spacing: 1px;
-    }
-    .unique-text-logo {
-        font-family: 'Cinzel', serif; font-weight: 400; font-size: 24px;
-        color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
-    }
-    .action-btn.action-btn-unique:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,255,170,0.2); }
-    .action-btn.action-btn-unique:active { transform: translateY(0); }
-    .action-btn.action-btn-unique:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
 
-    @keyframes auroraShine { 0% { transform: translateX(-140%); } 20%, 100% { transform: translateX(140%); } }
+    /* 회전하는 글로우 테두리 */
+    .action-btn.action-btn-unique::before {
+      content:"";
+      position:absolute;
+      inset:-4px;
+      background: conic-gradient(from 180deg, #00f7ff, #aa00ff, #ffdd00, #00f7ff);
+      filter: blur(12px);
+      opacity: 0.6;
+      animation: glowSpin 4s linear infinite;
+      pointer-events:none;
+    }
+
+    /* 광택 효과 */
+    .action-btn.action-btn-unique::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.2) 30%, transparent 60%);
+      transform: translateX(-140%);
+      animation: shine 3s ease-in-out infinite;
+      mix-blend-mode: overlay;
+    }
+
+    /* 버튼 내부 텍스트 컨테이너 */
+    .unique-inner {
+      position: relative;
+      z-index: 2;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      width:100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(15,23,42,0.9), rgba(2,6,23,0.95));
+      border-radius: 999px;
+      margin: 2px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 1px;
+    }
+
+    .unique-text-logo {
+        font-family: 'Cinzel', serif;
+        font-weight: 900;
+        background: linear-gradient(to bottom, #fff, #ffd700);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 8px rgba(255,215,0,0.5));
+    }
+
+    .action-btn.action-btn-unique:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 50px rgba(0,0,0,0.9);
+    }
+    .action-btn.action-btn-unique:active {
+      transform: translateY(0);
+    }
+    .action-btn.action-btn-unique:disabled {
+      filter: grayscale(1);
+      opacity: 0.5;
+      cursor: not-allowed;
+      animation: none;
+    }
+
+    @keyframes glowSpin { 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
+    @keyframes shine { 0%{ transform: translateX(-140%); } 20%, 100%{ transform: translateX(140%); } }
 
     /* =========================================
        2. Base & Layout
        ========================================= */
     :root {
       --bg-dark: #050510;
-      --panel-bg: rgba(12, 12, 18, 0.95);
-      --gold-1: #ffd700; --gold-2: #bf953f; --danger: #ff0044;
-      --neon-yellow: #fff200;
+      --panel-bg: rgba(10, 10, 15, 0.92);
+      --gold-1: #ffd700;
+      --gold-2: #bf953f;
+      --danger: #ff0044;
+      --neon-orange: #ff6600;
+      --neon-yellow: #ffcc00;
     }
+
     body {
-      margin: 0; padding: 0; background-color: var(--bg-dark);
-      background: radial-gradient(circle at 70% 50%, #1a0b2e 0%, #000000 90%);
-      color: #fff; font-family: 'Cinzel', serif, system-ui; overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      background: radial-gradient(circle at 60% 50%, #150a20 0%, #000000 90%);
+      color: #fff;
+      font-family: 'Cinzel', serif, system-ui;
+      overflow: hidden;
     }
-    body.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-    @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 
+    /* 화면 흔들림 효과 (정지 시) */
+    body.shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+      40%, 60% { transform: translate3d(8px, 0, 0); }
+    }
+
+    /* 전광판 (Marquee) */
     .marquee-wrap {
-      position: fixed; top: 0; width: 100%; height: 40px;
-      background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(255,255,255,0.1);
-      overflow: hidden; z-index: 200; display: flex; align-items: center;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: 40px;
+      background: rgba(0,0,0,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+      z-index: 200;
+      display: flex;
+      align-items: center;
     }
-    .marquee-content { display: flex; animation: scroll 30s linear infinite; }
+    .marquee-content {
+      display: flex;
+      animation: scroll 40s linear infinite;
+    }
     .marquee-text {
-      white-space: nowrap; font-weight: 700; color: #fff; font-size: 14px; letter-spacing: 1px;
-      padding: 0 40px; text-shadow: 0 0 5px rgba(255,255,255,0.5);
+      white-space: nowrap;
+      font-weight: 700;
+      color: var(--gold-1);
+      font-size: 14px;
+      letter-spacing: 1px;
+      padding: 0 50px;
+      text-shadow: 0 0 10px rgba(255,215,0,0.4);
     }
-    @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
 
-    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      display: block;
+    }
 
     /* =========================================
-       3. UI Container (Right Side)
+       3. UI Container & Elements
        ========================================= */
     .ui-container {
-      position: fixed; z-index: 100;
-      top: 40px; bottom: 0; right: 0; width: 400px;
-      background: var(--panel-bg); border-left: 1px solid rgba(255,255,255,0.1);
-      display: flex; flex-direction: column;
-      box-shadow: -10px 0 50px rgba(0,0,0,0.8);
+      position: fixed;
+      z-index: 100;
+      top: 40px;
+      bottom: 0;
+      right: 0;
+      width: 420px;
+      background: var(--panel-bg);
+      border-left: 1px solid rgba(255,215,0,0.2);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -10px 0 60px rgba(0,0,0,0.9);
+      backdrop-filter: blur(15px);
     }
+
     @media (max-width: 1023px) {
-      .ui-container { width: 100%; height: 45%; top: auto; bottom: 0; right: 0; left: 0; border-left: none; border-top: 1px solid rgba(255,255,255,0.1); }
+      .ui-container {
+        width: 100%;
+        height: 45%;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.1);
+      }
     }
 
+    /* 🔥 화살표 (왼쪽 네온 오렌지) 🔥 */
     .pointer-wrap {
-      position: absolute; z-index: 50; display: flex; align-items: center;
-      filter: drop-shadow(0 0 15px rgba(255, 242, 0, 0.8));
+      position: absolute;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      filter: drop-shadow(0 0 15px rgba(255, 102, 0, 0.8));
     }
-    .pointer-shape {
-      width: 0; height: 0;
-      border-top: 30px solid transparent;
-      border-bottom: 30px solid transparent;
-      border-left: 50px solid var(--neon-yellow);
-      transform: scale(1.2);
+    .pointer-real {
+      width: 70px;
+      height: 50px;
+      background: linear-gradient(90deg, #ff8800, #ffcc00);
+      clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
     }
 
-    .hud-row { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
-    .label { font-size: 12px; color: #888; font-weight: 700; }
-    .value-lg { font-size: 28px; font-weight: 800; color: var(--gold-1); }
-    .timer { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace; }
-    .timer.alert { color: var(--danger); animation: blink 0.5s infinite alternate; }
-    .list-wrap { flex: 1; overflow-y: auto; padding: 15px; }
-    .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; }
-    .rank-item.me { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); }
-    .p-col { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; box-shadow: 0 0 8px currentColor; }
-    .p-name { flex: 1; font-size: 14px; color: #ddd; }
+    /* HUD */
+    .hud-row {
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .label {
+      font-size: 11px;
+      color: #888;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    .value-lg {
+      font-size: 30px;
+      font-weight: 900;
+      color: var(--gold-1);
+      text-shadow: 0 0 10px rgba(255,215,0,0.3);
+    }
+    .timer {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+    }
+    .timer.alert {
+      color: var(--danger);
+      animation: blink 0.5s infinite alternate;
+    }
+    
+    .list-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    .rank-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+    }
+    .rank-item.me {
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.3);
+    }
+    .p-col {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 12px;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .p-name { flex: 1; font-size: 14px; font-weight: 600; color: #eee; }
     .p-amt { font-size: 14px; color: var(--gold-1); font-weight: 700; }
 
-    .ctrl-area { padding: 20px; background: rgba(0,0,0,0.3); }
-    .bet-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 15px; }
-    .btn-chip { background: #222; border: 1px solid #444; color: #ccc; border-radius: 8px; height: 45px; font-weight: 700; cursor: pointer; }
-    .btn-chip:hover { background: #333; color: #fff; border-color: #666; }
-    .inp-amt { background: #000; border: 1px solid #555; color: #fff; text-align: center; font-size: 16px; font-weight: 700; border-radius: 8px; width: 100%; outline: none; }
+    .ctrl-area {
+      padding: 25px;
+      background: rgba(0,0,0,0.4);
+    }
+    .bet-inputs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .btn-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #ccc;
+      border-radius: 8px;
+      height: 48px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-chip:hover {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border-color: rgba(255,255,255,0.3);
+    }
+    .inp-amt {
+      background: #000;
+      border: 1px solid #666;
+      color: #fff;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 8px;
+      width: 100%;
+      outline: none;
+      height: 48px;
+    }
 
-    .countdown-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 150; }
-    .cd-num { font-size: 150px; font-weight: 900; color: #fff; text-shadow: 0 0 30px var(--danger); opacity: 0; transition: transform 0.2s; }
-    .cd-num.active { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; }
+    /* 카운트다운 & 모달 */
+    .countdown-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 150;
+    }
+    .cd-num {
+      font-size: 160px;
+      font-weight: 1000;
+      color: #fff;
+      text-shadow: 0 0 40px var(--danger);
+      opacity: 0;
+      transition: transform 0.2s;
+    }
+    .cd-num.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 300;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
     .modal-mask.on { display: flex; }
-    .modal-body { width: 90%; max-width: 400px; background: #1a1a2e; border: 2px solid var(--gold-2); border-radius: 15px; padding: 30px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-    .c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
-    .c-btn { height: 45px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
-    .c-btn.sel { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px #fff; }
+    .modal-body {
+      width: 90%;
+      max-width: 450px;
+      background: #12121a;
+      border: 2px solid var(--gold-2);
+      border-radius: 20px;
+      padding: 35px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0,0,0,0.7);
+    }
+    .c-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin: 25px 0;
+    }
+    .c-btn {
+      height: 50px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.2s;
+    }
+    .c-btn.sel {
+      border-color: #fff;
+      transform: scale(1.15);
+      box-shadow: 0 0 20px currentColor;
+    }
 
+    /* Music Control Container */
+    .music-control-wrap {
+      position: fixed;
+      top: 60px;
+      left: 20px;
+      z-index: 250;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Main Toggle Button */
+    #musicBtn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: all 0.3s;
+    }
+    #musicBtn.playing {
+      border-color: #00ffaa;
+      box-shadow: 0 0 15px rgba(0,255,170,0.3);
+      animation: pulse 2s infinite;
+    }
+
+    /* Volume Buttons (+/-) */
+    .vol-btn {
+      width: 48px;
+      height: 30px;
+      border-radius: 15px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #ccc;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+    }
+    .vol-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .vol-btn:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,255,170,0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(0,255,170,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,170,0); }
+    }
     @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
+
   </style>
 </head>
 <body>
+  <div class="music-control-wrap">
+    <button id="musicBtn" title="BGM On/Off"><span id="musicIcon">🔇</span></button>
+    <button class="vol-btn" id="volUp" title="Volume Up">+</button>
+    <button class="vol-btn" id="volDown" title="Volume Down">-</button>
+  </div>
+
   <div class="marquee-wrap">
     <div class="marquee-content">
-      <span class="marquee-text" id="mqText1">💎 WELCOME TO THE UNIQUE CASINO! WIN BIG! 💎</span>
-      <span class="marquee-text" id="mqText2">💎 WELCOME TO THE UNIQUE CASINO! WIN BIG! 💎</span>
+      <span class="marquee-text" id="mqText1">💎 WELCOME TO THE UNIQUE CASINO! 💎</span>
+      <span class="marquee-text" id="mqText2">💎 WELCOME TO THE UNIQUE CASINO! 💎</span>
     </div>
   </div>
 
   <canvas id="cvs"></canvas>
-  <div id="pointer" class="pointer-wrap"><div class="pointer-shape"></div></div>
+  
+  <div id="pointer" class="pointer-wrap">
+    <div class="pointer-real"></div>
+  </div>
+  
   <div class="countdown-box"><div id="cdNum" class="cd-num"></div></div>
 
   <aside class="ui-container">
     <div class="hud-row">
-      <div><div class="label">TOTAL POOL</div><div class="value-lg" id="poolDisp">0 UT</div></div>
-      <div style="text-align:right;"><div class="label">TIME LEFT</div><div class="timer" id="timerDisp">--:--</div></div>
+      <div>
+        <div class="label">TOTAL POOL</div>
+        <div class="value-lg" id="poolDisp">0 UT</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="label">TIME LEFT</div>
+        <div class="timer" id="timerDisp">--:--</div>
+      </div>
     </div>
-    <div class="list-wrap" id="pList"><div style="text-align:center; padding:20px; color:#555;">No bets yet...</div></div>
+    
+    <div class="list-wrap" id="pList">
+      <div style="text-align:center; padding:20px; color:#555;">No bets yet...</div>
+    </div>
+    
     <div class="ctrl-area">
       <div class="bet-inputs">
         <button class="btn-chip" id="bMin">MIN</button>
@@ -154,59 +483,99 @@
         <button class="btn-chip" id="bP100">+100</button>
         <button class="btn-chip" id="bMax">MAX</button>
       </div>
+      
       <button id="bJoin" class="action-btn action-btn-unique" type="button">
         <span class="unique-inner" id="btnText">
-          <span class="unique-text-logo">So.T</span> &nbsp;BET NOW
+          <span class="unique-text-logo">UNIQUE</span> &nbsp;BET NOW
         </span>
       </button>
-      <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:13px; color:#aaa;">
-        <span>MY WALLET</span><span style="color:var(--gold-1); font-weight:700;" id="myBal">Loading...</span>
+      
+      <div style="display:flex; justify-content:space-between; margin-top:18px; font-size:13px; color:#aaa;">
+        <span>MY WALLET</span>
+        <span style="color:var(--gold-1); font-weight:700;" id="myBal">Loading...</span>
       </div>
     </div>
   </aside>
 
   <div id="mdColor" class="modal-mask">
     <div class="modal-body">
-      <h2 style="color:#fff; margin:0;">PICK COLOR</h2>
+      <h2 style="color:#fff; margin:0; font-size:24px;">PICK YOUR COLOR</h2>
       <div class="c-grid" id="cGrid"></div>
-      <button id="bColorOk" class="action-btn action-btn-unique" style="min-height:50px;" disabled><span class="unique-inner">START</span></button>
+      <button id="bColorOk" class="action-btn action-btn-unique" style="min-height:50px;" disabled>
+        <span class="unique-inner">START</span>
+      </button>
     </div>
   </div>
+
   <div id="mdRes" class="modal-mask">
     <div class="modal-body">
-      <h2 style="color:var(--gold-1); font-size:32px;">WINNER!</h2>
-      <div id="resName" style="font-size:40px; font-weight:900; color:#fff; margin:10px 0;">-</div>
-      <div id="resAmt" style="font-size:24px; color:var(--gold-1); font-weight:700;">-</div>
-      <div style="margin-top:20px; color:#888;">Next round starting soon...</div>
+      <h2 style="color:var(--gold-1); font-size:36px; margin-bottom:10px;">WINNER!</h2>
+      <div id="resName" style="font-size:42px; font-weight:900; color:#fff; margin:15px 0;">-</div>
+      <div id="resAmt" style="font-size:28px; color:var(--gold-1); font-weight:900;">-</div>
+      <div style="margin-top:25px; color:#888;">Next round starting soon...</div>
     </div>
   </div>
 
   <div id="ytPlayer" style="display:none;"></div>
-
+  
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
+    // ============================================
+    // ⚙️ CONFIGURATION
+    // ============================================
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
     const MIN_BET = 100;
-    const ROUND_DURATION_SEC = 1200;
+    const ROUND_DURATION_SEC = 1200; // 20분
 
-    let myId="", myWallet=0, myColor=null;
-    let roundKey=null, participants=[], totalPool=0;
-    let rotation=0, wheelState="SPINNING", stopTargetAngle=0, stopStartTime=0;
-    const STOP_DURATION=8000;
-    let isLocked=false, serverOffset=0, nextRoundMs=0, isPC=window.innerWidth>=1024;
+    // ============================================
+    // 📊 GLOBAL STATE
+    // ============================================
+    let myId = "";
+    let myWallet = 0;
+    let myColor = null;
+    let roundKey = null;
+    let participants = [];
+    let totalPool = 0;
+    
+    // Wheel Animation State
+    let rotation = 0;
+    let wheelState = "SPINNING"; // SPINNING, STOPPING, STOPPED
+    let stopTargetAngle = 0;
+    let stopStartTime = 0;
+    const STOP_DURATION = 8000; // 정지 연출 시간 (8초)
 
-    const colors = ['#ff0055','#ffea00','#00ff99','#00ccff','#ff6600','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
+    let isLocked = false;
+    let serverOffset = 0;
+    let nextRoundMs = 0;
+    let isPC = window.innerWidth >= 1024;
+    
+    // Vivid Color Palette
+    const colors = [
+      '#ff0055','#ffea00','#00ff99','#00ccff','#ff6600',
+      '#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'
+    ];
     let confetti = [];
 
     // ============================================
-    // 🎵 YouTube BGM 설정 (여기에 영상 ID를 추가하세요)
+    // 🎵 MUSIC PLAYLIST (사용자님 리스트 복구 완료)
     // ============================================
-    // 예: https://youtu.be/-jdZKf-xSpA 주소에서 "v=" 뒷부분이 ID입니다.
-    // -jdZKf-xSpA
-    const ytPlaylist = ['-jdZKf-xSpA,-B3HvFhHsIM,Sc-EOEQDBHk,dttGdK0l1G0,yPqI1VAHX8Q,Ge9OgkOayQs,dDxWoKcOmsA,BJRlZ0R4nuE,WbvoZvYmkBg,X6SuW5HhQoc,0P4A1K4lXDo,LpTL5nTPwjo,Qe8fa4b5xNU,LtwQuHFzIlk,s3uPXokhpnA,8KDWGWMs7Sg,pcIOYAdwKsw,MXz88usIhzA,lmxNgwBeJ44,j3V53sF13UQ,znDgBy2mHbc,53BBRKF-L60,BsxBh3lE5Qs,eE5oaOOwInE,M4t25bx0Quc,vA8p2bioJ00,gRj83OcBbXc,p1GwElw35vo,jIIdLgUbj5E,gU3ubk8u7dA,Nh-V4s5jHHM,z0vCwGUZe1I,DPBm9nQ7o2E,TrDyciJ8svc,tO4dxvguQDk,F2AitTPI5U0,L7n5oXTQd2Q,7uaOFQpO_Ks,x46z5iMK1Wg,fwlLHP6j7U8,3XDf5Ke2Zj8,PxbcXlqXrU0,yldUrx-4GPU,yajZ_cOVrXQ,h7FCYhJHCPw,']; // 콤마로 구분해 계속 추가 가능
+    const ytPlaylist = [
+      '-jdZKf-xSpA', '-B3HvFhHsIM', 'Sc-EOEQDBHk', 'dttGdK0l1G0', 'yPqI1VAHX8Q',
+      'Ge9OgkOayQs', 'dDxWoKcOmsA', 'BJRlZ0R4nuE', 'WbvoZvYmkBg', 'X6SuW5HhQoc',
+      '0P4A1K4lXDo', 'LpTL5nTPwjo', 'Qe8fa4b5xNU', 'LtwQuHFzIlk', 's3uPXokhpnA',
+      '8KDWGWMs7Sg', 'pcIOYAdwKsw', 'MXz88usIhzA', 'lmxNgwBeJ44', 'j3V53sF13UQ',
+      'znDgBy2mHbc', '53BBRKF-L60', 'BsxBh3lE5Qs', 'eE5oaOOwInE', 'M4t25bx0Quc',
+      'vA8p2bioJ00', 'gRj83OcBbXc', 'p1GwElw35vo', 'jIIdLgUbj5E', 'gU3ubk8u7dA',
+      'Nh-V4s5jHHM', 'z0vCwGUZe1I', 'DPBm9nQ7o2E', 'TrDyciJ8svc', 'tO4dxvguQDk',
+      'F2AitTPI5U0', 'L7n5oXTQd2Q', '7uaOFQpO_Ks', 'x46z5iMK1Wg', 'fwlLHP6j7U8',
+      '3XDf5Ke2Zj8', 'PxbcXlqXrU0', 'yldUrx-4GPU', 'yajZ_cOVrXQ', 'h7FCYhJHCPw'
+    ]; 
 
+    // YouTube Player Object
     var ytPlayer;
+    var currentVolume = 20;
+
     function onYouTubeIframeAPIReady() {
       ytPlayer = new YT.Player('ytPlayer', {
         height: '0',
@@ -215,7 +584,7 @@
           'autoplay': 1,
           'controls': 0,
           'loop': 1,
-          'playlist': ytPlaylist.join(',') // 플레이리스트 연결
+          'playlist': ytPlaylist.join(',')
         },
         events: {
           'onReady': onPlayerReady
@@ -224,141 +593,499 @@
     }
 
     function onPlayerReady(event) {
-      event.target.setVolume(20); // 볼륨 20 (잔잔하게)
+      event.target.setVolume(currentVolume);
       event.target.playVideo();
+      updateMusicUI(true);
     }
-
-    const synth=window.speechSynthesis; const $=(id)=>document.getElementById(id);
-    const toMoney=(n)=>Number(n).toLocaleString();
-    function speak(txt){ if(synth&&!synth.speaking){const u=new SpeechSynthesisUtterance(txt);u.lang='en-US';synth.speak(u);}}
-
-    function updateLayoutMetrics() {
-      isPC = window.innerWidth >= 1024;
-      const ptr = $("pointer");
-      const w = window.innerWidth, h = window.innerHeight;
-      if(isPC) {
-        ptr.style.left="0px"; ptr.style.top="50%"; ptr.style.transform="translateY(-50%)";
-        return { r: h*1.2, cx: 50+(h*1.2), cy: h/2, pointerAngle: Math.PI };
+    
+    // Music Button Logic
+    document.getElementById("musicBtn").onclick = () => {
+      if(!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+      if(ytPlayer.getPlayerState() === 1) { 
+        ytPlayer.pauseVideo();
+        updateMusicUI(false);
       } else {
-        ptr.style.left="50%"; ptr.style.top="80px"; ptr.style.transform="translateX(-50%) rotate(90deg)";
-        return { r: w*0.9, cx: w/2, cy: 150+(w*0.9), pointerAngle: -Math.PI/2 };
+        ytPlayer.playVideo();
+        updateMusicUI(true);
+      }
+    };
+
+    function updateMusicUI(isPlaying) {
+      const btn = document.getElementById("musicBtn");
+      const icon = document.getElementById("musicIcon");
+      if(isPlaying) {
+        btn.classList.add("playing");
+        icon.innerText = "🎵";
+      } else {
+        btn.classList.remove("playing");
+        icon.innerText = "🔇";
       }
     }
 
+    // Volume Control Logic
+    document.getElementById("volUp").onclick = () => {
+      if(ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        currentVolume = Math.min(100, currentVolume + 10);
+        ytPlayer.setVolume(currentVolume);
+      }
+    };
+
+    document.getElementById("volDown").onclick = () => {
+      if(ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        currentVolume = Math.max(0, currentVolume - 10);
+        ytPlayer.setVolume(currentVolume);
+      }
+    };
+
+    // Helpers
+    const synth = window.speechSynthesis;
+    const $ = (id) => document.getElementById(id);
+    const toMoney = (n) => Number(n).toLocaleString();
+    
+    function speak(txt){
+      if(synth && !synth.speaking){
+        const u = new SpeechSynthesisUtterance(txt);
+        u.lang='en-US';
+        synth.speak(u);
+      }
+    }
+
+    // ============================================
+    // 🎨 RENDER & ANIMATION
+    // ============================================
+    function updateLayoutMetrics() {
+      isPC = window.innerWidth >= 1024;
+      const ptr = $("pointer");
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      if(isPC) {
+        // PC: 화살표 왼쪽 벽 고정
+        ptr.style.left = "0px";
+        ptr.style.top = "50%";
+        ptr.style.transform = "translateY(-50%)";
+        // 휠: 화살표 끝(70px)에서 시작되도록 중심점 이동
+        return { r: h * 1.2, cx: 70 + (h * 1.2), cy: h / 2, pointerAngle: Math.PI };
+      } else {
+        // Mobile: 상단
+        ptr.style.left = "50%";
+        ptr.style.top = "80px";
+        ptr.style.transform = "translateX(-50%) rotate(90deg)";
+        return { r: w * 0.9, cx: w / 2, cy: 150 + (w * 0.9), pointerAngle: -Math.PI / 2 };
+      }
+    }
+
+    // 🔥 SPEED LOGIC: 1분 = 1바퀴 = 1 RPM 🔥
+    // 1 RPM = 360도/60초 = 6도/초
+    // 60fps 기준 프레임당 0.1도
     function getCurrentRPM(sec) {
-        if(sec>1170) return 0.2; if(sec>900) return 1.0; if(sec>600) return 2.0; if(sec>300) return 3.0; if(sec>0) return 4.0; return 0;
+        if(sec > 1170) return 0.05; // 시작 직후 (0.5 RPM)
+        if(sec > 900) return 0.1;   // ~4분30초: 1 RPM (정확히 1분에 1바퀴)
+        if(sec > 600) return 0.2;   // ~5분: 2 RPM
+        if(sec > 300) return 0.3;   // ~5분: 3 RPM
+        if(sec > 0) return 0.4;     // 마지막 5분: 4 RPM
+        return 0; 
     }
 
     function draw() {
-      const cvs=$("cvs"), ctx=cvs.getContext("2d");
-      const w=window.innerWidth, h=window.innerHeight;
-      if(cvs.width!==w || cvs.height!==h){ cvs.width=w; cvs.height=h; }
-      ctx.clearRect(0,0,w,h);
+      const cvs = $("cvs");
+      const ctx = cvs.getContext("2d");
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      
+      if(cvs.width !== w || cvs.height !== h) {
+        cvs.width = w;
+        cvs.height = h;
+      }
+      ctx.clearRect(0, 0, w, h);
 
-      const {cx,cy,r} = updateLayoutMetrics();
+      const { cx, cy, r } = updateLayoutMetrics();
 
+      // Rotation Logic
       if (wheelState === "SPINNING") {
         let sec = 0;
         if(nextRoundMs) {
             const now = Date.now() + serverOffset;
-            sec = Math.max(0, Math.floor((nextRoundMs - now)/1000));
+            sec = Math.max(0, Math.floor((nextRoundMs - now) / 1000));
         }
+        // Apply Slow Speed
         rotation += (getCurrentRPM(sec) * Math.PI / 180);
       } else if (wheelState === "STOPPING") {
         const now = Date.now();
         const t = Math.min(1, (now - stopStartTime) / STOP_DURATION);
         const ease = 1 - Math.pow(1 - t, 4);
         rotation = window.startRotation + (stopTargetAngle - window.startRotation) * ease;
-        if (t >= 1) { wheelState="STOPPED"; document.body.classList.add("shake"); setTimeout(()=>document.body.classList.remove("shake"),1000); showResultModal(); spawnConfetti(); }
+        
+        if (t >= 1) {
+          wheelState = "STOPPED";
+          document.body.classList.add("shake");
+          setTimeout(() => document.body.classList.remove("shake"), 1000);
+          showResultModal();
+          spawnConfetti();
+        }
       }
 
-      ctx.beginPath(); ctx.arc(cx,cy,r+15,0,Math.PI*2);
+      // Draw Rim
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 15, 0, Math.PI * 2);
       ctx.fillStyle = '#ffd700';
-      ctx.shadowColor="rgba(0,0,0,0.5)"; ctx.shadowBlur=20; ctx.fill(); ctx.shadowBlur=0;
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
-      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
+      // Draw Background
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#111';
+      ctx.fill();
 
-      let startAng=rotation; const total=totalPool||1;
-      if(participants.length>0) {
-        participants.forEach(p=>{
-          const slice=(p.amount/total)*2*Math.PI; const endAng=startAng+slice;
-          ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r-5,startAng,endAng); ctx.fillStyle=p.color; ctx.fill();
-          ctx.lineWidth=2; ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.stroke(); 
-          if(slice>0.04) {
-            const mid=startAng+slice/2; const tx=cx+Math.cos(mid)*(r*0.9), ty=cy+Math.sin(mid)*(r*0.9);
-            ctx.save(); ctx.translate(tx,ty); ctx.rotate(mid+Math.PI); ctx.textAlign="center"; ctx.textBaseline="middle";
-            ctx.fillStyle="#fff"; ctx.font="800 20px sans-serif"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
-            ctx.fillText(p.name.slice(0,6),0,-10);
-            ctx.fillStyle="#fff200"; ctx.font="700 16px monospace"; ctx.fillText(toMoney(p.amount),0,12); ctx.restore();
+      // Draw Slices
+      let startAng = rotation;
+      const total = totalPool || 1;
+      
+      if(participants.length > 0) {
+        participants.forEach(p => {
+          const slice = (p.amount / total) * 2 * Math.PI;
+          const endAng = startAng + slice;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r - 5, startAng, endAng);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "rgba(0,0,0,0.2)";
+          ctx.stroke(); 
+          
+          // Slice Text
+          if(slice > 0.04) {
+            const mid = startAng + slice / 2;
+            const tx = cx + Math.cos(mid) * (r * 0.9);
+            const ty = cy + Math.sin(mid) * (r * 0.9);
+            
+            ctx.save();
+            ctx.translate(tx, ty);
+            ctx.rotate(mid + Math.PI);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            ctx.fillStyle = "#fff";
+            ctx.font = "800 20px sans-serif";
+            ctx.shadowColor = "#000";
+            ctx.shadowBlur = 4;
+            ctx.fillText(p.name.slice(0, 6), 0, -10);
+            
+            ctx.fillStyle = "#fff200";
+            ctx.font = "700 16px monospace";
+            ctx.fillText(toMoney(p.amount), 0, 12);
+            ctx.restore();
           }
-          startAng=endAng;
+          startAng = endAng;
         });
       }
 
-      const capR=Math.min(r*0.15, 180);
-      const gradCap=ctx.createRadialGradient(cx,cy,0,cx,cy,capR);
-      gradCap.addColorStop(0,'#fff'); gradCap.addColorStop(0.4,'#ffd700'); gradCap.addColorStop(1,'#b8860b');
-      ctx.beginPath(); ctx.arc(cx,cy,capR,0,Math.PI*2); ctx.fillStyle=gradCap; ctx.shadowBlur=20; ctx.shadowColor="black"; ctx.fill(); ctx.shadowBlur=0;
+      // Center Cap
+      const capR = Math.min(r * 0.15, 180);
+      const gradCap = ctx.createRadialGradient(cx, cy, 0, cx, cy, capR);
+      gradCap.addColorStop(0, '#fff');
+      gradCap.addColorStop(0.4, '#ffd700');
+      gradCap.addColorStop(1, '#b8860b');
+      
+      ctx.beginPath();
+      ctx.arc(cx, cy, capR, 0, Math.PI * 2);
+      ctx.fillStyle = gradCap;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = "black";
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
-      if(wheelState==="STOPPED" || confetti.length>0) drawConfetti(ctx,w,h);
+      if(wheelState === "STOPPED" || confetti.length > 0) {
+        drawConfetti(ctx, w, h);
+      }
+      
       requestAnimationFrame(draw);
     }
 
-    function spawnConfetti(){ for(let i=0;i<200;i++)confetti.push({x:window.innerWidth/2,y:window.innerHeight/2,vx:(Math.random()-0.5)*20,vy:(Math.random()-0.5)*20-5,color:colors[Math.floor(Math.random()*colors.length)],size:Math.random()*10+5,gravity:0.2,rotation:Math.random()*360,rSpeed:(Math.random()-0.5)*10}); }
-    function drawConfetti(ctx,w,h){ confetti.forEach((c,i)=>{c.x+=c.vx;c.y+=c.vy;c.vy+=c.gravity;c.rotation+=c.rSpeed;c.vx*=0.96;c.vy*=0.96;ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.rotation*Math.PI/180);ctx.fillStyle=c.color;ctx.fillRect(-c.size/2,-c.size/2,c.size,c.size);ctx.restore();if(c.y>h)confetti.splice(i,1);}); }
+    // Confetti
+    function spawnConfetti(){
+      for(let i=0; i<200; i++) {
+        confetti.push({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          vx: (Math.random() - 0.5) * 20,
+          vy: (Math.random() - 0.5) * 20 - 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 10 + 5,
+          gravity: 0.2,
+          rotation: Math.random() * 360,
+          rSpeed: (Math.random() - 0.5) * 10
+        });
+      }
+    }
+    function drawConfetti(ctx, w, h){
+      confetti.forEach((c, i) => {
+        c.x += c.vx; c.y += c.vy; c.vy += c.gravity;
+        c.rotation += c.rSpeed; c.vx *= 0.96; c.vy *= 0.96;
+        
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rotation * Math.PI / 180);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
+        ctx.restore();
+        
+        if(c.y > h) confetti.splice(i, 1);
+      });
+    }
 
+    // Spin Logic
     function spinToWin(winnerName){
-      if(wheelState!=="SPINNING")return; const winIndices=[]; participants.forEach((p,i)=>{if(p.name===winnerName)winIndices.push(i);});
-      if(winIndices.length===0)return; const targetIndex=winIndices[Math.floor(Math.random()*winIndices.length)];
-      let sum=0, mid=0; const total=totalPool||1;
-      for(let i=0;i<participants.length;i++){ const s=(participants[i].amount/total)*2*Math.PI; if(i===targetIndex){mid=sum+s/2;break;} sum+=s; }
-      const cur=rotation; const extra=Math.PI*2*4; const m=updateLayoutMetrics();
-      let dest=m.pointerAngle-mid; while(dest<cur+extra)dest+=Math.PI*2;
-      stopTargetAngle=dest; window.startRotation=cur; stopStartTime=Date.now(); wheelState="STOPPING";
+      if(wheelState !== "SPINNING") return;
+      
+      const winIndices = [];
+      participants.forEach((p, i) => {
+        if(p.name === winnerName) winIndices.push(i);
+      });
+      
+      if(winIndices.length === 0) return;
+      
+      const targetIndex = winIndices[Math.floor(Math.random() * winIndices.length)];
+      let sum = 0, mid = 0;
+      const total = totalPool || 1;
+      
+      for(let i=0; i<participants.length; i++){
+        const s = (participants[i].amount / total) * 2 * Math.PI;
+        if(i === targetIndex) {
+          mid = sum + s / 2;
+          break;
+        }
+        sum += s;
+      }
+      
+      const cur = rotation;
+      const extra = Math.PI * 2 * 4;
+      const m = updateLayoutMetrics();
+      
+      let dest = m.pointerAngle - mid;
+      while(dest < cur + extra) dest += Math.PI * 2;
+      
+      stopTargetAngle = dest;
+      window.startRotation = cur;
+      stopStartTime = Date.now();
+      wheelState = "STOPPING";
     }
 
-    async function api(act,p={}){const r=await fetch(GAS_URL+"?"+new URLSearchParams({action:act,...p,_:Date.now()}));return await r.json();}
-    async function updateState(){
-      if(wheelState==="STOPPING"||wheelState==="STOPPED")return;
-      try{ const d=await api("getRouletteState"); if(d.result!=="success")return;
-        if(d.serverTs)serverOffset=d.serverTs-Date.now(); if(d.nextRoundAtMs)nextRoundMs=d.nextRoundAtMs;
-        const nk=String(d.roundKey); if(roundKey&&nk!==roundKey)resetGame(nk); roundKey=nk;
-        participants=(d.participants||[]).map(p=>({name:p.name,amount:Number(p.amount),color:p.color}));
-        totalPool=participants.reduce((a,c)=>a+c.amount,0); $("poolDisp").innerText=toMoney(totalPool)+" UT"; renderList();
-        const winTxt=d.lastWinner?`🏆 LAST WINNER: ${d.lastWinner.name} (${toMoney(d.lastWinner.prize)} UT) 🏆`:"";
-        $("mqText1").innerHTML=`💎 WELCOME TO THE UNIQUE CASINO! 💎 <span>${winTxt}</span>`; $("mqText2").innerHTML=$("mqText1").innerHTML;
-      }catch(e){}
+    // API & State Logic
+    async function api(act, p = {}){
+      const r = await fetch(GAS_URL + "?" + new URLSearchParams({
+        action: act, ...p, _: Date.now()
+      }));
+      return await r.json();
     }
-    function renderList(){const el=$("pList");el.innerHTML="";participants.forEach(p=>{el.innerHTML+=`<div class="rank-item ${p.name===myId?'me':''}"><div class="p-col" style="background:${p.color};"></div><div class="p-name">${p.name}</div><div class="p-amt">${toMoney(p.amount)}</div></div>`;});el.scrollTop=el.scrollHeight;}
-    function resetGame(nk){wheelState="SPINNING";$("mdRes").style.display="none";isLocked=false;$("bJoin").disabled=false;$("btnText").innerText="So.T BET NOW";$("timerDisp").classList.remove("alert");$("pList").innerHTML="<div style='text-align:center;padding:20px;color:#777;'>Waiting...</div>";participants=[];totalPool=0;confetti=[];}
-    async function checkWinnerAndStop(){if(wheelState!=="SPINNING")return;const d=await api("getRouletteState");if(d.lastWinner&&String(d.lastWinner.round)===String(roundKey)){spinToWin(d.lastWinner.name);$("resName").innerText=d.lastWinner.name;$("resAmt").innerText=toMoney(d.lastWinner.prize)+" UT";}}
-    function showResultModal(){$("mdRes").style.display="flex";}
+
+    async function updateState(){
+      if(wheelState === "STOPPING" || wheelState === "STOPPED") return;
+      
+      try {
+        const d = await api("getRouletteState");
+        if(d.result !== "success") return;
+        
+        if(d.serverTs) serverOffset = d.serverTs - Date.now();
+        if(d.nextRoundAtMs) nextRoundMs = d.nextRoundAtMs;
+        
+        const nk = String(d.roundKey);
+        if(roundKey && nk !== roundKey) resetGame(nk);
+        roundKey = nk;
+        
+        participants = (d.participants || []).map(p => ({
+          name: p.name,
+          amount: Number(p.amount),
+          color: p.color
+        }));
+        
+        totalPool = participants.reduce((a, c) => a + c.amount, 0);
+        $("poolDisp").innerText = toMoney(totalPool) + " UT";
+        renderList();
+        
+        const winTxt = d.lastWinner ? `🏆 LAST WINNER: ${d.lastWinner.name} (${toMoney(d.lastWinner.prize)} UT) 🏆` : "";
+        $("mqText1").innerHTML = `💎 WELCOME TO THE UNIQUE CASINO! 💎 <span>${winTxt}</span>`;
+        $("mqText2").innerHTML = $("mqText1").innerHTML;
+      } catch(e) {}
+    }
+
+    function renderList(){
+      const el = $("pList");
+      el.innerHTML = "";
+      participants.forEach(p => {
+        el.innerHTML += `
+          <div class="rank-item ${p.name === myId ? 'me' : ''}">
+            <div class="p-col" style="background:${p.color};"></div>
+            <div class="p-name">${p.name}</div>
+            <div class="p-amt">${toMoney(p.amount)}</div>
+          </div>`;
+      });
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function resetGame(nk){
+      wheelState = "SPINNING";
+      $("mdRes").style.display = "none";
+      isLocked = false;
+      $("bJoin").disabled = false;
+      $("btnText").innerHTML = '<span class="unique-text-logo">UNIQUE</span> &nbsp;BET NOW';
+      $("timerDisp").classList.remove("alert");
+      $("pList").innerHTML = "<div style='text-align:center;padding:20px;color:#777;'>Waiting...</div>";
+      participants = [];
+      totalPool = 0;
+      confetti = [];
+    }
+
+    async function checkWinnerAndStop(){
+      if(wheelState !== "SPINNING") return;
+      const d = await api("getRouletteState");
+      if(d.lastWinner && String(d.lastWinner.round) === String(roundKey)){
+        spinToWin(d.lastWinner.name);
+        $("resName").innerText = d.lastWinner.name;
+        $("resAmt").innerText = toMoney(d.lastWinner.prize) + " UT";
+      }
+    }
+
+    function showResultModal(){
+      $("mdRes").style.display = "flex";
+    }
 
     function startTimer(){
-      setInterval(()=>{
-        if(!nextRoundMs)return; const now=Date.now()+serverOffset; let diff=Math.floor((nextRoundMs-now)/1000);
-        let d=diff; if(diff>ROUND_DURATION_SEC-30){d=0;if(wheelState==="SPINNING")wheelState="WAITING";}else{if(wheelState==="WAITING")wheelState="SPINNING";}
-        if(d<0)d=0; const mm=Math.floor(d/60), ss=d%60; $("timerDisp").innerText=`${mm}:${ss<10?'0'+ss:ss}`;
-        if(d<=0&&!isLocked&&diff<=ROUND_DURATION_SEC-30){isLocked=true;$("bJoin").disabled=true;$("btnText").innerText="CLOSED";$("timerDisp").classList.add("alert");speak("Betting Closed");setTimeout(checkWinnerAndStop,2000);setTimeout(checkWinnerAndStop,6000);}
-        const cd=$("cdNum"); if(d<=10&&d>0&&wheelState==="SPINNING"){cd.innerText=d;cd.classList.add("active");speak(String(d));}else{cd.classList.remove("active");}
-      },1000);
+      setInterval(() => {
+        if(!nextRoundMs) return;
+        const now = Date.now() + serverOffset;
+        let diff = Math.floor((nextRoundMs - now) / 1000);
+        let d = diff;
+        
+        if(diff > ROUND_DURATION_SEC - 30) {
+          d = 0;
+          if(wheelState === "SPINNING") wheelState = "WAITING";
+        } else {
+          if(wheelState === "WAITING") wheelState = "SPINNING";
+        }
+        
+        if(d < 0) d = 0;
+        const mm = Math.floor(d / 60);
+        const ss = d % 60;
+        $("timerDisp").innerText = `${mm}:${ss < 10 ? '0' + ss : ss}`;
+
+        if(d <= 0 && !isLocked && diff <= ROUND_DURATION_SEC - 30) {
+          isLocked = true;
+          $("bJoin").disabled = true;
+          $("btnText").innerText = "CLOSED";
+          $("timerDisp").classList.add("alert");
+          speak("Betting Closed");
+          setTimeout(checkWinnerAndStop, 2000);
+          setTimeout(checkWinnerAndStop, 6000);
+        }
+        
+        const cd = $("cdNum");
+        if(d <= 10 && d > 0 && wheelState === "SPINNING"){
+          cd.innerText = d;
+          cd.classList.add("active");
+          speak(String(d));
+        } else {
+          cd.classList.remove("active");
+        }
+      }, 1000);
     }
 
-    const setB=v=>$("inpBet").value=v; $("bMin").onclick=()=>setB(MIN_BET); $("bMax").onclick=()=>setB(Math.floor(myWallet/100)*100);
-    $("bM100").onclick=()=>{let v=Number($("inpBet").value)-100;if(v<MIN_BET)v=MIN_BET;setB(v);}; $("bP100").onclick=()=>{let v=Number($("inpBet").value)+100;if(v>myWallet)v=myWallet;setB(v);};
-    $("bJoin").onclick=async()=>{if(isLocked)return alert("Closed.");const amt=Number($("inpBet").value);if(amt>myWallet)return alert("No Money");const btn=$("bJoin"),bt=$("btnText");btn.disabled=true;bt.innerText="...";try{const r=await api("rouletteResult",{type:"bet",id:myId,amount:amt,color:myColor});if(r.result==="success"){myWallet=r.newBalance;$("myBal").innerText=toMoney(myWallet)+" UT";updateState();}else alert(r.msg);}catch(e){}btn.disabled=false;bt.innerHTML='<span class="unique-text-logo">So.T</span> BET NOW';};
-    $("bColorOk").onclick=()=>{if(!myColor)return;localStorage.setItem("c_"+myId,myColor);$("mdColor").style.display="none";};
+    // Button Events
+    const setB = v => $("inpBet").value = v;
+    $("bMin").onclick = () => setB(MIN_BET);
+    $("bMax").onclick = () => setB(Math.floor(myWallet / 100) * 100);
+    $("bM100").onclick = () => {
+      let v = Number($("inpBet").value) - 100;
+      if(v < MIN_BET) v = MIN_BET;
+      setB(v);
+    };
+    $("bP100").onclick = () => {
+      let v = Number($("inpBet").value) + 100;
+      if(v > myWallet) v = myWallet;
+      setB(v);
+    };
 
-    window.onload=async()=>{
-      const p=new URLSearchParams(location.search);myId=p.get("id")||"Guest"; const sc=localStorage.getItem("c_"+myId);
-      if(sc)myColor=sc;else{const g=$("cGrid");colors.forEach(c=>{const d=document.createElement("div");d.className="c-btn";d.style.backgroundColor=c;d.onclick=()=>{document.querySelectorAll(".c-btn").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");myColor=c;$("bColorOk").disabled=false;};g.appendChild(d);});$("mdColor").style.display="flex";}
-      try{const u=await api("getUserInfo",{id:myId});if(u.result==="success")myWallet=u.balance;$("myBal").innerText=toMoney(myWallet)+" UT";}catch(e){}
-      updateState(); setInterval(updateState,2000); startTimer(); draw(); window.addEventListener('resize',draw);
+    $("bJoin").onclick = async () => {
+      if(isLocked) return alert("Closed.");
+      const amt = Number($("inpBet").value);
+      if(amt > myWallet) return alert("No Money");
       
-      // 첫 클릭 시 BGM 재생 (브라우저 정책)
+      const btn = $("bJoin");
+      const bt = $("btnText");
+      btn.disabled = true;
+      bt.innerText = "...";
+      
+      try {
+        const r = await api("rouletteResult", {
+          type: "bet", id: myId, amount: amt, color: myColor
+        });
+        if(r.result === "success") {
+          myWallet = r.newBalance;
+          $("myBal").innerText = toMoney(myWallet) + " UT";
+          updateState();
+        } else {
+          alert(r.msg);
+        }
+      } catch(e) {}
+      
+      btn.disabled = false;
+      bt.innerHTML = '<span class="unique-text-logo">UNIQUE</span> &nbsp;BET NOW';
+    };
+
+    $("bColorOk").onclick = () => {
+      if(!myColor) return;
+      localStorage.setItem("c_" + myId, myColor);
+      $("mdColor").style.display = "none";
+    };
+
+    // INIT
+    window.onload = async () => {
+      const p = new URLSearchParams(location.search);
+      myId = p.get("id") || "Guest";
+      
+      const sc = localStorage.getItem("c_" + myId);
+      if(sc) {
+        myColor = sc;
+      } else {
+        const g = $("cGrid");
+        colors.forEach(c => {
+          const d = document.createElement("div");
+          d.className = "c-btn";
+          d.style.backgroundColor = c;
+          d.onclick = () => {
+            document.querySelectorAll(".c-btn").forEach(x => x.classList.remove("sel"));
+            d.classList.add("sel");
+            myColor = c;
+            $("bColorOk").disabled = false;
+          };
+          g.appendChild(d);
+        });
+        $("mdColor").style.display = "flex";
+      }
+      
+      try {
+        const u = await api("getUserInfo", { id: myId });
+        if(u.result === "success") myWallet = u.balance;
+        $("myBal").innerText = toMoney(myWallet) + " UT";
+      } catch(e) {}
+      
+      updateState();
+      setInterval(updateState, 2000);
+      startTimer();
+      draw();
+      window.addEventListener('resize', draw);
+      
+      // Auto-play workaround
       document.body.addEventListener('click', () => {
         if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
            ytPlayer.playVideo();
+           updateMusicUI(true);
         }
       }, { once: true });
     };
