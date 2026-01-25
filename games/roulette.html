@@ -14,13 +14,11 @@
     :root{
       --bg0:#05070f;
       --bg1:#070b18;
-
       --gold1:#ffd36b;
       --gold2:#f7b500;
       --gold3:#ffcc00;
-      --txt:#e9edf7;
       --muted:#a8b0c6;
-
+      --txt:#e9edf7;
       --pink:#ff0a78;
 
       --radius:22px;
@@ -30,6 +28,8 @@
       --roundSec: 900;      /* 15분 */
       --lockSec: 60;        /* 60초 남으면 베팅 잠금 */
       --freezeSec: 30;      /* 승자 표시 30초 유지 */
+
+      --themeBarH: 44px;    /* 하단 테마바 높이 */
     }
 
     *{box-sizing:border-box}
@@ -39,6 +39,7 @@
       color:var(--txt);
       font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
       overflow-x:hidden;
+      padding-bottom: calc(var(--themeBarH) + env(safe-area-inset-bottom)); /* ✅ 고정바가 화면 가리지 않게 */
     }
 
     /* ==========================
@@ -72,7 +73,7 @@
 
     /* Top ticker */
     .ticker{
-      position:sticky; top:0; z-index:50;
+      position:sticky; top:0; z-index:60;
       width:100%;
       border-bottom:1px solid rgba(255, 208, 80, 0.10);
       background: linear-gradient(180deg, rgba(0,0,0,0.76), rgba(0,0,0,0.35));
@@ -98,15 +99,17 @@
 
     /* Layout */
     .wrap{
-      max-width: 1400px;
+      width:100%;
+      max-width: 1800px;   /* ✅ PC 꽉차게 크게 */
       margin: 0 auto;
-      padding: 14px 14px 28px;
+      padding: 14px 14px 18px;
+      min-height: calc(100vh - 44px); /* 대략 ticker 고려 */
     }
     .grid{
       display:grid;
       grid-template-columns: 1.35fr 0.65fr;
       gap: 14px;
-      align-items:start;
+      align-items:stretch; /* ✅ 높이 맞춤 */
     }
 
     .card{
@@ -119,7 +122,9 @@
 
     /* Stage (wheel area) */
     .stage{
-      position:relative;
+      display:flex;
+      flex-direction:column;
+      height: calc(100vh - 70px - var(--themeBarH)); /* ✅ PC 화면 꽉 채움 */
       min-height: 680px;
       background:
         radial-gradient(900px 700px at 45% 35%, rgba(0,0,0,0.0), rgba(0,0,0,0.55)),
@@ -127,11 +132,12 @@
       border-right:1px solid rgba(255, 208, 80, 0.10);
     }
 
-    /* Wheel viewport (for mobile crop) */
+    /* Wheel viewport */
     .wheelViewport{
       position:relative;
       width:100%;
-      height: 640px;
+      flex: 1 1 auto;     /* ✅ 남는 공간을 룰렛이 먹음 */
+      min-height: 520px;
       overflow:hidden;
       border-bottom:1px solid rgba(255, 208, 80, 0.10);
       background:
@@ -144,8 +150,8 @@
       left:50%;
       top:50%;
       transform: translate(-50%, -50%);
-      width: 640px;
-      height: 640px; /* ✅ 정사각 유지 = 원형 유지 */
+      width: min(78vh, 820px);  /* ✅ PC에서 더 크게 */
+      height: min(78vh, 820px);
       max-width: 92vw;
       max-height: 92vw;
     }
@@ -157,7 +163,7 @@
       filter: drop-shadow(0 24px 60px rgba(0,0,0,0.55));
     }
 
-    /* Pointer (triangle only, no dot) */
+    /* Pointer (triangle only) */
     .pointer{
       position:absolute;
       left:50%;
@@ -166,7 +172,7 @@
       width:0;height:0;
       border-left: 16px solid transparent;
       border-right: 16px solid transparent;
-      border-top: 26px solid var(--gold2); /* ✅ 뾰족한 부분이 아래(룰렛) */
+      border-top: 26px solid var(--gold2); /* 뾰족한 부분이 아래(룰렛) */
       filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55));
       z-index:20;
       opacity:0.95;
@@ -174,6 +180,7 @@
 
     /* HUD under wheel */
     .hud{
+      flex: 0 0 auto;
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
@@ -228,9 +235,15 @@
     @keyframes blink{ 50%{opacity:0.25} }
 
     /* Right panel */
+    #sideCard{
+      display:flex;
+      flex-direction:column;
+      height: calc(100vh - 70px - var(--themeBarH)); /* ✅ PC 화면 꽉 */
+      min-height: 680px;
+    }
     .sideTop{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap: 10px;
       padding: 12px 14px;
@@ -243,19 +256,23 @@
       letter-spacing:.08em;
       font-size:12px;
       color: rgba(255, 208, 80, 0.9);
+      line-height:1.1;
     }
     .sideStatus{
       font-size:11px;
       color: rgba(255,255,255,0.60);
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 210px;
     }
 
-    /* Player Bar (BGM) - 모바일 2줄 대응 */
+    /* Player Bar (BGM) */
     .playerBar{
       display:flex;
       align-items:center;
       gap:10px;
-      padding: 10px 10px;
+      padding: 8px 10px;
       border:1px solid rgba(255, 208, 80, 0.14);
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25));
       border-radius: 14px;
@@ -263,6 +280,17 @@
       max-width: 100%;
       overflow:hidden;
     }
+    .pBtn{
+      width:34px;height:34px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+      color: rgba(255,255,255,0.88);
+      cursor:pointer;
+      flex: 0 0 auto;
+    }
+    .pBtn:active{ transform: translateY(1px); }
+
     .pMeta{
       min-width: 0;
       display:flex;
@@ -284,34 +312,12 @@
       font-size:11px;
       color: rgba(255,255,255,0.55);
     }
-
-    .pControls{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex: 0 0 auto;
-    }
-    .pButtons{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .pBtn{
-      width:34px;height:34px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.35);
-      color: rgba(255,255,255,0.88);
-      cursor:pointer;
-      line-height:1;
-    }
-    .pBtn:active{ transform: translateY(1px); }
-
     .volWrap{
       display:flex;
       align-items:center;
       gap:8px;
       flex: 0 0 auto;
+      justify-content:flex-end;
     }
     .volLabel{
       font-family:"Cinzel", serif;
@@ -320,7 +326,7 @@
       color: rgba(255,255,255,0.62);
       white-space:nowrap;
     }
-    input[type="range"]{ width: 130px; max-width: 26vw; }
+    input[type="range"]{ width: 120px; max-width: 24vw; }
 
     /* Bet panel */
     .betBox{ padding: 14px; }
@@ -384,9 +390,7 @@
     }
     .btn:disabled{ opacity:.45; cursor:not-allowed; }
 
-    /* ==========================
-       BET NOW 버튼: OPEN(번쩍) / CLOSED(크로스)
-       ========================== */
+    /* BET NOW 버튼: OPEN(번쩍) / CLOSED(크로스) */
     .betNow{
       position: relative;
       width:100%;
@@ -405,7 +409,6 @@
       box-shadow: 0 16px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,.04);
       margin-bottom: 10px;
     }
-
     .betNow.is-open{
       border-color: rgba(255, 208, 80, 0.55);
       box-shadow:
@@ -481,6 +484,8 @@
 
     /* Lists */
     .list{
+      flex:1 1 auto;
+      overflow:auto;                /* ✅ PC에서 패널 내부 스크롤 */
       padding: 10px 14px 14px;
       border-top:1px solid rgba(255, 208, 80, 0.10);
     }
@@ -575,46 +580,68 @@
       color: var(--gold3);
     }
 
-    /* BG Switch UI */
-    .bgSwitch{
+    /* ==========================
+       ✅ 테마 버튼: 얇고 세련된 하단 바(PC/모바일 공통, 기능 살림)
+       ========================== */
+    .themeBar{
       position: fixed;
-      right: 12px;
-      bottom: 12px;
-      z-index: 80;
-      display:flex;
-      gap:8px;
-      padding:8px;
+      left: 50%;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      transform: translateX(-50%);
+      z-index: 90;
+      width: min(720px, 94vw);
+      height: var(--themeBarH);
+      padding: 6px;
       border-radius: 999px;
-      border:1px solid rgba(255, 208, 80, 0.16);
-      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255, 208, 80, 0.16);
+      background: rgba(0,0,0,0.42);
       backdrop-filter: blur(10px);
       box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
-    .bgSwitch button{
-      height: 34px;
-      padding: 0 12px;
+    .themeBar .seg{
+      width:100%;
+      height: 100%;
+      display:flex;
+      gap: 6px;
+    }
+    .themeBar button{
+      flex:1;
+      height: 100%;
       border-radius: 999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.30);
-      color: rgba(255,255,255,0.80);
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.78);
       font-family:"Cinzel", serif;
       font-weight:700;
-      letter-spacing:.06em;
+      letter-spacing:.08em;
       cursor:pointer;
       font-size:11px;
       white-space:nowrap;
     }
-    .bgSwitch button.active{
+    .themeBar button.active{
       border-color: rgba(255, 208, 80, 0.45);
       color: rgba(255, 208, 80, 0.92);
-      box-shadow: 0 0 0 1px rgba(255, 208, 80, 0.12), 0 10px 28px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255, 208, 80, 0.10), 0 8px 22px rgba(0,0,0,0.45);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.18));
     }
 
     /* Mobile rules */
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
-      .stage{ min-height: unset; }
-      .wheelViewport{ height: 72vw; max-height: 420px; }
+      .stage{
+        height: auto;
+        min-height: unset;
+      }
+      #sideCard{
+        height:auto;
+        min-height: unset;
+      }
+
+      .wheelViewport{ height: 72vw; max-height: 420px; flex: 0 0 auto; }
 
       /* ✅ 모바일: 원형 유지 + 크게 만들고 크롭(부분만 보이게) */
       .wheelDock{
@@ -629,87 +656,27 @@
 
       .pointer{ top: 8px; }
 
-      input[type="range"]{ width: 120px; max-width: 38vw; }
+      /* ✅ 모바일: BGM 바 줄바꿈(트랙/볼륨이 한칸 내려오게) */
+      .playerBar{
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+      .pMeta{ flex: 1 1 160px; }
+      .volWrap{
+        width:100%;
+        justify-content:flex-end;
+      }
+      input[type="range"]{ width: 130px; max-width: 52vw; }
       .pBtn{ width:30px; height:30px; border-radius: 11px; }
       .pName{ font-size:11px; }
       .volLabel{ font-size:10px; }
     }
 
-    /* ✅ 아주 좁은 모바일: 제목/트랙은 위, 버튼+볼륨은 아래 줄 */
     @media (max-width: 420px){
-      .playerBar{
-        flex-direction: column;
-        align-items: stretch;
-        gap:8px;
-      }
-      .pControls{
-        width:100%;
-        justify-content: space-between;
-      }
-      input[type="range"]{ width: 48vw; max-width: 220px; }
       .nm{ max-width: 170px; }
       .hudValue{ font-size:30px; }
       .hudValue.small{ font-size:26px; }
-      .sideStatus{ white-space:normal; }
     }
-    /* ==========================
-   ✅ PC 전용: 화면 꽉차게 + 이쁘게 재배치
-   (모바일은 건드리지 않음)
-========================== */
-@media (min-width: 981px){
-
-  /* 전체 컨테이너: 1400 제한 풀고 꽉 차게 */
-  .wrap{
-    max-width: none;
-    width: 100%;
-    padding: 18px 22px 22px;
-  }
-
-  /* 좌:룰렛 / 우:패널 비율 자동(우측은 clamp로 적당한 폭 유지) */
-  .grid{
-    grid-template-columns: minmax(720px, 1fr) clamp(420px, 30vw, 560px);
-    gap: 18px;
-    min-height: calc(100vh - 54px); /* 상단 ticker 고려 */
-    align-items: stretch;
-  }
-
-  /* 좌측 스테이지: 세로 꽉 차게 */
-  .stage{
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* 룰렛 영역: 남는 높이를 먹고, 너무 작아지지 않게 */
-  .wheelViewport{
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 560px;
-    max-height: calc(100vh - 220px);
-  }
-
-  /* 룰렛 자체: PC에서 크게 (화면/카드 폭에 따라 커짐) */
-  .wheelDock{
-    width: clamp(640px, 46vw, 920px);
-    height: clamp(640px, 46vw, 920px);
-    max-width: calc(100% - 36px);
-    max-height: calc(100% - 36px);
-  }
-
-  /* 우측 패널: 좌측 높이에 맞춰서 내부 리스트만 스크롤 */
-  #sideCard{
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  #sideTop{ flex: 0 0 auto; }
-  #betBox{ flex: 0 0 auto; }
-  #sideCard .list{
-    flex: 1 1 auto;
-    overflow: auto;
-  }
-}
   </style>
 
   <!-- ✅ 네가 만든 플레이리스트 파일 (필수) -->
@@ -765,7 +732,8 @@
         <div class="sideTop" id="sideTop">
           <div>
             <div class="sideTitle">ROYAL CONTROL</div>
-            <div class="sideStatus" id="syncStatus">동기화: LOCAL</div>
+            <!-- ✅ “서버 응답 없음” 문구 제거 + 모바일에서도 안 짤림 -->
+            <div class="sideStatus" id="syncStatus" title="서버 미연결">동기화: LOCAL</div>
           </div>
           <!-- ✅ PC: BGM 컨트롤은 여기 -->
           <div id="bgmDock"></div>
@@ -820,11 +788,13 @@
     </div>
   </div>
 
-  <!-- ✅ BG 테마 스위치 -->
-  <div class="bgSwitch" id="bgSwitch">
-    <button type="button" data-bg="0">MARBLE</button>
-    <button type="button" data-bg="1">CARBON</button>
-    <button type="button" data-bg="2">VELVET</button>
+  <!-- ✅ 테마 바(얇고 세련된 버튼 3개, 화면에 붙음, 안 가림) -->
+  <div class="themeBar" id="themeBar">
+    <div class="seg">
+      <button type="button" data-bg="0">MARBLE</button>
+      <button type="button" data-bg="1">CARBON</button>
+      <button type="button" data-bg="2">VELVET</button>
+    </div>
   </div>
 
   <!-- ✅ 유튜브 플레이어 Host(숨김) -->
@@ -839,7 +809,7 @@ const MY_ID = (qs.get("id") || "GUEST").trim();
 document.getElementById("myId").textContent = MY_ID;
 
 /* ==========================
-   1) Playlist (네가 만든 파일 사용)
+   1) Playlist
 ========================== */
 const PLAYLIST = (Array.isArray(window.UNIQUE_YT_PLAYLIST) && window.UNIQUE_YT_PLAYLIST.length)
   ? window.UNIQUE_YT_PLAYLIST
@@ -847,8 +817,8 @@ const PLAYLIST = (Array.isArray(window.UNIQUE_YT_PLAYLIST) && window.UNIQUE_YT_P
 
 /* ==========================
    2) YouTube Player UI
-   - 모바일 좁으면 2줄로 자연스럽게 내려가게 CSS 처리
-   - 랜덤 버튼 추가
+   - ✅ 랜덤플레이 버튼 추가(▶ 옆)
+   - ✅ 모바일 폭 좁으면 트랙/볼륨 줄바꿈(CSS)
 ========================== */
 let ytPlayer = null;
 let ytIndex = 0;
@@ -859,23 +829,19 @@ function buildPlayerBar(){
   bar.id = "playerBar";
 
   bar.innerHTML = `
+    <button class="pBtn" id="pPrev" title="Prev">⏮</button>
+    <button class="pBtn" id="pPlay" title="Play/Pause">▶</button>
+    <button class="pBtn" id="pRand" title="Random">🎲</button>
+    <button class="pBtn" id="pNext" title="Next">⏭</button>
+
     <div class="pMeta">
       <div class="pName" id="pTitle">ROYAL BGM</div>
       <div class="pSub" id="pSub">0/0</div>
     </div>
 
-    <div class="pControls">
-      <div class="pButtons">
-        <button class="pBtn" id="pPrev" title="Prev">⏮</button>
-        <button class="pBtn" id="pPlay" title="Play/Pause">▶</button>
-        <button class="pBtn" id="pRand" title="Random">🔀</button>
-        <button class="pBtn" id="pNext" title="Next">⏭</button>
-      </div>
-
-      <div class="volWrap">
-        <div class="volLabel">VOL</div>
-        <input id="pVol" type="range" min="0" max="100" value="35" />
-      </div>
+    <div class="volWrap">
+      <div class="volLabel">VOL</div>
+      <input id="pVol" type="range" min="0" max="100" value="35" />
     </div>
   `;
   return bar;
@@ -939,9 +905,18 @@ function onYouTubeIframeAPIReady(){
   };
   document.getElementById("pPrev").onclick = prevTrack;
   document.getElementById("pNext").onclick = nextTrack;
-  document.getElementById("pRand").onclick = randomTrack;
-  document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
 
+  // ✅ 랜덤 플레이
+  document.getElementById("pRand").onclick = () => {
+    if(!ytPlayer || PLAYLIST.length <= 1) return;
+    let n = Math.floor(Math.random() * PLAYLIST.length);
+    if(n === ytIndex) n = (n + 1) % PLAYLIST.length;
+    ytIndex = n;
+    ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
+    updateBgmMeta();
+  };
+
+  document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
   window.addEventListener("resize", dockBgmBar);
 }
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
@@ -967,14 +942,6 @@ function prevTrack(){
   ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
   updateBgmMeta();
 }
-function randomTrack(){
-  if(!ytPlayer || PLAYLIST.length <= 1) return;
-  let next = ytIndex;
-  while(next === ytIndex) next = Math.floor(Math.random() * PLAYLIST.length);
-  ytIndex = next;
-  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
-  updateBgmMeta();
-}
 
 /* ==========================
    3) Round Timer
@@ -992,7 +959,7 @@ let showingWinner = false;
 let winnerUntil = 0;
 
 /* ==========================
-   4) Bets / Aggregation
+   4) Bets / Wallet
 ========================== */
 const STORE_KEY = "unique_roulette_bets_v1";
 const WALLET_KEY = "unique_wallet_v1";
@@ -1029,8 +996,8 @@ function aggregateById(bets){
 
 /* ==========================
    5) Wheel Drawing
-   - 색상: 아이디 기반 럭셔리 팔레트 랜덤(고정)
-   - 라벨 겹침 방지: 조각이 작으면 자동 생략/축소
+   ✅ 조각 색상: 럭셔리 팔레트(아이디별로 "랜덤처럼" 고정)
+   ✅ 글씨 방향: "9시 기준 옆으로" = 가로(수평) 고정, 위치만 회전(겹침 방지)
 ========================== */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
@@ -1039,29 +1006,30 @@ let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 let wheelAngle = 0;
 let wheelRunning = true;
 
-/* ✅ 아이디 기반 색상 팔레트(럭셔리) */
-const SEG_PALETTES = [
-  {a:"#f3efe6", b:"#cbb48c", c:"#1a1512"}, // ivory / gold / black
-  {a:"#7dd3fc", b:"#1d4ed8", c:"#0a132b"}, // sapphire
-  {a:"#6ee7b7", b:"#0f766e", c:"#061a16"}, // emerald
-  {a:"#d8b4fe", b:"#6d28d9", c:"#1a0836"}, // amethyst
-  {a:"#fdba74", b:"#c2410c", c:"#2a1106"}, // amber/copper
-  {a:"#cbd5e1", b:"#334155", c:"#0b0b10"}, // steel/charcoal
-  {a:"#f472b6", b:"#be185d", c:"#2a0516"}, // only one pink (brand hint)
-];
+function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
 
 function hashStr(s){
-  let h = 2166136261 >>> 0;
+  s = String(s||"");
+  let h = 2166136261;
   for(let i=0;i<s.length;i++){
     h ^= s.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return h >>> 0;
+  return (h>>>0);
 }
-function paletteForId(id){
-  const key = String(id||"").toUpperCase();
-  if(key === "COMPANY") return {a:"#ff4aa2", b:"#ff0a78", c:"#5a0023"}; // 회사는 브랜드 핑크 고정
-  const idx = hashStr(key) % SEG_PALETTES.length;
+
+/* ✅ 오렌지/쨍한색 제거, 보석톤/샴페인/블랙계열 */
+const SEG_PALETTES = [
+  {a:"#0b0f1a", b:"#39445e", c:"#05060b"}, // graphite
+  {a:"#081b3a", b:"#2f6bff", c:"#040a16"}, // royal blue
+  {a:"#063426", b:"#19c7a1", c:"#041a13"}, // emerald
+  {a:"#2a0a2a", b:"#a76bff", c:"#120514"}, // amethyst
+  {a:"#3a0018", b:"#d4145a", c:"#16000a"}, // burgundy
+  {a:"#1a0f00", b:"#ffd36b", c:"#080500"}, // champagne
+];
+
+function pickPalette(name){
+  const idx = hashStr(name) % SEG_PALETTES.length;
   return SEG_PALETTES[idx];
 }
 
@@ -1069,7 +1037,7 @@ function resizeCanvas(){
   const rect = canvas.getBoundingClientRect();
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height= Math.floor(rect.height * dpr);
-  drawWheel(cachedPlayers);
+  drawWheel();
 }
 window.addEventListener("resize", ()=>{ resizeCanvas(); dockBgmBar(); });
 
@@ -1080,6 +1048,7 @@ function drawWheel(players = null){
   const R = Math.min(W,H)*0.46;
 
   ctx.clearRect(0,0,W,H);
+
   ctx.save();
   ctx.translate(cx,cy);
   ctx.rotate(wheelAngle);
@@ -1111,15 +1080,16 @@ function drawWheel(players = null){
   // segments
   const total = Math.max(1, list.reduce((s,p)=>s+p.amount,0));
   let start = -Math.PI/2;
+
   for(let i=0;i<list.length;i++){
     const p = list[i];
     const frac = Math.max(0.001, p.amount/total);
     const ang = frac * Math.PI*2;
 
-    const pal = paletteForId(p.id);
-    const segGrd = ctx.createRadialGradient(0,0,R*0.18, 0,0,R*1.05);
-    segGrd.addColorStop(0, pal.a);
-    segGrd.addColorStop(0.60, pal.b);
+    const pal = pickPalette(p.id);
+    const segGrd = ctx.createRadialGradient(0,0,R*0.18, 0,0,R*1.03);
+    segGrd.addColorStop(0, pal.b);
+    segGrd.addColorStop(0.62, pal.a);
     segGrd.addColorStop(1, pal.c);
 
     ctx.beginPath();
@@ -1129,7 +1099,7 @@ function drawWheel(players = null){
     ctx.fillStyle = segGrd;
     ctx.fill();
 
-    // separator line
+    // separator
     ctx.beginPath();
     ctx.moveTo(0,0);
     ctx.lineTo(Math.cos(start)*R*0.92, Math.sin(start)*R*0.92);
@@ -1137,20 +1107,21 @@ function drawWheel(players = null){
     ctx.lineWidth = 2*dpr;
     ctx.stroke();
 
+    // ✅ 라벨: 겹침 방지(각도 작은 조각은 숨김/축소)
     const mid = start + ang/2;
-    drawLabelFixedScreen(p.id, p.amount, mid, ang, R);
+    drawLabelHorizontal9OClock(p.id, p.amount, mid, ang, R);
 
     start += ang;
   }
 
-  // inner highlight rings
+  // inner highlight ring
   ctx.beginPath();
   ctx.arc(0,0,R*0.90,0,Math.PI*2);
   ctx.strokeStyle="rgba(255,255,255,0.06)";
   ctx.lineWidth=2*dpr;
   ctx.stroke();
 
-  // center: bigger black + ring + UNIQUE
+  // center bigger + UNIQUE (wheel rotates with it)
   const cR = R*0.22;
   const ring = ctx.createLinearGradient(-cR, -cR, cR, cR);
   ring.addColorStop(0, "#3c2a00");
@@ -1185,52 +1156,73 @@ function drawWheel(players = null){
   ctx.restore();
 }
 
-/* ✅ 라벨: 위치는 휠에 따라 돌되, 글자 방향은 화면 기준 수평 + 겹침 자동 방지 */
-function drawLabelFixedScreen(name, amt, midAngle, segAngle, R){
+/* ✅ “9시 기준 옆으로” = 글자 항상 가로(수평), 위치만 회전 */
+function drawLabelHorizontal9OClock(name, amt, midAngle, segAngle, R){
+  // 너무 작은 조각은 아예 안 그림(겹침 방지)
+  if(segAngle < 0.10) return; // 약 5.7도 이하
+
   const label = String(name||"").trim();
-  const amount = `${amt}`;
+  const amountText = `${amt}`;
 
-  // arc 길이로 표시 여부 결정(작은 조각은 생략/축소)
-  const radius = R * 0.62;
-  const arcLen = radius * segAngle; // canvas px 기준
-  if(arcLen < 70*dpr) return;             // 너무 작으면 아무것도 안 그림
-  const onlyAmount = (arcLen < 110*dpr);  // 조금 작으면 금액만
+  // ✅ 휠 회전 반영된 실제 각도
+  const a = midAngle + wheelAngle;
+  const x = Math.cos(a) * (R*0.60);
+  const y = Math.sin(a) * (R*0.60);
 
-  const x = Math.cos(midAngle) * (R*0.58);
-  const y = Math.sin(midAngle) * (R*0.58);
+  // 각도에 따라 글자 크기 자동 축소
+  const scale = clamp(segAngle / 0.55, 0.55, 1.0);
+  const nameSize = Math.floor(clamp(R*0.055, 12*dpr, 22*dpr) * scale);
+  const amtSize  = Math.floor(clamp(R*0.050, 11*dpr, 20*dpr) * scale);
+
+  const maxW = R * (0.38 * scale);
 
   ctx.save();
   ctx.translate(x, y);
-  // wheelAngle + midAngle 만큼 역회전 => 화면 기준 수평 유지
-  ctx.rotate(-(wheelAngle + midAngle));
 
+  // ✅ 글자 방향은 항상 가로(회전 없음)
+  const isLeftHalf = (Math.cos(a) < 0);
+  ctx.textAlign = isLeftHalf ? "left" : "right";
+  const px = isLeftHalf ? 0 : 0; // align만 바꾸고 좌표는 동일
+
+  // 가독성: 살짝 외곽선
   ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10*dpr;
 
-  const nameSize = Math.max(12*dpr, Math.min(22*dpr, R*0.050));
-  const amtSize  = Math.max(12*dpr, Math.min(20*dpr, R*0.046));
+  // 텍스트 줄: (이름) / (금액)
+  let t = label;
+  ctx.font = `${nameSize}px Cinzel`;
+  // ellipsis
+  while(ctx.measureText(t).width > maxW && t.length>3) t = t.slice(0,-1);
+  if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
 
-  const maxW = Math.min(arcLen, R*0.38);
-
-  // ID
-  if(!onlyAmount){
-    ctx.font = `${Math.floor(nameSize)}px Cinzel`;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.textAlign = "left";
-
-    let t = label;
-    while(ctx.measureText(t).width > maxW && t.length>3) t = t.slice(0,-1);
-    if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
-
-    ctx.fillText(t, 0, -R*0.035);
+  // 작은 조각이면 이름 대신 금액만(겹침 더 방지)
+  if(segAngle < 0.18){
+    ctx.font = `${amtSize}px Rajdhani`;
+    ctx.fillStyle = "rgba(255,255,255,0.90)";
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 3*dpr;
+    ctx.strokeText(amountText, px, 0);
+    ctx.fillText(amountText, px, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    return;
   }
 
-  // amount (항상 가능하면 표시)
-  ctx.font = `${Math.floor(amtSize)}px Rajdhani`;
-  ctx.fillStyle = "rgba(255,208,80,0.95)";
-  ctx.textAlign = "left";
-  ctx.fillText(amount, 0, onlyAmount ? 0 : R*0.06);
+  // 이름
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.strokeStyle = "rgba(0,0,0,0.38)";
+  ctx.lineWidth = 3*dpr;
+  ctx.strokeText(t, px, -R*0.06*scale);
+  ctx.fillText(t, px, -R*0.06*scale);
+
+  // 금액
+  ctx.font = `${amtSize}px Rajdhani`;
+  ctx.fillStyle = "rgba(255, 210, 130, 0.95)";
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 3*dpr;
+  ctx.strokeText(amountText, px, R*0.06*scale);
+  ctx.fillText(amountText, px, R*0.06*scale);
 
   ctx.shadowBlur = 0;
   ctx.restore();
@@ -1280,7 +1272,7 @@ document.getElementById("btnBet").onclick = ()=>{
   saveBets(bets);
   setWallet(w - betAmount);
 
-  forceUIRefresh();
+  refreshUI();
 };
 
 /* ==========================
@@ -1312,29 +1304,18 @@ function getCurrentAggregatedPlayers(){
 }
 
 /* ==========================
-   8) UI refresh (DOM 업데이트는 250ms로 제한)
+   8) UI refresh
 ========================== */
-let cachedPlayers = [];
-let lastUI = 0;
-let uiDirty = true;
-
-function forceUIRefresh(){
-  uiDirty = true;
-}
-
 function refreshUI(){
-  // wallet
   document.getElementById("myWallet").textContent = `${getWallet().toLocaleString()} UT`;
 
-  // players
-  cachedPlayers = getCurrentAggregatedPlayers();
-  const total = cachedPlayers.reduce((s,p)=>s+p.amount,0);
+  const players = getCurrentAggregatedPlayers();
+  const total = players.reduce((s,p)=>s+p.amount,0);
   document.getElementById("totalPool").textContent = `${total.toLocaleString()} UT`;
 
-  // list render
   const listEl = document.getElementById("playersList");
   listEl.innerHTML = "";
-  cachedPlayers.forEach((p, i)=>{
+  players.forEach((p, i)=>{
     const row = document.createElement("div");
     row.className = "item";
     row.innerHTML = `
@@ -1346,9 +1327,8 @@ function refreshUI(){
     `;
     listEl.appendChild(row);
   });
-  document.getElementById("playersCount").textContent = `${cachedPlayers.length}`;
+  document.getElementById("playersCount").textContent = `${players.length}`;
 
-  // my bets
   const bets = getCurrentRoundBets().filter(b => b.id === MY_ID);
   const myTotal = bets.reduce((s,b)=>s+b.amount,0);
   document.getElementById("myTotalBet").textContent = `${myTotal.toLocaleString()} UT`;
@@ -1371,6 +1351,8 @@ function refreshUI(){
       myList.appendChild(row);
     });
   }
+
+  drawWheel(players);
 }
 
 /* ==========================
@@ -1423,18 +1405,17 @@ function hideWinnerOverlay(){
 function updateClockAndState(){
   const now = Date.now();
 
-  // 라운드 종료 순간 → winner 표시(30초 유지)
+  // 라운드 종료 순간 → winner 표시
   if(!showingWinner && now >= roundEndAt){
-    cachedPlayers = getCurrentAggregatedPlayers();
-    const win = pickWinner(cachedPlayers);
+    const players = getCurrentAggregatedPlayers();
+    const win = pickWinner(players);
 
     wheelRunning = false;
-    wheelAngle = computeStopAngle(cachedPlayers, win.index);
+    wheelAngle = computeStopAngle(players, win.index);
 
     showingWinner = true;
     winnerUntil = now + FREEZE_SEC*1000;
     showWinnerOverlay(win.id, win.amount);
-    uiDirty = true;
   }
 
   let leftSec;
@@ -1444,13 +1425,13 @@ function updateClockAndState(){
       hideWinnerOverlay();
       showingWinner = false;
 
+      // 다음 라운드로 정상 진입
       const start = alignRoundStart(now);
       roundStartAt = start;
       roundEndAt = start + ROUND_SEC*1000;
       roundKey = String(start);
 
       wheelRunning = true;
-      uiDirty = true;
     }
   }else{
     leftSec = Math.ceil((roundEndAt - now)/1000);
@@ -1475,32 +1456,23 @@ function updateClockAndState(){
     wheelAngle += 0.0022;
   }
 
-  // DOM 업데이트는 250ms마다(모바일 렉 감소)
-  if(uiDirty || (now - lastUI) > 250){
-    refreshUI();
-    lastUI = now;
-    uiDirty = false;
-  }
-
-  // 휠은 매 프레임 그려서 부드럽게 회전
-  drawWheel(cachedPlayers);
-
+  refreshUI();
   requestAnimationFrame(updateClockAndState);
 }
 
 /* ==========================
-   11) Background Theme Switch
+   11) Theme Switch (하단 바)
 ========================== */
 (function(){
   const KEY = "unique_bg_theme";
   const host = document.body;
-  const wrap = document.getElementById("bgSwitch");
+  const wrap = document.getElementById("themeBar");
   if(!wrap) return;
 
   function setTheme(n){
     host.setAttribute("data-bg", String(n));
     localStorage.setItem(KEY, String(n));
-    [...wrap.querySelectorAll("button")].forEach(b=>{
+    [...wrap.querySelectorAll("button[data-bg]")].forEach(b=>{
       b.classList.toggle("active", b.dataset.bg === String(n));
     });
   }
@@ -1516,11 +1488,9 @@ function updateClockAndState(){
 
 /* init */
 function init(){
-  document.getElementById("syncStatus").textContent = "동기화: LOCAL";
   initRound();
   resizeCanvas();
   refreshUI();
-  cachedPlayers = getCurrentAggregatedPlayers();
   setBettingUI(true);
   requestAnimationFrame(updateClockAndState);
 }
