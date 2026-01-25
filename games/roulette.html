@@ -652,6 +652,64 @@
       .hudValue.small{ font-size:26px; }
       .sideStatus{ white-space:normal; }
     }
+    /* ==========================
+   ✅ PC 전용: 화면 꽉차게 + 이쁘게 재배치
+   (모바일은 건드리지 않음)
+========================== */
+@media (min-width: 981px){
+
+  /* 전체 컨테이너: 1400 제한 풀고 꽉 차게 */
+  .wrap{
+    max-width: none;
+    width: 100%;
+    padding: 18px 22px 22px;
+  }
+
+  /* 좌:룰렛 / 우:패널 비율 자동(우측은 clamp로 적당한 폭 유지) */
+  .grid{
+    grid-template-columns: minmax(720px, 1fr) clamp(420px, 30vw, 560px);
+    gap: 18px;
+    min-height: calc(100vh - 54px); /* 상단 ticker 고려 */
+    align-items: stretch;
+  }
+
+  /* 좌측 스테이지: 세로 꽉 차게 */
+  .stage{
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 룰렛 영역: 남는 높이를 먹고, 너무 작아지지 않게 */
+  .wheelViewport{
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 560px;
+    max-height: calc(100vh - 220px);
+  }
+
+  /* 룰렛 자체: PC에서 크게 (화면/카드 폭에 따라 커짐) */
+  .wheelDock{
+    width: clamp(640px, 46vw, 920px);
+    height: clamp(640px, 46vw, 920px);
+    max-width: calc(100% - 36px);
+    max-height: calc(100% - 36px);
+  }
+
+  /* 우측 패널: 좌측 높이에 맞춰서 내부 리스트만 스크롤 */
+  #sideCard{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  #sideTop{ flex: 0 0 auto; }
+  #betBox{ flex: 0 0 auto; }
+  #sideCard .list{
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+}
   </style>
 
   <!-- ✅ 네가 만든 플레이리스트 파일 (필수) -->
