@@ -575,6 +575,7 @@
   </div>
 
   <audio id="bgm" preload="auto" playsinline></audio>
+  <script src="./roulette.playlist.js"></script>
 
   <script>
     /* =========================
@@ -584,13 +585,11 @@
     const MIN_BET = 100;
     const ROUND_DURATION_SEC = 1200; // 20min
 
-    // ✅ 여기만 네가 실제 mp3 경로로 바꿔
-    // 예: "bgm/01.mp3" (roulette.html 기준 상대경로)
-    const BGM_PLAYLIST = [
-      { title: "ROYAL BGM 01", src: "bgm/royal01.mp3" },
-      { title: "ROYAL BGM 02", src: "bgm/royal02.mp3" },
-      { title: "ROYAL BGM 03", src: "bgm/royal03.mp3" }
-    ];
+    /// ✅ roulette.playlist.js (window.UNIQUE_YT_PLAYLIST) 사용
+const BGM_PLAYLIST = (window.UNIQUE_YT_PLAYLIST || []).map((id, i) => ({
+  title: `BGM ${String(i + 1).padStart(2, "0")}`,
+  yt: id
+}));
 
     // 자동 색상 팔레트
     const colors = ['#ff0055','#ffdd00','#00ffaa','#00ccff','#ff4400','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
