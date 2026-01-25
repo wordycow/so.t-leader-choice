@@ -31,7 +31,7 @@
       --shadow: 0 18px 60px rgba(0,0,0,.55);
       --glow: 0 0 18px rgba(255, 200, 70, 0.18);
 
-      --roundSec: 900;      /* 15분(원하면 바꿔) */
+      --roundSec: 900;      /* 15분 */
       --lockSec: 60;        /* 60초 남으면 베팅 잠금 */
       --freezeSec: 30;      /* 승자 표시 30초 유지 */
     }
@@ -42,12 +42,36 @@
       margin:0;
       color:var(--txt);
       font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* ==========================
+       럭셔리 배경 3종 (MARBLE/CARBON/VELVET)
+       ========================== */
+    body[data-bg="0"]{
       background:
         radial-gradient(1200px 600px at 50% -10%, rgba(255, 208, 80, 0.10), transparent 60%),
-        radial-gradient(900px 500px at 15% 30%, rgba(255,255,255,0.05), transparent 55%),
+        radial-gradient(900px 500px at 15% 30%, rgba(255,255,255,0.06), transparent 55%),
         radial-gradient(900px 500px at 90% 40%, rgba(255, 30, 120, 0.06), transparent 60%),
         linear-gradient(180deg, var(--bg0), var(--bg1));
-      overflow-x:hidden;
+    }
+    body[data-bg="1"]{
+      background:
+        radial-gradient(1100px 700px at 50% -10%, rgba(255, 208, 80, 0.09), transparent 60%),
+        repeating-linear-gradient(135deg,
+          rgba(255,255,255,0.03) 0 2px,
+          rgba(0,0,0,0.00) 2px 10px),
+        repeating-linear-gradient(45deg,
+          rgba(255,255,255,0.02) 0 1px,
+          rgba(0,0,0,0.00) 1px 8px),
+        linear-gradient(180deg, #04060d, #070b18);
+    }
+    body[data-bg="2"]{
+      background:
+        radial-gradient(900px 500px at 50% 0%, rgba(255, 208, 80, 0.09), transparent 60%),
+        radial-gradient(900px 600px at 20% 35%, rgba(140, 60, 255, 0.09), transparent 55%),
+        radial-gradient(900px 600px at 85% 55%, rgba(255, 10, 120, 0.08), transparent 60%),
+        linear-gradient(180deg, #04040a, #090818);
     }
 
     /* Top ticker */
@@ -96,7 +120,6 @@
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-    .cardInner{ padding: 14px; }
 
     /* Stage (wheel area) */
     .stage{
@@ -289,9 +312,7 @@
     input[type="range"]{ width: 120px; max-width: 24vw; }
 
     /* Bet panel */
-    .betBox{
-      padding: 14px;
-    }
+    .betBox{ padding: 14px; }
     .row{
       display:flex; align-items:center; justify-content:space-between; gap: 10px;
       margin-bottom: 10px;
@@ -311,6 +332,8 @@
       font-size:12px;
       white-space:nowrap;
     }
+    .pill.open{ color: rgba(255, 208, 80, 0.88); border-color: rgba(255, 208, 80, 0.18); }
+    .pill.closed{ color: rgba(255,255,255,0.88); border-color: rgba(255,255,255,0.14); }
 
     .amountBox{
       border:1px solid rgba(255, 208, 80, 0.22);
@@ -347,33 +370,103 @@
     .btn.gold{
       border:1px solid rgba(255, 208, 80, 0.35);
       color: var(--gold3);
-      box-shadow: 0 0 0 rgba(0,0,0,0);
     }
-    .btn:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-    }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; }
 
+    /* ==========================
+       BET NOW 버튼: OPEN(번쩍) / CLOSED(크로스)
+       ========================== */
     .betNow{
+      position: relative;
       width:100%;
       height: 54px;
       border-radius: 999px;
       border:1px solid rgba(255, 208, 80, 0.22);
       background:
-        linear-gradient(90deg,
-          rgba(0,0,0,0.35),
-          rgba(255, 208, 80, 0.20),
-          rgba(255, 10, 120, 0.14),
-          rgba(0,0,0,0.35));
-      color:#fff;
+        radial-gradient(120% 180% at 50% 0%, rgba(255,255,255,0.06), transparent 62%),
+        linear-gradient(90deg, rgba(10,12,20,0.95), rgba(12,14,24,0.92));
+      color: rgba(255, 230, 160, .95);
       font-family:"Cinzel", serif;
       font-weight:700;
       letter-spacing:.12em;
       cursor:pointer;
-      box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+      overflow:hidden;
+      box-shadow: 0 16px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,.04);
       margin-bottom: 10px;
     }
-    .betNow:disabled{ opacity:.45; cursor:not-allowed; }
+
+    .betNow.is-open{
+      border-color: rgba(255, 208, 80, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(255, 208, 80, .12),
+        0 16px 50px rgba(0,0,0,.58),
+        0 0 28px rgba(255, 10, 120, .22);
+    }
+    .betNow.is-open::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        linear-gradient(110deg,
+          transparent 0%,
+          rgba(255, 208, 80, 0.00) 35%,
+          rgba(255, 208, 80, 0.35) 45%,
+          rgba(255, 10, 120, 0.25) 55%,
+          rgba(255, 208, 80, 0.00) 65%,
+          transparent 100%);
+      transform: translateX(-60%);
+      animation: betShine 1.35s linear infinite;
+      mix-blend-mode: screen;
+      pointer-events:none;
+    }
+    .betNow.is-open::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(80% 140% at 15% 50%, rgba(255, 20, 120, .30), transparent 60%),
+        radial-gradient(80% 140% at 85% 50%, rgba(255, 60, 120, .16), transparent 62%);
+      opacity: .90;
+      pointer-events:none;
+    }
+    @keyframes betShine{
+      0%{ transform: translateX(-70%); opacity:.65; }
+      65%{ opacity: .98; }
+      100%{ transform: translateX(70%); opacity:.65; }
+    }
+
+    .betNow.is-closed,
+    .betNow:disabled{
+      cursor:not-allowed;
+      color: rgba(255,255,255,0.35);
+      border-color: rgba(255,255,255,0.10);
+      background:
+        radial-gradient(120% 180% at 50% 0%, rgba(255,255,255,0.04), transparent 62%),
+        linear-gradient(90deg, rgba(8,10,18,0.95), rgba(8,10,18,0.88));
+      box-shadow: 0 12px 30px rgba(0,0,0,.62), inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    .betNow.is-closed::before,
+    .betNow:disabled::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(135deg,
+          transparent 0 46%,
+          rgba(255, 60, 120, 0.85) 46% 49%,
+          transparent 49% 100%);
+      opacity: .55;
+      pointer-events:none;
+      animation:none;
+    }
+    .betNow.is-closed::after,
+    .betNow:disabled::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(0deg,
+          rgba(255,255,255,0.05) 0 1px,
+          transparent 1px 6px);
+      opacity:.18;
+      pointer-events:none;
+    }
 
     /* Lists */
     .list{
@@ -471,26 +564,60 @@
       color: var(--gold3);
     }
 
+    /* BG Switch UI */
+    .bgSwitch{
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 80;
+      display:flex;
+      gap:8px;
+      padding:8px;
+      border-radius: 999px;
+      border:1px solid rgba(255, 208, 80, 0.16);
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+    }
+    .bgSwitch button{
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.30);
+      color: rgba(255,255,255,0.80);
+      font-family:"Cinzel", serif;
+      font-weight:700;
+      letter-spacing:.06em;
+      cursor:pointer;
+      font-size:11px;
+      white-space:nowrap;
+    }
+    .bgSwitch button.active{
+      border-color: rgba(255, 208, 80, 0.45);
+      color: rgba(255, 208, 80, 0.92);
+      box-shadow: 0 0 0 1px rgba(255, 208, 80, 0.12), 0 10px 28px rgba(0,0,0,0.45);
+    }
+
     /* Mobile rules */
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       .stage{ min-height: unset; }
       .wheelViewport{ height: 72vw; max-height: 420px; }
 
-      /* ✅ 모바일: 룰렛 크게 만들고 크롭(부분만 보이게) */
+      /* ✅ 모바일: 원형 유지 + 크게 만들고 크롭(부분만 보이게) */
       .wheelDock{
         width: 140vw;
         height: 140vw;
         max-width: 760px;
         max-height: 760px;
         left:50%;
-        top: 6px; /* 위로 붙임 */
+        top: 6px;
         transform: translateX(-50%);
       }
 
       .pointer{ top: 8px; }
 
-      /* ✅ 모바일: BGM 바는 BET 버튼 밑으로 내려감(동적 이동도 JS에서 처리) */
       input[type="range"]{ width: 100px; max-width: 30vw; }
       .pBtn{ width:30px; height:30px; border-radius: 11px; }
       .pName{ font-size:11px; }
@@ -510,7 +637,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 
-<body>
+<body data-bg="0">
   <div class="ticker">
     <div class="inner">
       <span class="marquee" id="tickerText">
@@ -566,7 +693,7 @@
         <div class="betBox" id="betBox">
           <div class="row">
             <div class="kv">MY NAME: <b id="myId">—</b></div>
-            <div class="pill" id="betStatePill">BETTING OPEN</div>
+            <div class="pill open" id="betStatePill">BETTING OPEN</div>
           </div>
 
           <div class="row">
@@ -576,7 +703,6 @@
 
           <div class="amountBox" id="betAmountBox">100</div>
 
-          <!-- ✅ 모바일에서 버튼 한칸 내려주는 구조 이미 반영 -->
           <div class="btnRow" id="btnRow1">
             <button class="btn" id="btnMin">MIN</button>
             <button class="btn" id="btnMinus">-100</button>
@@ -585,7 +711,7 @@
             <button class="btn" id="btnMax">MAX</button>
           </div>
 
-          <button class="betNow" id="btnBet">UNIQUE  &nbsp; BET NOW</button>
+          <button class="betNow is-open" id="btnBet">UNIQUE  &nbsp; BET NOW</button>
 
           <!-- ✅ 모바일: BGM 컨트롤은 BET 버튼 밑으로 이동됨(JS가 자동 이동) -->
           <div id="bgmDockMobile" style="margin-top:10px;"></div>
@@ -613,6 +739,16 @@
     </div>
   </div>
 
+  <!-- ✅ BG 테마 스위치 -->
+  <div class="bgSwitch" id="bgSwitch">
+    <button type="button" data-bg="0">MARBLE</button>
+    <button type="button" data-bg="1">CARBON</button>
+    <button type="button" data-bg="2">VELVET</button>
+  </div>
+
+  <!-- ✅ 유튜브 플레이어 Host(숨김) -->
+  <div id="ytHost" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+
 <script>
 /* ==========================
    0) User / Storage
@@ -626,10 +762,10 @@ document.getElementById("myId").textContent = MY_ID;
 ========================== */
 const PLAYLIST = (Array.isArray(window.UNIQUE_YT_PLAYLIST) && window.UNIQUE_YT_PLAYLIST.length)
   ? window.UNIQUE_YT_PLAYLIST
-  : []; // 없으면 조용히 빈값
+  : [];
 
 /* ==========================
-   2) YouTube Player UI (턴테이블 느낌, 반응형)
+   2) YouTube Player UI
 ========================== */
 let ytPlayer = null;
 let ytIndex = 0;
@@ -673,7 +809,6 @@ function dockBgmBar(){
 }
 
 function onYouTubeIframeAPIReady(){
-  // UI 먼저 만든다
   const bar = buildPlayerBar();
   document.getElementById("bgmDock").appendChild(bar);
   dockBgmBar();
@@ -681,17 +816,15 @@ function onYouTubeIframeAPIReady(){
   if(!PLAYLIST.length){
     document.getElementById("pTitle").textContent = "BGM 없음";
     document.getElementById("pSub").textContent = "0/0";
-    // 버튼 비활성
     ["pPrev","pPlay","pNext","pVol"].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.disabled=true;
     });
+    window.addEventListener("resize", dockBgmBar);
     return;
   }
 
-  ytPlayer = new YT.Player(document.createElement("div"), {
-    height: "0",
-    width: "0",
+  ytPlayer = new YT.Player("ytHost", {
     videoId: PLAYLIST[0],
     playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
     events: {
@@ -700,21 +833,16 @@ function onYouTubeIframeAPIReady(){
           ytPlayer.setVolume(+document.getElementById("pVol").value || 35);
           ytPlayer.playVideo();
           updateBgmMeta();
+          updatePlayBtnIcon();
         }, 120);
       },
       onStateChange: (e) => {
-        // 끝나면 다음곡
-        if(e.data === YT.PlayerState.ENDED){
-          nextTrack();
-        }
+        if(e.data === YT.PlayerState.ENDED) nextTrack();
         updatePlayBtnIcon();
       }
     }
   });
 
-  document.body.appendChild(ytPlayer.getIframe());
-
-  // controls
   document.getElementById("pPlay").onclick = () => {
     const st = ytPlayer.getPlayerState();
     if(st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
@@ -735,10 +863,8 @@ function updatePlayBtnIcon(){
   document.getElementById("pPlay").textContent = (st === YT.PlayerState.PLAYING) ? "⏸" : "▶";
 }
 function updateBgmMeta(){
-  const titleEl = document.getElementById("pTitle");
-  const subEl = document.getElementById("pSub");
-  titleEl.textContent = `ROYAL BGM ${String(ytIndex+1).padStart(2,"0")}`;
-  subEl.textContent = `${ytIndex+1}/${PLAYLIST.length}`;
+  document.getElementById("pTitle").textContent = `ROYAL BGM ${String(ytIndex+1).padStart(2,"0")}`;
+  document.getElementById("pSub").textContent = `${ytIndex+1}/${PLAYLIST.length}`;
 }
 function nextTrack(){
   if(!ytPlayer) return;
@@ -754,16 +880,19 @@ function prevTrack(){
 }
 
 /* ==========================
-   3) Round Timer (60초 잠금, 10~0 깜빡임, 0초 정지+승자 30초)
+   3) Round Timer (버그 수정: 0초+승자표시가 실제로 뜨게)
 ========================== */
 const ROUND_SEC = +getComputedStyle(document.documentElement).getPropertyValue("--roundSec") || 900;
 const LOCK_SEC  = +getComputedStyle(document.documentElement).getPropertyValue("--lockSec") || 60;
 const FREEZE_SEC= +getComputedStyle(document.documentElement).getPropertyValue("--freezeSec") || 30;
 
 let roundKey = "";
+let roundStartAt = 0;
 let roundEndAt = 0;
+
 let bettingLocked = false;
 let showingWinner = false;
+let winnerUntil = 0;
 
 /* ==========================
    4) Bets / Aggregation
@@ -774,29 +903,19 @@ const WALLET_KEY = "unique_wallet_v1";
 function loadWallet(){
   const raw = localStorage.getItem(WALLET_KEY);
   const base = raw ? JSON.parse(raw) : {};
-  if(typeof base[MY_ID] !== "number") base[MY_ID] = 6983; // 기본값(원하면 바꿔)
+  if(typeof base[MY_ID] !== "number") base[MY_ID] = 6983;
   localStorage.setItem(WALLET_KEY, JSON.stringify(base));
   return base;
 }
-function setWalletAll(obj){
-  localStorage.setItem(WALLET_KEY, JSON.stringify(obj));
-}
-function getWallet(){
-  const all = loadWallet();
-  return all[MY_ID] || 0;
-}
+function setWalletAll(obj){ localStorage.setItem(WALLET_KEY, JSON.stringify(obj)); }
+function getWallet(){ const all = loadWallet(); return all[MY_ID] || 0; }
 function setWallet(me){
   const all = loadWallet();
   all[MY_ID] = me;
   setWalletAll(all);
 }
-function loadBets(){
-  const raw = localStorage.getItem(STORE_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-function saveBets(arr){
-  localStorage.setItem(STORE_KEY, JSON.stringify(arr));
-}
+function loadBets(){ const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : []; }
+function saveBets(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
 
 /* 같은 아이디 합산 */
 function aggregateById(bets){
@@ -812,14 +931,15 @@ function aggregateById(bets){
 }
 
 /* ==========================
-   5) Wheel Drawing (라벨 방향 보정: 왼쪽도 “→오른쪽” 읽히게)
+   5) Wheel Drawing
+   - 중앙 검은 부분 더 크게 + UNIQUE 포함(휠과 같이 회전)
+   - 라벨은 "화면 기준" 수평으로 보이게(왼쪽에서 → 오른쪽 읽힘)
 ========================== */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 
 let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-let wheelAngle = 0;        // current angle
-let wheelTarget = null;    // stop angle at 0 sec
+let wheelAngle = 0;
 let wheelRunning = true;
 
 function resizeCanvas(){
@@ -867,13 +987,12 @@ function drawWheel(players = null){
 
   // segments
   const total = Math.max(1, list.reduce((s,p)=>s+p.amount,0));
-  let start = -Math.PI/2; // top is pointer
+  let start = -Math.PI/2;
   for(let i=0;i<list.length;i++){
     const p = list[i];
     const frac = Math.max(0.001, p.amount/total);
     const ang = frac * Math.PI*2;
 
-    // vivid luxury palette (pink/gold/black variations)
     const segGrd = ctx.createRadialGradient(0,0,R*0.2, 0,0,R*1.05);
     if(i%2===0){
       segGrd.addColorStop(0, "#ff2e96");
@@ -892,7 +1011,6 @@ function drawWheel(players = null){
     ctx.fillStyle = segGrd;
     ctx.fill();
 
-    // separator line
     ctx.beginPath();
     ctx.moveTo(0,0);
     ctx.lineTo(Math.cos(start)*R*0.92, Math.sin(start)*R*0.92);
@@ -900,22 +1018,20 @@ function drawWheel(players = null){
     ctx.lineWidth = 2*dpr;
     ctx.stroke();
 
-    // label (radial, flip for readability)
     const mid = start + ang/2;
-    drawLabelRadial(p.id, p.amount, mid, R);
+    drawLabelFixedScreen(p.id, p.amount, mid, R);
 
     start += ang;
   }
 
-  // inner highlight rings
   ctx.beginPath();
   ctx.arc(0,0,R*0.90,0,Math.PI*2);
   ctx.strokeStyle="rgba(255,255,255,0.06)";
   ctx.lineWidth=2*dpr;
   ctx.stroke();
 
-  // ✅ center black bigger + UNIQUE inside (wheel rotates with it)
-  const cR = R*0.22; // bigger than before
+  // ✅ center: bigger black + ring + UNIQUE
+  const cR = R*0.22;
   const ring = ctx.createLinearGradient(-cR, -cR, cR, cR);
   ring.addColorStop(0, "#3c2a00");
   ring.addColorStop(0.5, "#ffd36b");
@@ -949,19 +1065,19 @@ function drawWheel(players = null){
   ctx.restore();
 }
 
-function drawLabelRadial(name, amt, midAngle, R){
-  // radial orientation
-  ctx.save();
-  ctx.rotate(midAngle);
-
-  // flip when on left side so it reads left->right from rim inward
-  const leftSide = (midAngle > Math.PI/2 && midAngle < 3*Math.PI/2);
-  if(leftSide) ctx.rotate(Math.PI);
-
+/* ✅ 라벨: 위치는 휠에 따라 돌되, 글자 방향은 화면 기준 수평(왼쪽도 → 오른쪽으로 읽힘) */
+function drawLabelFixedScreen(name, amt, midAngle, R){
   const label = String(name||"").trim();
   const small = `${amt}`;
-  const x = R*0.58;
-  const maxW = R*0.30;
+  const maxW = R*0.34;
+
+  const x = Math.cos(midAngle) * (R*0.58);
+  const y = Math.sin(midAngle) * (R*0.58);
+
+  ctx.save();
+  ctx.translate(x, y);
+  // wheelAngle + midAngle 만큼 "글자"는 역회전 => 화면 기준 수평 유지
+  ctx.rotate(-(wheelAngle + midAngle));
 
   ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,0.55)";
@@ -971,23 +1087,22 @@ function drawLabelRadial(name, amt, midAngle, R){
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.textAlign = "left";
 
-  // ellipsis if too long
   let t = label;
   while(ctx.measureText(t).width > maxW && t.length>3) t = t.slice(0,-1);
   if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
 
-  ctx.fillText(t, x, -R*0.08);
+  ctx.fillText(t, 0, -R*0.04);
 
   ctx.font = `${Math.floor(R*0.05)}px Rajdhani`;
   ctx.fillStyle = "rgba(255,208,80,0.95)";
-  ctx.fillText(small, x, R*0.03);
+  ctx.fillText(small, 0, R*0.06);
 
   ctx.shadowBlur = 0;
   ctx.restore();
 }
 
 /* ==========================
-   6) Round + UI
+   6) Bet UI
 ========================== */
 let betAmount = 100;
 
@@ -1001,77 +1116,76 @@ setBetAmount(100);
 document.getElementById("btnMin").onclick = ()=> setBetAmount(0);
 document.getElementById("btnMinus").onclick= ()=> setBetAmount(Math.max(0, betAmount-100));
 document.getElementById("btnPlus").onclick = ()=> setBetAmount(betAmount+100);
-document.getElementById("btnMax").onclick  = ()=> setBetAmount(1000); // 필요하면 바꿔
-document.getElementById("btnMid").onclick  = ()=> setBetAmount(betAmount); // 그대로
+document.getElementById("btnMax").onclick  = ()=> setBetAmount(1000);
+document.getElementById("btnMid").onclick  = ()=> setBetAmount(betAmount);
+
+function setBettingUI(isOpen){
+  const pill = document.getElementById("betStatePill");
+  const btnBet = document.getElementById("btnBet");
+
+  pill.textContent = isOpen ? "BETTING OPEN" : "BETTING CLOSED";
+  pill.classList.toggle("open", isOpen);
+  pill.classList.toggle("closed", !isOpen);
+
+  btnBet.disabled = !isOpen;
+  btnBet.classList.toggle("is-open", isOpen);
+  btnBet.classList.toggle("is-closed", !isOpen);
+  btnBet.innerHTML = isOpen ? `UNIQUE  &nbsp; BET NOW` : `BETTING CLOSED`;
+}
 
 document.getElementById("btnBet").onclick = ()=>{
   if(bettingLocked || showingWinner) return;
   if(betAmount <= 0) return;
 
-  // wallet check
   const w = getWallet();
   if(w < betAmount) return;
 
-  // store bet
   const bets = loadBets();
-  bets.push({
-    round: roundKey,
-    id: MY_ID,
-    amount: betAmount,
-    ts: Date.now()
-  });
+  bets.push({ round: roundKey, id: MY_ID, amount: betAmount, ts: Date.now() });
   saveBets(bets);
   setWallet(w - betAmount);
 
   refreshUI();
 };
 
-function getRoundKey(now = new Date()){
-  // 15분 단위 라운드
-  const ms = now.getTime();
-  const slot = Math.floor(ms / (ROUND_SEC*1000)) * (ROUND_SEC*1000);
-  return String(slot);
+/* ==========================
+   7) Round helpers
+========================== */
+function alignRoundStart(ms){
+  return Math.floor(ms / (ROUND_SEC*1000)) * (ROUND_SEC*1000);
 }
-
-function computeRoundTimes(){
+function initRound(){
   const now = Date.now();
-  const slot = Math.floor(now / (ROUND_SEC*1000)) * (ROUND_SEC*1000);
-  roundKey = String(slot);
-  roundEndAt = slot + ROUND_SEC*1000;
+  roundStartAt = alignRoundStart(now);
+  roundEndAt = roundStartAt + ROUND_SEC*1000;
+  roundKey = String(roundStartAt);
 }
-
 function fmtMMSS(sec){
   sec = Math.max(0, sec|0);
   const m = Math.floor(sec/60);
   const s = sec%60;
   return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
-
 function getCurrentRoundBets(){
   const bets = loadBets();
   return bets.filter(b => b.round === roundKey);
 }
-
 function getCurrentAggregatedPlayers(){
   const rb = getCurrentRoundBets();
-
-  // 회사가 항상 보이게 (원하면 0으로 바꿔)
   const company = { round: roundKey, id: "COMPANY", amount: 100, ts: Date.now() };
-
-  const merged = aggregateById([company, ...rb]);
-  return merged;
+  return aggregateById([company, ...rb]);
 }
 
+/* ==========================
+   8) UI refresh
+========================== */
 function refreshUI(){
-  // wallet
   document.getElementById("myWallet").textContent = `${getWallet().toLocaleString()} UT`;
 
-  // players
   const players = getCurrentAggregatedPlayers();
   const total = players.reduce((s,p)=>s+p.amount,0);
   document.getElementById("totalPool").textContent = `${total.toLocaleString()} UT`;
 
-  // list render
   const listEl = document.getElementById("playersList");
   listEl.innerHTML = "";
   players.forEach((p, i)=>{
@@ -1088,7 +1202,6 @@ function refreshUI(){
   });
   document.getElementById("playersCount").textContent = `${players.length}`;
 
-  // my bets
   const bets = getCurrentRoundBets().filter(b => b.id === MY_ID);
   const myTotal = bets.reduce((s,b)=>s+b.amount,0);
   document.getElementById("myTotalBet").textContent = `${myTotal.toLocaleString()} UT`;
@@ -1101,7 +1214,6 @@ function refreshUI(){
     row.innerHTML = `<div class="nm" style="opacity:.8;">(아직 베팅 없음)</div><div class="amt">—</div>`;
     myList.appendChild(row);
   }else{
-    // 최근 6개만
     bets.slice(-6).reverse().forEach(b=>{
       const row = document.createElement("div");
       row.className="item";
@@ -1113,21 +1225,18 @@ function refreshUI(){
     });
   }
 
-  // redraw wheel
   drawWheel(players);
 }
 
 /* ==========================
-   7) Winner logic (0초 정지 후 30초 표시)
+   9) Winner logic
 ========================== */
 function pickWinner(players){
   const total = players.reduce((s,p)=>s+p.amount,0);
   if(total <= 0) return { id: "NO BETS", amount: 0, index: 0 };
 
-  // deterministic-ish seed: roundKey 기반
   let seed = 0;
   for(let i=0;i<roundKey.length;i++) seed = (seed*31 + roundKey.charCodeAt(i)) >>> 0;
-  // xorshift
   seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
   const r = (seed >>> 0) / 4294967296;
 
@@ -1140,54 +1249,69 @@ function pickWinner(players){
 }
 
 function computeStopAngle(players, winIndex){
-  // segments accumulated from -PI/2
   const total = Math.max(1, players.reduce((s,p)=>s+p.amount,0));
   let start = -Math.PI/2;
   for(let i=0;i<players.length;i++){
     const ang = Math.max(0.001, players[i].amount/total) * Math.PI*2;
     const mid = start + ang/2;
-    if(i === winIndex){
-      // pointer is at top => want wheelAngle such that mid aligns to -PI/2 (top)
-      // currently wheel is rotated by wheelAngle. We need wheelAngle so that (mid + wheelAngle) == -PI/2
-      return (-Math.PI/2) - mid;
-    }
+    if(i === winIndex) return (-Math.PI/2) - mid;
     start += ang;
   }
   return 0;
 }
 
 function showWinnerOverlay(name, amount){
-  const ov = document.getElementById("winnerOverlay");
-  const n = document.getElementById("winnerName");
-  const s = document.getElementById("winnerSub");
-  n.textContent = name;
-  s.textContent = amount ? `${amount.toLocaleString()} UT` : "—";
-  ov.style.display = "flex";
+  document.getElementById("winnerName").textContent = name;
+  document.getElementById("winnerSub").textContent = amount ? `${amount.toLocaleString()} UT` : "—";
+  document.getElementById("winnerOverlay").style.display = "flex";
 
-  // ticker update
-  const tick = document.getElementById("tickerText");
-  tick.textContent = `UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎  ·  LAST WINNER: ${name} (${amount||0} UT) 🏆  ·  UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎`;
+  document.getElementById("tickerText").textContent =
+    `UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎  ·  LAST WINNER: ${name} (${amount||0} UT) 🏆  ·  UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎`;
 }
-
 function hideWinnerOverlay(){
   document.getElementById("winnerOverlay").style.display = "none";
 }
 
 /* ==========================
-   8) Animation Loop
+   10) Main Loop
 ========================== */
-function tick(){
-  computeRoundTimes();
-
+function updateClockAndState(){
   const now = Date.now();
-  const leftSec = Math.ceil((roundEndAt - now)/1000);
-  const timeEl = document.getElementById("timeLeft");
-  const pill = document.getElementById("betStatePill");
-  const btnBet = document.getElementById("btnBet");
 
-  // time display rules:
-  // - 60초 이하: 초만 크게(예쁜 숫자)
-  // - 10~0: 깜빡임
+  // 라운드 종료 순간 → winner 표시(30초 유지)
+  if(!showingWinner && now >= roundEndAt){
+    const players = getCurrentAggregatedPlayers();
+    const win = pickWinner(players);
+
+    wheelRunning = false;
+    wheelAngle = computeStopAngle(players, win.index);
+
+    showingWinner = true;
+    winnerUntil = now + FREEZE_SEC*1000;
+    showWinnerOverlay(win.id, win.amount);
+  }
+
+  let leftSec;
+  if(showingWinner){
+    leftSec = 0;
+    if(now >= winnerUntil){
+      hideWinnerOverlay();
+      showingWinner = false;
+
+      // 다음 라운드로 정상 진입
+      const start = alignRoundStart(now);
+      roundStartAt = start;
+      roundEndAt = start + ROUND_SEC*1000;
+      roundKey = String(start);
+
+      wheelRunning = true;
+    }
+  }else{
+    leftSec = Math.ceil((roundEndAt - now)/1000);
+  }
+
+  // 타임 표시(60초 이하면 초만, 10~0 깜빡)
+  const timeEl = document.getElementById("timeLeft");
   if(leftSec <= 60){
     timeEl.textContent = String(Math.max(0,leftSec));
     timeEl.className = "countBig countWarn";
@@ -1197,61 +1321,54 @@ function tick(){
     timeEl.className = "countBig";
   }
 
-  // lock betting
-  bettingLocked = (leftSec <= LOCK_SEC);
-  pill.textContent = bettingLocked ? "BETTING CLOSED" : "BETTING OPEN";
-  pill.style.color = bettingLocked ? "rgba(255,255,255,0.88)" : "rgba(255, 208, 80, 0.88)";
-  pill.style.borderColor = bettingLocked ? "rgba(255,255,255,0.14)" : "rgba(255, 208, 80, 0.18)";
-  btnBet.disabled = bettingLocked || showingWinner;
+  bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
+  setBettingUI(!bettingLocked);
 
-  // wheel motion:
-  if(!showingWinner){
-    if(leftSec > 0){
-      // open phase: subtle rotation
-      wheelRunning = true;
-      wheelAngle += 0.0022; // 천천히 도는 느낌
-    }else{
-      // 0초: 정지 + winner
-      if(wheelRunning){
-        wheelRunning = false;
-        const players = getCurrentAggregatedPlayers();
-        const win = pickWinner(players);
-
-        // stop exact
-        wheelTarget = computeStopAngle(players, win.index);
-        wheelAngle = wheelTarget;
-
-        // show
-        showingWinner = true;
-        showWinnerOverlay(win.id, win.amount);
-
-        // 30초 유지 후 다음 라운드로
-        setTimeout(()=>{
-          hideWinnerOverlay();
-          showingWinner = false;
-          wheelTarget = null;
-          // 다음 라운드로 넘어가면 로컬 베팅은 남아도 roundKey가 바뀌어 자동 분리됨
-          refreshUI();
-        }, FREEZE_SEC*1000);
-      }
-    }
+  // wheel motion
+  if(!showingWinner && wheelRunning){
+    wheelAngle += 0.0022;
   }
 
   refreshUI();
-
-  requestAnimationFrame(tick);
+  requestAnimationFrame(updateClockAndState);
 }
+
+/* ==========================
+   11) Background Theme Switch
+========================== */
+(function(){
+  const KEY = "unique_bg_theme";
+  const host = document.body;
+  const wrap = document.getElementById("bgSwitch");
+  if(!wrap) return;
+
+  function setTheme(n){
+    host.setAttribute("data-bg", String(n));
+    localStorage.setItem(KEY, String(n));
+    [...wrap.querySelectorAll("button")].forEach(b=>{
+      b.classList.toggle("active", b.dataset.bg === String(n));
+    });
+  }
+
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-bg]");
+    if(!btn) return;
+    setTheme(btn.dataset.bg);
+  });
+
+  setTheme(localStorage.getItem(KEY) ?? "0");
+})();
 
 /* init */
 function init(){
   document.getElementById("syncStatus").textContent = "동기화: LOCAL (서버 응답 없음)";
+  initRound();
   resizeCanvas();
   refreshUI();
-  requestAnimationFrame(tick);
+  setBettingUI(true);
+  requestAnimationFrame(updateClockAndState);
 }
 init();
-
-/* ✅ 카운트 소리: 아예 없음(요청 반영) */
 </script>
 </body>
 </html>
