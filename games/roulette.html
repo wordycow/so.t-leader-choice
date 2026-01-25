@@ -4,1150 +4,1174 @@
   <meta charset="UTF-8" />
   <title>THE UNIQUE: ROYAL ROULETTE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 
   <style>
-    :root {
-      --bg-dark: #050508;
-      --panel-bg: rgba(12, 14, 20, 0.95);
-      --gold-1: #ffd700;
-      --gold-2: #d4af37;
-      --gold-3: #ffdf7a;
-      --danger: #ff0044;
-      --accent-blue: #00f0ff;
-      --neon-orange: #ff6600;
-      --line: rgba(255,215,0,0.25);
+    :root{
+      --bg:#050508;
+      --panel: rgba(12, 14, 20, 0.92);
+      --panel2: rgba(12, 14, 20, 0.72);
+      --line: rgba(255, 215, 0, 0.25);
+      --gold1:#ffd700;
+      --gold2:#d4af37;
+      --text:#f3f4f6;
+      --muted: rgba(243,244,246,0.65);
+      --danger:#ff0044;
+      --ok:#22c55e;
+      --shadow: 0 18px 60px rgba(0,0,0,0.55);
+
+      --wheelSize: min(76vh, 640px);
+      --wheelViewportH: calc(var(--wheelSize) * 0.56); /* 부분 노출 높이 */
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    *{ box-sizing:border-box; }
+    html, body { height:100%; }
     body{
       margin:0;
-      background: radial-gradient(circle at 70% 40%, #150a20 0%, #000000 90%);
-      background-color: var(--bg-dark);
-      color:#fff;
-      font-family:'Cinzel', serif;
+      background: radial-gradient(circle at 30% 10%, rgba(255,215,0,0.08), transparent 45%),
+                  radial-gradient(circle at 70% 20%, rgba(0,240,255,0.06), transparent 40%),
+                  var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      overflow-x:hidden;
     }
 
-    /* ====== 상단 마퀴 ====== */
-    .marquee-wrap{
-      position:fixed; top:0; left:0; right:0;
-      height:40px; z-index:300;
-      background: rgba(0,0,0,0.95);
-      border-bottom: 1px solid rgba(255,215,0,0.2);
+    /* ===== Top Ticker (2 lines) ===== */
+    .topTicker{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,215,0,0.18);
+    }
+    .tickerRow{
+      position:relative;
       overflow:hidden;
-      display:flex; align-items:center;
+      height:34px;
+      display:flex;
+      align-items:center;
+      border-bottom: 1px solid rgba(255,215,0,0.10);
     }
-    .marquee-content{ display:flex; animation: scroll 60s linear infinite; }
-    .marquee-text{
-      white-space: nowrap;
-      font-weight: 700;
-      color: var(--gold-2);
-      font-size: 14px;
-      letter-spacing: 2px;
-      padding: 0 60px;
-      text-shadow: 0 0 5px rgba(0,0,0,0.8);
+    .tickerRow:last-child{ border-bottom:none; }
+    .marquee{
+      white-space:nowrap;
+      display:inline-block;
+      padding-left:100%;
+      animation: marquee 20s linear infinite;
+      font-family:"Cinzel", serif;
+      letter-spacing: .06em;
+      font-size: 13px;
+      color: rgba(255,215,0,0.92);
+      text-shadow: 0 0 12px rgba(255,215,0,0.16);
     }
-    @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marquee.m2{
+      animation-duration: 26s;
+      color: rgba(243,244,246,0.88);
+      font-family: "Playfair Display", serif;
+      letter-spacing: .03em;
+      font-size: 13px;
+    }
+    @keyframes marquee{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-100%); }
+    }
 
-    /* ====== 음악 바 ====== */
-    .music-bar{
-      position:fixed; top:48px; left:16px; z-index:290;
-      display:flex; align-items:center; gap:8px;
-      background: rgba(20, 20, 30, 0.72);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 999px;
-      padding: 8px 14px;
-      box-shadow: 0 5px 25px rgba(0,0,0,0.7);
-      user-select:none;
+    /* ===== Winner Toast (top popup) ===== */
+    .toast{
+      position:fixed;
+      top:72px;
+      left:50%;
+      transform: translateX(-50%);
+      z-index:80;
+      background: rgba(10,10,14,0.92);
+      border:1px solid rgba(255,215,0,0.28);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      border-radius: 14px;
+      min-width: min(680px, calc(100vw - 28px));
+      display:none;
     }
-    .mb-btn{
-      width:40px; height:40px; border-radius:50%;
-      border:none; cursor:pointer;
-      background: rgba(255,255,255,0.06);
-      color:#ddd;
-      display:flex; align-items:center; justify-content:center;
-      font-size:18px;
-      transition: .18s;
+    .toast.show{ display:block; }
+    .toast .t1{
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      letter-spacing:.08em;
+      color: var(--gold1);
+      font-size: 14px;
+      margin-bottom: 6px;
     }
-    .mb-btn:hover{ transform: scale(1.08); background: rgba(255,255,255,0.18); color:#fff; }
-    .v-sep{ width:1px; height:22px; background: rgba(255,255,255,0.22); margin:0 4px; }
-    .track-label{
-      font-family: monospace;
+    .toast .t2{
+      display:flex;
+      gap:10px;
+      align-items:baseline;
+      flex-wrap:wrap;
+    }
+    .toast .name{
+      font-family:"Playfair Display", serif;
+      font-weight:900;
+      font-size: 22px;
+      letter-spacing:.04em;
+    }
+    .toast .amt{
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      color: rgba(255,215,0,0.92);
+      font-size: 18px;
+    }
+    .toast .sub{
+      margin-top:6px;
+      color: rgba(243,244,246,0.72);
       font-size: 12px;
-      color:#bbb;
-      margin-left:4px;
-      min-width:72px;
+    }
+
+    /* ===== Layout ===== */
+    .wrap{
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 14px 14px 22px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      align-items:start;
+      margin-top: 10px;
+    }
+
+    /* ===== Wheel Area ===== */
+    .stage{
+      background: linear-gradient(180deg, rgba(18,20,28,0.72), rgba(6,7,10,0.72));
+      border: 1px solid rgba(255,215,0,0.14);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      position:relative;
+      overflow:hidden;
+      min-height: 560px;
+    }
+
+    .stageTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .audioBar{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius: 999px;
+      padding: 8px 10px;
+    }
+    .btnIcon{
+      width:34px;
+      height:34px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.35);
+      color: rgba(243,244,246,0.92);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+    }
+    .btnIcon:active{ transform: translateY(1px); }
+    .vol{
+      width:140px;
+      accent-color: var(--gold1);
+    }
+    .hint{
+      font-size:12px;
+      color: rgba(243,244,246,0.55);
+    }
+
+    /* 부분 룰렛 뷰포트 */
+    .wheelViewport{
+      width: var(--wheelSize);
+      max-width: 100%;
+      height: var(--wheelViewportH);
+      margin: 8px auto 6px;
+      position:relative;
+      overflow:hidden;             /* ✅ 반만 보여주기 */
+      border-radius: 22px;
+    }
+    .wheelWrap{
+      width: var(--wheelSize);
+      height: var(--wheelSize);
+      position:absolute;
+      left:50%;
+      bottom: calc(var(--wheelSize) * -0.44); /* ✅ 아래로 내려서 윗부분만 노출 */
+      transform: translateX(-50%);
+      filter: drop-shadow(0 24px 80px rgba(0,0,0,0.65));
+    }
+
+    .ring{
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,0.0) 58%, rgba(0,0,0,0.65) 78%, rgba(0,0,0,0.9) 100%),
+        radial-gradient(circle at 50% 50%, rgba(255,215,0,0.25), rgba(255,215,0,0.0) 55%),
+        radial-gradient(circle at 50% 50%, rgba(255,215,0,0.12) 0, rgba(0,0,0,0.0) 62%);
+      border: 10px solid rgba(255,215,0,0.62);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.55);
+    }
+
+    canvas#wheelCanvas{
+      width:100%;
+      height:100%;
+      border-radius:50%;
+      display:block;
+      transform: rotate(0deg);
+    }
+
+    /* ✅ 화살표 12시 고정 + 끝이 살짝 걸치게 */
+    .pointer{
+      position:absolute;
+      top: -8px;                 /* 너무 깊게 내려오지 않게 */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 70px;
+      z-index: 5;
+      pointer-events:none;
+    }
+    .pointer:before{
+      content:"";
+      position:absolute;
+      left:50%;
+      top: 6px;
+      transform: translateX(-50%);
+      width:0;height:0;
+      border-left: 16px solid transparent;
+      border-right:16px solid transparent;
+      border-top: 32px solid #ff7a00;        /* 오렌지 포인트 */
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,0.55));
+    }
+    .pointer:after{
+      content:"";
+      position:absolute;
+      left:50%;
+      top: 34px;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #fff2, #0000 60%), linear-gradient(180deg, var(--gold1), var(--gold2));
+      box-shadow: 0 8px 18px rgba(0,0,0,0.6);
+      border: 1px solid rgba(0,0,0,0.35);
+    }
+
+    /* ✅ 중심 축(UNIQUE) 글씨 줄여서 축 안에 */
+    .hub{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform: translate(-50%, -50%);
+      width: 86px;
+      height: 86px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.16), rgba(0,0,0,0.0) 55%),
+                  radial-gradient(circle at 50% 50%, rgba(255,215,0,0.18), rgba(0,0,0,0.85) 70%);
+      border: 2px solid rgba(255,215,0,0.55);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.65);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index: 4;
+      pointer-events:none;
+    }
+    .hub span{
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      letter-spacing:.10em;
+      font-size: 14px; /* ✅ 줄임 */
+      color: rgba(255,215,0,0.95);
+      text-shadow: 0 0 18px rgba(255,215,0,0.18);
+    }
+
+    .wheelMeta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .pill{
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 999px;
+      padding: 10px 12px;
+      min-width: 200px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+    }
+    .pill .k{
+      font-family:"Cinzel", serif;
+      letter-spacing:.10em;
+      font-weight:900;
+      font-size: 11px;
+      color: rgba(255,215,0,0.85);
+      margin-bottom: 6px;
+    }
+    .pill .v{
+      font-family:"Playfair Display", serif;
+      font-weight:900;
+      font-size: 24px;
+      letter-spacing:.04em;
+    }
+    .pill .v small{
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      font-size: 16px;
+      color: rgba(255,215,0,0.9);
+      margin-left: 6px;
+    }
+
+    /* ===== Right Panel ===== */
+    .side{
+      background: var(--panel);
+      border: 1px solid rgba(255,215,0,0.14);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      position:sticky;
+      top: 90px;
+    }
+
+    .sideHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .sideHead .block{
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px 12px;
+      flex:1;
+    }
+    .sideHead .title{
+      font-family:"Cinzel", serif;
+      letter-spacing:.10em;
+      font-weight:900;
+      font-size: 11px;
+      color: rgba(255,215,0,0.85);
+      margin-bottom: 6px;
+    }
+    .sideHead .big{
+      font-family:"Playfair Display", serif;
+      font-weight:900;
+      font-size: 30px;
+      letter-spacing:.04em;
+    }
+    .timeBig{
+      font-variant-numeric: tabular-nums; /* ✅ 숫자 흔들림 제거 */
+      min-width: 110px;
       text-align:right;
     }
 
-    /* ====== 레이아웃 ====== */
-    .layout{
-      padding-top:40px; /* marquee */
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 10px;
     }
-
-    .wheel-section{
-      position:relative;
-      width:100%;
-      background: transparent;
-    }
-    canvas{
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      display:block;
-    }
-
-    /* 포인터(화살표) */
-    #pointer{
-      position:absolute;
-      z-index:50;
-      display:flex; align-items:center;
-      filter: drop-shadow(0 0 18px rgba(255, 140, 0, 0.8));
-      pointer-events:none;
-    }
-    .pointer-real{
-      width:78px; height:46px;
-      background: linear-gradient(90deg, #ff4d00 0%, #ff9900 60%, #ffcc00 100%);
-      clip-path: polygon(0% 25%, 60% 25%, 60% 5%, 100% 50%, 60% 95%, 60% 75%, 0% 75%);
-      border-radius: 10px;
-    }
-
-    /* 중앙 카운트다운 */
-    .countdown-box{
-      position:absolute; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      pointer-events:none;
-      z-index:150;
-    }
-    #cdNum{
-      font-size: 180px;
-      font-weight: 900;
-      color:#fff;
-      -webkit-text-stroke: 4px var(--danger);
-      text-shadow: 0 0 60px var(--danger);
-      opacity:0;
-      transform: scale(0.98);
-      transition: opacity .12s, transform .12s;
-    }
-    #cdNum.on{
-      opacity:1;
-      transform: scale(1.05);
-    }
-    #cdNum.blink{
-      animation: cdBlink .45s infinite alternate;
-    }
-    @keyframes cdBlink{ from{ opacity:1 } to{ opacity:.25 } }
-
-    /* 배팅 이펙트(화살표 근처) */
-    .betfx{
-      position:absolute;
-      z-index:160;
-      pointer-events:none;
-    }
-    .betfx .chip{
-      position:absolute;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-weight: 900;
-      font-family: monospace;
-      color:#111;
-      background: #ffd700;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.65);
-      opacity:0;
-      transform: translateY(12px) scale(.95);
-      animation: chipPop .9s ease-out forwards;
-      white-space:nowrap;
-    }
-    @keyframes chipPop{
-      0%{ opacity:0; transform: translateY(12px) scale(.95); }
-      25%{ opacity:1; transform: translateY(0) scale(1.05); }
-      100%{ opacity:0; transform: translateY(-26px) scale(1.0); }
-    }
-
-    /* 우측 패널(PC) / 하단 패널(모바일) */
-    .ui-container{
-      background: var(--panel-bg);
-      border-left: 1px solid var(--line);
-      display:flex; flex-direction:column;
-      backdrop-filter: blur(18px);
-      box-shadow: -10px 0 80px rgba(0,0,0,0.9);
-    }
-
-    .hud-row{
-      padding:18px 18px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      display:flex; justify-content:space-between; align-items:flex-end;
-      gap:14px;
-    }
-    .label{
-      font-size:11px;
-      color:#8a8a8a;
-      font-weight:700;
-      letter-spacing:2px;
-      text-transform:uppercase;
-    }
-    .value-lg{
-      font-size:34px;
+    .cbtn{
+      padding: 10px 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.35);
+      color: rgba(243,244,246,0.92);
       font-weight:900;
-      color: var(--gold-1);
-      line-height:1;
-    }
-    .timer{
-      font-size:26px;
-      font-weight:800;
-      color:#fff;
-      font-family: monospace;
-      line-height:1;
-    }
-
-    .ctrl-area{
-      padding:18px;
-      background: rgba(0,0,0,0.48);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-
-    /* 버튼 간격/정렬(PC/모바일 공통) */
-    .bet-inputs{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-bottom:16px;
-    }
-    .btn-chip, .inp-amt{
-      height:50px;
-      border-radius: 12px;
-      width:100%;
-    }
-    .btn-chip{
-      background: linear-gradient(180deg, #2a2a35, #16161d);
-      border: 1px solid rgba(255,255,255,0.22);
-      color:#d6d6d6;
-      font-weight: 800;
       cursor:pointer;
-      transition:.15s;
+      font-family:"Cinzel", serif;
+      letter-spacing:.05em;
     }
-    .btn-chip:hover{
-      color:#fff;
-      border-color: rgba(255,215,0,0.55);
-      background: linear-gradient(180deg, #343445, #1b1b24);
-    }
-    .inp-amt{
-      background: rgba(0,0,0,0.72);
-      border: 2px solid rgba(255,215,0,0.75);
-      color: var(--gold-1);
-      text-align:center;
-      font-size: 18px;
-      font-weight: 900;
-      outline:none;
-      font-family: monospace;
+    .cbtn.active{
+      border-color: rgba(255,215,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,215,0,0.24);
+      color: rgba(255,215,0,0.95);
     }
 
-    .action-btn.action-btn-sot{
-      position: relative; overflow: hidden; border: 0; padding: 0;
-      min-height: 60px; border-radius: 999px; width: 100%; cursor: pointer;
-      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1) inset;
-      transform: translateZ(0); transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .action-btn.action-btn-sot::before{
-      content:""; position:absolute; inset:-10px;
-      background: conic-gradient(from 180deg, rgba(0,247,255,0.95), rgba(168,85,247,0.95), rgba(251,191,36,0.95), rgba(0,247,255,0.95));
-      filter: blur(16px); opacity: .55; animation: sotGlowSpin 3.2s linear infinite; pointer-events:none;
-    }
-    .action-btn.action-btn-sot::after{
-      content:""; position:absolute; inset:0;
-      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.22) 28%, transparent 60%);
-      transform: translateX(-140%); animation: sotShine 2.6s ease-in-out infinite; pointer-events:none; mix-blend-mode: screen; opacity: .9;
-    }
-    .action-btn.action-btn-sot:hover{ transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,255,170,0.2); }
-    .action-btn.action-btn-sot:active{ transform: translateY(0) scale(0.995); }
-    .action-btn.action-btn-sot:disabled { filter: grayscale(1) brightness(0.5); cursor: not-allowed; animation: none; }
-
-    .unique-inner{
-      position: relative; z-index:2;
-      display:flex; align-items:center; justify-content:center;
-      gap:10px; width:100%;
-      color:#fff; font-weight: 900; font-size: 20px; letter-spacing: 1px;
-    }
-    .unique-logo-text{
-      font-family: 'Cinzel', serif;
-      font-weight: 900;
-      letter-spacing: 2px;
-      background: linear-gradient(to bottom, #fff, #ffd700);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 5px rgba(255,215,0,0.8));
-    }
-    @keyframes sotGlowSpin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
-    @keyframes sotShine{ 0%{ transform: translateX(-140%); } 45%{ transform: translateX(140%); } 100%{ transform: translateX(140%); } }
-
-    .wallet-row{
-      display:flex; justify-content:space-between;
-      margin-top:14px;
-      font-size:13px;
-      color:#aaa;
-      font-weight:700;
-      letter-spacing:.5px;
-    }
-    .wallet-row #myBal{
-      color: var(--gold-1);
-      font-size:16px;
-      font-family: monospace;
-    }
-
-    .list-wrap{
-      flex:1;
-      overflow:auto;
-      padding:14px;
-    }
-    .rank-item{
-      display:flex; align-items:center;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 12px;
+    .betBox{
+      margin-top: 12px;
+      background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px;
     }
-    .rank-item.me{
-      background: linear-gradient(90deg, rgba(255,215,0,0.16), transparent);
-      border-color: rgba(255,215,0,0.35);
-    }
-    .p-col{
-      width:12px; height:12px;
-      border-radius:50%;
-      margin-right: 12px;
-      box-shadow: 0 0 10px currentColor;
-    }
-    .p-name{
-      flex:1;
-      font-size: 14px;
-      font-weight: 800;
-      color:#e8e8e8;
-    }
-    .p-amt{
-      font-size: 14px;
-      color: var(--gold-1);
-      font-weight: 900;
-      font-family: monospace;
-    }
-
-    /* ====== 모달(승자) ====== */
-    .modal-mask{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,0.92);
-      z-index:400;
-      display:none;
-      justify-content:center; align-items:center;
-      backdrop-filter: blur(16px);
-      padding: 18px;
-    }
-    .modal-mask.on{ display:flex; }
-    .modal-body{
-      width: 100%;
-      max-width: 520px;
-      border-radius: 22px;
-      border: 2px solid rgba(255,215,0,0.55);
-      background: radial-gradient(circle, #2a1a3a 0%, #111 100%);
-      box-shadow: 0 0 80px rgba(0,0,0,0.8);
-      padding: 34px 26px 26px;
-      text-align:center;
-    }
-    .win-title{
-      font-size: 40px;
-      font-weight: 900;
-      color: var(--gold-1);
-      margin: 0 0 10px;
-      text-shadow: 0 0 26px rgba(255,215,0,0.7);
-    }
-    #resName{
-      font-size: 46px;
-      font-weight: 900;
-      color:#fff;
-      margin: 10px 0 6px;
-      text-shadow: 0 6px 18px rgba(0,0,0,0.85);
-      word-break: break-word;
-    }
-    #resAmt{
-      font-size: 28px;
-      color: var(--gold-3);
-      font-weight: 900;
-      font-family: monospace;
-      margin-bottom: 10px;
-    }
-    #resHint{
-      color:#cfcfcf;
-      font-weight: 700;
-      letter-spacing:.5px;
-      font-size: 13px;
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
       margin-top: 8px;
     }
-
-    /* ====== PC / 모바일 분리 ====== */
-    /* PC: 우측 패널 고정, 휠 전체 화면 고정 */
-    @media (min-width: 1024px){
-      body{ overflow:hidden; }
-      .wheel-section{
-        position:fixed;
-        top:40px; left:0; right:0; bottom:0;
-      }
-      .ui-container{
-        position:fixed;
-        top:40px; right:0; bottom:0;
-        width:420px;
-      }
-      .layout{ padding-top:40px; }
-      .wheel-section{ padding-right:420px; }
-      .music-bar{ top:56px; left:18px; }
+    .label{
+      color: rgba(243,244,246,0.65);
+      font-size: 12px;
+      letter-spacing:.02em;
+    }
+    .wallet{
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      letter-spacing:.06em;
+      color: rgba(255,215,0,0.90);
+      font-variant-numeric: tabular-nums;
     }
 
-    /* 모바일: 페이지 길게, 스크롤되게(휠은 위, 패널은 아래 흐름) */
-    @media (max-width: 1023px){
-      body{ overflow-y:auto; overflow-x:hidden; }
-      .layout{ padding-top:40px; }
-      .wheel-section{
-        height: min(72vh, 560px);
-        margin-top: 0;
-      }
-      .ui-container{
-        position:relative;
-        width:100%;
-        border-left:none;
-        border-top: 1px solid var(--line);
-        box-shadow:none;
-        min-height: calc(100vh - 40px);
-      }
-      .music-bar{ top:48px; left:12px; }
+    .betNow{
+      margin-top: 12px;
+      width:100%;
+      padding: 14px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,215,0,0.28);
+      background: linear-gradient(90deg, rgba(255,215,0,0.18), rgba(255,215,0,0.06));
+      color: rgba(243,244,246,0.92);
+      font-family:"Cinzel", serif;
+      font-weight:900;
+      letter-spacing:.10em;
+      cursor:pointer;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.45);
+    }
+    .betNow[disabled]{
+      opacity: 0.45;
+      cursor:not-allowed;
+      filter: grayscale(0.3);
+    }
+
+    .statusLine{
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(243,244,246,0.62);
+      line-height:1.35;
+    }
+    .statusLine b{ color: rgba(255,215,0,0.92); font-family:"Cinzel", serif; letter-spacing:.05em; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 980px){
+      :root{ --wheelSize: min(72vh, 560px); }
+      .grid{ grid-template-columns: 1fr; }
+      .side{ position:relative; top:auto; }
+      .stage{ min-height: 520px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="marquee-wrap">
-    <div class="marquee-content">
-      <span class="marquee-text" id="mqText1">💎 UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎</span>
-      <span class="marquee-text" id="mqText2">💎 UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎</span>
+  <!-- Top ticker -->
+  <div class="topTicker">
+    <div class="tickerRow">
+      <div id="ticker1" class="marquee">🏆 오늘 최고 수익자: 로딩중…</div>
+    </div>
+    <div class="tickerRow">
+      <div id="ticker2" class="marquee m2">당신도 행운의 주인공이 될 수있습니다.</div>
     </div>
   </div>
 
-  <div class="music-bar">
-    <button class="mb-btn" id="prevBtn" title="Prev">⏮</button>
-    <button class="mb-btn" id="playBtn" title="Play">▶</button>
-    <button class="mb-btn" id="pauseBtn" title="Pause">⏸</button>
-    <button class="mb-btn" id="nextBtn" title="Next">⏭</button>
-    <div class="v-sep"></div>
-    <button class="mb-btn" id="volDown" title="Vol -">－</button>
-    <button class="mb-btn" id="volUp" title="Vol +">＋</button>
-    <div class="track-label" id="trackLabel">--/--</div>
-  </div>
-
-  <div class="layout">
-    <!-- 휠 영역 -->
-    <section class="wheel-section" id="wheelSection">
-      <canvas id="cvs"></canvas>
-      <div id="pointer"><div class="pointer-real"></div></div>
-      <div class="countdown-box"><div id="cdNum"></div></div>
-      <div class="betfx" id="betFx"></div>
-    </section>
-
-    <!-- UI 패널 -->
-    <aside class="ui-container" id="uiPanel">
-      <div class="hud-row">
-        <div>
-          <div class="label">TOTAL POOL</div>
-          <div class="value-lg" id="poolDisp">0 UT</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="label">TIME LEFT</div>
-          <div class="timer" id="timerDisp">--:--</div>
-        </div>
-      </div>
-
-      <div class="ctrl-area">
-        <div class="bet-inputs">
-          <button class="btn-chip" id="bMin">MIN</button>
-          <button class="btn-chip" id="bM100">-100</button>
-          <input type="number" id="inpBet" class="inp-amt" value="100" readonly />
-          <button class="btn-chip" id="bP100">+100</button>
-          <button class="btn-chip" id="bMax">MAX</button>
-        </div>
-
-        <button id="bJoin" class="action-btn action-btn-sot" type="button">
-          <span class="unique-inner" id="btnText">
-            <span class="unique-logo-text">UNIQUE</span>&nbsp; BET NOW
-          </span>
-        </button>
-
-        <div class="wallet-row">
-          <span>MY WALLET</span>
-          <span id="myBal">Loading...</span>
-        </div>
-      </div>
-
-      <div class="list-wrap" id="pList">
-        <div style="text-align:center; padding:30px; color:#555;">Waiting for bets...</div>
-      </div>
-    </aside>
-  </div>
-
-  <!-- 승자 모달(30초 유지) -->
-  <div id="mdRes" class="modal-mask">
-    <div class="modal-body">
-      <div class="win-title">WINNER</div>
-      <div id="resName">-</div>
-      <div id="resAmt">-</div>
-      <div id="resHint">30초 동안 화면이 고정됩니다.</div>
+  <!-- Winner popup -->
+  <div id="winnerToast" class="toast" aria-live="polite">
+    <div class="t1">WINNER</div>
+    <div class="t2">
+      <div class="name" id="winnerName">-</div>
+      <div class="amt" id="winnerAmt">0 UT</div>
     </div>
+    <div class="sub" id="winnerSub">30초 정지 후 다음 회차가 시작됩니다.</div>
   </div>
 
-  <!-- 유튜브 플레이어 -->
-  <div id="ytPlayer" style="display:none;"></div>
-  <script src="https://www.youtube.com/iframe_api"></script>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const toMoney = (n) => Number(n || 0).toLocaleString();
-
-    /* ====== 서버 ====== */
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
-    async function api(act, p = {}) {
-      const r = await fetch(GAS_URL + "?" + new URLSearchParams({ action: act, ...p, _: Date.now() }));
-      return await r.json();
-    }
-
-    /* ====== 기본 ====== */
-    const MIN_BET = 100;
-    const HOLD_MS = 30000;
-
-    let myId = "", myWallet = 0, myColor = "#999";
-    let participants = [], totalPool = 0;
-
-    // 서버 기준 타이밍
-    let serverOffset = 0;       // serverTs - Date.now()
-    let nextRoundMs = 0;        // 서버가 준 다음 라운드 경계(ms)
-    let activeRoundKey = null;  // 현재 배팅이 들어가는 라운드키(서버)
-    let lastSettledShown = null; // 이미 보여준 settled roundKey
-    let holdUntilServerMs = 0;  // hold 종료(서버 시간 기준)
-
-    // 휠/애니메이션
-    let rotation = 0;
-    let wheelState = "SPINNING"; // SPINNING | STOPPING | STOPPED
-    let stopTargetAngle = 0, stopStartTime = 0;
-    const STOP_DURATION = 3500; // 멈추는 애니메이션 시간(조금 빠르게)
-    let lastFrame = 0;
-
-    // 캔버스/레이아웃
-    function getWheelRect() {
-      const sec = $("wheelSection");
-      return { w: sec.clientWidth, h: sec.clientHeight };
-    }
-    function setPointerPosition(mx) {
-      const ptr = $("pointer");
-      ptr.style.left = mx.px + "px";
-      ptr.style.top  = mx.py + "px";
-      ptr.style.transform = mx.ptrTransform;
-    }
-    function getMetrics() {
-      const sec = $("wheelSection");
-      const { w, h } = getWheelRect();
-      const isPC = window.innerWidth >= 1024;
-
-      if (isPC) {
-        // PC: 오른쪽 패널 제외 영역을 기준으로 센터 잡기
-        const panelW = $("uiPanel").getBoundingClientRect().width || 420;
-        const availW = Math.max(320, window.innerWidth - panelW);
-        const r = Math.min(availW, window.innerHeight) * 0.48;
-
-        const cx = availW * 0.52;
-        const cy = (window.innerHeight - 40) * 0.52; // marquee 높이 감안 약간 아래
-
-        // 포인터: 휠 왼쪽 가장자리에 위치
-        const px = Math.max(8, cx - r - 54);
-        const py = cy;
-        setPointerPosition({ px, py, ptrTransform: "translateY(-50%)" });
-
-        return { cx, cy, r, pointerAngle: Math.PI, isPC };
-      } else {
-        // 모바일: 섹션 안에서 완전 원형으로 보이게
-        const r = Math.min(w, h) * 0.42;
-        const cx = w / 2;
-        const cy = h / 2 + 10;
-
-        const px = cx - 39; // 포인터 너비 보정
-        const py = cy - r - 26;
-        setPointerPosition({ px, py, ptrTransform: "rotate(90deg)" });
-
-        return { cx, cy, r, pointerAngle: -Math.PI / 2, isPC };
-      }
-    }
-
-    // RPM 스케줄(요청: 4분30초 1rpm, 다음 5분 2rpm, 다음 5분 3rpm, 다음 5분 6rpm)
-    // 20분 기준(남은 시간 기준으로 분기)
-    function rpmByRemaining(remSec) {
-      // remSec: 0 ~ 1200
-      if (remSec > 15 * 60 + 30) return 1; // 20:00~15:30 (4m30)
-      if (remSec > 10 * 60 + 30) return 2; // 15:30~10:30 (5m)
-      if (remSec > 5  * 60 + 30) return 3; // 10:30~05:30 (5m)
-      return 6;                              // 05:30~00:00 (5m30) - 마지막 30초 포함
-    }
-
-    /* ====== 카운트다운(60초 표시 / 10초부터 깜빡 / 5~0 TTS) ====== */
-    const synth = window.speechSynthesis;
-    let koVoice = null;
-    function pickKoreanVoice() {
-      const vs = synth ? synth.getVoices() : [];
-      // ko-KR 우선, 가능하면 남성 느낌 이름 우선(기기마다 다름)
-      const ko = vs.filter(v => (v.lang || "").toLowerCase().includes("ko"));
-      koVoice = ko.find(v => /male|남|man/i.test(v.name)) || ko[0] || null;
-    }
-    if (synth) {
-      pickKoreanVoice();
-      // 일부 브라우저는 voiceschanged 이벤트 후에야 목록이 생김
-      window.speechSynthesis.onvoiceschanged = () => pickKoreanVoice();
-    }
-    let lastSpoken = null;
-    const KO_NUM = { 5:"오", 4:"사", 3:"삼", 2:"이", 1:"일", 0:"영" };
-    function speakKo(n) {
-      if (!synth) return;
-      if (lastSpoken === n) return;
-      lastSpoken = n;
-      const u = new SpeechSynthesisUtterance(KO_NUM[n] ?? String(n));
-      u.lang = "ko-KR";
-      if (koVoice) u.voice = koVoice;
-      u.rate = 1.0;
-      u.pitch = 0.9; // 약간 낮춰서 남성 느낌 시도(기기마다 차이)
-      try { synth.cancel(); } catch(_){}
-      synth.speak(u);
-    }
-
-    function setCountdownUI(remSec) {
-      const cd = $("cdNum");
-      if (remSec <= 60 && remSec > 0) {
-        cd.textContent = remSec;
-        cd.classList.add("on");
-        if (remSec <= 10) cd.classList.add("blink");
-        else cd.classList.remove("blink");
-
-        if (remSec <= 5) speakKo(remSec);
-      } else {
-        cd.classList.remove("on");
-        cd.classList.remove("blink");
-      }
-
-      // 0초도 읽어달라고 했으니, 0이 된 순간 한 번
-      if (remSec === 0) speakKo(0);
-    }
-
-    /* ====== 배팅 이펙트(화살표 근처) ====== */
-    function spawnBetFx(amount, color) {
-      const fx = $("betFx");
-      const m = getMetrics();
-
-      // PC: 포인터 근처(왼쪽)
-      // 모바일: 포인터 근처(상단)
-      const chip = document.createElement("div");
-      chip.className = "chip";
-      chip.style.background = color || "#ffd700";
-      chip.style.color = "#111";
-      chip.textContent = `+${toMoney(amount)} UT`;
-
-      // 위치 잡기(절대 좌표는 wheelSection 기준)
-      const isPC = m.isPC;
-      const x = isPC ? (m.cx - m.r + 20) : (m.cx - 60);
-      const y = isPC ? (m.cy - 22) : (m.cy - m.r + 28);
-
-      chip.style.left = x + "px";
-      chip.style.top  = y + "px";
-
-      fx.appendChild(chip);
-      setTimeout(() => chip.remove(), 950);
-    }
-
-    /* ====== 리스트 렌더 ====== */
-    function renderList() {
-      const el = $("pList");
-      if (!participants.length) {
-        el.innerHTML = "<div style='text-align:center;padding:30px;color:#555;'>Waiting for bets...</div>";
-        return;
-      }
-      el.innerHTML = "";
-      participants.forEach(p => {
-        el.innerHTML += `
-          <div class="rank-item ${p.name === myId ? "me" : ""}">
-            <div class="p-col" style="background:${p.color};"></div>
-            <div class="p-name">${p.name}</div>
-            <div class="p-amt">${toMoney(p.amount)}</div>
+  <div class="wrap">
+    <div class="grid">
+      <!-- Left: Wheel -->
+      <div class="stage">
+        <div class="stageTop">
+          <div class="audioBar">
+            <button id="bgmToggle" class="btnIcon" title="BGM On/Off">▶</button>
+            <input id="bgmVol" class="vol" type="range" min="0" max="1" step="0.01" value="0.25" />
+            <div class="hint">※ 목소리(TTS) 없음 / BGM만</div>
           </div>
-        `;
-      });
-      el.scrollTop = el.scrollHeight;
+          <div class="hint" id="syncHint">동기화: 대기중…</div>
+        </div>
+
+        <div class="wheelViewport">
+          <div class="pointer"></div>
+
+          <div id="wheelWrap" class="wheelWrap">
+            <div class="ring"></div>
+            <canvas id="wheelCanvas" width="900" height="900"></canvas>
+            <div class="hub"><span>UNIQUE</span></div>
+          </div>
+        </div>
+
+        <div class="wheelMeta">
+          <div class="pill">
+            <div class="k">ROUND</div>
+            <div class="v"><span id="roundNo">-</span><small>회차</small></div>
+          </div>
+          <div class="pill">
+            <div class="k">BETTING</div>
+            <div class="v"><span id="betState">OPEN</span></div>
+          </div>
+          <div class="pill">
+            <div class="k">SYNC</div>
+            <div class="v"><span id="syncState">OK</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Controls -->
+      <div class="side">
+        <div class="sideHead">
+          <div class="block">
+            <div class="title">TOTAL POOL</div>
+            <div class="big"><span id="totalPool">0</span> <span style="font-family:'Cinzel',serif;color:rgba(255,215,0,.9);font-weight:900">UT</span></div>
+          </div>
+          <div class="block" style="max-width: 200px;">
+            <div class="title" style="text-align:right;">TIME LEFT</div>
+            <div class="big timeBig" id="timeLeft">--:--</div>
+          </div>
+        </div>
+
+        <div class="controls" aria-label="Bet amount controls">
+          <button class="cbtn" id="btnMin">MIN</button>
+          <button class="cbtn" id="btnMinus">-100</button>
+          <button class="cbtn active" id="btnCur">100</button>
+          <button class="cbtn" id="btnPlus">+100</button>
+          <button class="cbtn" id="btnMax">MAX</button>
+        </div>
+
+        <div class="betBox">
+          <div class="row">
+            <div class="label">MY WALLET</div>
+            <div class="wallet"><span id="myWallet">0</span> UT</div>
+          </div>
+          <div class="row">
+            <div class="label">MY NAME</div>
+            <div class="wallet" id="myName">-</div>
+          </div>
+          <div class="row">
+            <div class="label">BET AMOUNT</div>
+            <div class="wallet"><span id="betAmt">100</span> UT</div>
+          </div>
+
+          <button id="betNow" class="betNow">BET NOW</button>
+
+          <div class="statusLine" id="statusLine">
+            <b>규칙</b> · 20분 1회차(1시간 3회) · 종료 1분 전 베팅마감 · 종료 30초 정지 · 운영 10% (승자 이익 기준)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BGM audio (optional) -->
+  <audio id="bgm" preload="auto" loop>
+    <!-- 네가 쓰는 bgm 파일 있으면 여기 src로 넣어 -->
+    <!-- <source src="./bgm.mp3" type="audio/mpeg" /> -->
+  </audio>
+
+<script>
+/* =========================================================
+   [A] CONFIG
+   ========================================================= */
+const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec"; // ✅ 여기에 /exec 주소 넣기
+const USER_ID = new URLSearchParams(location.search).get("id") || "guest";
+
+/* 회차(20분) 구성:
+   - 전체 1200s (20분)
+   - 마지막 30s 정지(위너 표시)
+   - 베팅 마감: 남은 60s (1분 전)
+   - 스핀 구간 1170s (정지 30초 제외)
+   - 속도 스케줄:
+       0~4:30  (270s)  1rpm
+       4:30~9:30 (300s) 2rpm
+       9:30~14:30(300s) 4rpm
+       14:30~19:25(295s) 8rpm
+       19:25~19:30(5s)   감속 6→4→3→2→1rpm
+*/
+const ROUND_SEC = 20*60;
+const STOP_SEC  = 30;
+const SPIN_END  = ROUND_SEC - STOP_SEC; // 1170
+const BET_CLOSE_REMAIN_SEC = 60;         // 남은 60초부터 베팅 금지
+
+const SPEED_SEG = [
+  { end: 270, rpm: 1 },
+  { end: 570, rpm: 2 },
+  { end: 870, rpm: 4 },
+  { end: 1165, rpm: 8 }, // 감속 시작 직전
+];
+
+/* =========================================================
+   [B] STATE
+   ========================================================= */
+let serverOffsetMs = 0;   // serverNow - localNow
+let lastSecondShown = null;
+
+let roundState = {
+  roundStartMs: 0,
+  roundNo: 1,
+  entries: [],
+  totalPool: 0,
+  myWallet: 0,
+  myName: USER_ID,
+  winnerIndex: 0,
+  winnerName: "",
+  winnerProfit: 0,
+  dailyTop: null,     // {roundNo,name,profit}
+  lastWinner: null,   // {roundNo,name,profit}
+};
+
+let betAmount = 100;
+
+const el = (id)=>document.getElementById(id);
+
+/* =========================================================
+   [C] TIME / ROUND KEY (Seoul)
+   ========================================================= */
+function nowMs(){ return Date.now() + serverOffsetMs; }
+
+function seoulYMD(ms){
+  return new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'
+  }).format(new Date(ms)); // "YYYY-MM-DD"
+}
+function seoulHMSToParts(ms){
+  const parts = new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Asia/Seoul', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  }).formatToParts(new Date(ms));
+  const map = {};
+  parts.forEach(p=>{ if(p.type!=="literal") map[p.type]=p.value; });
+  return { h:+map.hour, m:+map.minute, s:+map.second };
+}
+function seoulMidnightEpoch(ms){
+  const ymd = seoulYMD(ms);
+  return new Date(`${ymd}T00:00:00+09:00`).getTime();
+}
+function computeRoundStartMs(ms){
+  const mid = seoulMidnightEpoch(ms);
+  const {h,m,s} = seoulHMSToParts(ms);
+  const since = (h*60+m)*60 + s;
+  const block = Math.floor(since / ROUND_SEC);
+  return mid + block*ROUND_SEC*1000;
+}
+function computeRoundNo(ms){
+  const mid = seoulMidnightEpoch(ms);
+  return Math.floor((ms - mid) / (ROUND_SEC*1000)) + 1;
+}
+
+/* =========================================================
+   [D] RPM SCHEDULE + INTEGRATION
+   ========================================================= */
+function rpmAt(tSec){
+  if(tSec >= SPIN_END) return 0;
+
+  // 감속(마지막 5초)
+  if(tSec >= (SPIN_END - 5)){
+    const rem = SPIN_END - tSec; // (0~5]
+    if(rem <= 1) return 1;
+    if(rem <= 2) return 2;
+    if(rem <= 3) return 3;
+    if(rem <= 4) return 4;
+    return 6; // 5초 전
+  }
+
+  // 일반 구간
+  for(const seg of SPEED_SEG){
+    if(tSec < seg.end) return seg.rpm;
+  }
+  return 8;
+}
+
+// rpm → deg/sec : rpm * 360 / 60 = rpm*6
+function baseRotationDeg(tSec){
+  // 빠르고 정확하게: 구간별로 적분(초 단위)
+  if(tSec <= 0) return 0;
+
+  let rot = 0;
+  let prev = 0;
+
+  // 일반 구간
+  for(const seg of SPEED_SEG){
+    const end = Math.min(tSec, seg.end);
+    if(end > prev){
+      rot += (end - prev) * (seg.rpm * 6);
+      prev = end;
+    }
+    if(tSec <= seg.end) return rot;
+  }
+
+  // 8rpm 구간 (감속 시작 전)
+  const decelStart = SPIN_END - 5;
+  if(tSec > prev){
+    const end = Math.min(tSec, decelStart);
+    if(end > prev){
+      rot += (end - prev) * (8 * 6);
+      prev = end;
+    }
+  }
+  if(tSec <= decelStart) return rot;
+
+  // 감속 5초 구간(6,4,3,2,1 rpm 각 1초)
+  // t in [decelStart, SPIN_END)
+  const steps = [
+    {from: decelStart, to: decelStart+1, rpm:6},
+    {from: decelStart+1, to: decelStart+2, rpm:4},
+    {from: decelStart+2, to: decelStart+3, rpm:3},
+    {from: decelStart+3, to: decelStart+4, rpm:2},
+    {from: decelStart+4, to: decelStart+5, rpm:1},
+  ];
+  for(const st of steps){
+    const a = Math.max(st.from, 0);
+    const b = Math.min(st.to, tSec);
+    if(b > a) rot += (b - a) * (st.rpm * 6);
+  }
+  return rot;
+}
+
+/* =========================================================
+   [E] WHEEL DRAWING
+   ========================================================= */
+const canvas = el("wheelCanvas");
+const ctx = canvas.getContext("2d");
+
+let wheelMeta = {
+  sectors: [], // {name,amount,startRad,endRad,midRad,color}
+  total: 0,
+  targetDeg: 0,
+  startOffsetDeg: 0,
+};
+
+function pickColor(i, n){
+  // 네온/럭셔리 느낌: HSL로 균등 분배
+  const hue = (i * (360 / Math.max(1,n))) % 360;
+  return `hsl(${hue} 85% 55%)`;
+}
+
+function drawWheel(entries){
+  const list = (entries && entries.length) ? entries : [{name:"COMPANY", amount:100}];
+  const total = list.reduce((a,b)=>a+(+b.amount||0),0) || 1;
+
+  wheelMeta.total = total;
+  wheelMeta.sectors = [];
+
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const r  = W*0.44;
+
+  ctx.clearRect(0,0,W,H);
+
+  // 배경
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = "rgba(255,255,255,0.03)";
+  ctx.fill();
+
+  let start = -Math.PI/2; // 12시 방향 기준
+  list.forEach((e, i)=>{
+    const amt = (+e.amount||0);
+    const ang = (amt/total) * Math.PI*2;
+    const end = start + ang;
+
+    const mid = start + ang/2;
+    const color = pickColor(i, list.length);
+
+    // sector
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // separator
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // text
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(mid);
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "800 28px Cinzel";
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowBlur = 8;
+    ctx.fillText(String(e.name).toUpperCase(), r*0.18, 0);
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,215,0,0.92)";
+    ctx.font = "900 22px Cinzel";
+    ctx.fillText(`${amt}`, r*0.18, 30);
+
+    ctx.restore();
+
+    wheelMeta.sectors.push({ name:e.name, amount:amt, startRad:start, endRad:end, midRad:mid, color });
+    start = end;
+  });
+
+  // inner circle to give depth
+  ctx.beginPath();
+  ctx.arc(cx,cy,r*0.60,0,Math.PI*2);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,215,0,0.10)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+
+function computeTargetDegByWinnerIndex(idx){
+  const s = wheelMeta.sectors;
+  if(!s.length) return 0;
+  const i = Math.max(0, Math.min(idx, s.length-1));
+  const mid = s[i].midRad;
+  // midRad + rotRad = -PI/2  => rotRad = -PI/2 - midRad
+  const rotRad = (-Math.PI/2) - mid;
+  let deg = rotRad * 180/Math.PI;
+  deg = ((deg % 360) + 360) % 360;
+  return deg;
+}
+
+/* =========================================================
+   [F] SYNC + API (JSONP)
+   ========================================================= */
+function jsonp(url){
+  return new Promise((resolve, reject)=>{
+    const cb = `__cb_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const sep = url.includes("?") ? "&" : "?";
+    const full = `${url}${sep}callback=${cb}`;
+
+    const timer = setTimeout(()=>{
+      cleanup();
+      reject(new Error("JSONP timeout"));
+    }, 8000);
+
+    function cleanup(){
+      clearTimeout(timer);
+      script.remove();
+      try{ delete window[cb]; }catch(_){}
     }
 
-    /* ====== 휠 드로잉 ====== */
-    function resizeCanvas(ctx) {
-      const sec = $("wheelSection");
-      const w = sec.clientWidth;
-      const h = sec.clientHeight;
-      const dpr = window.devicePixelRatio || 1;
-      const cvs = $("cvs");
-      const need = (cvs.width !== Math.floor(w * dpr) || cvs.height !== Math.floor(h * dpr));
-      if (need) {
-        cvs.width = Math.floor(w * dpr);
-        cvs.height = Math.floor(h * dpr);
-        cvs.style.width = w + "px";
-        cvs.style.height = h + "px";
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return { w, h };
-    }
-
-    function draw(ts) {
-      const cvs = $("cvs");
-      const ctx = cvs.getContext("2d");
-
-      const { w, h } = resizeCanvas(ctx);
-      const m = getMetrics();
-
-      if (!lastFrame) lastFrame = ts;
-      const dt = ts - lastFrame;
-      lastFrame = ts;
-
-      // 배경(흰 멍 제거)
-      ctx.fillStyle = "#050508";
-      ctx.fillRect(0, 0, w, h);
-
-      // 남은 시간(서버 기준)
-      let remSec = 0;
-      if (nextRoundMs) {
-        const nowServer = Date.now() + serverOffset;
-        remSec = Math.max(0, Math.floor((nextRoundMs - nowServer) / 1000));
-      }
-
-      // 회전 업데이트
-      if (wheelState === "SPINNING") {
-        const rpm = rpmByRemaining(remSec);
-        const radPerMs = (rpm * 2 * Math.PI) / 60000;
-        rotation += radPerMs * dt;
-      } else if (wheelState === "STOPPING") {
-        const t = Math.min(1, (Date.now() - stopStartTime) / STOP_DURATION);
-        const ease = 1 - Math.pow(1 - t, 4);
-        rotation = window.__startRot + (stopTargetAngle - window.__startRot) * ease;
-        if (t >= 1) {
-          wheelState = "STOPPED";
-        }
-      }
-
-      // 림
-      const { cx, cy, r } = m;
-      const gradRim = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
-      gradRim.addColorStop(0, "#fbf5b7");
-      gradRim.addColorStop(0.3, "#d4af37");
-      gradRim.addColorStop(0.5, "#ffd700");
-      gradRim.addColorStop(0.8, "#aa771c");
-      gradRim.addColorStop(1, "#fbf5b7");
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, r + 16, 0, Math.PI * 2);
-      ctx.fillStyle = gradRim;
-      ctx.shadowColor = "rgba(0,0,0,0.85)";
-      ctx.shadowBlur = 28;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle = "#110000";
-      ctx.fill();
-
-      // 슬라이스
-      let startAng = rotation;
-      const total = totalPool || 1;
-
-      if (participants.length > 0) {
-        participants.forEach(p => {
-          const slice = (p.amount / total) * 2 * Math.PI;
-          const endAng = startAng + slice;
-
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.arc(cx, cy, r - 5, startAng, endAng);
-          ctx.fillStyle = p.color || "#999";
-          ctx.fill();
-
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "rgba(255,255,255,0.15)";
-          ctx.stroke();
-
-          // 텍스트(너무 작은 조각은 스킵)
-          if (slice > 0.05) {
-            const mid = startAng + slice / 2;
-            const tx = cx + Math.cos(mid) * (r * 0.70);
-            const ty = cy + Math.sin(mid) * (r * 0.70);
-            ctx.save();
-            ctx.translate(tx, ty);
-            ctx.rotate(mid + Math.PI);
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-
-            ctx.fillStyle = "#fff";
-            ctx.font = "900 18px 'Cinzel', sans-serif";
-            ctx.shadowColor = "rgba(0,0,0,1)";
-            ctx.shadowBlur = 6;
-
-            let n = p.name || "";
-            if (n.length > 12) n = n.slice(0, 10) + "..";
-            ctx.fillText(n, 0, -12);
-
-            ctx.fillStyle = "#ffd700";
-            ctx.font = "900 14px monospace";
-            ctx.fillText(toMoney(p.amount), 0, 12);
-            ctx.restore();
-          }
-
-          startAng = endAng;
-        });
-      }
-
-      // 센터캡
-      const capR = Math.min(r * 0.14, 150);
-      const gradCap = ctx.createRadialGradient(cx, cy, capR * 0.1, cx, cy, capR);
-      gradCap.addColorStop(0, "#fff");
-      gradCap.addColorStop(0.3, "#ffd700");
-      gradCap.addColorStop(0.9, "#b8860b");
-      gradCap.addColorStop(1, "#5e4b25");
-
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.8)";
-      ctx.shadowBlur = 18;
-      ctx.beginPath();
-      ctx.arc(cx, cy, capR, 0, Math.PI * 2);
-      ctx.fillStyle = gradCap;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(-rotation * 0.45);
-      ctx.beginPath();
-      ctx.arc(0, 0, capR * 0.70, 0, Math.PI * 2);
-      ctx.fillStyle = "#1a0b0b";
-      ctx.fill();
-      ctx.strokeStyle = "#ffd700";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.fillStyle = "#ffd700";
-      ctx.font = "900 22px 'Cinzel'";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("UNIQUE", 0, 2);
-      ctx.restore();
-
-      // 60초 카운트다운 UI
-      setCountdownUI(remSec);
-
-      requestAnimationFrame(draw);
-    }
-
-    function spinToWinner(winnerName) {
-      if (!participants.length) return;
-
-      // winnerName과 일치하는 슬라이스 인덱스들
-      const winIndices = [];
-      participants.forEach((p, i) => {
-        if (String(p.name) === String(winnerName)) winIndices.push(i);
-      });
-      if (!winIndices.length) return;
-
-      const targetIndex = winIndices[Math.floor(Math.random() * winIndices.length)];
-
-      let sum = 0, mid = 0;
-      const total = totalPool || 1;
-      for (let i = 0; i < participants.length; i++) {
-        const s = (participants[i].amount / total) * 2 * Math.PI;
-        if (i === targetIndex) { mid = sum + s / 2; break; }
-        sum += s;
-      }
-
-      const cur = rotation;
-      const extra = Math.PI * 2 * 3; // 충분히 더 돌리고 멈춤
-      const m = getMetrics();
-      let dest = m.pointerAngle - mid;
-      while (dest < cur + extra) dest += Math.PI * 2;
-
-      stopTargetAngle = dest;
-      window.__startRot = cur;
-      stopStartTime = Date.now();
-      wheelState = "STOPPING";
-    }
-
-    /* ====== 음악(목록 내에서만 prev/next) ====== */
-    // ⚠️ 유튜브 추천/자동이탈 방지: nextVideo/previousVideo 안 쓰고
-    // 우리가 가진 ytPlaylist 인덱스로만 loadVideoById 한다.
-    const ytPlaylist = [
-      '-jdZKf-xSpA','-B3HvFhHsIM','Sc-EOEQDBHk','dttGdK0l1G0','yPqI1VAHX8Q','Ge9OgkOayQs','dDxWoKcOmsA','aGpOcVy2A8I',
-      'BJRlZ0R4nuE','WbvoZvYmkBg','X6SuW5HhQoc','0P4A1K4lXDo','LpTL5nTPwjo','viIJYFSGq0o','Qe8fa4b5xNU','LtwQuHFzIlk',
-      's3uPXokhpnA','8KDWGWMs7Sg','pcIOYAdwKsw','MXz88usIhzA','lmxNgwBeJ44','j3V53sF13UQ','znDgBy2mHbc','53BBRKF-L60',
-      'BsxBh3lE5Qs','eE5oaOOwInE','M4t25bx0Quc','vA8p2bioJ00','gRj83OcBbXc','p1GwElw35vo','jIIdLgUbj5E','gU3ubk8u7dA',
-      'Nh-V4s5jHHM','z0vCwGUZe1I','DPBm9nQ7o2E','TrDyciJ8svc','tO4dxvguQDk','F2AitTPI5U0','L7n5oXTQd2Q','Ijq-zNn-GWU',
-      'kP2ocLMNUnw','Ikbj54iFTdw','7uaOFQpO_Ks','x46z5iMK1Wg','fwlLHP6j7U8','AVUeL6RMHoo','3XDf5Ke2Zj8','PxbcXlqXrU0',
-      'yldUrx-4GPU','yajZ_cOVrXQ','h7FCYhJHCPw'
-    ];
-    let ytPlayer = null;
-    let curTrack = 0;
-    let curVol = 20;
-    let userInteracted = false;
-
-    function setTrackLabel() {
-      $("trackLabel").textContent = `${String(curTrack+1).padStart(2,"0")}/${String(ytPlaylist.length).padStart(2,"0")}`;
-    }
-
-    function loadTrack(i, autoplay = false) {
-      if (!ytPlayer) return;
-      curTrack = (i + ytPlaylist.length) % ytPlaylist.length;
-      setTrackLabel();
-      const vid = ytPlaylist[curTrack];
-      // 오직 우리 목록 안에서만 로드
-      ytPlayer.loadVideoById({ videoId: vid, startSeconds: 0, suggestedQuality: "small" });
-      if (!autoplay) ytPlayer.pauseVideo();
-      ytPlayer.setVolume(curVol);
-    }
-
-    function onYouTubeIframeAPIReady() {
-      ytPlayer = new YT.Player('ytPlayer', {
-        height: '0', width: '0',
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          playsinline: 1,
-          rel: 0,
-          modestbranding: 1,
-          origin: location.origin
-        },
-        events: { onReady: onPlayerReady }
-      });
-    }
-
-    function onPlayerReady() {
-      setTrackLabel();
-      loadTrack(curTrack, false);
-    }
-
-    $("playBtn").onclick = () => {
-      userInteracted = true;
-      if (!ytPlayer) return;
-      ytPlayer.playVideo();
-    };
-    $("pauseBtn").onclick = () => {
-      if (!ytPlayer) return;
-      ytPlayer.pauseVideo();
-    };
-    $("prevBtn").onclick = () => {
-      userInteracted = true;
-      if (!ytPlayer) return;
-      loadTrack(curTrack - 1, true);
-    };
-    $("nextBtn").onclick = () => {
-      userInteracted = true;
-      if (!ytPlayer) return;
-      loadTrack(curTrack + 1, true);
-    };
-    $("volUp").onclick = () => {
-      if (!ytPlayer) return;
-      curVol = Math.min(100, curVol + 10);
-      ytPlayer.setVolume(curVol);
-    };
-    $("volDown").onclick = () => {
-      if (!ytPlayer) return;
-      curVol = Math.max(0, curVol - 10);
-      ytPlayer.setVolume(curVol);
-    };
-
-    // 모바일 자동재생 차단 대응: 첫 터치/클릭에서 play 가능하게
-    document.addEventListener("click", () => {
-      if (userInteracted) return;
-      userInteracted = true;
-      if (ytPlayer && typeof ytPlayer.playVideo === "function") ytPlayer.playVideo();
-    }, { once: true });
-
-    /* ====== 자동 색상(선택창 제거) ====== */
-    const colors = ['#ff0055','#ffdd00','#00ffaa','#00ccff','#ff4400','#aa00ff','#ffffff','#ff00aa','#ccff00','#0055ff'];
-    function hashToColor(str){
-      let h = 0;
-      for (let i=0;i<str.length;i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-      return colors[h % colors.length];
-    }
-
-    /* ====== 상태 업데이트(서버) + “모두 같은 화면(30초 고정)” 처리 ====== */
-    function applyCurrentParticipants(list){
-      participants = (list || []).map(p => ({
-        name: String(p.name || ""),
-        amount: Number(p.amount || 0),
-        color: String(p.color || "#999")
-      }));
-      totalPool = participants.reduce((a,c) => a + (Number(c.amount)||0), 0);
-      $("poolDisp").textContent = `${toMoney(totalPool)} UT`;
-      renderList();
-    }
-
-    function showWinnerModal(winnerName, prize){
-      $("resName").textContent = winnerName || "-";
-      $("resAmt").textContent  = `${toMoney(prize)} UT`;
-      $("mdRes").classList.add("on");
-    }
-    function hideWinnerModal(){
-      $("mdRes").classList.remove("on");
-    }
-
-    async function updateState() {
-      try {
-        const d = await api("getRouletteState");
-        if (!d || d.result !== "success") return;
-
-        // 서버 시간 보정
-        if (d.serverTs) serverOffset = Number(d.serverTs) - Date.now();
-        if (d.nextRoundAtMs) nextRoundMs = Number(d.nextRoundAtMs);
-
-        // active roundKey는 “지금 배팅 들어가는 라운드”
-        activeRoundKey = String(d.roundKey || "");
-
-        // 상단 LAST WINNER 마퀴
-        const winTxt = d.lastWinner ? `🏆 LAST WINNER: ${d.lastWinner.name} (${toMoney(d.lastWinner.prize)} UT) 🏆` : "";
-        $("mqText1").innerHTML = `💎 UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎 <span>${winTxt}</span>`;
-        $("mqText2").innerHTML = $("mqText1").innerHTML;
-
-        // HOLD 상태면(서버가 “지금은 승자 고정 30초”라고 알려줌)
-        if (d.phase === "HOLD" && d.settledRound && d.settledRound.roundKey) {
-          const sk = String(d.settledRound.roundKey);
-          holdUntilServerMs = Number(d.settledRound.holdUntilMs || 0);
-
-          // 아직 이 라운드를 보여준 적이 없으면: 해당 라운드 참가자/승자 고정 화면으로 전환
-          if (lastSettledShown !== sk) {
-            lastSettledShown = sk;
-
-            // 휠을 “정산 라운드” 데이터로 교체
-            applyCurrentParticipants(d.settledRound.participants || []);
-            totalPool = participants.reduce((a,c)=>a + (Number(c.amount)||0),0);
-            $("poolDisp").textContent = `${toMoney(totalPool)} UT`;
-
-            // 멈추고 승자 위치로 스핀
-            wheelState = "SPINNING";
-            // winnerName은 서버에서 id->표시명 처리해서 내려옴
-            spinToWinner(d.settledRound.winnerName);
-
-            // 모달 30초 표시
-            showWinnerModal(d.settledRound.winnerName, d.settledRound.prize);
-          }
-          // HOLD 중에는 참가자(신규라운드) 화면으로 덮지 않음
-          return;
-        }
-
-        // HOLD가 아니면: 모달 닫고 현재 라운드 참가자 표시 + 스핀 계속
-        hideWinnerModal();
-        wheelState = "SPINNING";
-        applyCurrentParticipants(d.participants || []);
-
-      } catch (e) {
-        // 조용히
-      }
-    }
-
-    // HOLD 종료 체크(서버 시간 기준)
-    function tickHoldEnd() {
-      const nowServer = Date.now() + serverOffset;
-      if (holdUntilServerMs && nowServer >= holdUntilServerMs) {
-        holdUntilServerMs = 0;
-        // 다음 updateState에서 현재 라운드 표시로 정상 복귀됨
-        hideWinnerModal();
-      }
-    }
-
-    /* ====== 타이머 표시 ====== */
-    function startTimerUI() {
-      setInterval(() => {
-        if (!nextRoundMs) return;
-
-        const nowServer = Date.now() + serverOffset;
-        const rem = Math.max(0, Math.floor((nextRoundMs - nowServer)/1000));
-        const mm = Math.floor(rem/60);
-        const ss = rem%60;
-        $("timerDisp").textContent = `${mm}:${ss<10 ? "0"+ss : ss}`;
-
-        tickHoldEnd();
-
-        // 0초가 됐는데(라운드가 넘어갔는데) 아직 HOLD가 안 오면, 상태를 빨리 한번 더 당겨옴
-        if (rem === 0) updateState();
-
-      }, 250); // 더 촘촘히(지연 줄임)
-    }
-
-    /* ====== 배팅 버튼 ====== */
-    const setB = v => $("inpBet").value = v;
-    $("bMin").onclick  = () => setB(MIN_BET);
-    $("bMax").onclick  = () => setB(Math.max(MIN_BET, Math.floor(myWallet/100)*100));
-    $("bM100").onclick = () => { let v = Number($("inpBet").value) - 100; if (v < MIN_BET) v = MIN_BET; setB(v); };
-    $("bP100").onclick = () => { let v = Number($("inpBet").value) + 100; if (v > myWallet) v = myWallet; setB(Math.max(MIN_BET, v)); };
-
-    $("bJoin").onclick = async () => {
-      const amt = Number($("inpBet").value);
-      if (amt > myWallet) return alert("잔액 부족");
-      const btn = $("bJoin");
-      const bt = $("btnText");
-
-      btn.disabled = true;
-      bt.textContent = "...";
-
-      try {
-        const r = await api("rouletteResult", { type:"bet", id: myId, amount: amt, color: myColor });
-        if (r.result === "success") {
-          myWallet = r.newBalance;
-          $("myBal").textContent = `${toMoney(myWallet)} UT`;
-
-          // 화살표 근처 “배팅 추가” 이펙트 (연타 가능)
-          spawnBetFx(amt, myColor);
-
-          // 바로 상태 갱신
-          updateState();
-        } else {
-          alert(r.msg || "실패");
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      btn.disabled = false;
-      bt.innerHTML = `<span class="unique-logo-text">UNIQUE</span>&nbsp; BET NOW`;
+    window[cb] = (data)=>{
+      cleanup();
+      resolve(data);
     };
 
-    /* ====== 시작 ====== */
-    window.onload = async () => {
-      const p = new URLSearchParams(location.search);
-      myId = (p.get("id") || "guest").toLowerCase();
-
-      // 자동 색상
-      myColor = hashToColor(myId);
-
-      // 지갑 조회
-      try {
-        const u = await api("getUserInfo", { id: myId });
-        if (u.result === "success") myWallet = Number(u.balance || 0);
-        $("myBal").textContent = `${toMoney(myWallet)} UT`;
-      } catch (e) {}
-
-      setB(MIN_BET);
-
-      // 초기 상태
-      await updateState();
-      setInterval(updateState, 1200); // 폴링(모두 동일화면 위한 핵심)
-      startTimerUI();
-
-      // 렌더 루프
-      requestAnimationFrame(draw);
-
-      // 리사이즈
-      window.addEventListener("resize", () => {
-        lastFrame = 0;
-      });
+    script.onerror = ()=>{
+      cleanup();
+      reject(new Error("JSONP load error"));
     };
-  </script>
+
+    script.src = full;
+    document.head.appendChild(script);
+  });
+}
+
+async function apiSync(){
+  // 서버 규격: action=sync&id=...
+  // 응답 예:
+  // { ok:true, serverNowMs, roundStartMs, roundNo, myName, myWallet, entries:[{name,amount}], totalPool,
+  //   winnerIndex, winnerName, winnerProfit, dailyTop:{roundNo,name,profit}, lastWinner:{...} }
+  const url = `${APP_SCRIPT_URL}?action=sync&id=${encodeURIComponent(USER_ID)}`;
+  return await jsonp(url);
+}
+
+async function apiBet(amount){
+  // 서버 규격: action=bet&id=...&amount=...
+  const url = `${APP_SCRIPT_URL}?action=bet&id=${encodeURIComponent(USER_ID)}&amount=${encodeURIComponent(amount)}`;
+  return await jsonp(url);
+}
+
+async function hardSync(){
+  try{
+    const res = await apiSync();
+    if(res && res.serverNowMs){
+      serverOffsetMs = res.serverNowMs - Date.now();
+      el("syncHint").textContent = "동기화: OK";
+      el("syncState").textContent = "OK";
+    }else{
+      el("syncHint").textContent = "동기화: 로컬(서버 응답 없음)";
+      el("syncState").textContent = "LOCAL";
+    }
+
+    const nms = nowMs();
+    roundState.roundStartMs = res.roundStartMs || computeRoundStartMs(nms);
+    roundState.roundNo = res.roundNo || computeRoundNo(nms);
+
+    roundState.myName = res.myName || res.name || USER_ID; // ✅ 이름(구글시트) 우선
+    roundState.myWallet = +res.myWallet || 0;
+
+    roundState.entries = Array.isArray(res.entries) ? res.entries : (Array.isArray(res.players) ? res.players : []);
+    roundState.totalPool = +res.totalPool || roundState.entries.reduce((a,b)=>a+(+b.amount||0),0) || 0;
+
+    roundState.winnerIndex = Number.isFinite(+res.winnerIndex) ? +res.winnerIndex : 0;
+    roundState.winnerName  = res.winnerName || (res.winner && res.winner.name) || "";
+    roundState.winnerProfit= +res.winnerProfit || (res.winner && +res.winner.profit) || 0;
+
+    roundState.dailyTop = res.dailyTop || null;
+    roundState.lastWinner = res.lastWinner || null;
+
+    // UI 반영
+    el("myName").textContent = roundState.myName;
+    el("myWallet").textContent = formatInt(roundState.myWallet);
+    el("roundNo").textContent = roundState.roundNo;
+    el("totalPool").textContent = formatInt(roundState.totalPool);
+
+    drawWheel(roundState.entries);
+    wheelMeta.targetDeg = computeTargetDegByWinnerIndex(roundState.winnerIndex);
+
+    // startOffset = target - baseRotation(SPIN_END)
+    const baseEnd = baseRotationDeg(SPIN_END) % 360;
+    wheelMeta.startOffsetDeg = ((wheelMeta.targetDeg - baseEnd) % 360 + 360) % 360;
+
+    updateTickerTexts();
+
+  }catch(err){
+    console.error(err);
+    el("syncHint").textContent = "동기화: 실패(서버 연결)";
+    el("syncState").textContent = "ERR";
+  }
+}
+
+function updateTickerTexts(){
+  // 1줄: 오늘 최고 수익자(하루 종일)
+  // 방금전판 우승자가 있으면 같이 보여주기
+  const daily = roundState.dailyTop;
+  const last  = roundState.lastWinner;
+
+  const dailyTxt = daily
+    ? `🏆 오늘 최고 수익자: ${daily.roundNo}회차 ${daily.name} (+${formatInt(daily.profit)} UT)`
+    : `🏆 오늘 최고 수익자: 집계중…`;
+
+  const lastTxt = last
+    ? `🥇 방금 전 ${last.roundNo}회차 우승: ${last.name} (+${formatInt(last.profit)} UT)`
+    : "";
+
+  el("ticker1").textContent = lastTxt ? `${lastTxt}   •   ${dailyTxt}` : dailyTxt;
+  el("ticker2").textContent = "당신도 행운의 주인공이 될 수있습니다.";
+}
+
+function formatInt(n){
+  const x = Math.floor(+n||0);
+  return x.toLocaleString("en-US");
+}
+
+/* =========================================================
+   [G] BETTING RULES + UI
+   ========================================================= */
+function setBetControlsEnabled(on){
+  el("betNow").disabled = !on;
+  el("btnMin").disabled = !on;
+  el("btnMinus").disabled = !on;
+  el("btnPlus").disabled = !on;
+  el("btnMax").disabled = !on;
+}
+
+function updateBetStateUI(remainingSec){
+  const bettingOpen = remainingSec > BET_CLOSE_REMAIN_SEC && remainingSec > STOP_SEC;
+  el("betState").textContent = bettingOpen ? "OPEN" : "CLOSED";
+  setBetControlsEnabled(bettingOpen);
+}
+
+/* =========================================================
+   [H] TIMER + WHEEL ANIMATION (SYNCED)
+   ========================================================= */
+const wheelWrap = el("wheelWrap");
+let rafId = null;
+
+function tickSecond(){
+  const ms = nowMs();
+  const start = roundState.roundStartMs || computeRoundStartMs(ms);
+  const elapsed = (ms - start) / 1000;
+  const remain = Math.max(0, Math.floor(ROUND_SEC - elapsed));
+
+  // ✅ timeLeft가 "갔다왔다" 하지 않게: 절대 증가 금지
+  if(lastSecondShown !== null && remain > lastSecondShown){
+    // 이전보다 커지면 이전값 유지 (서버 오프셋 튐 방지)
+  }else{
+    lastSecondShown = remain;
+  }
+
+  const showRemain = lastSecondShown ?? remain;
+
+  // 표시
+  el("timeLeft").textContent = `${String(Math.floor(showRemain/60)).padStart(2,"0")}:${String(showRemain%60).padStart(2,"0")}`;
+  el("roundNo").textContent = roundState.roundNo;
+
+  updateBetStateUI(showRemain);
+
+  // 위너 팝업(정지 구간 30초)
+  const inStop = (elapsed >= SPIN_END) && (elapsed < ROUND_SEC);
+  if(inStop){
+    showWinnerToast();
+  }else{
+    hideWinnerToast();
+  }
+
+  // 라운드 넘어가면 리셋 + 강제 sync
+  if(elapsed >= ROUND_SEC){
+    lastSecondShown = null;
+    hardSync(); // 다음 회차 정보/우승자/entries 갱신
+  }
+
+  // 다음 1초 경계에 맞춰 재호출(흔들림/드리프트 최소화)
+  const next = 1000 - (nowMs() % 1000);
+  setTimeout(tickSecond, Math.max(30, next));
+}
+
+function animateWheel(){
+  const ms = nowMs();
+  const start = roundState.roundStartMs || computeRoundStartMs(ms);
+  const tSec = (ms - start) / 1000;
+
+  let rot;
+  if(tSec >= SPIN_END){
+    rot = wheelMeta.targetDeg;
+  }else{
+    const base = baseRotationDeg(Math.max(0,tSec));
+    rot = (wheelMeta.startOffsetDeg + base) % 360;
+  }
+
+  // wheelWrap 전체를 회전 (부분 노출/화살표는 고정)
+  wheelWrap.style.transform = `translateX(-50%) rotate(${rot}deg)`;
+
+  rafId = requestAnimationFrame(animateWheel);
+}
+
+function showWinnerToast(){
+  // winnerName/Profit 없으면 표시 안 함
+  if(!roundState.winnerName) return;
+  el("winnerName").textContent = roundState.winnerName;
+  el("winnerAmt").textContent  = `${formatInt(roundState.winnerProfit)} UT`;
+  el("winnerSub").textContent  = "30초 정지 후 다음 회차가 시작됩니다. (운영 10% 승자이익 기준)";
+  el("winnerToast").classList.add("show");
+}
+function hideWinnerToast(){
+  el("winnerToast").classList.remove("show");
+}
+
+/* =========================================================
+   [I] EVENTS
+   ========================================================= */
+function clampBet(){
+  betAmount = Math.max(10, Math.min(1000000, betAmount));
+  el("betAmt").textContent = formatInt(betAmount);
+  el("btnCur").textContent = formatInt(betAmount);
+}
+
+el("btnMin").addEventListener("click", ()=>{ betAmount = 10; clampBet(); });
+el("btnMinus").addEventListener("click", ()=>{ betAmount -= 100; clampBet(); });
+el("btnPlus").addEventListener("click", ()=>{ betAmount += 100; clampBet(); });
+el("btnMax").addEventListener("click", ()=>{ betAmount = 1000; clampBet(); }); // 원하면 바꿔
+
+el("betNow").addEventListener("click", async ()=>{
+  try{
+    el("betNow").disabled = true;
+    const res = await apiBet(betAmount);
+
+    // 성공 시 화면 갱신
+    if(res && res.ok){
+      // wallet/name/entries/totalPool 갱신
+      if(res.serverNowMs) serverOffsetMs = res.serverNowMs - Date.now();
+      if(res.myWallet!=null) roundState.myWallet = +res.myWallet || 0;
+      if(res.myName) roundState.myName = res.myName;
+
+      if(Array.isArray(res.entries)) roundState.entries = res.entries;
+      if(res.totalPool!=null) roundState.totalPool = +res.totalPool||0;
+
+      el("myWallet").textContent = formatInt(roundState.myWallet);
+      el("myName").textContent = roundState.myName;
+      el("totalPool").textContent = formatInt(roundState.totalPool);
+
+      drawWheel(roundState.entries);
+      // winnerIndex는 라운드 시작 시 고정이라고 가정 → 여기선 재계산만
+      wheelMeta.targetDeg = computeTargetDegByWinnerIndex(roundState.winnerIndex);
+      const baseEnd = baseRotationDeg(SPIN_END) % 360;
+      wheelMeta.startOffsetDeg = ((wheelMeta.targetDeg - baseEnd) % 360 + 360) % 360;
+    }else{
+      alert((res && res.msg) ? res.msg : "베팅 실패(서버 응답)");
+    }
+  }catch(err){
+    console.error(err);
+    alert("베팅 실패(연결 오류)");
+  }finally{
+    // 상태에 따라 다시 활성화는 tickSecond에서 처리
+  }
+});
+
+/* BGM (목소리 없음) */
+const bgm = el("bgm");
+const bgmToggle = el("bgmToggle");
+const bgmVol = el("bgmVol");
+bgm.volume = +bgmVol.value;
+
+bgmVol.addEventListener("input", ()=>{ bgm.volume = +bgmVol.value; });
+
+bgmToggle.addEventListener("click", async ()=>{
+  try{
+    if(bgm.paused){
+      await bgm.play();
+      bgmToggle.textContent = "⏸";
+    }else{
+      bgm.pause();
+      bgmToggle.textContent = "▶";
+    }
+  }catch(e){
+    // 자동재생 제한 케이스
+    alert("브라우저 자동재생 제한으로 BGM은 사용자가 한번 눌러야 재생됩니다.");
+  }
+});
+
+/* =========================================================
+   [J] BOOT
+   ========================================================= */
+(async function boot(){
+  // 초기 UI
+  el("myName").textContent = USER_ID;
+  clampBet();
+
+  // 첫 sync
+  await hardSync();
+
+  // 타이머/애니메이션 시작
+  tickSecond();
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(animateWheel);
+
+  // entries 실시간 갱신(너무 잦지 않게): 5초마다(정지/마감 구간 제외)
+  setInterval(async ()=>{
+    const ms = nowMs();
+    const start = roundState.roundStartMs || computeRoundStartMs(ms);
+    const elapsed = (ms - start)/1000;
+    const remain = ROUND_SEC - elapsed;
+    if(remain <= 65) return; // 마감~정지 구간엔 불필요 갱신 금지
+    try{
+      const res = await apiSync();
+      if(res && Array.isArray(res.entries)){
+        roundState.entries = res.entries;
+        roundState.totalPool = +res.totalPool || roundState.entries.reduce((a,b)=>a+(+b.amount||0),0) || 0;
+        el("totalPool").textContent = formatInt(roundState.totalPool);
+        drawWheel(roundState.entries);
+      }
+      if(res && (res.dailyTop || res.lastWinner)){
+        roundState.dailyTop = res.dailyTop || roundState.dailyTop;
+        roundState.lastWinner = res.lastWinner || roundState.lastWinner;
+        updateTickerTexts();
+      }
+    }catch(_){}
+  }, 5000);
+})();
+</script>
 </body>
 </html>
