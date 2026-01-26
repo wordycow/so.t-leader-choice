@@ -1,3 +1,4 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 /* THE UNIQUE - ROYAL ROULETTE Playlist
    - roulette.html과 같은 폴더(/games/)에 두세요.
 */
