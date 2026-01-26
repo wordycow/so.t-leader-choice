@@ -789,40 +789,39 @@
 
 <script>
 /* ==========================
-   SUPABASE SYNC (멀티플레이)
+   SUPABASE (멀티플레이)
 ========================== */
 const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
+const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-const SB_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && typeof window.supabase.createClient === "function");
-const sb = SB_ENABLED
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession:false } })
-  : null;
+const SB_ENABLED = !!(SUPABASE_URL && SUPABASE_KEY);
+const sb = SB_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-let serverBetsCache = [];   // 현재 라운드 서버 베팅 캐시
 let sbChannel = null;
-let lastSubscribedRoundKey = null;
+let serverBetMap = new Map(); // uuid -> { round,id,amount,ts }
+let sbPollingTimer = null;
+let currentSubscribedRound = null;
 
-function setSyncStatus(){
+function setSyncStatus(text){
   const el = document.getElementById("syncStatus");
-  if(!el) return;
-  el.textContent = SB_ENABLED ? "동기화: LIVE" : "동기화: LOCAL";
-  el.title = SB_ENABLED ? "Supabase Realtime" : "서버 미연결";
+  if(el) el.textContent = text;
 }
 
 async function sbFetchRoundBets(rk){
   if(!sb) return [];
   const { data, error } = await sb
     .from("roulette_bets")
-    .select("player_id, amount, created_at, round")
+    .select("id, round, player_id, amount, created_at")
     .eq("round", rk)
     .order("created_at", { ascending: true });
 
   if(error){
     console.warn("[SB] fetch error", error);
+    setSyncStatus("동기화: ERROR");
     return [];
   }
   return (data || []).map(x => ({
+    key: x.id,
     round: x.round,
     id: x.player_id,
     amount: x.amount,
@@ -830,29 +829,47 @@ async function sbFetchRoundBets(rk){
   }));
 }
 
+async function sbRefreshRound(rk){
+  const rows = await sbFetchRoundBets(rk);
+  serverBetMap.clear();
+  for(const r of rows){
+    serverBetMap.set(r.key, r);
+  }
+  setSyncStatus("동기화: LIVE");
+}
+
 async function sbInsertBet(rk, playerId, amount){
-  if(!sb) return;
+  if(!sb) return { ok:false };
   const { error } = await sb.from("roulette_bets").insert({
     round: rk,
     player_id: playerId,
-    amount: amount
+    amount
   });
-  if(error) console.warn("[SB] insert error", error);
+  if(error){
+    console.warn("[SB] insert error", error);
+    setSyncStatus("동기화: INSERT ERROR");
+    return { ok:false, error };
+  }
+  return { ok:true };
 }
 
 async function sbResubscribeRound(rk){
   if(!sb) return;
-  lastSubscribedRoundKey = rk;
 
-  // 1) 현재 라운드 전체를 먼저 받아서 캐시 채움
-  serverBetsCache = await sbFetchRoundBets(rk);
+  // 이미 같은 라운드면 스킵
+  if(currentSubscribedRound === rk && sbChannel) return;
+  currentSubscribedRound = rk;
 
-  // 2) 라운드 채널 재구독
+  // 1) 먼저 전체 동기화
+  await sbRefreshRound(rk);
+
+  // 2) 기존 채널 제거
   if(sbChannel){
     try{ await sb.removeChannel(sbChannel); }catch(e){}
     sbChannel = null;
   }
 
+  // 3) 새 라운드 채널 구독
   sbChannel = sb.channel("roulette_bets_" + rk)
     .on("postgres_changes", {
       event: "INSERT",
@@ -861,25 +878,29 @@ async function sbResubscribeRound(rk){
       filter: `round=eq.${rk}`
     }, (payload) => {
       const n = payload.new;
-      const t = new Date(n.created_at).getTime();
-
-      // 중복(내가 optimistic으로 넣었거나, fetch로 이미 있음) 방지
-      const dup = serverBetsCache.some(b =>
-        b.round === rk && b.id === n.player_id && b.amount === n.amount && Math.abs((b.ts||0) - t) < 5000
-      );
-      if(!dup){
-        serverBetsCache.push({
-          round: rk,
-          id: n.player_id,
-          amount: n.amount,
-          ts: t
-        });
-      }
+      // uuid PK 기준으로 upsert → 중복 방지
+      serverBetMap.set(n.id, {
+        key: n.id,
+        round: n.round,
+        id: n.player_id,
+        amount: n.amount,
+        ts: new Date(n.created_at).getTime()
+      });
+      setSyncStatus("동기화: LIVE");
     })
-    .subscribe((status)=>{
-      // 콘솔에서 상태 확인 가능
-      // console.log("[SB] channel status:", status);
+    .subscribe((status) => {
+      if(status === "SUBSCRIBED") setSyncStatus("동기화: LIVE");
     });
+}
+
+function sbStartPolling(){
+  if(!SB_ENABLED || sbPollingTimer) return;
+  // Realtime이 꺼져 있어도 최소 폴링으로 “다른 사람 베팅 보이게”
+  sbPollingTimer = setInterval(()=>{
+    if(!SB_ENABLED) return;
+    // 현재 라운드만 가볍게 갱신
+    sbRefreshRound(roundKey).catch(()=>{});
+  }, 1500);
 }
 
 /* ==========================
@@ -906,18 +927,15 @@ function buildPlayerBar(){
   const bar = document.createElement("div");
   bar.className = "playerBar";
   bar.id = "playerBar";
-
   bar.innerHTML = `
     <button class="pBtn" id="pPrev" title="Prev">⏮</button>
     <button class="pBtn" id="pPlay" title="Play/Pause">▶</button>
     <button class="pBtn" id="pRand" title="Random">🎲</button>
     <button class="pBtn" id="pNext" title="Next">⏭</button>
-
     <div class="pMeta">
       <div class="pName" id="pTitle">ROYAL BGM</div>
       <div class="pSub" id="pSub">0/0</div>
     </div>
-
     <div class="volWrap">
       <div class="volLabel">VOL</div>
       <input id="pVol" type="range" min="0" max="100" value="35" />
@@ -930,10 +948,8 @@ function dockBgmBar(){
   const isMobile = matchMedia("(max-width: 980px)").matches;
   const bar = document.getElementById("playerBar");
   if(!bar) return;
-
   const pcDock = document.getElementById("bgmDock");
   const moDock = document.getElementById("bgmDockMobile");
-
   if(isMobile){
     if(moDock && bar.parentElement !== moDock) moDock.appendChild(bar);
   }else{
@@ -984,7 +1000,6 @@ function onYouTubeIframeAPIReady(){
   };
   document.getElementById("pPrev").onclick = prevTrack;
   document.getElementById("pNext").onclick = nextTrack;
-
   document.getElementById("pRand").onclick = () => {
     if(!ytPlayer || PLAYLIST.length <= 1) return;
     let n = Math.floor(Math.random() * PLAYLIST.length);
@@ -993,7 +1008,6 @@ function onYouTubeIframeAPIReady(){
     ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
     updateBgmMeta();
   };
-
   document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
   window.addEventListener("resize", dockBgmBar);
 }
@@ -1036,12 +1050,15 @@ let bettingLocked = false;
 let showingWinner = false;
 let winnerUntil = 0;
 
-/* ==========================
-   4) Bets / Wallet
-========================== */
-const STORE_KEY = "unique_roulette_bets_v1";
-const WALLET_KEY = "unique_wallet_v1";
+// ✅ 락(60초) 시점에 스냅샷 고정 → 모두 같은 결과
+let frozenPlayers = null;
+let frozenRoundKey = null;
+let frozenDone = false;
 
+/* ==========================
+   4) Wallet (로컬)
+========================== */
+const WALLET_KEY = "unique_wallet_v1";
 function loadWallet(){
   const raw = localStorage.getItem(WALLET_KEY);
   const base = raw ? JSON.parse(raw) : {};
@@ -1056,10 +1073,10 @@ function setWallet(me){
   all[MY_ID] = me;
   setWalletAll(all);
 }
-function loadBets(){ const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : []; }
-function saveBets(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
 
-/* 같은 아이디 합산 */
+/* ==========================
+   5) Bets aggregation (정렬 안정화)
+========================== */
 function aggregateById(bets){
   const map = new Map();
   for(const b of bets){
@@ -1069,22 +1086,35 @@ function aggregateById(bets){
   }
   return [...map.entries()]
     .map(([id, amount])=>({id, amount}))
-    .sort((a,b)=> b.amount - a.amount);
+    // ✅ amount 동률이면 id로 정렬 → 모든 참여자 동일한 순서/조각/우승
+    .sort((a,b)=> (b.amount - a.amount) || a.id.localeCompare(b.id));
+}
+
+function getCurrentRoundBets(){
+  if(SB_ENABLED){
+    return [...serverBetMap.values()].filter(b => b.round === roundKey);
+  }
+  return []; // SB 꺼진 모드(지금은 멀티 목적이라 생략)
+}
+
+function getCurrentAggregatedPlayers(){
+  const rb = getCurrentRoundBets();
+  const company = { round: roundKey, id: "COMPANY", amount: 100, ts: Date.now() };
+  return aggregateById([company, ...rb]);
 }
 
 /* ==========================
-   5) Wheel Drawing
-   ✅ 글씨가 룰렛과 같이 회전 + “9시 기준 옆으로(=반지름 방향)”
+   6) Wheel Drawing
+   ✅ 글씨가 룰렛판과 같이 돌아감
+   ✅ 반대편은 자동으로 뒤집어서 "위로" 읽히게(WORDYCOW 뒤집힘 해결)
 ========================== */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
-
 let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 let wheelAngle = 0;
 let wheelRunning = true;
 
 function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
-
 function hashStr(s){
   s = String(s||"");
   let h = 2166136261;
@@ -1094,7 +1124,6 @@ function hashStr(s){
   }
   return (h>>>0);
 }
-
 const SEG_PALETTES = [
   {a:"#0b0f1a", b:"#39445e", c:"#05060b"},
   {a:"#081b3a", b:"#2f6bff", c:"#040a16"},
@@ -1103,7 +1132,6 @@ const SEG_PALETTES = [
   {a:"#3a0018", b:"#d4145a", c:"#16000a"},
   {a:"#1a0f00", b:"#ffd36b", c:"#080500"},
 ];
-
 function pickPalette(name){
   const idx = hashStr(name) % SEG_PALETTES.length;
   return SEG_PALETTES[idx];
@@ -1129,29 +1157,17 @@ function drawWheel(players = null){
   ctx.translate(cx,cy);
   ctx.rotate(wheelAngle);
 
-  // base shadow ring
-  ctx.beginPath();
-  ctx.arc(0,0,R*1.08,0,Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.28)";
-  ctx.fill();
-
   // outer gold ring
   const grd = ctx.createLinearGradient(-R, -R, R, R);
   grd.addColorStop(0, "#8b6a00");
   grd.addColorStop(0.35, "#ffd36b");
-  grd.addColorStop(0.65, "#ffcc00");
+  grd.addColorStop(0.65, "#f7b500");
   grd.addColorStop(1, "#4a3400");
   ctx.beginPath();
   ctx.arc(0,0,R*1.03,0,Math.PI*2);
-  ctx.lineWidth = R*0.085;
+  ctx.lineWidth = R*0.08;
   ctx.strokeStyle = grd;
   ctx.stroke();
-
-  // inner disc base
-  ctx.beginPath();
-  ctx.arc(0,0,R*0.94,0,Math.PI*2);
-  ctx.fillStyle = "#0b0b10";
-  ctx.fill();
 
   // segments
   const total = Math.max(1, list.reduce((s,p)=>s+p.amount,0));
@@ -1179,25 +1195,17 @@ function drawWheel(players = null){
     ctx.beginPath();
     ctx.moveTo(0,0);
     ctx.lineTo(Math.cos(start)*R*0.92, Math.sin(start)*R*0.92);
-    ctx.strokeStyle = "rgba(255, 208, 80, 0.16)";
+    ctx.strokeStyle = "rgba(255, 208, 80, 0.14)";
     ctx.lineWidth = 2*dpr;
     ctx.stroke();
 
-    // ✅ 라벨: 룰렛과 같이 회전 + 9시 기준 옆(반지름 방향)
     const mid = start + ang/2;
-    drawLabelRadial(p.id, p.amount, mid, ang, R);
+    drawLabelTangentUpright(p.id, p.amount, mid, ang, R);
 
     start += ang;
   }
 
-  // inner highlight ring
-  ctx.beginPath();
-  ctx.arc(0,0,R*0.90,0,Math.PI*2);
-  ctx.strokeStyle="rgba(255,255,255,0.06)";
-  ctx.lineWidth=2*dpr;
-  ctx.stroke();
-
-  // center bigger + UNIQUE
+  // center
   const cR = R*0.22;
   const ring = ctx.createLinearGradient(-cR, -cR, cR, cR);
   ring.addColorStop(0, "#3c2a00");
@@ -1232,34 +1240,40 @@ function drawWheel(players = null){
   ctx.restore();
 }
 
-/* ✅ 라벨을 “반지름 방향(9시 기준 옆)”으로 + 룰렛과 같이 회전 */
-function drawLabelRadial(name, amt, midAngle, segAngle, R){
+// ✅ 룰렛판과 “같이” 회전 + 반대편 자동 뒤집기(읽는 방향 위로)
+function drawLabelTangentUpright(name, amt, midAngle, segAngle, R){
   if(segAngle < 0.10) return;
 
   const label = String(name||"").trim();
   const amountText = `${amt}`;
 
+  const x = Math.cos(midAngle) * (R*0.62);
+  const y = Math.sin(midAngle) * (R*0.62);
+
+  // 조각 작으면 글씨 축소
   const scale = clamp(segAngle / 0.55, 0.55, 1.0);
-  const nameSize = Math.floor(clamp(R*0.055, 12*dpr, 22*dpr) * scale);
-  const amtSize  = Math.floor(clamp(R*0.050, 11*dpr, 20*dpr) * scale);
-  const maxW = R * (0.42 * scale);
+  const nameSize = Math.floor(clamp(R*0.060, 12*dpr, 22*dpr) * scale);
+  const amtSize  = Math.floor(clamp(R*0.052, 11*dpr, 20*dpr) * scale);
 
   ctx.save();
+  ctx.translate(x, y);
 
-  // (현재 ctx는 wheelAngle 만큼 이미 회전된 상태)
-  ctx.rotate(midAngle);
-  ctx.translate(R*0.62, 0);
+  // tangent 방향
+  let rot = midAngle + Math.PI/2;
 
-  // 왼쪽 반원(9시쪽)은 뒤집어서 항상 읽히게
-  if(midAngle > Math.PI/2 && midAngle < 3*Math.PI/2){
-    ctx.rotate(Math.PI);
-  }
+  // ✅ 뒤집힘 보정: 위로 읽히게
+  // (rot가 90~270도 사이면 글씨가 거꾸로 보이므로 180도 뒤집음)
+  const norm = ((rot % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  if(norm > Math.PI/2 && norm < (Math.PI*3)/2) rot += Math.PI;
+
+  ctx.rotate(rot);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10*dpr;
 
+  // 작은 조각이면 금액만
   if(segAngle < 0.18){
     ctx.font = `${amtSize}px Rajdhani`;
     ctx.fillStyle = "rgba(255,255,255,0.90)";
@@ -1271,32 +1285,29 @@ function drawLabelRadial(name, amt, midAngle, segAngle, R){
     return;
   }
 
-  let t = label;
+  // 이름
   ctx.font = `${nameSize}px Cinzel`;
-  while(ctx.measureText(t).width > maxW && t.length > 3) t = t.slice(0,-1);
-  if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
-
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.strokeStyle = "rgba(0,0,0,0.38)";
   ctx.lineWidth = 3*dpr;
-  ctx.strokeText(t, 0, -R*0.06*scale);
-  ctx.fillText(t, 0, -R*0.06*scale);
+  ctx.strokeText(label, 0, -R*0.07*scale);
+  ctx.fillText(label, 0, -R*0.07*scale);
 
+  // 금액
   ctx.font = `${amtSize}px Rajdhani`;
   ctx.fillStyle = "rgba(255, 210, 130, 0.95)";
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   ctx.lineWidth = 3*dpr;
-  ctx.strokeText(amountText, 0, R*0.06*scale);
-  ctx.fillText(amountText, 0, R*0.06*scale);
+  ctx.strokeText(amountText, 0, R*0.07*scale);
+  ctx.fillText(amountText, 0, R*0.07*scale);
 
   ctx.restore();
 }
 
 /* ==========================
-   6) Bet UI
+   7) Bet UI
 ========================== */
 let betAmount = 100;
-
 function setBetAmount(v){
   betAmount = Math.max(0, Math.min(1000000, v|0));
   document.getElementById("betAmountBox").textContent = betAmount;
@@ -1313,42 +1324,35 @@ document.getElementById("btnMid").onclick  = ()=> setBetAmount(betAmount);
 function setBettingUI(isOpen){
   const pill = document.getElementById("betStatePill");
   const btnBet = document.getElementById("btnBet");
-
   pill.textContent = isOpen ? "BETTING OPEN" : "BETTING CLOSED";
   pill.classList.toggle("open", isOpen);
   pill.classList.toggle("closed", !isOpen);
-
   btnBet.disabled = !isOpen;
   btnBet.classList.toggle("is-open", isOpen);
   btnBet.classList.toggle("is-closed", !isOpen);
   btnBet.innerHTML = isOpen ? `UNIQUE  &nbsp; BET NOW` : `BETTING CLOSED`;
 }
 
-document.getElementById("btnBet").onclick = ()=>{
+document.getElementById("btnBet").onclick = async ()=>{
   if(bettingLocked || showingWinner) return;
   if(betAmount <= 0) return;
 
   const w = getWallet();
   if(w < betAmount) return;
 
-  // 로컬 기록/지갑
-  const bets = loadBets();
-  bets.push({ round: roundKey, id: MY_ID, amount: betAmount, ts: Date.now() });
-  saveBets(bets);
-  setWallet(w - betAmount);
-
-  // 서버 기록(멀티플레이)
+  // ✅ SB 모드: 서버 insert 성공 후 지갑 차감(안 먹힘 방지)
   if(SB_ENABLED){
-    // 화면 즉시 반영(optimistic)
-    serverBetsCache.push({ round: roundKey, id: MY_ID, amount: betAmount, ts: Date.now() });
-    sbInsertBet(roundKey, MY_ID, betAmount);
+    const res = await sbInsertBet(roundKey, MY_ID, betAmount);
+    if(!res.ok) return;
+    setWallet(w - betAmount);
+    await sbRefreshRound(roundKey);
+    refreshUI();
+    return;
   }
-
-  refreshUI();
 };
 
 /* ==========================
-   7) Round helpers
+   8) Round helpers
 ========================== */
 function alignRoundStart(ms){
   return Math.floor(ms / (ROUND_SEC*1000)) * (ROUND_SEC*1000);
@@ -1358,6 +1362,9 @@ function initRound(){
   roundStartAt = alignRoundStart(now);
   roundEndAt = roundStartAt + ROUND_SEC*1000;
   roundKey = String(roundStartAt);
+  frozenPlayers = null;
+  frozenRoundKey = null;
+  frozenDone = false;
 }
 function fmtMMSS(sec){
   sec = Math.max(0, sec|0);
@@ -1366,36 +1373,8 @@ function fmtMMSS(sec){
   return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
-function getCurrentRoundBets(){
-  // ✅ LIVE면 서버 + 로컬(혹시 서버 삽입 막혀도 최소 내 베팅은 보이게)
-  if(SB_ENABLED){
-    const server = serverBetsCache.filter(b => b.round === roundKey);
-    const local  = loadBets().filter(b => b.round === roundKey);
-
-    const seen = new Set();
-    const merged = [];
-    for(const b of [...server, ...local]){
-      const key = `${b.id}|${b.amount}|${Math.floor((b.ts||0)/1000)}`;
-      if(seen.has(key)) continue;
-      seen.add(key);
-      merged.push(b);
-    }
-    return merged;
-  }
-
-  // LOCAL
-  const bets = loadBets();
-  return bets.filter(b => b.round === roundKey);
-}
-
-function getCurrentAggregatedPlayers(){
-  const rb = getCurrentRoundBets();
-  const company = { round: roundKey, id: "COMPANY", amount: 100, ts: Date.now() };
-  return aggregateById([company, ...rb]);
-}
-
 /* ==========================
-   8) UI refresh
+   9) UI refresh
 ========================== */
 function refreshUI(){
   document.getElementById("myWallet").textContent = `${getWallet().toLocaleString()} UT`;
@@ -1420,19 +1399,19 @@ function refreshUI(){
   });
   document.getElementById("playersCount").textContent = `${players.length}`;
 
-  const bets = getCurrentRoundBets().filter(b => b.id === MY_ID);
-  const myTotal = bets.reduce((s,b)=>s+b.amount,0);
+  const myBets = getCurrentRoundBets().filter(b => b.id === MY_ID);
+  const myTotal = myBets.reduce((s,b)=>s+b.amount,0);
   document.getElementById("myTotalBet").textContent = `${myTotal.toLocaleString()} UT`;
 
   const myList = document.getElementById("myBetsList");
   myList.innerHTML = "";
-  if(!bets.length){
+  if(!myBets.length){
     const row = document.createElement("div");
     row.className="item";
     row.innerHTML = `<div class="nm" style="opacity:.8;">(아직 베팅 없음)</div><div class="amt">—</div>`;
     myList.appendChild(row);
   }else{
-    bets.slice(-6).reverse().forEach(b=>{
+    myBets.slice(-6).reverse().forEach(b=>{
       const row = document.createElement("div");
       row.className="item";
       row.innerHTML = `
@@ -1447,7 +1426,7 @@ function refreshUI(){
 }
 
 /* ==========================
-   9) Winner logic
+   10) Winner logic (0초 정지 + 화살표 일치)
 ========================== */
 function pickWinner(players){
   const total = players.reduce((s,p)=>s+p.amount,0);
@@ -1472,7 +1451,7 @@ function computeStopAngle(players, winIndex){
   for(let i=0;i<players.length;i++){
     const ang = Math.max(0.001, players[i].amount/total) * Math.PI*2;
     const mid = start + ang/2;
-    if(i === winIndex) return (-Math.PI/2) - mid;
+    if(i === winIndex) return (-Math.PI/2) - mid; // 화살표(12시) 정렬
     start += ang;
   }
   return 0;
@@ -1482,7 +1461,6 @@ function showWinnerOverlay(name, amount){
   document.getElementById("winnerName").textContent = name;
   document.getElementById("winnerSub").textContent = amount ? `${amount.toLocaleString()} UT` : "—";
   document.getElementById("winnerOverlay").style.display = "flex";
-
   document.getElementById("tickerText").textContent =
     `UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎  ·  LAST WINNER: ${name} (${amount||0} UT) 🏆  ·  UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎`;
 }
@@ -1491,41 +1469,57 @@ function hideWinnerOverlay(){
 }
 
 /* ==========================
-   10) Main Loop
+   11) Main Loop
 ========================== */
 function updateClockAndState(){
   const now = Date.now();
+  let leftSec = Math.ceil((roundEndAt - now)/1000);
 
+  // ✅ LOCK 시점(60초)에서 스냅샷 고정(모든 참여자 동일 결과)
+  if(!showingWinner && !frozenDone && leftSec <= LOCK_SEC){
+    frozenDone = true;
+    (async ()=>{
+      if(SB_ENABLED) await sbRefreshRound(roundKey);
+      frozenPlayers = getCurrentAggregatedPlayers();
+      frozenRoundKey = roundKey;
+    })();
+  }
+
+  // 라운드 종료 순간(0초) → 즉시 정지 + 우승자
   if(!showingWinner && now >= roundEndAt){
-    const players = getCurrentAggregatedPlayers();
-    const win = pickWinner(players);
+    const players = (frozenPlayers && frozenRoundKey === roundKey)
+      ? frozenPlayers
+      : getCurrentAggregatedPlayers();
 
+    const win = pickWinner(players);
     wheelRunning = false;
     wheelAngle = computeStopAngle(players, win.index);
 
     showingWinner = true;
     winnerUntil = now + FREEZE_SEC*1000;
     showWinnerOverlay(win.id, win.amount);
-  }
-
-  let leftSec;
-  if(showingWinner){
     leftSec = 0;
-    if(now >= winnerUntil){
-      hideWinnerOverlay();
-      showingWinner = false;
-
-      const start = alignRoundStart(now);
-      roundStartAt = start;
-      roundEndAt = start + ROUND_SEC*1000;
-      roundKey = String(start);
-
-      wheelRunning = true;
-    }
-  }else{
-    leftSec = Math.ceil((roundEndAt - now)/1000);
   }
 
+  // 승자 표시 끝나면 다음 라운드
+  if(showingWinner && now >= winnerUntil){
+    hideWinnerOverlay();
+    showingWinner = false;
+
+    const start = alignRoundStart(now);
+    roundStartAt = start;
+    roundEndAt = start + ROUND_SEC*1000;
+    roundKey = String(start);
+
+    wheelRunning = true;
+    frozenPlayers = null;
+    frozenRoundKey = null;
+    frozenDone = false;
+
+    if(SB_ENABLED) sbResubscribeRound(roundKey);
+  }
+
+  // 타임 표시
   const timeEl = document.getElementById("timeLeft");
   if(leftSec <= 60){
     timeEl.textContent = String(Math.max(0,leftSec));
@@ -1539,13 +1533,9 @@ function updateClockAndState(){
   bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
   setBettingUI(!bettingLocked);
 
+  // wheel motion
   if(!showingWinner && wheelRunning){
     wheelAngle += 0.0022;
-  }
-
-  // ✅ 라운드 바뀌면 Supabase도 그 라운드로 재구독 (안하면 남이 안보임)
-  if(SB_ENABLED && roundKey !== lastSubscribedRoundKey){
-    sbResubscribeRound(roundKey);
   }
 
   refreshUI();
@@ -1553,7 +1543,7 @@ function updateClockAndState(){
 }
 
 /* ==========================
-   11) Theme Switch (하단 바)
+   12) Theme Switch
 ========================== */
 (function(){
   const KEY = "unique_bg_theme";
@@ -1578,16 +1568,23 @@ function updateClockAndState(){
   setTheme(localStorage.getItem(KEY) ?? "0");
 })();
 
-/* init */
-function init(){
+/* ==========================
+   init
+========================== */
+async function init(){
   initRound();
   resizeCanvas();
-  setSyncStatus();
-
-  if(SB_ENABLED) sbResubscribeRound(roundKey);
-
   refreshUI();
   setBettingUI(true);
+
+  if(SB_ENABLED){
+    setSyncStatus("동기화: CONNECTING...");
+    await sbResubscribeRound(roundKey);
+    sbStartPolling();
+  }else{
+    setSyncStatus("동기화: LOCAL");
+  }
+
   requestAnimationFrame(updateClockAndState);
 }
 init();
