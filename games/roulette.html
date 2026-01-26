@@ -668,7 +668,7 @@
   </style>
 
   <!-- ✅ 네가 만든 플레이리스트 파일 (필수) -->
- <script src="./roulette.playlist.js?v=20260126"></script>
+  <script src="./roulette.playlist.js?v=20260126"></script>
   <!-- YouTube Iframe API -->
   <script defer src="https://www.youtube.com/iframe_api"></script>
 </head>
@@ -876,7 +876,6 @@ async function sbResubscribeRound(rk){
       filter: `round=eq.${rk}`
     }, (payload) => {
       const n = payload.new;
-      // uuid PK 기준으로 upsert → 중복 방지
       serverBetMap.set(n.id, {
         key: n.id,
         round: n.round,
@@ -893,10 +892,9 @@ async function sbResubscribeRound(rk){
 
 function sbStartPolling(){
   if(!SB_ENABLED || sbPollingTimer) return;
-  // Realtime이 꺼져 있어도 최소 폴링으로 “다른 사람 베팅 보이게”
   sbPollingTimer = setInterval(()=>{
     if(!SB_ENABLED) return;
-    // 현재 라운드만 가볍게 갱신
+    if(!roundKey) return;
     sbRefreshRound(roundKey).catch(()=>{});
   }, 1500);
 }
@@ -907,6 +905,16 @@ function sbStartPolling(){
 const qs = new URLSearchParams(location.search);
 const MY_ID = (qs.get("id") || "GUEST").trim();
 document.getElementById("myId").textContent = MY_ID;
+
+// ✅ 지갑 (로컬)
+const WALLET_KEY = `unique_wallet_${MY_ID}`;
+function getWallet(){
+  const v = localStorage.getItem(WALLET_KEY);
+  return (v == null) ? 1000 : Math.max(0, parseInt(v,10) || 0);
+}
+function setWallet(n){
+  localStorage.setItem(WALLET_KEY, String(Math.max(0, n|0)));
+}
 
 /* ==========================
    1) Playlist
@@ -955,6 +963,43 @@ function dockBgmBar(){
   }
 }
 
+function updatePlayBtnIcon(){
+  if(!ytPlayer) return;
+  const st = ytPlayer.getPlayerState();
+  const el = document.getElementById("pPlay");
+  if(el) el.textContent = (st === YT.PlayerState.PLAYING) ? "⏸" : "▶";
+}
+function updateBgmMeta(){
+  const titleEl = document.getElementById("pTitle");
+  const subEl   = document.getElementById("pSub");
+  if(titleEl) titleEl.textContent = `ROYAL BGM ${String(ytIndex+1).padStart(2,"0")}`;
+  if(subEl) subEl.textContent = `${ytIndex+1}/${PLAYLIST.length}`;
+}
+function nextTrack(){
+  if(!ytPlayer || !PLAYLIST.length) return;
+  ytIndex = (ytIndex + 1) % PLAYLIST.length;
+  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
+  updateBgmMeta();
+}
+function prevTrack(){
+  if(!ytPlayer || !PLAYLIST.length) return;
+  ytIndex = (ytIndex - 1 + PLAYLIST.length) % PLAYLIST.length;
+  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
+  updateBgmMeta();
+}
+function randomTrack(){
+  if(!ytPlayer || !PLAYLIST.length) return;
+  let next = ytIndex;
+  if(PLAYLIST.length > 1){
+    while(next === ytIndex) next = Math.floor(Math.random() * PLAYLIST.length);
+  }else{
+    next = 0;
+  }
+  ytIndex = next;
+  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
+  updateBgmMeta();
+}
+
 function onYouTubeIframeAPIReady(){
   const bar = buildPlayerBar();
   document.getElementById("bgmDock").appendChild(bar);
@@ -971,66 +1016,47 @@ function onYouTubeIframeAPIReady(){
     return;
   }
 
- ytPlayer = new YT.Player("ytHost", {
-  videoId: PLAYLIST[0],
-  playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
-  events: {
-    onReady: () => {
-      setTimeout(() => {
-        const volEl = document.getElementById("pVol");
-        const vol = volEl ? (+volEl.value || 35) : 35;
+  ytPlayer = new YT.Player("ytHost", {
+    videoId: PLAYLIST[0],
+    playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+    events: {
+      onReady: () => {
+        setTimeout(() => {
+          const volEl = document.getElementById("pVol");
+          const vol = volEl ? (+volEl.value || 35) : 35;
 
-        ytPlayer.setVolume(vol);
+          ytPlayer.setVolume(vol);
 
-        // 자동재생 차단 대비: mute 상태로 재생부터 걸어둠
-        ytPlayer.mute();
-        ytPlayer.playVideo();
+          // 자동재생 차단 대비: mute 상태로 재생부터 걸어둠
+          ytPlayer.mute();
+          ytPlayer.playVideo();
 
-        updateBgmMeta();
+          updateBgmMeta();
+          updatePlayBtnIcon();
+        }, 120);
+      },
+      onStateChange: (e) => {
+        if (e.data === YT.PlayerState.ENDED) nextTrack();
         updatePlayBtnIcon();
-      }, 120);
-    },
-    onStateChange: (e) => {
-      if (e.data === YT.PlayerState.ENDED) nextTrack();
-      updatePlayBtnIcon();
+      }
     }
-  }
-});
+  });
 
-// 사용자 클릭에서만 소리 켜기
-document.getElementById("pPlay").onclick = () => {
-  const st = ytPlayer.getPlayerState();
-  if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-  else { ytPlayer.unMute(); ytPlayer.playVideo(); }
-  updatePlayBtnIcon();
-};
+  // 버튼 연결
+  document.getElementById("pPlay").onclick = () => {
+    const st = ytPlayer.getPlayerState();
+    if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+    else { ytPlayer.unMute(); ytPlayer.playVideo(); }
+    updatePlayBtnIcon();
+  };
+  document.getElementById("pPrev").onclick = () => { ytPlayer.unMute(); prevTrack(); };
+  document.getElementById("pNext").onclick = () => { ytPlayer.unMute(); nextTrack(); };
+  document.getElementById("pRand").onclick = () => { ytPlayer.unMute(); randomTrack(); };
 
   document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
   window.addEventListener("resize", dockBgmBar);
 }
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
-
-function updatePlayBtnIcon(){
-  if(!ytPlayer) return;
-  const st = ytPlayer.getPlayerState();
-  document.getElementById("pPlay").textContent = (st === YT.PlayerState.PLAYING) ? "⏸" : "▶";
-}
-function updateBgmMeta(){
-  document.getElementById("pTitle").textContent = `ROYAL BGM ${String(ytIndex+1).padStart(2,"0")}`;
-  document.getElementById("pSub").textContent = `${ytIndex+1}/${PLAYLIST.length}`;
-}
-function nextTrack(){
-  if(!ytPlayer) return;
-  ytIndex = (ytIndex + 1) % PLAYLIST.length;
-  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
-  updateBgmMeta();
-}
-function prevTrack(){
-  if(!ytPlayer) return;
-  ytIndex = (ytIndex - 1 + PLAYLIST.length) % PLAYLIST.length;
-  ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
-  updateBgmMeta();
-}
 
 /* ==========================
    3) Round Timer
@@ -1052,8 +1078,6 @@ let frozenPlayers = null;
 let frozenRoundKey = null;
 let frozenDone = false;
 
-
-
 /* ==========================
    5) Bets aggregation (정렬 안정화)
 ========================== */
@@ -1064,16 +1088,16 @@ function aggregateById(bets){
     if(!key) continue;
     map.set(key, (map.get(key)||0) + (b.amount||0));
   }
-   return [...map.entries()]
+  return [...map.entries()]
     .map(([id, amount])=>({id, amount}))
     .sort((a,b)=> (b.amount - a.amount) || String(a.id).localeCompare(String(b.id)));
-  }
+}
 
 function getCurrentRoundBets(){
   if(SB_ENABLED){
     return [...serverBetMap.values()].filter(b => b.round === roundKey);
   }
-  return []; // SB 꺼진 모드(지금은 멀티 목적이라 생략)
+  return [];
 }
 
 function getCurrentAggregatedPlayers(){
@@ -1084,8 +1108,6 @@ function getCurrentAggregatedPlayers(){
 
 /* ==========================
    6) Wheel Drawing
-   ✅ 글씨가 룰렛판과 같이 돌아감
-   ✅ 반대편은 자동으로 뒤집어서 "위로" 읽히게(WORDYCOW 뒤집힘 해결)
 ========================== */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
@@ -1124,34 +1146,29 @@ function layoutWheelDesktop(){
   if(!vp || !dock || !pointer) return;
 
   if(!isDesktop){
-    // ✅ 모바일은 기존 CSS 그대로(아무것도 건드리지 않음)
     dock.style.width = "";
     dock.style.height = "";
     pointer.style.top = "";
     return;
   }
 
-  // ✅ PC: wheelViewport 안에서 가능한 최대 크기로 휠을 키움(정사각 꽉)
   const vpRect = vp.getBoundingClientRect();
-  const size = Math.floor(Math.min(vpRect.width, vpRect.height) * 0.985); // 거의 꽉 채움
+  const size = Math.floor(Math.min(vpRect.width, vpRect.height) * 0.985);
   dock.style.width = size + "px";
   dock.style.height = size + "px";
 
-  // ✅ PC: 포인터 끝이 바깥 링과 만나도록 top 자동 정렬
-  // 포인터 tip 길이(삼각형 높이) = border-top-width
   const tip = parseFloat(getComputedStyle(pointer).borderTopWidth) || 26;
 
   const dockRect = dock.getBoundingClientRect();
   const dockTopRel = dockRect.top - vpRect.top;
 
-  const overlap = 4; // 링에 살짝 “붙는” 느낌(원하면 2~6 조절)
+  const overlap = 4;
   const top = Math.max(0, Math.round(dockTopRel - tip + overlap));
   pointer.style.top = top + "px";
 }
 
 function resizeCanvas(){
-  layoutWheelDesktop(); // ✅ PC만 휠/포인터 자동 레이아웃
-
+  layoutWheelDesktop();
   const rect = canvas.getBoundingClientRect();
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height= Math.floor(rect.height * dpr);
@@ -1255,25 +1272,11 @@ function drawWheel(players = null){
   ctx.restore();
 }
 
-// ✅ 룰렛판과 “같이” 회전 + 반대편 자동 뒤집기(읽는 방향 위로)
-const TAU = Math.PI * 2;
-function normAngle(a){
-  a = a % TAU;
-  return (a + TAU) % TAU;
-}
-
-/*
-  ✅ 판에 "붙어서" 같이 회전
-  ✅ 9시 쪽에서는 글씨가 자연스럽게 좌→우로 읽히도록(뒤집힘 방지)
-  ✅ 아래쪽/왼쪽에서 뒤집혀 보이는 건 자동 180도 보정
-  ⚠️ drawWheel() 내부는 이미 ctx.rotate(wheelAngle) 상태라 wheelAngle을 여기서 더하면 안 됨
-*/
 function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
   const label = String(name || "").trim();
   const amountText = `${amt}`;
-  const isOwner = (label === "COMPANY"); // 주인(회사) 조각은 최대한 표시
+  const isOwner = (label === "COMPANY");
 
-  // 너무 작은 조각은 원래 생략했는데, COMPANY는 웬만하면 보여주자
   if(segAngle < 0.06 && !isOwner) return;
 
   const scale = clamp(segAngle / 0.55, 0.55, 1.0);
@@ -1283,13 +1286,10 @@ function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
   const r = R * 0.62;
 
   ctx.save();
-
-  // 1) 위치는 조각 중앙각(midAngle)로 "판 위"에 붙인다
   ctx.rotate(midAngle);
   ctx.translate(r, 0);
 
-  // ✅ 핵심: 9시(왼쪽) 기준으로 좌→우로 “한 번 찍고”
-  // ✅ 이후엔 절대 뒤집기 보정하지 않는다(3시에서는 자연스럽게 뒤집혀 보임)
+  // (원본 로직 유지)
   ctx.rotate(Math.PI);
 
   ctx.textAlign = "center";
@@ -1297,14 +1297,12 @@ function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10*dpr;
 
-  // 너비 제한 + 말줄임
   const maxW = R * (0.40 * scale);
   let t = label;
   ctx.font = `${nameSize}px Cinzel`;
   while(ctx.measureText(t).width > maxW && t.length > 3) t = t.slice(0, -1);
   if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
 
-  // 조각이 작은 경우: 아이디만(겹침 방지 + “주인 id 보여야” 요구 충족)
   if(segAngle < 0.18){
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.strokeStyle = "rgba(0,0,0,0.38)";
@@ -1315,14 +1313,12 @@ function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
     return;
   }
 
-  // 이름(위)
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.strokeStyle = "rgba(0,0,0,0.38)";
   ctx.lineWidth = 3*dpr;
   ctx.strokeText(t, 0, -R*0.065*scale);
   ctx.fillText(t, 0, -R*0.065*scale);
 
-  // 금액(아래)
   ctx.font = `${amtSize}px Rajdhani`;
   ctx.fillStyle = "rgba(255, 210, 130, 0.95)";
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
@@ -1369,14 +1365,12 @@ document.getElementById("btnBet").onclick = async ()=>{
   const w = getWallet();
   if(w < betAmount) return;
 
-  // ✅ SB 모드: 서버 insert 성공 후 지갑 차감(안 먹힘 방지)
   if(SB_ENABLED){
     const res = await sbInsertBet(roundKey, MY_ID, betAmount);
     if(!res.ok) return;
     setWallet(w - betAmount);
     await sbRefreshRound(roundKey);
     refreshUI();
-    return;
   }
 };
 
@@ -1402,22 +1396,39 @@ function fmtMMSS(sec){
   return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
+// ✅ 다음 라운드 전환(필수)
+async function startNextRound(nowMs){
+  roundStartAt = alignRoundStart(nowMs);
+  roundEndAt = roundStartAt + ROUND_SEC*1000;
+  roundKey = String(roundStartAt);
+
+  frozenPlayers = null;
+  frozenRoundKey = null;
+  frozenDone = false;
+
+  wheelRunning = true;
+
+  if(SB_ENABLED){
+    try{
+      await sbResubscribeRound(roundKey);
+    }catch(e){
+      console.warn("[SB] resubscribe error", e);
+    }
+  }
+}
+
 /* ==========================
    9) UI refresh
 ========================== */
 function refreshUI(){
   document.getElementById("myWallet").textContent = `${getWallet().toLocaleString()} UT`;
 
-  // ✅ 승자 표시 중엔 frozenPlayers를 그대로 보여줘서 화면이 안 흔들리게
   const players = (showingWinner && frozenPlayers && frozenRoundKey === roundKey)
     ? frozenPlayers
     : getCurrentAggregatedPlayers();
 
   const total = players.reduce((s,p)=>s+p.amount,0);
   document.getElementById("totalPool").textContent = `${total.toLocaleString()} UT`;
-
-  // 이하 기존 코드 그대로...
-
 
   const listEl = document.getElementById("playersList");
   listEl.innerHTML = "";
@@ -1487,7 +1498,7 @@ function computeStopAngle(players, winIndex){
   for(let i=0;i<players.length;i++){
     const ang = Math.max(0.001, players[i].amount/total) * Math.PI*2;
     const mid = start + ang/2;
-    if(i === winIndex) return (-Math.PI/2) - mid; // 화살표(12시) 정렬
+    if(i === winIndex) return (-Math.PI/2) - mid;
     start += ang;
   }
   return 0;
@@ -1505,7 +1516,7 @@ function hideWinnerOverlay(){
 }
 
 /* ==========================
-   11) Main Loop
+   11) Main Loop (✅ 여기 파싱 깨지던 부분 완전 수정)
 ========================== */
 function updateClockAndState(){
   try{
@@ -1548,8 +1559,8 @@ function updateClockAndState(){
       hideWinnerOverlay();
       showingWinner = false;
 
-      startNextRound(now); // ✅ 여기서 다음 라운드로 전환
-      leftSec = Math.ceil((roundEndAt - now)/1000); // ✅ 전환 직후 타이머 즉시 반영
+      startNextRound(now).catch(()=>{});
+      leftSec = Math.ceil((roundEndAt - now)/1000);
     }
 
     // 타임 표시
@@ -1566,18 +1577,18 @@ function updateClockAndState(){
     bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
     setBettingUI(!bettingLocked);
 
-    // wheel motion
     if(!showingWinner && wheelRunning){
       wheelAngle += 0.0022;
     }
 
-   try{
-  refreshUI();
-} catch(err){
-  console.error("[UI LOOP ERROR]", err);
-} finally{
-  requestAnimationFrame(updateClockAndState);
+    refreshUI();
+  }catch(err){
+    console.error("[UI LOOP ERROR]", err);
+  }finally{
+    requestAnimationFrame(updateClockAndState);
+  }
 }
+
 /* ==========================
    12) Theme Switch
 ========================== */
@@ -1611,7 +1622,6 @@ async function init(){
   initRound();
   resizeCanvas();
   refreshUI();
-  setBettingUI(true);
 
   if(SB_ENABLED){
     setSyncStatus("동기화: CONNECTING...");
