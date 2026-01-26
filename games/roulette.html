@@ -794,44 +794,36 @@
 const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 
-// ✅ SDK가 실제 로드돼있을 때만 SB 켬
-const SB_ENABLED =
-  !!SUPABASE_URL && !!SUPABASE_ANON_KEY &&
-  !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_") &&
-  window.supabase && typeof window.supabase.createClient === "function";
+const SB_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && typeof window.supabase.createClient === "function");
+const sb = SB_ENABLED
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession:false } })
+  : null;
 
-const sb = SB_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-let sbLiveOk = false;        // ✅ 서버 읽기/쓰기 정상일 때만 true
-let serverBetsCache = [];    // ✅ 현재 라운드 베팅(서버에서 받아온 원본)
+let serverBetsCache = [];   // 현재 라운드 서버 베팅 캐시
 let sbChannel = null;
-let pendingBets = [];        // ✅ 내 “즉시표시용” 임시 베팅(서버 반영 전)
+let lastSubscribedRoundKey = null;
 
-function setSyncText(isLive){
+function setSyncStatus(){
   const el = document.getElementById("syncStatus");
   if(!el) return;
-  el.textContent = isLive ? "동기화: LIVE" : "동기화: LOCAL";
-  el.title = isLive ? "Supabase 실시간 동기화" : "로컬 모드";
+  el.textContent = SB_ENABLED ? "동기화: LIVE" : "동기화: LOCAL";
+  el.title = SB_ENABLED ? "Supabase Realtime" : "서버 미연결";
 }
 
 async function sbFetchRoundBets(rk){
   if(!sb) return [];
   const { data, error } = await sb
     .from("roulette_bets")
-    .select("id, round, player_id, amount, created_at")
+    .select("player_id, amount, created_at, round")
     .eq("round", rk)
     .order("created_at", { ascending: true });
 
   if(error){
     console.warn("[SB] fetch error", error);
-    sbLiveOk = false;
-    setSyncText(false);
     return [];
   }
-
   return (data || []).map(x => ({
     round: x.round,
-    row_id: x.id,
     id: x.player_id,
     amount: x.amount,
     ts: new Date(x.created_at).getTime()
@@ -839,55 +831,21 @@ async function sbFetchRoundBets(rk){
 }
 
 async function sbInsertBet(rk, playerId, amount){
-  if(!sb) return null;
-
-  // ✅ insert 성공하면 row를 바로 받아서 cache에 넣어 “즉시” 보이게 함
-  const { data, error } = await sb
-    .from("roulette_bets")
-    .insert({ round: rk, player_id: playerId, amount })
-    .select("id, round, player_id, amount, created_at")
-    .single();
-
-  if(error){
-    console.warn("[SB] insert error", error);
-    sbLiveOk = false;
-    setSyncText(false);
-    return null;
-  }
-
-  const row = {
-    round: data.round,
-    row_id: data.id,
-    id: data.player_id,
-    amount: data.amount,
-    ts: new Date(data.created_at).getTime()
-  };
-
-  // 중복 방지
-  if(!serverBetsCache.some(b => b.row_id === row.row_id)){
-    serverBetsCache.push(row);
-  }
-
-  sbLiveOk = true;
-  setSyncText(true);
-  return row;
+  if(!sb) return;
+  const { error } = await sb.from("roulette_bets").insert({
+    round: rk,
+    player_id: playerId,
+    amount: amount
+  });
+  if(error) console.warn("[SB] insert error", error);
 }
 
 async function sbResubscribeRound(rk){
   if(!sb) return;
+  lastSubscribedRoundKey = rk;
 
   // 1) 현재 라운드 전체를 먼저 받아서 캐시 채움
   serverBetsCache = await sbFetchRoundBets(rk);
-
-  // fetch가 실패했다면 로컬 모드로
-  if(!serverBetsCache){
-    sbLiveOk = false;
-    setSyncText(false);
-    return;
-  }
-
-  sbLiveOk = true;
-  setSyncText(true);
 
   // 2) 라운드 채널 재구독
   if(sbChannel){
@@ -903,25 +861,24 @@ async function sbResubscribeRound(rk){
       filter: `round=eq.${rk}`
     }, (payload) => {
       const n = payload.new;
-      const row = {
-        round: n.round,
-        row_id: n.id,
-        id: n.player_id,
-        amount: n.amount,
-        ts: new Date(n.created_at).getTime()
-      };
-      if(!serverBetsCache.some(b => b.row_id === row.row_id)){
-        serverBetsCache.push(row);
+      const t = new Date(n.created_at).getTime();
+
+      // 중복(내가 optimistic으로 넣었거나, fetch로 이미 있음) 방지
+      const dup = serverBetsCache.some(b =>
+        b.round === rk && b.id === n.player_id && b.amount === n.amount && Math.abs((b.ts||0) - t) < 5000
+      );
+      if(!dup){
+        serverBetsCache.push({
+          round: rk,
+          id: n.player_id,
+          amount: n.amount,
+          ts: t
+        });
       }
-      sbLiveOk = true;
-      setSyncText(true);
     })
     .subscribe((status)=>{
-      // subscribed / closed / channel_error 등
-      if(status === "SUBSCRIBED"){
-        sbLiveOk = true;
-        setSyncText(true);
-      }
+      // 콘솔에서 상태 확인 가능
+      // console.log("[SB] channel status:", status);
     });
 }
 
@@ -1102,6 +1059,7 @@ function setWallet(me){
 function loadBets(){ const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : []; }
 function saveBets(arr){ localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
 
+/* 같은 아이디 합산 */
 function aggregateById(bets){
   const map = new Map();
   for(const b of bets){
@@ -1116,10 +1074,7 @@ function aggregateById(bets){
 
 /* ==========================
    5) Wheel Drawing
-   ✅ 글씨가 “판에 붙어서 같이 도는 느낌”으로 수정
-   - 네 코드 문제: ctx가 이미 wheelAngle만큼 rotate된 상태인데
-     라벨 함수에서 midAngle + wheelAngle을 또 더해서 “따로 노는” 현상 발생했음.
-   ✅ “9시 기준 옆으로” = 라벨을 조각의 각도(midAngle) 기준으로 회전해서 표시
+   ✅ 글씨가 룰렛과 같이 회전 + “9시 기준 옆으로(=반지름 방향)”
 ========================== */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
@@ -1174,27 +1129,31 @@ function drawWheel(players = null){
   ctx.translate(cx,cy);
   ctx.rotate(wheelAngle);
 
+  // base shadow ring
   ctx.beginPath();
   ctx.arc(0,0,R*1.08,0,Math.PI*2);
   ctx.fillStyle="rgba(0,0,0,0.28)";
   ctx.fill();
 
+  // outer gold ring
   const grd = ctx.createLinearGradient(-R, -R, R, R);
   grd.addColorStop(0, "#8b6a00");
   grd.addColorStop(0.35, "#ffd36b");
-  grd.addColorStop(0.65, "#f7b500");
+  grd.addColorStop(0.65, "#ffcc00");
   grd.addColorStop(1, "#4a3400");
   ctx.beginPath();
   ctx.arc(0,0,R*1.03,0,Math.PI*2);
-  ctx.lineWidth = R*0.08;
+  ctx.lineWidth = R*0.085;
   ctx.strokeStyle = grd;
   ctx.stroke();
 
+  // inner disc base
   ctx.beginPath();
   ctx.arc(0,0,R*0.94,0,Math.PI*2);
   ctx.fillStyle = "#0b0b10";
   ctx.fill();
 
+  // segments
   const total = Math.max(1, list.reduce((s,p)=>s+p.amount,0));
   let start = -Math.PI/2;
 
@@ -1216,27 +1175,29 @@ function drawWheel(players = null){
     ctx.fillStyle = segGrd;
     ctx.fill();
 
+    // separator
     ctx.beginPath();
     ctx.moveTo(0,0);
     ctx.lineTo(Math.cos(start)*R*0.92, Math.sin(start)*R*0.92);
-    ctx.strokeStyle = "rgba(255, 208, 80, 0.14)";
+    ctx.strokeStyle = "rgba(255, 208, 80, 0.16)";
     ctx.lineWidth = 2*dpr;
     ctx.stroke();
 
+    // ✅ 라벨: 룰렛과 같이 회전 + 9시 기준 옆(반지름 방향)
     const mid = start + ang/2;
-
-    // ✅ 라벨(판에 붙어서 같이 도는 느낌)
-    drawLabelRadial9OClock(p.id, p.amount, mid, ang, R);
+    drawLabelRadial(p.id, p.amount, mid, ang, R);
 
     start += ang;
   }
 
+  // inner highlight ring
   ctx.beginPath();
   ctx.arc(0,0,R*0.90,0,Math.PI*2);
   ctx.strokeStyle="rgba(255,255,255,0.06)";
   ctx.lineWidth=2*dpr;
   ctx.stroke();
 
+  // center bigger + UNIQUE
   const cR = R*0.22;
   const ring = ctx.createLinearGradient(-cR, -cR, cR, cR);
   ring.addColorStop(0, "#3c2a00");
@@ -1271,9 +1232,9 @@ function drawWheel(players = null){
   ctx.restore();
 }
 
-// ✅ “9시 기준 옆으로” + “판에 붙어서 같이 도는 느낌”
-function drawLabelRadial9OClock(name, amt, midAngle, segAngle, R){
-  if(segAngle < 0.10) return; // 너무 작은 조각은 숨김
+/* ✅ 라벨을 “반지름 방향(9시 기준 옆)”으로 + 룰렛과 같이 회전 */
+function drawLabelRadial(name, amt, midAngle, segAngle, R){
+  if(segAngle < 0.10) return;
 
   const label = String(name||"").trim();
   const amountText = `${amt}`;
@@ -1281,33 +1242,24 @@ function drawLabelRadial9OClock(name, amt, midAngle, segAngle, R){
   const scale = clamp(segAngle / 0.55, 0.55, 1.0);
   const nameSize = Math.floor(clamp(R*0.055, 12*dpr, 22*dpr) * scale);
   const amtSize  = Math.floor(clamp(R*0.050, 11*dpr, 20*dpr) * scale);
-  const maxW = R * (0.34 * scale);
+  const maxW = R * (0.42 * scale);
 
   ctx.save();
 
-  // 조각의 중간각으로 회전 → 라벨이 “원판에 붙어서” 같이 돌아감
+  // (현재 ctx는 wheelAngle 만큼 이미 회전된 상태)
   ctx.rotate(midAngle);
-  ctx.translate(R*0.58, 0);
+  ctx.translate(R*0.62, 0);
 
-  // 왼쪽 반쪽이면 뒤집어서(가독성)
-  const flip = (midAngle > Math.PI/2 && midAngle < 3*Math.PI/2);
-  if(flip){
+  // 왼쪽 반원(9시쪽)은 뒤집어서 항상 읽히게
+  if(midAngle > Math.PI/2 && midAngle < 3*Math.PI/2){
     ctx.rotate(Math.PI);
-    ctx.textAlign = "right";
-  }else{
-    ctx.textAlign = "left";
   }
 
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10*dpr;
 
-  let t = label;
-  ctx.font = `${nameSize}px Cinzel`;
-  while(ctx.measureText(t).width > maxW && t.length>3) t = t.slice(0,-1);
-  if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
-
-  // 작은 조각이면 금액만
   if(segAngle < 0.18){
     ctx.font = `${amtSize}px Rajdhani`;
     ctx.fillStyle = "rgba(255,255,255,0.90)";
@@ -1315,10 +1267,14 @@ function drawLabelRadial9OClock(name, amt, midAngle, segAngle, R){
     ctx.lineWidth = 3*dpr;
     ctx.strokeText(amountText, 0, 0);
     ctx.fillText(amountText, 0, 0);
-    ctx.shadowBlur = 0;
     ctx.restore();
     return;
   }
+
+  let t = label;
+  ctx.font = `${nameSize}px Cinzel`;
+  while(ctx.measureText(t).width > maxW && t.length > 3) t = t.slice(0,-1);
+  if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
 
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.strokeStyle = "rgba(0,0,0,0.38)";
@@ -1333,7 +1289,6 @@ function drawLabelRadial9OClock(name, amt, midAngle, segAngle, R){
   ctx.strokeText(amountText, 0, R*0.06*scale);
   ctx.fillText(amountText, 0, R*0.06*scale);
 
-  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -1369,35 +1324,24 @@ function setBettingUI(isOpen){
   btnBet.innerHTML = isOpen ? `UNIQUE  &nbsp; BET NOW` : `BETTING CLOSED`;
 }
 
-document.getElementById("btnBet").onclick = async ()=>{
+document.getElementById("btnBet").onclick = ()=>{
   if(bettingLocked || showingWinner) return;
   if(betAmount <= 0) return;
 
   const w = getWallet();
   if(w < betAmount) return;
 
-  const ts = Date.now();
-
-  // ✅ 즉시 반영(내가 눌렀을 때 “안먹힘” 방지)
+  // 로컬 기록/지갑
+  const bets = loadBets();
+  bets.push({ round: roundKey, id: MY_ID, amount: betAmount, ts: Date.now() });
+  saveBets(bets);
   setWallet(w - betAmount);
 
-  const local = loadBets();
-  local.push({ round: roundKey, id: MY_ID, amount: betAmount, ts });
-  saveBets(local);
-
-  pendingBets.push({ round: roundKey, id: MY_ID, amount: betAmount, ts });
-
-  // ✅ 서버 모드면 서버에도 기록
+  // 서버 기록(멀티플레이)
   if(SB_ENABLED){
-    const row = await sbInsertBet(roundKey, MY_ID, betAmount);
-    if(!row){
-      // 서버 실패면 롤백(안 보이거나 돈만 줄어드는 상황 방지)
-      pendingBets = pendingBets.filter(b => b.ts !== ts);
-      saveBets(loadBets().filter(b => !(b.round===roundKey && b.id===MY_ID && b.ts===ts)));
-      setWallet(w);
-    }else{
-      pendingBets = pendingBets.filter(b => b.ts !== ts);
-    }
+    // 화면 즉시 반영(optimistic)
+    serverBetsCache.push({ round: roundKey, id: MY_ID, amount: betAmount, ts: Date.now() });
+    sbInsertBet(roundKey, MY_ID, betAmount);
   }
 
   refreshUI();
@@ -1423,13 +1367,23 @@ function fmtMMSS(sec){
 }
 
 function getCurrentRoundBets(){
-  // ✅ 서버 정상(LIVE)일 때: 서버 + 내 pending 합쳐서 표시
-  if(SB_ENABLED && sbLiveOk){
-    const sbNow = serverBetsCache.filter(b => b.round === roundKey);
-    const pnNow = pendingBets.filter(b => b.round === roundKey);
-    return [...sbNow, ...pnNow];
+  // ✅ LIVE면 서버 + 로컬(혹시 서버 삽입 막혀도 최소 내 베팅은 보이게)
+  if(SB_ENABLED){
+    const server = serverBetsCache.filter(b => b.round === roundKey);
+    const local  = loadBets().filter(b => b.round === roundKey);
+
+    const seen = new Set();
+    const merged = [];
+    for(const b of [...server, ...local]){
+      const key = `${b.id}|${b.amount}|${Math.floor((b.ts||0)/1000)}`;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      merged.push(b);
+    }
+    return merged;
   }
-  // ✅ 아니면 로컬(기존 방식)
+
+  // LOCAL
   const bets = loadBets();
   return bets.filter(b => b.round === roundKey);
 }
@@ -1566,9 +1520,6 @@ function updateClockAndState(){
       roundEndAt = start + ROUND_SEC*1000;
       roundKey = String(start);
 
-      // ✅ 라운드 바뀌면 SB도 라운드 채널 재구독(안하면 서로 안보임)
-      if(SB_ENABLED) sbResubscribeRound(roundKey);
-
       wheelRunning = true;
     }
   }else{
@@ -1592,12 +1543,17 @@ function updateClockAndState(){
     wheelAngle += 0.0022;
   }
 
+  // ✅ 라운드 바뀌면 Supabase도 그 라운드로 재구독 (안하면 남이 안보임)
+  if(SB_ENABLED && roundKey !== lastSubscribedRoundKey){
+    sbResubscribeRound(roundKey);
+  }
+
   refreshUI();
   requestAnimationFrame(updateClockAndState);
 }
 
 /* ==========================
-   11) Theme Switch
+   11) Theme Switch (하단 바)
 ========================== */
 (function(){
   const KEY = "unique_bg_theme";
@@ -1626,21 +1582,15 @@ function updateClockAndState(){
 function init(){
   initRound();
   resizeCanvas();
+  setSyncStatus();
+
+  if(SB_ENABLED) sbResubscribeRound(roundKey);
+
   refreshUI();
   setBettingUI(true);
-
-  // ✅ SB 켜져있으면 시작 라운드 구독
-  if(SB_ENABLED){
-    setSyncText(true);
-    sbResubscribeRound(roundKey);
-  }else{
-    setSyncText(false);
-  }
-
   requestAnimationFrame(updateClockAndState);
 }
 init();
 </script>
-
 </body>
 </html>
