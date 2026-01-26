@@ -1134,12 +1134,48 @@ function pickPalette(name){
   return SEG_PALETTES[idx];
 }
 
+function layoutWheelDesktop(){
+  const isDesktop = matchMedia("(min-width: 981px)").matches;
+  const vp = document.getElementById("wheelViewport");
+  const dock = vp ? vp.querySelector(".wheelDock") : null;
+  const pointer = document.getElementById("pointer");
+  if(!vp || !dock || !pointer) return;
+
+  if(!isDesktop){
+    // ✅ 모바일은 기존 CSS 그대로(아무것도 건드리지 않음)
+    dock.style.width = "";
+    dock.style.height = "";
+    pointer.style.top = "";
+    return;
+  }
+
+  // ✅ PC: wheelViewport 안에서 가능한 최대 크기로 휠을 키움(정사각 꽉)
+  const vpRect = vp.getBoundingClientRect();
+  const size = Math.floor(Math.min(vpRect.width, vpRect.height) * 0.985); // 거의 꽉 채움
+  dock.style.width = size + "px";
+  dock.style.height = size + "px";
+
+  // ✅ PC: 포인터 끝이 바깥 링과 만나도록 top 자동 정렬
+  // 포인터 tip 길이(삼각형 높이) = border-top-width
+  const tip = parseFloat(getComputedStyle(pointer).borderTopWidth) || 26;
+
+  const dockRect = dock.getBoundingClientRect();
+  const dockTopRel = dockRect.top - vpRect.top;
+
+  const overlap = 4; // 링에 살짝 “붙는” 느낌(원하면 2~6 조절)
+  const top = Math.max(0, Math.round(dockTopRel - tip + overlap));
+  pointer.style.top = top + "px";
+}
+
 function resizeCanvas(){
+  layoutWheelDesktop(); // ✅ PC만 휠/포인터 자동 레이아웃
+
   const rect = canvas.getBoundingClientRect();
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height= Math.floor(rect.height * dpr);
   drawWheel();
 }
+
 window.addEventListener("resize", ()=>{ resizeCanvas(); dockBgmBar(); });
 
 function drawWheel(players = null){
