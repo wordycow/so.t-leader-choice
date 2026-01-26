@@ -971,7 +971,7 @@ function onYouTubeIframeAPIReady(){
     return;
   }
 
-  ytPlayer = new YT.Player("ytHost", {
+ ytPlayer = new YT.Player("ytHost", {
   videoId: PLAYLIST[0],
   playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
   events: {
@@ -982,7 +982,7 @@ function onYouTubeIframeAPIReady(){
 
         ytPlayer.setVolume(vol);
 
-        // ✅ 자동재생 차단 대비: 처음엔 mute 상태로 재생 시도
+        // 자동재생 차단 대비: mute 상태로 재생부터 걸어둠
         ytPlayer.mute();
         ytPlayer.playVideo();
 
@@ -996,16 +996,15 @@ function onYouTubeIframeAPIReady(){
     }
   }
 });
- document.getElementById("pPlay").onclick = () => {
+
+// 사용자 클릭에서만 소리 켜기
+document.getElementById("pPlay").onclick = () => {
   const st = ytPlayer.getPlayerState();
-  if (st === YT.PlayerState.PLAYING) {
-    ytPlayer.pauseVideo();
-  } else {
-    ytPlayer.unMute();     // ✅ 사용자 클릭에서 소리 켜기
-    ytPlayer.playVideo();
-  }
+  if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+  else { ytPlayer.unMute(); ytPlayer.playVideo(); }
   updatePlayBtnIcon();
 };
+
   document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
   window.addEventListener("resize", dockBgmBar);
 }
@@ -1589,14 +1588,12 @@ function updateClockAndState(){
       wheelAngle += 0.0022;
     }
 
-    refreshUI();
-  }catch(err){
-    console.error("[LOOP] crashed", err);
-    setSyncStatus("동기화: JS ERROR");
-  }finally{
-    // ✅ 어떤 에러가 나도 루프는 계속 돈다
-    requestAnimationFrame(updateClockAndState);
-  }
+   try{
+  refreshUI();
+} catch(err){
+  console.error("[UI LOOP ERROR]", err);
+} finally{
+  requestAnimationFrame(updateClockAndState);
 }
 /* ==========================
    12) Theme Switch
