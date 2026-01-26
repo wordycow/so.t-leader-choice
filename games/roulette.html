@@ -1267,12 +1267,11 @@ function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
   // 1) 조각 중앙 각도로 이동(판을 따라 같이 돈다)
   ctx.rotate(midAngle);
 
-  // 2) 뒤집힘 자동 보정(읽기 방향 유지)
-  //    왼쪽 반원 구간에서는 180도 돌려서 "좌→우"로 읽히게
-  const n = normAngle(midAngle);
-  if(n > Math.PI/2 && n < 3*Math.PI/2){
-    ctx.rotate(Math.PI);
-  }
+  // ✅ 실제 화면에서의 각도(휠 회전각 wheelAngle까지 반영)
+const n = normAngle(midAngle + wheelAngle);
+if(n > Math.PI/2 && n < 3*Math.PI/2){
+  ctx.rotate(Math.PI);
+}
 
   // 3) 반지름 방향으로 이동
   ctx.translate(r, 0);
