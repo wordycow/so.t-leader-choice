@@ -1084,11 +1084,10 @@ function aggregateById(bets){
     if(!key) continue;
     map.set(key, (map.get(key)||0) + (b.amount||0));
   }
-  return [...map.entries()]
+   return [...map.entries()]
     .map(([id, amount])=>({id, amount}))
-    // ✅ amount 동률이면 id로 정렬 → 모든 참여자 동일한 순서/조각/우승
-    .sort((a,b)=> (b.amount - a.amount) || a.id.localeCompare(b.id));
-}
+    .sort((a,b)=> (b.amount - a.amount) || String(a.id).localeCompare(String(b.id)));
+
 
 function getCurrentRoundBets(){
   if(SB_ENABLED){
@@ -1200,7 +1199,7 @@ function drawWheel(players = null){
     ctx.stroke();
 
     const mid = start + ang/2;
-    drawLabelTangentUpright(p.id, p.amount, mid, ang, R);
+    drawLabelOnWheel(p.id, p.amount, mid, ang, R);
 
     start += ang;
   }
@@ -1241,32 +1240,44 @@ function drawWheel(players = null){
 }
 
 // ✅ 룰렛판과 “같이” 회전 + 반대편 자동 뒤집기(읽는 방향 위로)
-function drawLabelTangentUpright(name, amt, midAngle, segAngle, R){
-  if(segAngle < 0.10) return;
+const TAU = Math.PI * 2;
+function normAngle(a){
+  a = a % TAU;
+  return (a + TAU) % TAU;
+}
 
-  const label = String(name||"").trim();
+/*
+  ✅ 판에 "붙어서" 같이 회전
+  ✅ 9시 쪽에서는 글씨가 자연스럽게 좌→우로 읽히도록(뒤집힘 방지)
+  ✅ 아래쪽/왼쪽에서 뒤집혀 보이는 건 자동 180도 보정
+  ⚠️ drawWheel() 내부는 이미 ctx.rotate(wheelAngle) 상태라 wheelAngle을 여기서 더하면 안 됨
+*/
+function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
+  if(segAngle < 0.10) return; // 너무 작은 조각은 생략(겹침 방지)
+
+  const label = String(name || "").trim();
   const amountText = `${amt}`;
 
-  const x = Math.cos(midAngle) * (R*0.62);
-  const y = Math.sin(midAngle) * (R*0.62);
-
-  // 조각 작으면 글씨 축소
   const scale = clamp(segAngle / 0.55, 0.55, 1.0);
-  const nameSize = Math.floor(clamp(R*0.060, 12*dpr, 22*dpr) * scale);
-  const amtSize  = Math.floor(clamp(R*0.052, 11*dpr, 20*dpr) * scale);
+  const nameSize = Math.floor(clamp(R*0.055, 12*dpr, 22*dpr) * scale);
+  const amtSize  = Math.floor(clamp(R*0.050, 11*dpr, 20*dpr) * scale);
+
+  const r = R * 0.62;
 
   ctx.save();
-  ctx.translate(x, y);
 
-  // tangent 방향
-  let rot = midAngle + Math.PI/2;
+  // 1) 조각 중앙 각도로 이동(판을 따라 같이 돈다)
+  ctx.rotate(midAngle);
 
-  // ✅ 뒤집힘 보정: 위로 읽히게
-  // (rot가 90~270도 사이면 글씨가 거꾸로 보이므로 180도 뒤집음)
-  const norm = ((rot % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-  if(norm > Math.PI/2 && norm < (Math.PI*3)/2) rot += Math.PI;
+  // 2) 뒤집힘 자동 보정(읽기 방향 유지)
+  //    왼쪽 반원 구간에서는 180도 돌려서 "좌→우"로 읽히게
+  const n = normAngle(midAngle);
+  if(n > Math.PI/2 && n < 3*Math.PI/2){
+    ctx.rotate(Math.PI);
+  }
 
-  ctx.rotate(rot);
+  // 3) 반지름 방향으로 이동
+  ctx.translate(r, 0);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -1285,21 +1296,27 @@ function drawLabelTangentUpright(name, amt, midAngle, segAngle, R){
     return;
   }
 
-  // 이름
+  // 너비 제한 + 말줄임표
+  const maxW = R * (0.40 * scale);
+  let t = label;
   ctx.font = `${nameSize}px Cinzel`;
+  while(ctx.measureText(t).width > maxW && t.length > 3) t = t.slice(0, -1);
+  if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
+
+  // 이름(위)
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.strokeStyle = "rgba(0,0,0,0.38)";
   ctx.lineWidth = 3*dpr;
-  ctx.strokeText(label, 0, -R*0.07*scale);
-  ctx.fillText(label, 0, -R*0.07*scale);
+  ctx.strokeText(t, 0, -R*0.065*scale);
+  ctx.fillText(t, 0, -R*0.065*scale);
 
-  // 금액
+  // 금액(아래)
   ctx.font = `${amtSize}px Rajdhani`;
   ctx.fillStyle = "rgba(255, 210, 130, 0.95)";
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   ctx.lineWidth = 3*dpr;
-  ctx.strokeText(amountText, 0, R*0.07*scale);
-  ctx.fillText(amountText, 0, R*0.07*scale);
+  ctx.strokeText(amountText, 0, R*0.065*scale);
+  ctx.fillText(amountText, 0, R*0.065*scale);
 
   ctx.restore();
 }
