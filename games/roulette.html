@@ -1426,9 +1426,16 @@ function fmtMMSS(sec){
 function refreshUI(){
   document.getElementById("myWallet").textContent = `${getWallet().toLocaleString()} UT`;
 
-  const players = getCurrentAggregatedPlayers();
+  // ✅ 승자 표시 중엔 frozenPlayers를 그대로 보여줘서 화면이 안 흔들리게
+  const players = (showingWinner && frozenPlayers && frozenRoundKey === roundKey)
+    ? frozenPlayers
+    : getCurrentAggregatedPlayers();
+
   const total = players.reduce((s,p)=>s+p.amount,0);
   document.getElementById("totalPool").textContent = `${total.toLocaleString()} UT`;
+
+  // 이하 기존 코드 그대로...
+
 
   const listEl = document.getElementById("playersList");
   listEl.innerHTML = "";
@@ -1519,76 +1526,78 @@ function hideWinnerOverlay(){
    11) Main Loop
 ========================== */
 function updateClockAndState(){
-  const now = Date.now();
-  let leftSec = Math.ceil((roundEndAt - now)/1000);
+  try{
+    const now = Date.now();
+    let leftSec = Math.ceil((roundEndAt - now)/1000);
 
-  // ✅ LOCK 시점(60초)에서 스냅샷 고정(모든 참여자 동일 결과)
-  if(!showingWinner && !frozenDone && leftSec <= LOCK_SEC){
-    frozenDone = true;
-    (async ()=>{
-      if(SB_ENABLED) await sbRefreshRound(roundKey);
-      frozenPlayers = getCurrentAggregatedPlayers();
-      frozenRoundKey = roundKey;
-    })();
+    // ✅ LOCK 시점(60초) 스냅샷 고정
+    if(!showingWinner && !frozenDone && leftSec <= LOCK_SEC){
+      frozenDone = true;
+      (async ()=>{
+        try{
+          if(SB_ENABLED) await sbRefreshRound(roundKey);
+          frozenPlayers = getCurrentAggregatedPlayers();
+          frozenRoundKey = roundKey;
+        }catch(e){
+          console.warn("[FREEZE SNAPSHOT] error", e);
+        }
+      })();
+    }
+
+    // ✅ 라운드 종료 → 즉시 정지 + 우승자 표시
+    if(!showingWinner && now >= roundEndAt){
+      const players = (frozenPlayers && frozenRoundKey === roundKey)
+        ? frozenPlayers
+        : getCurrentAggregatedPlayers();
+
+      const win = pickWinner(players);
+      wheelRunning = false;
+      wheelAngle = computeStopAngle(players, win.index);
+
+      showingWinner = true;
+      winnerUntil = now + FREEZE_SEC*1000;
+      showWinnerOverlay(win.id, win.amount);
+
+      leftSec = 0;
+    }
+
+    // ✅ 30초 후 다음 라운드 시작
+    if(showingWinner && now >= winnerUntil){
+      hideWinnerOverlay();
+      showingWinner = false;
+
+      startNextRound(now); // ✅ 여기서 다음 라운드로 전환
+      leftSec = Math.ceil((roundEndAt - now)/1000); // ✅ 전환 직후 타이머 즉시 반영
+    }
+
+    // 타임 표시
+    const timeEl = document.getElementById("timeLeft");
+    if(leftSec <= 60){
+      timeEl.textContent = String(Math.max(0,leftSec));
+      timeEl.className = "countBig countWarn";
+      if(leftSec <= 10) timeEl.className = "countBig countFinal";
+    }else{
+      timeEl.textContent = fmtMMSS(leftSec);
+      timeEl.className = "countBig";
+    }
+
+    bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
+    setBettingUI(!bettingLocked);
+
+    // wheel motion
+    if(!showingWinner && wheelRunning){
+      wheelAngle += 0.0022;
+    }
+
+    refreshUI();
+  }catch(err){
+    console.error("[LOOP] crashed", err);
+    setSyncStatus("동기화: JS ERROR");
+  }finally{
+    // ✅ 어떤 에러가 나도 루프는 계속 돈다
+    requestAnimationFrame(updateClockAndState);
   }
-
-  // 라운드 종료 순간(0초) → 즉시 정지 + 우승자
-  if(!showingWinner && now >= roundEndAt){
-    const players = (frozenPlayers && frozenRoundKey === roundKey)
-      ? frozenPlayers
-      : getCurrentAggregatedPlayers();
-
-    const win = pickWinner(players);
-    wheelRunning = false;
-    wheelAngle = computeStopAngle(players, win.index);
-
-    showingWinner = true;
-    winnerUntil = now + FREEZE_SEC*1000;
-    showWinnerOverlay(win.id, win.amount);
-    leftSec = 0;
-  }
-
-  // 승자 표시 끝나면 다음 라운드
-  if(showingWinner && now >= winnerUntil){
-    hideWinnerOverlay();
-    showingWinner = false;
-
-    const start = alignRoundStart(now);
-    roundStartAt = start;
-    roundEndAt = start + ROUND_SEC*1000;
-    roundKey = String(start);
-
-    wheelRunning = true;
-    frozenPlayers = null;
-    frozenRoundKey = null;
-    frozenDone = false;
-
-    if(SB_ENABLED) sbResubscribeRound(roundKey);
-  }
-
-  // 타임 표시
-  const timeEl = document.getElementById("timeLeft");
-  if(leftSec <= 60){
-    timeEl.textContent = String(Math.max(0,leftSec));
-    timeEl.className = "countBig countWarn";
-    if(leftSec <= 10) timeEl.className = "countBig countFinal";
-  }else{
-    timeEl.textContent = fmtMMSS(leftSec);
-    timeEl.className = "countBig";
-  }
-
-  bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
-  setBettingUI(!bettingLocked);
-
-  // wheel motion
-  if(!showingWinner && wheelRunning){
-    wheelAngle += 0.0022;
-  }
-
-  refreshUI();
-  requestAnimationFrame(updateClockAndState);
 }
-
 /* ==========================
    12) Theme Switch
 ========================== */
