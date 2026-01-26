@@ -668,9 +668,9 @@
   </style>
 
   <!-- ✅ 네가 만든 플레이리스트 파일 (필수) -->
-  <script src="./roulette.playlist.js"></script>
+ <script src="./roulette.playlist.js?v=20260126"></script>
   <!-- YouTube Iframe API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
+  <script defer src="https://www.youtube.com/iframe_api"></script>
 </head>
 
 <body data-bg="0">
@@ -972,40 +972,40 @@ function onYouTubeIframeAPIReady(){
   }
 
   ytPlayer = new YT.Player("ytHost", {
-    videoId: PLAYLIST[0],
-    playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
-    events: {
-      onReady: () => {
-        setTimeout(()=> {
-          ytPlayer.setVolume(+document.getElementById("pVol").value || 35);
-          ytPlayer.playVideo();
-          updateBgmMeta();
-          updatePlayBtnIcon();
-        }, 120);
-      },
-      onStateChange: (e) => {
-        if(e.data === YT.PlayerState.ENDED) nextTrack();
-        updatePlayBtnIcon();
-      }
-    }
-  });
+  videoId: PLAYLIST[0],
+  playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+  events: {
+    onReady: () => {
+      setTimeout(() => {
+        const volEl = document.getElementById("pVol");
+        const vol = volEl ? (+volEl.value || 35) : 35;
 
-  document.getElementById("pPlay").onclick = () => {
-    const st = ytPlayer.getPlayerState();
-    if(st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-    else ytPlayer.playVideo();
-    updatePlayBtnIcon();
-  };
-  document.getElementById("pPrev").onclick = prevTrack;
-  document.getElementById("pNext").onclick = nextTrack;
-  document.getElementById("pRand").onclick = () => {
-    if(!ytPlayer || PLAYLIST.length <= 1) return;
-    let n = Math.floor(Math.random() * PLAYLIST.length);
-    if(n === ytIndex) n = (n + 1) % PLAYLIST.length;
-    ytIndex = n;
-    ytPlayer.loadVideoById(PLAYLIST[ytIndex]);
-    updateBgmMeta();
-  };
+        ytPlayer.setVolume(vol);
+
+        // ✅ 자동재생 차단 대비: 처음엔 mute 상태로 재생 시도
+        ytPlayer.mute();
+        ytPlayer.playVideo();
+
+        updateBgmMeta();
+        updatePlayBtnIcon();
+      }, 120);
+    },
+    onStateChange: (e) => {
+      if (e.data === YT.PlayerState.ENDED) nextTrack();
+      updatePlayBtnIcon();
+    }
+  }
+});
+ document.getElementById("pPlay").onclick = () => {
+  const st = ytPlayer.getPlayerState();
+  if (st === YT.PlayerState.PLAYING) {
+    ytPlayer.pauseVideo();
+  } else {
+    ytPlayer.unMute();     // ✅ 사용자 클릭에서 소리 켜기
+    ytPlayer.playVideo();
+  }
+  updatePlayBtnIcon();
+};
   document.getElementById("pVol").oninput = (e)=> ytPlayer.setVolume(+e.target.value);
   window.addEventListener("resize", dockBgmBar);
 }
