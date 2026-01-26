@@ -1251,10 +1251,12 @@ function normAngle(a){
   ⚠️ drawWheel() 내부는 이미 ctx.rotate(wheelAngle) 상태라 wheelAngle을 여기서 더하면 안 됨
 */
 function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
-  if(segAngle < 0.10) return; // 너무 작은 조각은 생략(겹침 방지)
-
   const label = String(name || "").trim();
   const amountText = `${amt}`;
+  const isOwner = (label === "COMPANY"); // 주인(회사) 조각은 최대한 표시
+
+  // 너무 작은 조각은 원래 생략했는데, COMPANY는 웬만하면 보여주자
+  if(segAngle < 0.06 && !isOwner) return;
 
   const scale = clamp(segAngle / 0.55, 0.55, 1.0);
   const nameSize = Math.floor(clamp(R*0.055, 12*dpr, 22*dpr) * scale);
@@ -1264,41 +1266,36 @@ function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
 
   ctx.save();
 
-  // 1) 조각 중앙 각도로 이동(판을 따라 같이 돈다)
+  // 1) 위치는 조각 중앙각(midAngle)로 "판 위"에 붙인다
   ctx.rotate(midAngle);
-
-  // ✅ 실제 화면에서의 각도(휠 회전각 wheelAngle까지 반영)
-const n = normAngle(midAngle + wheelAngle);
-if(n > Math.PI/2 && n < 3*Math.PI/2){
-  ctx.rotate(Math.PI);
-}
-
-  // 3) 반지름 방향으로 이동
   ctx.translate(r, 0);
+
+  // ✅ 핵심: 9시(왼쪽) 기준으로 좌→우로 “한 번 찍고”
+  // ✅ 이후엔 절대 뒤집기 보정하지 않는다(3시에서는 자연스럽게 뒤집혀 보임)
+  ctx.rotate(Math.PI);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10*dpr;
 
-  // 작은 조각이면 금액만
-  if(segAngle < 0.18){
-    ctx.font = `${amtSize}px Rajdhani`;
-    ctx.fillStyle = "rgba(255,255,255,0.90)";
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.lineWidth = 3*dpr;
-    ctx.strokeText(amountText, 0, 0);
-    ctx.fillText(amountText, 0, 0);
-    ctx.restore();
-    return;
-  }
-
-  // 너비 제한 + 말줄임표
+  // 너비 제한 + 말줄임
   const maxW = R * (0.40 * scale);
   let t = label;
   ctx.font = `${nameSize}px Cinzel`;
   while(ctx.measureText(t).width > maxW && t.length > 3) t = t.slice(0, -1);
   if(t !== label) t = t.slice(0, Math.max(2, t.length-1)) + "…";
+
+  // 조각이 작은 경우: 아이디만(겹침 방지 + “주인 id 보여야” 요구 충족)
+  if(segAngle < 0.18){
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.strokeStyle = "rgba(0,0,0,0.38)";
+    ctx.lineWidth = 3*dpr;
+    ctx.strokeText(t, 0, 0);
+    ctx.fillText(t, 0, 0);
+    ctx.restore();
+    return;
+  }
 
   // 이름(위)
   ctx.fillStyle = "rgba(255,255,255,0.92)";
