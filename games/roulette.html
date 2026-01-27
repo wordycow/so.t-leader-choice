@@ -913,7 +913,7 @@ function gasLog({k,type,round,id,delta,bal,meta}){
 ========================== */
 const COMPANY_ID = "company";
 const COMPANY_SEED_DEFAULT = 1000; // 회사가 라운드마다 실제로 거는 돈
-let seedForRound = 0;             // 서버에서 확정된 seed (0~100)
+let seedForRound = 0;            
 
 /* ==========================
    SUPABASE CLIENT
@@ -1352,13 +1352,18 @@ function getCurrentRoundBets(){
 }
 
 function getCurrentAggregatedPlayers(){
-  const rb = getCurrentRoundBets(); // supabase bets
+  const rb = getCurrentRoundBets(); // supabase bets (실제 DB)
+  const hasCompany = rb.some(b => (b.id || "").toLowerCase() === COMPANY_ID);
+
   const base = [...rb];
-  if(seedForRound > 0){
+
+  // ✅ DB에 회사 베팅이 없을 때만(=seed가 DB에 안 들어가는 구조일 때만) 화면에 seed를 얹는다
+  if(seedForRound > 0 && !hasCompany){
     base.unshift({ round: roundKey, id: COMPANY_ID, amount: seedForRound, ts: Date.now() });
   }
   return aggregateById(base);
 }
+
 
 /* ==========================
    6) Wheel Drawing (원본 유지)
