@@ -32,7 +32,7 @@
       --shadow: 0 18px 60px rgba(0,0,0,.55);
       --glow: 0 0 18px rgba(255, 200, 70, 0.18);
 
-      --roundSec: 900;      /* 15분 */
+      --roundSec: 1200;      /* 15분 */
       --lockSec: 60;        /* 60초 남으면 베팅 잠금 */
       --freezeSec: 30;      /* 승자 표시 30초 유지 */
 
@@ -1373,6 +1373,52 @@ const ctx = canvas.getContext("2d");
 let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 let wheelAngle = 0;
 let wheelRunning = true;
+// ✅ 20분 라운드 RPM 스케줄(시간표 그대로)
+const INTRO_SEC = 10; // 시작 10초는 전판 우승자 화면(0rpm)
+
+let lastFramePerf = performance.now();
+let settling = false;         // 정산 중(오버레이 유지)
+let lastWinnerInfo = null;    // { winner, payout, fee, total }
+
+// elapsedSec(초) -> rpm
+function rpmByElapsed(t){
+  t = Math.max(0, t|0);
+
+  if(t <= 10)   return 0;   // 00:00~00:10
+  if(t <= 240)  return 1;   // 00:11~04:00
+  if(t <= 480)  return 2;   // 04:01~08:00
+  if(t <= 720)  return 4;   // 08:01~12:00
+  if(t <= 960)  return 8;   // 12:01~16:00
+  if(t <= 1170) return 16;  // 16:01~19:30
+  if(t <= 1180) return 12;  // 19:31~19:40
+  if(t <= 1192) return 8;   // 19:41~19:52
+  if(t <= 1194) return 4;   // 19:53~19:54
+  if(t <= 1196) return 3;   // 19:55~19:56
+  if(t <= 1198) return 2;   // 19:57~19:58
+  if(t <= 1199) return 1;   // 19:59
+  return 0;
+}
+
+function radPerSecFromRpm(rpm){
+  return (rpm * 2 * Math.PI) / 60;
+}
+
+// ✅ 오버레이를 매 프레임 갈아치우지 않게 캐시
+let _overlayKey = "";
+function ensureWinnerOverlay(name, payout, fee, total){
+  const key = `${name}|${payout}|${fee}|${total}`;
+  if(_overlayKey !== key || document.getElementById("winnerOverlay").style.display !== "flex"){
+    _overlayKey = key;
+    showWinnerOverlay(name, payout, fee, total);
+  }
+}
+function ensureWinnerOverlayOff(){
+  if(document.getElementById("winnerOverlay").style.display !== "none"){
+    _overlayKey = "";
+    hideWinnerOverlay();
+  }
+}
+  
 
 function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
 function hashStr(s){
@@ -1626,7 +1672,7 @@ function setBettingUI(isOpen){
 
 document.getElementById("btnBet").onclick = async ()=>{
   if(!SB_ENABLED) return;
-  if(bettingLocked || showingWinner) return;
+  if(bettingLocked || settling) return;
   if(betAmount <= 0) return;
 
   const w = getWallet();
@@ -1683,8 +1729,6 @@ async function startNextRound(nowMs){
   frozenRoundKey = null;
   frozenDone = false;
   settleRequestedRoundKey = null;
-
-  wheelRunning = true;
 
   await sbResubscribeRound(roundKey);
   await sbEnsureSeedForRound(roundKey); // ✅ 회사 seed 실제 차감/확정 + 시트 반영
@@ -1776,10 +1820,20 @@ function hideWinnerOverlay(){
 function updateClockAndState(){
   try{
     const now = Date.now();
+
+    // ✅ dt 보정(프레임마다 속도 일정)
+    const perfNow = performance.now();
+    let dt = (perfNow - lastFramePerf) / 1000;
+    lastFramePerf = perfNow;
+    dt = Math.max(0, Math.min(0.05, dt)); // 0~50ms로 캡
+
     let leftSec = Math.ceil((roundEndAt - now)/1000);
+    if(leftSec < 0) leftSec = 0;
+
+    const elapsedSec = Math.floor((now - roundStartAt)/1000);
 
     // LOCK 스냅샷(표시용)
-    if(!showingWinner && !frozenDone && leftSec <= LOCK_SEC){
+    if(!settling && !frozenDone && leftSec <= LOCK_SEC){
       frozenDone = true;
       (async ()=>{
         try{
@@ -1793,36 +1847,46 @@ function updateClockAndState(){
       })();
     }
 
-    // 라운드 종료 → 서버 정산 결과를 가져와서 표시
-    if(!showingWinner && now >= roundEndAt){
-      showingWinner = true;
-      winnerUntil = now + FREEZE_SEC*1000;
-      leftSec = 0;
+    // ✅ 라운드 종료(20:00) → 정산 시작(오버레이 유지) → 결과 받으면 즉시 다음 라운드로
+    if(!settling && now >= roundEndAt){
+      settling = true;
       wheelRunning = false;
+
+      // 정산 대기 화면(즉시 띄우기)
+      if(lastWinnerInfo){
+        ensureWinnerOverlay(lastWinnerInfo.winner, lastWinnerInfo.payout, lastWinnerInfo.fee, lastWinnerInfo.total);
+      }else{
+        ensureWinnerOverlay("SETTLING...", 0, 0, 0);
+      }
 
       const players = (frozenPlayers && frozenRoundKey === roundKey)
         ? frozenPlayers
         : getCurrentAggregatedPlayers();
 
-      // 정산 요청 1회만
       if(settleRequestedRoundKey !== roundKey){
         settleRequestedRoundKey = roundKey;
 
         (async ()=>{
           const res = await sbSettleRound(roundKey);
+
           if(!res){
-            showWinnerOverlay("SETTLE ERROR", 0, 0, 0);
+            lastWinnerInfo = { winner:"SETTLE ERROR", payout:0, fee:0, total:0 };
+            ensureWinnerOverlay("SETTLE ERROR", 0, 0, 0);
             markUIDirty();
+
+            // 에러여도 다음 라운드로 넘어가게
+            await startNextRound(Date.now()).catch(()=>{});
+            settling = false;
             return;
           }
 
           const winner = String(res.winner_id || "").trim().toLowerCase();
-          const total = Number(res.total)||0;
-          const fee = Number(res.fee)||0;
+          const total  = Number(res.total)||0;
+          const fee    = Number(res.fee)||0;
           const payout = Number(res.payout)||0;
-          const seed = Number(res.seed)||0;
+          const seed   = Number(res.seed)||0;
 
-          // 서버가 준 seed가 있으면 UI도 고정
+          // 서버가 준 seed 있으면 UI도 고정
           if(Number.isFinite(seed)) seedForRound = Math.max(0, seed);
 
           const companyBal = (res.company_balance === undefined || res.company_balance === null)
@@ -1864,30 +1928,41 @@ function updateClockAndState(){
             });
           }
 
-          // 화살표 각도는 "표시용 players"에서 winner 위치 찾아서 맞춤
+          // 바늘 위치 고정(표시용)
           const winIndex = players.findIndex(p => String(p.id).toLowerCase() === winner);
           if(winIndex >= 0) wheelAngle = computeStopAngle(players, winIndex);
           else wheelAngle = 0;
 
-          showWinnerOverlay(winner, payout, fee, total);
+          // ✅ “전판 우승자” 저장 + 오버레이 업데이트
+          lastWinnerInfo = { winner, payout, fee, total };
+          ensureWinnerOverlay(winner, payout, fee, total);
 
           // 내 지갑 최신값 동기화
           walletBalance = await sbFetchWallet(MY_ID);
           markUIDirty();
+
+          // ✅ 바로 다음 라운드로(20분 컷은 alignRoundStart가 유지)
+          await startNextRound(Date.now()).catch(()=>{});
+          settling = false;
         })();
       }
     }
 
-    // 30초 후 다음 라운드
-    if(showingWinner && now >= winnerUntil){
-      hideWinnerOverlay();
-      showingWinner = false;
-      startNextRound(now).catch(()=>{});
-      leftSec = Math.ceil((roundEndAt - now)/1000);
-      wheelRunning = true;
-      markUIDirty();
+    // ✅ 시작 10초: 전판 우승자 화면 + 0rpm
+    const introPhase = (elapsedSec <= INTRO_SEC);
+
+    // 오버레이 on/off
+    if(settling || introPhase){
+      if(lastWinnerInfo){
+        ensureWinnerOverlay(lastWinnerInfo.winner, lastWinnerInfo.payout, lastWinnerInfo.fee, lastWinnerInfo.total);
+      }else{
+        ensureWinnerOverlay("WAITING", 0, 0, 0);
+      }
+    }else{
+      ensureWinnerOverlayOff();
     }
 
+    // TIME LEFT 표시
     const timeEl = document.getElementById("timeLeft");
     if(leftSec <= 60){
       timeEl.textContent = String(Math.max(0,leftSec));
@@ -1898,15 +1973,20 @@ function updateClockAndState(){
       timeEl.className = "countBig";
     }
 
-    bettingLocked = showingWinner || (leftSec <= LOCK_SEC);
+    // 베팅 잠금(기존 유지): 종료 60초 전만 잠금
+    bettingLocked = (leftSec <= LOCK_SEC);
     setBettingUI(!bettingLocked);
 
-    const playersForDisplay = (showingWinner && frozenPlayers && frozenRoundKey === roundKey)
+    const playersForDisplay = (frozenPlayers && frozenRoundKey === roundKey)
       ? frozenPlayers
       : getCurrentAggregatedPlayers();
 
-    if(!showingWinner && wheelRunning){
-      wheelAngle += 0.0022;
+    // ✅ RPM 스케줄 적용(소개 10초는 0rpm)
+    const rpm = rpmByElapsed(elapsedSec);
+
+    wheelRunning = (!settling && !introPhase && leftSec > 0 && rpm > 0);
+    if(wheelRunning){
+      wheelAngle += radPerSecFromRpm(rpm) * dt;
     }
 
     drawWheel(playersForDisplay);
@@ -1918,6 +1998,7 @@ function updateClockAndState(){
     requestAnimationFrame(updateClockAndState);
   }
 }
+
 
 /* ==========================
    Theme Switch (원본 유지)
