@@ -840,24 +840,83 @@ const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
 const SB_ENABLED = !!(SUPABASE_URL && SUPABASE_KEY);
 
 /* ==========================
-   ✅ GAS LOG (Google Sheet 기록용) - CORS 안전 비콘
+   ✅ GAS (Google Sheet 원장 동기화 + 로그)
 ========================== */
-// ⚠️ 여기에 너의 Apps Script "웹앱 배포 URL(/exec)" 넣어
+// ⚠️ Apps Script 웹앱(/exec) URL
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-function gasLogRoulette(params){
+// ✅ CORS 안전 비콘 (로그용)
+function gasBeacon(params){
   if(!GAS_WEBAPP_URL) return;
   try{
     const q = new URLSearchParams({ action:"logRoulette", ...params });
     const url = GAS_WEBAPP_URL + (GAS_WEBAPP_URL.includes("?") ? "&" : "?") + q.toString();
     const img = new Image();
     img.referrerPolicy = "no-referrer";
-    img.src = url; // 비콘 => CORS 영향 최소
+    img.src = url;
   }catch(e){
     console.warn("[GAS LOG] fail", e);
   }
 }
 
+// ✅ JSONP (시트 잔액 읽기용: getUserInfo)
+function gasJsonp(action, params={}){
+  return new Promise((resolve, reject)=>{
+    if(!GAS_WEBAPP_URL) return resolve(null);
+    const cb = "__gas_cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    const script = document.createElement("script");
+    const cleanup = ()=>{
+      try{ delete window[cb]; }catch(_){}
+      if(script && script.parentNode) script.parentNode.removeChild(script);
+    };
+    window[cb] = (data)=>{ cleanup(); resolve(data); };
+    script.onerror = ()=>{ cleanup(); reject(new Error("GAS JSONP error")); };
+
+    const qs = new URLSearchParams({ action, callback: cb, ...params });
+    script.src = GAS_WEBAPP_URL + (GAS_WEBAPP_URL.includes("?") ? "&" : "?") + qs.toString();
+    document.head.appendChild(script);
+  });
+}
+
+async function gasGetBalance(id){
+  try{
+    const r = await gasJsonp("getUserInfo", { id });
+    if(r && r.ok && typeof r.balance !== "undefined"){
+      return Math.max(0, Math.floor(Number(r.balance)||0));
+    }
+  }catch(_){}
+  return 0;
+}
+
+// ✅ 우리 표준 로그 포맷: k/type/round/id/delta/bal/meta
+function uid_(){
+  return (crypto?.randomUUID?.() || (Date.now()+"_"+Math.random().toString(16).slice(2)));
+}
+function makeLogKey_(...parts){
+  return parts.join("|");
+}
+function gasLog({k,type,round,id,delta,bal,meta}){
+  gasBeacon({
+    k: String(k||""),
+    type: String(type||""),
+    round: String(round||""),
+    id: String(id||""),
+    delta: String(delta ?? 0),
+    bal: (bal === undefined || bal === null) ? "" : String(bal),
+    meta: String(meta||"")
+  });
+}
+
+/* ==========================
+   ✅ COMPANY SEED (진짜로 돈이 들어가야 함)
+========================== */
+const COMPANY_ID = "company";
+const COMPANY_SEED_DEFAULT = 100; // 회사가 라운드마다 실제로 거는 돈
+let seedForRound = 0;             // 서버에서 확정된 seed (0~100)
+
+/* ==========================
+   SUPABASE CLIENT
+========================== */
 const sb = SB_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let sbChannel = null;
@@ -883,35 +942,31 @@ function markUIDirty(){ uiDirty = true; }
    0) User
 ========================== */
 const qs = new URLSearchParams(location.search);
-const MY_ID = (qs.get("id") || "GUEST").trim();
+const MY_ID = String(qs.get("id") || "guest").trim().toLowerCase();
 document.getElementById("myId").textContent = MY_ID;
+
+function displayId(id){
+  const s = String(id||"").trim();
+  if(s.toLowerCase() === COMPANY_ID) return "COMPANY";
+  return s;
+}
 
 /* ==========================
    ✅ SERVER WALLET (Supabase)
 ========================== */
 let walletBalance = 0;
 
-async function sbEnsureWallet(playerId){
-  if(!sb) return;
-  const { error } = await sb.from("roulette_wallets").insert({ player_id: playerId, balance: 0 });
-  if(error && error.code !== "23505"){
-    console.warn("[SB] ensureWallet error", error);
-  }
-}
-
 async function sbFetchWallet(playerId){
   if(!sb) return 0;
+  const pid = String(playerId||"").trim().toLowerCase();
   const { data, error } = await sb
     .from("roulette_wallets")
     .select("balance")
-    .eq("player_id", playerId)
+    .eq("player_id", pid)
     .single();
 
   if(error){
-    await sbEnsureWallet(playerId);
-    const r2 = await sb.from("roulette_wallets").select("balance").eq("player_id", playerId).single();
-    if(r2.error) return 0;
-    return Math.max(0, Number(r2.data.balance)||0);
+    return 0;
   }
   return Math.max(0, Number(data.balance)||0);
 }
@@ -919,17 +974,19 @@ async function sbFetchWallet(playerId){
 async function sbSubscribeWallet(playerId){
   if(!sb) return;
 
+  const pid = String(playerId||"").trim().toLowerCase();
+
   if(sbWalletChannel){
     try{ await sb.removeChannel(sbWalletChannel); }catch(e){}
     sbWalletChannel = null;
   }
 
-  sbWalletChannel = sb.channel("wallet_" + playerId)
+  sbWalletChannel = sb.channel("wallet_" + pid)
     .on("postgres_changes", {
       event: "*",
       schema: "public",
       table: "roulette_wallets",
-      filter: `player_id=eq.${playerId}`
+      filter: `player_id=eq.${pid}`
     }, (payload) => {
       const n = payload.new;
       if(n && typeof n.balance !== "undefined"){
@@ -941,7 +998,63 @@ async function sbSubscribeWallet(playerId){
 }
 
 function getWallet(){ return Math.max(0, Number(walletBalance)||0); }
-function setWalletLocal(n){ walletBalance = Math.max(0, Math.floor(Number(n)||0)); } // 서버 RPC 결과로만 갱신
+function setWalletLocal(n){ walletBalance = Math.max(0, Math.floor(Number(n)||0)); }
+
+/* ==========================
+   ✅ RPC: 시트 잔액 -> Supabase 지갑 스냅샷 동기화
+========================== */
+async function sbSetWalletBalance(playerId, balance){
+  const pid = String(playerId||"").trim().toLowerCase();
+  const bal = Math.max(0, Math.floor(Number(balance)||0));
+  const { data, error } = await sb.rpc("rpc_set_wallet_balance", {
+    p_player_id: pid,
+    p_balance: bal
+  });
+  if(error){
+    console.warn("[SB] rpc_set_wallet_balance error", error);
+    return { ok:false, balance: 0 };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return { ok:true, balance: Math.max(0, Number(row?.balance)||0) };
+}
+
+/* ==========================
+   ✅ RPC: 라운드 seed(회사 100UT) 1회만 실제 차감/확정
+========================== */
+async function sbEnsureSeedForRound(rk){
+  const { data, error } = await sb.rpc("rpc_ensure_seed", {
+    p_round: String(rk),
+    p_seed: COMPANY_SEED_DEFAULT
+  });
+  if(error){
+    console.warn("[SB] rpc_ensure_seed error", error);
+    seedForRound = 0;
+    return { ok:false, seed:0, reserved:false, company_balance:null };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  const seed = Math.max(0, Number(row?.seed)||0);
+  const reserved = !!row?.reserved;
+  const companyBal = (row?.company_balance === undefined || row?.company_balance === null)
+    ? null
+    : Math.max(0, Number(row.company_balance)||0);
+
+  seedForRound = seed;
+  markUIDirty();
+
+  // ✅ 회사 seed가 "이번 라운드에 새로" 예약됐다면 -> 시트도 즉시 차감
+  if(reserved && seed > 0){
+    gasLog({
+      k: makeLogKey_(rk, "SEED", COMPANY_ID, uid_()),
+      type: "SEED",
+      round: rk,
+      id: COMPANY_ID,
+      delta: -seed,
+      bal: companyBal, // 가능하면 절대값 세팅
+      meta: `seed=${seed}`
+    });
+  }
+  return { ok:true, seed, reserved, company_balance: companyBal };
+}
 
 /* ==========================
    Bets (Server)
@@ -951,7 +1064,7 @@ async function sbFetchRoundBets(rk){
   const { data, error } = await sb
     .from("roulette_bets")
     .select("id, round, player_id, amount, created_at")
-    .eq("round", rk)
+    .eq("round", String(rk))
     .order("created_at", { ascending: true });
 
   if(error){
@@ -961,8 +1074,8 @@ async function sbFetchRoundBets(rk){
   }
   return (data || []).map(x => ({
     key: x.id,
-    round: x.round,
-    id: x.player_id,
+    round: String(x.round),
+    id: String(x.player_id||"").trim().toLowerCase(),
     amount: Number(x.amount)||0,
     ts: new Date(x.created_at).getTime()
   }));
@@ -979,28 +1092,29 @@ async function sbRefreshRound(rk){
 async function sbResubscribeRound(rk){
   if(!sb) return;
 
-  if(currentSubscribedRound === rk && sbChannel) return;
-  currentSubscribedRound = rk;
+  const rr = String(rk);
+  if(currentSubscribedRound === rr && sbChannel) return;
+  currentSubscribedRound = rr;
 
-  await sbRefreshRound(rk);
+  await sbRefreshRound(rr);
 
   if(sbChannel){
     try{ await sb.removeChannel(sbChannel); }catch(e){}
     sbChannel = null;
   }
 
-  sbChannel = sb.channel("roulette_bets_" + rk)
+  sbChannel = sb.channel("roulette_bets_" + rr)
     .on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "roulette_bets",
-      filter: `round=eq.${rk}`
+      filter: `round=eq.${rr}`
     }, (payload) => {
       const n = payload.new;
       serverBetMap.set(n.id, {
         key: n.id,
-        round: n.round,
-        id: n.player_id,
+        round: String(n.round),
+        id: String(n.player_id||"").trim().toLowerCase(),
         amount: Number(n.amount)||0,
         ts: new Date(n.created_at).getTime()
       });
@@ -1028,9 +1142,9 @@ function sbStartPolling(){
 ========================== */
 async function sbPlaceBet(rk, playerId, amount){
   const { data, error } = await sb.rpc("rpc_place_bet", {
-    p_round: rk,
-    p_player_id: playerId,
-    p_amount: amount
+    p_round: String(rk),
+    p_player_id: String(playerId).trim().toLowerCase(),
+    p_amount: Math.floor(Number(amount)||0)
   });
   if(error){
     console.warn("[SB] place_bet error", error);
@@ -1041,12 +1155,12 @@ async function sbPlaceBet(rk, playerId, amount){
 }
 
 /* ==========================
-   ✅ RPC: settle round (승자90/회사10) 서버 정산
+   ✅ RPC: settle round (승자/수수료/seed 포함 서버 정산)
 ========================== */
 const HOUSE_FEE_RATE = 0.10;
 async function sbSettleRound(rk){
   const { data, error } = await sb.rpc("rpc_settle_round", {
-    p_round: rk,
+    p_round: String(rk),
     p_fee_rate: HOUSE_FEE_RATE
   });
   if(error){
@@ -1217,30 +1331,32 @@ let frozenDone = false;
 let settleRequestedRoundKey = null;
 
 /* ==========================
-   5) Bets aggregation  ✅ FIX (COMPANY 100 항상 포함)
+   5) Bets aggregation  ✅ FIX (seedForRound 실제값 포함)
 ========================== */
-const COMPANY_STAKE = 100;
-
 function aggregateById(bets){
   const map = new Map();
   for(const b of bets){
-    const key = (b.id || "").trim();
+    const key = (b.id || "").trim().toLowerCase();
     if(!key) continue;
     map.set(key, (map.get(key)||0) + (Number(b.amount)||0));
   }
   return [...map.entries()]
     .map(([id, amount])=>({id, amount}))
+    .filter(x => x.amount > 0) // ✅ 0은 제거 (세그먼트 이상 방지)
     .sort((a,b)=> (b.amount - a.amount) || String(a.id).localeCompare(String(b.id)));
 }
 
 function getCurrentRoundBets(){
-  return [...serverBetMap.values()].filter(b => b.round === roundKey);
+  return [...serverBetMap.values()].filter(b => String(b.round) === String(roundKey));
 }
 
 function getCurrentAggregatedPlayers(){
   const rb = getCurrentRoundBets(); // supabase bets
-  const company = { round: roundKey, id: "COMPANY", amount: COMPANY_STAKE, ts: Date.now() };
-  return aggregateById([company, ...rb]);
+  const base = [...rb];
+  if(seedForRound > 0){
+    base.unshift({ round: roundKey, id: COMPANY_ID, amount: seedForRound, ts: Date.now() });
+  }
+  return aggregateById(base);
 }
 
 /* ==========================
@@ -1405,7 +1521,7 @@ function drawWheel(players = null){
 }
 
 function drawLabelOnWheel(name, amt, midAngle, segAngle, R){
-  const label = String(name || "").trim();
+  const label = displayId(name);
   const amountText = `${amt}`;
 
   if(segAngle < 0.06) return;
@@ -1478,7 +1594,6 @@ function setBetAmount(v){
   betAmount = Math.max(0, Math.min(1000000, v|0));
   document.getElementById("betAmountBox").textContent = betAmount.toLocaleString();
   document.getElementById("btnMid").textContent = betAmount.toLocaleString();
-  // 금액 변경 시 버튼 enable 상태도 바로 반영
   setBettingUI(!bettingLocked);
 }
 setBetAmount(100);
@@ -1486,9 +1601,7 @@ setBetAmount(100);
 document.getElementById("btnMin").onclick = ()=> setBetAmount(0);
 document.getElementById("btnMinus").onclick= ()=> setBetAmount(Math.max(0, betAmount-100));
 document.getElementById("btnPlus").onclick = ()=> setBetAmount(betAmount+100);
-// ✅ MAX = 내 지갑 한도
 document.getElementById("btnMax").onclick  = ()=> setBetAmount(getWallet());
-// 가운데 버튼은 현재값 표시(원본 의도 유지)
 document.getElementById("btnMid").onclick  = ()=> setBetAmount(betAmount);
 
 function setBettingUI(isOpen){
@@ -1516,14 +1629,15 @@ document.getElementById("btnBet").onclick = async ()=>{
   const res = await sbPlaceBet(roundKey, MY_ID, betAmount);
   if(!res.ok) return;
 
-  // ✅ GAS log
-  gasLogRoulette({
+  // ✅ 시트 원장 반영(베팅 차감) - 반드시 k/id/delta/bal 맞춤
+  gasLog({
+    k: makeLogKey_(roundKey, "BET", MY_ID, uid_()),
     type: "BET",
     round: roundKey,
-    player_id: MY_ID,
-    amount: betAmount,
-    new_balance: res.new_balance,
-    ts: Date.now()
+    id: MY_ID,
+    delta: -betAmount,
+    bal: res.new_balance,
+    meta: `bet=${betAmount}`
   });
 
   setWalletLocal(res.new_balance);
@@ -1567,6 +1681,7 @@ async function startNextRound(nowMs){
   wheelRunning = true;
 
   await sbResubscribeRound(roundKey);
+  await sbEnsureSeedForRound(roundKey); // ✅ 회사 seed 실제 차감/확정 + 시트 반영
   markUIDirty();
 }
 
@@ -1601,7 +1716,7 @@ function refreshUI(playersOverride=null, force=false){
     row.innerHTML = `
       <div class="nameWrap">
         <div class="dot" style="opacity:${i===0?1:0.85}"></div>
-        <div class="nm" title="${p.id}">${p.id}</div>
+        <div class="nm" title="${p.id}">${displayId(p.id)}</div>
       </div>
       <div class="amt">${p.amount.toLocaleString()}</div>
     `;
@@ -1637,13 +1752,13 @@ function refreshUI(playersOverride=null, force=false){
    10) Winner overlay
 ========================== */
 function showWinnerOverlay(name, payout, fee, total){
-  document.getElementById("winnerName").textContent = name;
+  document.getElementById("winnerName").textContent = displayId(name);
   document.getElementById("winnerSub").textContent =
     `PAYOUT ${payout.toLocaleString()} UT  ·  FEE ${fee.toLocaleString()} UT`;
 
   document.getElementById("winnerOverlay").style.display = "flex";
   document.getElementById("tickerText").textContent =
-    `UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎  ·  LAST WINNER: ${name} (+${payout.toLocaleString()} UT) 🏆  ·  POOL ${total.toLocaleString()} UT  ·  UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎`;
+    `UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎  ·  LAST WINNER: ${displayId(name)} (+${payout.toLocaleString()} UT) 🏆  ·  POOL ${total.toLocaleString()} UT  ·  UNIQUE ROYAL CASINO - WHERE LEGENDS ARE BORN 💎`;
 }
 function hideWinnerOverlay(){
   document.getElementById("winnerOverlay").style.display = "none";
@@ -1695,24 +1810,56 @@ function updateClockAndState(){
             return;
           }
 
-          const winner = res.winner_id;
+          const winner = String(res.winner_id || "").trim().toLowerCase();
           const total = Number(res.total)||0;
           const fee = Number(res.fee)||0;
           const payout = Number(res.payout)||0;
+          const seed = Number(res.seed)||0;
 
-          // ✅ GAS log
-          gasLogRoulette({
+          // 서버가 준 seed가 있으면 UI도 고정
+          if(Number.isFinite(seed)) seedForRound = Math.max(0, seed);
+
+          const companyBal = (res.company_balance === undefined || res.company_balance === null)
+            ? null : Math.max(0, Number(res.company_balance)||0);
+          const winnerBal = (res.winner_balance === undefined || res.winner_balance === null)
+            ? null : Math.max(0, Number(res.winner_balance)||0);
+
+          // ✅ GAS 로그 (정산 3개: SETTLE / FEE / PAYOUT)
+          const settleK = makeLogKey_(roundKey, "SETTLE", uid_());
+          gasLog({
+            k: settleK,
             type: "SETTLE",
             round: roundKey,
-            winner_id: winner,
-            total,
-            fee,
-            payout,
-            ts: Date.now()
+            id: "",
+            delta: 0,
+            bal: "",
+            meta: JSON.stringify({ winner, total, fee, payout, seed })
           });
+          if(fee > 0){
+            gasLog({
+              k: settleK + "|FEE",
+              type: "FEE",
+              round: roundKey,
+              id: COMPANY_ID,
+              delta: +fee,
+              bal: companyBal,
+              meta: `fee=${fee}`
+            });
+          }
+          if(payout > 0){
+            gasLog({
+              k: settleK + "|PAYOUT",
+              type: "PAYOUT",
+              round: roundKey,
+              id: winner,
+              delta: +payout,
+              bal: winnerBal,
+              meta: `payout=${payout}`
+            });
+          }
 
           // 화살표 각도는 "표시용 players"에서 winner 위치 찾아서 맞춤
-          const winIndex = players.findIndex(p => p.id === winner);
+          const winIndex = players.findIndex(p => String(p.id).toLowerCase() === winner);
           if(winIndex >= 0) wheelAngle = computeStopAngle(players, winIndex);
           else wheelAngle = 0;
 
@@ -1756,10 +1903,7 @@ function updateClockAndState(){
       wheelAngle += 0.0022;
     }
 
-    // ✅ 휠은 60fps로 계속 그려서 부드럽게
     drawWheel(playersForDisplay);
-
-    // ✅ DOM(리스트/합계)은 250ms 단위로만 업데이트
     refreshUI(playersForDisplay);
 
   }catch(err){
@@ -1809,11 +1953,24 @@ async function init(){
   resizeCanvas();
 
   setSyncStatus("동기화: CONNECTING...");
-  await sbEnsureWallet(MY_ID);
+
+  // ✅ 1) 시트 원장 잔액 읽기 (나 + 회사)
+  const sheetBalMe = await gasGetBalance(MY_ID);
+  const sheetBalCompany = await gasGetBalance(COMPANY_ID);
+
+  // ✅ 2) Supabase 지갑을 시트로 스냅샷 동기화
+  await sbSetWalletBalance(COMPANY_ID, sheetBalCompany);
+  const meSync = await sbSetWalletBalance(MY_ID, sheetBalMe);
+  setWalletLocal(meSync.ok ? meSync.balance : sheetBalMe);
+
+  // ✅ 3) 지갑 실시간 구독
   walletBalance = await sbFetchWallet(MY_ID);
   await sbSubscribeWallet(MY_ID);
 
+  // ✅ 4) 라운드 구독 + 회사 seed 확정(실제 차감)
   await sbResubscribeRound(roundKey);
+  await sbEnsureSeedForRound(roundKey);
+
   sbStartPolling();
 
   markUIDirty();
@@ -1822,5 +1979,6 @@ async function init(){
 }
 init();
 </script>
+
 </body>
 </html>
