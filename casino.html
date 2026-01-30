@@ -8,6 +8,7 @@
         :root {
             --bg: #050714;
             --text: #ffffff;
+            --gold: #fbbf24;
         }
 
         body {
@@ -21,7 +22,7 @@
             flex-direction: column;
         }
 
-        /* 상단 타이틀 (더 얇고 세련되게 변경) */
+        /* 상단 타이틀 */
         .header-overlay {
             position: absolute;
             top: 40px; left: 0; width: 100%;
@@ -32,7 +33,7 @@
         }
         h1 {
             font-size: 2.5rem; margin: 0;
-            font-weight: 300; /* 얇은 폰트로 변경 */
+            font-weight: 300;
             letter-spacing: 12px;
             text-transform: uppercase;
             color: #fff;
@@ -43,6 +44,44 @@
             font-size: 0.9rem; color: #ffd700;
             font-weight: 600; letter-spacing: 2px;
             text-transform: uppercase;
+        }
+
+        /* ✅ UT 충전 버튼 (헤더에서 클릭 가능하게) */
+        .header-actions{
+            position:absolute;
+            top:-6px;
+            right:24px;
+            display:flex;
+            gap:10px;
+            align-items:center;
+            pointer-events:auto; /* ✅ 헤더는 막고 버튼만 클릭 가능 */
+        }
+        .topup-btn{
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            color:#fff;
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 1px;
+            cursor:pointer;
+            transition: 0.25s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+        .topup-btn:hover{
+            border-color: rgba(251,191,36,0.9);
+            box-shadow: 0 0 25px rgba(251,191,36,0.22);
+            transform: translateY(-1px);
+        }
+        .topup-sub{
+            display:block;
+            margin-top:4px;
+            font-size:10px;
+            font-weight:700;
+            color: rgba(251,191,36,0.9);
+            letter-spacing: 1px;
         }
 
         /* 메인 컨테이너 */
@@ -64,7 +103,7 @@
             color: white;
             overflow: hidden;
             cursor: pointer;
-            border-right: 1px solid rgba(255,255,255,0.05); /* 경계선 아주 얇게 */
+            border-right: 1px solid rgba(255,255,255,0.05);
         }
         .game-panel:last-child { border-right: none; }
 
@@ -74,8 +113,6 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover;
             background-position: center;
-            
-            /* 평소엔 약간 어둡게 (텍스트 잘 보이게) */
             filter: brightness(0.6) grayscale(20%);
             transform: scale(1);
             transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -86,7 +123,7 @@
         .slot-bg { background-image: url('games/img/slot/slot-bg.png'); }
         .roulette-bg { background-image: url('games/img/slot/roulette-bg.png'); }
 
-        /* 마우스 올렸을 때 효과 (밝아지면서 확대) */
+        /* 마우스 올렸을 때 효과 */
         .game-panel:hover .game-panel-bg {
             filter: brightness(1.1) grayscale(0%);
             transform: scale(1.05);
@@ -97,18 +134,15 @@
             position: relative; z-index: 10;
             text-align: center;
             transition: 0.4s;
-            mix-blend-mode: overlay; /* 배경이랑 자연스럽게 섞임 */
+            mix-blend-mode: overlay;
         }
         
-        /* 텍스트 스타일: 배경을 가리지 않도록 심플하게 */
         .title {
             font-size: 5rem; 
             font-weight: 900;
             text-transform: uppercase; 
             margin: 0;
             letter-spacing: 4px;
-            color: rgba(255,255,255,0.8);
-            /* 텍스트 테두리만 남기고 속은 비움 (고급짐) */
             -webkit-text-stroke: 2px rgba(255,255,255,0.8);
             color: transparent; 
             transition: 0.4s;
@@ -121,9 +155,8 @@
             transform: translateY(20px);
         }
 
-        /* 마우스 올렸을 때 텍스트 변화 */
         .game-panel:hover .title {
-            color: #fff; /* 속 채우기 */
+            color: #fff;
             text-shadow: 0 0 30px rgba(255,255,255,0.8);
             -webkit-text-stroke: 0px;
             transform: scale(1.1);
@@ -133,7 +166,7 @@
             transform: translateY(0);
         }
 
-        /* 나가기 버튼 (유리 질감) */
+        /* 나가기 버튼 */
         .back-btn {
             position: absolute;
             bottom: 40px; left: 50%;
@@ -161,11 +194,11 @@
             .split-container { flex-direction: column; }
             h1 { font-size: 1.5rem; letter-spacing: 6px; }
             .header-overlay { top: 20px; }
-            
+            .header-actions{ right:12px; top:-10px; }
+
             .game-panel { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); }
-            
             .title { font-size: 3.5rem; -webkit-text-stroke: 1px rgba(255,255,255,0.8); }
-            .game-panel-bg { filter: brightness(0.8) grayscale(0%); } /* 모바일은 항상 좀 밝게 */
+            .game-panel-bg { filter: brightness(0.8) grayscale(0%); }
             .desc { opacity: 1; transform: translateY(0); font-size: 0.8rem; letter-spacing: 2px;}
         }
     </style>
@@ -175,6 +208,14 @@
     <div class="header-overlay">
         <h1>THE CASINO</h1>
         <div id="welcome-msg" class="user-greet"></div>
+
+        <!-- ✅ UT 충전(10USDT→50,000UT) 진입 버튼 -->
+        <div class="header-actions">
+            <button id="btnTopupUt" class="topup-btn">
+                🪙 UT 충전
+                <span class="topup-sub">10 USDT → 50,000 UT</span>
+            </button>
+        </div>
     </div>
 
     <div class="split-container">
@@ -200,8 +241,26 @@
     <a href="the-unique-main.html" class="back-btn">EXIT LOBBY</a>
 
     <script>
+        function resolveUserId(){
+            // 1) promo가 쓰는 uniqueCurrentUser 우선
+            const raw = localStorage.getItem('uniqueCurrentUser');
+            if(raw){
+                try{
+                    const obj = JSON.parse(raw);
+                    const id = (obj && (obj.id || obj.name)) ? String(obj.id || obj.name).trim() : "";
+                    if(id) return id;
+                }catch(_){}
+            }
+            // 2) 기존 키들 fallback
+            return (localStorage.getItem('user_id')
+                || localStorage.getItem('loginId')
+                || localStorage.getItem('id')
+                || ""
+            ).trim();
+        }
+
         window.onload = function() {
-            const myId = localStorage.getItem('user_id') || localStorage.getItem('loginId') || localStorage.getItem('id');
+            const myId = resolveUserId();
 
             if (!myId) {
                 alert("로그인이 필요합니다. 메인화면으로 이동합니다.");
@@ -209,9 +268,29 @@
                 return;
             }
 
+            // ✅ promo에서 요구하는 uniqueCurrentUser 보정 세팅
+            try{
+                localStorage.setItem('uniqueCurrentUser', JSON.stringify({ id: myId, name: myId }));
+            }catch(_){}
+
             document.getElementById('welcome-msg').innerText = "PLAYER: " + myId;
-            document.getElementById('link-slot').href = "games/slot.html?id=" + myId;
-            document.getElementById('link-roulette').href = "games/roulette.html?id=" + myId;
+
+            document.getElementById('link-slot').href = "games/slot.html?id=" + encodeURIComponent(myId);
+            document.getElementById('link-roulette').href = "games/roulette.html?id=" + encodeURIComponent(myId);
+
+            // ✅ UT 충전 버튼 -> promo 열기
+            const btn = document.getElementById('btnTopupUt');
+            btn.addEventListener('click', () => {
+                // 클릭에서 팝업 시도 (차단되면 같은 탭 이동)
+                const w = window.open(
+                    "the-unique-promo.html",
+                    "uniqueTopup",
+                    "width=760,height=920,noopener"
+                );
+                if(!w){
+                    location.href = "the-unique-promo.html";
+                }
+            });
         };
     </script>
 
