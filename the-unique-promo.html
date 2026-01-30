@@ -11,7 +11,14 @@
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
     :root{ --gold: #fbbf24; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; }
-    body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; color: var(--text-main); background: #000; display:flex; justify-content:center; align-items:flex-start; }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      color: var(--text-main);
+      background: #000;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
 
     .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
     .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
@@ -41,7 +48,7 @@
 
     .label { font-size: 12px; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block; }
     .value { font-size: 28px; font-weight: 900; color: #fff; }
-    .sub-text { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+    .sub-text { font-size: 11px; color: var(--text-sub); margin-top: 4px; line-height: 1.4; }
 
     .btn-copy { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
 
@@ -58,8 +65,13 @@
     .btn-gold { background: var(--gold); color: #000; }
     .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
 
-    /* 랭킹 리스트 */
-    .ranking-list { margin-top:10px; max-height: 200px; overflow-y: auto; }
+    /* 랭킹 리스트 (✅ 빈 공간 해결: 데스크톱은 내용만큼 줄어듦) */
+    .ranking-list {
+      margin-top:10px;
+      height:auto !important;
+      max-height: unset !important;
+      overflow: visible !important;
+    }
     .rank-item { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
     .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; font-weight:bold; margin-right:8px; border-radius: 50%; font-size: 11px; background: #334155; color: #fff; }
     .rank-1 { background: #FFD700; color: #000; } .rank-2 { background: #C0C0C0; color: #000; } .rank-3 { background: #CD7F32; color: #000; }
@@ -76,7 +88,15 @@
     /* USDT 환산 미리보기 */
     .usdt-preview { font-size: 12px; color: #fbbf24; margin-top: 4px; text-align: right; font-weight: bold; }
 
-    @media (max-width: 480px) { .page-wrap { padding: 15px; margin-top: 20px; } .title { font-size: 18px; } }
+    /* 모바일에서는 랭킹 리스트 스크롤 허용 */
+    @media (max-width: 480px) {
+      .page-wrap { padding: 15px; margin-top: 20px; }
+      .title { font-size: 18px; }
+      .ranking-list{
+        max-height: 260px !important;
+        overflow-y: auto !important;
+      }
+    }
   </style>
 </head>
 
@@ -97,9 +117,9 @@
       </div>
 
       <div class="tab-menu">
-        <button class="tab-btn active" onclick="switchTab('home')">🏠 홈 & 기금</button>
-        <button class="tab-btn" onclick="switchTab('loan')">🏦 대출 (Loan)</button>
-        <button class="tab-btn" onclick="switchTab('settle')">💸 정산 신청</button>
+        <button class="tab-btn active" onclick="switchTab('home', this)">🏠 홈 & 기금</button>
+        <button class="tab-btn" onclick="switchTab('loan', this)">🏦 대출 (Loan)</button>
+        <button class="tab-btn" onclick="switchTab('settle', this)">💸 정산 신청</button>
       </div>
 
       <div id="tab-home" class="section active">
@@ -108,17 +128,24 @@
           <div class="label">공동기금 (REAL USDT)</div>
           <div class="value" id="vault-balance-num">Loading...</div>
           <div class="sub-text">TRC20 Network</div>
+          <div class="sub-text" id="vault-addr" style="margin-top:6px; word-break:break-all;"></div>
         </div>
 
         <div class="info-box gold-box">
-          <div class="label" style="color:#fbbf24; margin-bottom:12px;">🏆 기금 후원하기 (명예의 전당 등록)</div>
+          <div class="label" style="color:#fbbf24; margin-bottom:8px;">🪙 UT 충전 신청 (10 USDT → 50,000 UT)</div>
+          <div class="sub-text" style="margin-bottom:12px;">
+            1) 아래 주소로 <b style="color:#fff">10 USDT(TRC20)</b> 입금<br>
+            2) TXID + 성함 제출 → <b style="color:#fff">운영자가 확인 후 수동으로 50,000 UT 충전</b><br>
+            3) 제출 즉시 <b style="color:#fff">명예의 전당에 10 USDT</b>로 기록됩니다.
+          </div>
+
           <div class="input-group">
-            <input id="donate-name" class="input-field" placeholder="후원자 성함 (랭킹 표시용)" />
+            <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
           </div>
           <div class="input-group">
             <input id="donate-txid" class="input-field" placeholder="TXID (이체 확인증)" />
           </div>
-          <button class="action-btn btn-gold" onclick="submitDonation()">후원 내역 제출</button>
+          <button class="action-btn btn-gold" onclick="submitDonation()">충전 신청 제출</button>
         </div>
 
         <div class="info-box">
@@ -226,13 +253,18 @@
   }
 
   // ======================================================
+  // UT 판매(충전) 설정값 (✅ 유송 요청)
+  // ======================================================
+  const TOPUP_USDT = 10;
+  const TOPUP_UT   = 50000;
+
+  // ======================================================
   // Constants / State
   // ======================================================
   let myUsername = "";
   let myCurrentBalance = 0;
 
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
-  const WORKER_BASE = "https://the-unique-vault-api.wordycow0001.workers.dev";
 
   // ✅ 오늘 정산가(메인에서 저장된 값)
   const UT_RATE = (() => {
@@ -253,6 +285,10 @@
       myUsername = String(userObj.id || userObj.name || "Unknown").toLowerCase().trim();
       document.getElementById("user-display").textContent = `[${myUsername}]`;
 
+      // 주소 표시
+      const addrEl = document.getElementById("vault-addr");
+      if (addrEl) addrEl.textContent = VAULT_TRON_ADDRESS;
+
       fetchRanking();
       fetchMyBalance();       // ✅ UT 잔액은 시트에서 최신화
       fetchVaultSumSince();   // ✅ 12/21 이후 합산
@@ -261,46 +297,43 @@
     }
   });
 
-  function switchTab(tabName) {
+  function switchTab(tabName, btnEl) {
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
-    event.target.classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
 
     if (tabName === 'settle') {
       fetchMyBalance();
       fetchMyHistory();
     }
   }
- 
-  // ✅ 공동기금(REAL USDT)에는 "12/21 이후 처리된 후원 합산"만 표시
-async function fetchVaultSumSince() {
-  // 2025-12-21 00:00 KST = 2025-12-20 15:00:00Z
-  const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
 
-  const mainEl = document.getElementById("vault-balance-num");
-  if (!mainEl) return;
+  // ✅ 공동기금(REAL USDT): "12/21 이후 donation_verify 합산"만 표시
+  async function fetchVaultSumSince() {
+    // 2025-12-21 00:00 KST = 2025-12-20 15:00:00Z
+    const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
 
-  try {
-    const { data, error } = await db
-      .from("transactions")
-      .select("amount, created_at")
-      .eq("type", "donation_verify")
-      .gte("created_at", CUTOFF_UTC);
+    const mainEl = document.getElementById("vault-balance-num");
+    if (!mainEl) return;
 
-    if (error) throw error;
+    try {
+      const { data, error } = await db
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("type", "donation_verify")
+        .gte("created_at", CUTOFF_UTC);
 
-    const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+      if (error) throw error;
 
-    // ✅ 큰 숫자(공동기금)에만 표시
-    mainEl.textContent = `${sum.toLocaleString()} USDT`;
+      const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+      mainEl.textContent = `${sum.toLocaleString()} USDT`;
 
-  } catch (e) {
-    console.warn("fetchVaultSumSince fail:", e);
-    mainEl.textContent = "Error";
+    } catch (e) {
+      console.warn("fetchVaultSumSince fail:", e);
+      mainEl.textContent = "Error";
+    }
   }
-}
-
 
   // ✅ UT 잔액: localStorage 즉시 표시 → Apps Script(getUser) 최신화
   async function fetchMyBalance() {
@@ -324,7 +357,7 @@ async function fetchVaultSumSince() {
 
   function copyVaultAddress(){
     navigator.clipboard.writeText(VAULT_TRON_ADDRESS)
-      .then(()=>alert("기금 지갑 주소가 복사되었습니다."))
+      .then(()=>alert("입금 주소가 복사되었습니다."))
       .catch(()=>{});
   }
 
@@ -339,52 +372,91 @@ async function fetchVaultSumSince() {
     }
   }
 
+  // ======================================================
+  // ✅ UT 충전 신청 제출: 이름 + TXID -> 10 USDT로 "명예의 전당" 기록
+  //    (UT 50,000 충전은 유송이 casino-admin에서 수동 반영)
+  // ======================================================
   async function submitDonation() {
     const name = document.getElementById("donate-name").value.trim();
     const txid = document.getElementById("donate-txid").value.trim();
     if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
 
-    const { data: existing } = await db.from('transactions').select('txid').eq('txid', txid).maybeSingle();
+    // 중복 TXID 방지
+    const { data: existing } = await db
+      .from('transactions')
+      .select('txid')
+      .eq('txid', txid)
+      .maybeSingle();
+
     if (existing) return alert("이미 제출된 TXID입니다.");
 
-    let amount = 100;
-    if(txid.startsWith("c9f6")) amount = 360;
-    if(txid.startsWith("eece")) amount = 350;
+    const amount = TOPUP_USDT;
 
+    // ✅ donation_verify 로 넣어서 Top Donors에 그대로 표시되게 함
     await db.from('transactions').insert([{
       username: myUsername,
       donor_name: name,
       type: 'donation_verify',
       amount: amount,
-      description: `[후원] ${name} / ${amount} USDT`,
+      description: `[UT충전신청] ${name} / ${amount} USDT -> ${TOPUP_UT.toLocaleString()} UT (수동충전)`,
       txid: txid
     }]);
 
-    const { data: prof } = await db.from('profiles').select('donation_total').eq('username', myUsername).maybeSingle();
+    // donation_total 누적 (랭킹/통계용)
+    const { data: prof } = await db
+      .from('profiles')
+      .select('donation_total')
+      .eq('username', myUsername)
+      .maybeSingle();
+
     const current = prof ? (prof.donation_total || 0) : 0;
+    await db.from('profiles').upsert(
+      { username: myUsername, donation_total: current + amount },
+      { onConflict: 'username' }
+    );
 
-    await db.from('profiles').upsert({ username: myUsername, donation_total: current + amount }, { onConflict: 'username' });
+    alert(`접수 완료!\n입금 확인 후 운영자가 ${TOPUP_UT.toLocaleString()} UT를 수동 충전합니다.\n(명예의 전당에 ${amount} USDT로 기록됨)`);
 
-    alert(`감사합니다! 후원 내역이 접수되었습니다.`);
     document.getElementById("donate-txid").value = "";
     fetchRanking();
-    fetchVaultSumSince(); // ✅ 새 후원 반영
+    fetchVaultSumSince();
   }
 
+  // ✅ Top Donors: donor_name 기준 누적합으로 10명 표시
   async function fetchRanking() {
     const container = document.getElementById("donation-ranking");
-    const { data: list } = await db.from('transactions')
-      .select('donor_name, amount')
-      .eq('type', 'donation_verify')
-      .order('amount', {ascending:false})
-      .limit(10);
 
-    if (!list || list.length === 0) {
-      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">아직 후원 내역이 없습니다.</div>';
+    // 최근 500건 정도만 긁어서 donor_name 누적 (규모 작으면 충분)
+    const { data: list, error } = await db.from('transactions')
+      .select('donor_name, amount, created_at')
+      .eq('type', 'donation_verify')
+      .order('created_at', {ascending:false})
+      .limit(500);
+
+    if (error) {
+      container.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">랭킹 로딩 오류</div>';
       return;
     }
 
-    container.innerHTML = list.map((item, idx) => {
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">아직 후원/충전 내역이 없습니다.</div>';
+      return;
+    }
+
+    const agg = new Map();
+    for (const r of list) {
+      const dn = String(r.donor_name || "").trim();
+      if (!dn) continue;
+      const a = Number(r.amount || 0);
+      agg.set(dn, (agg.get(dn) || 0) + a);
+    }
+
+    const ranked = Array.from(agg.entries())
+      .map(([donor_name, amount]) => ({ donor_name, amount }))
+      .sort((a,b) => b.amount - a.amount)
+      .slice(0, 10);
+
+    container.innerHTML = ranked.map((item, idx) => {
       let badge = `<span class="rank-badge">${idx+1}</span>`;
       if(idx===0) badge = `<span class="rank-badge rank-1">${idx+1}</span>`;
       if(idx===1) badge = `<span class="rank-badge rank-2">${idx+1}</span>`;
