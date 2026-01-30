@@ -1,130 +1,109 @@
+/* =========================================================
+ * js/unique.app.js  (FULL REPLACE / COPY-PASTE)
+ * - 앱 부트스트랩(로그인체크 → 스케줄 → UI → 시트동기화 → 직급/설정/가격/ebook → 유튜브)
+ * - onclick 전역함수(openTab/registerNickname/sendP2P/handleScheduleSheet/onYouTubeIframeAPIReady) 보장
+ * - Casino/Slot 링크에 닉/UID/UT/ID 쿼리 동기화
+ * - slot/casino에서 돌아올 때 ?u=&uid=&ut=&id= 로컬스토리지 즉시 반영
+ * ========================================================= */
+
 (function () {
+  "use strict";
+
   window.UNIQUE = window.UNIQUE || {};
   const U = window.UNIQUE;
 
-  async function boot() {
-    // 1) 로그인 체크
-    if (!U.auth || !U.auth.requireLogin || !U.auth.requireLogin()) return;
+  const SLOT_PATH  = "games/slot.html";
+  const LOBBY_PATH = "casino.html"; // 현재 main.html 링크(id="btnCasinoLobby") 기본 목적지
 
-    // 2) 스케줄 로드
-    if (U.schedule && U.schedule.init) U.schedule.init();
+  /* -------------------------
+   * Utils
+   * ------------------------- */
+  const isFn = (v) => typeof v === "function";
 
-    // 3) 기본 UI
-    if (U.ui) {
-      U.ui.updateHeaderUI && U.ui.updateHeaderUI();
-      U.ui.updateNicknameButton && U.ui.updateNicknameButton();
-      U.ui.updateWalletUI && U.ui.updateWalletUI();
-      U.ui.bindBasicButtons && U.ui.bindBasicButtons();
-    }
-
-    // 4) 시트 최신화 + 직급 + 설정 + 가격 + ebook
-    if (U.wallet && U.wallet.refreshUserFromSheet) {
-      await U.wallet.refreshUserFromSheet();
-      U.ui && U.ui.updateHeaderUI && U.ui.updateHeaderUI();
-      U.ui && U.ui.updateNicknameButton && U.ui.updateNicknameButton();
-    }
-
-    if (U.rank && U.rank.loadAndApply) {
-      await U.rank.loadAndApply();
-      U.rank.bindCaptureClicks && U.rank.bindCaptureClicks();
-    }
-
-    if (U.wallet) {
-      U.wallet.refreshRewardConfig && (await U.wallet.refreshRewardConfig());
-      U.wallet.refreshPricing && (await U.wallet.refreshPricing());
-      U.ui && U.ui.updateWalletUI && U.ui.updateWalletUI();
-    }
-
-    if (U.ebooks && U.ebooks.load) {
-      await U.ebooks.load();
-    }
-
-    // 5) 유튜브/보상 버튼 바인딩
-    if (U.youtube) {
-      U.youtube.init && U.youtube.init();
-      U.youtube.bindRewardButton && U.youtube.bindRewardButton();
-      U.youtube.bindLuckyBox && U.youtube.bindLuckyBox();
-    }
-
-    // 6) 주기 동기화
-    const refreshMs =
-      (U.CONFIG && U.CONFIG.REFRESH_MS) ? U.CONFIG.REFRESH_MS : 15000;
-
-    setInterval(async () => {
-      try {
-        if (U.wallet && U.wallet.refreshUserFromSheet) await U.wallet.refreshUserFromSheet();
-        if (U.rank && U.rank.loadAndApply) await U.rank.loadAndApply();
-        if (U.wallet && U.wallet.refreshRewardConfig) await U.wallet.refreshRewardConfig();
-        if (U.wallet && U.wallet.refreshPricing) await U.wallet.refreshPricing();
-
-        if (U.ui) {
-          U.ui.updateHeaderUI && U.ui.updateHeaderUI();
-          U.ui.updateNicknameButton && U.ui.updateNicknameButton();
-          U.ui.updateWalletUI && U.ui.updateWalletUI();
-        }
-      } catch (e) {
-        console.warn("periodic refresh error:", e);
-      }
-    }, refreshMs);
-  }
-
-  document.addEventListener("DOMContentLoaded", boot);
-})(); // ✅ 이게 빠져서 전체가 죽었던 거야
-/* =========================
-   MAIN ← SLOT (query sync)
-   - slot에서 돌아올 때 ?u= &uid= &ut=
-   - localStorage에 즉시 반영 (UT 동기화 핵심)
-========================= */
-(function () {
-  try {
-    const qs = new URLSearchParams(location.search);
-    const u   = (qs.get("u") || "").trim();
-    const uid = (qs.get("uid") || "").trim();
-    const ut  = (qs.get("ut") || "").trim();
-
-    if (u)   localStorage.setItem("slot_player", u);
-    if (u)   localStorage.setItem("unique_nickname", u);
-
-    if (uid) localStorage.setItem("unique_userid", uid);
-    if (uid) localStorage.setItem("uid", uid);
-
-    if (ut)  localStorage.setItem("unique_ut", ut);
-  } catch (e) {
-    console.warn("query sync error:", e);
-  }
-})();
-
-/* =========================
-   SLOT 버튼 닉네임/UID/UT 연동 브릿지 (강화판)
-   - PC: #slotBtnPc
-   - M : #slotBtnM
-   - CTA: #slotCta
-   - 슬롯: games/slot.html?u=닉네임&uid=회원UID&ut=표시용UT
-   - uid 없으면 이동 막고 안내 (missing_user 방지 핵심)
-========================= */
-(function () {
-  const SLOT_PATH = "games/slot.html";
-
-  function clean(v) {
-    v = (v || "").trim();
+  function cleanText(v) {
+    v = (v ?? "").toString().trim();
     if (!v) return "";
     if (v === "User" || v === "회원 이름") return "";
     return v;
   }
 
+  function cleanNumText(v) {
+    v = cleanText(v);
+    if (!v) return "";
+    // "12,345.67 UT" 같은 표시도 들어올 수 있으니 숫자/점/마이너스만 남김
+    const only = v.replace(/[^0-9.\-]/g, "");
+    return only || v;
+  }
+
   function textById(id) {
     const el = document.getElementById(id);
-    return clean(el ? (el.textContent || el.value || "") : "");
+    if (!el) return "";
+    return cleanText(el.textContent || el.value || "");
   }
 
   function fromLS(keys) {
     for (const k of keys) {
-      const v = clean(localStorage.getItem(k));
+      const v = cleanText(localStorage.getItem(k));
       if (v) return v;
     }
     return "";
   }
 
+  function fromLSNum(keys) {
+    for (const k of keys) {
+      const v = cleanNumText(localStorage.getItem(k));
+      if (v) return v;
+    }
+    return "";
+  }
+
+  function buildUrl(basePath, paramsObj) {
+    const params = new URLSearchParams();
+    Object.entries(paramsObj || {}).forEach(([k, v]) => {
+      const cv = cleanText(v);
+      if (cv) params.set(k, cv);
+    });
+    const qs = params.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
+  }
+
+  /* -------------------------
+   * Query Sync (slot/casino → main)
+   * - ?u= &uid= &ut= &id= 들어오면 즉시 저장
+   * ------------------------- */
+  function syncFromQuery() {
+    try {
+      const qs = new URLSearchParams(location.search);
+
+      const u   = cleanText(qs.get("u"));
+      const uid = cleanText(qs.get("uid"));
+      const ut  = cleanNumText(qs.get("ut"));
+      const id  = cleanText(qs.get("id"));
+
+      if (u) {
+        localStorage.setItem("slot_player", u);
+        localStorage.setItem("unique_nickname", u);
+      }
+      if (uid) {
+        localStorage.setItem("unique_userid", uid);
+        localStorage.setItem("uid", uid);
+      }
+      if (ut) {
+        localStorage.setItem("unique_ut", ut);
+      }
+      if (id) {
+        // 예전 호환: id로도 uid 채워주기
+        localStorage.setItem("unique_userid", id);
+        localStorage.setItem("uid", id);
+      }
+    } catch (e) {
+      console.warn("[query sync] error:", e);
+    }
+  }
+
+  /* -------------------------
+   * Identity getters
+   * ------------------------- */
   function getNickname() {
     // 1) localStorage
     const v1 = fromLS(["slot_player", "unique_nickname", "nickname", "userNickname", "the_unique_nickname"]);
@@ -134,20 +113,22 @@
     const v2 = textById("tb-user-name") || textById("member-name") || textById("nickname");
     if (v2) return v2;
 
-    // 3) window.UNIQUE 상태값(있으면)
-    const U = window.UNIQUE || {};
-    const v3 = clean(U.STATE?.nickname) || clean(U.STATE?.user?.nickname) || clean(U.user?.nickname);
+    // 3) window.UNIQUE 상태값
+    const v3 =
+      cleanText(U.STATE?.nickname) ||
+      cleanText(U.STATE?.user?.nickname) ||
+      cleanText(U.user?.nickname);
     if (v3) return v3;
 
     return "";
   }
 
   function getUid() {
-    // 1) localStorage (가장 확실)
-    const v1 = fromLS(["unique_userid", "uid", "userId", "memberId"]);
+    // 1) localStorage
+    const v1 = fromLS(["unique_userid", "uid", "userId", "memberId", "unique_user_id"]);
     if (v1) return v1;
 
-    // 2) DOM 후보 확장
+    // 2) DOM
     const v2 =
       textById("member-id") ||
       textById("tb-user-id") ||
@@ -156,14 +137,13 @@
       textById("my-uid");
     if (v2) return v2;
 
-    // 3) window.UNIQUE 상태값(있으면)
-    const U = window.UNIQUE || {};
+    // 3) window.UNIQUE 상태값
     const v3 =
-      clean(U.STATE?.uid) ||
-      clean(U.STATE?.userId) ||
-      clean(U.STATE?.user?.uid) ||
-      clean(U.STATE?.user?.id) ||
-      clean(U.user?.uid);
+      cleanText(U.STATE?.uid) ||
+      cleanText(U.STATE?.userId) ||
+      cleanText(U.STATE?.user?.uid) ||
+      cleanText(U.STATE?.user?.id) ||
+      cleanText(U.user?.uid);
     if (v3) return v3;
 
     return "";
@@ -171,94 +151,311 @@
 
   function getUt() {
     // 1) localStorage
-    const v1 = fromLS(["unique_ut", "ut", "balanceUT"]);
+    const v1 = fromLSNum(["unique_ut", "ut", "balanceUT"]);
     if (v1) return v1;
 
-    // 2) DOM 후보 확장
+    // 2) DOM
     const v2 =
-      textById("my-ut-display") ||
-      textById("tb-user-ut") ||
-      textById("user-ut") ||
-      textById("ut");
+      cleanNumText(textById("my-ut-display")) ||
+      cleanNumText(textById("my-ut-display-transfer")) ||
+      cleanNumText(textById("tb-user-ut")) ||
+      cleanNumText(textById("user-ut")) ||
+      cleanNumText(textById("ut"));
     if (v2) return v2;
 
-    // 3) window.UNIQUE 상태값(있으면)
-    const U = window.UNIQUE || {};
+    // 3) window.UNIQUE 상태값
     const v3 =
-      clean(U.STATE?.ut) ||
-      clean(U.STATE?.balanceUT) ||
-      clean(U.STATE?.user?.ut) ||
-      clean(U.user?.ut);
+      cleanNumText(U.STATE?.ut) ||
+      cleanNumText(U.STATE?.balanceUT) ||
+      cleanNumText(U.STATE?.user?.ut) ||
+      cleanNumText(U.user?.ut);
     if (v3) return v3;
 
     return "";
   }
 
-  function buildSlotUrl(nick, uid, ut) {
-    const params = new URLSearchParams();
-    if (nick) params.set("u", nick);
-    if (uid)  params.set("uid", uid);
-    if (ut)   params.set("ut", ut);
-    return params.toString() ? `${SLOT_PATH}?${params.toString()}` : SLOT_PATH;
+  function getLoginId() {
+    // 1) gate가 저장한 uniqueCurrentUser 우선
+    try {
+      const raw = localStorage.getItem("uniqueCurrentUser");
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj && obj.id) return cleanText(obj.id);
+      }
+    } catch (e) {}
+
+    // 2) 호환 키들
+    const v2 = fromLS(["unique_userid", "unique_user_id", "user_id", "uid", "id"]);
+    if (v2) return v2;
+
+    return "";
   }
 
-  function applySlotLinks() {
+  /* -------------------------
+   * Casino/Slot link apply
+   * - 다양한 id를 모두 지원
+   * ------------------------- */
+  function applyCasinoLinks() {
     const nick = getNickname();
     const uid  = getUid();
     const ut   = getUt();
+    const id   = getLoginId() || uid; // id 호환
 
-    // 저장 (다음 페이지에서도 유지)
-    if (nick) localStorage.setItem("slot_player", nick);
-    if (nick) localStorage.setItem("unique_nickname", nick);
-    if (uid)  localStorage.setItem("unique_userid", uid);
-    if (uid)  localStorage.setItem("uid", uid);
-    if (ut)   localStorage.setItem("unique_ut", ut);
+    // 저장(다음 페이지에서도 유지)
+    if (nick) {
+      localStorage.setItem("slot_player", nick);
+      localStorage.setItem("unique_nickname", nick);
+    }
+    if (uid) {
+      localStorage.setItem("unique_userid", uid);
+      localStorage.setItem("uid", uid);
+    }
+    if (ut) {
+      localStorage.setItem("unique_ut", ut);
+    }
 
-    const url = buildSlotUrl(nick, uid, ut);
+    // (A) 로비 링크들
+    const lobbyIds = ["btnCasinoLobby"];
+    const lobbyUrl = buildUrl(LOBBY_PATH, { u: nick, uid, ut, id });
 
-    const pc  = document.getElementById("slotBtnPc");
-    const m   = document.getElementById("slotBtnM");
-    const cta = document.getElementById("slotCta");
+    // (B) 슬롯 직접 링크들
+    const slotIds = ["slotBtnPc", "slotBtnM", "slotCta", "slotBtn"];
+    const slotUrl = buildUrl(SLOT_PATH, { u: nick, uid, ut, id });
 
-    [pc, m, cta].forEach(a => {
-      if (!a) return;
-      a.href = url;
+    function setLink(el, url, needUid) {
+      if (!el) return;
 
-      // ✅ uid 없으면 안내 + 시각적 힌트(완전 비활성은 클릭에서 막음)
-      if (!uid) {
-        a.setAttribute("data-slot-disabled", "1");
-        a.title = "슬롯은 로그인 후(회원 UID 필요) 이용 가능합니다.";
+      // a 태그면 href / 버튼이면 dataset으로 처리(버튼인 케이스도 방어)
+      if (el.tagName === "A") el.href = url;
+
+      const ok = needUid ? !!uid : !!id;
+      if (!ok) {
+        el.setAttribute("data-slot-disabled", "1");
+        el.title = "로그인 후 이용 가능합니다. (회원 UID 필요)";
       } else {
-        a.removeAttribute("data-slot-disabled");
-        a.title = "";
+        el.removeAttribute("data-slot-disabled");
+        el.title = "";
       }
-    });
+    }
 
-    return { nick, uid, ut, url };
+    lobbyIds.forEach((idName) => setLink(document.getElementById(idName), lobbyUrl, true));
+    slotIds.forEach((idName)  => setLink(document.getElementById(idName),  slotUrl,  true));
+
+    return { nick, uid, ut, id, lobbyUrl, slotUrl };
   }
 
-  function boot() {
-    applySlotLinks();
-
-    // 닉네임/uid 렌더가 늦는 케이스 대비 (10초 재시도)
-    let tries = 0;
-    const t = setInterval(() => {
-      applySlotLinks();
-      tries++;
-      if (tries >= 20) clearInterval(t);
-    }, 500);
-
-    // 클릭 순간에도 한번 더 보정 + uid 없으면 이동 막기
+  function bindCasinoLinkGuards() {
+    // 클릭 순간에도 한 번 더 보정 + uid 없으면 이동 막기
     document.addEventListener("click", (e) => {
-      const a = e.target.closest("#slotBtnPc, #slotBtnM, #slotCta");
+      const a = e.target.closest("#btnCasinoLobby, #slotBtnPc, #slotBtnM, #slotCta, #slotBtn");
       if (!a) return;
 
-      const { uid } = applySlotLinks();
-      if (!uid) {
+      const info = applyCasinoLinks();
+      const needUid = true;
+
+      if (needUid && !info.uid) {
         e.preventDefault();
-        alert("슬롯은 메인에서 로그인 후 이용 가능합니다. (회원 UID가 필요해요)");
+        alert("슬롯/카지노는 메인에서 로그인 후 이용 가능합니다. (회원 UID가 필요해요)");
       }
     });
+  }
+
+  /* -------------------------
+   * Global bindings for onclick
+   * - openTab/registerNickname/sendP2P/handleScheduleSheet/onYouTubeIframeAPIReady
+   * ------------------------- */
+  function ensureGlobalBindings() {
+    function pickFn(paths) {
+      for (const path of paths) {
+        let cur = window;
+        for (const key of path) {
+          if (!cur || !(key in cur)) { cur = null; break; }
+          cur = cur[key];
+        }
+        if (isFn(cur)) return cur;
+      }
+      return null;
+    }
+
+    // openTab
+    if (!isFn(window.openTab)) {
+      const modOpenTab = pickFn([
+        ["UNIQUE","ui","openTab"],
+        ["UNIQUE","UI","openTab"],
+        ["UNIQUE","ui","tabs","openTab"],
+      ]);
+
+      window.openTab = function (btn, tabId) {
+        try {
+          if (modOpenTab) return modOpenTab(btn, tabId);
+
+          // fallback: 탭 active 토글
+          const tabButtons = document.querySelectorAll(".tb-tab-btn");
+          const contents = document.querySelectorAll(".tb-content");
+          tabButtons.forEach(b => b.classList.remove("active"));
+          contents.forEach(c => c.classList.remove("active"));
+
+          if (btn && btn.classList) btn.classList.add("active");
+          const el = document.getElementById(tabId);
+          if (el) el.classList.add("active");
+        } catch (e) {
+          console.error("[openTab] failed:", e);
+        }
+      };
+    }
+
+    // registerNickname
+    if (!isFn(window.registerNickname)) {
+      const fn = pickFn([
+        ["UNIQUE","ui","registerNickname"],
+        ["UNIQUE","wallet","registerNickname"],
+        ["UNIQUE","supabase","registerNickname"],
+      ]);
+
+      window.registerNickname = function () {
+        if (fn) return fn();
+        alert("registerNickname 함수가 아직 준비되지 않았습니다. (unique.ui.js / unique.wallet.js / unique.supabase.js 확인)");
+        console.warn("[registerNickname] not found");
+      };
+    }
+
+    // sendP2P
+    if (!isFn(window.sendP2P)) {
+      const fn = pickFn([
+        ["UNIQUE","wallet","sendP2P"],
+      ]);
+
+      window.sendP2P = function () {
+        if (fn) return fn();
+        alert("sendP2P 함수가 아직 준비되지 않았습니다. (unique.wallet.js 확인)");
+        console.warn("[sendP2P] not found");
+      };
+    }
+
+    // handleScheduleSheet (gviz callback)
+    if (!isFn(window.handleScheduleSheet)) {
+      const fn = pickFn([
+        ["UNIQUE","schedule","handleScheduleSheet"],
+      ]);
+      if (fn) window.handleScheduleSheet = fn;
+    }
+
+    // YouTube Iframe API callback
+    if (!isFn(window.onYouTubeIframeAPIReady)) {
+      const fn = pickFn([
+        ["UNIQUE","youtube","onYouTubeIframeAPIReady"],
+      ]);
+      if (fn) window.onYouTubeIframeAPIReady = fn;
+    }
+
+    // 예전 호환: main → slot 직접 이동 함수(혹시 다른 페이지에서 onclick 쓰면 살아있게)
+    if (!isFn(window.goCasinoFromMain)) {
+      window.goCasinoFromMain = function (e) {
+        if (e) e.preventDefault();
+        const id = getLoginId();
+        if (!id) {
+          alert("로그인 정보가 없습니다. 게이트에서 로그인 후 다시 시도하세요.");
+          location.href = "the-unique-gate.html";
+          return false;
+        }
+        location.href = buildUrl(SLOT_PATH, { id });
+        return false;
+      };
+    }
+  }
+
+  /* -------------------------
+   * Main boot
+   * ------------------------- */
+  async function boot() {
+    // 0) onclick 전역함수 먼저 보장
+    ensureGlobalBindings();
+
+    // 0-1) 쿼리 동기화 + 링크 보정
+    syncFromQuery();
+    applyCasinoLinks();
+    bindCasinoLinkGuards();
+
+    // 1) 로그인 체크
+    if (U.auth && isFn(U.auth.requireLogin)) {
+      const ok = U.auth.requireLogin();
+      if (!ok) return;
+    }
+
+    // 2) 스케줄 로드
+    if (U.schedule && isFn(U.schedule.init)) {
+      U.schedule.init();
+    }
+
+    // 3) 기본 UI
+    if (U.ui) {
+      isFn(U.ui.updateHeaderUI) && U.ui.updateHeaderUI();
+      isFn(U.ui.updateNicknameButton) && U.ui.updateNicknameButton();
+      isFn(U.ui.updateWalletUI) && U.ui.updateWalletUI();
+      isFn(U.ui.bindBasicButtons) && U.ui.bindBasicButtons();
+    }
+
+    // 4) 시트 최신화 + 직급 + 설정 + 가격 + ebook
+    if (U.wallet && isFn(U.wallet.refreshUserFromSheet)) {
+      await U.wallet.refreshUserFromSheet();
+
+      // 시트에서 닉/uid/ut가 찍힌 뒤 링크 한 번 더 보정
+      applyCasinoLinks();
+
+      if (U.ui) {
+        isFn(U.ui.updateHeaderUI) && U.ui.updateHeaderUI();
+        isFn(U.ui.updateNicknameButton) && U.ui.updateNicknameButton();
+        isFn(U.ui.updateWalletUI) && U.ui.updateWalletUI();
+      }
+    }
+
+    if (U.rank && isFn(U.rank.loadAndApply)) {
+      await U.rank.loadAndApply();
+      isFn(U.rank.bindCaptureClicks) && U.rank.bindCaptureClicks();
+    }
+
+    if (U.wallet) {
+      isFn(U.wallet.refreshRewardConfig) && (await U.wallet.refreshRewardConfig());
+      isFn(U.wallet.refreshPricing) && (await U.wallet.refreshPricing());
+
+      if (U.ui) {
+        isFn(U.ui.updateWalletUI) && U.ui.updateWalletUI();
+      }
+    }
+
+    if (U.ebooks && isFn(U.ebooks.load)) {
+      await U.ebooks.load();
+    }
+
+    // 5) 유튜브/보상 버튼 바인딩
+    if (U.youtube) {
+      isFn(U.youtube.init) && U.youtube.init();
+      isFn(U.youtube.bindRewardButton) && U.youtube.bindRewardButton();
+      isFn(U.youtube.bindLuckyBox) && U.youtube.bindLuckyBox();
+    }
+
+    // 6) 주기 동기화
+    const refreshMs = (U.CONFIG && U.CONFIG.REFRESH_MS) ? U.CONFIG.REFRESH_MS : 15000;
+
+    setInterval(async () => {
+      try {
+        if (U.wallet && isFn(U.wallet.refreshUserFromSheet)) await U.wallet.refreshUserFromSheet();
+        if (U.rank && isFn(U.rank.loadAndApply)) await U.rank.loadAndApply();
+        if (U.wallet && isFn(U.wallet.refreshRewardConfig)) await U.wallet.refreshRewardConfig();
+        if (U.wallet && isFn(U.wallet.refreshPricing)) await U.wallet.refreshPricing();
+
+        if (U.ui) {
+          isFn(U.ui.updateHeaderUI) && U.ui.updateHeaderUI();
+          isFn(U.ui.updateNicknameButton) && U.ui.updateNicknameButton();
+          isFn(U.ui.updateWalletUI) && U.ui.updateWalletUI();
+        }
+
+        // 주기적으로도 링크 보정(닉/uid/ut 변동 대응)
+        applyCasinoLinks();
+      } catch (e) {
+        console.warn("[periodic refresh] error:", e);
+      }
+    }, refreshMs);
   }
 
   if (document.readyState === "loading") {
@@ -266,51 +463,5 @@
   } else {
     boot();
   }
-})();
-/* ===== slot 이동: 로그인 id를 붙여서 넘어가기 (main → slot) ===== */
-(function () {
-  function getLoginId() {
-    // 1) gate가 저장한 uniqueCurrentUser 우선
-    try {
-      const raw = localStorage.getItem("uniqueCurrentUser");
-      if (raw) {
-        const u = JSON.parse(raw);
-        if (u && u.id) return String(u.id).trim();
-      }
-    } catch (e) {}
 
-    // 2) 호환 키들
-    const keys = ["unique_user_id", "user_id", "uid", "id"];
-    for (const k of keys) {
-      const v = (localStorage.getItem(k) || "").trim();
-      if (v) return v;
-    }
-    return "";
-  }
-
-  // 클릭용 (onclick에서 호출)
-  window.goCasinoFromMain = function (e) {
-    if (e) e.preventDefault();
-
-    const id = getLoginId();
-    if (!id) {
-      alert("로그인 정보가 없습니다. 게이트에서 로그인 후 다시 시도하세요.");
-      location.href = "the-unique-gate.html";
-      return false;
-    }
-    location.href = "games/slot.html?id=" + encodeURIComponent(id);
-    return false;
-  };
-
-  // 우클릭 새탭/새창 열기에서도 id가 붙도록 href도 갱신
-  function refreshSlotHref() {
-    const a = document.getElementById("slotBtn");
-    if (!a) return;
-    const id = getLoginId();
-    if (id) a.href = "games/slot.html?id=" + encodeURIComponent(id);
-  }
-
-  // 지금 바로 + DOM 로드 후 한 번 더
-  refreshSlotHref();
-  document.addEventListener("DOMContentLoaded", refreshSlotHref);
 })();
