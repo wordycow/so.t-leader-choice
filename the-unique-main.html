@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- ✅ Pretendard 로드(전광판 폰트 적용용) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -43,7 +47,7 @@
         color: #fff;
         font-weight: bold;
         font-size: 0.85rem;
-        font-family: 'Pretendard', sans-serif;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -258,17 +262,17 @@
     }
 
     .wm-card{
-  background:#1e293b;
-  border-radius:12px;
-  padding:20px;
-  border:1px solid rgba(255,255,255,0.05);
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  min-height:0;
-  min-width:0; /* ✅ 그리드에서 내용이 밖으로 삐져나가는 거 방지 */
-}
+      background:#1e293b;
+      border-radius:12px;
+      padding:20px;
+      border:1px solid rgba(255,255,255,0.05);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      min-height:0;
+      min-width:0; /* ✅ 그리드에서 내용이 밖으로 삐져나가는 거 방지 */
+    }
 
     .wm-card.wallet{ border-color:#fbbf24; justify-content:space-between; }
     .fund-label{ font-size:13px; color:#fbbf24; margin-bottom:8px; display:block; font-weight:700; }
@@ -278,192 +282,182 @@
     .fund-rate{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:#94a3b8; }
 
     /* ===== 3D UT 점유 도표 (PC: 도넛 + 우측 정보 / Mobile: 세로 스택) ===== */
-.ut-viz{
-  /* ✅ PC에서 도넛+우측 정보가 한 줄에 들어가게 사이즈 조정 */
-  --viz-size: clamp(165px, 13vw, 190px);
-  --thick: 22px;
+    .ut-viz{
+      --viz-size: clamp(165px, 13vw, 190px);
+      --thick: 22px;
 
-  margin: 12px 0 8px;
-  display: grid;
-  grid-template-columns: var(--viz-size) minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
-  max-width: 100%;
-}
+      margin: 12px 0 8px;
+      display: grid;
+      grid-template-columns: var(--viz-size) minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      max-width: 100%;
+    }
 
-@media (max-width: 768px){
-  .ut-viz{
-    /* ✅ 카드(블럭) 안에서만: 도넛이 절대 밖으로 안나가게 */
-    width: 100%;
-    max-width: 100%;
+    @media (max-width: 768px){
+      .ut-viz{
+        width: 100%;
+        max-width: 100%;
+        --viz-size: min(100%, 320px);
+        --thick: 28px;
 
-    /* ✅ vw 제거 → 카드 내부 폭(100%)을 상한으로 잡음 */
-    --viz-size: min(100%, 320px);
-    --thick: 28px;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 12px;
 
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 12px;
+        overflow: hidden;
+      }
 
-    overflow: hidden; /* ✅ 글로우/그림자 튐 방지 */
-  }
+      .ut-donut{
+        overflow: hidden;
+      }
+    }
 
-  /* ✅ 도넛 자체도 클리핑(링/마커 글로우가 밖으로 새는 것 방지) */
-  .ut-donut{
-    overflow: hidden;
-  }
-}
+    .ut-donut{
+      width: var(--viz-size);
+      height: var(--viz-size);
+      position:relative;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at 30% 18%, rgba(255,255,255,0.10), transparent 52%),
+        radial-gradient(circle at 55% 70%, rgba(0,0,0,0.45), transparent 55%),
+        rgba(2,6,23,0.42);
+      box-shadow:
+        0 30px 80px rgba(0,0,0,0.88),
+        0 0 0 1px rgba(148,163,184,0.14) inset;
+      overflow: visible;
 
+      --r: calc((var(--viz-size) / 2) - (var(--thick) / 2) - 8px);
+    }
 
-.ut-donut{
-  width: var(--viz-size);
-  height: var(--viz-size);
-  position:relative;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  background:
-    radial-gradient(circle at 30% 18%, rgba(255,255,255,0.10), transparent 52%),
-    radial-gradient(circle at 55% 70%, rgba(0,0,0,0.45), transparent 55%),
-    rgba(2,6,23,0.42);
-  box-shadow:
-    0 30px 80px rgba(0,0,0,0.88),
-    0 0 0 1px rgba(148,163,184,0.14) inset;
-  overflow: visible;
+    .ut-donut::after{
+      content:"";
+      position:absolute;
+      inset: 12px;
+      border-radius:50%;
+      background: radial-gradient(circle at 50% 14%, rgba(255,255,255,0.10), transparent 58%);
+      box-shadow:
+        0 14px 28px rgba(0,0,0,0.45) inset,
+        0 -10px 22px rgba(0,0,0,0.25) inset;
+      pointer-events:none;
+      opacity: .95;
+    }
 
-  /* ✅ 마커 이동거리(없으면 transform 깨짐) */
-  --r: calc((var(--viz-size) / 2) - (var(--thick) / 2) - 8px);
-}
+    .ut-donut-ring{
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      background:
+        conic-gradient(from -90deg,
+          rgba(251,191,36,0.98) 0 calc(var(--p)*1%),
+          rgba(148,163,184,0.18) 0 100%);
+      -webkit-mask: radial-gradient(farthest-side,
+          transparent calc(50% - var(--thick)),
+          #000 calc(50% - var(--thick) + 1px));
+              mask: radial-gradient(farthest-side,
+          transparent calc(50% - var(--thick)),
+          #000 calc(50% - var(--thick) + 1px));
+      filter: drop-shadow(0 0 18px rgba(251,191,36,0.28));
+    }
 
-.ut-donut::after{
-  content:"";
-  position:absolute;
-  inset: 12px;
-  border-radius:50%;
-  background: radial-gradient(circle at 50% 14%, rgba(255,255,255,0.10), transparent 58%);
-  box-shadow:
-    0 14px 28px rgba(0,0,0,0.45) inset,
-    0 -10px 22px rgba(0,0,0,0.25) inset;
-  pointer-events:none;
-  opacity: .95;
-}
+    .ut-donut-ring::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      background:
+        conic-gradient(from -90deg,
+          rgba(251,191,36,0.00) 0 calc(var(--p)*1% - 2%),
+          rgba(251,191,36,0.55) calc(var(--p)*1% - 2%) calc(var(--p)*1% + 2%),
+          rgba(251,191,36,0.00) calc(var(--p)*1% + 2%) 100%);
+      -webkit-mask: inherit;
+              mask: inherit;
+      filter: blur(2px);
+      opacity: .95;
+    }
 
-.ut-donut-ring{
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  background:
-    conic-gradient(from -90deg,
-      rgba(251,191,36,0.98) 0 calc(var(--p)*1%),
-      rgba(148,163,184,0.18) 0 100%);
-  -webkit-mask: radial-gradient(farthest-side,
-      transparent calc(50% - var(--thick)),
-      #000 calc(50% - var(--thick) + 1px));
-          mask: radial-gradient(farthest-side,
-      transparent calc(50% - var(--thick)),
-      #000 calc(50% - var(--thick) + 1px));
-  filter: drop-shadow(0 0 18px rgba(251,191,36,0.28));
-}
+    .ut-donut-ring::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background: rgba(251,191,36,0.98);
+      box-shadow:
+        0 0 0 7px rgba(251,191,36,0.14),
+        0 0 26px rgba(251,191,36,0.55);
+      transform: translate(-50%, -50%) rotate(var(--deg)) translateY(calc(-1 * var(--r)));
+      transform-origin:center;
+    }
 
-.ut-donut-ring::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  background:
-    conic-gradient(from -90deg,
-      rgba(251,191,36,0.00) 0 calc(var(--p)*1% - 2%),
-      rgba(251,191,36,0.55) calc(var(--p)*1% - 2%) calc(var(--p)*1% + 2%),
-      rgba(251,191,36,0.00) calc(var(--p)*1% + 2%) 100%);
-  -webkit-mask: inherit;
-          mask: inherit;
-  filter: blur(2px);
-  opacity: .95;
-}
+    .ut-donut-center{
+      position:relative;
+      z-index:3;
+      width: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
+      height: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
+      border-radius:50%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.08), transparent 55%),
+        rgba(2,6,23,0.72);
+      border: 1px solid rgba(148,163,184,0.18);
+      box-shadow:
+        0 16px 34px rgba(0,0,0,0.65),
+        0 0 0 1px rgba(0,0,0,0.35) inset;
+      text-align:center;
+    }
 
-.ut-donut-ring::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:12px;
-  height:12px;
-  border-radius:50%;
-  background: rgba(251,191,36,0.98);
-  box-shadow:
-    0 0 0 7px rgba(251,191,36,0.14),
-    0 0 26px rgba(251,191,36,0.55);
-  transform: translate(-50%, -50%) rotate(var(--deg)) translateY(calc(-1 * var(--r)));
-  transform-origin:center;
-}
+    .ut-viz-pct{
+      font-size: 26px;
+      font-weight: 1000;
+      color:#fff;
+      text-shadow: 0 0 18px rgba(251,191,36,0.22);
+      letter-spacing: .02em;
+    }
 
-.ut-donut-center{
-  position:relative;
-  z-index:3;
-  width: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
-  height: calc(var(--viz-size) - (var(--thick) * 2) - 34px);
-  border-radius:50%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.08), transparent 55%),
-    rgba(2,6,23,0.72);
-  border: 1px solid rgba(148,163,184,0.18);
-  box-shadow:
-    0 16px 34px rgba(0,0,0,0.65),
-    0 0 0 1px rgba(0,0,0,0.35) inset;
-  text-align:center;
-}
+    .ut-viz-sub{
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(203,213,225,0.9);
+      font-weight: 800;
+    }
 
-.ut-viz-pct{
-  font-size: 26px;
-  font-weight: 1000;
-  color:#fff;
-  text-shadow: 0 0 18px rgba(251,191,36,0.22);
-  letter-spacing: .02em;
-}
+    .ut-viz-info{
+      width: 100%;
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    @media (max-width: 768px){
+      .ut-viz-info{ max-width: 360px; }
+    }
 
-.ut-viz-sub{
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgba(203,213,225,0.9);
-  font-weight: 800;
-}
+    .ut-info-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(2,6,23,0.35);
+      border: 1px solid rgba(148,163,184,0.14);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    }
+    .ut-info-row .k{ font-size:12px; color: rgba(203,213,225,0.85); font-weight:800; }
+    .ut-info-row .v{ font-size:12px; color:#fff; font-weight:900; }
 
-/* ✅ 오른쪽 “누적발행/내보유” 박스: PC에선 도넛 오른쪽, 모바일에선 도넛 아래 */
-.ut-viz-info{
-  width: 100%;
-  min-width: 0;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-@media (max-width: 768px){
-  .ut-viz-info{ max-width: 360px; }
-}
-
-.ut-info-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(2,6,23,0.35);
-  border: 1px solid rgba(148,163,184,0.14);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.35);
-}
-.ut-info-row .k{ font-size:12px; color: rgba(203,213,225,0.85); font-weight:800; }
-.ut-info-row .v{ font-size:12px; color:#fff; font-weight:900; }
-
-/* ✅ FIX: 모바일에서 도넛 유지 (dial 마크업 없으면 dial 숨김) */
-@media (max-width: 768px){
-  .ut-viz.ut-viz--donut{ display:grid; }
-  .ut-viz.ut-viz--dial{ display:none; }
-}
-
+    @media (max-width: 768px){
+      .ut-viz.ut-viz--donut{ display:grid; }
+      .ut-viz.ut-viz--dial{ display:none; }
+    }
 
     .wm-card.mining{ border:1px solid rgba(251,191,36,0.2); justify-content:flex-start; }
     .mining-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -539,7 +533,7 @@
       border-radius: 18px;
       box-shadow: 0 10px 20px rgba(0,0,0,0.5);
       transition: transform .2s ease, filter .2s ease;
-      max-height: 220px; /* ✅ PC에서 과도하게 커지지 않게 */
+      max-height: 220px;
     }
 
     .slot-cta:hover img {
@@ -611,6 +605,80 @@
       display:flex;
       flex-direction:column;
       min-height:0;
+    }
+
+    /* ✅ UT 충전 CTA (지갑 카드 안) */
+    .ut-topup-cta{
+      margin-top: 12px;
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(251,191,36,0.55);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(251,191,36,0.22), transparent 55%),
+        radial-gradient(circle at 80% 70%, rgba(217,70,239,0.14), transparent 60%),
+        rgba(2,6,23,0.25);
+      box-shadow:
+        0 14px 28px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(0,0,0,0.25) inset;
+      text-decoration:none;
+      color:#fff;
+      cursor:pointer;
+      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ut-topup-cta:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      border-color: rgba(251,191,36,0.85);
+    }
+    .ut-topup-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .ut-topup-badge{
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display:grid;
+      place-items:center;
+      background: rgba(251,191,36,0.16);
+      border: 1px solid rgba(251,191,36,0.30);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+      flex-shrink:0;
+    }
+    .ut-topup-text{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .ut-topup-title{
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .ut-topup-sub{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(251,191,36,0.95);
+      letter-spacing: 1px;
+    }
+    .ut-topup-arrow{
+      font-size: 18px;
+      opacity: .95;
+      flex-shrink:0;
+      color: rgba(251,191,36,0.95);
     }
 
     .history-title{
@@ -820,18 +888,6 @@
     }
     @media (max-width: 768px){
       .action-btn.action-btn-sot .sot-logo{ height: 32px; }
-    }
-
-    .action-btn.action-btn-sot .sot-chip{
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: .18em;
-      padding: 6px 10px;
-      border-radius: 999px;
-      color: #0b1120;
-      background: linear-gradient(135deg, rgba(251,191,36,0.95), rgba(245,158,11,0.95));
-      box-shadow: 0 10px 20px rgba(0,0,0,0.55);
-      text-transform: uppercase;
     }
 
     .action-btn.action-btn-sot:hover{
@@ -1108,16 +1164,14 @@
           </div>
 
           <div class="tb-tabs-under-title">
-           <button class="tb-tab-btn active" onclick="openTab(this, 'tab-main')">내 지갑 & 지식 채굴</button>
-           <button class="tb-tab-btn" onclick="openTab(this, 'tab-transfer')">UT 송금</button>
-
+            <button class="tb-tab-btn active" onclick="openTab(this, 'tab-main')">내 지갑 & 지식 채굴</button>
+            <button class="tb-tab-btn" onclick="openTab(this, 'tab-transfer')">UT 송금</button>
             <button id="btn-nick-reg" class="btn-nick-reg" onclick="registerNickname()">닉네임 등록</button>
           </div>
 
           <div id="tab-main" class="tb-content active">
             <div class="wallet-mining-grid">
 
-              <!-- ✅ FIX: ut-card 클래스 추가 -->
               <div class="wm-card wallet ut-card">
                 <div>
                   <span class="fund-label">나의 자산 (UT)</span>
@@ -1150,7 +1204,17 @@
                   </div>
                 </div>
 
-                <!-- ✅ FIX: ut-actions로 버튼을 항상 하단으로 -->
+                <a class="ut-topup-cta" href="the-unique-promo.html" target="_blank" rel="noopener">
+                  <div class="ut-topup-left">
+                    <div class="ut-topup-badge">🪙</div>
+                    <div class="ut-topup-text">
+                      <div class="ut-topup-title">UT 충전</div>
+                      <div class="ut-topup-sub">10 USDT → 50,000 UT</div>
+                    </div>
+                  </div>
+                  <div class="ut-topup-arrow">➜</div>
+                </a>
+
                 <div class="wallet-btn-group ut-actions">
                   <button id="btn-claim-video-reward" class="btn-reward-main" disabled>
                     학습 보상 받기 (대기중)
@@ -1161,7 +1225,6 @@
                 </div>
               </div>
 
-              <!-- ✅ FIX: knowledge-card + knowledge-bottom -->
               <div class="wm-card mining knowledge-card">
                 <div class="mining-header">
                   <span class="mining-title">⛏ 지식 채굴 (영상)</span>
@@ -1218,8 +1281,8 @@
                 </div>
 
                 <div id="history-container">
-  <div class="history-empty">거래 내역이 없습니다.</div>
-</div>
+                  <div class="history-empty">거래 내역이 없습니다.</div>
+                </div>
               </div>
             </div>
           </div>
