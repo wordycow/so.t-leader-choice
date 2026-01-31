@@ -314,13 +314,10 @@
           <div class="gate-input-wrap">
             <input id="login-id" class="gate-input" type="text" autocomplete="username" placeholder="아이디" />
           </div>
-          <div class="gate-input-wrap">
-            <input id="login-pw" class="gate-input" type="password" autocomplete="current-password" placeholder="비밀번호" />
-          </div>
 
           <div class="btn-row">
-            <!-- 기본 Enter 제출은 "메인 입장" -->
-            <button type="submit" class="btn btn-primary" id="btn-main">메인 입장</button>
+            <!-- 기본 Enter 제출은 메인 -->
+            <button type="submit" class="btn btn-primary" id="btn-main">UNIQUE MAIN</button>
 
             <button type="button" class="btn btn-market btn-with-icon" id="btn-market">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -337,7 +334,6 @@
           <div class="divider-amp">&amp;</div>
 
           <div class="btn-row" style="margin-top:10px;">
-            <!-- return이 있는 경우, 로그인 후 해당 페이지로 복귀하는 버튼 -->
             <button type="button" class="btn btn-ghost" id="btn-return" style="display:none;">
               이전 화면으로 계속
             </button>
@@ -445,9 +441,7 @@
       phone: String(pick(u, ["phone","전화번호","핸드폰","휴대폰"]) || "").trim(),
       team: String(pick(u, ["team","소속","추천인","리더","sponsor"]) || "").trim(),
       joinedAt: String(pick(u, ["joinedAt","joinAt","timestamp","타임스탬프"]) || "").trim(),
-      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0),
-      // ✅ 비번 필드(시트/서버에서 내려줘야 함)
-      password: String(pick(u, ["password","pw","pass","비밀번호","비번"]) || "").trim()
+      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0)
     };
   }
 
@@ -523,19 +517,6 @@
     return null;
   }
 
-  function verifyPassword(userObj, inputPw){
-    const serverPw = String(userObj?.password || "").trim();
-    const inPw = String(inputPw || "").trim();
-
-    // ✅ 정책: 시트/서버에 비번이 없으면 로그인 막는다 (보안/통제)
-    if (!serverPw) return { ok:false, reason:"비밀번호가 설정되지 않은 계정입니다. 운영자에게 문의하세요." };
-
-    // ✅ 일치 검사 (대소문자 그대로)
-    if (serverPw !== inPw) return { ok:false, reason:"비밀번호가 일치하지 않습니다." };
-
-    return { ok:true };
-  }
-
   function setBusy(isBusy){
     const btnMain = document.getElementById("btn-main");
     const btnMarket = document.getElementById("btn-market");
@@ -547,7 +528,6 @@
 
   const form = document.getElementById("gate-form");
   const idInput = document.getElementById("login-id");
-  const pwInput = document.getElementById("login-pw");
   const btnMarket = document.getElementById("btn-market");
   const btnReturn = document.getElementById("btn-return");
 
@@ -567,9 +547,9 @@
   if (idInput) idInput.value = preId || lastId || "";
 
   if (signup === "1"){
-    setStatus("✅ 회원가입 완료! 아이디/비밀번호 입력 후 입장하세요.", "ok");
+    setStatus("✅ 회원가입 완료! 아이디 입력 후 입장하세요.", "ok");
   } else if (preId){
-    setStatus("아이디/비밀번호 확인 후 입장하세요.");
+    setStatus("아이디 확인 후 입장하세요.");
   }
 
   // return 버튼 노출
@@ -596,10 +576,8 @@
 
   async function doLogin(targetPage){
     const rawId = (idInput?.value || "").trim();
-    const rawPw = (pwInput?.value || "").trim();
 
     if (!rawId) { setStatus("아이디를 입력해 주세요.", "error"); return; }
-    if (!rawPw) { setStatus("비밀번호를 입력해 주세요.", "error"); return; }
 
     setBusy(true);
     setStatus("회원 확인 중...");
@@ -609,13 +587,6 @@
 
       if (!user || !user.id) {
         setStatus("등록되지 않은 아이디입니다. (대소문자/띄어쓰기 확인)", "error");
-        setBusy(false);
-        return;
-      }
-
-      const pwCheck = verifyPassword(user, rawPw);
-      if (!pwCheck.ok){
-        setStatus(pwCheck.reason || "비밀번호 오류", "error");
         setBusy(false);
         return;
       }
