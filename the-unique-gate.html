@@ -327,8 +327,8 @@
           <div class="btn-row">
             <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
 
-            <!-- ✅ 회원가입 후 다시 게이트로 돌아올 수 있게 return 파라미터를 달아줌 (signup이 지원하면 자동 복귀) -->
-            <a href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
+            <!-- 세션스토리지에 return을 저장하므로, signup 다녀와도 return 유지됨 -->
+            <a id="signup-link" href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
           </div>
 
           <div id="status" class="status"></div>
@@ -355,8 +355,12 @@
   // ✅ 구글 Apps Script 웹앱 (가입/조회가 여기로 붙음)
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ 로그인 성공 시 이동할 메인
+  // ✅ 로그인 성공 시 기본 이동 페이지
   const MAIN_PAGE = "the-unique-main.html";
+
+  // ✅ return 저장 키 & TTL (stale return 때문에 promo로 끌려가는 것 방지)
+  const RETURN_KEY = "unique_return_to";
+  const RETURN_TTL_MS = 30 * 60 * 1000; // 30분
 
   // ✅ 인앱 브라우저 감지(카톡/텔레그램/인스타 등)
   function isInAppBrowser(){
@@ -364,6 +368,76 @@
     return /KAKAOTALK|Instagram|FBAN|FBAV|Line|NAVER|DaumApps|Whale|Telegram|TikTok/i.test(ua);
   }
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  // ✅ status
+  function setStatus(msg, isError=false){
+    const el = document.getElementById("status");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "status" + (isError ? " status-error" : "");
+  }
+
+  // ✅ 안전한 return 경로만 허용
+  function safeReturnPath(p){
+    p = String(p || "").trim();
+    if (!p) return "";
+    if (/^[a-zA-Z]+:\/\//.test(p)) return "";   // 외부URL 차단
+    if (p.includes("..")) return "";            // 경로탈출 차단
+    // 기본: *.html(쿼리 허용)
+    if (!/^[a-z0-9\-_/]+\.html(\?.*)?$/i.test(p)) return "";
+    return p;
+  }
+
+  function setReturnTarget(path){
+    const p = safeReturnPath(path);
+    if (!p) return;
+    sessionStorage.setItem(RETURN_KEY, JSON.stringify({ p, ts: Date.now() }));
+  }
+
+  function getReturnTarget(){
+    // 1) URL return 우선
+    const qs = new URLSearchParams(location.search);
+    const qret = safeReturnPath(qs.get("return"));
+    if (qret) {
+      setReturnTarget(qret);
+      return qret;
+    }
+
+    // 2) sessionStorage return (TTL 내만)
+    const raw = sessionStorage.getItem(RETURN_KEY);
+    if (raw) {
+      try{
+        const o = JSON.parse(raw);
+        const p = safeReturnPath(o && o.p);
+        const ts = Number(o && o.ts) || 0;
+        if (p && ts && (Date.now() - ts) <= RETURN_TTL_MS) return p;
+      }catch(e){}
+      // 만료/깨짐이면 삭제
+      sessionStorage.removeItem(RETURN_KEY);
+    }
+
+    return MAIN_PAGE;
+  }
+
+  function clearLocalSessionAll(){
+    const keys = [
+      "uniqueCurrentUser",
+      "unique_user_id",
+      "user_id",
+      "uid",
+      "id",
+      "unique_user_name",
+      "unique_user_nick",
+      "myUtPoints"
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("myNickname_"))
+      .forEach(k => localStorage.removeItem(k));
+
+    sessionStorage.removeItem(RETURN_KEY);
+  }
 
   // ✅ JSONP 1회 호출
   function apiOnceJSONP(action, params = {}, timeoutMs = 20000) {
@@ -414,13 +488,6 @@
     throw lastErr || new Error("API failed");
   }
 
-  function setStatus(msg, isError=false){
-    const el = document.getElementById("status");
-    if (!el) return;
-    el.textContent = msg || "";
-    el.className = "status" + (isError ? " status-error" : "");
-  }
-
   function pick(obj, keys){
     for (const k of keys){
       if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
@@ -455,6 +522,7 @@
       nickname: u.nickname || "",
       balance: Number(u.balance || 0)
     }));
+
     // ✅ 다른 페이지(slot 등)에서 찾는 키들도 같이 저장 (호환용)
     localStorage.setItem("unique_user_id", idLower);
     localStorage.setItem("user_id", idLower);
@@ -475,13 +543,11 @@
 
   function extractUser(resp){
     if (!resp) return null;
-    // 흔한 케이스들 다 흡수
     if (resp.user) return resp.user;
     if (resp.data) return resp.data;
     if (resp.row)  return resp.row;
     if (resp.result && resp.result.user) return resp.result.user;
 
-    // resp 자체가 유저 형태일 수도 있음(서버 구현차)
     const hasAny =
       (resp.id || resp.ID || resp.아이디 || resp.name || resp.이름 || resp.phone || resp.전화번호 || resp.team || resp.소속);
     return hasAny ? resp : null;
@@ -497,7 +563,7 @@
     return false;
   }
 
-  // ✅ 핵심: 서버가 대소문자 구분해도 통과시키기 위해 3번 조회
+  // ✅ 서버가 대소문자 구분해도 통과시키기 위해 3번 조회
   async function getUserByIdRobust(rawId){
     const base = String(rawId || "").trim();
     if (!base) return null;
@@ -515,7 +581,6 @@
       if (isOk(r) && u0) return normalizeUser(u0, idTry);
     }
 
-    // 서버가 ok는 주는데 user를 다른 구조로 주는 경우: 마지막 응답에서 강제로 뽑아봄
     const u1 = extractUser(lastResp);
     if (isOk(lastResp) && u1) return normalizeUser(u1, base);
 
@@ -526,25 +591,43 @@
   const idInput = document.getElementById("login-id");
   const loginBtn = document.getElementById("login-btn");
 
+  // ✅ 인앱 브라우저 경고
   if (isInAppBrowser()){
     setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
   }
 
-  // ✅ 회원가입 후 돌아왔을 때: ?id=xxx or ?signup=1
+  // ✅ 초기 파라미터 처리: return 저장 + signup/로그아웃 문구 + 아이디 프리필
   (function initFromQuery(){
     const qs = new URLSearchParams(location.search);
+
+    // return 저장(핵심)
+    const ret = safeReturnPath(qs.get("return"));
+    if (ret) setReturnTarget(ret);
+
+    // 로그인 완료/가입 완료 문구
     const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
     const signup = qs.get("signup");
+    const logout = qs.get("logout");
 
     if (preId && idInput) idInput.value = preId;
+
+    if (logout === "1"){
+      // 🔥 로그아웃으로 게이트 들어오면: 세션/리턴값 싹 정리
+      clearLocalSessionAll();
+      setStatus("✅ 로그아웃되었습니다. 아이디를 입력해 로그인하세요.");
+      history.replaceState(null, "", "the-unique-gate.html"); // URL 깔끔하게
+      return;
+    }
 
     if (signup === "1"){
       setStatus("✅ 회원가입 완료! 아이디 확인 후 로그인하세요.");
     } else if (preId){
       setStatus("아이디 확인 후 로그인하세요.");
+    } else {
+      // return만 있고 다른 이벤트 없으면 굳이 메시지 안띄움(깔끔)
     }
 
-    // 옵션: ?autologin=1 이면 자동 로그인
+    // 옵션: ?autologin=1&id=xxx 이면 자동 로그인
     const auto = qs.get("autologin");
     if (auto === "1" && preId){
       setTimeout(() => form && form.dispatchEvent(new Event("submit", { cancelable: true })), 200);
@@ -570,7 +653,19 @@
       }
 
       saveUserToLocal(user);
-      window.location.href = MAIN_PAGE;
+
+      // ✅ 로그인 후 이동 대상: return 우선, 없으면 MAIN_PAGE
+      let dest = getReturnTarget();
+
+      // dest가 gate 자체면 루프 방지
+      const destLower = String(dest || "").toLowerCase();
+      if (destLower.startsWith("the-unique-gate.html")) dest = MAIN_PAGE;
+
+      // 🔥 한 번 쓰고 삭제(다음에 promo로 끌려가는 문제 방지)
+      sessionStorage.removeItem(RETURN_KEY);
+
+      // 뒤로가기로 게이트가 남지 않게 replace 사용
+      location.replace(dest);
 
     } catch (err) {
       console.error(err);
