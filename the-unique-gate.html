@@ -61,7 +61,6 @@
       position: relative;
       border-radius: 26px;
       padding: 28px 26px 22px;
-
       background: radial-gradient(circle at top, rgba(248,181,84,0.15), rgba(15,23,42,0.96));
       border: 1px solid rgba(250, 204, 21, 0.95);
       box-shadow:
@@ -69,19 +68,19 @@
         0 28px 70px rgba(0,0,0,0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-
       overflow: visible;
       z-index: 20;
-     }
+      width: min(460px, 92vw);
+    }
 
     .gate-inner { position: relative; z-index: 1; }
 
-    .gate-title-wrap { text-align: center; margin-bottom: 22px; }
+    .gate-title-wrap { text-align: center; margin-bottom: 18px; }
 
     .gate-title {
       font-family: "Cinzel", "Times New Roman", serif;
       font-weight: 700;
-      font-size: 40px;
+      font-size: 38px;
       letter-spacing: 0.24em;
       text-transform: uppercase;
       margin-bottom: 8px;
@@ -123,9 +122,7 @@
         0 4px 14px rgba(0,0,0,0.75) inset,
         0 0 0 1px rgba(0,0,0,0.55);
     }
-
     .gate-input::placeholder { color: #6b7280; }
-
     .gate-input:focus {
       border-color: rgba(248,181,84,0.95);
       box-shadow:
@@ -147,7 +144,7 @@
       border-radius: 999px;
       border: 1px solid transparent;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor: pointer;
@@ -159,7 +156,14 @@
         transform 0.12s ease,
         box-shadow 0.12s ease,
         background 0.12s ease,
-        border-color 0.12s ease;
+        border-color 0.12s ease,
+        opacity 0.12s ease;
+      user-select: none;
+    }
+    .btn:disabled{
+      cursor: not-allowed;
+      opacity: .65;
+      transform: none !important;
     }
 
     .btn-primary {
@@ -170,12 +174,21 @@
         0 10px 26px rgba(0,0,0,1),
         0 0 0 1px rgba(0,0,0,0.5) inset;
     }
+    .btn-primary:hover { transform: translateY(-1px); }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow:
-        0 16px 38px rgba(0,0,0,1),
-        0 0 0 1px rgba(0,0,0,0.5) inset;
+    .btn-market{
+      background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
+      color:#111827;
+      border: 1px solid rgba(250,204,21,0.95);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.95);
+      letter-spacing: 0.16em;
+      font-weight: 900;
+    }
+    .btn-market span{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:900;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
     }
 
     .btn-ghost {
@@ -184,7 +197,6 @@
       color: #e5e7eb;
       box-shadow: 0 8px 22px rgba(0,0,0,0.9);
     }
-
     .btn-ghost:hover {
       background: rgba(15,23,42,1);
       border-color: rgba(148,163,184,0.9);
@@ -194,25 +206,24 @@
       min-height: 18px;
       font-size: 11px;
       text-align: center;
-      margin-top: 2px;
+      margin-top: 6px;
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     }
     .status-error { color: #fecaca; }
+    .status-ok { color: #bbf7d0; }
 
     .divider-amp{
-      margin: 10px 0 10px;
+      margin: 10px 0 8px;
       text-align:center;
       font-family:"Cinzel","Times New Roman",serif;
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 800;
       letter-spacing: 0.35em;
       line-height: 1;
-
       color:transparent;
       background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
       -webkit-background-clip:text;
       background-clip:text;
-
       text-shadow: 0 0 12px rgba(250,204,21,0.75), 0 6px 18px rgba(0,0,0,1);
       user-select:none;
     }
@@ -266,21 +277,6 @@
     .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
     .btn-with-icon span{ line-height:1; }
 
-    .btn-market{
-      background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
-      color:#111827;
-      border: 1px solid rgba(250,204,21,0.95);
-      box-shadow: 0 12px 28px rgba(0,0,0,0.95);
-      letter-spacing: 0.16em;
-      font-weight: 900;
-    }
-    .btn-market span{
-      font-family:"Cinzel","Times New Roman",serif;
-      font-weight:900;
-      letter-spacing:0.24em;
-      text-transform:uppercase;
-    }
-
     @media (max-width: 768px) {
       .gate-card { padding: 24px 20px 18px; border-radius: 22px; }
       .gate-title { font-size: 32px; letter-spacing: 0.22em; }
@@ -294,11 +290,6 @@
         --witch-top: 18vh;
         --witch-right: 34vw;
         --witch-width: 12vw;
-      }
-
-      .divider-amp{
-        margin: 8px 0 8px;
-        font-size: 26px;
       }
     }
   </style>
@@ -319,16 +310,26 @@
           <div class="gate-subtitle-en">Invitation-only access for action takers</div>
         </div>
 
-        <form id="gate-form" class="form-body">
+        <form id="gate-form" class="form-body" autocomplete="off">
           <div class="gate-input-wrap">
-            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디" />
+            <input id="login-id" class="gate-input" type="text" autocomplete="username" placeholder="아이디" />
+          </div>
+          <div class="gate-input-wrap">
+            <input id="login-pw" class="gate-input" type="password" autocomplete="current-password" placeholder="비밀번호" />
           </div>
 
           <div class="btn-row">
-            <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
+            <!-- 기본 Enter 제출은 "메인 입장" -->
+            <button type="submit" class="btn btn-primary" id="btn-main">메인 입장</button>
 
-            <!-- 세션스토리지에 return을 저장하므로, signup 다녀와도 return 유지됨 -->
-            <a id="signup-link" href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
+            <button type="button" class="btn btn-market btn-with-icon" id="btn-market">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.2 14h9.9c.75 0 1.41-.41 1.75-1.03l3.24-5.88A1 1 0 0 0 21.21 6H6.02L5.6 4.35A1 1 0 0 0 4.63 3.6H2a1 1 0 1 0 0 2h1.86l2.29 8.91-.94 1.72C4.52 17.37 5.48 19 6.94 19H20a1 1 0 1 0 0-2H6.94l.26-.48.0-.01Z"/>
+              </svg>
+              <span>UNIQUE MARKET</span>
+            </button>
+
+            <a href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
           </div>
 
           <div id="status" class="status"></div>
@@ -336,15 +337,10 @@
           <div class="divider-amp">&amp;</div>
 
           <div class="btn-row" style="margin-top:10px;">
-            <a class="btn btn-market btn-with-icon" href="market.html?autologin=1">
-              <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
-                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
-                <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
-                <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
-                <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
-              </svg>
-              <span>UNIQUE MARKET</span>
-            </a>
+            <!-- return이 있는 경우, 로그인 후 해당 페이지로 복귀하는 버튼 -->
+            <button type="button" class="btn btn-ghost" id="btn-return" style="display:none;">
+              이전 화면으로 계속
+            </button>
           </div>
         </form>
       </div>
@@ -352,91 +348,28 @@
   </div>
 
   <script>
-  // ✅ 구글 Apps Script 웹앱 (가입/조회가 여기로 붙음)
+  // ✅ 구글 Apps Script 웹앱
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  // ✅ 로그인 성공 시 기본 이동 페이지
-  const MAIN_PAGE = "the-unique-main.html";
+  // ✅ 로그인 성공 시 이동 대상
+  const MAIN_PAGE   = "the-unique-main.html";
+  const MARKET_PAGE = "market.html";
 
-  // ✅ return 저장 키 & TTL (stale return 때문에 promo로 끌려가는 것 방지)
-  const RETURN_KEY = "unique_return_to";
-  const RETURN_TTL_MS = 30 * 60 * 1000; // 30분
-
-  // ✅ 인앱 브라우저 감지(카톡/텔레그램/인스타 등)
+  // ✅ 인앱 브라우저 감지
   function isInAppBrowser(){
     const ua = navigator.userAgent || "";
     return /KAKAOTALK|Instagram|FBAN|FBAV|Line|NAVER|DaumApps|Whale|Telegram|TikTok/i.test(ua);
   }
   function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-  // ✅ status
-  function setStatus(msg, isError=false){
-    const el = document.getElementById("status");
-    if (!el) return;
-    el.textContent = msg || "";
-    el.className = "status" + (isError ? " status-error" : "");
-  }
-
-  // ✅ 안전한 return 경로만 허용
+  // ✅ 안전한 return 검증 (상대경로 html만 허용)
   function safeReturnPath(p){
     p = String(p || "").trim();
     if (!p) return "";
-    if (/^[a-zA-Z]+:\/\//.test(p)) return "";   // 외부URL 차단
-    if (p.includes("..")) return "";            // 경로탈출 차단
-    // 기본: *.html(쿼리 허용)
+    if (/^[a-zA-Z]+:\/\//.test(p)) return "";
+    if (p.includes("..")) return "";
     if (!/^[a-z0-9\-_/]+\.html(\?.*)?$/i.test(p)) return "";
     return p;
-  }
-
-  function setReturnTarget(path){
-    const p = safeReturnPath(path);
-    if (!p) return;
-    sessionStorage.setItem(RETURN_KEY, JSON.stringify({ p, ts: Date.now() }));
-  }
-
-  function getReturnTarget(){
-    // 1) URL return 우선
-    const qs = new URLSearchParams(location.search);
-    const qret = safeReturnPath(qs.get("return"));
-    if (qret) {
-      setReturnTarget(qret);
-      return qret;
-    }
-
-    // 2) sessionStorage return (TTL 내만)
-    const raw = sessionStorage.getItem(RETURN_KEY);
-    if (raw) {
-      try{
-        const o = JSON.parse(raw);
-        const p = safeReturnPath(o && o.p);
-        const ts = Number(o && o.ts) || 0;
-        if (p && ts && (Date.now() - ts) <= RETURN_TTL_MS) return p;
-      }catch(e){}
-      // 만료/깨짐이면 삭제
-      sessionStorage.removeItem(RETURN_KEY);
-    }
-
-    return MAIN_PAGE;
-  }
-
-  function clearLocalSessionAll(){
-    const keys = [
-      "uniqueCurrentUser",
-      "unique_user_id",
-      "user_id",
-      "uid",
-      "id",
-      "unique_user_name",
-      "unique_user_nick",
-      "myUtPoints"
-    ];
-    keys.forEach(k => localStorage.removeItem(k));
-
-    Object.keys(localStorage)
-      .filter(k => k.startsWith("myNickname_"))
-      .forEach(k => localStorage.removeItem(k));
-
-    sessionStorage.removeItem(RETURN_KEY);
   }
 
   // ✅ JSONP 1회 호출
@@ -475,7 +408,6 @@
   async function apiJSONP(action, params = {}) {
     let lastErr = null;
     const tries = 3;
-
     for (let i = 1; i <= tries; i++){
       try{
         const timeoutMs = (i === 1) ? 16000 : 24000;
@@ -486,6 +418,13 @@
       }
     }
     throw lastErr || new Error("API failed");
+  }
+
+  function setStatus(msg, type=""){
+    const el = document.getElementById("status");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "status" + (type === "error" ? " status-error" : (type === "ok" ? " status-ok" : ""));
   }
 
   function pick(obj, keys){
@@ -506,7 +445,9 @@
       phone: String(pick(u, ["phone","전화번호","핸드폰","휴대폰"]) || "").trim(),
       team: String(pick(u, ["team","소속","추천인","리더","sponsor"]) || "").trim(),
       joinedAt: String(pick(u, ["joinedAt","joinAt","timestamp","타임스탬프"]) || "").trim(),
-      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0)
+      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0),
+      // ✅ 비번 필드(시트/서버에서 내려줘야 함)
+      password: String(pick(u, ["password","pw","pass","비밀번호","비번"]) || "").trim()
     };
   }
 
@@ -523,7 +464,7 @@
       balance: Number(u.balance || 0)
     }));
 
-    // ✅ 다른 페이지(slot 등)에서 찾는 키들도 같이 저장 (호환용)
+    // ✅ 다른 페이지 호환 키들
     localStorage.setItem("unique_user_id", idLower);
     localStorage.setItem("user_id", idLower);
     localStorage.setItem("uid", idLower);
@@ -531,14 +472,9 @@
 
     localStorage.setItem("unique_user_name", u.name || "");
     localStorage.setItem("unique_user_nick", u.nickname || "");
-
     localStorage.setItem("myUtPoints", String(Number(u.balance || 0)));
 
-    if (String(u.nickname || "").trim()) {
-      localStorage.setItem("myNickname_" + idLower, String(u.nickname || "").trim());
-    } else {
-      localStorage.removeItem("myNickname_" + idLower);
-    }
+    localStorage.setItem("uniqueLastLoginId", idLower);
   }
 
   function extractUser(resp){
@@ -587,101 +523,122 @@
     return null;
   }
 
-  const form = document.getElementById("gate-form");
-  const idInput = document.getElementById("login-id");
-  const loginBtn = document.getElementById("login-btn");
+  function verifyPassword(userObj, inputPw){
+    const serverPw = String(userObj?.password || "").trim();
+    const inPw = String(inputPw || "").trim();
 
-  // ✅ 인앱 브라우저 경고
-  if (isInAppBrowser()){
-    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
+    // ✅ 정책: 시트/서버에 비번이 없으면 로그인 막는다 (보안/통제)
+    if (!serverPw) return { ok:false, reason:"비밀번호가 설정되지 않은 계정입니다. 운영자에게 문의하세요." };
+
+    // ✅ 일치 검사 (대소문자 그대로)
+    if (serverPw !== inPw) return { ok:false, reason:"비밀번호가 일치하지 않습니다." };
+
+    return { ok:true };
   }
 
-  // ✅ 초기 파라미터 처리: return 저장 + signup/로그아웃 문구 + 아이디 프리필
-  (function initFromQuery(){
-    const qs = new URLSearchParams(location.search);
+  function setBusy(isBusy){
+    const btnMain = document.getElementById("btn-main");
+    const btnMarket = document.getElementById("btn-market");
+    const btnReturn = document.getElementById("btn-return");
+    if (btnMain) btnMain.disabled = !!isBusy;
+    if (btnMarket) btnMarket.disabled = !!isBusy;
+    if (btnReturn) btnReturn.disabled = !!isBusy;
+  }
 
-    // return 저장(핵심)
-    const ret = safeReturnPath(qs.get("return"));
-    if (ret) setReturnTarget(ret);
+  const form = document.getElementById("gate-form");
+  const idInput = document.getElementById("login-id");
+  const pwInput = document.getElementById("login-pw");
+  const btnMarket = document.getElementById("btn-market");
+  const btnReturn = document.getElementById("btn-return");
 
-    // 로그인 완료/가입 완료 문구
-    const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
-    const signup = qs.get("signup");
-    const logout = qs.get("logout");
+  // 인앱 경고
+  if (isInAppBrowser()){
+    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 통신이 막힐 수 있어요. 크롬/사파리로 열면 안정적입니다.", "error");
+  }
 
-    if (preId && idInput) idInput.value = preId;
+  // 쿼리 파라미터 처리
+  const qs = new URLSearchParams(location.search);
+  const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
+  const signup = qs.get("signup");
+  const returnPage = safeReturnPath(qs.get("return"));
 
-    if (logout === "1"){
-      // 🔥 로그아웃으로 게이트 들어오면: 세션/리턴값 싹 정리
-      clearLocalSessionAll();
-      setStatus("✅ 로그아웃되었습니다. 아이디를 입력해 로그인하세요.");
-      history.replaceState(null, "", "the-unique-gate.html"); // URL 깔끔하게
-      return;
-    }
+  // 마지막 로그인 아이디 자동 채움
+  const lastId = String(localStorage.getItem("uniqueLastLoginId") || "").trim();
+  if (idInput) idInput.value = preId || lastId || "";
 
-    if (signup === "1"){
-      setStatus("✅ 회원가입 완료! 아이디 확인 후 로그인하세요.");
-    } else if (preId){
-      setStatus("아이디 확인 후 로그인하세요.");
-    } else {
-      // return만 있고 다른 이벤트 없으면 굳이 메시지 안띄움(깔끔)
-    }
+  if (signup === "1"){
+    setStatus("✅ 회원가입 완료! 아이디/비밀번호 입력 후 입장하세요.", "ok");
+  } else if (preId){
+    setStatus("아이디/비밀번호 확인 후 입장하세요.");
+  }
 
-    // 옵션: ?autologin=1&id=xxx 이면 자동 로그인
-    const auto = qs.get("autologin");
-    if (auto === "1" && preId){
-      setTimeout(() => form && form.dispatchEvent(new Event("submit", { cancelable: true })), 200);
-    }
-  })();
+  // return 버튼 노출
+  if (returnPage && btnReturn){
+    btnReturn.style.display = "inline-flex";
+    btnReturn.textContent = "이전 화면으로 계속";
+    btnReturn.addEventListener("click", async () => {
+      await doLogin(returnPage);
+    });
+  }
 
+  // 메인(Enter) 로그인
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    await doLogin(MAIN_PAGE);
+  });
 
-    const raw = (idInput.value || "").trim();
-    if (!raw) { setStatus("아이디를 입력해 주세요.", true); return; }
+  // 마켓 로그인
+  if (btnMarket){
+    btnMarket.addEventListener("click", async () => {
+      await doLogin(MARKET_PAGE);
+    });
+  }
 
+  async function doLogin(targetPage){
+    const rawId = (idInput?.value || "").trim();
+    const rawPw = (pwInput?.value || "").trim();
+
+    if (!rawId) { setStatus("아이디를 입력해 주세요.", "error"); return; }
+    if (!rawPw) { setStatus("비밀번호를 입력해 주세요.", "error"); return; }
+
+    setBusy(true);
     setStatus("회원 확인 중...");
-    if (loginBtn) loginBtn.disabled = true;
 
     try {
-      const user = await getUserByIdRobust(raw);
+      const user = await getUserByIdRobust(rawId);
 
       if (!user || !user.id) {
-        setStatus("등록되지 않은 아이디입니다. (대소문자/띄어쓰기 확인)", true);
-        if (loginBtn) loginBtn.disabled = false;
+        setStatus("등록되지 않은 아이디입니다. (대소문자/띄어쓰기 확인)", "error");
+        setBusy(false);
+        return;
+      }
+
+      const pwCheck = verifyPassword(user, rawPw);
+      if (!pwCheck.ok){
+        setStatus(pwCheck.reason || "비밀번호 오류", "error");
+        setBusy(false);
         return;
       }
 
       saveUserToLocal(user);
 
-      // ✅ 로그인 후 이동 대상: return 우선, 없으면 MAIN_PAGE
-      let dest = getReturnTarget();
-
-      // dest가 gate 자체면 루프 방지
-      const destLower = String(dest || "").toLowerCase();
-      if (destLower.startsWith("the-unique-gate.html")) dest = MAIN_PAGE;
-
-      // 🔥 한 번 쓰고 삭제(다음에 promo로 끌려가는 문제 방지)
-      sessionStorage.removeItem(RETURN_KEY);
-
-      // 뒤로가기로 게이트가 남지 않게 replace 사용
-      location.replace(dest);
+      // ✅ 타겟으로 이동
+      location.href = targetPage || MAIN_PAGE;
 
     } catch (err) {
       console.error(err);
       const msg = String(err && err.message ? err.message : err);
 
       if (msg.includes("timeout")) {
-        setStatus("네트워크 지연으로 응답이 늦습니다. 다시 시도해 주세요.", true);
+        setStatus("네트워크 지연으로 응답이 늦습니다. 다시 시도해 주세요.", "error");
       } else if (msg.includes("load failed")) {
-        setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", true);
+        setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", "error");
       } else {
-        setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", true);
+        setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", "error");
       }
-
-      if (loginBtn) loginBtn.disabled = false;
+      setBusy(false);
     }
-  });
+  }
   </script>
 </body>
 </html>
