@@ -967,7 +967,31 @@
       filter:brightness(1.05);
       box-shadow: 0 16px 32px rgba(0,0,0,1), 0 0 0 1px rgba(248,250,252,0.8) inset;
     }
+     function hardLogout(){
+  // 1) 로그인 세션 제거 (너 프로젝트에서 쓰는 키들)
+  const keys = [
+    "uniqueCurrentUser",
+    "unique_user_id",
+    "user_id",
+    "uid",
+    "id",
+    "unique_user_name",
+    "unique_user_nick",
+    "myUtPoints"
+  ];
+  keys.forEach(k => localStorage.removeItem(k));
 
+  // 닉네임 캐시도 싹 제거(선택)
+  Object.keys(localStorage)
+    .filter(k => k.startsWith("myNickname_"))
+    .forEach(k => localStorage.removeItem(k));
+
+  // 2) return(되돌아갈 페이지) 기억값 제거 (핵심)
+  sessionStorage.removeItem("unique_return_to");
+
+  // 3) 게이트로 이동 (return 없이)
+  location.replace("the-unique-gate.html?logout=1");
+}
     .goal-panel{
       border-radius:22px;
       padding:16px 18px;
