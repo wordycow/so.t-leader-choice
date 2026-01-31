@@ -9,5 +9,5 @@ window.UNIQUE_YT_PLAYLIST = [
   "BsxBh3lE5Qs","eE5oaOOwInE","M4t25bx0Quc","vA8p2bioJ00","gRj83OcBbXc","p1GwElw35vo","jIIdLgUbj5E","gU3ubk8u7dA",
   "Nh-V4s5jHHM","z0vCwGUZe1I","DPBm9nQ7o2E","TrDyciJ8svc","tO4dxvguQDk","F2AitTPI5U0","L7n5oXTQd2Q","Ijq-zNn-GWU",
   "kP2ocLMNUnw","Ikbj54iFTdw","7uaOFQpO_Ks","x46z5iMK1Wg","fwlLHP6j7U8","AVUeL6RMHoo","3XDf5Ke2Zj8","PxbcXlqXrU0",
-  "yldUrx-4GPU","yajZ_cOVrXQ","h7FCYhJHCPw","fC9vj0NlNaA","VtJ_2SbYoIM"."mesRhn_OWA8","YsWaftG0D6U"
+  "yldUrx-4GPU","yajZ_cOVrXQ","h7FCYhJHCPw","fC9vj0NlNaA","VtJ_2SbYoIM","mesRhn_OWA8","YsWaftG0D6U"
 ];
