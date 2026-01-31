@@ -2,7 +2,7 @@
    - roulette.html과 같은 폴더(/games/)에 두세요.
 */
 window.UNIQUE_YT_PLAYLIST = [
-  "-jdZKf-xSpA","-B3HvFhHsIM","Sc-EOEQDBHk","dttGdK0l1G0","yPqI1VAHX8Q","Ge9OgkOayQs","dDxWoKcOmsA","aGpOcVy2A8I",
+  "XFkzRNyygfk",'86Zdoj2X5p4","qBhHucqxff0","jS8ImskNXyw","AkfzyGkihqY","AiXurzwXhMI","pP6w5A8-hz4","-jdZKf-xSpA","-B3HvFhHsIM","Sc-EOEQDBHk","dttGdK0l1G0","yPqI1VAHX8Q","Ge9OgkOayQs","dDxWoKcOmsA","aGpOcVy2A8I",
   "BJRlZ0R4nuE","WbvoZvYmkBg","X6SuW5HhQoc","0P4A1K4lXDo","LpTL5nTPwjo","viIJYFSGq0o","Qe8fa4b5xNU","LtwQuHFzIlk",
   "s3uPXokhpnA","8KDWGWMs7Sg","pcIOYAdwKsw","MXz88usIhzA","lmxNgwBeJ44","j3V53sF13UQ","znDgBy2mHbc","53BBRKF-L60",
   "BsxBh3lE5Qs","eE5oaOOwInE","M4t25bx0Quc","vA8p2bioJ00","gRj83OcBbXc","p1GwElw35vo","jIIdLgUbj5E","gU3ubk8u7dA",
