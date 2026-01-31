@@ -2,98 +2,303 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>THE UNIQUE TREASURE BOX</title>
+  <title>The Unique – Gate</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Unique – 초대 전용 게이트">
+  <meta property="og:description" content="Invitation-only access for action takers.">
+  <meta property="og:url" content="https://wordycow.github.io/so.t-leader-choice/the-unique-gate.html">
+  <meta property="og:image" content="https://wordycow.github.io/so.t-leader-choice/img/the-unique-gate-preview.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Unique – 초대 전용 게이트">
+  <meta name="twitter:description" content="Invitation-only access for action takers.">
+  <meta name="twitter:image" content="https://wordycow.github.io/so.t-leader-choice/img/the-unique-gate-preview.png">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* --- 기본 스타일 --- */
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; height:100%; }
-    :root{ --gold: #fbbf24; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; }
-    body{
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-      color: var(--text-main);
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #f9fafb;
       background: #000;
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
     }
 
-    .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
-    .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
-
-    .page-wrap{ position:relative; z-index:10; max-width:700px; width:100%; margin:40px auto; padding:20px; }
-
-    .card{ background: rgba(15, 23, 42, 0.95); border-radius: 24px; border: 1px solid var(--gold); box-shadow: 0 0 30px rgba(251, 191, 36, 0.15); padding: 30px 24px; }
-
-    /* 상단 바 */
-    .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; }
-    .title{ font-size:22px; font-weight:700; color: #fff; font-family: "Cinzel", serif; letter-spacing: 0.05em; }
-    .user-info { font-size: 13px; color: var(--gold); font-weight: 600; margin-top: 4px; }
-    .btn-close{ background: var(--panel-light); border: 1px solid var(--text-sub); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-
-    /* 탭 메뉴 */
-    .tab-menu { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-    .tab-btn { flex: 1; padding: 12px; background: var(--panel-light); border: 1px solid rgba(255,255,255,0.1); color: var(--text-sub); border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
-    .tab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
-
-    .section { display: none; animation: fadeIn 0.3s; }
-    .section.active { display: block; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-    /* 박스 스타일 */
-    .info-box { background: var(--panel-light); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; position: relative; }
-    .gold-box { border-color: var(--gold); background: rgba(251, 191, 36, 0.05); }
-
-    .label { font-size: 12px; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block; }
-    .value { font-size: 28px; font-weight: 900; color: #fff; }
-    .sub-text { font-size: 11px; color: var(--text-sub); margin-top: 4px; line-height: 1.4; }
-
-    .btn-copy { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
-
-    /* 잔액 표시 */
-    .balance-badge { position:absolute; top:20px; right:20px; background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid var(--gold); }
-
-    /* 입력 폼 */
-    .input-group { margin-bottom: 12px; }
-    .input-field { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; font-size: 13px; }
-    .input-field:focus { border-color: var(--gold); outline: none; }
-
-    .action-btn { width: 100%; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-size: 14px; transition: transform 0.1s; }
-    .action-btn:active { transform: scale(0.98); }
-    .btn-gold { background: var(--gold); color: #000; }
-    .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
-
-    /* 랭킹 리스트 */
-    .ranking-list {
-      margin-top:10px;
-      height:auto !important;
-      max-height: unset !important;
-      overflow: visible !important;
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
     }
-    .rank-item { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
-    .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; font-weight:bold; margin-right:8px; border-radius: 50%; font-size: 11px; background: #334155; color: #fff; }
-    .rank-1 { background: #FFD700; color: #000; } .rank-2 { background: #C0C0C0; color: #000; } .rank-3 { background: #CD7F32; color: #000; }
 
-    /* 내역 리스트 */
-    .history-list { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-    .history-title { font-size: 13px; color: #cbd5e1; font-weight: 700; margin-bottom: 10px; }
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
-    .h-desc { color: #fff; font-weight: 600; margin-bottom: 2px; }
-    .h-date { color: #64748b; font-size: 10px; }
-    .h-amount { font-weight: 700; font-size: 13px; }
-    .h-minus { color: #f87171; } .h-plus { color: #4ade80; }
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-    /* USDT 환산 미리보기 */
-    .usdt-preview { font-size: 12px; color: #fbbf24; margin-top: 4px; text-align: right; font-weight: bold; }
+    .page-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 12px;
+      z-index: 10;
+    }
 
-    @media (max-width: 480px) {
-      .page-wrap { padding: 15px; margin-top: 20px; }
-      .title { font-size: 18px; }
-      .ranking-list{
-        max-height: 260px !important;
-        overflow-y: auto !important;
+    .gate-card {
+      position: relative;
+      border-radius: 26px;
+      padding: 28px 26px 22px;
+
+      background: radial-gradient(circle at top, rgba(248,181,84,0.15), rgba(15,23,42,0.96));
+      border: 1px solid rgba(250, 204, 21, 0.95);
+      box-shadow:
+        0 0 20px rgba(250, 204, 21, 0.75),
+        0 28px 70px rgba(0,0,0,0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      overflow: visible;
+      z-index: 20;
+     }
+
+    .gate-inner { position: relative; z-index: 1; }
+
+    .gate-title-wrap { text-align: center; margin-bottom: 22px; }
+
+    .gate-title {
+      font-family: "Cinzel", "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 40px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+
+      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow:
+        0 0 10px rgba(250, 204, 21, 0.9),
+        0 4px 18px rgba(0,0,0,1);
+    }
+
+    .gate-subtitle-en {
+      font-size: 11px;
+      color: #f9fafb;
+      opacity: 0.9;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 6px rgba(0,0,0,0.6);
+    }
+
+    .form-body { max-width: 360px; margin: 0 auto; }
+    .gate-input-wrap { margin-bottom: 10px; }
+
+    .gate-input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.90), rgba(3,7,18,0.96));
+      color: #f9fafb;
+      font-size: 13px;
+      outline: none;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,0.75) inset,
+        0 0 0 1px rgba(0,0,0,0.55);
+    }
+
+    .gate-input::placeholder { color: #6b7280; }
+
+    .gate-input:focus {
+      border-color: rgba(248,181,84,0.95);
+      box-shadow:
+        0 0 0 1px rgba(248,181,84,0.6),
+        0 6px 22px rgba(0,0,0,0.9) inset;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .btn-primary {
+      background: radial-gradient(circle at top, #f97316, #7f1d1d);
+      border-color: rgba(248,181,84,0.95);
+      color: #fef2f2;
+      box-shadow:
+        0 10px 26px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 16px 38px rgba(0,0,0,1),
+        0 0 0 1px rgba(0,0,0,0.5) inset;
+    }
+
+    .btn-ghost {
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      border-color: rgba(55,65,81,1);
+      color: #e5e7eb;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.9);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(15,23,42,1);
+      border-color: rgba(148,163,184,0.9);
+    }
+
+    .status {
+      min-height: 18px;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+    .status-error { color: #fecaca; }
+
+    .divider-amp{
+      margin: 10px 0 10px;
+      text-align:center;
+      font-family:"Cinzel","Times New Roman",serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.35em;
+      line-height: 1;
+
+      color:transparent;
+      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+
+      text-shadow: 0 0 12px rgba(250,204,21,0.75), 0 6px 18px rgba(0,0,0,1);
+      user-select:none;
+    }
+
+    :root{
+      --bat-top: -8vh;
+      --bat-right: 0vw;
+      --bat-width: clamp(320px, 55vw, 900px);
+      --bat-bob: 20px;
+
+      --witch-top: 28vh;
+      --witch-right: 20vw;
+      --witch-width: clamp(18px, 7vw, 44px);
+      --witch-bob: 6px;
+    }
+    .spirit{
+      position:absolute;
+      pointer-events:none;
+      z-index: 1;
+    }
+    .spirit img{
+      display:block;
+      width:100%;
+      height:auto;
+      filter:none;
+    }
+
+    @keyframes floatY {
+      from { transform: translateY(calc(-1 * var(--bob))); }
+      to   { transform: translateY(var(--bob)); }
+    }
+
+    .spirit-bat{
+      top: var(--bat-top);
+      right: var(--bat-right);
+      width: var(--bat-width);
+      --bob: var(--bat-bob);
+      animation: floatY 2.2s ease-in-out infinite alternate;
+      opacity: .95;
+    }
+
+    .spirit-witch{
+      top: var(--witch-top);
+      right: var(--witch-right);
+      width: var(--witch-width);
+      --bob: var(--witch-bob);
+      animation: floatY 3.2s ease-in-out infinite alternate;
+    }
+
+    .btn-with-icon{ gap:10px; justify-content:center; }
+    .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
+    .btn-with-icon span{ line-height:1; }
+
+    .btn-market{
+      background: radial-gradient(circle at top, rgba(250,204,21,0.95), rgba(202,138,4,0.55));
+      color:#111827;
+      border: 1px solid rgba(250,204,21,0.95);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.95);
+      letter-spacing: 0.16em;
+      font-weight: 900;
+    }
+    .btn-market span{
+      font-family:"Cinzel","Times New Roman",serif;
+      font-weight:900;
+      letter-spacing:0.24em;
+      text-transform:uppercase;
+    }
+
+    @media (max-width: 768px) {
+      .gate-card { padding: 24px 20px 18px; border-radius: 22px; }
+      .gate-title { font-size: 32px; letter-spacing: 0.22em; }
+      .form-body { max-width: 100%; }
+
+      :root{
+        --bat-top: 10vh;
+        --bat-right: -22vw;
+        --bat-width: 85vw;
+
+        --witch-top: 18vh;
+        --witch-right: 34vw;
+        --witch-width: 12vw;
+      }
+
+      .divider-amp{
+        margin: 8px 0 8px;
+        font-size: 26px;
       }
     }
   </style>
@@ -101,172 +306,146 @@
 
 <body>
   <div class="scene">
-    <img src="img/bg-unique-promo.jpg" class="scene-bg" alt="Background" onerror="this.style.display='none'" />
+    <img src="img/bg-unique-gate-clean.jpg" class="scene-bg" alt="The Unique Gate background">
+    <div class="spirit spirit-witch"><img src="img/witch-float.png" alt=""></div>
+    <div class="spirit spirit-bat"><img src="img/bat-float.png" alt=""></div>
   </div>
 
   <div class="page-wrap">
-    <div class="card">
-
-      <div class="top-bar">
-        <div>
-          <div class="title">THE UNIQUE TREASURE BOX</div>
-          <div class="user-info" id="user-display">User</div>
+    <main class="gate-card">
+      <div class="gate-inner">
+        <div class="gate-title-wrap">
+          <div class="gate-title">THE UNIQUE</div>
+          <div class="gate-subtitle-en">Invitation-only access for action takers</div>
         </div>
-        <button class="btn-close" onclick="handleClose()">닫기 ✕</button>
+
+        <form id="gate-form" class="form-body">
+          <div class="gate-input-wrap">
+            <input id="login-id" class="gate-input" type="text" autocomplete="off" placeholder="아이디" />
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
+
+            <!-- ✅ 회원가입 후 다시 게이트로 돌아올 수 있게 return 파라미터를 달아줌 (signup이 지원하면 자동 복귀) -->
+            <a href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
+          </div>
+
+          <div id="status" class="status"></div>
+
+          <div class="divider-amp">&amp;</div>
+
+          <div class="btn-row" style="margin-top:10px;">
+            <a class="btn btn-market btn-with-icon" href="market.html?autologin=1">
+              <svg viewBox="0 0 533.5 544.3" aria-hidden="true">
+                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37-4.7-55.2H272.1v104.6h146.9c-6.3 33.8-25 62.5-53.3 81.7v67h86.2c50.5-46.5 81.6-115.2 81.6-198.1z"/>
+                <path fill="#34A853" d="M272.1 544.3c72.6 0 133.6-24.1 178.2-65.6l-86.2-67c-24 16.1-54.7 25.6-92 25.6-70.7 0-130.6-47.7-152.1-111.7H30.9v70.3c44.4 88.3 135.7 149.1 241.2 149.1z"/>
+                <path fill="#FBBC05" d="M120 325.6c-10.8-32.3-10.8-67.3 0-99.6V155.7H30.9c-40.6 80.9-40.6 177.9 0 258.8L120 325.6z"/>
+                <path fill="#EA4335" d="M272.1 107.7c39.5-.6 77.6 13.9 106.7 40.8l79.6-79.6C410.3 24.1 344.7-1.5 272.1 0 166.6 0 75.3 60.8 30.9 149.1l89.1 70.3c21.4-64 81.4-111.7 152.1-111.7z"/>
+              </svg>
+              <span>UNIQUE MARKET</span>
+            </a>
+          </div>
+        </form>
       </div>
-
-      <div class="tab-menu">
-        <button class="tab-btn active" onclick="switchTab('home', this)">🏠 홈 & 기금</button>
-        <button class="tab-btn" onclick="switchTab('loan', this)">🏦 대출 (Loan)</button>
-        <button class="tab-btn" onclick="switchTab('settle', this)">💸 정산 신청</button>
-      </div>
-
-      <div id="tab-home" class="section active">
-        <div class="info-box">
-          <button class="btn-copy" onclick="copyVaultAddress()">주소 복사</button>
-          <div class="label">공동기금 (REAL USDT)</div>
-          <div class="value" id="vault-balance-num">Loading...</div>
-          <div class="sub-text">TRC20 Network</div>
-          <div class="sub-text" id="vault-addr" style="margin-top:6px; word-break:break-all;"></div>
-        </div>
-
-        <div class="info-box gold-box">
-          <div class="label" style="color:#fbbf24; margin-bottom:8px;">🪙 UT 충전 신청 (10 USDT → 50,000 UT)</div>
-          <div class="sub-text" style="margin-bottom:12px;">
-            1) 아래 주소로 <b style="color:#fff">10 USDT(TRC20)</b> 입금<br>
-            2) TXID + 성함 제출 → <b style="color:#fff">운영자가 확인 후 수동으로 50,000 UT 충전</b><br>
-            3) 제출 즉시 <b style="color:#fff">명예의 전당에 10 USDT</b>로 기록됩니다.
-          </div>
-
-          <div class="input-group">
-            <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
-          </div>
-          <div class="input-group">
-            <input id="donate-txid" class="input-field" placeholder="TXID (이체 확인증)" />
-          </div>
-          <button class="action-btn btn-gold" onclick="submitDonation()">충전 신청 제출</button>
-        </div>
-
-        <div class="info-box">
-          <div class="label">💖 명예의 전당 (Top Donors)</div>
-          <div id="donation-ranking" class="ranking-list">
-            <div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">데이터 로딩 중...</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-loan" class="section">
-        <div class="info-box gold-box">
-          <div class="label" style="font-size:15px; color:#fbbf24;">💰 USDT 비즈니스 론</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">
-            고직급자 전용 사업자금 융통 상품입니다.<br>
-            - 상환 기한: 14일 이내 (수수료 +10 USDT)<br>
-            <span style="color:#f87171;">※ TRC20 지갑 주소 필수</span>
-          </p>
-
-          <div class="input-group">
-            <input id="usdt-loan-amount" type="number" class="input-field" placeholder="신청 금액 (USDT)" />
-          </div>
-          <div class="input-group">
-            <input id="usdt-loan-address" type="text" class="input-field" placeholder="받으실 지갑 주소 (TRC20)" />
-          </div>
-          <div class="input-group">
-            <input id="usdt-loan-reason" type="text" class="input-field" placeholder="사용 목적 및 직급" />
-          </div>
-          <button class="action-btn btn-danger" onclick="requestUsdtLoan()">USDT 대출 심사 신청</button>
-        </div>
-      </div>
-
-      <div id="tab-settle" class="section">
-        <div class="info-box gold-box">
-
-          <div class="balance-badge">현재 보유: <span id="my-balance-display">0</span> UT</div>
-
-          <div class="label" style="color:#fbbf24;">💸 정산 신청 (Exchange)</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px;">
-            보유한 UT를 USDT로 정산 신청합니다.<br>
-            (최소 10 UT 이상, <b>정수 단위만 가능</b>)
-          </p>
-
-          <div class="input-group">
-            <input id="ex-amount" type="number" step="1" class="input-field" placeholder="신청 수량 (정수만 입력)"
-                   oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateUsdtPreview(this.value);" />
-            <div id="usdt-preview-text" class="usdt-preview">≈ 0.00 USDT (정산가)</div>
-          </div>
-
-          <div class="input-group">
-            <input id="ex-address" type="text" class="input-field" placeholder="받으실 USDT 주소 (TRC20)" />
-          </div>
-
-          <button class="action-btn btn-gold" onclick="requestExchange()">정산 신청하기 (즉시차감)</button>
-        </div>
-
-        <div class="history-list">
-          <div class="history-title">📊 나의 내역 (후원 & 정산)</div>
-          <div id="my-history-container">
-            <div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
+    </main>
   </div>
 
-<script>
-  // ======================================================
-  // Supabase
-  // ======================================================
-  const SUPABASE_URL = "https://lrpscubricemcgfssjgg.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_8mMA4oEsuB9j0rc6KsLmtQ_UkJo0Zaq";
-  const { createClient } = supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  // ======================================================
-  // Apps Script(JSONP)
-  // ======================================================
+  <script>
+  // ✅ 구글 Apps Script 웹앱 (가입/조회가 여기로 붙음)
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
-  function api(action, params = {}) {
+  // ✅ 로그인 성공 시 이동할 메인
+  const MAIN_PAGE = "the-unique-main.html";
+
+  // ✅ 인앱 브라우저 감지(카톡/텔레그램/인스타 등)
+  function isInAppBrowser(){
+    const ua = navigator.userAgent || "";
+    return /KAKAOTALK|Instagram|FBAN|FBAV|Line|NAVER|DaumApps|Whale|Telegram|TikTok/i.test(ua);
+  }
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  // ✅ JSONP 1회 호출
+  function apiOnceJSONP(action, params = {}, timeoutMs = 20000) {
     return new Promise((resolve, reject) => {
       const cb = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+
       params.action = action;
       params.callback = cb;
       params._t = Date.now();
 
       const qs = new URLSearchParams(params).toString();
       const s = document.createElement("script");
-      s.src = GOOGLE_SCRIPT_URL + (GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?") + qs;
+      const joiner = GOOGLE_SCRIPT_URL.includes("?") ? "&" : "?";
+      s.src = GOOGLE_SCRIPT_URL + joiner + qs;
 
-      const t = setTimeout(() => { cleanup(); reject(new Error("API timeout")); }, 20000);
+      const t = setTimeout(() => {
+        cleanup();
+        reject(new Error("API timeout"));
+      }, timeoutMs);
+
       window[cb] = (data) => { cleanup(); resolve(data); };
       s.onerror = () => { cleanup(); reject(new Error("API load failed")); };
 
-      function cleanup(){
+      function cleanup() {
         clearTimeout(t);
-        try { delete window[cb]; } catch(_) {}
-        try { s.remove(); } catch(_) {}
+        try { delete window[cb]; } catch(e){}
+        try { s.remove(); } catch(e){}
       }
+
       document.body.appendChild(s);
     });
   }
 
-  // ======================================================
-  // ✅ 로그인 가드(핵심 수정)
-  //    - 세션 없으면 게이트로 보냄 (return 포함)
-  //    - ?id=xxx&autologin=1 이면 자동으로 세션 생성 시도
-  // ======================================================
-  function safeReturnPath(p){
-    p = String(p || "").trim();
-    if (!p) return "";
-    if (/^[a-zA-Z]+:\/\//.test(p)) return "";
-    if (p.includes("..")) return "";
-    if (!/^[a-z0-9\-_/]+\.html(\?.*)?$/i.test(p)) return "";
-    return p;
+  // ✅ JSONP 재시도
+  async function apiJSONP(action, params = {}) {
+    let lastErr = null;
+    const tries = 3;
+
+    for (let i = 1; i <= tries; i++){
+      try{
+        const timeoutMs = (i === 1) ? 16000 : 24000;
+        return await apiOnceJSONP(action, params, timeoutMs);
+      } catch(e){
+        lastErr = e;
+        await sleep(350 * i);
+      }
+    }
+    throw lastErr || new Error("API failed");
+  }
+
+  function setStatus(msg, isError=false){
+    const el = document.getElementById("status");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "status" + (isError ? " status-error" : "");
+  }
+
+  function pick(obj, keys){
+    for (const k of keys){
+      if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
+    }
+    return "";
+  }
+
+  function normalizeUser(u, fallbackId){
+    const rawId = String(pick(u, ["id","ID","userId","userid","아이디"]) || fallbackId || "").trim();
+    const idLower = rawId.toLowerCase();
+
+    return {
+      id: idLower,
+      name: String(pick(u, ["name","이름","성명","fullName"]) || "").trim(),
+      nickname: String(pick(u, ["nickname","닉네임","별명"]) || "").trim(),
+      phone: String(pick(u, ["phone","전화번호","핸드폰","휴대폰"]) || "").trim(),
+      team: String(pick(u, ["team","소속","추천인","리더","sponsor"]) || "").trim(),
+      joinedAt: String(pick(u, ["joinedAt","joinAt","timestamp","타임스탬프"]) || "").trim(),
+      balance: Number(pick(u, ["balance","ut","points","포인트"]) || 0)
+    };
   }
 
   function saveUserToLocal(u){
     const idLower = String(u.id || "").toLowerCase().trim();
+
     localStorage.setItem("uniqueCurrentUser", JSON.stringify({
       id: idLower,
       name: u.name || "",
@@ -276,361 +455,138 @@
       nickname: u.nickname || "",
       balance: Number(u.balance || 0)
     }));
+    // ✅ 다른 페이지(slot 등)에서 찾는 키들도 같이 저장 (호환용)
     localStorage.setItem("unique_user_id", idLower);
     localStorage.setItem("user_id", idLower);
     localStorage.setItem("uid", idLower);
     localStorage.setItem("id", idLower);
+
+    localStorage.setItem("unique_user_name", u.name || "");
+    localStorage.setItem("unique_user_nick", u.nickname || "");
+
     localStorage.setItem("myUtPoints", String(Number(u.balance || 0)));
+
+    if (String(u.nickname || "").trim()) {
+      localStorage.setItem("myNickname_" + idLower, String(u.nickname || "").trim());
+    } else {
+      localStorage.removeItem("myNickname_" + idLower);
+    }
   }
 
-  async function ensureLoginOrRedirect(){
-    const rawUser = localStorage.getItem("uniqueCurrentUser");
-    if (rawUser) return true;
+  function extractUser(resp){
+    if (!resp) return null;
+    // 흔한 케이스들 다 흡수
+    if (resp.user) return resp.user;
+    if (resp.data) return resp.data;
+    if (resp.row)  return resp.row;
+    if (resp.result && resp.result.user) return resp.result.user;
 
-    const qs = new URLSearchParams(location.search);
-    const qid = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
-    const auto = qs.get("autologin") === "1";
+    // resp 자체가 유저 형태일 수도 있음(서버 구현차)
+    const hasAny =
+      (resp.id || resp.ID || resp.아이디 || resp.name || resp.이름 || resp.phone || resp.전화번호 || resp.team || resp.소속);
+    return hasAny ? resp : null;
+  }
 
-    // 옵션: 링크로 바로 들어온 사람도 id 있으면 세션 생성 시도
-    if (auto && qid){
-      try{
-        const r = await api("getUser", { id: qid });
-        if (r && r.ok && r.user){
-          const u = r.user;
-          // 최소키 강제
-          const normalized = {
-            id: String(u.id || qid).toLowerCase().trim(),
-            name: String(u.name || "").trim(),
-            phone: String(u.phone || "").trim(),
-            team: String(u.team || "").trim(),
-            joinedAt: String(u.joinedAt || u.timestamp || "").trim(),
-            nickname: String(u.nickname || "").trim(),
-            balance: Number(u.balance || 0)
-          };
-          saveUserToLocal(normalized);
-          return true;
-        }
-      }catch(e){
-        console.warn("autologin by id failed:", e);
-      }
-    }
-
-    // 세션 없으면 게이트로
-    const me = "the-unique-promo.html";
-    location.href = "the-unique-gate.html?return=" + encodeURIComponent(me);
+  function isOk(resp){
+    if (!resp) return false;
+    if (resp.ok === true) return true;
+    if (resp.success === true) return true;
+    if (String(resp.status || "").toLowerCase() === "ok") return true;
+    if (String(resp.result || "").toLowerCase() === "ok") return true;
+    if (resp.found === true || resp.exists === true) return true;
     return false;
   }
 
-  function handleClose(){
-    // 인앱/모바일에서 window.close 막히는 경우가 많아서 fallback 제공
-    try{
-      window.close();
-      setTimeout(() => { location.href = "the-unique-main.html"; }, 200);
-    }catch(e){
-      location.href = "the-unique-main.html";
+  // ✅ 핵심: 서버가 대소문자 구분해도 통과시키기 위해 3번 조회
+  async function getUserByIdRobust(rawId){
+    const base = String(rawId || "").trim();
+    if (!base) return null;
+
+    const candidates = [];
+    for (const v of [base, base.toLowerCase(), base.toUpperCase()]){
+      if (v && !candidates.includes(v)) candidates.push(v);
     }
+
+    let lastResp = null;
+    for (const idTry of candidates){
+      const r = await apiJSONP("getUser", { id: idTry });
+      lastResp = r;
+      const u0 = extractUser(r);
+      if (isOk(r) && u0) return normalizeUser(u0, idTry);
+    }
+
+    // 서버가 ok는 주는데 user를 다른 구조로 주는 경우: 마지막 응답에서 강제로 뽑아봄
+    const u1 = extractUser(lastResp);
+    if (isOk(lastResp) && u1) return normalizeUser(u1, base);
+
+    return null;
   }
 
-  // ======================================================
-  // UT 판매(충전) 설정값
-  // ======================================================
-  const TOPUP_USDT = 10;
-  const TOPUP_UT   = 50000;
+  const form = document.getElementById("gate-form");
+  const idInput = document.getElementById("login-id");
+  const loginBtn = document.getElementById("login-btn");
 
-  // ======================================================
-  // Constants / State
-  // ======================================================
-  let myUsername = "";
-  let myCurrentBalance = 0;
+  if (isInAppBrowser()){
+    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 오류가 날 수 있습니다. 크롬/사파리로 열어서 시도하세요.", true);
+  }
 
-  const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
+  // ✅ 회원가입 후 돌아왔을 때: ?id=xxx or ?signup=1
+  (function initFromQuery(){
+    const qs = new URLSearchParams(location.search);
+    const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
+    const signup = qs.get("signup");
 
-  const UT_RATE = (() => {
-    const p = Number(localStorage.getItem("ut_settlement_price"));
-    return (Number.isFinite(p) && p > 0) ? p : 0.02;
+    if (preId && idInput) idInput.value = preId;
+
+    if (signup === "1"){
+      setStatus("✅ 회원가입 완료! 아이디 확인 후 로그인하세요.");
+    } else if (preId){
+      setStatus("아이디 확인 후 로그인하세요.");
+    }
+
+    // 옵션: ?autologin=1 이면 자동 로그인
+    const auto = qs.get("autologin");
+    if (auto === "1" && preId){
+      setTimeout(() => form && form.dispatchEvent(new Event("submit", { cancelable: true })), 200);
+    }
   })();
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    const ok = await ensureLoginOrRedirect();
-    if (!ok) return;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    const rawUser = localStorage.getItem('uniqueCurrentUser');
-    if (!rawUser) return; // 여기까지 왔으면 거의 없음
+    const raw = (idInput.value || "").trim();
+    if (!raw) { setStatus("아이디를 입력해 주세요.", true); return; }
+
+    setStatus("회원 확인 중...");
+    if (loginBtn) loginBtn.disabled = true;
 
     try {
-      const userObj = JSON.parse(rawUser);
-      myUsername = String(userObj.id || userObj.name || "Unknown").toLowerCase().trim();
-      document.getElementById("user-display").textContent = `[${myUsername}]`;
+      const user = await getUserByIdRobust(raw);
 
-      const addrEl = document.getElementById("vault-addr");
-      if (addrEl) addrEl.textContent = VAULT_TRON_ADDRESS;
+      if (!user || !user.id) {
+        setStatus("등록되지 않은 아이디입니다. (대소문자/띄어쓰기 확인)", true);
+        if (loginBtn) loginBtn.disabled = false;
+        return;
+      }
 
-      fetchRanking();
-      fetchMyBalance();
-      fetchVaultSumSince();
-    } catch(e) {
-      console.error(e);
-      location.href = "the-unique-gate.html?return=" + encodeURIComponent("the-unique-promo.html");
+      saveUserToLocal(user);
+      window.location.href = MAIN_PAGE;
+
+    } catch (err) {
+      console.error(err);
+      const msg = String(err && err.message ? err.message : err);
+
+      if (msg.includes("timeout")) {
+        setStatus("네트워크 지연으로 응답이 늦습니다. 다시 시도해 주세요.", true);
+      } else if (msg.includes("load failed")) {
+        setStatus("script.google.com 연결이 차단됐을 수 있습니다. (광고차단/보안DNS/인앱브라우저 확인)", true);
+      } else {
+        setStatus("서버 통신 중 오류가 발생했습니다. (잠시 후 다시 시도)", true);
+      }
+
+      if (loginBtn) loginBtn.disabled = false;
     }
   });
-
-  function switchTab(tabName, btnEl) {
-    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
-    if (btnEl) btnEl.classList.add('active');
-
-    if (tabName === 'settle') {
-      fetchMyBalance();
-      fetchMyHistory();
-    }
-  }
-
-  async function fetchVaultSumSince() {
-    const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
-    const mainEl = document.getElementById("vault-balance-num");
-    if (!mainEl) return;
-
-    try {
-      const { data, error } = await db
-        .from("transactions")
-        .select("amount, created_at")
-        .eq("type", "donation_verify")
-        .gte("created_at", CUTOFF_UTC);
-
-      if (error) throw error;
-
-      const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-      mainEl.textContent = `${sum.toLocaleString()} USDT`;
-
-    } catch (e) {
-      console.warn("fetchVaultSumSince fail:", e);
-      mainEl.textContent = "Error";
-    }
-  }
-
-  async function fetchMyBalance() {
-    const localBal = localStorage.getItem('myUtPoints');
-    if (localBal != null) {
-      myCurrentBalance = parseFloat(localBal) || 0;
-      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
-    }
-
-    try{
-      const r = await api("getUser", { id: myUsername });
-      if (r && r.ok && r.user) {
-        myCurrentBalance = Number(r.user.balance || 0);
-        document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
-        localStorage.setItem('myUtPoints', String(myCurrentBalance));
-      }
-    }catch(e){
-      console.warn("fetchMyBalance(getUser) fail:", e);
-    }
-  }
-
-  function copyVaultAddress(){
-    navigator.clipboard.writeText(VAULT_TRON_ADDRESS)
-      .then(()=>alert("입금 주소가 복사되었습니다."))
-      .catch(()=>{});
-  }
-
-  function updateUsdtPreview(val) {
-    const amt = parseInt(val, 10);
-    const display = document.getElementById("usdt-preview-text");
-    if (!amt || amt < 0) {
-      display.textContent = "≈ 0.00 USDT (정산가)";
-    } else {
-      const usdt = (amt * UT_RATE).toFixed(2);
-      display.textContent = `≈ ${usdt} USDT (정산가)`;
-    }
-  }
-
-  async function submitDonation() {
-    const name = document.getElementById("donate-name").value.trim();
-    const txid = document.getElementById("donate-txid").value.trim();
-    if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
-
-    const { data: existing } = await db
-      .from('transactions')
-      .select('txid')
-      .eq('txid', txid)
-      .maybeSingle();
-
-    if (existing) return alert("이미 제출된 TXID입니다.");
-
-    const amount = TOPUP_USDT;
-
-    await db.from('transactions').insert([{
-      username: myUsername,
-      donor_name: name,
-      type: 'donation_verify',
-      amount: amount,
-      description: `[UT충전신청] ${name} / ${amount} USDT -> ${TOPUP_UT.toLocaleString()} UT (수동충전)`,
-      txid: txid
-    }]);
-
-    const { data: prof } = await db
-      .from('profiles')
-      .select('donation_total')
-      .eq('username', myUsername)
-      .maybeSingle();
-
-    const current = prof ? (prof.donation_total || 0) : 0;
-    await db.from('profiles').upsert(
-      { username: myUsername, donation_total: current + amount },
-      { onConflict: 'username' }
-    );
-
-    alert(`접수 완료!\n입금 확인 후 운영자가 ${TOPUP_UT.toLocaleString()} UT를 수동 충전합니다.\n(명예의 전당에 ${amount} USDT로 기록됨)`);
-
-    document.getElementById("donate-txid").value = "";
-    fetchRanking();
-    fetchVaultSumSince();
-  }
-
-  async function fetchRanking() {
-    const container = document.getElementById("donation-ranking");
-
-    const { data: list, error } = await db.from('transactions')
-      .select('donor_name, amount, created_at')
-      .eq('type', 'donation_verify')
-      .order('created_at', {ascending:false})
-      .limit(500);
-
-    if (error) {
-      container.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">랭킹 로딩 오류</div>';
-      return;
-    }
-
-    if (!list || list.length === 0) {
-      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">아직 후원/충전 내역이 없습니다.</div>';
-      return;
-    }
-
-    const agg = new Map();
-    for (const r of list) {
-      const dn = String(r.donor_name || "").trim();
-      if (!dn) continue;
-      const a = Number(r.amount || 0);
-      agg.set(dn, (agg.get(dn) || 0) + a);
-    }
-
-    const ranked = Array.from(agg.entries())
-      .map(([donor_name, amount]) => ({ donor_name, amount }))
-      .sort((a,b) => b.amount - a.amount)
-      .slice(0, 10);
-
-    container.innerHTML = ranked.map((item, idx) => {
-      let badge = `<span class="rank-badge">${idx+1}</span>`;
-      if(idx===0) badge = `<span class="rank-badge rank-1">${idx+1}</span>`;
-      if(idx===1) badge = `<span class="rank-badge rank-2">${idx+1}</span>`;
-      if(idx===2) badge = `<span class="rank-badge rank-3">${idx+1}</span>`;
-
-      return `
-        <div class="rank-item">
-          <div style="display:flex; align-items:center;">
-            ${badge}
-            <span style="font-weight:bold; color:#fff; font-size:12px;">${item.donor_name}</span>
-          </div>
-          <div style="color:#fbbf24; font-weight:bold;">${Number(item.amount || 0).toLocaleString()} USDT</div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  async function requestUsdtLoan() {
-    const amt = document.getElementById("usdt-loan-amount").value;
-    const addr = document.getElementById("usdt-loan-address").value;
-    const reason = document.getElementById("usdt-loan-reason").value;
-
-    if(!amt || !addr || !reason) return alert("모든 항목을 입력해주세요.");
-
-    await db.from('transactions').insert([{
-      username: myUsername,
-      type: 'out',
-      amount: parseFloat(amt),
-      description: `[대출신청] ${amt} USDT / ${reason} / 주소:${addr}`
-    }]);
-
-    alert("대출 심사가 접수되었습니다.");
-    document.getElementById("usdt-loan-amount").value = "";
-    document.getElementById("usdt-loan-reason").value = "";
-  }
-
-  async function requestExchange() {
-    const amtInput = document.getElementById("ex-amount").value;
-    const addrInput = document.getElementById("ex-address").value.trim();
-
-    if(!addrInput) return alert("정산받으실 USDT 지갑 주소를 입력해주세요.");
-
-    const amt = parseInt(String(amtInput).replace(/[^\d]/g,''), 10);
-    if(!amt || amt < 10) return alert("최소 10 UT 이상 신청 가능합니다.");
-    if(amt > myCurrentBalance) return alert("보유 잔액이 부족합니다.");
-
-    const usdtAmt = (amt * UT_RATE).toFixed(2);
-
-    if(!confirm(`${amt} UT (≈ ${usdtAmt} USDT, 정산가)을 정산 신청하시겠습니까?\n(즉시 UT 차감)`)) return;
-
-    try{
-      const r = await api("addBalance", { id: myUsername, delta: -amt });
-      if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT 차감 실패");
-
-      myCurrentBalance = Number(r.user.balance || 0);
-      localStorage.setItem('myUtPoints', String(myCurrentBalance));
-      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
-
-      await db.from('transactions').insert([{
-        username: myUsername,
-        type: 'out',
-        amount: amt,
-        description: `[정산신청] ${amt} UT (Rate:${UT_RATE}) -> ${usdtAmt} USDT / 주소:${addrInput}`
-      }]);
-
-      alert("정산 신청이 완료되었습니다.");
-      document.getElementById("ex-amount").value = "";
-      updateUsdtPreview("0");
-      fetchMyHistory();
-
-    } catch(e){
-      console.error(e);
-      alert("정산 처리 오류: " + (e.message || e));
-    }
-  }
-
-  async function fetchMyHistory() {
-    const container = document.getElementById("my-history-container");
-    container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>';
-
-    const { data: list } = await db.from('transactions')
-      .select('*')
-      .eq('username', myUsername)
-      .in('type', ['donation_verify', 'out'])
-      .order('created_at', {ascending:false})
-      .limit(20);
-
-    if(!list || list.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">내역이 없습니다.</div>';
-      return;
-    }
-
-    container.innerHTML = list.map(item => {
-      const isDonation = item.type === 'donation_verify';
-      const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString() : "";
-      const amountClass = isDonation ? 'h-plus' : 'h-minus';
-      const amountSign = isDonation ? '' : '-';
-      const unit = isDonation ? 'USDT' : 'UT';
-
-      return `
-        <div class="history-item">
-          <div style="flex:1;">
-            <div class="h-desc">${item.description || ''}</div>
-            <div class="h-date">${dateStr}</div>
-          </div>
-          <div class="h-amount ${amountClass}">${amountSign}${Number(item.amount || 0).toLocaleString()} ${unit}</div>
-        </div>
-      `;
-    }).join('');
-  }
-</script>
+  </script>
 </body>
 </html>
