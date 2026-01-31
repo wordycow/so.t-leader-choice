@@ -303,7 +303,7 @@
       .topup-btn{
         padding: 10px 12px;
       }
-      .topup-sub{ display:none; } /* 상단은 간결 */
+      .topup-sub{ display:none; }
       .title{
         font-size: 3.5rem;
         -webkit-text-stroke: 1px rgba(255,255,255,0.8);
@@ -311,7 +311,6 @@
       .game-panel{ border-right:none; border-bottom: 1px solid rgba(255,255,255,0.1); }
       .split-container{ flex-direction:column; }
 
-      /* 모바일은 하단 바가 메인, PC용 EXIT 숨김 */
       .back-btn{ display:none; }
       .bottombar{ display:flex; }
       .game-panel-bg{ filter: brightness(0.8) grayscale(0%); }
@@ -322,7 +321,6 @@
 
 <body>
 
-  <!-- ✅ 상단 고정 바 (이미지 위가 아니라 “UI 영역”) -->
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">
@@ -340,7 +338,6 @@
     </div>
   </div>
 
-  <!-- ✅ 게임 영역 -->
   <div class="split-container">
     <a id="link-slot" href="#" class="game-panel">
       <div class="game-panel-bg slot-bg"></div>
@@ -359,10 +356,8 @@
     </a>
   </div>
 
-  <!-- PC용 EXIT -->
   <a href="the-unique-main.html" class="back-btn">EXIT LOBBY</a>
 
-  <!-- 모바일 하단 고정 바 (엄지로 바로 누름) -->
   <div class="bottombar">
     <button id="btnTopupUtBottom" class="bottom-topup" type="button">
       🪙 UT 충전 <span>10 USDT → 50,000 UT</span>
@@ -387,9 +382,14 @@
       ).trim();
     }
 
-    function goTopup(){
-      // ✅ 팝업 차단 신경 X: 그냥 확실하게 이동
-      location.href = "the-unique-promo.html";
+    // ✅ 새 탭으로 UT 충전 페이지 열기 (요청사항)
+    function goTopupNewTab(){
+      const url = "the-unique-promo.html";
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      // 팝업이 막힌 경우 대비 (그래도 대부분 클릭 이벤트라 잘 열림)
+      if(!w){
+        location.href = url;
+      }
     }
 
     window.onload = function(){
@@ -401,7 +401,7 @@
         return;
       }
 
-      // ✅ promo가 요구하는 uniqueCurrentUser 보정 세팅
+      // promo가 요구하는 uniqueCurrentUser 보정 세팅
       try{
         localStorage.setItem('uniqueCurrentUser', JSON.stringify({ id: myId, name: myId }));
       }catch(_){}
@@ -411,11 +411,11 @@
       document.getElementById('link-slot').href = "games/slot.html?id=" + encodeURIComponent(myId);
       document.getElementById('link-roulette').href = "games/roulette.html?id=" + encodeURIComponent(myId);
 
-      // ✅ UT 충전 버튼 (상단/하단 둘 다)
-      document.getElementById('btnTopupUtTop').addEventListener('click', goTopup);
-      document.getElementById('btnTopupUtBottom').addEventListener('click', goTopup);
+      // ✅ UT 충전 버튼 (상단/하단 둘 다) → 새 탭
+      document.getElementById('btnTopupUtTop').addEventListener('click', goTopupNewTab);
+      document.getElementById('btnTopupUtBottom').addEventListener('click', goTopupNewTab);
 
-      // ✅ 모바일 EXIT
+      // 모바일 EXIT
       document.getElementById('btnExitBottom').addEventListener('click', () => {
         location.href = "the-unique-main.html";
       });
