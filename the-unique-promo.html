@@ -93,12 +93,37 @@
       line-height:1.4;
     }
 
-    .ranking-list {
-      margin-top:10px;
-      height:auto !important;
-      max-height: unset !important;
-      overflow: visible !important;
+    /* ✅ 입금수단 토글 */
+    .asset-row{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
     }
+    .asset-btn{
+      flex:1;
+      padding:10px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(2,6,23,0.25);
+      color:#e5e7eb;
+      font-weight: 950;
+      cursor:pointer;
+      transition:.15s;
+    }
+    .asset-btn.active{
+      background: rgba(251,191,36,0.95);
+      color:#000;
+      border-color: rgba(251,191,36,0.95);
+    }
+    .asset-tip{
+      margin-top:8px;
+      font-size:11px;
+      color:#94a3b8;
+      text-align:center;
+      line-height:1.4;
+    }
+
+    .ranking-list { margin-top:10px; height:auto !important; max-height: unset !important; overflow: visible !important; }
     .rank-item { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
     .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; font-weight:bold; margin-right:8px; border-radius: 50%; font-size: 11px; background: #334155; color: #fff; }
     .rank-1 { background: #FFD700; color: #000; } .rank-2 { background: #C0C0C0; color: #000; } .rank-3 { background: #CD7F32; color: #000; }
@@ -132,10 +157,7 @@
     @media (max-width: 480px) {
       .page-wrap { padding: 15px; margin-top: 20px; }
       .title { font-size: 18px; }
-      .ranking-list{
-        max-height: 260px !important;
-        overflow-y: auto !important;
-      }
+      .ranking-list{ max-height: 260px !important; overflow-y: auto !important; }
     }
   </style>
 </head>
@@ -153,7 +175,7 @@
           <div class="title">THE UNIQUE TREASURE BOX</div>
           <div class="user-info" id="user-display">User</div>
         </div>
-        <button class="btn-close" onclick="window.close()">닫기 ✕</button>
+        <button class="btn-close" type="button" onclick="tryClose()">닫기 ✕</button>
       </div>
 
       <div class="tab-menu">
@@ -181,15 +203,28 @@
             3) 운영자 확인 후 <b style="color:#fff">UT 충전 + 명예의 전당 반영</b>
           </div>
 
-          <!-- ✅ 금액 선택 (USDT 기준, 10단위) -->
+          <!-- ✅ 금액 선택 (USDT 등가 기준, 10단위) -->
           <div class="amt-row" id="amt-row">
             <button class="amt-btn active" data-usdt="10" type="button">10</button>
             <button class="amt-btn" data-usdt="20" type="button">20</button>
             <button class="amt-btn" data-usdt="40" type="button">40</button>
             <button class="amt-btn" data-usdt="100" type="button">100</button>
           </div>
+
+          <!-- ✅ 입금수단 선택 -->
+          <div class="asset-row" id="asset-row">
+            <button class="asset-btn active" data-asset="USDT" type="button">USDT</button>
+            <button class="asset-btn" data-asset="TRX" type="button">TRX</button>
+          </div>
+          <div class="asset-tip" id="asset-tip">
+            TRX 선택 시 <b style="color:#fff">35 TRX = 10 USDT 등가</b>로 접수됩니다.
+          </div>
+
           <div class="amt-hint" id="amt-hint">선택: 10 USDT → 50,000 UT</div>
-          <div class="amt-note">※ USDT는 <b>10 단위</b>로만 접수합니다. (예: 40 USDT → 200,000 UT)</div>
+          <div class="amt-note" id="amt-note">
+            입금액: <b style="color:#fff" id="deposit-amount">10 USDT</b> / 충전: <b style="color:#fff" id="credit-ut">50,000 UT</b><br>
+            ※ DB에는 기금/랭킹을 위해 <b>USDT 등가</b>로 기록됩니다. (실입금은 설명에 같이 저장)
+          </div>
 
           <div class="input-group" style="margin-top:12px;">
             <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
@@ -316,8 +351,9 @@
   // ======================================================
   // UT 충전 룰
   // ======================================================
-  const TOPUP_UT_PER_10USDT = 50000; // 10 USDT -> 50,000 UT
-  const TOPUP_USDT_UNIT = 10;        // USDT는 10단위만 접수
+  const TOPUP_UT_PER_10USDT = 50000;  // 10 USDT -> 50,000 UT
+  const TOPUP_USDT_UNIT = 10;         // USDT는 10단위(등가 기준)
+  const TRX_PER_10USDT = 35;          // 35 TRX = 10 USDT 등가
 
   const TOPUP_TYPE_REQUEST  = "donation_request"; // 신청(대기)
   const TOPUP_TYPE_VERIFIED = "donation_verify";  // 확인 완료
@@ -327,7 +363,9 @@
   // ======================================================
   let myUsername = "";
   let myCurrentBalance = 0;
-  let selectedUsdt = 10; // ✅ 기본값 10
+
+  let selectedUsdt = 10;     // ✅ 등가 USDT 기준 선택 (10/20/40/100)
+  let selectedAsset = "USDT"; // ✅ 실입금 자산: USDT or TRX
 
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
 
@@ -337,14 +375,32 @@
   })();
 
   function calcUtFromUsdt(usdt){
-    // usdt는 10 단위로만 들어오게 강제
     return Math.round((usdt / 10) * TOPUP_UT_PER_10USDT);
+  }
+
+  function calcDepositAmount(usdtEq, asset){
+    const packs = usdtEq / 10; // 10USDT=1팩
+    if(asset === "TRX") return Math.round(packs * TRX_PER_10USDT); // 35TRX=1팩
+    return usdtEq; // USDT는 등가 그대로
   }
 
   function renderAmountHint(){
     const ut = calcUtFromUsdt(selectedUsdt);
+    const deposit = calcDepositAmount(selectedUsdt, selectedAsset);
+
     const hint = document.getElementById("amt-hint");
-    if(hint) hint.textContent = `선택: ${selectedUsdt} USDT → ${ut.toLocaleString()} UT`;
+    const depEl = document.getElementById("deposit-amount");
+    const utEl  = document.getElementById("credit-ut");
+
+    if(hint){
+      if(selectedAsset === "TRX"){
+        hint.textContent = `선택: ${selectedUsdt} USDT(등가) / ${deposit} TRX → ${ut.toLocaleString()} UT`;
+      }else{
+        hint.textContent = `선택: ${selectedUsdt} USDT → ${ut.toLocaleString()} UT`;
+      }
+    }
+    if(depEl) depEl.textContent = `${deposit.toLocaleString()} ${selectedAsset}`;
+    if(utEl) utEl.textContent = `${ut.toLocaleString()} UT`;
   }
 
   function bindAmountButtons(){
@@ -367,21 +423,54 @@
     });
   }
 
+  function bindAssetButtons(){
+    const row = document.getElementById("asset-row");
+    if(!row) return;
+
+    row.addEventListener("click", (e) => {
+      const btn = e.target.closest(".asset-btn");
+      if(!btn) return;
+
+      const a = String(btn.getAttribute("data-asset") || "").toUpperCase();
+      if(a !== "USDT" && a !== "TRX") return;
+
+      selectedAsset = a;
+
+      row.querySelectorAll(".asset-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      renderAmountHint();
+    });
+  }
+
+  function tryClose(){
+    try{ window.close(); }catch(_){}
+    setTimeout(() => {
+      // 닫기 실패하면 뒤로/로비 이동
+      if (document.visibilityState === "visible") {
+        if(history.length > 1) history.back();
+        else location.href = "the-unique-main.html";
+      }
+    }, 120);
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     bindAmountButtons();
+    bindAssetButtons();
     renderAmountHint();
 
     const rawUser = localStorage.getItem('uniqueCurrentUser');
     if (!rawUser) {
       alert("로그인 정보가 없습니다. 메인 화면에서 접속해주세요.");
-      window.close();
+      tryClose();
       return;
     }
 
     try {
       const userObj = JSON.parse(rawUser);
-      myUsername = String(userObj.id || userObj.name || "Unknown").toLowerCase().trim();
+      myUsername = String(userObj.id || userObj.name || "Unknown").trim();
       document.getElementById("user-display").textContent = `[${myUsername}]`;
+
       const cu = document.getElementById("credit-user");
       if(cu) cu.textContent = `[${myUsername}]`;
 
@@ -475,19 +564,20 @@
   }
 
   // ======================================================
-  // ✅ UT 충전 신청: 선택 USDT 기준으로 저장
+  // ✅ UT 충전 신청: 선택 금액 + 자산(USDT/TRX) 반영
   // ======================================================
   async function submitDonation() {
     const name = document.getElementById("donate-name").value.trim();
     const txid = document.getElementById("donate-txid").value.trim();
     if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
 
-    // ✅ USDT는 10단위만
-    const usdt = Number(selectedUsdt);
-    if(!Number.isFinite(usdt) || usdt <= 0) return alert("충전 금액이 올바르지 않습니다.");
-    if(usdt % TOPUP_USDT_UNIT !== 0) return alert("USDT는 10 단위로만 접수합니다. (예: 40 USDT)");
+    // ✅ 등가 USDT는 10단위만
+    const usdtEq = Number(selectedUsdt);
+    if(!Number.isFinite(usdtEq) || usdtEq <= 0) return alert("충전 금액이 올바르지 않습니다.");
+    if(usdtEq % TOPUP_USDT_UNIT !== 0) return alert("USDT 등가 기준 10 단위만 접수합니다. (예: 40 USDT)");
 
-    const ut = calcUtFromUsdt(usdt);
+    const ut = calcUtFromUsdt(usdtEq);
+    const deposit = calcDepositAmount(usdtEq, selectedAsset);
 
     const txidNorm = txid.toLowerCase().trim();
 
@@ -505,16 +595,22 @@
     if (dup && dup.length) return alert("이미 제출된 TXID입니다.");
 
     try {
+      // ✅ amount는 USDT 등가로 저장 (기금/랭킹 안정)
       await db.from('transactions').insert([{
         username: myUsername,
         donor_name: name,
         type: TOPUP_TYPE_REQUEST,
-        amount: usdt, // ✅ 선택 USDT 그대로 저장
-        description: `[UT충전신청:대기] ${name} / ${usdt} USDT -> ${ut.toLocaleString()} UT / user:${myUsername}`,
+        amount: usdtEq,
+        description: `[UT충전신청:대기] ${name} / paid:${deposit} ${selectedAsset} (≈ ${usdtEq} USDT) -> ${ut.toLocaleString()} UT / user:${myUsername}`,
         txid: txidNorm
       }]);
 
-      alert(`접수 완료(대기)!\n입금 확인 후 운영자가 ${ut.toLocaleString()} UT를 충전합니다.\n(${usdt} USDT 기준)`);
+      alert(
+        `접수 완료(대기)!\n` +
+        `입금 확인 후 운영자가 ${ut.toLocaleString()} UT를 충전합니다.\n` +
+        `입금수단: ${selectedAsset} / 금액: ${deposit} ${selectedAsset}\n` +
+        `(DB 기록: ${usdtEq} USDT 등가)`
+      );
 
       document.getElementById("donate-txid").value = "";
 
