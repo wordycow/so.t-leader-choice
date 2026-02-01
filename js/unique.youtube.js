@@ -34,7 +34,7 @@
         new YT.Player("youtube-player", {
           height: "100%",
           width: "100%",
-          videoId: U.CONFIG.YT_VIDEO_ID,
+          videoId:"S6ypLQqX1qY",
           playerVars: { origin: window.location.origin, rel: 0, playsinline: 1 },
           events: {
             onStateChange: function (ev) {
