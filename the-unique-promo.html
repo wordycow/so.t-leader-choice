@@ -7,172 +7,126 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    html, body { margin:0; padding:0; height:100%; }
-    :root{ --gold: #fbbf24; --panel-light: #1e293b; --text-main: #f9fafb; --text-sub: #94a3b8; }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%}
+    :root{
+      --gold:#fbbf24;
+      --panel:#1e293b;
+      --text:#f9fafb;
+      --muted:#94a3b8;
+      --bg:#000;
+    }
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-      color: var(--text-main);
-      background: #000;
+      color:var(--text);
+      background:var(--bg);
       display:flex;
       justify-content:center;
       align-items:flex-start;
     }
 
-    .scene{ position:fixed; inset:0; overflow:hidden; z-index:-1; }
-    .scene-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity: 0.6; }
+    .scene{position:fixed;inset:0;overflow:hidden;z-index:-1}
+    .scene-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6}
 
-    .page-wrap{ position:relative; z-index:10; max-width:700px; width:100%; margin:40px auto; padding:20px; }
-    .card{ background: rgba(15, 23, 42, 0.95); border-radius: 24px; border: 1px solid var(--gold); box-shadow: 0 0 30px rgba(251, 191, 36, 0.15); padding: 30px 24px; }
-
-    .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; }
-    .title{ font-size:22px; font-weight:700; color: #fff; font-family: "Cinzel", serif; letter-spacing: 0.05em; }
-    .user-info { font-size: 13px; color: var(--gold); font-weight: 600; margin-top: 4px; }
-    .btn-close{ background: var(--panel-light); border: 1px solid var(--text-sub); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-
-    .tab-menu { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-    .tab-btn { flex: 1; padding: 12px; background: var(--panel-light); border: 1px solid rgba(255,255,255,0.1); color: var(--text-sub); border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
-    .tab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
-
-    .section { display: none; animation: fadeIn 0.3s; }
-    .section.active { display: block; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-    .info-box { background: var(--panel-light); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; position: relative; }
-    .gold-box { border-color: var(--gold); background: rgba(251, 191, 36, 0.05); }
-
-    .label { font-size: 12px; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block; }
-    .value { font-size: 28px; font-weight: 900; color: #fff; }
-    .sub-text { font-size: 11px; color: var(--text-sub); margin-top: 4px; line-height: 1.4; }
-
-    .btn-copy { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fbbf24; padding:6px 12px; border-radius:8px; font-size:11px; cursor:pointer; }
-
-    .balance-badge { position:absolute; top:20px; right:20px; background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid var(--gold); }
-
-    .input-group { margin-bottom: 12px; }
-    .input-field { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; font-size: 13px; }
-    .input-field:focus { border-color: var(--gold); outline: none; }
-
-    .action-btn { width: 100%; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-size: 14px; transition: transform 0.1s; }
-    .action-btn:active { transform: scale(0.98); }
-    .btn-gold { background: var(--gold); color: #000; }
-    .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
-
-    /* ✅ 금액 선택 UI (가이드용) */
-    .amt-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-    .amt-btn{
-      flex: 1 1 72px;
-      min-width: 72px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(2,6,23,0.35);
-      color: #e5e7eb;
-      font-weight: 900;
-      cursor:pointer;
-      transition:.15s;
-    }
-    .amt-btn.active{
-      background: rgba(251,191,36,0.95);
-      color:#000;
-      border-color: rgba(251,191,36,0.95);
-    }
-    .amt-hint{
-      margin-top:10px;
-      font-size:12px;
-      font-weight:900;
-      color:#fbbf24;
-      text-align:center;
-      letter-spacing:.2px;
-    }
-    .amt-note{
-      margin-top:6px;
-      font-size:11px;
-      color:#94a3b8;
-      text-align:center;
-      line-height:1.4;
+    .page-wrap{position:relative;z-index:10;max-width:720px;width:100%;margin:40px auto;padding:20px}
+    .card{
+      background:rgba(15,23,42,.95);
+      border-radius:24px;
+      border:1px solid var(--gold);
+      box-shadow:0 0 30px rgba(251,191,36,.15);
+      padding:28px 22px;
     }
 
-    /* ✅ 입금수단 토글 (가이드용) */
-    .asset-row{
-      display:flex;
-      gap:8px;
-      margin-top:12px;
+    .top-bar{
+      display:flex;justify-content:space-between;align-items:center;
+      margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.1);
+      padding-bottom:16px;
     }
-    .asset-btn{
-      flex:1;
-      padding:10px 12px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(2,6,23,0.25);
-      color:#e5e7eb;
-      font-weight: 950;
-      cursor:pointer;
-      transition:.15s;
+    .title{
+      font-size:22px;font-weight:700;color:#fff;
+      font-family:"Cinzel",serif;letter-spacing:.05em;
     }
-    .asset-btn.active{
-      background: rgba(251,191,36,0.95);
-      color:#000;
-      border-color: rgba(251,191,36,0.95);
-    }
-    .asset-tip{
-      margin-top:8px;
-      font-size:11px;
-      color:#94a3b8;
-      text-align:center;
-      line-height:1.4;
+    .user-info{font-size:13px;color:var(--gold);font-weight:700;margin-top:4px}
+    .btn-close{
+      background:var(--panel);border:1px solid rgba(255,255,255,.18);
+      color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;
     }
 
-    .ranking-list { margin-top:10px; height:auto !important; max-height: unset !important; overflow: visible !important; }
-    .rank-item { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
-    .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; font-weight:bold; margin-right:8px; border-radius: 50%; font-size: 11px; background: #334155; color: #fff; }
-    .rank-1 { background: #FFD700; color: #000; } .rank-2 { background: #C0C0C0; color: #000; } .rank-3 { background: #CD7F32; color: #000; }
-
-    .history-list { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-    .history-title { font-size: 13px; color: #cbd5e1; font-weight: 700; margin-bottom: 10px; }
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
-    .h-desc { color: #fff; font-weight: 600; margin-bottom: 2px; }
-    .h-date { color: #64748b; font-size: 10px; }
-    .h-amount { font-weight: 700; font-size: 13px; }
-    .h-minus { color: #f87171; } .h-plus { color: #4ade80; } .h-pending{ color: #fbbf24; }
-
-    .usdt-preview { font-size: 12px; color: #fbbf24; margin-top: 4px; text-align: right; font-weight: bold; }
-
-    .status-pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:800;
-      border:1px solid rgba(255,255,255,0.15);
-      background: rgba(0,0,0,0.15);
-      color:#cbd5e1;
-      margin-left:8px;
+    .info-box{
+      background:var(--panel);
+      padding:18px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      margin-bottom:16px;
+      position:relative;
     }
-    .status-pending{ border-color: rgba(251,191,36,0.45); color:#fbbf24; }
-    .status-verified{ border-color: rgba(74,222,128,0.45); color:#4ade80; }
+    .gold-box{
+      border-color:rgba(251,191,36,.6);
+      background:rgba(251,191,36,.06);
+    }
+
+    .label{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:8px;display:block}
+    .value{font-size:30px;font-weight:950;color:#fff}
+    .sub-text{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+
+    .btn-copy{
+      position:absolute;top:16px;right:16px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.20);
+      color:var(--gold);
+      padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;
+    }
+
+    .input-group{margin-bottom:10px}
+    .input-field{
+      width:100%;padding:12px;
+      background:#0f172a;border:1px solid #334155;
+      color:#fff;border-radius:10px;font-size:13px;
+    }
+    .input-field:focus{border-color:var(--gold);outline:none}
+
+    .action-btn{
+      width:100%;padding:14px;border-radius:12px;
+      font-weight:900;cursor:pointer;border:none;font-size:14px;
+      transition:transform .1s;
+    }
+    .action-btn:active{transform:scale(.98)}
+    .btn-gold{background:var(--gold);color:#000}
+    .action-btn[disabled]{opacity:.65;cursor:not-allowed}
 
     .mini-result{
       margin-top:10px;
       padding:10px 12px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(2,6,23,0.25);
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(2,6,23,.25);
       color:#cbd5e1;
       font-size:12px;
-      line-height:1.4;
+      line-height:1.45;
       word-break:break-word;
       display:none;
     }
-    .mini-result.show{ display:block; }
-    .mini-result b{ color:#fff; }
+    .mini-result.show{display:block}
+    .mini-result b{color:#fff}
 
-    @media (max-width: 480px) {
-      .page-wrap { padding: 15px; margin-top: 20px; }
-      .title { font-size: 18px; }
-      .ranking-list{ max-height: 260px !important; overflow-y: auto !important; }
+    .ranking-list{margin-top:10px}
+    .rank-item{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:13px;
+    }
+    .rank-badge{
+      display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;
+      font-weight:900;margin-right:8px;border-radius:50%;font-size:11px;
+      background:#334155;color:#fff;
+    }
+    .rank-1{background:#FFD700;color:#000}
+    .rank-2{background:#C0C0C0;color:#000}
+    .rank-3{background:#CD7F32;color:#000}
+
+    @media (max-width:480px){
+      .page-wrap{padding:15px;margin-top:20px}
+      .title{font-size:18px}
     }
   </style>
 </head>
@@ -188,144 +142,52 @@
       <div class="top-bar">
         <div>
           <div class="title">THE UNIQUE TREASURE BOX</div>
-          <div class="user-info" id="user-display">User</div>
+          <div class="user-info" id="user-display">[User]</div>
         </div>
         <button class="btn-close" type="button" onclick="tryClose()">닫기 ✕</button>
       </div>
 
-      <div class="tab-menu">
-        <button class="tab-btn active" onclick="switchTab('home', this)">🏠 홈 & 기금</button>
-        <button class="tab-btn" onclick="switchTab('loan', this)">🏦 대출 (Loan)</button>
-        <button class="tab-btn" onclick="switchTab('settle', this)">💸 정산 신청</button>
+      <!-- 금고 잔액/주소 -->
+      <div class="info-box">
+        <button class="btn-copy" onclick="copyVaultAddress()">주소 복사</button>
+        <div class="label">공동기금 (REAL USDT)</div>
+        <div class="value" id="vault-balance-num">Loading...</div>
+        <div class="sub-text">TRON Network (USDT TRC20 / TRX)</div>
+        <div class="sub-text" id="vault-addr" style="margin-top:6px; word-break:break-all;"></div>
       </div>
 
-      <div id="tab-home" class="section active">
-        <div class="info-box">
-          <button class="btn-copy" onclick="copyVaultAddress()">주소 복사</button>
-          <div class="label">공동기금 (REAL USDT)</div>
-          <div class="value" id="vault-balance-num">Loading...</div>
-          <div class="sub-text">TRC20 Network</div>
-          <div class="sub-text" id="vault-addr" style="margin-top:6px; word-break:break-all;"></div>
+      <!-- TXID 즉시 충전 -->
+      <div class="info-box gold-box">
+        <div class="label" style="color:var(--gold); font-size:14px;">🪙 UT 충전 (TXID 자동 검증 → 즉시 충전)</div>
+
+        <div class="sub-text" style="margin-bottom:10px;">
+          1) 위 <b style="color:#fff;">금고 주소</b>로 <b style="color:#fff;">USDT(TRC20) 또는 TRX</b> 입금<br>
+          2) 입금한 <b style="color:#fff;">TXID(트랜잭션 해시)</b> 입력<br>
+          3) 서버가 체인에서 확인되면 <b style="color:#fff;">즉시 UT 충전</b><br>
+          <span style="color:#94a3b8;">※ 금액/자산 선택 같은 건 필요 없음. TXID가 전부 판단합니다.</span>
         </div>
 
-        <div class="info-box gold-box">
-          <div class="label" style="color:#fbbf24; margin-bottom:8px;">🪙 UT 충전 (TXID 검증 → 즉시 충전)</div>
-
-          <div class="sub-text" style="margin-bottom:10px;">
-            기준: <b style="color:#fff">10 USDT(TRC20)</b> 또는 <b style="color:#fff">35 TRX</b> → <b style="color:#fff">50,000 UT</b><br>
-            1) 아래 주소로 입금 (USDT/TRX 가능)<br>
-            2) <b style="color:#fff">TXID 입력</b> → 서버가 체인에서 확인<br>
-            3) 확인되면 <b style="color:#fff">즉시 UT 충전</b><br>
-            <span style="color:#94a3b8;">※ 아래 금액/자산 선택은 “가이드용”이며, 최종 충전은 TXID로 확인된 실입금 기준입니다.</span>
-          </div>
-
-          <!-- ✅ 금액 선택(가이드) -->
-          <div class="amt-row" id="amt-row">
-            <button class="amt-btn active" data-usdt="10" type="button">10</button>
-            <button class="amt-btn" data-usdt="20" type="button">20</button>
-            <button class="amt-btn" data-usdt="40" type="button">40</button>
-            <button class="amt-btn" data-usdt="100" type="button">100</button>
-          </div>
-
-          <!-- ✅ 입금수단 선택(가이드) -->
-          <div class="asset-row" id="asset-row">
-            <button class="asset-btn active" data-asset="USDT" type="button">USDT</button>
-            <button class="asset-btn" data-asset="TRX" type="button">TRX</button>
-          </div>
-          <div class="asset-tip" id="asset-tip">
-            TRX 선택 시 <b style="color:#fff">35 TRX = 10 USDT 등가</b> 기준으로 안내됩니다.
-          </div>
-
-          <div class="amt-hint" id="amt-hint">선택(가이드): 10 USDT → 50,000 UT</div>
-          <div class="amt-note" id="amt-note">
-            가이드 입금액: <b style="color:#fff" id="deposit-amount">10 USDT</b> / 예상 충전: <b style="color:#fff" id="credit-ut">50,000 UT</b><br>
-            ※ 실제 충전량은 TXID 검증 결과(실입금)로 결정됩니다.
-          </div>
-
-          <div class="input-group" style="margin-top:12px;">
-            <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
-          </div>
-          <div class="input-group">
-            <input id="donate-txid" class="input-field" placeholder="TXID (이체 확인증)" />
-          </div>
-
-          <button id="btn-submit-topup" class="action-btn btn-gold" onclick="submitDonation()">TXID 확인 후 즉시 충전</button>
-
-          <div id="verify-mini" class="mini-result"></div>
-
-          <div class="sub-text" style="margin-top:10px; text-align:center;">
-            ⚠️ 충전 반영 계정: <b style="color:#fff" id="credit-user">[unknown]</b>
-          </div>
+        <div class="input-group">
+          <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
+        </div>
+        <div class="input-group">
+          <input id="donate-txid" class="input-field" placeholder="TXID (64자리 해시)" />
         </div>
 
-        <div class="info-box">
-          <div class="label">🧾 나의 충전 내역(표시용)</div>
-          <div class="sub-text" style="margin-bottom:8px;">
-            아래 리스트는 <b>랭킹/기금 표시용 Supabase 기록</b>입니다. 실제 UT 충전 여부는 <b>Apps Script 원장</b>이 단일 진실입니다.
-          </div>
-          <div id="my-topup-requests" class="ranking-list">
-            <div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">로딩 중...</div>
-          </div>
-        </div>
+        <button id="btn-submit-topup" class="action-btn btn-gold" onclick="submitDonation()">TXID 확인 후 즉시 충전</button>
 
-        <div class="info-box">
-          <div class="label">💖 명예의 전당 (충전 완료/검증됨)</div>
-          <div id="donation-ranking" class="ranking-list">
-            <div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">데이터 로딩 중...</div>
-          </div>
+        <div id="verify-mini" class="mini-result"></div>
+
+        <div class="sub-text" style="margin-top:10px; text-align:center;">
+          ⚠️ 충전 반영 계정: <b style="color:#fff" id="credit-user">[unknown]</b>
         </div>
       </div>
 
-      <div id="tab-loan" class="section">
-        <div class="info-box gold-box">
-          <div class="label" style="font-size:15px; color:#fbbf24;">💰 USDT 비즈니스 론</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px; line-height:1.5;">
-            고직급자 전용 사업자금 융통 상품입니다.<br>
-            - 상환 기한: 14일 이내 (수수료 +10 USDT)<br>
-            <span style="color:#f87171;">※ TRC20 지갑 주소 필수</span>
-          </p>
-
-          <div class="input-group">
-            <input id="usdt-loan-amount" type="number" class="input-field" placeholder="신청 금액 (USDT)" />
-          </div>
-          <div class="input-group">
-            <input id="usdt-loan-address" type="text" class="input-field" placeholder="받으실 지갑 주소 (TRC20)" />
-          </div>
-          <div class="input-group">
-            <input id="usdt-loan-reason" type="text" class="input-field" placeholder="사용 목적 및 직급" />
-          </div>
-          <button class="action-btn btn-danger" onclick="requestUsdtLoan()">USDT 대출 심사 신청</button>
-        </div>
-      </div>
-
-      <div id="tab-settle" class="section">
-        <div class="info-box gold-box">
-          <div class="balance-badge">현재 보유: <span id="my-balance-display">0</span> UT</div>
-
-          <div class="label" style="color:#fbbf24;">💸 정산 신청 (Exchange)</div>
-          <p style="font-size:11px; color:#cbd5e1; margin-bottom:15px;">
-            보유한 UT를 USDT로 정산 신청합니다.<br>
-            (최소 10 UT 이상, <b>정수 단위만 가능</b>)
-          </p>
-
-          <div class="input-group">
-            <input id="ex-amount" type="number" step="1" class="input-field" placeholder="신청 수량 (정수만 입력)"
-                   oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateUsdtPreview(this.value);" />
-            <div id="usdt-preview-text" class="usdt-preview">≈ 0.00 USDT (정산가)</div>
-          </div>
-
-          <div class="input-group">
-            <input id="ex-address" type="text" class="input-field" placeholder="받으실 USDT 주소 (TRC20)" />
-          </div>
-
-          <button class="action-btn btn-gold" onclick="requestExchange()">정산 신청하기 (즉시차감)</button>
-        </div>
-
-        <div class="history-list">
-          <div class="history-title">📊 나의 내역 (충전 완료 & 정산)</div>
-          <div id="my-history-container">
-            <div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>
-          </div>
+      <!-- 명예의 전당 -->
+      <div class="info-box">
+        <div class="label">💖 명예의 전당 (충전 완료)</div>
+        <div id="donation-ranking" class="ranking-list">
+          <div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">데이터 로딩 중...</div>
         </div>
       </div>
 
@@ -342,7 +204,7 @@
   const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // ======================================================
-  // Apps Script(JSONP): UT 잔액/충전(단일 진실)
+  // Apps Script(JSONP): 단일 진실(검증/충전)
   // ======================================================
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtdOVoV2PtB_UbCLu2OzZHo6JjNks-0gk4s2fci52HjuuBNy3uwuf7DP7ePTK7S6VI/exec";
 
@@ -371,40 +233,37 @@
   }
 
   // ======================================================
-  // UI/표시용 상수
+  // 상수/상태
   // ======================================================
-  const TOPUP_UT_PER_10USDT = 50000;  // 10 USDT -> 50,000 UT (가이드)
-  const TOPUP_USDT_UNIT = 10;
-  const TRX_PER_10USDT = 35;
+  const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
+  const TOPUP_TYPE_VERIFIED = "donation_verify";
 
-  const TOPUP_TYPE_REQUEST  = "donation_request"; // (현재 페이지에서는 거의 안씀: 예외용)
-  const TOPUP_TYPE_VERIFIED = "donation_verify";  // 완료 로그
-
-  // ======================================================
-  // State
-  // ======================================================
   let myUsername = "";
   let myCurrentBalance = 0;
 
-  // 가이드 선택(실제 충전은 TXID로 결정)
-  let selectedUsdt = 10;
-  let selectedAsset = "USDT";
-
-  const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
-
-  const UT_RATE = (() => {
-    const p = Number(localStorage.getItem("ut_settlement_price"));
-    return (Number.isFinite(p) && p > 0) ? p : 0.02;
-  })();
-
-  function calcUtFromUsdt(usdt){
-    return Math.round((usdt / 10) * TOPUP_UT_PER_10USDT);
+  function escapeHtml(s){
+    return String(s||"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
   }
 
-  function calcDepositAmount(usdtEq, asset){
-    const packs = usdtEq / 10;
-    if(asset === "TRX") return Math.round(packs * TRX_PER_10USDT);
-    return usdtEq;
+  function tryClose(){
+    try{ window.close(); }catch(_){}
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        if(history.length > 1) history.back();
+        else location.href = "the-unique-main.html";
+      }
+    }, 120);
+  }
+
+  function copyVaultAddress(){
+    navigator.clipboard.writeText(VAULT_TRON_ADDRESS)
+      .then(()=>alert("입금 주소가 복사되었습니다."))
+      .catch(()=>{});
   }
 
   function setMiniResult(html, show=true){
@@ -418,86 +277,45 @@
     const btn = document.getElementById("btn-submit-topup");
     if(btn){
       btn.disabled = !!isBusy;
-      btn.style.opacity = isBusy ? "0.7" : "1";
       btn.textContent = isBusy ? "확인 중..." : "TXID 확인 후 즉시 충전";
-      btn.style.cursor = isBusy ? "not-allowed" : "pointer";
     }
   }
 
-  function renderAmountHint(){
-    const ut = calcUtFromUsdt(selectedUsdt);
-    const deposit = calcDepositAmount(selectedUsdt, selectedAsset);
+  function getTopupAdminToken_(){
+    // 필요 시 localStorage.setItem("topup_admin_token","...") 로 넣어둔 토큰 사용
+    const t = String(localStorage.getItem("topup_admin_token") || "").trim();
+    return t || "";
+  }
 
-    const hint = document.getElementById("amt-hint");
-    const depEl = document.getElementById("deposit-amount");
-    const utEl  = document.getElementById("credit-ut");
+  // ======================================================
+  // Supabase: TXID 기준 upsert (표시용 로그)
+  // ======================================================
+  async function upsertTxByTxid_(txidNorm, payload){
+    const { data: exist, error: e1 } = await db
+      .from('transactions')
+      .select('id, created_at')
+      .eq('txid', txidNorm)
+      .order('created_at', {ascending:false})
+      .limit(1);
 
-    if(hint){
-      if(selectedAsset === "TRX"){
-        hint.textContent = `선택(가이드): ${selectedUsdt} USDT(등가) / ${deposit} TRX → ${ut.toLocaleString()} UT`;
-      }else{
-        hint.textContent = `선택(가이드): ${selectedUsdt} USDT → ${ut.toLocaleString()} UT`;
-      }
+    if (e1) throw e1;
+
+    if (exist && exist.length && exist[0].id != null){
+      const id = exist[0].id;
+      const { error: e2 } = await db.from('transactions').update(payload).eq('id', id);
+      if (e2) throw e2;
+      return { mode: "update", id };
+    } else {
+      const { error: e3 } = await db.from('transactions').insert([payload]);
+      if (e3) throw e3;
+      return { mode: "insert" };
     }
-    if(depEl) depEl.textContent = `${deposit.toLocaleString()} ${selectedAsset}`;
-    if(utEl) utEl.textContent = `${ut.toLocaleString()} UT`;
   }
 
-  function bindAmountButtons(){
-    const row = document.getElementById("amt-row");
-    if(!row) return;
-
-    row.addEventListener("click", (e) => {
-      const btn = e.target.closest(".amt-btn");
-      if(!btn) return;
-
-      const v = Number(btn.getAttribute("data-usdt"));
-      if(!Number.isFinite(v) || v <= 0) return;
-
-      selectedUsdt = v;
-
-      row.querySelectorAll(".amt-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      renderAmountHint();
-    });
-  }
-
-  function bindAssetButtons(){
-    const row = document.getElementById("asset-row");
-    if(!row) return;
-
-    row.addEventListener("click", (e) => {
-      const btn = e.target.closest(".asset-btn");
-      if(!btn) return;
-
-      const a = String(btn.getAttribute("data-asset") || "").toUpperCase();
-      if(a !== "USDT" && a !== "TRX") return;
-
-      selectedAsset = a;
-
-      row.querySelectorAll(".asset-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      renderAmountHint();
-    });
-  }
-
-  function tryClose(){
-    try{ window.close(); }catch(_){}
-    setTimeout(() => {
-      if (document.visibilityState === "visible") {
-        if(history.length > 1) history.back();
-        else location.href = "the-unique-main.html";
-      }
-    }, 120);
-  }
-
+  // ======================================================
+  // 초기 로드
+  // ======================================================
   document.addEventListener('DOMContentLoaded', async () => {
-    bindAmountButtons();
-    bindAssetButtons();
-    renderAmountHint();
-
     const rawUser = localStorage.getItem('uniqueCurrentUser');
     if (!rawUser) {
       alert("로그인 정보가 없습니다. 메인 화면에서 접속해주세요.");
@@ -508,38 +326,33 @@
     try {
       const userObj = JSON.parse(rawUser);
       myUsername = String(userObj.id || userObj.name || "Unknown").trim();
+
       document.getElementById("user-display").textContent = `[${myUsername}]`;
+      document.getElementById("credit-user").textContent = `[${myUsername}]`;
+      document.getElementById("vault-addr").textContent = VAULT_TRON_ADDRESS;
 
-      const cu = document.getElementById("credit-user");
-      if(cu) cu.textContent = `[${myUsername}]`;
-
-      const addrEl = document.getElementById("vault-addr");
-      if (addrEl) addrEl.textContent = VAULT_TRON_ADDRESS;
-
-      await fetchMyBalance();
-      await fetchVaultSumSince();
-      await fetchMyTopupRequests();
-      await fetchRanking();
-
+      await fetchMyBalance();        // 내부 상태 업데이트(필수는 아니지만 안전)
+      await fetchVaultSumSince();    // 표시
+      await fetchRanking();          // 표시
     } catch(e) {
       console.error(e);
+      alert("초기화 오류: " + (e.message || e));
     }
   });
 
-  function switchTab(tabName, btnEl) {
-    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
-    if (btnEl) btnEl.classList.add('active');
+  async function fetchMyBalance() {
+    // 화면 표시용은 아니고, 추후 확장/안전용으로만 유지
+    const localBal = localStorage.getItem('myUtPoints');
+    if (localBal != null) myCurrentBalance = parseFloat(localBal) || 0;
 
-    if (tabName === 'settle') {
-      fetchMyBalance();
-      fetchMyHistory();
-    }
-    if (tabName === 'home') {
-      fetchVaultSumSince();
-      fetchMyTopupRequests();
-      fetchRanking();
+    try{
+      const r = await api("getUser", { id: myUsername });
+      if (r && r.ok && r.user) {
+        myCurrentBalance = Number(r.user.balance || 0);
+        localStorage.setItem('myUtPoints', String(myCurrentBalance));
+      }
+    }catch(e){
+      console.warn("fetchMyBalance(getUser) fail:", e);
     }
   }
 
@@ -559,284 +372,15 @@
 
       const sum = (data || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
       mainEl.textContent = `${sum.toLocaleString()} USDT`;
-
     } catch (e) {
       console.warn("fetchVaultSumSince fail:", e);
       mainEl.textContent = "Error";
     }
   }
 
-  async function fetchMyBalance() {
-    const localBal = localStorage.getItem('myUtPoints');
-    if (localBal != null) {
-      myCurrentBalance = parseFloat(localBal) || 0;
-      const el = document.getElementById('my-balance-display');
-      if (el) el.textContent = Math.floor(myCurrentBalance).toLocaleString();
-    }
-
-    try{
-      const r = await api("getUser", { id: myUsername });
-      if (r && r.ok && r.user) {
-        myCurrentBalance = Number(r.user.balance || 0);
-        const el = document.getElementById('my-balance-display');
-        if (el) el.textContent = Math.floor(myCurrentBalance).toLocaleString();
-        localStorage.setItem('myUtPoints', String(myCurrentBalance));
-      }
-    }catch(e){
-      console.warn("fetchMyBalance(getUser) fail:", e);
-    }
-  }
-
-  function copyVaultAddress(){
-    navigator.clipboard.writeText(VAULT_TRON_ADDRESS)
-      .then(()=>alert("입금 주소가 복사되었습니다."))
-      .catch(()=>{});
-  }
-
-  function updateUsdtPreview(val) {
-    const amt = parseInt(val, 10);
-    const display = document.getElementById("usdt-preview-text");
-    if (!display) return;
-
-    if (!amt || amt < 0) display.textContent = "≈ 0.00 USDT (정산가)";
-    else display.textContent = `≈ ${(amt * UT_RATE).toFixed(2)} USDT (정산가)`;
-  }
-
-  // ======================================================
-  // ✅ Supabase: txid 1건 upsert (있으면 업데이트 / 없으면 insert)
-  // ======================================================
-  async function upsertTxByTxid_(txidNorm, payload){
-    // txid 기준으로 최근 1건을 가져와서 update, 없으면 insert
-    const { data: exist, error: e1 } = await db
-      .from('transactions')
-      .select('id, type, created_at')
-      .eq('txid', txidNorm)
-      .order('created_at', {ascending:false})
-      .limit(1);
-
-    if (e1) throw e1;
-
-    if (exist && exist.length && exist[0].id != null){
-      const id = exist[0].id;
-      const { error: e2 } = await db.from('transactions').update(payload).eq('id', id);
-      if (e2) throw e2;
-      return { mode: "update", id };
-    } else {
-      const { error: e3 } = await db.from('transactions').insert([payload]);
-      if (e3) throw e3;
-      return { mode: "insert" };
-    }
-  }
-
-  function getTopupAdminToken_(){
-    // 필요하면 localStorage에 토큰 넣어서 사용
-    // localStorage.setItem("topup_admin_token","...") 해두면 자동 포함
-    const t = String(localStorage.getItem("topup_admin_token") || "").trim();
-    return t || "";
-  }
-
-  // ======================================================
-  // ✅ UT 충전: TXID 검증 → 즉시 충전
-  // - Supabase 중복 체크로 막지 않는다(오판 방지)
-  // - 실제 중복/클레임은 Apps Script(topupByTxid)가 결정
-  // ======================================================
-  async function submitDonation() {
-    const name = document.getElementById("donate-name").value.trim();
-    const txid = document.getElementById("donate-txid").value.trim();
-
-    if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
-
-    const txidNorm = txid.toLowerCase().trim();
-
-    // 간단 형식 검사(64 hex)
-    if(!/^[0-9a-f]{64}$/.test(txidNorm)){
-      return alert("TXID 형식이 올바르지 않습니다. (64자리 hex)");
-    }
-
-    setBusyTopup(true);
-    setMiniResult("", false);
-
-    try{
-      // 1) 체인 검증
-      const v = await api("verifyTopupTxid", { txid: txidNorm });
-      if(!v || !v.ok || !v.verify || !v.verify.ok){
-        const msg = v?.error || v?.msg || v?.verify?.error || "verify_failed";
-        setMiniResult(`❌ 검증 실패: <b>${escapeHtml(msg)}</b><br>TXID가 금고주소로 들어온 내역(최근 스캔)에 없을 수 있습니다.`, true);
-        return;
-      }
-
-      const ver = v.verify;
-      const symbol = String(ver.symbol || "");
-      const amountExact = Number(ver.amountExact || 0);
-      const usdtExact = Number(ver.usdtExact || 0);
-      const trxExact = Number(ver.trxExact || 0);
-      const utTarget = Math.floor(Number(ver.utTarget || 0));
-      const utApplied = Math.floor(Number(ver.utApplied || 0));
-
-      setMiniResult(
-        `✅ 검증 성공<br>` +
-        `자산: <b>${escapeHtml(symbol)}</b> / 실입금: <b>${amountExact}</b> ${escapeHtml(symbol)}<br>` +
-        `USDT 등가: <b>${usdtExact}</b> / TRX 등가: <b>${trxExact}</b><br>` +
-        `충전 예정 UT(타겟): <b>${utTarget.toLocaleString()}</b> UT` +
-        (utApplied > 0 ? `<br>이미 적용된 UT: <b>${utApplied.toLocaleString()}</b> UT` : ``),
-        true
-      );
-
-      if(!utTarget || utTarget <= 0){
-        return alert("검증은 되었지만 충전 대상 UT가 0입니다. (지원 토큰/금액 확인 필요)");
-      }
-
-      // 2) 즉시 충전 (Apps Script가 중복/클레임/차액충전 처리)
-      const token = getTopupAdminToken_();
-      const payload = { id: myUsername, txid: txidNorm };
-      if(token) payload.token = token;
-
-      const a = await api("topupByTxid", payload);
-
-      if(!a || !a.ok){
-        const err = a?.error || a?.msg || "topup_failed";
-        // 케이스: 이미 다른 사람에게 클레임됨
-        if(String(err).includes("txid_already_claimed")){
-          setMiniResult(`❌ 충전 실패: <b>이미 다른 계정에 사용된 TXID</b><br>(Apps Script 기준으로 차단됨)`, true);
-          return alert("이미 다른 계정에 사용된 TXID입니다.");
-        }
-        // 케이스: 토큰 설정됨(forbidden)
-        if(String(err).includes("forbidden")){
-          setMiniResult(`❌ 충전 실패: <b>forbidden</b><br>TOPUP_ADMIN_TOKEN이 설정되어 있으면 token이 필요합니다.`, true);
-          return alert("충전 권한 오류(forbidden). TOPUP_ADMIN_TOKEN 설정 여부 확인.");
-        }
-
-        setMiniResult(`❌ 충전 실패: <b>${escapeHtml(err)}</b>`, true);
-        return alert("충전 실패: " + err);
-      }
-
-      // 3) 잔액 UI 반영
-      if(a.newBalance != null){
-        myCurrentBalance = Number(a.newBalance || 0);
-      } else if(a.user && a.user.balance != null){
-        myCurrentBalance = Number(a.user.balance || 0);
-      } else {
-        // 안전: 재조회
-        await fetchMyBalance();
-      }
-
-      localStorage.setItem('myUtPoints', String(myCurrentBalance));
-      const balEl = document.getElementById('my-balance-display');
-      if (balEl) balEl.textContent = Math.floor(myCurrentBalance).toLocaleString();
-
-      const utAdded = Math.floor(Number(a.utAdded || 0));
-      const appliedFlag = !!a.applied;
-
-      // 4) Supabase 기록(표시용): txid 기준 upsert
-      //    amount는 "USDT 등가(실입금 기준)"로 저장
-      try{
-        const desc =
-          `[UT충전:${appliedFlag ? "완료" : "확인"}] ${name} / ` +
-          `tx:${txidNorm} / ` +
-          `paid:${amountExact} ${symbol} (≈ ${usdtExact} USDT) / ` +
-          `UT:${utTarget.toLocaleString()} (added:${utAdded.toLocaleString()}) / user:${myUsername}`;
-
-        await upsertTxByTxid_(txidNorm, {
-          username: myUsername,
-          donor_name: name,
-          type: TOPUP_TYPE_VERIFIED,
-          amount: usdtExact, // ✅ 실제 기준(USDT 등가)
-          description: desc,
-          txid: txidNorm
-        });
-      }catch(e){
-        // 표시용 로그 실패해도 충전은 이미 끝난 상태
-        console.warn("supabase upsert fail:", e);
-      }
-
-      // 5) 안내
-      alert(
-        (appliedFlag
-          ? `✅ 충전 완료!\n${utAdded.toLocaleString()} UT가 즉시 충전되었습니다.`
-          : `✅ 확인 완료!\n이미 반영된 TXID라 추가 충전은 없었습니다.`) +
-        `\n\nTXID: ${txidNorm}\n잔액: ${Math.floor(myCurrentBalance).toLocaleString()} UT`
-      );
-
-      document.getElementById("donate-txid").value = "";
-
-      // 6) 화면 갱신
-      fetchMyTopupRequests();
-      fetchVaultSumSince();
-      fetchRanking();
-
-    } catch(e){
-      console.error(e);
-      alert("처리 오류: " + (e.message || e));
-    } finally {
-      setBusyTopup(false);
-    }
-  }
-
-  function escapeHtml(s){
-    return String(s||"")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#39;");
-  }
-
-  async function fetchMyTopupRequests(){
-    const box = document.getElementById("my-topup-requests");
-    if(!box) return;
-
-    box.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">로딩 중...</div>';
-
-    try{
-      const { data, error } = await db
-        .from('transactions')
-        .select('type, amount, created_at, txid, donor_name, description')
-        .eq('username', myUsername)
-        .in('type', [TOPUP_TYPE_REQUEST, TOPUP_TYPE_VERIFIED])
-        .order('created_at', {ascending:false})
-        .limit(20);
-
-      if(error) throw error;
-
-      if(!data || data.length === 0){
-        box.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">내역이 없습니다.</div>';
-        return;
-      }
-
-      box.innerHTML = data.map(r => {
-        const isVerified = r.type === TOPUP_TYPE_VERIFIED;
-        const dateStr = r.created_at ? new Date(r.created_at).toLocaleString() : "";
-        const txTail = (r.txid || "").slice(-10);
-        const pill = isVerified
-          ? `<span class="status-pill status-verified">완료</span>`
-          : `<span class="status-pill status-pending">대기</span>`;
-
-        return `
-          <div class="rank-item" style="gap:10px;">
-            <div style="min-width:0;">
-              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <span style="font-weight:900; color:#fff; font-size:12px;">${escapeHtml(r.donor_name||"")}</span>
-                ${pill}
-              </div>
-              <div style="color:#64748b; font-size:11px; margin-top:4px; word-break:break-all;">
-                ${escapeHtml(dateStr)} · TXID …${escapeHtml(txTail)}
-              </div>
-            </div>
-            <div style="color:${isVerified ? '#4ade80' : '#fbbf24'}; font-weight:900; white-space:nowrap;">
-              ${Number(r.amount||0).toLocaleString()} USDT
-            </div>
-          </div>
-        `;
-      }).join('');
-
-    }catch(e){
-      console.warn(e);
-      box.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">내역 로딩 오류</div>';
-    }
-  }
-
   async function fetchRanking() {
     const container = document.getElementById("donation-ranking");
+    if(!container) return;
 
     const { data: list, error } = await db.from('transactions')
       .select('donor_name, amount, created_at')
@@ -850,7 +394,7 @@
     }
 
     if (!list || list.length === 0) {
-      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">아직 확인 완료된 내역이 없습니다.</div>';
+      container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:12px; padding:10px;">아직 충전 완료 내역이 없습니다.</div>';
       return;
     }
 
@@ -877,106 +421,131 @@
         <div class="rank-item">
           <div style="display:flex; align-items:center;">
             ${badge}
-            <span style="font-weight:bold; color:#fff; font-size:12px;">${escapeHtml(item.donor_name)}</span>
+            <span style="font-weight:900; color:#fff; font-size:12px;">${escapeHtml(item.donor_name)}</span>
           </div>
-          <div style="color:#fbbf24; font-weight:bold;">${Number(item.amount || 0).toLocaleString()} USDT</div>
+          <div style="color:#fbbf24; font-weight:900;">${Number(item.amount || 0).toLocaleString()} USDT</div>
         </div>
       `;
     }).join('');
   }
 
-  async function requestUsdtLoan() {
-    const amt = document.getElementById("usdt-loan-amount").value;
-    const addr = document.getElementById("usdt-loan-address").value;
-    const reason = document.getElementById("usdt-loan-reason").value;
+  // ======================================================
+  // ✅ TXID 검증 → 즉시 충전
+  // ======================================================
+  async function submitDonation() {
+    const name = document.getElementById("donate-name").value.trim();
+    const txid = document.getElementById("donate-txid").value.trim();
+    if(!name || !txid) return alert("성함과 TXID를 입력해주세요.");
 
-    if(!amt || !addr || !reason) return alert("모든 항목을 입력해주세요.");
+    const txidNorm = txid.toLowerCase().trim();
+    if(!/^[0-9a-f]{64}$/.test(txidNorm)){
+      return alert("TXID 형식이 올바르지 않습니다. (64자리 hex)");
+    }
 
-    await db.from('transactions').insert([{
-      username: myUsername,
-      type: 'out',
-      amount: parseFloat(amt),
-      description: `[대출신청] ${amt} USDT / ${reason} / 주소:${addr}`
-    }]);
-
-    alert("대출 심사가 접수되었습니다.");
-    document.getElementById("usdt-loan-amount").value = "";
-    document.getElementById("usdt-loan-reason").value = "";
-  }
-
-  async function requestExchange() {
-    const amtInput = document.getElementById("ex-amount").value;
-    const addrInput = document.getElementById("ex-address").value.trim();
-
-    if(!addrInput) return alert("정산받으실 USDT 지갑 주소를 입력해주세요.");
-
-    const amt = parseInt(String(amtInput).replace(/[^\d]/g,''), 10);
-    if(!amt || amt < 10) return alert("최소 10 UT 이상 신청 가능합니다.");
-    if(amt > myCurrentBalance) return alert("보유 잔액이 부족합니다.");
-
-    const usdtAmt = (amt * UT_RATE).toFixed(2);
-
-    if(!confirm(`${amt} UT (≈ ${usdtAmt} USDT, 정산가)을 정산 신청하시겠습니까?\n(즉시 UT 차감)`)) return;
+    setBusyTopup(true);
+    setMiniResult("", false);
 
     try{
-      const r = await api("addBalance", { id: myUsername, delta: -amt });
-      if (!r || !r.ok || !r.user) throw new Error(r?.error || "UT 차감 실패");
+      // 1) 체인 검증
+      const v = await api("verifyTopupTxid", { txid: txidNorm });
+      if(!v || !v.ok || !v.verify || !v.verify.ok){
+        const msg = v?.error || v?.msg || v?.verify?.error || "verify_failed";
+        setMiniResult(`❌ 검증 실패: <b>${escapeHtml(msg)}</b><br>TXID가 금고주소 입금 트랜잭션이 아닐 수 있습니다.`, true);
+        return;
+      }
 
-      myCurrentBalance = Number(r.user.balance || 0);
+      const ver = v.verify;
+      const symbol = String(ver.symbol || "");
+      const amountExact = Number(ver.amountExact || 0);
+      const usdtExact = Number(ver.usdtExact || 0);
+      const utTarget = Math.floor(Number(ver.utTarget || 0));
+      const utApplied = Math.floor(Number(ver.utApplied || 0));
+
+      setMiniResult(
+        `✅ 검증 성공<br>` +
+        `자산: <b>${escapeHtml(symbol)}</b> / 실입금: <b>${amountExact}</b> ${escapeHtml(symbol)}<br>` +
+        `USDT 등가: <b>${usdtExact}</b><br>` +
+        `충전 대상 UT: <b>${utTarget.toLocaleString()}</b> UT` +
+        (utApplied > 0 ? `<br>이미 적용된 UT: <b>${utApplied.toLocaleString()}</b> UT` : ``),
+        true
+      );
+
+      if(!utTarget || utTarget <= 0){
+        return alert("검증은 되었지만 충전 대상 UT가 0입니다. (지원 자산/금액 확인)");
+      }
+
+      // 2) 즉시 충전 (Apps Script가 중복/클레임 차단)
+      const token = getTopupAdminToken_();
+      const payload = { id: myUsername, txid: txidNorm };
+      if(token) payload.token = token;
+
+      const a = await api("topupByTxid", payload);
+
+      if(!a || !a.ok){
+        const err = a?.error || a?.msg || "topup_failed";
+        if(String(err).includes("txid_already_claimed")){
+          setMiniResult(`❌ 충전 실패: <b>이미 다른 계정에 사용된 TXID</b>`, true);
+          alert("이미 다른 계정에 사용된 TXID입니다.");
+          return;
+        }
+        if(String(err).includes("forbidden")){
+          setMiniResult(`❌ 충전 실패: <b>forbidden</b><br>TOPUP_ADMIN_TOKEN 설정 시 token 필요`, true);
+          alert("충전 권한 오류(forbidden). 토큰 설정 확인.");
+          return;
+        }
+        setMiniResult(`❌ 충전 실패: <b>${escapeHtml(err)}</b>`, true);
+        alert("충전 실패: " + err);
+        return;
+      }
+
+      // 3) 잔액 갱신
+      if(a.newBalance != null) myCurrentBalance = Number(a.newBalance || 0);
+      else if(a.user && a.user.balance != null) myCurrentBalance = Number(a.user.balance || 0);
+      else await fetchMyBalance();
+
       localStorage.setItem('myUtPoints', String(myCurrentBalance));
-      document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
 
-      await db.from('transactions').insert([{
-        username: myUsername,
-        type: 'out',
-        amount: amt,
-        description: `[정산신청] ${amt} UT (Rate:${UT_RATE}) -> ${usdtAmt} USDT / 주소:${addrInput}`
-      }]);
+      const utAdded = Math.floor(Number(a.utAdded || 0));
+      const appliedFlag = !!a.applied;
 
-      alert("정산 신청이 완료되었습니다.");
-      document.getElementById("ex-amount").value = "";
-      updateUsdtPreview("0");
-      fetchMyHistory();
+      // 4) Supabase 표시용 로그(업서트)
+      try{
+        const desc =
+          `[UT충전:${appliedFlag ? "완료" : "확인"}] ${name} / ` +
+          `paid:${amountExact} ${symbol} (≈ ${usdtExact} USDT) / ` +
+          `UT_target:${utTarget.toLocaleString()} (added:${utAdded.toLocaleString()}) / user:${myUsername}`;
+
+        await upsertTxByTxid_(txidNorm, {
+          username: myUsername,
+          donor_name: name,
+          type: TOPUP_TYPE_VERIFIED,
+          amount: usdtExact,     // ✅ 랭킹/기금은 USDT 등가로 집계
+          description: desc,
+          txid: txidNorm
+        });
+      }catch(e){
+        console.warn("supabase upsert fail:", e);
+      }
+
+      alert(
+        (appliedFlag
+          ? `✅ 충전 완료!\n${utAdded.toLocaleString()} UT가 충전되었습니다.`
+          : `✅ 확인 완료!\n이미 반영된 TXID라 추가 충전은 없었습니다.`) +
+        `\n\nTXID: ${txidNorm}`
+      );
+
+      document.getElementById("donate-txid").value = "";
+
+      // 5) 화면 갱신
+      fetchVaultSumSince();
+      fetchRanking();
 
     } catch(e){
       console.error(e);
-      alert("정산 처리 오류: " + (e.message || e));
+      alert("처리 오류: " + (e.message || e));
+    } finally {
+      setBusyTopup(false);
     }
-  }
-
-  async function fetchMyHistory() {
-    const container = document.getElementById("my-history-container");
-    container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>';
-
-    const { data: list } = await db.from('transactions')
-      .select('*')
-      .eq('username', myUsername)
-      .in('type', [TOPUP_TYPE_VERIFIED, 'out'])
-      .order('created_at', {ascending:false})
-      .limit(20);
-
-    if(!list || list.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">내역이 없습니다.</div>';
-      return;
-    }
-
-    container.innerHTML = list.map(item => {
-      const isTopup = item.type === TOPUP_TYPE_VERIFIED;
-      const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString() : "";
-      const amountClass = isTopup ? 'h-plus' : 'h-minus';
-      const amountSign = isTopup ? '' : '-';
-      const unit = isTopup ? 'USDT' : 'UT';
-
-      return `
-        <div class="history-item">
-          <div style="flex:1;">
-            <div class="h-desc">${escapeHtml(item.description || '')}</div>
-            <div class="h-date">${escapeHtml(dateStr)}</div>
-          </div>
-          <div class="h-amount ${amountClass}">${amountSign}${Number(item.amount || 0).toLocaleString()} ${unit}</div>
-        </div>
-      `;
-    }).join('');
   }
 </script>
 </body>
