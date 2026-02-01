@@ -967,31 +967,7 @@
       filter:brightness(1.05);
       box-shadow: 0 16px 32px rgba(0,0,0,1), 0 0 0 1px rgba(248,250,252,0.8) inset;
     }
-     function hardLogout(){
-  // 1) 로그인 세션 제거 (너 프로젝트에서 쓰는 키들)
-  const keys = [
-    "uniqueCurrentUser",
-    "unique_user_id",
-    "user_id",
-    "uid",
-    "id",
-    "unique_user_name",
-    "unique_user_nick",
-    "myUtPoints"
-  ];
-  keys.forEach(k => localStorage.removeItem(k));
 
-  // 닉네임 캐시도 싹 제거(선택)
-  Object.keys(localStorage)
-    .filter(k => k.startsWith("myNickname_"))
-    .forEach(k => localStorage.removeItem(k));
-
-  // 2) return(되돌아갈 페이지) 기억값 제거 (핵심)
-  sessionStorage.removeItem("unique_return_to");
-
-  // 3) 게이트로 이동 (return 없이)
-  location.replace("the-unique-gate.html?logout=1");
-}
     .goal-panel{
       border-radius:22px;
       padding:16px 18px;
@@ -1183,7 +1159,8 @@
             </div>
 
             <div class="tb-header-right">
-              <button class="game-btn" type="button" onclick="window.open('game.html','_blank')">GAME</button>
+              <!-- ✅ GAME 버튼: casino.html 새 탭 -->
+              <button class="game-btn" type="button" onclick="window.open('casino.html','_blank','noopener,noreferrer')">GAME</button>
             </div>
           </div>
 
@@ -1228,7 +1205,8 @@
                   </div>
                 </div>
 
-                <a class="ut-topup-cta" href="the-unique-promo.html" target="_blank" rel="noopener">
+                <!-- ✅ UT 충전 CTA: the-unique-promo.html 새 탭 -->
+                <a class="ut-topup-cta" href="the-unique-promo.html" target="_blank" rel="noopener noreferrer">
                   <div class="ut-topup-left">
                     <div class="ut-topup-badge">🪙</div>
                     <div class="ut-topup-text">
@@ -1261,7 +1239,8 @@
                 <div id="yt-status-text" class="mining-status">▶ 재생 버튼을 눌러 시청하세요 (매일 00:00 초기화)</div>
 
                 <div class="knowledge-bottom">
-                  <a class="slot-cta" id="btnCasinoLobby" href="casino.html" target="_blank">
+                  <!-- ✅ 카지노 로비: 새 탭 + rel 보강 -->
+                  <a class="slot-cta" id="btnCasinoLobby" href="casino.html" target="_blank" rel="noopener noreferrer">
                     <img src="img/slot-btn.png" alt="CASINO FOR FUN">
                   </a>
                 </div>
@@ -1400,6 +1379,37 @@
 
   <div class="promo-section" id="promo-section"></div>
   <div class="footer-note">The Unique &copy; 2025 · internal use only</div>
+
+  <!-- ✅ (치명 버그 수정) CSS 밖으로 hardLogout 이동 -->
+  <script>
+    function hardLogout(){
+      const keys = [
+        "uniqueCurrentUser",
+        "unique_user_id",
+        "user_id",
+        "uid",
+        "id",
+        "unique_user_name",
+        "unique_user_nick",
+        "myUtPoints"
+      ];
+      keys.forEach(k => localStorage.removeItem(k));
+
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("myNickname_"))
+        .forEach(k => localStorage.removeItem(k));
+
+      sessionStorage.removeItem("unique_return_to");
+
+      location.replace("the-unique-gate.html?logout=1");
+    }
+
+    // 로그아웃 버튼 클릭 → hardLogout
+    (function(){
+      const btn = document.getElementById("logout-btn");
+      if(btn) btn.addEventListener("click", hardLogout);
+    })();
+  </script>
 
   <script src="js/unique.config.js"></script>
   <script src="js/unique.state.js"></script>
