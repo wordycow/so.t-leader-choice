@@ -58,6 +58,41 @@
     .btn-gold { background: var(--gold); color: #000; }
     .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
 
+    /* ✅ 금액 선택 UI */
+    .amt-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .amt-btn{
+      flex: 1 1 72px;
+      min-width: 72px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(2,6,23,0.35);
+      color: #e5e7eb;
+      font-weight: 900;
+      cursor:pointer;
+      transition:.15s;
+    }
+    .amt-btn.active{
+      background: rgba(251,191,36,0.95);
+      color:#000;
+      border-color: rgba(251,191,36,0.95);
+    }
+    .amt-hint{
+      margin-top:10px;
+      font-size:12px;
+      font-weight:900;
+      color:#fbbf24;
+      text-align:center;
+      letter-spacing:.2px;
+    }
+    .amt-note{
+      margin-top:6px;
+      font-size:11px;
+      color:#94a3b8;
+      text-align:center;
+      line-height:1.4;
+    }
+
     .ranking-list {
       margin-top:10px;
       height:auto !important;
@@ -93,26 +128,6 @@
     }
     .status-pending{ border-color: rgba(251,191,36,0.45); color:#fbbf24; }
     .status-verified{ border-color: rgba(74,222,128,0.45); color:#4ade80; }
-
-    /* ✅ 충전 금액 선택 UI */
-    .amount-row{ display:flex; gap:8px; }
-    .amount-btn{
-      flex:1;
-      padding:10px 0;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.06);
-      color:#cbd5e1;
-      font-weight:900;
-      cursor:pointer;
-      transition: all .15s ease;
-    }
-    .amount-btn:hover{ filter:brightness(1.08); }
-    .amount-btn.active{
-      background: var(--gold);
-      color:#000;
-      border-color: var(--gold);
-    }
 
     @media (max-width: 480px) {
       .page-wrap { padding: 15px; margin-top: 20px; }
@@ -159,33 +174,34 @@
         <div class="info-box gold-box">
           <div class="label" style="color:#fbbf24; margin-bottom:8px;">🪙 UT 충전 신청</div>
 
-          <div class="sub-text" style="margin-bottom:12px;" id="topup-guide">
-            1) 아래 주소로 <b style="color:#fff"><span id="topup-usdt-text">10</span> USDT(TRC20)</b> 입금<br>
+          <div class="sub-text" style="margin-bottom:10px;">
+            기준: <b style="color:#fff">10 USDT(TRC20)</b> 또는 <b style="color:#fff">35 TRX</b> → <b style="color:#fff">50,000 UT</b><br>
+            1) 아래 주소로 입금 (USDT/TRX 가능)<br>
             2) TXID + 성함 제출 → <b style="color:#fff">대기 상태로 접수</b><br>
-            3) 운영자가 확인 후 <b style="color:#fff">UT 충전 + 명예의 전당 반영</b>
+            3) 운영자 확인 후 <b style="color:#fff">UT 충전 + 명예의 전당 반영</b>
           </div>
 
-          <!-- ✅ 금액 선택 -->
-          <div class="input-group">
-            <span class="label" style="color:#cbd5e1;">충전 금액 선택</span>
-            <div class="amount-row">
-              <button type="button" class="amount-btn active" onclick="setTopupAmount(10, this)">10</button>
-              <button type="button" class="amount-btn" onclick="setTopupAmount(20, this)">20</button>
-              <button type="button" class="amount-btn" onclick="setTopupAmount(40, this)">40</button>
-              <button type="button" class="amount-btn" onclick="setTopupAmount(100, this)">100</button>
-            </div>
-            <div class="sub-text" style="margin-top:8px; color:#fbbf24; font-weight:900;" id="topup-preview">
-              선택: 10 USDT → 50,000 UT
-            </div>
+          <!-- ✅ 금액 선택 (USDT 기준, 10단위) -->
+          <div class="amt-row" id="amt-row">
+            <button class="amt-btn active" data-usdt="10" type="button">10</button>
+            <button class="amt-btn" data-usdt="20" type="button">20</button>
+            <button class="amt-btn" data-usdt="40" type="button">40</button>
+            <button class="amt-btn" data-usdt="100" type="button">100</button>
           </div>
+          <div class="amt-hint" id="amt-hint">선택: 10 USDT → 50,000 UT</div>
+          <div class="amt-note">※ USDT는 <b>10 단위</b>로만 접수합니다. (예: 40 USDT → 200,000 UT)</div>
 
-          <div class="input-group">
+          <div class="input-group" style="margin-top:12px;">
             <input id="donate-name" class="input-field" placeholder="성함 (명예의 전당 표시용)" />
           </div>
           <div class="input-group">
             <input id="donate-txid" class="input-field" placeholder="TXID (이체 확인증)" />
           </div>
           <button class="action-btn btn-gold" onclick="submitDonation()">충전 신청 제출</button>
+
+          <div class="sub-text" style="margin-top:10px; text-align:center;">
+            ⚠️ 충전 반영 계정: <b style="color:#fff" id="credit-user">[unknown]</b>
+          </div>
         </div>
 
         <div class="info-box">
@@ -298,21 +314,20 @@
   }
 
   // ======================================================
-  // UT 충전 설정
+  // UT 충전 룰
   // ======================================================
-  const TOPUP_UNIT_USDT = 10;     // 기준 단위
-  const TOPUP_UNIT_UT   = 50000;  // 10 USDT당 UT
+  const TOPUP_UT_PER_10USDT = 50000; // 10 USDT -> 50,000 UT
+  const TOPUP_USDT_UNIT = 10;        // USDT는 10단위만 접수
+
   const TOPUP_TYPE_REQUEST  = "donation_request"; // 신청(대기)
-  const TOPUP_TYPE_VERIFIED = "donation_verify";  // 확인 완료(명예의 전당/기금)
+  const TOPUP_TYPE_VERIFIED = "donation_verify";  // 확인 완료
 
   // ======================================================
   // State
   // ======================================================
   let myUsername = "";
   let myCurrentBalance = 0;
-
-  // ✅ 선택 금액
-  let selectedTopupUsdt = 10;
+  let selectedUsdt = 10; // ✅ 기본값 10
 
   const VAULT_TRON_ADDRESS = "TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt";
 
@@ -321,27 +336,41 @@
     return (Number.isFinite(p) && p > 0) ? p : 0.02;
   })();
 
-  function calcTopupUt(usdt){
-    const u = Number(usdt) || 0;
-    return Math.round((u / TOPUP_UNIT_USDT) * TOPUP_UNIT_UT);
+  function calcUtFromUsdt(usdt){
+    // usdt는 10 단위로만 들어오게 강제
+    return Math.round((usdt / 10) * TOPUP_UT_PER_10USDT);
   }
 
-  function syncTopupUI(){
-    const ut = calcTopupUt(selectedTopupUsdt);
-    const usdtTextEl = document.getElementById("topup-usdt-text");
-    const prevEl = document.getElementById("topup-preview");
-    if(usdtTextEl) usdtTextEl.textContent = String(selectedTopupUsdt);
-    if(prevEl) prevEl.textContent = `선택: ${Number(selectedTopupUsdt).toLocaleString()} USDT → ${ut.toLocaleString()} UT`;
+  function renderAmountHint(){
+    const ut = calcUtFromUsdt(selectedUsdt);
+    const hint = document.getElementById("amt-hint");
+    if(hint) hint.textContent = `선택: ${selectedUsdt} USDT → ${ut.toLocaleString()} UT`;
   }
 
-  function setTopupAmount(usdt, btn){
-    selectedTopupUsdt = Number(usdt) || 10;
-    document.querySelectorAll(".amount-btn").forEach(b => b.classList.remove("active"));
-    if(btn) btn.classList.add("active");
-    syncTopupUI();
+  function bindAmountButtons(){
+    const row = document.getElementById("amt-row");
+    if(!row) return;
+
+    row.addEventListener("click", (e) => {
+      const btn = e.target.closest(".amt-btn");
+      if(!btn) return;
+
+      const v = Number(btn.getAttribute("data-usdt"));
+      if(!Number.isFinite(v) || v <= 0) return;
+
+      selectedUsdt = v;
+
+      row.querySelectorAll(".amt-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      renderAmountHint();
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    bindAmountButtons();
+    renderAmountHint();
+
     const rawUser = localStorage.getItem('uniqueCurrentUser');
     if (!rawUser) {
       alert("로그인 정보가 없습니다. 메인 화면에서 접속해주세요.");
@@ -353,11 +382,11 @@
       const userObj = JSON.parse(rawUser);
       myUsername = String(userObj.id || userObj.name || "Unknown").toLowerCase().trim();
       document.getElementById("user-display").textContent = `[${myUsername}]`;
+      const cu = document.getElementById("credit-user");
+      if(cu) cu.textContent = `[${myUsername}]`;
 
       const addrEl = document.getElementById("vault-addr");
       if (addrEl) addrEl.textContent = VAULT_TRON_ADDRESS;
-
-      syncTopupUI();
 
       await fetchMyBalance();
       await fetchVaultSumSince();
@@ -366,7 +395,6 @@
 
     } catch(e) {
       console.error(e);
-      alert("초기화 오류: " + (e.message || e));
     }
   });
 
@@ -387,7 +415,6 @@
     }
   }
 
-  // ✅ 공동기금(REAL USDT): "확인완료(VERIFIED)"만 합산
   async function fetchVaultSumSince() {
     const CUTOFF_UTC = "2025-12-20T15:00:00.000Z";
     const mainEl = document.getElementById("vault-balance-num");
@@ -411,7 +438,6 @@
     }
   }
 
-  // ✅ UT 잔액: localStorage 즉시 표시 → Apps Script(getUser) 최신화
   async function fetchMyBalance() {
     const localBal = localStorage.getItem('myUtPoints');
     if (localBal != null) {
@@ -449,20 +475,23 @@
   }
 
   // ======================================================
-  // ✅ UT 충전 신청: REQUEST로만 저장 (대기)
+  // ✅ UT 충전 신청: 선택 USDT 기준으로 저장
   // ======================================================
   async function submitDonation() {
     const name = document.getElementById("donate-name").value.trim();
     const txid = document.getElementById("donate-txid").value.trim();
     if(!name || !txid) return alert("이름과 TXID를 모두 입력해주세요.");
 
-    const usdt = Number(selectedTopupUsdt) || 10;
-    if (usdt < 10 || usdt % 10 !== 0) return alert("충전 금액은 10 USDT 단위로만 가능합니다.");
+    // ✅ USDT는 10단위만
+    const usdt = Number(selectedUsdt);
+    if(!Number.isFinite(usdt) || usdt <= 0) return alert("충전 금액이 올바르지 않습니다.");
+    if(usdt % TOPUP_USDT_UNIT !== 0) return alert("USDT는 10 단위로만 접수합니다. (예: 40 USDT)");
 
-    const expectedUt = calcTopupUt(usdt);
+    const ut = calcUtFromUsdt(usdt);
+
     const txidNorm = txid.toLowerCase().trim();
 
-    // TXID 중복 방지 (전체 테이블)
+    // TXID 중복 방지
     const { data: dup, error: dupErr } = await db
       .from('transactions')
       .select('id')
@@ -471,35 +500,34 @@
 
     if (dupErr) {
       console.warn(dupErr);
-      return alert("TXID 확인 중 오류가 발생했습니다: " + (dupErr.message || dupErr));
+      return alert("TXID 확인 중 오류가 발생했습니다.");
     }
     if (dup && dup.length) return alert("이미 제출된 TXID입니다.");
 
-    // ✅ INSERT 에러를 반드시 확인 (RLS 막히면 여기서 걸림)
-    const { error: insErr } = await db.from('transactions').insert([{
-      username: myUsername,
-      donor_name: name,
-      type: TOPUP_TYPE_REQUEST,
-      amount: usdt,
-      description: `[UT충전신청:대기] ${name} / ${usdt} USDT -> ${expectedUt.toLocaleString()} UT`,
-      txid: txidNorm
-    }]);
+    try {
+      await db.from('transactions').insert([{
+        username: myUsername,
+        donor_name: name,
+        type: TOPUP_TYPE_REQUEST,
+        amount: usdt, // ✅ 선택 USDT 그대로 저장
+        description: `[UT충전신청:대기] ${name} / ${usdt} USDT -> ${ut.toLocaleString()} UT / user:${myUsername}`,
+        txid: txidNorm
+      }]);
 
-    if (insErr) {
-      console.error("Topup insert error:", insErr);
-      return alert("접수 실패: " + (insErr.message || insErr));
+      alert(`접수 완료(대기)!\n입금 확인 후 운영자가 ${ut.toLocaleString()} UT를 충전합니다.\n(${usdt} USDT 기준)`);
+
+      document.getElementById("donate-txid").value = "";
+
+      fetchMyTopupRequests();
+      fetchVaultSumSince();
+      fetchRanking();
+
+    } catch (e) {
+      console.error(e);
+      alert("접수 실패: " + (e.message || e));
     }
-
-    alert(`접수 완료(대기)!\n${usdt} USDT 입금 확인 후 운영자가 ${expectedUt.toLocaleString()} UT를 충전합니다.`);
-
-    document.getElementById("donate-txid").value = "";
-
-    fetchMyTopupRequests();
-    fetchVaultSumSince();
-    fetchRanking();
   }
 
-  // ✅ 내 충전 신청 현황 (대기/완료)
   async function fetchMyTopupRequests(){
     const box = document.getElementById("my-topup-requests");
     if(!box) return;
@@ -530,8 +558,6 @@
           ? `<span class="status-pill status-verified">완료</span>`
           : `<span class="status-pill status-pending">대기</span>`;
 
-        const ut = calcTopupUt(Number(r.amount||0));
-
         return `
           <div class="rank-item" style="gap:10px;">
             <div style="min-width:0;">
@@ -540,7 +566,7 @@
                 ${pill}
               </div>
               <div style="color:#64748b; font-size:11px; margin-top:4px; word-break:break-all;">
-                ${dateStr} · TXID …${txTail} · ${Number(r.amount||0).toLocaleString()} USDT → ${ut.toLocaleString()} UT
+                ${dateStr} · TXID …${txTail}
               </div>
             </div>
             <div style="color:${isVerified ? '#4ade80' : '#fbbf24'}; font-weight:900; white-space:nowrap;">
@@ -552,11 +578,10 @@
 
     }catch(e){
       console.warn(e);
-      box.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">내역 로딩 오류: ' + (e.message||e) + '</div>';
+      box.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">내역 로딩 오류</div>';
     }
   }
 
-  // ✅ 명예의 전당: 확인 완료(VERIFIED)만
   async function fetchRanking() {
     const container = document.getElementById("donation-ranking");
 
@@ -567,7 +592,7 @@
       .limit(500);
 
     if (error) {
-      container.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">랭킹 로딩 오류: ' + (error.message||error) + '</div>';
+      container.innerHTML = '<div style="text-align:center; color:#f87171; font-size:12px; padding:10px;">랭킹 로딩 오류</div>';
       return;
     }
 
@@ -614,14 +639,12 @@
 
     if(!amt || !addr || !reason) return alert("모든 항목을 입력해주세요.");
 
-    const { error } = await db.from('transactions').insert([{
+    await db.from('transactions').insert([{
       username: myUsername,
       type: 'out',
       amount: parseFloat(amt),
       description: `[대출신청] ${amt} USDT / ${reason} / 주소:${addr}`
     }]);
-
-    if(error) return alert("대출 신청 저장 실패: " + (error.message||error));
 
     alert("대출 심사가 접수되었습니다.");
     document.getElementById("usdt-loan-amount").value = "";
@@ -650,14 +673,12 @@
       localStorage.setItem('myUtPoints', String(myCurrentBalance));
       document.getElementById('my-balance-display').textContent = Math.floor(myCurrentBalance).toLocaleString();
 
-      const { error } = await db.from('transactions').insert([{
+      await db.from('transactions').insert([{
         username: myUsername,
         type: 'out',
         amount: amt,
         description: `[정산신청] ${amt} UT (Rate:${UT_RATE}) -> ${usdtAmt} USDT / 주소:${addrInput}`
       }]);
-
-      if(error) throw error;
 
       alert("정산 신청이 완료되었습니다.");
       document.getElementById("ex-amount").value = "";
@@ -674,17 +695,12 @@
     const container = document.getElementById("my-history-container");
     container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">로딩 중...</div>';
 
-    const { data: list, error } = await db.from('transactions')
+    const { data: list } = await db.from('transactions')
       .select('*')
       .eq('username', myUsername)
       .in('type', [TOPUP_TYPE_VERIFIED, 'out'])
       .order('created_at', {ascending:false})
       .limit(20);
-
-    if(error){
-      container.innerHTML = '<div style="text-align:center; padding:10px; color:#f87171; font-size:12px;">내역 로딩 오류: ' + (error.message||error) + '</div>';
-      return;
-    }
 
     if(!list || list.length === 0) {
       container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:12px;">내역이 없습니다.</div>';
