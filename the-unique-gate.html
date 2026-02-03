@@ -38,7 +38,6 @@
       pointer-events: none;
       z-index: 0;
     }
-
     .scene-bg {
       position: absolute;
       inset: 0;
@@ -202,30 +201,57 @@
       border-color: rgba(148,163,184,0.9);
     }
 
+    .btn-with-icon{ gap:10px; justify-content:center; }
+    .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
+    .btn-with-icon span{ line-height:1; }
+
+    /* ✅ 이미지처럼 기본 안내문을 아래에 고정 느낌으로 */
     .status {
       min-height: 18px;
       font-size: 11px;
       text-align: center;
-      margin-top: 6px;
+      margin-top: 10px;
+      color: rgba(226,232,240,0.88); /* 기본 회색 안내 */
       text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+      letter-spacing: 0.02em;
     }
     .status-error { color: #fecaca; }
     .status-ok { color: #bbf7d0; }
 
-    .divider-amp{
-      margin: 10px 0 8px;
-      text-align:center;
-      font-family:"Cinzel","Times New Roman",serif;
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: 0.35em;
-      line-height: 1;
-      color:transparent;
-      background: linear-gradient(180deg, #fffaf0 0%, #facc6b 45%, #d97706 100%);
-      -webkit-background-clip:text;
-      background-clip:text;
-      text-shadow: 0 0 12px rgba(250,204,21,0.75), 0 6px 18px rgba(0,0,0,1);
+    /* ✅ 하단 X 엠블럼 (스크린샷 느낌) */
+    .gate-emblem{
+      margin-top: 12px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height: 28px;
       user-select:none;
+      opacity: 0.95;
+    }
+    .gate-emblem .xmark{
+      position: relative;
+      width: 28px;
+      height: 28px;
+      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.9));
+    }
+    .gate-emblem .xmark::before,
+    .gate-emblem .xmark::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:50%;
+      width: 28px;
+      height: 4px;
+      transform-origin:center;
+      border-radius: 999px;
+      background: rgba(2,6,23,0.95);
+      box-shadow:
+        0 0 0 1px rgba(250,204,21,0.55),
+        0 0 16px rgba(250,204,21,0.25);
+      transform: translate(-50%,-50%) rotate(45deg);
+    }
+    .gate-emblem .xmark::after{
+      transform: translate(-50%,-50%) rotate(-45deg);
     }
 
     :root{
@@ -272,10 +298,6 @@
       --bob: var(--witch-bob);
       animation: floatY 3.2s ease-in-out infinite alternate;
     }
-
-    .btn-with-icon{ gap:10px; justify-content:center; }
-    .btn-with-icon svg{ width:18px; height:18px; flex:0 0 18px; display:block; }
-    .btn-with-icon span{ line-height:1; }
 
     @media (max-width: 768px) {
       .gate-card { padding: 24px 20px 18px; border-radius: 22px; }
@@ -327,16 +349,17 @@
             </button>
 
             <a href="the-unique-signup.html?return=the-unique-gate.html" class="btn btn-ghost">회원가입</a>
-          </div>
 
-          <div id="status" class="status"></div>
-
-          <div class="divider-amp">&amp;</div>
-
-          <div class="btn-row" style="margin-top:10px;">
+            <!-- return 버튼은 파라미터 있을 때만 노출 -->
             <button type="button" class="btn btn-ghost" id="btn-return" style="display:none;">
               이전 화면으로 계속
             </button>
+          </div>
+
+          <div id="status" class="status">아이디를 입력해 주세요.</div>
+
+          <div class="gate-emblem" aria-hidden="true">
+            <div class="xmark"></div>
           </div>
         </form>
       </div>
@@ -531,11 +554,6 @@
   const btnMarket = document.getElementById("btn-market");
   const btnReturn = document.getElementById("btn-return");
 
-  // 인앱 경고
-  if (isInAppBrowser()){
-    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 통신이 막힐 수 있어요. 크롬/사파리로 열면 안정적입니다.", "error");
-  }
-
   // 쿼리 파라미터 처리
   const qs = new URLSearchParams(location.search);
   const preId = (qs.get("id") || qs.get("userid") || qs.get("user") || "").trim();
@@ -546,13 +564,17 @@
   const lastId = String(localStorage.getItem("uniqueLastLoginId") || "").trim();
   if (idInput) idInput.value = preId || lastId || "";
 
-  if (signup === "1"){
+  // 인앱 경고(스크린샷 UI 유지하면서도 안내는 뜨게)
+  if (isInAppBrowser()){
+    setStatus("⚠️ 카톡/인스타/텔레그램 내장 브라우저에서는 통신이 막힐 수 있어요. 크롬/사파리로 열면 안정적입니다.", "error");
+  } else if (signup === "1"){
     setStatus("✅ 회원가입 완료! 아이디 입력 후 입장하세요.", "ok");
-  } else if (preId){
-    setStatus("아이디 확인 후 입장하세요.");
+  } else {
+    // ✅ 기본 상태: 이미지처럼 항상 안내문
+    setStatus("아이디를 입력해 주세요.");
   }
 
-  // return 버튼 노출
+  // return 버튼 노출(필요할 때만)
   if (returnPage && btnReturn){
     btnReturn.style.display = "inline-flex";
     btnReturn.textContent = "이전 화면으로 계속";
