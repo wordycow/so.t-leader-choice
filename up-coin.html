@@ -116,6 +116,7 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
+    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
     .meta{
       margin-top:10px;
       display:grid;
@@ -156,6 +157,28 @@
       font-size:12px;
       line-height:1.5;
     }
+
+    /* Gate (접근 제한) */
+    .gate{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.65);
+      z-index:9999;
+      padding:18px;
+    }
+    .gateBox{
+      width: min(520px, 100%);
+      border:1px solid var(--line);
+      background: rgba(11,18,38,0.96);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .gateTitle{font-size:16px; font-weight:800; margin:0 0 6px}
+    .gateDesc{font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:10px}
+    .gateRow{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap}
+    .gateMsg{margin-top:10px; font-size:12px; color:#ffd6de; line-height:1.5}
   </style>
 </head>
 <body>
@@ -166,6 +189,14 @@
         <div class="sub" id="subLine">데이터 로딩중…</div>
       </div>
       <div class="bar">
+        <select class="select" id="limitSelect" title="표시 개수">
+          <option value="AUTO">표시: 자동(DAYTRADE=6)</option>
+          <option value="6">표시: 6</option>
+          <option value="12">표시: 12</option>
+          <option value="20">표시: 20</option>
+          <option value="50">표시: 50</option>
+          <option value="ALL">표시: 전체</option>
+        </select>
         <select class="select" id="personSelect"></select>
         <button class="btn" id="btnRefresh">새로고침</button>
       </div>
@@ -191,15 +222,40 @@
     </div>
   </div>
 
+  <!-- Gate UI -->
+  <div class="gate" id="gate">
+    <div class="gateBox">
+      <div class="gateTitle">접근 확인</div>
+      <div class="gateDesc">
+        rank-hall.json 기준 <b>STAR1 / STAR2 / STAR3 / PRO1 이상</b>만 접근 가능.<br/>
+        (MEMBER는 차단)
+      </div>
+      <input class="select" id="gateInput" style="width:100%; min-width:unset" placeholder="닉네임 또는 ID 입력" />
+      <div class="gateRow">
+        <button class="btn" id="gateBtn">입장</button>
+        <button class="btn" id="gateReset">초기화</button>
+      </div>
+      <div class="gateMsg" id="gateMsg"></div>
+    </div>
+  </div>
+
   <script>
     // ✅ 네 WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
+
+    // ✅ 같은 폴더(/so.t-leader-choice/)에 rank-hall.json이 있으니 상대경로로 OK
+    const RANK_JSON_URL = "./rank-hall.json";
 
     const fmtKRW = new Intl.NumberFormat("ko-KR");
     const $ = (id) => document.getElementById(id);
 
     // ✅ 기본 탭을 DAYTRADE로 시작
-    let state = { status:null, picks:null, personId:null, category:"DAYTRADE" };
+    let state = {
+      status:null, picks:null, personId:null,
+      category:"DAYTRADE",
+      limitMode:"AUTO",
+      viewer:{ key:"", tier:"", allowed:false }
+    };
 
     function marketToTicker(market){
       if(!market) return "";
@@ -208,6 +264,12 @@
     }
     function upbitLink(market){
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
+    }
+
+    function holdGuide(cat){
+      if(cat === "COLLECT") return "30~180일";
+      if(cat === "SWING") return "3~21일";
+      return "당일~48h";
     }
 
     // JSONP only (CORS 회피)
@@ -247,10 +309,12 @@
       return Array.from(map.values());
     }
 
-    function setSubLine(){
+    function setSubLine(extra=""){
       const last = state.status?.last_refresh || state.picks?.asof || "";
-      const n = state.picks?.items?.length ?? 0;
-      $("subLine").textContent = `Last refresh: ${last} | Picks: ${n}`;
+      const total = state.picks?.items?.length ?? 0;
+      const filtered = filterPicksRaw().length;
+      const tier = state.viewer?.tier ? ` | Tier:${state.viewer.tier}` : "";
+      $("subLine").textContent = `Last refresh: ${last} | Total:${total} | View:${filtered}${tier}${extra ? " | " + extra : ""}`;
     }
 
     function renderPersonSelect(){
@@ -288,18 +352,37 @@
       }
     }
 
-    function filterPicks(){
-      const items = state.picks?.items || [];
-      return items
-        .filter(it => String(it["person_id"]) === String(state.personId))
-        .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
-        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0)); // ✅ 점수 높은게 위
-    }
-
     function chipForCategory(cat){
       if(cat === "COLLECT") return `<span class="chip gold">COLLECT</span>`;
       if(cat === "SWING") return `<span class="chip good">SWING</span>`;
       return `<span class="chip">DAYTRADE</span>`;
+    }
+
+    function filterPicksRaw(){
+      const items = state.picks?.items || [];
+      return items
+        .filter(it => String(it["person_id"]) === String(state.personId))
+        .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
+        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0)); // 점수 높은게 위
+    }
+
+    function applyLimit(arr){
+      const mode = state.limitMode || "AUTO";
+      if(mode === "ALL") return arr;
+
+      if(mode === "AUTO"){
+        // DAYTRADE는 기본 6개, 나머진 전체
+        if(state.category === "DAYTRADE") return arr.slice(0, 6);
+        return arr;
+      }
+
+      const n = Number(mode);
+      if(!Number.isFinite(n) || n <= 0) return arr;
+      return arr.slice(0, n);
+    }
+
+    function filterPicks(){
+      return applyLimit(filterPicksRaw());
     }
 
     function renderCards(){
@@ -331,8 +414,10 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
-        // ✅ 카테고리 탭에서는 1~n 로컬 등수로 표시 (원하는 1~6)
-        const displayRank = (state.category === "ALL") ? (Number(it["rank"]|| (i+1))) : (i+1);
+        // 카테고리 탭에서는 1~n 로컬 등수로 표시
+        const displayRank = (state.category === "ALL")
+          ? (Number(it["rank"] || (i+1)))
+          : (i+1);
 
         const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
         const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
@@ -347,6 +432,7 @@
             </div>
             <div class="chips">
               ${chipForCategory(cat)}
+              <span class="chip">보유:${holdGuide(cat)}</span>
               ${riskChip}
               ${volChip}
               <span class="chip">펌프:${pumpDays}d</span>
@@ -390,13 +476,167 @@
       catch(e){ alert("새로고침 실패: " + e.message); }
     };
 
-    (async function init(){
-      try{ await loadAll(); }
-      catch(e){
+    $("limitSelect").onchange = () => {
+      state.limitMode = $("limitSelect").value;
+      renderAll();
+    };
+
+    // -------------------------
+    // Gate (rank-hall.json)
+    // -------------------------
+    function norm(s){ return String(s ?? "").trim(); }
+    function normUpper(s){ return norm(s).toUpperCase().replace(/\s+/g,""); }
+
+    function tierOk(tierRaw){
+      const t = normUpper(tierRaw);
+      if(!t) return false;
+      if(t.includes("MEMBER")) return false;
+      if(t === "ADMIN" || t === "STAFF") return true;
+
+      // STAR1~ / PRO1~
+      const m1 = t.match(/^STAR(\d+)$/);
+      if(m1) return Number(m1[1]) >= 1;
+
+      const m2 = t.match(/^PRO(\d+)$/);
+      if(m2) return Number(m2[1]) >= 1;
+
+      // 혹시 "STAR_1" 같은 형태 대비
+      const t2 = t.replace(/[_-]/g,"");
+      const m3 = t2.match(/^STAR(\d+)$/);
+      if(m3) return Number(m3[1]) >= 1;
+      const m4 = t2.match(/^PRO(\d+)$/);
+      if(m4) return Number(m4[1]) >= 1;
+
+      return false;
+    }
+
+    function getUserList(data){
+      if(Array.isArray(data)) return data;
+      if(data && Array.isArray(data.items)) return data.items;
+      if(data && Array.isArray(data.members)) return data.members;
+      if(data && Array.isArray(data.users)) return data.users;
+      if(data && typeof data === "object"){
+        for(const k of Object.keys(data)){
+          if(Array.isArray(data[k])) return data[k];
+        }
+      }
+      return [];
+    }
+
+    function readTier(u){
+      const keys = ["tier","rank","grade","level","role","position","title","rank_name","tier_name"];
+      for(const k of keys){
+        if(u && u[k] != null && String(u[k]).trim() !== "") return String(u[k]);
+      }
+      return "";
+    }
+
+    function matchUser(u, key){
+      const k = normUpper(key);
+      if(!k) return false;
+      const fields = ["person_id","id","uid","user_id","member_id","name","nick","nickname","phone","email"];
+      for(const f of fields){
+        const v = normUpper(u?.[f]);
+        if(v && v === k) return true;
+      }
+      // 약하게도 한 번(부분일치)
+      for(const f of fields){
+        const v = normUpper(u?.[f]);
+        if(v && v.includes(k)) return true;
+      }
+      return false;
+    }
+
+    async function fetchRankHall(){
+      const res = await fetch(RANK_JSON_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error("rank-hall.json 로드 실패");
+      return await res.json();
+    }
+
+    async function verifyAccess(viewerKey){
+      const data = await fetchRankHall();
+      const list = getUserList(data);
+      const found = list.find(u => matchUser(u, viewerKey));
+      if(!found){
+        return { ok:false, msg:"rank-hall.json에서 사용자를 못 찾음. 입력값(닉/ID) 확인해줘." };
+      }
+      const tier = readTier(found);
+      if(!tierOk(tier)){
+        return { ok:false, tier, msg:`접근 불가 등급: ${tier} (STAR1/PRO1 이상만 가능)` };
+      }
+      return { ok:true, tier };
+    }
+
+    function showGate(msg=""){
+      $("gate").style.display = "flex";
+      $("gateMsg").textContent = msg;
+      $("gateInput").focus();
+    }
+    function hideGate(){
+      $("gate").style.display = "none";
+      $("gateMsg").textContent = "";
+    }
+
+    $("gateReset").onclick = () => {
+      localStorage.removeItem("upcoin_viewer_key");
+      localStorage.removeItem("upcoin_viewer_tier");
+      state.viewer = {key:"", tier:"", allowed:false};
+      showGate("초기화 완료. 다시 입력해줘.");
+    };
+
+    $("gateBtn").onclick = async () => {
+      try{
+        const key = $("gateInput").value;
+        if(!norm(key)) return $("gateMsg").textContent = "닉네임 또는 ID를 입력해줘.";
+        $("gateMsg").textContent = "확인 중…";
+        const v = await verifyAccess(key);
+        if(!v.ok) return $("gateMsg").textContent = v.msg || "접근 불가";
+
+        state.viewer = { key, tier: v.tier, allowed:true };
+        localStorage.setItem("upcoin_viewer_key", key);
+        localStorage.setItem("upcoin_viewer_tier", v.tier);
+        hideGate();
+        await boot();
+      } catch(e){
+        $("gateMsg").textContent = "확인 실패: " + e.message;
+      }
+    };
+
+    async function boot(){
+      try{
+        await loadAll();
+      } catch(e){
         $("loading").style.display = "none";
         $("subLine").textContent = "로드 실패: " + e.message;
         alert("로드 실패: " + e.message + "\n\nApps Script status/picks가 ok인지 확인해줘.");
       }
+    }
+
+    (async function init(){
+      // limit 기본 AUTO
+      $("limitSelect").value = "AUTO";
+      state.limitMode = "AUTO";
+
+      // Gate: 저장된 키로 자동 시도
+      const savedKey = localStorage.getItem("upcoin_viewer_key") || "";
+      if(savedKey){
+        try{
+          const v = await verifyAccess(savedKey);
+          if(v.ok){
+            state.viewer = { key: savedKey, tier: v.tier, allowed:true };
+            await boot();
+            return;
+          }
+          showGate("저장된 키가 유효하지 않음. 다시 입력해줘.");
+          return;
+        } catch(e){
+          showGate("접근 확인 실패. 다시 입력해줘.");
+          return;
+        }
+      }
+
+      // 처음이면 입력 받기
+      showGate("닉네임 또는 ID를 입력해줘.");
     })();
   </script>
 </body>
