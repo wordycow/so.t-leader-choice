@@ -116,6 +116,8 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
+    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
+
     .meta{
       margin-top:10px;
       display:grid;
@@ -186,14 +188,14 @@
       </div>
 
       <div class="footnote" style="margin-top:10px">
-        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 단타<br/>
+        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DIP = 하방 누적 / DAYTRADE = 단타<br/>
         • 추천금액(final_pos_krw)은 “손절폭 + 유동성(거래대금)” 기반 가이드.
       </div>
     </div>
   </div>
 
   <script>
-    // ✅ 너의 Apps Script WebApp URL 그대로
+    // ✅ 여기만 네 WebApp exec 주소로
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
 
     const fmtKRW = new Intl.NumberFormat("ko-KR");
@@ -210,7 +212,7 @@
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
     }
 
-    // ✅ JSONP (GitHub Pages CORS 회피)
+    // JSONP only (CORS 회피)
     function jsonp(url, timeoutMs = 12000){
       return new Promise((resolve, reject) => {
         const cbName = "__cb_" + Math.random().toString(36).slice(2);
@@ -219,7 +221,7 @@
 
         function cleanup(){
           clearTimeout(timer);
-          try { delete window[cbName]; } catch(_) {}
+          try { delete window[cbName]; } catch(e) {}
           script.remove();
         }
 
@@ -231,9 +233,8 @@
       });
     }
 
-    // ✅ 여기: 캐시 방지용 _=timestamp 붙이고 JSONP만 사용
     async function apiGet(action, params = {}){
-      const qs = new URLSearchParams({ action, ...params, _: Date.now() }).toString();
+      const qs = new URLSearchParams({ action, ...params, _: Date.now() }).toString(); // 캐시 방지
       const url = API_BASE + "?" + qs;
       return await jsonp(url);
     }
@@ -278,7 +279,7 @@
 
     function renderTabs(){
       const tabs = $("tabs");
-      const cats = ["ALL","COLLECT","SWING","DAYTRADE"];
+      const cats = ["ALL","COLLECT","SWING","DIP","DAYTRADE"];
       tabs.innerHTML = "";
       for(const c of cats){
         const el = document.createElement("div");
@@ -300,6 +301,7 @@
     function chipForCategory(cat){
       if(cat === "COLLECT") return `<span class="chip gold">COLLECT</span>`;
       if(cat === "SWING") return `<span class="chip good">SWING</span>`;
+      if(cat === "DIP") return `<span class="chip blue">DIP</span>`;
       return `<span class="chip">DAYTRADE</span>`;
     }
 
@@ -332,8 +334,13 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
+        const downStreak = Number(it["down_streak"] ?? 0);
+        const ret7d = Number(it["ret_7d"] ?? 0);
+
         const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
         const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
+        const downChip = (downStreak > 0) ? `<span class="chip">하방:${downStreak}d</span>` : ``;
+        const ret7Chip = (Number.isFinite(ret7d) && ret7d !== 0) ? `<span class="chip">7d:${(ret7d*100).toFixed(1)}%</span>` : ``;
 
         const card = document.createElement("div");
         card.className = "card";
@@ -347,6 +354,8 @@
               ${chipForCategory(cat)}
               ${riskChip}
               ${volChip}
+              ${downChip}
+              ${ret7Chip}
               <span class="chip">펌프:${pumpDays}d</span>
               <span class="chip">score:${score.toFixed(3)}</span>
             </div>
@@ -385,16 +394,12 @@
 
     $("btnRefresh").onclick = async () => {
       try{ await loadAll(); }
-      catch(e){
-        console.error(e);
-        alert("새로고침 실패: " + e.message);
-      }
+      catch(e){ alert("새로고침 실패: " + e.message); }
     };
 
     (async function init(){
       try{ await loadAll(); }
       catch(e){
-        console.error(e);
         $("loading").style.display = "none";
         $("subLine").textContent = "로드 실패: " + e.message;
         alert("로드 실패: " + e.message + "\n\nApps Script status/picks가 ok인지 확인해줘.");
