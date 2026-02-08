@@ -91,7 +91,6 @@
       overflow:hidden;
     }
     @media (max-width:880px){ .card{grid-column: span 12;} }
-
     .card:before{
       content:"";
       position:absolute; inset:-40% -30%;
@@ -117,7 +116,6 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
-
     .meta{
       margin-top:10px;
       display:grid;
@@ -149,27 +147,6 @@
       50%{transform:scale(1.2); opacity:1}
       100%{transform:scale(0.9); opacity:0.7}
     }
-
-    .historyWrap{display:none}
-    .historyWrap.show{display:block}
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:10px;
-      overflow:hidden;
-      border-radius:14px;
-      border:1px solid var(--line);
-    }
-    th,td{
-      padding:10px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      font-size:12px;
-      color:var(--text);
-    }
-    th{color:var(--muted); text-align:left; background: rgba(255,255,255,0.03)}
-    tr:hover td{background: rgba(255,255,255,0.02)}
-    .right{text-align:right}
-    .muted{color:var(--muted)}
     .warn{
       border-left:4px solid rgba(255,92,122,0.6);
       padding:10px 12px;
@@ -189,84 +166,38 @@
         <h1>so.t – Up Coin</h1>
         <div class="sub" id="subLine">데이터 로딩중…</div>
       </div>
-
       <div class="bar">
         <select class="select" id="personSelect"></select>
         <button class="btn" id="btnRefresh">새로고침</button>
-        <button class="btn" id="btnToggleHistory">히스토리 보기</button>
       </div>
     </div>
 
     <div class="panel">
       <div class="loading" id="loading">
         <div class="dot"></div>
-        <div>오늘의 코인 픽을 가져오는 중…</div>
+        <div>오늘의 픽을 가져오는 중…</div>
       </div>
 
       <div class="tabs" id="tabs"></div>
       <div class="grid" id="cards"></div>
 
       <div class="warn">
-        <b>주의</b>: 이 페이지는 “정보 제공/학습용”입니다. 수익은 보장되지 않으며,
-        변동성이 큰 자산(특히 단타/잡코인)은 손실 위험이 큽니다. 본인 책임 하에 판단하세요.
+        <b>주의</b>: 이 페이지는 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.
       </div>
 
       <div class="footnote" style="margin-top:10px">
-        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 단타 후보<br/>
-        • 추천 금액(final_pos_krw)은 “리스크(손절폭) + 유동성(거래대금)”을 보수적으로 반영한 가이드입니다.
+        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 단타<br/>
+        • 추천금액(final_pos_krw)은 “손절폭 + 유동성(거래대금)” 기반 가이드.
       </div>
     </div>
-
-    <div class="panel historyWrap" id="historyWrap">
-      <div class="row">
-        <div class="title">
-          <div class="ticker">히스토리 (최근 <span id="histDaysLabel">30</span>일)</div>
-          <div class="market muted">매일 09:05(KST) 스냅샷 저장</div>
-        </div>
-        <div class="chips">
-          <span class="chip" id="histCountChip">0 rows</span>
-        </div>
-      </div>
-
-      <table id="historyTable">
-        <thead>
-          <tr>
-            <th>스냅샷</th>
-            <th>마켓</th>
-            <th class="right">가격</th>
-            <th class="right">추천금액</th>
-            <th class="right">손절</th>
-            <th class="right">TP1</th>
-            <th class="right">TP2</th>
-            <th class="right">카테고리</th>
-            <th class="right">점수</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <div class="footnote" style="margin-top:10px">
-        히스토리는 “그날 시작 스냅샷”을 남기는 용도야. 실제 체결/수익과는 다를 수 있어(체결가/슬리피지/수수료 미반영).
-      </div>
-    </div>
-
   </div>
 
   <script>
-    // ✅ 유송 Apps Script WebApp URL
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
-
     const fmtKRW = new Intl.NumberFormat("ko-KR");
     const $ = (id) => document.getElementById(id);
 
-    let state = {
-      status: null,
-      picks: null,
-      history: null,
-      personId: null,
-      category: "ALL",
-      historyDays: 30
-    };
+    let state = { status:null, picks:null, personId:null, category:"ALL" };
 
     function marketToTicker(market){
       if(!market) return "";
@@ -282,10 +213,7 @@
       return new Promise((resolve, reject) => {
         const cbName = "__cb_" + Math.random().toString(36).slice(2);
         const script = document.createElement("script");
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error("JSONP timeout"));
-        }, timeoutMs);
+        const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
 
         function cleanup(){
           clearTimeout(timer);
@@ -304,7 +232,6 @@
     async function apiGet(action, params = {}){
       const qs = new URLSearchParams({ action, ...params }).toString();
       const url = API_BASE + "?" + qs;
-
       try{
         const res = await fetch(url, { method:"GET" });
         if(!res.ok) throw new Error("HTTP " + res.status);
@@ -319,31 +246,27 @@
       for(const it of items){
         const pid = String(it["person_id"] ?? "");
         const name = String(it["name"] ?? pid);
-        if(!pid) continue;
-        if(!map.has(pid)) map.set(pid, { person_id: pid, name });
+        if(pid && !map.has(pid)) map.set(pid, { person_id: pid, name });
       }
       return Array.from(map.values());
     }
 
     function setSubLine(){
       const last = state.status?.last_refresh || state.picks?.asof || "";
-      const picksN = state.picks?.items?.length ?? 0;
-      $("subLine").textContent = `Last refresh: ${last}  |  Picks: ${picksN}`;
+      const n = state.picks?.items?.length ?? 0;
+      $("subLine").textContent = `Last refresh: ${last} | Picks: ${n}`;
     }
 
     function renderPersonSelect(){
       const sel = $("personSelect");
       sel.innerHTML = "";
       const people = uniqPeople(state.picks?.items || []);
-
       if(!people.length){
         const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "인원 없음";
+        opt.value = ""; opt.textContent = "인원 없음";
         sel.appendChild(opt);
         return;
       }
-
       if(!state.personId) state.personId = people[0].person_id;
 
       for(const p of people){
@@ -353,11 +276,7 @@
         if(p.person_id === state.personId) opt.selected = true;
         sel.appendChild(opt);
       }
-
-      sel.onchange = () => {
-        state.personId = sel.value;
-        renderAll();
-      };
+      sel.onchange = () => { state.personId = sel.value; renderAll(); };
     }
 
     function renderTabs(){
@@ -390,13 +309,13 @@
     function renderCards(){
       const wrap = $("cards");
       wrap.innerHTML = "";
-
       const items = filterPicks();
+
       if(!items.length){
         wrap.innerHTML = `<div class="card" style="grid-column: span 12;">
           <div class="title">
             <div class="ticker">표시할 픽이 없음</div>
-            <div class="market">필터 조건/데이터 생성 상태를 확인해줘.</div>
+            <div class="market">데이터 생성/필터 조건을 확인해줘.</div>
           </div>
         </div>`;
         return;
@@ -424,13 +343,8 @@
         card.innerHTML = `
           <div class="row">
             <div class="title">
-              <div class="ticker">
-                #${it["rank"]} ${ticker}
-                <small class="muted" style="font-weight:600">(${cat})</small>
-              </div>
-              <div class="market">
-                <a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a>
-              </div>
+              <div class="ticker">#${it["rank"]} ${ticker} <small class="muted" style="font-weight:600">(${cat})</small></div>
+              <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
             <div class="chips">
               ${chipForCategory(cat)}
@@ -442,62 +356,15 @@
           </div>
 
           <div class="meta">
-            <div class="kv">
-              <div class="k">현재가</div>
-              <div class="v">${fmtKRW.format(price)} <small>KRW</small></div>
-            </div>
-            <div class="kv">
-              <div class="k">추천 매수 금액</div>
-              <div class="v">${fmtKRW.format(Math.floor(posKRW))} <small>KRW</small></div>
-            </div>
-
-            <div class="kv">
-              <div class="k">손절(Stop)</div>
-              <div class="v">${fmtKRW.format(Math.floor(stop))} <small>KRW</small></div>
-            </div>
-            <div class="kv">
-              <div class="k">익절 구간(TP1 / TP2)</div>
-              <div class="v">${fmtKRW.format(Math.floor(tp1))} <small>KRW</small>  ·  ${fmtKRW.format(Math.floor(tp2))} <small>KRW</small></div>
-            </div>
-
-            <div class="kv">
-              <div class="k">30D 위치(pos_in_range)</div>
-              <div class="v">${(pos*100).toFixed(1)}% <small>(낮을수록 바닥권)</small></div>
-            </div>
-            <div class="kv">
-              <div class="k">거래대금 비율(24h / avg7)</div>
-              <div class="v">${volRatio.toFixed(2)} <small>(높을수록 수급↑)</small></div>
-            </div>
+            <div class="kv"><div class="k">현재가</div><div class="v">${fmtKRW.format(price)} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${fmtKRW.format(Math.floor(posKRW))} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">손절(Stop)</div><div class="v">${fmtKRW.format(Math.floor(stop))} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${fmtKRW.format(Math.floor(tp1))} <small>KRW</small> · ${fmtKRW.format(Math.floor(tp2))} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">30D 위치</div><div class="v">${(pos*100).toFixed(1)}% <small>(낮을수록 바닥권)</small></div></div>
+            <div class="kv"><div class="k">24h/avg7</div><div class="v">${volRatio.toFixed(2)} <small>(높을수록 수급↑)</small></div></div>
           </div>
         `;
         wrap.appendChild(card);
-      }
-    }
-
-    function renderHistory(){
-      const tbody = $("historyTable").querySelector("tbody");
-      tbody.innerHTML = "";
-
-      const items = (state.history?.items || [])
-        .filter(it => String(it["person_id"]) === String(state.personId))
-        .sort((a,b) => String(b["snapshot_time"]).localeCompare(String(a["snapshot_time"])));
-
-      $("histCountChip").textContent = `${items.length} rows`;
-
-      for(const it of items.slice(0, 200)){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="muted">${it["snapshot_time"] || ""}</td>
-          <td>${it["market"] || ""}</td>
-          <td class="right">${fmtKRW.format(Math.floor(Number(it["price"]||0)))}</td>
-          <td class="right">${fmtKRW.format(Math.floor(Number(it["final_pos_krw"]||0)))}</td>
-          <td class="right">${fmtKRW.format(Math.floor(Number(it["stop_price"]||0)))}</td>
-          <td class="right">${fmtKRW.format(Math.floor(Number(it["tp1_price"]||0)))}</td>
-          <td class="right">${fmtKRW.format(Math.floor(Number(it["tp2_price"]||0)))}</td>
-          <td class="right">${it["category"] || ""}</td>
-          <td class="right">${Number(it["score"]||0).toFixed(3)}</td>
-        `;
-        tbody.appendChild(tr);
       }
     }
 
@@ -505,64 +372,28 @@
       setSubLine();
       renderTabs();
       renderCards();
-      if($("historyWrap").classList.contains("show")) renderHistory();
       $("loading").style.display = "none";
     }
 
     async function loadAll(){
       $("loading").style.display = "flex";
-
-      const [status, picks] = await Promise.all([
-        apiGet("status"),
-        apiGet("picks")
-      ]);
-
+      const [status, picks] = await Promise.all([ apiGet("status"), apiGet("picks") ]);
       if(!status.ok) throw new Error("status error: " + (status.error || "unknown"));
       if(!picks.ok) throw new Error("picks error: " + (picks.error || "unknown"));
-
       state.status = status;
       state.picks = picks;
-
       renderPersonSelect();
       renderAll();
     }
 
-    async function loadHistory(){
-      const days = state.historyDays || 30;
-      $("histDaysLabel").textContent = String(days);
-
-      const hist = await apiGet("history", { days: String(days) });
-      if(!hist.ok) throw new Error("history error: " + (hist.error || "unknown"));
-      state.history = hist;
-      renderHistory();
-    }
-
     $("btnRefresh").onclick = async () => {
-      try{
-        await loadAll();
-        if($("historyWrap").classList.contains("show")) await loadHistory();
-      }catch(e){
-        alert("새로고침 실패: " + e.message);
-      }
-    };
-
-    $("btnToggleHistory").onclick = async () => {
-      const wrap = $("historyWrap");
-      wrap.classList.toggle("show");
-      if(wrap.classList.contains("show")){
-        try{
-          if(!state.history) await loadHistory();
-          else renderHistory();
-        }catch(e){
-          alert("히스토리 로드 실패: " + e.message);
-        }
-      }
+      try{ await loadAll(); }
+      catch(e){ alert("새로고침 실패: " + e.message); }
     };
 
     (async function init(){
-      try{
-        await loadAll();
-      }catch(e){
+      try{ await loadAll(); }
+      catch(e){
         $("loading").style.display = "none";
         $("subLine").textContent = "로드 실패: " + e.message;
         alert("로드 실패: " + e.message + "\n\nApps Script status/picks가 ok인지 확인해줘.");
