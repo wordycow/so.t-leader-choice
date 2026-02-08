@@ -116,8 +116,6 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
-    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
-
     .meta{
       margin-top:10px;
       display:grid;
@@ -135,7 +133,6 @@
     .kv .k{font-size:11px; color:var(--muted)}
     .kv .v{margin-top:6px; font-size:14px; font-weight:650}
     .kv .v small{font-size:12px; color:var(--muted); font-weight:500}
-
     .footnote{color:var(--muted); font-size:12px; line-height:1.5;}
     .loading{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;}
     .dot{
@@ -188,20 +185,21 @@
       </div>
 
       <div class="footnote" style="margin-top:10px">
-        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DIP = 하방 누적 / DAYTRADE = 단타<br/>
+        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 데일리 트레이딩<br/>
         • 추천금액(final_pos_krw)은 “손절폭 + 유동성(거래대금)” 기반 가이드.
       </div>
     </div>
   </div>
 
   <script>
-    // ✅ 여기만 네 WebApp exec 주소로
+    // ✅ 네 WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
 
     const fmtKRW = new Intl.NumberFormat("ko-KR");
     const $ = (id) => document.getElementById(id);
 
-    let state = { status:null, picks:null, personId:null, category:"ALL" };
+    // ✅ 기본 탭을 DAYTRADE로 시작
+    let state = { status:null, picks:null, personId:null, category:"DAYTRADE" };
 
     function marketToTicker(market){
       if(!market) return "";
@@ -279,7 +277,7 @@
 
     function renderTabs(){
       const tabs = $("tabs");
-      const cats = ["ALL","COLLECT","SWING","DIP","DAYTRADE"];
+      const cats = ["ALL","COLLECT","SWING","DAYTRADE"];
       tabs.innerHTML = "";
       for(const c of cats){
         const el = document.createElement("div");
@@ -295,13 +293,12 @@
       return items
         .filter(it => String(it["person_id"]) === String(state.personId))
         .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
-        .sort((a,b) => Number(a["rank"]||999) - Number(b["rank"]||999));
+        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0)); // ✅ 점수 높은게 위
     }
 
     function chipForCategory(cat){
       if(cat === "COLLECT") return `<span class="chip gold">COLLECT</span>`;
       if(cat === "SWING") return `<span class="chip good">SWING</span>`;
-      if(cat === "DIP") return `<span class="chip blue">DIP</span>`;
       return `<span class="chip">DAYTRADE</span>`;
     }
 
@@ -320,7 +317,7 @@
         return;
       }
 
-      for(const it of items){
+      items.forEach((it, i) => {
         const market = it["market"];
         const ticker = marketToTicker(market);
         const price = Number(it["price"]||0);
@@ -334,28 +331,24 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
-        const downStreak = Number(it["down_streak"] ?? 0);
-        const ret7d = Number(it["ret_7d"] ?? 0);
+        // ✅ 카테고리 탭에서는 1~n 로컬 등수로 표시 (원하는 1~6)
+        const displayRank = (state.category === "ALL") ? (Number(it["rank"]|| (i+1))) : (i+1);
 
         const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
         const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
-        const downChip = (downStreak > 0) ? `<span class="chip">하방:${downStreak}d</span>` : ``;
-        const ret7Chip = (Number.isFinite(ret7d) && ret7d !== 0) ? `<span class="chip">7d:${(ret7d*100).toFixed(1)}%</span>` : ``;
 
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="row">
             <div class="title">
-              <div class="ticker">#${it["rank"]} ${ticker} <small class="muted" style="font-weight:600">(${cat})</small></div>
+              <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:600;color:#9fb0d6">(${cat})</small></div>
               <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
             <div class="chips">
               ${chipForCategory(cat)}
               ${riskChip}
               ${volChip}
-              ${downChip}
-              ${ret7Chip}
               <span class="chip">펌프:${pumpDays}d</span>
               <span class="chip">score:${score.toFixed(3)}</span>
             </div>
@@ -371,7 +364,7 @@
           </div>
         `;
         wrap.appendChild(card);
-      }
+      });
     }
 
     function renderAll(){
