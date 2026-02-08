@@ -9,7 +9,7 @@
   <style>
     :root{
       --bg:#070b18; --panel:#0b1226; --line:#223054; --text:#eaf0ff; --muted:#9fb0d6;
-      --gold:#f7c948; --good:#3ddc97; --bad:#ff5c7a; --blue:#4da3ff;
+      --gold:#f7c948; --good:#3ddc97; --bad:#ff5c7a; --blue:#4da3ff; --purple:#a78bfa;
       --shadow: 0 10px 30px rgba(0,0,0,0.35);
       --r:16px;
     }
@@ -21,14 +21,15 @@
                   radial-gradient(circle at 80% 0%, rgba(247,201,72,0.10), transparent 35%),
                   var(--bg);
       color:var(--text);
-      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     }
     a{color:inherit; text-decoration:none}
     .wrap{max-width:1100px; margin:0 auto; padding:18px}
-    .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;}
-    .brand{display:flex; flex-direction:column; gap:4px;}
+    .top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;}
+    .brand{display:flex; flex-direction:column; gap:6px;}
     .brand h1{margin:0; font-size:18px; letter-spacing:0.4px}
     .brand .sub{color:var(--muted); font-size:12px}
+    .brand .hint{color:rgba(159,176,214,0.85); font-size:12px; line-height:1.35}
     .bar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end;}
     .btn{
       border:1px solid var(--line);
@@ -38,8 +39,13 @@
       border-radius:12px;
       cursor:pointer;
       box-shadow: var(--shadow);
+      white-space:nowrap;
     }
     .btn:hover{border-color:#2f4477}
+    .btn.primary{
+      border-color: rgba(77,163,255,0.45);
+      background: rgba(77,163,255,0.12);
+    }
     .select{
       border:1px solid var(--line);
       background: rgba(255,255,255,0.03);
@@ -47,7 +53,7 @@
       padding:10px 12px;
       border-radius:12px;
       outline:none;
-      min-width:160px;
+      min-width:170px;
       box-shadow: var(--shadow);
     }
     .panel{
@@ -58,6 +64,17 @@
       box-shadow: var(--shadow);
       margin-bottom:12px;
     }
+    .banner{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border:1px solid rgba(34,48,84,0.9);
+      background: rgba(0,0,0,0.22);
+      border-radius:14px;
+      margin-bottom:10px;
+    }
+    .banner .left{display:flex; flex-direction:column; gap:4px}
+    .banner .t{font-size:12px; color:rgba(234,240,255,0.95); font-weight:700}
+    .banner .d{font-size:12px; color:var(--muted)}
     .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
     .tab{
       border:1px solid var(--line);
@@ -100,9 +117,9 @@
       pointer-events:none;
     }
     .card > *{position:relative}
-    .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .row{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
     .title{display:flex; flex-direction:column; gap:4px;}
-    .title .ticker{font-size:16px; font-weight:700; letter-spacing:0.3px}
+    .title .ticker{font-size:16px; font-weight:800; letter-spacing:0.3px}
     .title .market{font-size:12px; color:var(--muted)}
     .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
     .chip{
@@ -117,6 +134,14 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
+    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
+    .chip.purple{color:var(--purple); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.10)}
+
+    /* 타이밍 배지 */
+    .chip.ok{color:var(--good); border-color: rgba(61,220,151,0.45); background: rgba(61,220,151,0.14); font-weight:800}
+    .chip.wait{color:rgba(234,240,255,0.85); border-color: rgba(159,176,214,0.35); background: rgba(159,176,214,0.10); font-weight:800}
+    .chip.soon{color:var(--gold); border-color: rgba(247,201,72,0.45); background: rgba(247,201,72,0.14); font-weight:800}
+
     .meta{
       margin-top:10px;
       display:grid;
@@ -132,8 +157,26 @@
     }
     @media (max-width:880px){ .kv{grid-column: span 12;} }
     .kv .k{font-size:11px; color:var(--muted)}
-    .kv .v{margin-top:6px; font-size:14px; font-weight:650}
-    .kv .v small{font-size:12px; color:var(--muted); font-weight:500}
+    .kv .v{margin-top:6px; font-size:14px; font-weight:700}
+    .kv .v small{font-size:12px; color:var(--muted); font-weight:600}
+
+    .cardActions{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .miniBtn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      box-shadow: var(--shadow);
+    }
+    .miniBtn:hover{border-color:#2f4477}
+    .miniBtn.copy{border-color: rgba(247,201,72,0.45); background: rgba(247,201,72,0.10)}
+    .miniBtn.go{border-color: rgba(77,163,255,0.45); background: rgba(77,163,255,0.10)}
 
     .footnote{color:var(--muted); font-size:12px; line-height:1.5;}
     .loading{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;}
@@ -166,19 +209,21 @@
       <div class="brand">
         <h1>so.t – Up Coin</h1>
         <div class="sub" id="subLine">데이터 로딩중…</div>
+        <div class="hint">
+          • <b>OK</b>면 “진입 후보”, <b>SOON</b>이면 “곧 진입”, <b>WAIT</b>이면 “대기”<br/>
+          • DAYTRADE는 기본 <b>09:15~11:30</b>, <b>20:30~01:30</b>을 추천 시간대로 사용(수정 가능)
+        </div>
       </div>
       <div class="bar">
-        <select class="select" id="personSelect"></select>
-
-        <!-- ✅ 표시 개수 -->
-        <select class="select" id="limitSelect" style="min-width:120px">
-          <option value="6">6개</option>
-          <option value="12">12개</option>
-          <option value="24">24개</option>
-          <option value="9999">전체</option>
+        <select class="select" id="timingMode">
+          <option value="AUTO">타이밍: AUTO(추천)</option>
+          <option value="DAY">타이밍: 주간(09~11)</option>
+          <option value="NIGHT">타이밍: 야간(20~01)</option>
+          <option value="ALL">타이밍: 제한없음</option>
         </select>
 
-        <button class="btn" id="btnRefresh">새로고침</button>
+        <select class="select" id="personSelect"></select>
+        <button class="btn primary" id="btnRefresh">새로고침</button>
       </div>
     </div>
 
@@ -188,16 +233,25 @@
         <div>오늘의 픽을 가져오는 중…</div>
       </div>
 
+      <div class="banner" id="banner" style="display:none">
+        <div class="left">
+          <div class="t" id="bannerTitle">타이밍 안내</div>
+          <div class="d" id="bannerDesc">-</div>
+        </div>
+        <div class="chips" id="bannerChips"></div>
+      </div>
+
       <div class="tabs" id="tabs"></div>
       <div class="grid" id="cards"></div>
 
       <div class="warn">
-        <b>주의</b>: 이 페이지는 정보 제공/학습용. 수익 보장 없음. 손실 가능. 전부 본인 책임.
+        <b>주의</b>: 이 페이지는 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.
       </div>
 
       <div class="footnote" style="margin-top:10px">
         • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 데일리 트레이딩<br/>
-        • 추천금액(final_pos_krw)은 “손절폭 + 유동성(거래대금)” 기반 가이드.
+        • 추천금액(final_pos_krw)은 “손절폭 + 유동성(거래대금)” 기반 가이드.<br/>
+        • 펌프(pump) = 과거 특정 기준(+수익률 & 거래대금 급증)을 만족한 “급등일”을 뜻함. “펌프: 7d”면 7일 전쯤 그런 날이 있었다는 의미.
       </div>
     </div>
   </div>
@@ -206,11 +260,28 @@
     // ✅ 네 WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
 
+    // =========================
+    // ✅ 추천 타이밍(원하면 여기만 바꾸면 됨)
+    // =========================
+    const WINDOWS = {
+      DAYTRADE: [
+        { start: "09:15", end: "11:30" },
+        { start: "20:30", end: "01:30" }
+      ],
+      SWING: [
+        { start: "10:00", end: "16:00" },
+        { start: "20:00", end: "00:30" }
+      ],
+      COLLECT: [
+        { start: "09:00", end: "12:00" }
+      ]
+    };
+
     const fmtKRW = new Intl.NumberFormat("ko-KR");
     const $ = (id) => document.getElementById(id);
 
-    // ✅ 기본 탭 DAYTRADE, 기본 표시 6개
-    let state = { status:null, picks:null, personId:null, category:"DAYTRADE", limit: 6 };
+    // ✅ 기본 탭
+    let state = { status:null, picks:null, personId:null, category:"ALL" };
 
     function marketToTicker(market){
       if(!market) return "";
@@ -219,12 +290,6 @@
     }
     function upbitLink(market){
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
-    }
-
-    function holdGuide(cat){
-      if(cat === "COLLECT") return "보유:30~180일";
-      if(cat === "SWING") return "보유:3~21일";
-      return "보유:당일~48h";
     }
 
     // JSONP only (CORS 회피)
@@ -249,7 +314,7 @@
     }
 
     async function apiGet(action, params = {}){
-      const qs = new URLSearchParams({ action, ...params, _: Date.now() }).toString();
+      const qs = new URLSearchParams({ action, ...params, _: Date.now() }).toString(); // 캐시 방지
       const url = API_BASE + "?" + qs;
       return await jsonp(url);
     }
@@ -267,7 +332,7 @@
     function setSubLine(){
       const last = state.status?.last_refresh || state.picks?.asof || "";
       const n = state.picks?.items?.length ?? 0;
-      $("subLine").textContent = `Last refresh: ${last} | Picks rows: ${n}`;
+      $("subLine").textContent = `Last refresh: ${last} | Picks: ${n}`;
     }
 
     function renderPersonSelect(){
@@ -294,7 +359,7 @@
 
     function renderTabs(){
       const tabs = $("tabs");
-      const cats = ["DAYTRADE","SWING","COLLECT","ALL"];
+      const cats = ["ALL","COLLECT","SWING","DAYTRADE"];
       tabs.innerHTML = "";
       for(const c of cats){
         const el = document.createElement("div");
@@ -305,15 +370,92 @@
       }
     }
 
+    function holdGuide(cat){
+      if(cat === "COLLECT") return "30~180일";
+      if(cat === "SWING") return "3~21일";
+      return "당일~48h";
+    }
+
+    // =========================
+    // ✅ 시간/타이밍 어드바이스
+    // =========================
+    function kstNow(){
+      // 브라우저가 한국이어도 안전하게 KST로 맞춤
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      return new Date(utc + (9 * 3600000));
+    }
+    function hhmm(d){
+      const h = String(d.getHours()).padStart(2,"0");
+      const m = String(d.getMinutes()).padStart(2,"0");
+      return `${h}:${m}`;
+    }
+    function parseHHMM(s){
+      const [h,m] = String(s).split(":").map(Number);
+      return (h*60 + m) % 1440;
+    }
+    function minutesOfDay(d){ return d.getHours()*60 + d.getMinutes(); }
+    function inWindow(nowMin, startMin, endMin){
+      if(endMin >= startMin) return nowMin >= startMin && nowMin <= endMin;
+      // 자정 넘어감
+      return (nowMin >= startMin) || (nowMin <= endMin);
+    }
+    function nextStartDelta(nowMin, startMin){
+      if(startMin >= nowMin) return startMin - nowMin;
+      return (1440 - nowMin) + startMin;
+    }
+
+    function getWindowsByCat(cat){
+      const mode = $("timingMode").value;
+      if(mode === "ALL") return [{start:"00:00", end:"23:59"}];
+      if(mode === "DAY") return [{start:"09:15", end:"11:30"}];
+      if(mode === "NIGHT") return [{start:"20:30", end:"01:30"}];
+
+      // AUTO
+      if(cat === "COLLECT") return WINDOWS.COLLECT;
+      if(cat === "SWING") return WINDOWS.SWING;
+      return WINDOWS.DAYTRADE;
+    }
+
+    function timeAdvice(cat){
+      const now = kstNow();
+      const nowMin = minutesOfDay(now);
+      const wins = getWindowsByCat(cat);
+
+      let isOk = false;
+      let bestDelta = 999999;
+      let bestStart = null;
+
+      for(const w of wins){
+        const s = parseHHMM(w.start);
+        const e = parseHHMM(w.end);
+        if(inWindow(nowMin, s, e)) isOk = true;
+        const d = nextStartDelta(nowMin, s);
+        if(d < bestDelta){ bestDelta = d; bestStart = w.start; }
+      }
+
+      const windowStr = wins.map(w => `${w.start}~${w.end}`).join(" / ");
+      if(isOk){
+        return { cls:"ok", label:"지금 OK", windowStr, next:`진행중`, nextIn:`-` };
+      }
+
+      // 90분 이내면 SOON
+      if(bestDelta <= 90){
+        return { cls:"soon", label:"곧 진입", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
+      }
+
+      return { cls:"wait", label:"대기", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
+    }
+
+    // =========================
+    // Picks 필터/렌더
+    // =========================
     function filterPicks(){
       const items = state.picks?.items || [];
-      const filtered = items
+      return items
         .filter(it => String(it["person_id"]) === String(state.personId))
         .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
-        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0)); // score 높은 순
-
-      const lim = Number(state.limit || 6);
-      return filtered.slice(0, Math.max(1, lim));
+        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0)); // 점수 높은게 위
     }
 
     function chipForCategory(cat){
@@ -322,16 +464,79 @@
       return `<span class="chip">DAYTRADE</span>`;
     }
 
+    function renderBanner(items){
+      const b = $("banner");
+      b.style.display = "flex";
+
+      const cat = (state.category === "ALL") ? "DAYTRADE" : state.category;
+      const adv = timeAdvice(cat === "COLLECT" || cat === "SWING" ? cat : "DAYTRADE");
+
+      $("bannerTitle").textContent = `타이밍: ${$("timingMode").options[$("timingMode").selectedIndex].text}`;
+      $("bannerDesc").textContent = `현재(KST ${hhmm(kstNow())}) 기준: ${adv.label} · 다음 추천 시작: ${adv.next} (${adv.nextIn}) · 권장 시간대: ${adv.windowStr}`;
+
+      $("bannerChips").innerHTML = `
+        <span class="chip ${adv.cls}">${adv.label}</span>
+        <span class="chip purple">KST ${hhmm(kstNow())}</span>
+        <span class="chip">다음: ${adv.next} (${adv.nextIn})</span>
+      `;
+    }
+
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        alert("가이드 복사 완료 ✅");
+      }catch(e){
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        alert("가이드 복사 완료 ✅");
+      }
+    }
+
+    function buildGuideText(it){
+      const cat = String(it["category"]||"DAYTRADE");
+      const adv = timeAdvice(cat);
+      const market = String(it["market"]||"");
+      const ticker = marketToTicker(market);
+      const price = Number(it["price"]||0);
+      const posKRW = Number(it["final_pos_krw"]||0);
+      const stop = Number(it["stop_price"]||0);
+      const tp1 = Number(it["tp1_price"]||0);
+      const tp2 = Number(it["tp2_price"]||0);
+
+      return [
+        `so.t 픽 가이드`,
+        `- 코인: ${ticker} (${market}) [${cat}]`,
+        `- 현재가: ${fmtKRW.format(price)} KRW`,
+        `- 추천 매수금: ${fmtKRW.format(Math.floor(posKRW))} KRW`,
+        `- 손절: ${fmtKRW.format(Math.floor(stop))} KRW`,
+        `- 익절: TP1 ${fmtKRW.format(Math.floor(tp1))} / TP2 ${fmtKRW.format(Math.floor(tp2))} KRW`,
+        `- 권장 보유: ${holdGuide(cat)}`,
+        `- 진입 타이밍: ${adv.label} / 권장시간대: ${adv.windowStr} / 다음: ${adv.next} (${adv.nextIn})`,
+        ``,
+        `운영 규칙(간단):`,
+        `1) 손절가 터치 = 즉시 종료`,
+        `2) TP1 도달 시 일부 익절 + 나머지 본절(또는 약익절)로 스탑 올리기`,
+        `3) DAYTRADE는 6시간 내 TP1 못가면 힘없음 → 절반/전량 정리 고려`
+      ].join("\n");
+    }
+
     function renderCards(){
       const wrap = $("cards");
       wrap.innerHTML = "";
       const items = filterPicks();
 
+      renderBanner(items);
+
       if(!items.length){
         wrap.innerHTML = `<div class="card" style="grid-column: span 12;">
           <div class="title">
             <div class="ticker">표시할 픽이 없음</div>
-            <div class="market">백엔드 Picks 생성 조건(TOP_N / max_positions)을 확인해줘.</div>
+            <div class="market">데이터 생성/필터 조건을 확인해줘.</div>
           </div>
         </div>`;
         return;
@@ -351,21 +556,25 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
-        const displayRank = i + 1;
+        // 탭에서는 1~n 로컬 순위
+        const displayRank = (state.category === "ALL") ? (Number(it["rank"]|| (i+1))) : (i+1);
+
         const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
         const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
+
+        const adv = timeAdvice(cat);
 
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="row">
             <div class="title">
-              <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:600;color:#9fb0d6">(${cat})</small></div>
+              <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:700;color:#9fb0d6">(${cat})</small></div>
               <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
             <div class="chips">
               ${chipForCategory(cat)}
-              <span class="chip">${holdGuide(cat)}</span>
+              <span class="chip ${adv.cls}">${adv.label}</span>
               ${riskChip}
               ${volChip}
               <span class="chip">펌프:${pumpDays}d</span>
@@ -378,10 +587,20 @@
             <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${fmtKRW.format(Math.floor(posKRW))} <small>KRW</small></div></div>
             <div class="kv"><div class="k">손절(Stop)</div><div class="v">${fmtKRW.format(Math.floor(stop))} <small>KRW</small></div></div>
             <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${fmtKRW.format(Math.floor(tp1))} <small>KRW</small> · ${fmtKRW.format(Math.floor(tp2))} <small>KRW</small></div></div>
-            <div class="kv"><div class="k">30D 위치</div><div class="v">${(pos*100).toFixed(1)}% <small>(낮을수록 바닥권)</small></div></div>
-            <div class="kv"><div class="k">24h/avg7</div><div class="v">${volRatio.toFixed(2)} <small>(높을수록 수급↑)</small></div></div>
+            <div class="kv"><div class="k">추천 진입 시간대(KST)</div><div class="v">${adv.windowStr}<br/><small>다음: ${adv.next} (${adv.nextIn})</small></div></div>
+            <div class="kv"><div class="k">권장 보유</div><div class="v">${holdGuide(cat)}<br/><small>DAYTRADE는 6시간 내 TP1 실패 시 정리 고려</small></div></div>
+          </div>
+
+          <div class="cardActions">
+            <button class="miniBtn go" data-go="${market}">업비트 열기</button>
+            <button class="miniBtn copy" data-copy="${i}">매수 가이드 복사</button>
           </div>
         `;
+
+        // 버튼 바인딩
+        card.querySelector('[data-go]').onclick = () => window.open(upbitLink(market), "_blank", "noopener");
+        card.querySelector('[data-copy]').onclick = () => copyText(buildGuideText(it));
+
         wrap.appendChild(card);
       });
     }
@@ -404,15 +623,12 @@
       renderAll();
     }
 
-    $("limitSelect").onchange = () => {
-      state.limit = Number($("limitSelect").value || 6);
-      renderAll();
-    };
-
     $("btnRefresh").onclick = async () => {
       try{ await loadAll(); }
       catch(e){ alert("새로고침 실패: " + e.message); }
     };
+
+    $("timingMode").onchange = () => renderAll();
 
     (async function init(){
       try{ await loadAll(); }
