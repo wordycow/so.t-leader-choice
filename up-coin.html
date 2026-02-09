@@ -134,7 +134,6 @@
     .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
     .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
     .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
-    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
     .chip.purple{color:var(--purple); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.10)}
     .chip.ok{color:var(--good); border-color: rgba(61,220,151,0.45); background: rgba(61,220,151,0.14); font-weight:900}
     .chip.wait{color:rgba(234,240,255,0.85); border-color: rgba(159,176,214,0.35); background: rgba(159,176,214,0.10); font-weight:900}
@@ -172,6 +171,7 @@
     .miniBtn:hover{border-color:#2f4477}
     .miniBtn.copy{border-color: rgba(247,201,72,0.45); background: rgba(247,201,72,0.10)}
     .miniBtn.go{border-color: rgba(77,163,255,0.45); background: rgba(77,163,255,0.10)}
+    .miniBtn:disabled{opacity:0.45; cursor:not-allowed}
 
     .footnote{color:var(--muted); font-size:12px; line-height:1.5;}
     .loading{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;}
@@ -205,8 +205,8 @@
         <h1>so.t – Up Coin</h1>
         <div class="sub" id="subLine">데이터 로딩중…</div>
         <div class="hint">
-          • <b>현재가</b>는 이제 <b>실시간</b>으로 15초마다 갱신됨(업비트 ticker)<br/>
-          • DAYTRADE 추천 진입 시간대: <b>09:15~11:30</b>, <b>20:30~01:30</b> (AUTO 기준)
+          • <b>현재가(실시간)</b>는 업비트 ticker로 <b>15초마다</b> 갱신됨<br/>
+          • 손절/익절은 “스냅샷 기준 가이드”라 실시간가와 차이 날 수 있음 (차이 크면 경고 표시)
         </div>
       </div>
       <div class="bar">
@@ -247,24 +247,15 @@
       <div class="grid" id="cards"></div>
 
       <div class="warn">
-        <b>주의</b>: 이 페이지는 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.
-      </div>
-
-      <div class="footnote" style="margin-top:10px">
-        • COLLECT = 모으기(코어) / SWING = 중장기(스윙) / DAYTRADE = 데일리 트레이딩<br/>
-        • 손절/익절 라인은 “스냅샷 기준”으로 계산된 가이드(실시간 가격과 차이 날 수 있음).<br/>
-        • 펌프(pump) = 과거 특정 기준(+수익률 & 거래대금 급증)을 만족한 “급등일”. “펌프:7d”면 대략 7일 전쯤 있었다는 뜻.
+        <b>주의</b>: 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.
       </div>
     </div>
   </div>
 
   <script>
-    // ✅ 네 WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
+    const $ = (id) => document.getElementById(id);
 
-    // =========================
-    // ✅ 추천 타이밍(원하면 여기만 바꾸면 됨)
-    // =========================
     const WINDOWS = {
       DAYTRADE: [
         { start: "09:15", end: "11:30" },
@@ -279,12 +270,42 @@
       ]
     };
 
-    const fmtKRW = new Intl.NumberFormat("ko-KR");
-    const $ = (id) => document.getElementById(id);
-
     let state = { status:null, picks:null, personId:null, category:"ALL" };
     let liveTimer = null;
 
+    // -------------------------
+    // ✅ 업비트 호가 단위 기반 표시(소수점 문제 해결 핵심)
+    // -------------------------
+    function tickSizeKRW(price){
+      const p = Number(price || 0);
+      if (p >= 2000000) return 1000;
+      if (p >= 1000000) return 500;
+      if (p >= 500000)  return 100;
+      if (p >= 100000)  return 50;
+      if (p >= 10000)   return 10;
+      if (p >= 1000)    return 1;
+      if (p >= 100)     return 1;    // 100~999는 1원 단위
+      if (p >= 10)      return 0.1;  // 10~99.9는 0.1원
+      if (p >= 1)       return 0.01; // 1~9.99는 0.01원
+      return 0.001;
+    }
+
+    function decimalsByTick(tick){
+      if (tick >= 1) return 0;
+      if (tick >= 0.1) return 1;
+      if (tick >= 0.01) return 2;
+      if (tick >= 0.001) return 3;
+      return 4;
+    }
+
+    function formatKRWAuto(val, refPriceForTick){
+      const tick = tickSizeKRW(refPriceForTick ?? val);
+      const dec = decimalsByTick(tick);
+      const n = Number(val || 0);
+      return new Intl.NumberFormat("ko-KR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+    }
+
+    // -------------------------
     function marketToTicker(market){
       if(!market) return "";
       const parts = String(market).split("-");
@@ -294,7 +315,7 @@
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
     }
 
-    // JSONP only (CORS 회피)
+    // JSONP
     function jsonp(url, timeoutMs = 12000){
       return new Promise((resolve, reject) => {
         const cbName = "__cb_" + Math.random().toString(36).slice(2);
@@ -355,7 +376,7 @@
         if(p.person_id === state.personId) opt.selected = true;
         sel.appendChild(opt);
       }
-      sel.onchange = () => { state.personId = sel.value; renderAll(); startLiveLoop(); };
+      sel.onchange = () => { state.personId = sel.value; renderAll(); startLiveLoop(true); };
     }
 
     function renderTabs(){
@@ -366,7 +387,7 @@
         const el = document.createElement("div");
         el.className = "tab" + (state.category === c ? " active" : "");
         el.textContent = c;
-        el.onclick = () => { state.category = c; renderAll(); startLiveLoop(); };
+        el.onclick = () => { state.category = c; renderAll(); startLiveLoop(true); };
         tabs.appendChild(el);
       }
     }
@@ -377,9 +398,7 @@
       return "당일~48h";
     }
 
-    // =========================
-    // ✅ 시간/타이밍 어드바이스
-    // =========================
+    // 시간/타이밍
     function kstNow(){
       const now = new Date();
       const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -433,18 +452,11 @@
       }
 
       const windowStr = wins.map(w => `${w.start}~${w.end}`).join(" / ");
-      if(isOk){
-        return { cls:"ok", label:"지금 OK", windowStr, next:`진행중`, nextIn:`-` };
-      }
-      if(bestDelta <= 90){
-        return { cls:"soon", label:"곧 진입", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
-      }
+      if(isOk) return { cls:"ok", label:"지금 OK", windowStr, next:`진행중`, nextIn:`-` };
+      if(bestDelta <= 90) return { cls:"soon", label:"곧 진입", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
       return { cls:"wait", label:"대기", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
     }
 
-    // =========================
-    // Picks 필터/렌더
-    // =========================
     function filterPicks(){
       const items = state.picks?.items || [];
       const maxN = Number($("viewCount").value || 20);
@@ -463,7 +475,7 @@
       return `<span class="chip">DAYTRADE</span>`;
     }
 
-    function renderBanner(items){
+    function renderBanner(){
       const b = $("banner");
       b.style.display = "flex";
 
@@ -513,11 +525,11 @@
       return [
         `so.t 매수 가이드`,
         `- 코인: ${ticker} (${market}) [${cat}]`,
-        `- 현재가(실시간): ${fmtKRW.format(livePrice)} KRW`,
-        `- 스냅샷가(시트): ${fmtKRW.format(snapPrice)} KRW`,
-        `- 추천 매수금: ${fmtKRW.format(Math.floor(posKRW))} KRW`,
-        `- 손절: ${fmtKRW.format(Math.floor(stop))} KRW`,
-        `- 익절: TP1 ${fmtKRW.format(Math.floor(tp1))} / TP2 ${fmtKRW.format(Math.floor(tp2))} KRW`,
+        `- 현재가(실시간): ${formatKRWAuto(livePrice, livePrice)} KRW`,
+        `- 스냅샷가(시트): ${formatKRWAuto(snapPrice, snapPrice)} KRW`,
+        `- 추천 매수금: ${new Intl.NumberFormat("ko-KR").format(Math.floor(posKRW))} KRW`,
+        `- 손절: ${formatKRWAuto(stop, snapPrice)} KRW`,
+        `- 익절: TP1 ${formatKRWAuto(tp1, snapPrice)} / TP2 ${formatKRWAuto(tp2, snapPrice)} KRW`,
         `- 권장 보유: ${holdGuide(cat)}`,
         `- 진입 타이밍: ${adv.label} / 권장시간대: ${adv.windowStr} / 다음: ${adv.next} (${adv.nextIn})`,
         ``,
@@ -533,7 +545,7 @@
       wrap.innerHTML = "";
       const items = filterPicks();
 
-      renderBanner(items);
+      renderBanner();
 
       if(!items.length){
         wrap.innerHTML = `<div class="card" style="grid-column: span 12;">
@@ -561,7 +573,7 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
-        const displayRank = (state.category === "ALL") ? (i+1) : (i+1);
+        const displayRank = i + 1;
         const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
         const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
         const adv = timeAdvice(cat);
@@ -569,6 +581,7 @@
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.market = market;
+        card.dataset.stop = String(stop);
 
         card.innerHTML = `
           <div class="row">
@@ -576,7 +589,7 @@
               <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:800;color:#9fb0d6">(${cat})</small></div>
               <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
-            <div class="chips">
+            <div class="chips" data-chips>
               ${chipForCategory(cat)}
               <span class="chip ${adv.cls}">${adv.label}</span>
               ${riskChip}
@@ -591,12 +604,12 @@
               <div class="k">현재가(실시간)</div>
               <div class="v" data-liveprice>— <small>KRW</small></div>
               <div class="k" style="margin-top:6px">스냅샷가(시트)</div>
-              <div class="v"><small>${fmtKRW.format(snapPrice)} KRW</small></div>
+              <div class="v"><small>${formatKRWAuto(snapPrice, snapPrice)} KRW</small></div>
             </div>
 
-            <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${fmtKRW.format(Math.floor(posKRW))} <small>KRW</small></div></div>
-            <div class="kv"><div class="k">손절(Stop)</div><div class="v">${fmtKRW.format(Math.floor(stop))} <small>KRW</small></div></div>
-            <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${fmtKRW.format(Math.floor(tp1))} <small>KRW</small> · ${fmtKRW.format(Math.floor(tp2))} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${new Intl.NumberFormat("ko-KR").format(Math.floor(posKRW))} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">손절(Stop)</div><div class="v" data-stop>${formatKRWAuto(stop, snapPrice)} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${formatKRWAuto(tp1, snapPrice)} <small>KRW</small> · ${formatKRWAuto(tp2, snapPrice)} <small>KRW</small></div></div>
 
             <div class="kv"><div class="k">추천 진입 시간대(KST)</div><div class="v">${adv.windowStr}<br/><small>다음: ${adv.next} (${adv.nextIn})</small></div></div>
             <div class="kv"><div class="k">권장 보유</div><div class="v">${holdGuide(cat)}<br/><small>DAYTRADE는 6시간 내 TP1 실패 시 정리 고려</small></div></div>
@@ -636,9 +649,9 @@
       startLiveLoop(true);
     }
 
-    // =========================
-    // ✅ 실시간 가격 갱신 루프
-    // =========================
+    // -------------------------
+    // ✅ 실시간 가격 갱신 + 손절 터치 경고
+    // -------------------------
     function visibleMarkets(){
       const cards = Array.from(document.querySelectorAll(".card[data-market]"));
       return cards.map(c => c.dataset.market).filter(Boolean);
@@ -654,31 +667,59 @@
       const map = new Map();
       (res.items || []).forEach(x => map.set(String(x.market), Number(x.trade_price)));
 
+      // ✅ state에도 live price 저장(매수 가이드 복사에 반영)
+      const allItems = state.picks?.items || [];
+      for(const it of allItems){
+        const m = String(it["market"] || "");
+        if(map.has(m)) it.__live_price = map.get(m);
+      }
+
       const cards = Array.from(document.querySelectorAll(".card[data-market]"));
       for(const c of cards){
         const m = c.dataset.market;
-        const p = map.get(m);
-        if(!p) continue;
+        const live = map.get(m);
+        if(!live) continue;
+
+        const stop = Number(c.dataset.stop || 0);
+
         const el = c.querySelector("[data-liveprice]");
-        if(el) el.innerHTML = `${fmtKRW.format(p)} <small>KRW</small>`;
+        if(el) el.innerHTML = `${formatKRWAuto(live, live)} <small>KRW</small>`;
+
+        // 손절 터치/근접 경고 (실시간가 <= 손절가)
+        const chips = c.querySelector("[data-chips]");
+        const existed = chips.querySelector("[data-stopwarn]");
+        if(existed) existed.remove();
+
+        const btnGo = c.querySelector('[data-go]');
+        const btnCopy = c.querySelector('[data-copy]');
+
+        if(stop > 0 && live <= stop){
+          const warn = document.createElement("span");
+          warn.className = "chip bad";
+          warn.dataset.stopwarn = "1";
+          warn.textContent = "손절 터치";
+          chips.prepend(warn);
+
+          // ✅ 이 상태는 “진입 금지”가 맞아서 버튼도 잠깐 막아버림(원하면 제거 가능)
+          if(btnGo) btnGo.disabled = true;
+          if(btnCopy) btnCopy.disabled = true;
+        }else{
+          if(btnGo) btnGo.disabled = false;
+          if(btnCopy) btnCopy.disabled = false;
+        }
       }
     }
 
     function startLiveLoop(immediate=false){
       if(liveTimer) clearInterval(liveTimer);
       if(immediate) updateLiveOnce().catch(()=>{});
-      liveTimer = setInterval(() => {
-        updateLiveOnce().catch(()=>{});
-      }, 15000);
+      liveTimer = setInterval(() => updateLiveOnce().catch(()=>{}), 15000);
     }
 
     // UI events
     $("btnRefresh").onclick = async () => {
-      try{
-        await loadAll();
-      } catch(e){
-        alert("새로고침 실패: " + e.message);
-      }
+      try{ await loadAll(); }
+      catch(e){ alert("새로고침 실패: " + e.message); }
     };
     $("timingMode").onchange = () => { renderAll(); startLiveLoop(true); };
     $("viewCount").onchange = () => { renderAll(); startLiveLoop(true); };
