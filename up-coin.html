@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>so.t – Up Coin (DAYTRADE NOW)</title>
+  <title>so.t – 업코인 (단타 NOW)</title>
   <meta name="description" content="so.t Daily Picks – 업비트 공개 데이터 기반 추천/관리 화면" />
   <style>
     :root{
@@ -138,6 +138,7 @@
     .chip.ok{color:var(--good); border-color: rgba(61,220,151,0.45); background: rgba(61,220,151,0.14); font-weight:900}
     .chip.wait{color:rgba(234,240,255,0.85); border-color: rgba(159,176,214,0.35); background: rgba(159,176,214,0.10); font-weight:900}
     .chip.out{color:var(--bad); border-color: rgba(255,92,122,0.55); background: rgba(255,92,122,0.12); font-weight:900}
+    .chip.alloc{color:var(--gold); border-color: rgba(247,201,72,0.55); background: rgba(247,201,72,0.14); font-weight:900}
 
     .meta{
       margin-top:10px;
@@ -200,16 +201,17 @@
   <div class="wrap">
     <div class="top">
       <div class="brand">
-        <h1>so.t – Up Coin (DAYTRADE NOW)</h1>
+        <h1>so.t – 업코인 (단타 NOW)</h1>
         <div class="sub" id="subLine">데이터 로딩중…</div>
         <div class="hint">
-          • <b>NOW</b>=지금 진입 후보 / <b>WAIT</b>=대기 / <b>OUT</b>=손절 터치(진입 금지)<br/>
-          • “스냅샷가(시트)”는 고정값, “현재가(실시간)”는 15초마다 갱신됨
+          • <b>NOW</b>=지금 진입 후보 / <b>대기</b>=WAIT / <b>진입금지</b>=OUT(손절 터치)<br/>
+          • “스냅샷가(시트)”는 고정값, “현재가(실시간)”는 15초마다 갱신됨<br/>
+          • <b>시드 100만원 기준</b>: 오늘 “진입 추천 4개”에만 1코인당 20~30만원으로 배분(저위험↑, 고위험↓)
         </div>
       </div>
       <div class="bar">
         <select class="select" id="timingMode">
-          <option value="AUTO">타이밍: AUTO(추천)</option>
+          <option value="AUTO">타이밍: 자동(추천)</option>
           <option value="DAY">타이밍: 주간(09:15~11:30)</option>
           <option value="NIGHT">타이밍: 야간(20:30~01:30)</option>
           <option value="ALL">타이밍: 제한없음</option>
@@ -224,9 +226,9 @@
         </select>
 
         <select class="select" id="viewMode">
-          <option value="ALL">모드: 전체</option>
-          <option value="NOW">모드: NOW만</option>
-          <option value="HIDE_OUT">모드: OUT 숨김</option>
+          <option value="ALL">보기: 전체</option>
+          <option value="NOW">보기: 지금진입(NOW)만</option>
+          <option value="HIDE_OUT">보기: 진입금지(OUT) 숨김</option>
         </select>
 
         <select class="select" id="personSelect"></select>
@@ -242,7 +244,7 @@
 
       <div class="banner" id="banner" style="display:none">
         <div class="left">
-          <div class="t" id="bannerTitle">DAYTRADE: 지금 당장 진입 후보(NOW)</div>
+          <div class="t" id="bannerTitle">지금 진입 후보(NOW)</div>
           <div class="d" id="bannerDesc">-</div>
         </div>
         <div class="chips" id="bannerChips"></div>
@@ -253,19 +255,26 @@
 
       <div class="warn">
         <b>주의</b>: 이 페이지는 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.<br/>
-        <b>OUT(손절)</b>이면 “그 코인은 오늘 진입 금지”로 보고 다음 NOW 후보로 넘어가.
+        <b>진입금지(OUT)</b>이면 “그 코인은 오늘 진입 금지”로 보고 다음 NOW 후보로 넘어가.
       </div>
 
       <div class="warn" style="border-left-color: rgba(77,163,255,0.6); background: rgba(77,163,255,0.07); color:#dbe9ff">
         • 펌프(pump) = 과거 특정 기준(+수익률 & 거래대금 급증)을 만족한 “급등일”<br/>
-        • “펌프:7d” = 7일 전쯤 급등일이 있었다(너무 최근 펌프는 위험이라 DAYTRADE에서 제외되기도 함)
+        • “펌프:7d” = 7일 전쯤 급등일이 있었다(너무 최근 펌프는 위험이라 단타에서 제외되기도 함)
       </div>
     </div>
   </div>
 
   <script>
-    // ✅ 네 WebApp exec 주소
+    // ✅ WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
+
+    // ✅ 자금 배분(요청사항 고정)
+    const SEED_KRW = 1000000;     // 시드 100만원
+    const ALLOC_PICK_COUNT = 4;   // 진입 추천 4개만 배분
+    const PER_COIN_MIN = 200000;  // 1코인 20만원~
+    const PER_COIN_MAX = 300000;  // ~30만원
+    const SPLIT = [0.50, 0.30, 0.20]; // 3분할
 
     // ✅ 추천 타이밍 (원하면 여기만 수정)
     const WINDOWS = {
@@ -281,11 +290,9 @@
     };
 
     // ✅ NOW 판정(추격 방지): 실시간가가 스냅샷가 대비 너무 위면 NOW 제외
-    // 예) 0.6% 위까지 허용
     const CHASE_BAND_PCT = 0.006;
 
     // ✅ 손절가와의 거리 최소치(너무 붙으면 의미 없음)
-    // 예) 0.3% 이상 떨어져 있어야 NOW
     const MIN_STOP_GAP_PCT = 0.003;
 
     const $ = (id) => document.getElementById(id);
@@ -295,9 +302,16 @@
       picks:null,
       personId:null,
       category:"DAYTRADE",
-      liveMap: new Map(), // market -> live trade_price
+      liveMap: new Map(),       // market -> live trade_price
       liveAsOf: "",
-      liveTimer: null
+      liveTimer: null,
+      marketNameMap: new Map(), // market -> korean_name
+      allocPack: null,          // {map:Set,...}
+    };
+
+    const LABEL = {
+      tab: { ALL:"전체", COLLECT:"모으기", SWING:"스윙", DAYTRADE:"단타" },
+      cat: { COLLECT:"모으기", SWING:"스윙", DAYTRADE:"단타" },
     };
 
     function marketToTicker(market){
@@ -307,6 +321,16 @@
     }
     function upbitLink(market){
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
+    }
+
+    function getKoreanName(market){
+      const v = state.marketNameMap.get(String(market));
+      return v ? String(v) : "";
+    }
+    function displayCoinName(market){
+      const t = marketToTicker(market);
+      const ko = getKoreanName(market);
+      return ko ? `${t} (${ko})` : t;
     }
 
     function fmtPriceSmart(x){
@@ -321,6 +345,10 @@
     function fmtKRW(x){
       const n = Math.floor(Number(x||0));
       return isFinite(n) ? n.toLocaleString("ko-KR") : "0";
+    }
+    function round1000(x){
+      x = Number(x)||0;
+      return Math.floor(x/1000)*1000;
     }
 
     // JSONP only (CORS 회피)
@@ -362,8 +390,8 @@
     function setSubLine(){
       const last = state.status?.last_refresh || state.picks?.asof || "";
       const n = state.picks?.items?.length ?? 0;
-      const live = state.liveAsOf ? ` | LIVE: ${state.liveAsOf}` : "";
-      $("subLine").textContent = `Last refresh: ${last} | Picks: ${n}${live}`;
+      const live = state.liveAsOf ? ` | 실시간: ${state.liveAsOf}` : "";
+      $("subLine").textContent = `마지막 갱신: ${last} | 픽: ${n}${live} | 시드기준: ${fmtKRW(SEED_KRW)}원`;
     }
 
     function renderPersonSelect(){
@@ -395,7 +423,7 @@
       for(const c of cats){
         const el = document.createElement("div");
         el.className = "tab" + (state.category === c ? " active" : "");
-        el.textContent = c;
+        el.textContent = LABEL.tab[c] || c;
         el.onclick = () => { state.category = c; renderAll(); restartLive(); };
         tabs.appendChild(el);
       }
@@ -404,7 +432,7 @@
     function holdGuide(cat){
       if(cat === "COLLECT") return "30~180일";
       if(cat === "SWING") return "3~21일";
-      return "당일~48h";
+      return "당일~48시간";
     }
 
     // =========================
@@ -488,7 +516,7 @@
 
       // OUT: 손절가 터치(실시간)
       if (stop > 0 && live <= stop) {
-        return { code:"OUT", chip:"out", label:"OUT(손절)", reason:"stop touched", live };
+        return { code:"OUT", chip:"out", label:"진입금지(OUT)", reason:"stop touched", live };
       }
 
       // 타이밍 체크
@@ -501,10 +529,123 @@
       const stopGapOk = (live > 0 && stop > 0) ? (((live - stop) / live) >= MIN_STOP_GAP_PCT) : true;
 
       if (timingOk && chaseOk && stopGapOk) {
-        return { code:"NOW", chip:"ok", label:"NOW(진입)", reason:"ok", live, adv };
+        return { code:"NOW", chip:"ok", label:"지금진입(NOW)", reason:"ok", live, adv };
       }
 
-      return { code:"WAIT", chip:"wait", label:"WAIT", reason:"wait", live, adv };
+      return { code:"WAIT", chip:"wait", label:"대기(WAIT)", reason:"wait", live, adv };
+    }
+
+    // =========================
+    // 위험도/배분 로직(시드 100만원 → 4코인 20~30만)
+    // =========================
+    function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+    function riskScoreOf(it){
+      const cat = String(it.category||"DAYTRADE");
+      const pos = clamp(Number(it.pos_in_30d_range||0), 0, 1);
+      const volRatio = Number(it.vol_ratio_24h_to_avg7||0);
+      const pumpDays = Number(it.last_pump_days_ago||999);
+
+      let base = 0.7;
+      if(cat === "SWING") base = 0.45;
+      if(cat === "COLLECT") base = 0.25;
+
+      let score = base;
+      score += 0.30 * pos;                 // 상단권일수록 위험↑
+      if (volRatio < 1.2) score += 0.08;   // 수급 약하면 위험↑
+      if (pumpDays < 5) score += 0.18;     // 펌프 너무 최근이면 위험↑
+
+      return clamp(score, 0, 1);
+    }
+
+    function riskLabel(score){
+      if(score >= 0.70) return { label:"고위험", chip:"bad" };
+      if(score >= 0.45) return { label:"중위험", chip:"gold" };
+      return { label:"저위험", chip:"good" };
+    }
+
+    function computeAllocPack(items){
+      // OUT 제외, NOW 우선
+      const cand = items
+        .filter(x => x.__st && x.__st.code !== "OUT")
+        .slice()
+        .sort((a,b) => {
+          const pa = (a.__st.code === "NOW") ? 0 : 1;
+          const pb = (b.__st.code === "NOW") ? 0 : 1;
+          if(pa !== pb) return pa - pb;
+          return Number(b.score||0) - Number(a.score||0);
+        });
+
+      const K = Math.min(ALLOC_PICK_COUNT, cand.length);
+      const pick = cand.slice(0, K);
+
+      const weights = pick.map(it => {
+        const rs = riskScoreOf(it);
+        // 저위험(낮은 rs)에 가중치↑
+        const w = Math.pow(1.05 - rs, 1.6) + 0.10;
+        return { market:String(it.market||""), rs, w };
+      });
+      const sumW = weights.reduce((s,x)=>s+x.w,0) || 1;
+
+      // 기본 20만원씩 깔고, 남는 돈을 위험도(가중치)로 배분하되 30만원 상한
+      let base = round1000(PER_COIN_MIN);
+      let totalBase = base * K;
+      if (SEED_KRW < totalBase && K > 0) {
+        base = round1000(SEED_KRW / K);
+        totalBase = base * K;
+      }
+      let leftover = SEED_KRW - totalBase;
+
+      const allocMap = new Map();
+      const metaMap = new Map();
+      // 1차 배분(가중치)
+      let extras = weights.map(x => {
+        const cap = Math.max(0, round1000(PER_COIN_MAX - base));
+        const raw = round1000((leftover * (x.w / sumW)));
+        const ex = Math.min(cap, Math.max(0, raw));
+        return { ...x, cap, ex };
+      });
+
+      let usedExtra = extras.reduce((s,x)=>s+x.ex,0);
+      leftover = SEED_KRW - totalBase - usedExtra;
+
+      // 2차 배분(잔돈 1000원 단위로 더 높은 가중치부터)
+      if (leftover > 0){
+        extras.sort((a,b)=>b.w-a.w);
+        for (let i=0; i<extras.length && leftover>0; i++){
+          while(leftover > 0 && extras[i].ex < extras[i].cap){
+            extras[i].ex += 1000;
+            leftover -= 1000;
+          }
+        }
+      }
+
+      // 최종 결과
+      const selectedSet = new Set();
+      for (const x of extras){
+        const total = clamp(base + x.ex, 0, PER_COIN_MAX);
+        allocMap.set(x.market, total);
+        metaMap.set(x.market, { riskScore:x.rs, ...riskLabel(x.rs) });
+        selectedSet.add(x.market);
+      }
+
+      return {
+        seed: SEED_KRW,
+        pickCount: K,
+        selectedSet,
+        allocMap,
+        metaMap,
+        leftover
+      };
+    }
+
+    function splitAmount(total){
+      total = round1000(total);
+      if (total <= 0) return [0,0,0];
+      const a = round1000(total * SPLIT[0]);
+      const b = round1000(total * SPLIT[1]);
+      const c = Math.max(0, total - a - b);
+      return [a,b,c];
     }
 
     // =========================
@@ -519,7 +660,6 @@
         .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
         .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0));
 
-      // 상태 기반 필터
       arr = arr.map(it => ({...it, __st: entryStatus(it)}));
 
       if (viewMode === "NOW") arr = arr.filter(x => x.__st.code === "NOW");
@@ -532,9 +672,10 @@
     }
 
     function chipForCategory(cat){
-      if(cat === "COLLECT") return `<span class="chip gold">COLLECT</span>`;
-      if(cat === "SWING") return `<span class="chip good">SWING</span>`;
-      return `<span class="chip blue">DAYTRADE</span>`;
+      const name = LABEL.cat[cat] || cat;
+      if(cat === "COLLECT") return `<span class="chip gold">${name}</span>`;
+      if(cat === "SWING") return `<span class="chip good">${name}</span>`;
+      return `<span class="chip blue">${name}</span>`;
     }
 
     function renderBanner(items){
@@ -544,19 +685,28 @@
       const cat = (state.category === "ALL") ? "DAYTRADE" : state.category;
       const adv = timeAdvice(cat);
 
-      // NOW 추천 1개(없으면 안내)
       const nowOne = items.find(x => x.__st.code === "NOW");
-      const nowText = nowOne ? `NOW: ${marketToTicker(nowOne.market)} @ ${fmtPriceSmart(nowOne.__st.live)}` : `지금은 NOW 후보가 없음`;
+      const nowText = nowOne
+        ? `NOW: ${displayCoinName(nowOne.market)} @ ${fmtPriceSmart(nowOne.__st.live)}`
+        : `지금은 NOW 후보가 없음`;
 
-      $("bannerTitle").textContent = `DAYTRADE: 지금 당장 진입 후보(NOW)`;
+      // 배분 정보
+      state.allocPack = computeAllocPack(items);
+      const ap = state.allocPack;
+      const allocText = (ap.pickCount > 0)
+        ? `시드 ${fmtKRW(ap.seed)}원 → 진입추천 ${ap.pickCount}개 배분(1코인 20~30만)`
+        : `배분할 후보가 없음(OUT 제외 후 0개)`;
+
+      $("bannerTitle").textContent = `지금 진입 후보(NOW) + 시드 배분`;
       $("bannerDesc").textContent =
-        `현재(KST ${hhmm(kstNow())}) · ${adv.label} · 권장시간대: ${adv.windowStr} · ${nowText}`;
+        `현재(KST ${hhmm(kstNow())}) · ${adv.label} · 권장시간대: ${adv.windowStr} · ${nowText} · ${allocText}`;
 
       $("bannerChips").innerHTML = `
         <span class="chip purple">KST ${hhmm(kstNow())}</span>
         <span class="chip ${adv.cls}">${adv.label}</span>
         <span class="chip">${nowText}</span>
-        <span class="chip">LIVE 15s</span>
+        <span class="chip alloc">${allocText}</span>
+        <span class="chip">실시간 15초</span>
       `;
     }
 
@@ -575,25 +725,36 @@
       }
     }
 
-    function buildGuideText(it){
+    function buildGuideText(it, allocInfo){
       const cat = String(it["category"]||"DAYTRADE");
       const adv = timeAdvice(cat);
       const market = String(it["market"]||"");
-      const ticker = marketToTicker(market);
+      const name = displayCoinName(market);
 
       const snap = Number(it["price"]||0);
       const live = getLivePrice(market, snap);
-      const posKRW = Number(it["final_pos_krw"]||0);
       const stop = Number(it["stop_price"]||0);
       const tp1 = Number(it["tp1_price"]||0);
       const tp2 = Number(it["tp2_price"]||0);
 
+      const st = it.__st || entryStatus(it);
+
+      const alloc = allocInfo?.alloc || 0;
+      const split = splitAmount(alloc);
+      const risk = allocInfo?.riskLabel || "-";
+
+      const allocLine = (alloc > 0)
+        ? `- 시드기준 추천 매수금: ${fmtKRW(alloc)} KRW (1차 ${fmtKRW(split[0])} / 2차 ${fmtKRW(split[1])} / 3차 ${fmtKRW(split[2])})`
+        : `- 시드기준 추천 매수금: (관찰) 배분 없음`;
+
       return [
         `so.t 매수 가이드`,
-        `- 코인: ${ticker} (${market}) [${cat}]`,
+        `- 코인: ${name} (${market}) [${LABEL.cat[cat]||cat}]`,
+        `- 상태: ${st.label} (${st.reason || ""})`,
         `- 현재가(실시간): ${fmtPriceSmart(live)} KRW`,
         `- 스냅샷가(시트): ${fmtPriceSmart(snap)} KRW`,
-        `- 추천 매수금: ${fmtKRW(posKRW)} KRW`,
+        allocLine,
+        `- 위험도: ${risk}`,
         `- 손절: ${fmtPriceSmart(stop)} KRW`,
         `- 익절: TP1 ${fmtPriceSmart(tp1)} / TP2 ${fmtPriceSmart(tp2)} KRW`,
         `- 권장 보유: ${holdGuide(cat)}`,
@@ -602,7 +763,8 @@
         `운영 규칙(간단):`,
         `1) 손절가 터치 = 즉시 종료(미련 금지)`,
         `2) TP1 도달 시 일부 익절 + 나머지 스탑을 본절/약익절로 올리기`,
-        `3) DAYTRADE는 6시간 내 TP1 못 가면 힘없음 → 절반/전량 정리 고려`,
+        `3) 단타는 6시간 내 힘 없으면 절반/전량 정리 고려`,
+        `4) 진입금지(OUT)이면 오늘은 그 코인 건드리지 말고 다음 NOW 후보로 이동`,
       ].join("\n");
     }
 
@@ -616,21 +778,21 @@
       if(!items.length){
         wrap.innerHTML = `<div class="card" style="grid-column: span 12;">
           <div class="title">
-            <div class="ticker">표시할 픽이 없음</div>
-            <div class="market">NOW만 모드면 “지금 진입 가능한 코인”이 0개일 수 있어. (모드/시간대/탭 변경)</div>
+            <div class="ticker">표시할 코인이 없음</div>
+            <div class="market">“지금진입만” 모드면 0개일 수 있어. (보기/시간대/탭 변경)</div>
           </div>
         </div>`;
         return;
       }
 
+      // allocPack (배너에서 계산됨)
+      const ap = state.allocPack || computeAllocPack(items);
+
       items.forEach((it, i) => {
-        const market = it["market"];
-        const ticker = marketToTicker(market);
-
+        const market = String(it["market"]||"");
         const snap = Number(it["price"]||0);
-        const live = it.__st.live;
+        const live = it.__st?.live ?? getLivePrice(market, snap);
 
-        const posKRW = Number(it["final_pos_krw"]||0);
         const stop = Number(it["stop_price"]||0);
         const tp1 = Number(it["tp1_price"]||0);
         const tp2 = Number(it["tp2_price"]||0);
@@ -649,21 +811,34 @@
 
         const displayRank = (state.category === "ALL") ? (Number(it["rank"]|| (i+1))) : (i+1);
 
+        // 배분(진입 추천) / 위험도
+        const isSelected = ap.selectedSet.has(market) && (st.code !== "OUT");
+        const alloc = isSelected ? (ap.allocMap.get(market) || 0) : 0;
+        const split = splitAmount(alloc);
+
+        const rmeta = ap.metaMap.get(market) || riskLabel(riskScoreOf(it));
+        const riskText = `${rmeta.label}`;
+
+        const allocChip = isSelected ? `<span class="chip alloc">진입추천(배분)</span>` : `<span class="chip">관찰</span>`;
+
         const card = document.createElement("div");
         card.className = "card";
+
         card.innerHTML = `
           <div class="row">
             <div class="title">
-              <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:800;color:#9fb0d6">(${cat})</small></div>
+              <div class="ticker">#${displayRank} ${displayCoinName(market)} <small style="font-weight:800;color:#9fb0d6">(${LABEL.cat[cat]||cat})</small></div>
               <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
             <div class="chips">
               ${chipForCategory(cat)}
               <span class="chip ${st.chip}">${st.label}</span>
+              ${allocChip}
+              <span class="chip ${rmeta.chip}">${riskText}</span>
               ${riskChip}
               ${volChip}
               <span class="chip">펌프:${pumpDays}d</span>
-              <span class="chip">score:${score.toFixed(3)}</span>
+              <span class="chip">점수:${score.toFixed(3)}</span>
             </div>
           </div>
 
@@ -675,11 +850,22 @@
               <div class="v" style="opacity:.9">${fmtPriceSmart(snap)} <small>KRW</small></div>
             </div>
 
-            <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${fmtKRW(posKRW)} <small>KRW</small></div></div>
+            <div class="kv">
+              <div class="k">추천 매수(시드 ${fmtKRW(SEED_KRW)}원 기준)</div>
+              <div class="v">${alloc > 0 ? `${fmtKRW(alloc)} <small>KRW</small>` : `<span style="opacity:.7">-</span>`}</div>
+              <div class="k" style="margin-top:8px">분할 매수(3분할)</div>
+              <div class="v" style="opacity:.9">
+                ${alloc > 0
+                  ? `1차 ${fmtKRW(split[0])} / 2차 ${fmtKRW(split[1])} / 3차 ${fmtKRW(split[2])} <small>KRW</small>`
+                  : `<span style="opacity:.7">배분 없음(관찰)</span>`
+                }
+              </div>
+            </div>
+
             <div class="kv"><div class="k">손절(Stop)</div><div class="v">${fmtPriceSmart(stop)} <small>KRW</small></div></div>
             <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${fmtPriceSmart(tp1)} <small>KRW</small> · ${fmtPriceSmart(tp2)} <small>KRW</small></div></div>
             <div class="kv"><div class="k">추천 진입 시간대(KST)</div><div class="v">${adv.windowStr}<br/><small>다음: ${adv.next} (${adv.nextIn})</small></div></div>
-            <div class="kv"><div class="k">권장 보유</div><div class="v">${holdGuide(cat)}<br/><small>OUT면 진입 금지 → 다른 NOW 후보로 이동</small></div></div>
+            <div class="kv"><div class="k">권장 보유</div><div class="v">${holdGuide(cat)}<br/><small>진입금지(OUT)이면 다른 NOW로 이동</small></div></div>
           </div>
 
           <div class="cardActions">
@@ -689,7 +875,7 @@
         `;
 
         card.querySelector('[data-go]').onclick = () => window.open(upbitLink(market), "_blank", "noopener");
-        card.querySelector('[data-copy]').onclick = () => copyText(buildGuideText(it));
+        card.querySelector('[data-copy]').onclick = () => copyText(buildGuideText(it, { alloc, riskLabel: riskText }));
 
         wrap.appendChild(card);
       });
@@ -716,8 +902,9 @@
       const markets = collectVisibleMarkets();
       if (!markets.length) return;
 
-      const res = await apiGet("live", { markets: markets.join(",") });
-      if (!res.ok) return;
+      // 백엔드에 action=live가 있어야 함(없으면 조용히 실패)
+      const res = await apiGet("live", { markets: markets.join(",") }).catch(()=>null);
+      if (!res || !res.ok) return;
 
       state.liveAsOf = res.asof || "";
       state.liveMap.clear();
@@ -734,6 +921,22 @@
     }
 
     // =========================
+    // Markets map (한국이름)
+    // =========================
+    async function loadMarketsMap(){
+      // 백엔드에 action=markets가 있으면 Markets 시트에서 바로 가져옴
+      const res = await apiGet("markets").catch(()=>null);
+      if(!res || !res.ok || !Array.isArray(res.items)) return;
+
+      state.marketNameMap.clear();
+      for(const m of res.items){
+        const mk = String(m.market||"");
+        const kn = String(m.korean_name||"");
+        if(mk && kn) state.marketNameMap.set(mk, kn);
+      }
+    }
+
+    // =========================
     // Load picks
     // =========================
     async function loadAll(){
@@ -744,6 +947,9 @@
 
       state.status = status;
       state.picks = picks;
+
+      // 한국이름 로딩(없어도 페이지는 동작)
+      await loadMarketsMap().catch(()=>{});
 
       renderPersonSelect();
       renderAll();
