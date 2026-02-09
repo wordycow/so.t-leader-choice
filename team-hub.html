@@ -301,20 +301,22 @@
       color: #eef2ff;
     }
 
-    /* ✅ 여기서 고정 min-height 제거하고, JS로 “화면 하단까지” 자동 확장 */
-    .preview-frame {
-      border-radius: 14px;
-      overflow: hidden;
-      background: #020617;
-      border: 1px solid rgba(30, 41, 59, 1);
-      height: 720px;     /* JS가 덮어씀(초기값) */
-      min-height: 640px; /* 너무 작아지는 것 방지 */
+    /* ✅ preview-frame: 높이는 JS가 결정 */
+    .preview-frame{
+      border-radius:14px;
+      overflow:hidden;
+      background:#020617;
+      border:1px solid rgba(30, 41, 59, 1);
+      height: 70vh;          /* 초기값 */
+      min-height: 720px;     /* 초기 최소 */
     }
 
-    .preview-frame iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
+    .preview-frame iframe{
+      width:100%;
+      height: 100%;          /* ✅ wrapper 높이를 그대로 사용 */
+      border:0;
+      display:block;
+      background:#020617;
     }
 
     .hint {
@@ -335,6 +337,7 @@
     @media (max-width: 960px) {
       .card-grid { grid-template-columns: minmax(0, 1fr); }
       .sheet-links { flex-direction: column; }
+      .preview-frame { min-height: 640px; }
     }
   </style>
 </head>
@@ -505,7 +508,7 @@
           <button class="link-btn" type="button" id="btnScrollToPreview">미리보기로 이동</button>
         </div>
         <div class="hint">
-          • 아래 대형 미리보기는 현황판용(큰 화면)으로 사용하면 좋음.<br>
+          • 아래 미리보기는 “현황판 모드(화면맞춤)” 또는 “전체 펼치기(내용맞춤)”로 사용할 수 있음.<br>
           • 새로고침 버튼은 iframe만 리로드합니다(페이지 전체 리로드 X).
         </div>
       </article>
@@ -514,8 +517,10 @@
         <div class="preview-head">
           <div class="preview-title" id="previewTitle">대형 미리보기 – Up Coin</div>
           <div class="preview-actions">
+            <button class="mini-btn active" id="modeFit" type="button">현황판(화면맞춤)</button>
+            <button class="mini-btn" id="modeContent" type="button">전체 펼치기(내용맞춤)</button>
             <button class="mini-btn" id="btnReload" type="button">새로고침</button>
-            <a class="mini-btn active" id="openNew"
+            <a class="mini-btn" id="openNew"
                href="https://wordycow.github.io/so.t-leader-choice/up-coin.html"
                target="_blank" rel="noopener noreferrer">
               새탭으로 열기
@@ -532,9 +537,9 @@
           ></iframe>
         </div>
 
-        <div class="hint">
-          • iframe 높이를 “현재 화면의 아래 끝까지” 자동으로 늘려서 스크롤 범위를 키웠습니다.<br>
-          • 만약 더 과감하게 “스크롤 거의 없게” 만들고 싶으면, 다음 단계로 iframe 내부 높이(콘텐츠 높이) 자동맞춤도 가능.
+        <div class="hint" id="modeHint">
+          • 현재는 “현황판(화면맞춤)” 모드입니다 → 화면 아래 끝까지 꽉 채웁니다.<br>
+          • “전체 펼치기(내용맞춤)”로 바꾸면 iframe 내부 스크롤이 거의/완전 사라집니다.
         </div>
       </div>
     </section>
@@ -546,48 +551,202 @@
 
   <script>
     (function () {
+      const UPCOIN_URL = "https://wordycow.github.io/so.t-leader-choice/up-coin.html";
+
       const frame = document.getElementById("previewFrame");
       const frameWrap = document.getElementById("previewFrameWrap");
       const btnReload = document.getElementById("btnReload");
       const btnScroll = document.getElementById("btnScrollToPreview");
       const preview = document.getElementById("upcoinPreview");
 
-      btnReload.addEventListener("click", () => {
-        const base = "https://wordycow.github.io/so.t-leader-choice/up-coin.html";
-        frame.src = base + (base.includes("?") ? "&" : "?") + "r=" + Date.now();
-      });
+      const modeFitBtn = document.getElementById("modeFit");
+      const modeContentBtn = document.getElementById("modeContent");
+      const modeHint = document.getElementById("modeHint");
 
-      btnScroll.addEventListener("click", () => {
-        preview.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      if (!frame || !frameWrap) return;
 
-      // ✅ 핵심: “미리보기 프레임”을 화면 하단까지 자동 확장
+      // -----------------------------
+      // Mode
+      // -----------------------------
+      const MODE_KEY = "TEAMHUB_UPCOIN_MODE"; // "fit" | "content"
+      let mode = (localStorage.getItem(MODE_KEY) || "fit").toLowerCase();
+      if (mode !== "fit" && mode !== "content") mode = "fit";
+
+      function setActiveModeUI() {
+        if (modeFitBtn) modeFitBtn.classList.toggle("active", mode === "fit");
+        if (modeContentBtn) modeContentBtn.classList.toggle("active", mode === "content");
+
+        if (modeHint) {
+          if (mode === "fit") {
+            modeHint.innerHTML =
+              "• 현재는 “현황판(화면맞춤)” 모드입니다 → 화면 아래 끝까지 꽉 채웁니다.<br>" +
+              "• “전체 펼치기(내용맞춤)”로 바꾸면 iframe 내부 스크롤이 거의/완전 사라집니다.";
+          } else {
+            modeHint.innerHTML =
+              "• 현재는 “전체 펼치기(내용맞춤)” 모드입니다 → iframe 콘텐츠 높이로 자동 확장합니다.<br>" +
+              "• 만약 브라우저가 높이 측정을 막으면 자동으로 현황판 모드로 fallback 됩니다.";
+          }
+        }
+      }
+
+      function setMode(nextMode) {
+        mode = (nextMode === "content") ? "content" : "fit";
+        localStorage.setItem(MODE_KEY, mode);
+        setActiveModeUI();
+        scheduleFit(); // 모드 바꾸면 즉시 반영
+        if (mode === "content") scheduleContentResizeBursts();
+      }
+
+      // -----------------------------
+      // Reload + Scroll
+      // -----------------------------
+      if (btnReload) {
+        btnReload.addEventListener("click", () => {
+          frame.src = UPCOIN_URL + (UPCOIN_URL.includes("?") ? "&" : "?") + "r=" + Date.now();
+        });
+      }
+
+      if (btnScroll && preview) {
+        btnScroll.addEventListener("click", () => {
+          preview.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+
+      // -----------------------------
+      // Fit to viewport bottom (dashboard)
+      // -----------------------------
       let raf = 0;
+
       function fitPreviewToBottom() {
         raf = 0;
-        if (!frameWrap) return;
-
         const rect = frameWrap.getBoundingClientRect();
-        // 화면 하단까지 남은 높이 계산 (여유 padding 포함)
         const bottomPadding = 18;
         const available = window.innerHeight - rect.top - bottomPadding;
 
-        // 너무 작아지면 최소값 유지
-        const h = Math.max(640, Math.floor(available));
+        // 최소/최대 (너무 작거나 너무 커서 레이아웃 깨지는 것 방지)
+        const minH = 720;
+        const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.95));
+        const h = Math.max(minH, Math.min(maxH, Math.floor(available)));
+
         frameWrap.style.height = h + "px";
       }
 
       function scheduleFit() {
         if (raf) return;
-        raf = requestAnimationFrame(fitPreviewToBottom);
+        raf = requestAnimationFrame(() => {
+          if (mode === "fit") fitPreviewToBottom();
+          else resizeToContentHeight(); // content 모드면 내용 높이 기준
+        });
       }
 
+      // -----------------------------
+      // Resize to iframe content height (same-origin only)
+      // -----------------------------
+      let contentRAF = 0;
+      let observer = null;
+
+      function computeIframeContentHeight() {
+        try {
+          const doc = frame.contentDocument || frame.contentWindow.document;
+          if (!doc) return null;
+
+          const body = doc.body;
+          const html = doc.documentElement;
+
+          const h = Math.max(
+            body ? body.scrollHeight : 0,
+            html ? html.scrollHeight : 0,
+            body ? body.offsetHeight : 0,
+            html ? html.offsetHeight : 0
+          );
+
+          if (!h || !isFinite(h)) return null;
+          return h;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function resizeToContentHeight() {
+        contentRAF = 0;
+        if (mode !== "content") return;
+
+        const h = computeIframeContentHeight();
+        if (h == null) {
+          // 접근 불가(다른 도메인/정책)면 fit으로 fallback
+          setMode("fit");
+          return;
+        }
+
+        // 너무 과도하게 커지는 것 방지 (그래도 충분히 크게)
+        const minH = 720;
+        const maxH = 20000;
+        const finalH = Math.max(minH, Math.min(maxH, Math.floor(h)));
+
+        frameWrap.style.height = finalH + "px";
+      }
+
+      function scheduleContentResize() {
+        if (contentRAF) return;
+        contentRAF = requestAnimationFrame(resizeToContentHeight);
+      }
+
+      function scheduleContentResizeBursts() {
+        scheduleContentResize();
+        setTimeout(scheduleContentResize, 250);
+        setTimeout(scheduleContentResize, 800);
+        setTimeout(scheduleContentResize, 1600);
+        setTimeout(scheduleContentResize, 3000);
+      }
+
+      function attachMutationObserver() {
+        try {
+          const doc = frame.contentDocument || frame.contentWindow.document;
+          if (!doc || !doc.documentElement) return;
+
+          if (observer) observer.disconnect();
+          observer = new MutationObserver(() => {
+            if (mode === "content") scheduleContentResize();
+          });
+          observer.observe(doc.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true
+          });
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // -----------------------------
+      // Events
+      // -----------------------------
       window.addEventListener("resize", scheduleFit);
       window.addEventListener("scroll", scheduleFit, { passive: true });
 
-      // 초기 1회 + iframe 로드 후 1회(렌더링 안정화)
-      fitPreviewToBottom();
-      frame.addEventListener("load", () => setTimeout(fitPreviewToBottom, 80));
+      frame.addEventListener("load", () => {
+        // 로드 직후 안정화
+        if (mode === "fit") setTimeout(fitPreviewToBottom, 80);
+        else scheduleContentResizeBursts();
+
+        // iframe 내부 DOM 변화 감지(가능하면)
+        attachMutationObserver();
+      });
+
+      if (modeFitBtn) modeFitBtn.addEventListener("click", () => setMode("fit"));
+      if (modeContentBtn) modeContentBtn.addEventListener("click", () => setMode("content"));
+
+      // -----------------------------
+      // Init
+      // -----------------------------
+      setActiveModeUI();
+
+      // 최초 1회
+      if (mode === "fit") fitPreviewToBottom();
+      else scheduleContentResizeBursts();
+
+      // 첫 로드가 늦는 경우 대비
+      setTimeout(scheduleFit, 200);
     })();
   </script>
 </body>
