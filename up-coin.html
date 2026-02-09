@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>so.t – Up Coin</title>
+  <title>so.t – Up Coin (DAYTRADE NOW)</title>
+  <meta name="description" content="so.t Daily Picks – Upbit 공개 데이터 + 실시간 ticker 기반 NOW 진입 후보" />
 
   <style>
     :root{
@@ -23,12 +24,13 @@
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     }
     a{color:inherit; text-decoration:none}
-    .wrap{max-width:1100px; margin:0 auto; padding:18px}
+    .wrap{max-width:1160px; margin:0 auto; padding:18px}
     .top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;}
     .brand{display:flex; flex-direction:column; gap:6px;}
     .brand h1{margin:0; font-size:18px; letter-spacing:0.4px}
-    .brand .sub{color:var(--muted); font-size:12px}
-    .brand .hint{color:rgba(159,176,214,0.85); font-size:12px; line-height:1.35}
+    .brand .sub{color:var(--muted); font-size:12px; line-height:1.35}
+    .brand .hint{color:rgba(159,176,214,0.85); font-size:12px; line-height:1.45}
+
     .bar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end;}
     .btn{
       border:1px solid var(--line);
@@ -39,10 +41,11 @@
       cursor:pointer;
       box-shadow: var(--shadow);
       white-space:nowrap;
+      font-weight:800;
     }
     .btn:hover{border-color:#2f4477}
     .btn.primary{border-color: rgba(77,163,255,0.45); background: rgba(77,163,255,0.12);}
-
+    .btn.bad{border-color: rgba(255,92,122,0.55); background: rgba(255,92,122,0.12);}
     .select{
       border:1px solid var(--line);
       background: rgba(255,255,255,0.03);
@@ -52,6 +55,7 @@
       outline:none;
       min-width:160px;
       box-shadow: var(--shadow);
+      font-weight:800;
     }
 
     .panel{
@@ -64,32 +68,37 @@
     }
 
     .banner{
-      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
-      padding:10px 12px;
+      display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; justify-content:space-between;
+      padding:12px 12px;
       border:1px solid rgba(34,48,84,0.9);
       background: rgba(0,0,0,0.22);
       border-radius:14px;
       margin-bottom:10px;
     }
     .banner .left{display:flex; flex-direction:column; gap:4px}
-    .banner .t{font-size:12px; color:rgba(234,240,255,0.95); font-weight:800}
-    .banner .d{font-size:12px; color:var(--muted)}
-    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
-    .tab{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,0.03);
-      color:var(--muted);
-      padding:8px 10px;
+    .banner .t{font-size:12px; color:rgba(234,240,255,0.95); font-weight:900}
+    .banner .d{font-size:12px; color:var(--muted); line-height:1.45}
+    .banner .right{display:flex; flex-direction:column; gap:8px; align-items:flex-end; max-width:520px}
+
+    .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+    .chip{
+      font-size:11px;
+      padding:6px 8px;
       border-radius:999px;
-      cursor:pointer;
-      font-size:12px;
-      user-select:none;
+      background: rgba(255,255,255,0.04);
+      border:1px solid var(--line);
+      color:var(--muted);
+      white-space:nowrap;
+      font-weight:800;
     }
-    .tab.active{
-      color:var(--text);
-      border-color:#37519a;
-      background: rgba(77,163,255,0.12);
-    }
+    .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
+    .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
+    .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
+    .chip.blue{color:var(--blue); border-color: rgba(77,163,255,0.35); background: rgba(77,163,255,0.10)}
+    .chip.purple{color:var(--purple); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.10)}
+    .chip.ok{color:var(--good); border-color: rgba(61,220,151,0.55); background: rgba(61,220,151,0.16)}
+    .chip.wait{color:rgba(234,240,255,0.85); border-color: rgba(159,176,214,0.35); background: rgba(159,176,214,0.10)}
+    .chip.soon{color:var(--gold); border-color: rgba(247,201,72,0.55); background: rgba(247,201,72,0.16)}
 
     .grid{
       display:grid;
@@ -117,27 +126,11 @@
       pointer-events:none;
     }
     .card > *{position:relative}
+
     .row{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
     .title{display:flex; flex-direction:column; gap:4px;}
     .title .ticker{font-size:16px; font-weight:900; letter-spacing:0.3px}
     .title .market{font-size:12px; color:var(--muted)}
-    .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
-    .chip{
-      font-size:11px;
-      padding:6px 8px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.04);
-      border:1px solid var(--line);
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .chip.good{color:var(--good); border-color: rgba(61,220,151,0.35); background: rgba(61,220,151,0.10)}
-    .chip.bad{color:var(--bad); border-color: rgba(255,92,122,0.35); background: rgba(255,92,122,0.10)}
-    .chip.gold{color:var(--gold); border-color: rgba(247,201,72,0.35); background: rgba(247,201,72,0.10)}
-    .chip.purple{color:var(--purple); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.10)}
-    .chip.ok{color:var(--good); border-color: rgba(61,220,151,0.45); background: rgba(61,220,151,0.14); font-weight:900}
-    .chip.wait{color:rgba(234,240,255,0.85); border-color: rgba(159,176,214,0.35); background: rgba(159,176,214,0.10); font-weight:900}
-    .chip.soon{color:var(--gold); border-color: rgba(247,201,72,0.45); background: rgba(247,201,72,0.14); font-weight:900}
 
     .meta{
       margin-top:10px;
@@ -154,8 +147,8 @@
     }
     @media (max-width:880px){ .kv{grid-column: span 12;} }
     .kv .k{font-size:11px; color:var(--muted)}
-    .kv .v{margin-top:6px; font-size:14px; font-weight:800}
-    .kv .v small{font-size:12px; color:var(--muted); font-weight:700}
+    .kv .v{margin-top:6px; font-size:14px; font-weight:900}
+    .kv .v small{font-size:12px; color:var(--muted); font-weight:800}
 
     .cardActions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
     .miniBtn{
@@ -167,13 +160,14 @@
       cursor:pointer;
       font-size:12px;
       box-shadow: var(--shadow);
+      font-weight:900;
     }
     .miniBtn:hover{border-color:#2f4477}
-    .miniBtn.copy{border-color: rgba(247,201,72,0.45); background: rgba(247,201,72,0.10)}
-    .miniBtn.go{border-color: rgba(77,163,255,0.45); background: rgba(77,163,255,0.10)}
-    .miniBtn:disabled{opacity:0.45; cursor:not-allowed}
+    .miniBtn.copy{border-color: rgba(247,201,72,0.55); background: rgba(247,201,72,0.12)}
+    .miniBtn.go{border-color: rgba(77,163,255,0.55); background: rgba(77,163,255,0.12)}
+    .miniBtn.now{border-color: rgba(61,220,151,0.6); background: rgba(61,220,151,0.14)}
+    .miniBtn.out{border-color: rgba(255,92,122,0.6); background: rgba(255,92,122,0.14)}
 
-    .footnote{color:var(--muted); font-size:12px; line-height:1.5;}
     .loading{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;}
     .dot{
       width:8px; height:8px; border-radius:50%;
@@ -186,6 +180,7 @@
       50%{transform:scale(1.2); opacity:1}
       100%{transform:scale(0.9); opacity:0.7}
     }
+
     .warn{
       border-left:4px solid rgba(255,92,122,0.6);
       padding:10px 12px;
@@ -194,7 +189,7 @@
       margin-top:10px;
       color: #ffd6de;
       font-size:12px;
-      line-height:1.5;
+      line-height:1.55;
     }
   </style>
 </head>
@@ -202,80 +197,113 @@
   <div class="wrap">
     <div class="top">
       <div class="brand">
-        <h1>so.t – Up Coin</h1>
-        <div class="sub" id="subLine">데이터 로딩중…</div>
+        <h1>so.t – Up Coin (DAYTRADE NOW)</h1>
+        <div class="sub" id="subLine">로딩중…</div>
         <div class="hint">
-          • <b>현재가(실시간)</b>는 업비트 ticker로 <b>15초마다</b> 갱신됨<br/>
-          • 손절/익절은 “스냅샷 기준 가이드”라 실시간가와 차이 날 수 있음 (차이 크면 경고 표시)
+          • 이 페이지의 <b>현재가(실시간)</b>는 업비트 ticker를 15초마다 갱신<br/>
+          • <b>NOW</b>=지금 진입 후보 / <b>WAIT</b>=대기 / <b>OUT</b>=손절 터치 또는 추격구간(진입금지)<br/>
+          • 손절/익절 기준은 Picks 시트 값(Stop/TP1/TP2)을 그대로 사용
         </div>
       </div>
+
       <div class="bar">
         <select class="select" id="timingMode">
-          <option value="AUTO">타이밍: AUTO(추천)</option>
+          <option value="AUTO" selected>타이밍: AUTO(추천)</option>
           <option value="DAY">타이밍: 주간(09~11)</option>
           <option value="NIGHT">타이밍: 야간(20~01)</option>
           <option value="ALL">타이밍: 제한없음</option>
         </select>
 
         <select class="select" id="viewCount">
-          <option value="6">보기: 6개</option>
-          <option value="12">보기: 12개</option>
-          <option value="20" selected>보기: 20개</option>
-          <option value="50">보기: 50개</option>
+          <option value="6" selected>노출: 6개</option>
+          <option value="12">노출: 12개</option>
+          <option value="20">노출: 20개</option>
+        </select>
+
+        <select class="select" id="showMode">
+          <option value="NOW" selected>모드: NOW만</option>
+          <option value="ALL">모드: 전체</option>
         </select>
 
         <select class="select" id="personSelect"></select>
+
         <button class="btn primary" id="btnRefresh">새로고침</button>
+        <button class="btn" id="btnPaper">모의매매: ON</button>
+        <button class="btn" id="btnRotate">로테이션: ON</button>
+        <button class="btn" id="btnSound">알림: ON</button>
       </div>
     </div>
 
     <div class="panel">
       <div class="loading" id="loading">
         <div class="dot"></div>
-        <div>오늘의 픽을 가져오는 중…</div>
+        <div>픽 로딩중…</div>
       </div>
 
       <div class="banner" id="banner" style="display:none">
         <div class="left">
-          <div class="t" id="bannerTitle">타이밍 안내</div>
+          <div class="t" id="bannerTitle">지금 당장 진입 후보</div>
           <div class="d" id="bannerDesc">-</div>
         </div>
-        <div class="chips" id="bannerChips"></div>
+        <div class="right">
+          <div class="chips" id="bannerChips"></div>
+          <div class="chips" id="bannerNow"></div>
+          <div class="chips" id="bannerPos"></div>
+        </div>
       </div>
 
-      <div class="tabs" id="tabs"></div>
       <div class="grid" id="cards"></div>
 
       <div class="warn">
-        <b>주의</b>: 정보 제공/학습용. 수익 보장 없음. 단타/잡코인은 손실 위험이 큼. 본인 책임.
+        <b>주의</b>: 정보 제공/학습용. 수익 보장 없음. 단타는 손실 위험이 큼. 본인 책임.<br/>
+        “지금 당장”은 <b>시간창 OK + 손절과의 거리 확보 + 추격구간 아님</b> 조건으로 판정.
       </div>
     </div>
   </div>
 
   <script>
+    // ✅ 네 WebApp exec 주소
     const API_BASE = "https://script.google.com/macros/s/AKfycbz6shTLVydPvqNk69Ug2NsvyyIGeUvcM1b04aOn_KT32Wil2DWSMXaD7GkMncfVlEkv/exec";
-    const $ = (id) => document.getElementById(id);
 
+    // ====== 옵션 ======
+    const LIVE_INTERVAL_MS = 15000;
+    const ENTRY_BAND_PCT = 0.0035; // 스냅샷가 대비 +0.35% 이상이면 추격으로 보고 NOW 제외
+    const MIN_STOP_BUFFER_PCT = 0.002; // 현재가 대비 손절까지 최소 0.2% 이상 여유 있어야 NOW
+    const TP1_CHASE_BLOCK = true; // TP1 이상이면 진입금지(추격금지)
+
+    // ====== 타이밍 윈도우(유송이 원하면 여기만 수정) ======
     const WINDOWS = {
       DAYTRADE: [
         { start: "09:15", end: "11:30" },
         { start: "20:30", end: "01:30" }
-      ],
-      SWING: [
-        { start: "10:00", end: "16:00" },
-        { start: "20:00", end: "00:30" }
-      ],
-      COLLECT: [
-        { start: "09:00", end: "12:00" }
       ]
     };
 
-    let state = { status:null, picks:null, personId:null, category:"ALL" };
+    const $ = (id) => document.getElementById(id);
+
+    let state = { status:null, picks:null, personId:null };
     let liveTimer = null;
 
-    // -------------------------
-    // ✅ 업비트 호가 단위 기반 표시(소수점 문제 해결 핵심)
-    // -------------------------
+    // 로테이션(OUT이면 자동 교체)
+    let rotateOn = true;
+    let paperOn = true;
+    let soundOn = true;
+
+    // 화면에 유지할 "활성 후보" 리스트(로테이션용)
+    let activeMarkets = [];
+    let poolCursor = 0;
+
+    // 모의매매 포지션(localStorage)
+    const LS_KEY = "sot_paper_positions_v1";
+    function loadPositions(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }catch(e){ return {}; }
+    }
+    function savePositions(obj){
+      localStorage.setItem(LS_KEY, JSON.stringify(obj||{}));
+    }
+    let positions = loadPositions();
+
+    // ====== util: 가격 표시(호가단위 느낌) ======
     function tickSizeKRW(price){
       const p = Number(price || 0);
       if (p >= 2000000) return 1000;
@@ -284,12 +312,11 @@
       if (p >= 100000)  return 50;
       if (p >= 10000)   return 10;
       if (p >= 1000)    return 1;
-      if (p >= 100)     return 1;    // 100~999는 1원 단위
-      if (p >= 10)      return 0.1;  // 10~99.9는 0.1원
-      if (p >= 1)       return 0.01; // 1~9.99는 0.01원
+      if (p >= 100)     return 1;
+      if (p >= 10)      return 0.1;
+      if (p >= 1)       return 0.01;
       return 0.001;
     }
-
     function decimalsByTick(tick){
       if (tick >= 1) return 0;
       if (tick >= 0.1) return 1;
@@ -297,19 +324,16 @@
       if (tick >= 0.001) return 3;
       return 4;
     }
-
-    function formatKRWAuto(val, refPriceForTick){
-      const tick = tickSizeKRW(refPriceForTick ?? val);
+    function formatKRWAuto(val, ref){
+      const tick = tickSizeKRW(ref ?? val);
       const dec = decimalsByTick(tick);
       const n = Number(val || 0);
-      return new Intl.NumberFormat("ko-KR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+      return new Intl.NumberFormat("ko-KR", { minimumFractionDigits:dec, maximumFractionDigits:dec }).format(n);
     }
 
-    // -------------------------
     function marketToTicker(market){
-      if(!market) return "";
-      const parts = String(market).split("-");
-      return parts.length === 2 ? parts[1] : market;
+      const parts = String(market||"").split("-");
+      return parts.length===2 ? parts[1] : String(market||"");
     }
     function upbitLink(market){
       return "https://upbit.com/exchange?code=CRIX.UPBIT." + encodeURIComponent(market);
@@ -338,7 +362,8 @@
 
     async function apiGet(action, params = {}){
       const qs = new URLSearchParams({ action, ...params, _: Date.now() }).toString();
-      return await jsonp(API_BASE + "?" + qs);
+      const url = API_BASE + "?" + qs;
+      return await jsonp(url);
     }
 
     function uniqPeople(items){
@@ -354,7 +379,8 @@
     function setSubLine(){
       const last = state.status?.last_refresh || state.picks?.asof || "";
       const n = state.picks?.items?.length ?? 0;
-      $("subLine").textContent = `Last refresh(시트): ${last} | Picks: ${n} | 실시간 가격: 15초 자동 갱신`;
+      $("subLine").textContent =
+        `시트 갱신: ${last} | Picks: ${n} | 실시간: ${LIVE_INTERVAL_MS/1000}s | NOW판정: 시간OK+손절여유+추격금지`;
     }
 
     function renderPersonSelect(){
@@ -376,29 +402,10 @@
         if(p.person_id === state.personId) opt.selected = true;
         sel.appendChild(opt);
       }
-      sel.onchange = () => { state.personId = sel.value; renderAll(); startLiveLoop(true); };
+      sel.onchange = () => { state.personId = sel.value; initRotationPool(); renderAll(); startLiveLoop(true); };
     }
 
-    function renderTabs(){
-      const tabs = $("tabs");
-      const cats = ["ALL","COLLECT","SWING","DAYTRADE"];
-      tabs.innerHTML = "";
-      for(const c of cats){
-        const el = document.createElement("div");
-        el.className = "tab" + (state.category === c ? " active" : "");
-        el.textContent = c;
-        el.onclick = () => { state.category = c; renderAll(); startLiveLoop(true); };
-        tabs.appendChild(el);
-      }
-    }
-
-    function holdGuide(cat){
-      if(cat === "COLLECT") return "30~180일";
-      if(cat === "SWING") return "3~21일";
-      return "당일~48h";
-    }
-
-    // 시간/타이밍
+    // ====== KST/time window ======
     function kstNow(){
       const now = new Date();
       const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -423,21 +430,18 @@
       return (1440 - nowMin) + startMin;
     }
 
-    function getWindowsByCat(cat){
+    function getDaytradeWindows(){
       const mode = $("timingMode").value;
       if(mode === "ALL") return [{start:"00:00", end:"23:59"}];
       if(mode === "DAY") return [{start:"09:15", end:"11:30"}];
       if(mode === "NIGHT") return [{start:"20:30", end:"01:30"}];
-
-      if(cat === "COLLECT") return WINDOWS.COLLECT;
-      if(cat === "SWING") return WINDOWS.SWING;
-      return WINDOWS.DAYTRADE;
+      return WINDOWS.DAYTRADE; // AUTO
     }
 
-    function timeAdvice(cat){
+    function timingAdvice(){
       const now = kstNow();
       const nowMin = minutesOfDay(now);
-      const wins = getWindowsByCat(cat);
+      const wins = getDaytradeWindows();
 
       let isOk = false;
       let bestDelta = 999999;
@@ -452,51 +456,74 @@
       }
 
       const windowStr = wins.map(w => `${w.start}~${w.end}`).join(" / ");
-      if(isOk) return { cls:"ok", label:"지금 OK", windowStr, next:`진행중`, nextIn:`-` };
-      if(bestDelta <= 90) return { cls:"soon", label:"곧 진입", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
-      return { cls:"wait", label:"대기", windowStr, next:`${bestStart}`, nextIn:`${bestDelta}분 후` };
+      if(isOk) return { ok:true, cls:"ok", label:"지금 OK", windowStr, next:"진행중", nextIn:"-" };
+      if(bestDelta <= 90) return { ok:false, cls:"soon", label:"곧 진입", windowStr, next:bestStart, nextIn:`${bestDelta}분 후` };
+      return { ok:false, cls:"wait", label:"대기", windowStr, next:bestStart, nextIn:`${bestDelta}분 후` };
     }
 
-    function filterPicks(){
+    // ====== Picks pool ======
+    function allDaytradeSorted(){
       const items = state.picks?.items || [];
-      const maxN = Number($("viewCount").value || 20);
-
-      const filtered = items
+      return items
         .filter(it => String(it["person_id"]) === String(state.personId))
-        .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
+        .filter(it => String(it["category"] || "") === "DAYTRADE")
         .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0));
-
-      return filtered.slice(0, maxN);
     }
 
-    function chipForCategory(cat){
-      if(cat === "COLLECT") return `<span class="chip gold">COLLECT</span>`;
-      if(cat === "SWING") return `<span class="chip good">SWING</span>`;
-      return `<span class="chip">DAYTRADE</span>`;
+    function initRotationPool(){
+      activeMarkets = [];
+      poolCursor = 0;
+
+      const pool = allDaytradeSorted();
+      const maxN = Number($("viewCount").value || 6);
+      while(activeMarkets.length < maxN && poolCursor < pool.length){
+        const m = String(pool[poolCursor]["market"]||"");
+        if(m && !activeMarkets.includes(m)) activeMarkets.push(m);
+        poolCursor++;
+      }
     }
 
-    function renderBanner(){
-      const b = $("banner");
-      b.style.display = "flex";
-
-      const cat = (state.category === "ALL") ? "DAYTRADE" : state.category;
-      const adv = timeAdvice(cat === "COLLECT" || cat === "SWING" ? cat : "DAYTRADE");
-
-      $("bannerTitle").textContent = `타이밍: ${$("timingMode").options[$("timingMode").selectedIndex].text}`;
-      $("bannerDesc").textContent =
-        `현재(KST ${hhmm(kstNow())}) 기준: ${adv.label} · 다음 추천 시작: ${adv.next} (${adv.nextIn}) · 권장 시간대: ${adv.windowStr}`;
-
-      $("bannerChips").innerHTML = `
-        <span class="chip ${adv.cls}">${adv.label}</span>
-        <span class="chip purple">KST ${hhmm(kstNow())}</span>
-        <span class="chip">다음: ${adv.next} (${adv.nextIn})</span>
-      `;
+    function getPickByMarket(market){
+      const items = state.picks?.items || [];
+      return items.find(it => String(it["market"]||"") === String(market));
     }
 
+    // ====== NOW 판정 로직 ======
+    function classifyEntry(it, livePrice, timingOk){
+      const snap = Number(it["price"]||0);
+      const stop = Number(it["stop_price"]||0);
+      const tp1  = Number(it["tp1_price"]||0);
+      const tp2  = Number(it["tp2_price"]||0);
+
+      if(!livePrice || !snap || !stop) return { cls:"wait", label:"대기", reason:"price missing" };
+
+      // 손절 터치
+      if(livePrice <= stop) return { cls:"bad", label:"OUT(손절)", reason:"stop touched" };
+
+      // 추격금지(이미 많이 올라감)
+      if(TP1_CHASE_BLOCK && livePrice >= tp1) return { cls:"bad", label:"OUT(추격)", reason:">= TP1" };
+      if(livePrice >= tp2) return { cls:"bad", label:"OUT(늦음)", reason:">= TP2" };
+
+      // 시간창이 아니면 NOW 불가
+      if(!timingOk) return { cls:"wait", label:"WAIT(시간)", reason:"timing not ok" };
+
+      // 스냅샷가 대비 너무 위면(추격) NOW 제외
+      const chase = livePrice > snap * (1 + ENTRY_BAND_PCT);
+      if(chase) return { cls:"wait", label:"WAIT(눌림)", reason:"too high vs snapshot" };
+
+      // 손절 여유(현재가 대비)
+      const bufferPct = (livePrice - stop) / Math.max(1e-9, livePrice);
+      if(bufferPct < MIN_STOP_BUFFER_PCT) return { cls:"wait", label:"WAIT(여유↓)", reason:"stop too close" };
+
+      // NOW
+      return { cls:"good", label:"NOW(진입)", reason:"ok" };
+    }
+
+    // ====== 가이드(복사) ======
     async function copyText(text){
       try{
         await navigator.clipboard.writeText(text);
-        alert("매수 가이드 복사 완료 ✅");
+        alert("가이드 복사 완료 ✅");
       }catch(e){
         const ta = document.createElement("textarea");
         ta.value = text;
@@ -504,97 +531,226 @@
         ta.select();
         document.execCommand("copy");
         ta.remove();
-        alert("매수 가이드 복사 완료 ✅");
+        alert("가이드 복사 완료 ✅");
       }
     }
 
-    function buildGuideText(it){
-      const cat = String(it["category"]||"DAYTRADE");
-      const adv = timeAdvice(cat);
+    function buildGuideText(it, livePrice){
+      const snap = Number(it["price"]||0);
+      const stop = Number(it["stop_price"]||0);
+      const tp1  = Number(it["tp1_price"]||0);
+      const tp2  = Number(it["tp2_price"]||0);
+      const posKRW = Number(it["final_pos_krw"]||0);
+
       const market = String(it["market"]||"");
       const ticker = marketToTicker(market);
 
-      const snapPrice = Number(it["price"]||0);
-      const livePrice = Number(it.__live_price || 0) || snapPrice;
-
-      const posKRW = Number(it["final_pos_krw"]||0);
-      const stop = Number(it["stop_price"]||0);
-      const tp1 = Number(it["tp1_price"]||0);
-      const tp2 = Number(it["tp2_price"]||0);
-
       return [
-        `so.t 매수 가이드`,
-        `- 코인: ${ticker} (${market}) [${cat}]`,
+        `so.t DAYTRADE 가이드`,
+        `- 코인: ${ticker} (${market})`,
         `- 현재가(실시간): ${formatKRWAuto(livePrice, livePrice)} KRW`,
-        `- 스냅샷가(시트): ${formatKRWAuto(snapPrice, snapPrice)} KRW`,
+        `- 스냅샷가(시트): ${formatKRWAuto(snap, snap)} KRW`,
         `- 추천 매수금: ${new Intl.NumberFormat("ko-KR").format(Math.floor(posKRW))} KRW`,
-        `- 손절: ${formatKRWAuto(stop, snapPrice)} KRW`,
-        `- 익절: TP1 ${formatKRWAuto(tp1, snapPrice)} / TP2 ${formatKRWAuto(tp2, snapPrice)} KRW`,
-        `- 권장 보유: ${holdGuide(cat)}`,
-        `- 진입 타이밍: ${adv.label} / 권장시간대: ${adv.windowStr} / 다음: ${adv.next} (${adv.nextIn})`,
+        `- 손절(Stop): ${formatKRWAuto(stop, snap)} KRW`,
+        `- 익절: TP1 ${formatKRWAuto(tp1, snap)} / TP2 ${formatKRWAuto(tp2, snap)} KRW`,
         ``,
-        `운영 규칙(간단):`,
-        `1) 손절가 터치 = 즉시 종료`,
-        `2) TP1 도달 시 일부 익절 + 나머지 본절(또는 약익절)로 스탑 올리기`,
-        `3) DAYTRADE는 6시간 내 TP1 못가면 힘 약함 → 절반/전량 정리 고려`
+        `매매 규칙(단타 표준):`,
+        `1) 진입 후 Stop 터치 = 즉시 손절`,
+        `2) TP1 도달 = 일부 익절 + 스탑을 진입가(또는 약익절)로 올리기`,
+        `3) TP2 도달 = 나머지 청산`,
+        `4) 진입 후 6시간 내 TP1 실패 + 힘없음 = 정리 고려`,
       ].join("\n");
     }
 
-    function renderCards(){
+    // ====== 모의매매 ======
+    function beep(){
+      if(!soundOn) return;
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 880;
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.value = 0.08;
+        o.start();
+        setTimeout(()=>{ o.stop(); ctx.close(); }, 120);
+      }catch(e){}
+    }
+
+    function openPaper(market, it, livePrice){
+      if(!paperOn) return;
+      const pos = positions[market];
+      if(pos && pos.status === "OPEN") return;
+
+      positions[market] = {
+        market,
+        ticker: marketToTicker(market),
+        entry: Number(livePrice),
+        stop: Number(it["stop_price"]||0),
+        tp1: Number(it["tp1_price"]||0),
+        tp2: Number(it["tp2_price"]||0),
+        sizeKRW: Number(it["final_pos_krw"]||0),
+        openedAt: new Date().toISOString(),
+        status: "OPEN",
+        tp1Hit: false
+      };
+      savePositions(positions);
+      beep();
+    }
+
+    function closePaper(market, reason){
+      if(!paperOn) return;
+      const pos = positions[market];
+      if(!pos || pos.status !== "OPEN") return;
+      pos.status = reason || "CLOSED";
+      pos.closedAt = new Date().toISOString();
+      savePositions(positions);
+      beep();
+    }
+
+    function paperPnL(pos, livePrice){
+      const e = Number(pos.entry||0);
+      const p = Number(livePrice||0);
+      if(!e || !p) return 0;
+      return (p/e - 1);
+    }
+
+    // ====== 렌더 ======
+    function renderBanner(nowList, timing){
+      const b = $("banner");
+      b.style.display = "flex";
+
+      $("bannerTitle").textContent = `DAYTRADE: 지금 당장 진입 후보(NOW)`;
+      $("bannerDesc").textContent =
+        `현재(KST ${hhmm(kstNow())}) · 타이밍: ${timing.label} · 권장시간대: ${timing.windowStr} · 다음: ${timing.next} (${timing.nextIn})`;
+
+      $("bannerChips").innerHTML = `
+        <span class="chip ${timing.cls}">${timing.label}</span>
+        <span class="chip purple">KST ${hhmm(kstNow())}</span>
+        <span class="chip">LIVE ${LIVE_INTERVAL_MS/1000}s</span>
+      `;
+
+      if(!timing.ok){
+        $("bannerNow").innerHTML = `<span class="chip wait">지금은 시간창 아님 → NOW 없음</span>`;
+      }else if(!nowList.length){
+        $("bannerNow").innerHTML = `<span class="chip wait">NOW 조건(손절여유/추격금지) 만족 후보 없음</span>`;
+      }else{
+        $("bannerNow").innerHTML = nowList.slice(0,3).map(x =>
+          `<span class="chip good">NOW: ${x.ticker} @ ${formatKRWAuto(x.live, x.live)}</span>`
+        ).join("");
+      }
+
+      // 포지션 요약
+      const open = Object.values(positions).filter(p => p && p.status === "OPEN");
+      if(!paperOn){
+        $("bannerPos").innerHTML = `<span class="chip">모의매매 OFF</span>`;
+      }else if(!open.length){
+        $("bannerPos").innerHTML = `<span class="chip">OPEN 포지션 없음</span>`;
+      }else{
+        $("bannerPos").innerHTML =
+          `<span class="chip blue">OPEN ${open.length}개</span>` +
+          open.slice(0,3).map(p => `<span class="chip blue">${p.ticker}</span>`).join("");
+      }
+    }
+
+    function renderCards(liveMap){
       const wrap = $("cards");
       wrap.innerHTML = "";
-      const items = filterPicks();
 
-      renderBanner();
+      const timing = timingAdvice();
 
-      if(!items.length){
-        wrap.innerHTML = `<div class="card" style="grid-column: span 12;">
+      // pool 구성(로테이션 기준)
+      if(!activeMarkets.length) initRotationPool();
+
+      const showMode = $("showMode").value; // NOW/ALL
+      const maxN = Number($("viewCount").value || 6);
+
+      // activeMarkets 기반으로 카드 생성
+      const cardsData = [];
+      for(const m of activeMarkets.slice(0, maxN)){
+        const it = getPickByMarket(m);
+        if(!it) continue;
+        const live = liveMap.get(m) ?? Number(it["price"]||0);
+        const cls = classifyEntry(it, live, timing.ok);
+        cardsData.push({ it, market:m, live, cls });
+      }
+
+      // NOW 후보 리스트
+      const nowList = cardsData
+        .filter(x => x.cls.label.startsWith("NOW"))
+        .sort((a,b)=>Number(b.it["score"]||0)-Number(a.it["score"]||0))
+        .map(x => ({ market:x.market, ticker:marketToTicker(x.market), live:x.live }));
+
+      renderBanner(nowList, timing);
+
+      // showMode=NOW면 NOW만 보여주기(없으면 안내 카드)
+      let finalCards = cardsData;
+      if(showMode === "NOW") finalCards = cardsData.filter(x => x.cls.label.startsWith("NOW"));
+
+      if(!finalCards.length){
+        const empty = document.createElement("div");
+        empty.className = "card";
+        empty.style.gridColumn = "span 12";
+        empty.innerHTML = `
           <div class="title">
-            <div class="ticker">표시할 픽이 없음</div>
-            <div class="market">Picks 시트/필터/인원 선택을 확인해줘.</div>
+            <div class="ticker">NOW 후보 없음</div>
+            <div class="market">조건: 시간창 OK + 손절여유 + 추격금지(TP1 이상 금지) + 스냅샷가 대비 과열 아님</div>
           </div>
-        </div>`;
+          <div class="meta" style="margin-top:12px">
+            <div class="kv" style="grid-column: span 12">
+              <div class="k">다음 액션</div>
+              <div class="v">
+                1) 타이밍이 “지금 OK”인지 확인<br/>
+                2) 모드=전체로 바꾸면 WAIT/OUT 이유가 보임<br/>
+                3) 로테이션 ON이면 손절 터치/추격구간은 자동으로 다음 후보로 교체됨
+              </div>
+            </div>
+          </div>
+        `;
+        wrap.appendChild(empty);
         return;
       }
 
-      items.forEach((it, i) => {
-        const market = String(it["market"]||"");
+      finalCards.forEach((x, idx) => {
+        const it = x.it;
+        const market = x.market;
         const ticker = marketToTicker(market);
 
-        const snapPrice = Number(it["price"]||0);
+        const snap = Number(it["price"]||0);
         const stop = Number(it["stop_price"]||0);
-        const tp1 = Number(it["tp1_price"]||0);
-        const tp2 = Number(it["tp2_price"]||0);
-
+        const tp1  = Number(it["tp1_price"]||0);
+        const tp2  = Number(it["tp2_price"]||0);
         const posKRW = Number(it["final_pos_krw"]||0);
-        const pos = Number(it["pos_in_30d_range"]||0);
-        const volRatio = Number(it["vol_ratio_24h_to_avg7"]||0);
-        const pumpDays = Number(it["last_pump_days_ago"]||0);
         const score = Number(it["score"]||0);
-        const cat = String(it["category"]||"DAYTRADE");
 
-        const displayRank = i + 1;
-        const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
-        const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
-        const adv = timeAdvice(cat);
+        const cls = x.cls;
+        const live = x.live;
 
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.market = market;
-        card.dataset.stop = String(stop);
+
+        // 모의 포지션 상태
+        const pos = positions[market];
+        const posChip = (paperOn && pos && pos.status === "OPEN")
+          ? `<span class="chip blue">보유중(모의)</span>`
+          : ``;
+
+        const entryChip =
+          cls.label.startsWith("NOW")
+            ? `<span class="chip ok">NOW(진입)</span>`
+            : (cls.label.startsWith("WAIT") ? `<span class="chip wait">${cls.label}</span>` : `<span class="chip bad">${cls.label}</span>`);
 
         card.innerHTML = `
           <div class="row">
             <div class="title">
-              <div class="ticker">#${displayRank} ${ticker} <small style="font-weight:800;color:#9fb0d6">(${cat})</small></div>
+              <div class="ticker">#${idx+1} ${ticker} <small style="font-weight:900;color:#9fb0d6">(DAYTRADE)</small></div>
               <div class="market"><a href="${upbitLink(market)}" target="_blank" rel="noopener">${market}</a></div>
             </div>
-            <div class="chips" data-chips>
-              ${chipForCategory(cat)}
-              <span class="chip ${adv.cls}">${adv.label}</span>
-              ${riskChip}
-              ${volChip}
-              <span class="chip">펌프:${pumpDays}d</span>
+            <div class="chips">
+              ${entryChip}
+              ${posChip}
               <span class="chip">score:${score.toFixed(3)}</span>
             </div>
           </div>
@@ -602,27 +758,33 @@
           <div class="meta">
             <div class="kv">
               <div class="k">현재가(실시간)</div>
-              <div class="v" data-liveprice>— <small>KRW</small></div>
+              <div class="v">${formatKRWAuto(live, live)} <small>KRW</small></div>
               <div class="k" style="margin-top:6px">스냅샷가(시트)</div>
-              <div class="v"><small>${formatKRWAuto(snapPrice, snapPrice)} KRW</small></div>
+              <div class="v"><small>${formatKRWAuto(snap, snap)} KRW</small></div>
             </div>
 
             <div class="kv"><div class="k">추천 매수 금액</div><div class="v">${new Intl.NumberFormat("ko-KR").format(Math.floor(posKRW))} <small>KRW</small></div></div>
-            <div class="kv"><div class="k">손절(Stop)</div><div class="v" data-stop>${formatKRWAuto(stop, snapPrice)} <small>KRW</small></div></div>
-            <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${formatKRWAuto(tp1, snapPrice)} <small>KRW</small> · ${formatKRWAuto(tp2, snapPrice)} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">손절(Stop)</div><div class="v">${formatKRWAuto(stop, snap)} <small>KRW</small></div></div>
+            <div class="kv"><div class="k">익절(TP1 / TP2)</div><div class="v">${formatKRWAuto(tp1, snap)} <small>KRW</small> · ${formatKRWAuto(tp2, snap)} <small>KRW</small></div></div>
 
-            <div class="kv"><div class="k">추천 진입 시간대(KST)</div><div class="v">${adv.windowStr}<br/><small>다음: ${adv.next} (${adv.nextIn})</small></div></div>
-            <div class="kv"><div class="k">권장 보유</div><div class="v">${holdGuide(cat)}<br/><small>DAYTRADE는 6시간 내 TP1 실패 시 정리 고려</small></div></div>
+            <div class="kv" style="grid-column: span 12">
+              <div class="k">진입 판정</div>
+              <div class="v">${cls.label} <small>(${cls.reason})</small></div>
+            </div>
           </div>
 
           <div class="cardActions">
             <button class="miniBtn go" data-go="${market}">업비트 열기</button>
-            <button class="miniBtn copy" data-copy="1">매수 가이드 복사</button>
+            <button class="miniBtn copy" data-copy="${market}">가이드 복사</button>
+            <button class="miniBtn now" data-buy="${market}" ${(!paperOn || !cls.label.startsWith("NOW")) ? "disabled" : ""}>진입(모의)</button>
+            <button class="miniBtn out" data-sell="${market}" ${(paperOn && pos && pos.status==="OPEN") ? "" : "disabled"}>청산(모의)</button>
           </div>
         `;
 
-        card.querySelector('[data-go]').onclick = () => window.open(upbitLink(market), "_blank", "noopener");
-        card.querySelector('[data-copy]').onclick = () => copyText(buildGuideText(it));
+        card.querySelector("[data-go]").onclick = () => window.open(upbitLink(market), "_blank", "noopener");
+        card.querySelector("[data-copy]").onclick = () => copyText(buildGuideText(it, live));
+        card.querySelector("[data-buy]").onclick = () => { openPaper(market, it, live); };
+        card.querySelector("[data-sell]").onclick = () => { closePaper(market, "MANUAL"); };
 
         wrap.appendChild(card);
       });
@@ -630,13 +792,126 @@
 
     function renderAll(){
       setSubLine();
-      renderTabs();
-      renderCards();
       $("loading").style.display = "none";
+      // live 업데이트에서 렌더함
     }
 
+    // ====== Live loop ======
+    async function fetchLive(markets){
+      if(!markets.length) return new Map();
+      const res = await apiGet("live", { markets: markets.join(",") });
+      if(!res.ok) return new Map();
+      const map = new Map();
+      (res.items || []).forEach(x => map.set(String(x.market), Number(x.trade_price)));
+      return map;
+    }
+
+    function nextMarketFromPool(excludeSet){
+      const pool = allDaytradeSorted();
+      while(poolCursor < pool.length){
+        const m = String(pool[poolCursor]["market"]||"");
+        poolCursor++;
+        if(!m) continue;
+        if(excludeSet.has(m)) continue;
+        return m;
+      }
+      return null;
+    }
+
+    function rotateIfNeeded(liveMap){
+      if(!rotateOn) return;
+
+      const timing = timingAdvice();
+      const poolSet = new Set(activeMarkets);
+
+      // OUT(손절/추격)만 교체. WAIT은 유지.
+      for(let i=0; i<activeMarkets.length; i++){
+        const m = activeMarkets[i];
+        const it = getPickByMarket(m);
+        if(!it) continue;
+        const live = liveMap.get(m) ?? Number(it["price"]||0);
+        const cls = classifyEntry(it, live, timing.ok);
+        if(cls.label.startsWith("OUT")){
+          const next = nextMarketFromPool(poolSet);
+          if(next){
+            poolSet.delete(m);
+            activeMarkets[i] = next;
+            poolSet.add(next);
+          }
+        }
+      }
+    }
+
+    function updatePaperPositions(liveMap){
+      if(!paperOn) return;
+
+      const open = Object.values(positions).filter(p => p && p.status === "OPEN");
+      for(const p of open){
+        const live = liveMap.get(p.market);
+        if(!live) continue;
+
+        // 손절
+        if(Number(live) <= Number(p.stop)){
+          p.status = "STOP";
+          p.closedAt = new Date().toISOString();
+          savePositions(positions);
+          beep();
+          continue;
+        }
+
+        // TP1
+        if(!p.tp1Hit && Number(live) >= Number(p.tp1)){
+          p.tp1Hit = true;
+          // TP1 도달 시 “스탑을 진입가로 올리는” 것을 안내만(자동은 위험)
+          savePositions(positions);
+          beep();
+          continue;
+        }
+
+        // TP2
+        if(Number(live) >= Number(p.tp2)){
+          p.status = "TP2";
+          p.closedAt = new Date().toISOString();
+          savePositions(positions);
+          beep();
+          continue;
+        }
+      }
+    }
+
+    function renderPositionsBar(liveMap){
+      // 배너Pos는 renderBanner에서 간단표시만. 상세는 필요하면 다음 단계에서 추가.
+      // 여기서는 아무것도 안 함.
+    }
+
+    async function liveTick(){
+      const maxN = Number($("viewCount").value || 6);
+      if(!activeMarkets.length) initRotationPool();
+
+      const markets = activeMarkets.slice(0, maxN);
+      const liveMap = await fetchLive(markets);
+
+      rotateIfNeeded(liveMap);
+      updatePaperPositions(liveMap);
+
+      // 교체 후 다시 live 가져오기(교체된 종목 가격 필요)
+      const markets2 = activeMarkets.slice(0, maxN);
+      const liveMap2 = await fetchLive(markets2);
+
+      renderCards(liveMap2);
+      renderPositionsBar(liveMap2);
+    }
+
+    function startLiveLoop(immediate=false){
+      if(liveTimer) clearInterval(liveTimer);
+      if(immediate) liveTick().catch(()=>{});
+      liveTimer = setInterval(()=>liveTick().catch(()=>{}), LIVE_INTERVAL_MS);
+    }
+
+    // ====== load ======
     async function loadAll(){
       $("loading").style.display = "flex";
+
       const [status, picks] = await Promise.all([ apiGet("status"), apiGet("picks") ]);
       if(!status.ok) throw new Error("status error: " + (status.error || "unknown"));
       if(!picks.ok) throw new Error("picks error: " + (picks.error || "unknown"));
@@ -645,91 +920,48 @@
       state.picks = picks;
 
       renderPersonSelect();
+      initRotationPool();
       renderAll();
       startLiveLoop(true);
     }
 
-    // -------------------------
-    // ✅ 실시간 가격 갱신 + 손절 터치 경고
-    // -------------------------
-    function visibleMarkets(){
-      const cards = Array.from(document.querySelectorAll(".card[data-market]"));
-      return cards.map(c => c.dataset.market).filter(Boolean);
-    }
-
-    async function updateLiveOnce(){
-      const markets = visibleMarkets();
-      if(!markets.length) return;
-
-      const res = await apiGet("live", { markets: markets.join(",") });
-      if(!res.ok) return;
-
-      const map = new Map();
-      (res.items || []).forEach(x => map.set(String(x.market), Number(x.trade_price)));
-
-      // ✅ state에도 live price 저장(매수 가이드 복사에 반영)
-      const allItems = state.picks?.items || [];
-      for(const it of allItems){
-        const m = String(it["market"] || "");
-        if(map.has(m)) it.__live_price = map.get(m);
-      }
-
-      const cards = Array.from(document.querySelectorAll(".card[data-market]"));
-      for(const c of cards){
-        const m = c.dataset.market;
-        const live = map.get(m);
-        if(!live) continue;
-
-        const stop = Number(c.dataset.stop || 0);
-
-        const el = c.querySelector("[data-liveprice]");
-        if(el) el.innerHTML = `${formatKRWAuto(live, live)} <small>KRW</small>`;
-
-        // 손절 터치/근접 경고 (실시간가 <= 손절가)
-        const chips = c.querySelector("[data-chips]");
-        const existed = chips.querySelector("[data-stopwarn]");
-        if(existed) existed.remove();
-
-        const btnGo = c.querySelector('[data-go]');
-        const btnCopy = c.querySelector('[data-copy]');
-
-        if(stop > 0 && live <= stop){
-          const warn = document.createElement("span");
-          warn.className = "chip bad";
-          warn.dataset.stopwarn = "1";
-          warn.textContent = "손절 터치";
-          chips.prepend(warn);
-
-          // ✅ 이 상태는 “진입 금지”가 맞아서 버튼도 잠깐 막아버림(원하면 제거 가능)
-          if(btnGo) btnGo.disabled = true;
-          if(btnCopy) btnCopy.disabled = true;
-        }else{
-          if(btnGo) btnGo.disabled = false;
-          if(btnCopy) btnCopy.disabled = false;
-        }
-      }
-    }
-
-    function startLiveLoop(immediate=false){
-      if(liveTimer) clearInterval(liveTimer);
-      if(immediate) updateLiveOnce().catch(()=>{});
-      liveTimer = setInterval(() => updateLiveOnce().catch(()=>{}), 15000);
-    }
-
-    // UI events
+    // ====== UI events ======
     $("btnRefresh").onclick = async () => {
       try{ await loadAll(); }
       catch(e){ alert("새로고침 실패: " + e.message); }
     };
-    $("timingMode").onchange = () => { renderAll(); startLiveLoop(true); };
-    $("viewCount").onchange = () => { renderAll(); startLiveLoop(true); };
+    $("timingMode").onchange = () => { startLiveLoop(true); };
+    $("viewCount").onchange = () => { initRotationPool(); startLiveLoop(true); };
+    $("showMode").onchange = () => { startLiveLoop(true); };
+
+    $("btnRotate").onclick = () => {
+      rotateOn = !rotateOn;
+      $("btnRotate").textContent = `로테이션: ${rotateOn ? "ON" : "OFF"}`;
+      $("btnRotate").className = rotateOn ? "btn" : "btn bad";
+    };
+
+    $("btnPaper").onclick = () => {
+      paperOn = !paperOn;
+      $("btnPaper").textContent = `모의매매: ${paperOn ? "ON" : "OFF"}`;
+      $("btnPaper").className = paperOn ? "btn" : "btn bad";
+      if(!paperOn){
+        // 모의 OFF하면 OPEN 포지션도 그대로 두되, 알림/버튼은 비활성만
+      }
+      startLiveLoop(true);
+    };
+
+    $("btnSound").onclick = () => {
+      soundOn = !soundOn;
+      $("btnSound").textContent = `알림: ${soundOn ? "ON" : "OFF"}`;
+      $("btnSound").className = soundOn ? "btn" : "btn bad";
+    };
 
     (async function init(){
       try{ await loadAll(); }
       catch(e){
         $("loading").style.display = "none";
         $("subLine").textContent = "로드 실패: " + e.message;
-        alert("로드 실패: " + e.message + "\n\nApps Script WebApp 배포/권한(Anyone) 확인.");
+        alert("로드 실패: " + e.message + "\n\n1) Apps Script에 action=live 추가됨?\n2) 웹앱 배포(모든 사용자) 맞음?");
       }
     })();
   </script>
