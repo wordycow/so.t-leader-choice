@@ -134,7 +134,7 @@
     const linkonBtn = document.getElementById("ppt-form-btn");
     if (linkonBtn && linkonBtn.dataset.bound !== "1") {
       linkonBtn.dataset.bound = "1";
-      linkonBtn.addEventListener("click", () => window.open("https://linkon.gift/", "_blank"));
+      linkonBtn.addEventListener("click", () => window.open("https://www.pi-meta.com/main/", "_blank"));
     }
 
     const marketBtn = document.getElementById("market-btn");
