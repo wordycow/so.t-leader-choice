@@ -916,27 +916,73 @@
       .action-btn.action-btn-sot .sot-logo{ height: 30px; }
     }
 
-    .action-btn.linkon-btn{
-      padding: 6px 10px;
-      gap: 10px;
-      border: 1px solid rgba(164,212,186,0.55);
-      background: linear-gradient(180deg, #055430 0%, #024B2A 100%);
-      box-shadow:
-        0 10px 24px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(164,212,186,0.18) inset;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .action-btn.linkon-btn:hover{
-      transform: translateY(-1px);
-      filter: brightness(1.06);
-      background: linear-gradient(180deg, #066038 0%, #024B2A 100%);
-      box-shadow:
-        0 16px 32px rgba(0,0,0,1),
-        0 0 0 1px rgba(164,212,186,0.35) inset;
-    }
-    .action-btn.linkon-btn .linkon-logo{ height:32px; width:auto; display:block; object-fit:contain; }
+   /* ===== Linkon(PIMETA) 버튼: 화이트 강조 버전 ===== */
+.action-btn.linkon-btn{
+  position: relative;
+  overflow: hidden;
+
+  padding: 12px 14px;
+  min-height: 64px;
+  gap: 12px;
+
+  border: 1px solid rgba(251,191,36,0.65);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(245,245,245,0.92));
+  box-shadow:
+    0 14px 28px rgba(0,0,0,0.90),
+    0 0 0 1px rgba(255,255,255,0.35) inset;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  transform: translateZ(0);
+}
+
+/* 은은한 네온 글로우(로고 강조) */
+.action-btn.linkon-btn::before{
+  content:"";
+  position:absolute;
+  inset:-20px;
+  background:
+    radial-gradient(circle at 25% 30%, rgba(0,247,255,0.22), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(251,191,36,0.22), transparent 60%),
+    radial-gradient(circle at 55% 40%, rgba(168,85,247,0.16), transparent 60%);
+  filter: blur(10px);
+  opacity: .9;
+  pointer-events:none;
+}
+
+.action-btn.linkon-btn:hover{
+  transform: translateY(-2px) scale(1.01);
+  filter: brightness(1.03);
+  border-color: rgba(251,191,36,0.90);
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.96),
+    0 0 0 1px rgba(251,191,36,0.35) inset;
+}
+
+.action-btn.linkon-btn:active{
+  transform: translateY(0) scale(0.995);
+}
+
+/* 로고 크게 + 또렷하게 */
+.action-btn.linkon-btn .linkon-logo{
+  position: relative;
+  z-index: 1;
+  height: 44px;            /* ✅ 기존 32px → 44px */
+  width: auto;
+  display:block;
+  object-fit:contain;
+  filter:
+    drop-shadow(0 10px 16px rgba(0,0,0,0.35))
+    drop-shadow(0 0 10px rgba(0,0,0,0.12));
+}
+
+/* 모바일에서 살짝만 줄이기 */
+@media (max-width: 768px){
+  .action-btn.linkon-btn{ min-height: 60px; }
+  .action-btn.linkon-btn .linkon-logo{ height: 40px; }
+}
 
     .market-btn{
       border: 1px solid rgba(164,212,186,0.55);
@@ -1329,9 +1375,17 @@
                 </span>
               </button>
 
-              <button id="ppt-form-btn" class="action-btn linkon-btn">
-                <img class="linkon-logo" src="https://wordycow.github.io/so.t-leader-choice/img/Linkon.png" alt="Linkon">
-              </button>
+              <a id="ppt-form-btn"
+   class="action-btn linkon-btn"
+   href="https://www.pi-meta.com/main/"
+   target="_blank"
+   rel="noopener noreferrer"
+   aria-label="PIMETA 열기">
+  <img class="linkon-logo"
+       src="https://wordycow.github.io/so.t-leader-choice/img/Linkon.png"
+       alt="PIMETA">
+</a>
+
 
               <button id="market-btn" class="action-btn market-btn">UNIQUE MARKET</button>
               <button id="travel-btn" class="action-btn">여행신청/광고 문의</button>
