@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔥 슬랭 사전 - Street Dictionary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Permanent+Marker&family=Bangers&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-green: #39ff14;
+      --neon-pink: #ff10f0;
+      --neon-yellow: #ffff00;
+      --neon-blue: #00f0ff;
+      --neon-orange: #ff6600;
+      --dark-bg: #0a0a0a;
+      --brick-bg: #1a0f0f;
+      --graffiti: 'Bangers', cursive;
+      --marker: 'Permanent Marker', cursive;
+      --street: 'Bebas Neue', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--street);
+      background: 
+        repeating-linear-gradient(
+          90deg,
+          #1a0f0f 0px,
+          #1a0f0f 10px,
+          #2a1515 10px,
+          #2a1515 20px
+        ),
+        linear-gradient(180deg, #0a0a0a 0%, #1a0f0f 100%);
+      color: #fff;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 그래피티 배경 효과 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 20% 30%, rgba(57, 255, 20, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 16, 240, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 헤더 - 그래피티 스타일 */
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    .main-title {
+      font-family: var(--graffiti);
+      font-size: 72px;
+      color: var(--neon-green);
+      text-shadow: 
+        0 0 10px var(--neon-green),
+        0 0 20px var(--neon-green),
+        0 0 30px var(--neon-green),
+        3px 3px 0 #000,
+        -3px -3px 0 #000;
+      letter-spacing: 4px;
+      animation: flicker 3s infinite alternate;
+      margin-bottom: 10px;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.95; }
+      75% { opacity: 0.98; }
+    }
+
+    .subtitle {
+      font-family: var(--marker);
+      font-size: 24px;
+      color: var(--neon-pink);
+      text-shadow: 0 0 10px var(--neon-pink);
+      margin-bottom: 30px;
+    }
+
+    /* 검색창 - 스프레이 페인트 스타일 */
+    .search-container {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 3px solid var(--neon-yellow);
+      border-radius: 15px;
+      box-shadow: 
+        0 0 20px rgba(255, 255, 0, 0.3),
+        inset 0 0 20px rgba(255, 255, 0, 0.1);
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 15px 20px;
+      font-size: 18px;
+      font-family: var(--street);
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid var(--neon-green);
+      border-radius: 10px;
+      color: #fff;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--marker);
+    }
+
+    .search-input:focus {
+      border-color: var(--neon-pink);
+      box-shadow: 0 0 15px var(--neon-pink);
+    }
+
+    .search-btn {
+      padding: 15px 30px;
+      font-size: 18px;
+      font-family: var(--graffiti);
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-orange));
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(255, 16, 240, 0.5);
+      letter-spacing: 2px;
+    }
+
+    .search-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(255, 16, 240, 0.8);
+    }
+
+    .search-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 랜덤 버튼 - 스트리트 스타일 */
+    .random-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 40px;
+      font-size: 20px;
+      font-family: var(--marker);
+      background: transparent;
+      border: 3px dashed var(--neon-green);
+      border-radius: 20px;
+      color: var(--neon-green);
+      cursor: pointer;
+      transition: all 0.3s;
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .random-btn:hover {
+      background: rgba(57, 255, 20, 0.2);
+      transform: rotate(-2deg) scale(1.05);
+    }
+
+    /* 로딩 - 스프레이 캔 애니메이션 */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      display: none;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spray-can {
+      font-size: 60px;
+      animation: spray 1s infinite;
+      filter: drop-shadow(0 0 10px var(--neon-pink));
+    }
+
+    @keyframes spray {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-10px) rotate(-5deg); }
+      75% { transform: translateY(-10px) rotate(5deg); }
+    }
+
+    .loading-text {
+      font-family: var(--marker);
+      font-size: 24px;
+      color: var(--neon-yellow);
+      margin-top: 20px;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 결과 영역 - 그래피티 카드 */
+    .results {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .word-card {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(26, 15, 15, 0.8) 100%);
+      border: 3px solid var(--neon-pink);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 
+        0 0 30px rgba(255, 16, 240, 0.3),
+        inset 0 0 20px rgba(255, 16, 240, 0.05);
+      position: relative;
+      overflow: hidden;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* 스프레이 효과 */
+    .word-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(57, 255, 20, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .word-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px dashed var(--neon-green);
+    }
+
+    .word-term {
+      font-family: var(--graffiti);
+      font-size: 48px;
+      color: var(--neon-yellow);
+      text-shadow: 
+        0 0 10px var(--neon-yellow),
+        2px 2px 0 #000;
+      letter-spacing: 2px;
+    }
+
+    .word-rank {
+      font-family: var(--street);
+      font-size: 16px;
+      color: var(--neon-green);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 15px;
+      border-radius: 20px;
+      border: 2px solid var(--neon-green);
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+    }
+
+    .definition-item {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border-left: 4px solid var(--neon-pink);
+      border-radius: 10px;
+      position: relative;
+    }
+
+    .definition-number {
+      position: absolute;
+      top: -15px;
+      left: 15px;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-orange));
+      color: #000;
+      font-family: var(--graffiti);
+      font-size: 20px;
+      padding: 5px 15px;
+      border-radius: 15px;
+      font-weight: bold;
+    }
+
+    .definition-text {
+      font-family: 'Arial', sans-serif;
+      font-size: 18px;
+      line-height: 1.6;
+      color: #fff;
+      margin-bottom: 15px;
+      padding-top: 10px;
+    }
+
+    .example {
+      font-family: var(--marker);
+      font-size: 16px;
+      color: var(--neon-blue);
+      font-style: italic;
+      padding: 10px 15px;
+      background: rgba(0, 240, 255, 0.1);
+      border-radius: 8px;
+      border-left: 3px solid var(--neon-blue);
+      margin-top: 10px;
+    }
+
+    .example::before {
+      content: '💬 ';
+    }
+
+    .meta-info {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .vote-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 15px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 15px;
+      font-size: 16px;
+      font-family: var(--street);
+    }
+
+    .thumbs-up {
+      color: var(--neon-green);
+      text-shadow: 0 0 5px var(--neon-green);
+    }
+
+    .thumbs-down {
+      color: var(--neon-pink);
+      text-shadow: 0 0 5px var(--neon-pink);
+    }
+
+    .date-badge {
+      padding: 8px 15px;
+      background: rgba(255, 255, 0, 0.2);
+      border-radius: 15px;
+      color: var(--neon-yellow);
+      font-size: 14px;
+      font-family: var(--street);
+    }
+
+    .author-badge {
+      padding: 8px 15px;
+      background: rgba(255, 16, 240, 0.2);
+      border-radius: 15px;
+      color: var(--neon-pink);
+      font-size: 14px;
+      font-family: var(--street);
+    }
+
+    /* 에러 메시지 - 그래피티 스타일 */
+    .error-message {
+      text-align: center;
+      padding: 40px 20px;
+      display: none;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+
+    .error-emoji {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: shake 0.5s infinite;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-5deg); }
+      75% { transform: rotate(5deg); }
+    }
+
+    .error-text {
+      font-family: var(--graffiti);
+      font-size: 36px;
+      color: var(--neon-orange);
+      text-shadow: 0 0 20px var(--neon-orange);
+    }
+
+    /* 홈 버튼 */
+    .home-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 12px 24px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid var(--neon-green);
+      border-radius: 15px;
+      color: var(--neon-green);
+      font-family: var(--street);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+    }
+
+    .home-btn:hover {
+      background: rgba(57, 255, 20, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* 비용 표시 */
+    .cost-badge {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--neon-yellow), var(--neon-orange));
+      border: 3px solid var(--neon-orange);
+      border-radius: 20px;
+      color: #000;
+      font-family: var(--graffiti);
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+      z-index: 100;
+      letter-spacing: 2px;
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+      .main-title {
+        font-size: 48px;
+      }
+
+      .subtitle {
+        font-size: 18px;
+      }
+
+      .search-box {
+        flex-direction: column;
+      }
+
+      .word-term {
+        font-size: 32px;
+      }
+
+      .cost-badge {
+        top: 10px;
+        right: 10px;
+        font-size: 18px;
+        padding: 8px 16px;
+      }
+
+      .home-btn {
+        top: 10px;
+        left: 10px;
+        font-size: 14px;
+        padding: 8px 16px;
+      }
+    }
+
+    /* 추가 그래피티 효과 */
+    .graffiti-tag {
+      position: fixed;
+      font-family: var(--marker);
+      opacity: 0.1;
+      pointer-events: none;
+      transform: rotate(-15deg);
+      font-size: 120px;
+      z-index: 0;
+    }
+
+    .tag-1 {
+      top: 20%;
+      left: 5%;
+      color: var(--neon-pink);
+    }
+
+    .tag-2 {
+      top: 60%;
+      right: 5%;
+      color: var(--neon-green);
+      transform: rotate(15deg);
+    }
+  </style>
+</head>
+<body>
+  <!-- 그래피티 태그 배경 -->
+  <div class="graffiti-tag tag-1">SLANG</div>
+  <div class="graffiti-tag tag-2">WORD</div>
+
+  <!-- 홈 버튼 -->
+  <a href="the-unique-main.html" class="home-btn">
+    🏠 <span>HOME</span>
+  </a>
+
+  <!-- 비용 배지 -->
+  <div class="cost-badge">500 UT</div>
+
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <h1 class="main-title">🔥 SLANG DICTIONARY</h1>
+      <p class="subtitle">스트리트 언어의 모든 것</p>
+    </div>
+
+    <!-- 검색 영역 -->
+    <div class="search-container">
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input" 
+          id="searchInput"
+          placeholder="검색할 슬랭을 입력하세요... (예: YOLO, Lit, Flex)"
+          autocomplete="off"
+        >
+        <button class="search-btn" id="searchBtn">SEARCH</button>
+      </div>
+      <button class="random-btn" id="randomBtn">🎲 랜덤 슬랭 보기</button>
+    </div>
+
+    <!-- 로딩 -->
+    <div class="loading" id="loading">
+      <div class="spray-can">🎨</div>
+      <div class="loading-text">그래피티 그리는 중...</div>
+    </div>
+
+    <!-- 에러 메시지 -->
+    <div class="error-message" id="errorMessage">
+      <div class="error-emoji">😵</div>
+      <div class="error-text">단어를 찾을 수 없어요!</div>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://unofficialurbandictionaryapi.com/api';
+    
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const loading = document.getElementById('loading');
+    const errorMessage = document.getElementById('errorMessage');
+    const results = document.getElementById('results');
+
+    // 검색 함수
+    async function searchSlang(term) {
+      showLoading();
+      hideError();
+      clearResults();
+
+      try {
+        const response = await fetch(`${API_BASE}/search?term=${encodeURIComponent(term)}&strict=false&matchCase=false&limit=5`);
+        
+        if (!response.ok) {
+          throw new Error('검색 실패');
+        }
+
+        const data = await response.json();
+        
+        hideLoading();
+
+        if (!data || !data.list || data.list.length === 0) {
+          showError();
+          return;
+        }
+
+        displayResults(data.list);
+      } catch (error) {
+        console.error('검색 에러:', error);
+        hideLoading();
+        showError();
+      }
+    }
+
+    // 랜덤 슬랭 가져오기
+    async function getRandomSlang() {
+      showLoading();
+      hideError();
+      clearResults();
+
+      try {
+        const response = await fetch(`${API_BASE}/random`);
+        
+        if (!response.ok) {
+          throw new Error('랜덤 검색 실패');
+        }
+
+        const data = await response.json();
+        
+        hideLoading();
+
+        if (!data || !data.list || data.list.length === 0) {
+          showError();
+          return;
+        }
+
+        displayResults(data.list);
+      } catch (error) {
+        console.error('랜덤 에러:', error);
+        hideLoading();
+        showError();
+      }
+    }
+
+    // 결과 표시
+    function displayResults(items) {
+      results.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'word-card';
+        card.style.animationDelay = `${index * 0.1}s`;
+
+        const thumbsUpCount = item.thumbs_up || 0;
+        const thumbsDownCount = item.thumbs_down || 0;
+        const date = item.written_on ? new Date(item.written_on).toLocaleDateString('ko-KR') : '';
+        const author = item.author || 'Anonymous';
+
+        // 예문 처리
+        let exampleHTML = '';
+        if (item.example) {
+          exampleHTML = `<div class="example">${escapeHtml(item.example)}</div>`;
+        }
+
+        card.innerHTML = `
+          <div class="word-header">
+            <div class="word-term">${escapeHtml(item.word)}</div>
+            <div class="word-rank">#${index + 1}</div>
+          </div>
+          
+          <div class="definition-item">
+            <div class="definition-number">#${index + 1}</div>
+            <div class="definition-text">${escapeHtml(item.definition)}</div>
+            ${exampleHTML}
+            
+            <div class="meta-info">
+              <div class="vote-badge thumbs-up">
+                👍 ${thumbsUpCount.toLocaleString()}
+              </div>
+              <div class="vote-badge thumbs-down">
+                👎 ${thumbsDownCount.toLocaleString()}
+              </div>
+              ${date ? `<div class="date-badge">📅 ${date}</div>` : ''}
+              <div class="author-badge">✍️ ${escapeHtml(author)}</div>
+            </div>
+          </div>
+        `;
+
+        results.appendChild(card);
+      });
+    }
+
+    // HTML 이스케이프
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // UI 제어 함수들
+    function showLoading() {
+      loading.classList.add('active');
+    }
+
+    function hideLoading() {
+      loading.classList.remove('active');
+    }
+
+    function showError() {
+      errorMessage.classList.add('active');
+    }
+
+    function hideError() {
+      errorMessage.classList.remove('active');
+    }
+
+    function clearResults() {
+      results.innerHTML = '';
+    }
+
+    // 이벤트 리스너
+    searchBtn.addEventListener('click', () => {
+      const term = searchInput.value.trim();
+      if (term) {
+        searchSlang(term);
+      }
+    });
+
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const term = searchInput.value.trim();
+        if (term) {
+          searchSlang(term);
+        }
+      }
+    });
+
+    randomBtn.addEventListener('click', () => {
+      getRandomSlang();
+    });
+
+    // 초기 랜덤 슬랭 표시
+    window.addEventListener('load', () => {
+      getRandomSlang();
+    });
+  </script>
+</body>
+</html>
