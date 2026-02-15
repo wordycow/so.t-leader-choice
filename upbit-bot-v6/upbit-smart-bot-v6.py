@@ -40,6 +40,12 @@ LICENSE_CONFIG = {
     'network': 'TRC-20',  # Tron 네트워크
 }
 
+# ⚠️ 가격 정책 변경 예정:
+# 현재: 1 USDT = 1일 (소수점 버림)
+# 사용자 증가 시 가격 인상 예정 (예: 1 USDT = 0.5일)
+# LICENSE_CONFIG['price_per_day'] 값을 변경하고
+# save_license() 함수의 계산식도 함께 수정 필요
+
 # ═══════════════════════════════════════════════════════
 # 🎨 전역 상태 관리
 # ═══════════════════════════════════════════════════════
@@ -849,7 +855,7 @@ def bot_main_loop():
 @app.route('/')
 def index():
     """메인 대시보드"""
-    return render_template('dashboard-v6.html')
+    return render_template('dashboard-pro.html')
 
 @app.route('/api/license/info')
 def api_license_info():
