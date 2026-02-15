@@ -24,11 +24,17 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import threading
 
+# 트레이딩 데이터베이스 임포트
+from trading_database import TradingDatabase
+
 # ═══════════════════════════════════════════════════════
 # 🌐 Flask 웹 서버 설정
 # ═══════════════════════════════════════════════════════
 app = Flask(__name__)
 CORS(app)
+
+# 트레이딩 데이터베이스 초기화
+trading_db = TradingDatabase("trading_history.db")
 
 # ═══════════════════════════════════════════════════════
 # 💳 라이선스 설정
@@ -70,7 +76,11 @@ bot_state = {
     'simulation_seed': 1000000,  # 시뮬레이션 시드 (기본 100만원)
     'simulation_krw': 1000000,  # 시뮬레이션 현재 잔고
     'simulation_holdings': {},  # 시뮬레이션 보유 코인 {'KRW-BTC': {'amount': 0.001, 'avg_price': 50000000}}
-    'simulation_start_seed': 1000000  # 시뮬레이션 시작 시드 (수익률 계산용)
+    'simulation_start_seed': 1000000,  # 시뮬레이션 시작 시드 (수익률 계산용)
+    
+    # 📊 학습 및 데이터 수집
+    'current_session_id': None,  # 현재 세션 ID
+    'trade_reasons': []  # 거래 이유 리스트 (실시간 표시용)
 }
 
 # 수익 투자 대상 코인 (우선순위 순)
@@ -1101,6 +1111,99 @@ def api_simulation_status():
             'total_profit': total_profit,
             'profit_rate': profit_rate
         }
+    })
+
+@app.route('/api/learning/history', methods=['GET'])
+def api_learning_history():
+    """학습 히스토리 조회"""
+    try:
+        limit = int(request.args.get('limit', 10))
+        sessions = trading_db.get_session_history(limit)
+        
+        return jsonify({
+            'success': True,
+            'sessions': sessions,
+            'total': len(sessions)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/learning/session/<session_id>', methods=['GET'])
+def api_session_details(session_id):
+    """특정 세션의 상세 거래 내역"""
+    try:
+        trades = trading_db.get_trades_by_session(session_id)
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'trades': trades,
+            'total': len(trades)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/learning/analysis/buy-reasons', methods=['GET'])
+def api_analyze_buy_reasons():
+    """매수 이유별 성공률 분석"""
+    try:
+        analysis = trading_db.analyze_buy_reasons()
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/learning/analysis/rsi', methods=['GET'])
+def api_analyze_rsi():
+    """RSI 범위별 효과 분석"""
+    try:
+        analysis = trading_db.analyze_rsi_effectiveness()
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/learning/best-conditions', methods=['GET'])
+def api_best_conditions():
+    """최적 거래 조건 찾기"""
+    try:
+        min_samples = int(request.args.get('min_samples', 10))
+        conditions = trading_db.get_best_performing_conditions(min_samples)
+        
+        return jsonify({
+            'success': True,
+            'conditions': conditions
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/learning/trade-reasons', methods=['GET'])
+def api_trade_reasons():
+    """실시간 거래 이유 조회"""
+    return jsonify({
+        'success': True,
+        'reasons': bot_state['trade_reasons'][-20:]  # 최근 20개
     })
 
 # ═══════════════════════════════════════════════════════
