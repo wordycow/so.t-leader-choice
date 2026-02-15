@@ -35,7 +35,8 @@ CORS(app)
 # ═══════════════════════════════════════════════════════
 LICENSE_CONFIG = {
     'usdt_address': 'TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt',  # USDT 수신 주소 (TRC-20)
-    'price_per_10_days': 10,  # 10 USDT = 10일
+    'price_per_day': 1,  # 1 USDT = 1일 (비례 계산)
+    'min_amount': 10,  # 최소 10 USDT
     'network': 'TRC-20',  # Tron 네트워크
 }
 
@@ -168,8 +169,9 @@ def save_license(txid, amount, network='TRC-20'):
     """라이선스 정보 저장"""
     license_file = "license.json"
     
-    # 10 USDT = 10일
-    days = int(amount / LICENSE_CONFIG['price_per_10_days'] * 10)
+    # 1 USDT = 1일 (소수점 버림)
+    # 예: 10 USDT → 10일, 12.4 USDT → 12일, 20 USDT → 20일
+    days = int(amount)  # 소수점 버림
     
     start_date = datetime.now()
     expiry_date = start_date + timedelta(days=days)
@@ -189,7 +191,7 @@ def save_license(txid, amount, network='TRC-20'):
         with open(license_file, "w", encoding="utf-8") as f:
             json.dump(license_data, f, indent=2, ensure_ascii=False)
         
-        log(f"✅ 라이선스 활성화 완료! (기간: {days}일)", "SUCCESS")
+        log(f"✅ 라이선스 활성화 완료! ({amount} USDT → {days}일)", "SUCCESS")
         return license_data
     except Exception as e:
         log(f"❌ 라이선스 저장 실패: {e}", "ERROR")
@@ -228,8 +230,9 @@ def verify_txid(txid):
             amount_str = transfer_info.get('amount_str', '0')
             amount = float(amount_str) / 1000000  # USDT는 6 decimals
             
-            if amount < LICENSE_CONFIG['price_per_10_days']:
-                return {'success': False, 'error': f'Insufficient amount: {amount} USDT'}
+            # 최소 금액 확인 (10 USDT 이상)
+            if amount < LICENSE_CONFIG['min_amount']:
+                return {'success': False, 'error': f'Insufficient amount: {amount} USDT (minimum: {LICENSE_CONFIG["min_amount"]} USDT)'}
             
             return {
                 'success': True,
@@ -857,7 +860,8 @@ def api_license_info():
         'days_left': license_data.get('days_left', 0),
         'expiry_date': license_data.get('expiry_date'),
         'wallet_address': LICENSE_CONFIG['usdt_address'],
-        'price': LICENSE_CONFIG['price_per_10_days'],
+        'price_per_day': LICENSE_CONFIG['price_per_day'],
+        'min_amount': LICENSE_CONFIG['min_amount'],
         'network': LICENSE_CONFIG['network']
     })
 
