@@ -1090,13 +1090,34 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function showResult() {
+    async function showResult() {
       const needCards = selectedSpread === 'one' ? 1 : 
                        selectedSpread === 'three' ? 3 : 4;
 
       if (selectedCards.length !== needCards) {
         alert(`${needCards}장의 카드를 선택해주세요.`);
         return;
+      }
+
+      // 🔥 UT 차감 (5 UT)
+      try {
+        const utResponse = await fetch('https://www.genspark.ai/api/user-tools/v1/consume-ut', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 5 })
+        });
+        
+        if (!utResponse.ok) {
+          alert('⚠️ UT가 부족합니다. UT를 충전해주세요.');
+          return;
+        }
+        
+        console.log('✅ 타로 리딩 UT 차감 완료 (5 UT)');
+      } catch (error) {
+        console.error('UT 차감 오류:', error);
+        alert('⚠️ UT 차감 중 오류가 발생했습니다. 다시 시도해주세요.');
+        return;
+      }
       }
 
       // 선택한 카드 가져오기
