@@ -586,6 +586,56 @@
     const errorMessage = document.getElementById('errorMessage');
     const results = document.getElementById('results');
 
+    // 한국어 번역 사전 (주요 슬랭)
+    const koreanTranslations = {
+      'rizz': '매력, 이성을 끄는 능력',
+      'skibidi': '바이럴 밈 (의미 없는 재미)',
+      'sigma': '시그마 남성 (독립적이고 자기주도적)',
+      'no cap': '진짜로, 거짓말 없이',
+      'bussin': '엄청 맛있는, 대박인',
+      'slay': '완벽하게 해내다, 죽이다',
+      'vibe check': '분위기 확인, 기분 체크',
+      'mid': '평범한, 별로인',
+      'W': '승리, 이김 (Win의 줄임말)',
+      'L': '패배, 짐 (Loss의 줄임말)',
+      'sus': '의심스러운 (suspicious)',
+      'cap': '거짓말, 뻥',
+      'slaps': '엄청 좋다, 대박이다',
+      'fire': '불타는, 엄청 멋진',
+      'lowkey': '은근히, 조용히',
+      'highkey': '확실히, 명백히',
+      'bet': '알았어, 좋아, 오케이',
+      'fam': '가족, 친구들',
+      'lit': '흥겨운, 신나는, 멋진',
+      'goat': '역대 최고 (Greatest Of All Time)',
+      'simp': '헌신적인 팬, 바보같이 좋아하는 사람',
+      'karen': '불평하는 사람, 까탈스러운 사람',
+      'boomer': '꼰대, 구세대',
+      'zoomer': 'Z세대, 젊은이',
+      'stan': '열성팬, 광팬',
+      'flex': '자랑하다, 뽐내다',
+      'yolo': '인생은 한 번뿐 (You Only Live Once)',
+      'mood': '공감, 나도 그래',
+      'tea': '소문, 가십',
+      'shade': '은근한 비난, 디스',
+      'ghost': '잠수타다, 연락 끊다',
+      'clout': '영향력, 인기',
+      'extra': '과한, 오버하는',
+      'snatched': '완벽한, 멋진',
+      'thirsty': '관심에 목마른',
+      'woke': '깨어있는, 의식있는',
+      'savage': '대담한, 거침없는',
+      'receipt': '증거',
+      'cancelled': '취소된, 끝난',
+      'living rent free': '머릿속에 계속 떠오르는'
+    };
+
+    // 한국어 번역 가져오기
+    function getKoreanTranslation(term) {
+      const lowerTerm = term.toLowerCase().trim();
+      return koreanTranslations[lowerTerm] || null;
+    }
+
     // 검색 함수
     async function searchSlang(term) {
       showLoading();
@@ -678,6 +728,29 @@
         const date = item.written_on ? new Date(item.written_on).toLocaleDateString('ko-KR') : '';
         const author = item.author || 'Anonymous';
 
+        // 한국어 번역
+        const koreanMeaning = getKoreanTranslation(item.word);
+        let koreanHTML = '';
+        if (koreanMeaning) {
+          koreanHTML = `
+            <div style="
+              background: linear-gradient(135deg, rgba(57,255,20,0.2), rgba(255,255,0,0.2));
+              border: 2px solid var(--neon-green);
+              border-radius: 10px;
+              padding: 12px 20px;
+              margin-bottom: 15px;
+              font-family: 'Noto Sans KR', sans-serif;
+              font-size: 18px;
+              font-weight: 600;
+              color: var(--neon-yellow);
+              text-shadow: 0 0 8px rgba(255,255,0,0.5);
+              box-shadow: 0 0 15px rgba(57,255,20,0.3);
+            ">
+              🇰🇷 한국어: ${escapeHtml(koreanMeaning)}
+            </div>
+          `;
+        }
+
         // 예문 처리
         let exampleHTML = '';
         if (item.example) {
@@ -692,6 +765,7 @@
           
           <div class="definition-item">
             <div class="definition-number">#${index + 1}</div>
+            ${koreanHTML}
             <div class="definition-text">${escapeHtml(item.definition)}</div>
             ${exampleHTML}
             
