@@ -19,6 +19,7 @@ from datetime import datetime
 import json
 import os
 import sys
+import requests
 
 # ═══════════════════════════════════════════════════════
 # 🎨 터미널 색상 코드
@@ -71,6 +72,95 @@ def log(message, level="INFO", color=None):
 def log_separator():
     """구분선 출력"""
     print(f"\n{Colors.BOLD}{'═' * 80}{Colors.END}\n")
+
+# ═══════════════════════════════════════════════════════
+# 🚫 상장폐지 코인 목록 관리
+# ═══════════════════════════════════════════════════════
+DELISTED_COINS = set()
+EXCLUDED_MARKETS = set()
+
+def load_delisted_coins_config():
+    """
+    delisted_coins.json 파일에서 상장폐지 코인 목록 로드
+    
+    이유: 상장폐지 예정 코인은 거래가 위험하므로 모니터링에서 제외
+    """
+    global DELISTED_COINS, EXCLUDED_MARKETS
+    
+    config_file = "delisted_coins.json"
+    
+    try:
+        if os.path.exists(config_file):
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            
+            DELISTED_COINS = set(config.get("delisted_coins", []))
+            EXCLUDED_MARKETS = set(config.get("excluded_markets", []))
+            
+            log("📋 상장폐지 코인 설정 로드 완료", "SUCCESS")
+            log(f"   제외 코인: {len(DELISTED_COINS)}개", "INFO")
+            log(f"   제외 마켓: {', '.join(EXCLUDED_MARKETS)}", "INFO")
+            
+        else:
+            # 기본 설정
+            DELISTED_COINS = set([
+                'KRW-AXS', 'KRW-WAXP', 'KRW-STEEM', 'KRW-SBD',
+                'KRW-SC', 'KRW-POWR', 'KRW-STORJ', 'KRW-RFR'
+            ])
+            EXCLUDED_MARKETS = set(['USDT', 'BTC'])
+            log(f"⚠️  {config_file} 파일이 없어 기본 설정 사용", "WARNING")
+        
+        return DELISTED_COINS, EXCLUDED_MARKETS
+        
+    except Exception as e:
+        log(f"❌ 설정 로드 실패: {e}", "ERROR")
+        # 기본 설정 사용
+        DELISTED_COINS = set([
+            'KRW-AXS', 'KRW-WAXP', 'KRW-STEEM', 'KRW-SBD',
+            'KRW-SC', 'KRW-POWR', 'KRW-STORJ', 'KRW-RFR'
+        ])
+        EXCLUDED_MARKETS = set(['USDT', 'BTC'])
+        return DELISTED_COINS, EXCLUDED_MARKETS
+
+def fetch_delisting_coins():
+    """
+    상장폐지 코인 목록 표시
+    """
+    log_separator()
+    log("🚫 제외 대상 필터링 설정:", "INFO")
+    log(f"\n📋 상장폐지 코인 ({len(DELISTED_COINS)}개):", "WARNING")
+    for coin in sorted(DELISTED_COINS):
+        log(f"   ❌ {coin}", "WARNING")
+    
+    log(f"\n🚫 제외 마켓:", "WARNING")
+    for market in sorted(EXCLUDED_MARKETS):
+        log(f"   ❌ {market}-* (예: {market}-BTC, {market}-ETH 등)", "WARNING")
+
+def is_valid_market(ticker):
+    """
+    유효한 시장인지 검증
+    
+    제외 대상:
+    - USDT 마켓 (USDT-BTC, USDT-ETH 등)
+    - BTC 마켓 (BTC-ETH, BTC-XRP 등)
+    - 상장폐지 코인
+    
+    이유: 
+    - USDT/BTC 마켓은 변동성이 다르고 전략이 맞지 않음
+    - 상장폐지 코인은 거래 불가 또는 위험
+    """
+    # 제외 마켓 확인
+    for market in EXCLUDED_MARKETS:
+        if ticker.startswith(f'{market}-'):
+            log(f"⚠️  [{ticker}] {market} 마켓은 제외됩니다", "WARNING")
+            return False
+    
+    # 상장폐지 코인 제외
+    if ticker in DELISTED_COINS:
+        log(f"❌ [{ticker}] 상장폐지 예정 코인입니다 - 거래 중단", "ERROR")
+        return False
+    
+    return True
 
 # ═══════════════════════════════════════════════════════
 # 🔑 API 키 로드 함수
@@ -224,11 +314,19 @@ def analyze_portfolio(upbit):
         if amount > 0:
             ticker = f"KRW-{currency}"
             
+            # 시장 유효성 검증 (USDT/BTC 마켓, 상장폐지 코인 제외)
+            if not is_valid_market(ticker):
+                log(f"⏭️  [{ticker}] 모니터링 제외 - 건너뜀", "WARNING")
+                continue
+            
             try:
                 current_price = pyupbit.get_current_price(ticker)
             except Exception as e:
                 log(f"⚠️  [{ticker}] 가격 조회 실패: {e}", "WARNING")
                 log(f"   코인이 상장폐지되었거나 거래 중단되었을 수 있습니다", "WARNING")
+                # 자동으로 상장폐지 목록에 추가
+                DELISTED_COINS.add(ticker)
+                log(f"   ➕ [{ticker}]를 상장폐지 목록에 추가했습니다", "INFO")
                 continue
             
             if current_price and current_price > 0:
@@ -280,6 +378,11 @@ def create_strategy(upbit, holding):
     4. 수익률 (목표 수익 달성 여부)
     """
     ticker = holding['ticker']
+    
+    # 시장 유효성 재검증
+    if not is_valid_market(ticker):
+        log(f"⚠️  [{ticker}] 유효하지 않은 시장 - 전략 분석 건너뜀", "WARNING")
+        return None
     
     log_separator()
     log(f"🎯 [{ticker}] 전략 분석 중...", "STRATEGY")
@@ -468,8 +571,15 @@ def main():
     # 헤더 출력
     log_separator()
     print(f"{Colors.BOLD}{Colors.CYAN}")
-    print("  🤖 업비트 스마트 스캘핑 봇 v2.0")
+    print("  🤖 업비트 스마트 스캘핑 봇 v2.1")
+    print("  🛡️  안전 모드: 상장폐지 코인 자동 차단")
+    print("  🚫 제외 마켓: USDT, BTC")
     print(f"{Colors.END}")
+    log_separator()
+    
+    # 상장폐지 코인 목록 로드
+    load_delisted_coins_config()
+    fetch_delisting_coins()
     log_separator()
     
     # API 키 로드
