@@ -252,9 +252,9 @@
         </select>
 
         <select class="select" id="showCount">
-          <option value="6">노출: 6개</option>
-          <option value="10">노출: 10개</option>
-          <option value="20" selected>노출: 20개</option>
+          <option value="5">노출: 5개 (엄선)</option>
+          <option value="10" selected>노출: 10개</option>
+          <option value="20">노출: 20개</option>
           <option value="40">노출: 40개</option>
           <option value="9999">노출: 전체</option>
         </select>
@@ -326,11 +326,21 @@
       COLLECT: [{ start: "09:00", end: "12:00" }]
     };
 
-    // ✅ NOW 판정(추격 방지): 실시간가가 기준가 대비 너무 위면 NOW 제외
-    const CHASE_BAND_PCT = 0.006;
+    // ✅ NOW 판정 엄격화 (단타 코인 품질 향상)
+    const CHASE_BAND_PCT = 0.003;      // 0.6% → 0.3% (추격 방지 강화)
 
-    // ✅ 손절가와의 거리 최소치(너무 붙으면 의미 없음)
-    const MIN_STOP_GAP_PCT = 0.003;
+    // ✅ 손절가와의 거리 최소치 강화
+    const MIN_STOP_GAP_PCT = 0.005;    // 0.3% → 0.5% (안전 마진 확대)
+
+    // ✅ 수급 필터 (단타 전용)
+    const MIN_VOL_RATIO = 1.5;         // 거래대금 최근 7일 평균 대비 1.5배 이상
+    
+    // ✅ 펌프 타이밍 필터
+    const MIN_PUMP_DAYS = 5;           // 최소 5일 경과 (너무 최근 펌프 제외)
+    const MAX_PUMP_DAYS = 30;          // 최대 30일 이내 (너무 오래된 펌프 제외)
+    
+    // ✅ 포지션 필터 (바닥권 우선)
+    const MAX_POSITION = 0.5;          // 30일 범위의 50% 이하만 (상단권 제외)
 
     // ✅ 서버 갱신 건강 체크(분)
     const STALE_WARN_MIN = 45;   // 45분 넘으면 "갱신 멈춤" 의심
@@ -628,7 +638,19 @@
       const chaseOk = (snap > 0) ? (live <= snap * (1 + CHASE_BAND_PCT)) : true;
       const stopGapOk = (live > 0 && stop > 0) ? (((live - stop) / live) >= MIN_STOP_GAP_PCT) : true;
 
-      if (timingOk && chaseOk && stopGapOk) {
+      // ✅ 단타 코인 품질 체크 (수급·펌프·포지션)
+      const volRatio = Number(it.vol_ratio_24h_to_avg7||0);
+      const pumpDays = Number(it.last_pump_days_ago||999);
+      const posInRange = Number(it.pos_in_30d_range||0);
+      
+      const qualityOk = (
+        volRatio >= MIN_VOL_RATIO &&              // 수급 충분
+        pumpDays >= MIN_PUMP_DAYS &&              // 펌프 후 냉각 기간
+        pumpDays <= MAX_PUMP_DAYS &&              // 펌프가 너무 오래되지 않음
+        posInRange <= MAX_POSITION                // 바닥권 우선
+      );
+
+      if (timingOk && chaseOk && stopGapOk && qualityOk) {
         return { code:"NOW", chip:"ok", label:"지금진입(NOW)", reason:"ok", live, adv };
       }
 
@@ -637,6 +659,7 @@
       if(!timingOk) why = "out of window";
       else if(!chaseOk) why = "chasing";
       else if(!stopGapOk) why = "stop too close";
+      else if(!qualityOk) why = "quality check failed";
 
       return { code:"WAIT", chip:"wait", label:"대기(WAIT)", reason:why, live, adv };
     }
@@ -776,7 +799,7 @@
       state._fullAfterView = arr.slice();
 
       // 4) 노출 개수
-      const n = Number($("showCount").value || 20);
+      const n = Number($("showCount").value || 10);
       let shown = arr;
       if (isFinite(n) && n > 0 && n < 9999) shown = arr.slice(0, n);
 
@@ -971,8 +994,14 @@
         const score = Number(it["score"]||0);
         const cat = String(it["category"]||"DAYTRADE");
 
-        const riskChip = (pos <= 0.35) ? `<span class="chip good">바닥권</span>` : `<span class="chip bad">상단권</span>`;
-        const volChip = (volRatio >= 1.2) ? `<span class="chip good">수급↑</span>` : `<span class="chip">수급</span>`;
+        // ✅ 품질 체크 칩 (엄격한 기준 반영)
+        const riskChip = (pos <= MAX_POSITION) ? `<span class="chip good">바닥권 ✓</span>` : `<span class="chip bad">상단권 ✗</span>`;
+        const volChip = (volRatio >= MIN_VOL_RATIO) ? `<span class="chip good">수급강 ✓</span>` : `<span class="chip warn">수급약 ✗</span>`;
+        const pumpChip = (pumpDays >= MIN_PUMP_DAYS && pumpDays <= MAX_PUMP_DAYS) 
+          ? `<span class="chip good">펌프타이밍 ✓</span>` 
+          : (pumpDays < MIN_PUMP_DAYS) 
+            ? `<span class="chip bad">펌프최근 ✗</span>` 
+            : `<span class="chip warn">펌프오래 ✗</span>`;
 
         const adv = timeAdvice(cat);
         const st = it.__st;
@@ -1014,7 +1043,7 @@
               <span class="chip ${rmeta.chip}">${riskText}</span>
               ${riskChip}
               ${volChip}
-              <span class="chip">펌프:${pumpDays}d</span>
+              ${pumpChip}
               <span class="chip">점수:${score.toFixed(3)}</span>
             </div>
           </div>
