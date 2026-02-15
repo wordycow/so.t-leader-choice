@@ -44,7 +44,9 @@ bot_state = {
     'trade_history': [],
     'profit_investments': [],  # 수익 투자 내역
     'last_update': None,
-    'error': None
+    'error': None,
+    'first_run': True,  # 🔒 첫 실행 여부 (안전 모드)
+    'start_time': None  # 봇 시작 시간
 }
 
 # 수익 투자 대상 코인 (우선순위 순)
@@ -465,12 +467,26 @@ def create_strategy(upbit, holding):
         strategy['reason'].append(("SELL", sell_reason))
         return strategy
     
-    # 긴급 손절
+    # 긴급 손절 (안전 모드: 첫 실행 후 1시간은 손절 안 함)
     if profit_rate <= -15.0:
+        # 첫 실행 확인
+        if bot_state['first_run']:
+            # 봇 시작 후 1시간 경과 확인
+            if bot_state['start_time']:
+                elapsed = (datetime.now() - bot_state['start_time']).total_seconds() / 3600
+                if elapsed < 1.0:  # 1시간 이내
+                    log(f"⚠️  안전 모드: 손절 대기 중 {ticker} ({profit_rate:.2f}%, {elapsed*60:.0f}분 경과)", "WARNING")
+                    strategy['reason'].append(("HOLD", f"안전 모드 - 손절 대기 ({elapsed*60:.0f}/60분)"))
+                    return strategy
+                else:
+                    # 1시간 경과 → 안전 모드 해제
+                    bot_state['first_run'] = False
+                    log(f"🔓 안전 모드 해제: 이제 정상 손절이 작동합니다", "INFO")
+        
         strategy['action'] = 'SELL'
         strategy['sell_stage'] = 0
         strategy['sell_ratio'] = 1.0
-        strategy['reason'].append(("SELL", f"긴급 손절"))
+        strategy['reason'].append(("SELL", f"긴급 손절 ({profit_rate:.2f}%)"))
         return strategy
     
     # 매수 신호
@@ -615,6 +631,11 @@ def bot_main_loop():
     if bot_state['initial_seed'] == 0:
         bot_state['initial_seed'] = krw
         log(f"💰 초기 시드: {krw:,.0f}원 (절대 보존)", "SUCCESS")
+    
+    # 봇 시작 시간 기록 (안전 모드용)
+    if bot_state['start_time'] is None:
+        bot_state['start_time'] = datetime.now()
+        log(f"🔒 안전 모드 활성화: 1시간 동안 손절 보호", "INFO")
     
     # 상장폐지 설정 로드
     load_delisted_coins_config()
