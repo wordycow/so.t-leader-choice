@@ -186,15 +186,35 @@ def analyze_portfolio(upbit):
     log_separator()
     log("💼 포트폴리오 분석 시작...", "INFO")
     
-    balances = upbit.get_balances()
+    try:
+        balances = upbit.get_balances()
+    except Exception as e:
+        log(f"❌ 잔고 조회 실패: {e}", "ERROR")
+        return 0, []
+    
+    # 응답이 리스트가 아니면 에러 처리
+    if not isinstance(balances, list):
+        log(f"⚠️  잘못된 API 응답 형식: {type(balances)}", "WARNING")
+        log(f"   응답 내용: {balances}", "WARNING")
+        return 0, []
+    
     krw_balance = 0
     holdings = []
     
     for balance in balances:
-        currency = balance['currency']
-        amount = float(balance['balance'])
-        locked = float(balance['locked'])
-        avg_buy_price = float(balance['avg_buy_price'])
+        # dict 타입인지 확인
+        if not isinstance(balance, dict):
+            log(f"⚠️  잘못된 잔고 데이터: {balance}", "WARNING")
+            continue
+        
+        try:
+            currency = balance.get('currency', 'UNKNOWN')
+            amount = float(balance.get('balance', 0))
+            locked = float(balance.get('locked', 0))
+            avg_buy_price = float(balance.get('avg_buy_price', 0))
+        except (ValueError, TypeError) as e:
+            log(f"⚠️  잔고 데이터 파싱 실패: {e}", "WARNING")
+            continue
         
         if currency == 'KRW':
             krw_balance = amount
