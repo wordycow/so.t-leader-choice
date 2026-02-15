@@ -2,7 +2,7 @@
    - roulette.html과 같은 폴더(/games/)에 두세요.
 */
 window.UNIQUE_YT_PLAYLIST = [
-  "PHyVwN8TljY","XFkzRNyygfk","86Zdoj2X5p4","qBhHucqxff0","jS8ImskNXyw","AkfzyGkihqY","AiXurzwXhMI","pP6w5A8-hz4","-jdZKf-xSpA",
+  "PHyVwN8TljY","DFTFUq9mqOY","XFkzRNyygfk","86Zdoj2X5p4","qBhHucqxff0","jS8ImskNXyw","AkfzyGkihqY","AiXurzwXhMI","pP6w5A8-hz4","-jdZKf-xSpA",
   "-B3HvFhHsIM","Sc-EOEQDBHk","dttGdK0l1G0","yPqI1VAHX8Q","Ge9OgkOayQs","dDxWoKcOmsA","aGpOcVy2A8I","h7FCYhJHCPw",
   "BJRlZ0R4nuE","WbvoZvYmkBg","X6SuW5HhQoc","0P4A1K4lXDo","LpTL5nTPwjo","viIJYFSGq0o","Qe8fa4b5xNU","LtwQuHFzIlk",
   "s3uPXokhpnA","8KDWGWMs7Sg","pcIOYAdwKsw","MXz88usIhzA","lmxNgwBeJ44","j3V53sF13UQ","znDgBy2mHbc","53BBRKF-L60",
