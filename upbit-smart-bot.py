@@ -223,9 +223,15 @@ def analyze_portfolio(upbit):
         
         if amount > 0:
             ticker = f"KRW-{currency}"
-            current_price = pyupbit.get_current_price(ticker)
             
-            if current_price:
+            try:
+                current_price = pyupbit.get_current_price(ticker)
+            except Exception as e:
+                log(f"⚠️  [{ticker}] 가격 조회 실패: {e}", "WARNING")
+                log(f"   코인이 상장폐지되었거나 거래 중단되었을 수 있습니다", "WARNING")
+                continue
+            
+            if current_price and current_price > 0:
                 invested = avg_buy_price * amount
                 current_value = current_price * amount
                 profit = current_value - invested
