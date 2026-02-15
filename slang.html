@@ -557,7 +557,7 @@
         >
         <button class="search-btn" id="searchBtn">SEARCH</button>
       </div>
-      <button class="random-btn" id="randomBtn">🎲 랜덤 슬랭 보기</button>
+      <button class="random-btn" id="randomBtn">🔥 인기 슬랭 보기</button>
     </div>
 
     <!-- 로딩 -->
@@ -616,17 +616,30 @@
       }
     }
 
-    // 랜덤 슬랭 가져오기
+    // 트렌딩/인기 슬랭 가져오기 (조회수 높은 순)
     async function getRandomSlang() {
       showLoading();
       hideError();
       clearResults();
 
       try {
-        const response = await fetch(`${API_BASE}/random`);
+        // 인기 슬랭 목록 (2026년 트렌딩 슬랭)
+        const trendingTerms = [
+          'rizz', 'skibidi', 'sigma', 'no cap', 'bussin',
+          'slay', 'vibe check', 'mid', 'W', 'L',
+          'sus', 'cap', 'slaps', 'fire', 'lowkey',
+          'highkey', 'bet', 'fam', 'lit', 'goat',
+          'simp', 'karen', 'boomer', 'zoomer', 'stan'
+        ];
+        
+        // 랜덤으로 하나 선택
+        const randomTerm = trendingTerms[Math.floor(Math.random() * trendingTerms.length)];
+        
+        // 선택된 트렌딩 슬랭 검색
+        const response = await fetch(`${API_BASE}/search?term=${encodeURIComponent(randomTerm)}&strict=false&matchCase=false&limit=3`);
         
         if (!response.ok) {
-          throw new Error('랜덤 검색 실패');
+          throw new Error('트렌딩 검색 실패');
         }
 
         const data = await response.json();
@@ -638,9 +651,14 @@
           return;
         }
 
-        displayResults(data.list);
+        // 투표 수로 정렬 (가장 인기 있는 정의 우선)
+        const sortedList = data.list.sort((a, b) => {
+          return (b.thumbs_up || 0) - (a.thumbs_up || 0);
+        });
+
+        displayResults(sortedList);
       } catch (error) {
-        console.error('랜덤 에러:', error);
+        console.error('트렌딩 에러:', error);
         hideLoading();
         showError();
       }
@@ -743,7 +761,7 @@
       getRandomSlang();
     });
 
-    // 초기 랜덤 슬랭 표시
+    // 초기 트렌딩 슬랭 표시
     window.addEventListener('load', () => {
       getRandomSlang();
     });
