@@ -965,15 +965,15 @@
   transform: translateY(0) scale(0.995);
 }
 
-/* ✅ PI.META(기존 linkon) 버튼: So.T보다 아주 조금 낮게 */
+/* ✅ PI.META(기존 linkon) 버튼: So.T보다 조금 낮게 */
 .action-btn.linkon-btn{
-  min-height: 60px;      /* So.T(64px)보다 4px 낮게 */
+  min-height: 56px;      /* So.T(64px)보다 8px 낮게 */
   padding: 10px 14px;
 }
 
 /* ✅ PI.META 로고(글자)만 크게 */
 .action-btn.linkon-btn .linkon-logo{
-  height: 48px;        /* ← 글자 포함 로고 크게 */
+  height: 42px;        /* ← 글자 포함 로고 약간 작게 */
   width: auto;
   max-width: 92%;
   display:block;
@@ -981,9 +981,110 @@
 }
 
 @media (max-width: 768px){
+  .action-btn.linkon-btn{
+    min-height: 52px;
+  }
   .action-btn.linkon-btn .linkon-logo{
-    height: 44px;
+    height: 38px;
     max-width: 94%;
+  }
+}
+
+/* ===== CLONE 버튼: 금색 배경, 흰색 텍스트, So.T와 동일 크기 ===== */
+.action-btn.clone-btn{
+  position: relative;
+  overflow: hidden;
+
+  padding: 12px 14px;
+  min-height: 64px;      /* So.T와 동일 */
+  gap: 12px;
+
+  border: 1px solid rgba(251,191,36,0.85);
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  box-shadow:
+    0 14px 28px rgba(0,0,0,0.90),
+    0 0 0 1px rgba(255,255,255,0.25) inset;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  transform: translateZ(0);
+}
+
+/* CLONE 텍스트 */
+.action-btn.clone-btn .clone-text{
+  position: relative;
+  z-index: 2;
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #ffffff;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 8px rgba(0,0,0,0.5),
+    0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* CLONE 글로우 효과 */
+.action-btn.clone-btn::before{
+  content:"";
+  position:absolute;
+  inset:-20px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(251,191,36,0.35), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(217,119,6,0.35), transparent 65%);
+  filter: blur(12px);
+  animation: cloneGlow 2.8s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+
+@keyframes cloneGlow{
+  0%{ opacity: 0.7; }
+  100%{ opacity: 1; }
+}
+
+/* CLONE 샤인 효과 */
+.action-btn.clone-btn::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg,
+    transparent 0%,
+    rgba(255,255,255,0.3) 28%,
+    transparent 60%
+  );
+  transform: translateX(-140%);
+  animation: cloneShine 3s ease-in-out infinite;
+  pointer-events:none;
+  mix-blend-mode: screen;
+}
+
+@keyframes cloneShine{
+  0%{ transform: translateX(-140%); }
+  45%{ transform: translateX(140%); }
+  100%{ transform: translateX(140%); }
+}
+
+.action-btn.clone-btn:hover{
+  transform: translateY(-2px) scale(1.01);
+  filter: brightness(1.08);
+  box-shadow:
+    0 22px 48px rgba(0,0,0,0.98),
+    0 0 0 1px rgba(255,255,255,0.35) inset;
+}
+
+.action-btn.clone-btn:active{
+  transform: translateY(0) scale(0.995);
+}
+
+@media (max-width: 768px){
+  .action-btn.clone-btn{
+    min-height: 60px;
+  }
+  .action-btn.clone-btn .clone-text{
+    font-size: 20px;
   }
 }
 
@@ -1391,6 +1492,15 @@
                 </span>
               </button>
 
+              <a id="clone-btn"
+   class="action-btn clone-btn"
+   href="https://clone.wordycow.com"
+   target="_blank"
+   rel="noopener noreferrer"
+   aria-label="CLONE">
+  <span class="clone-text">CLONE</span>
+</a>
+
               <a id="ppt-form-btn"
    class="action-btn linkon-btn"
    href="https://www.pi-meta.com/main/"
@@ -1404,7 +1514,6 @@
 
 
               <button id="market-btn" class="action-btn market-btn">UNIQUE MARKET</button>
-              <button id="travel-btn" class="action-btn">여행신청/광고 문의</button>
             </div>
 
             <div class="logout-row">
