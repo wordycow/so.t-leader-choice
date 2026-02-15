@@ -702,7 +702,17 @@ def execute_order(upbit, strategy, holding, krw_balance):
             if buy_amount < 5000 or krw_balance < buy_amount:
                 return
             
+            # 매수 이유 생성
+            buy_reasons = strategy.get('reason', [])
+            buy_reason_text = " | ".join([f"{r[0]}: {r[1]}" for r in buy_reasons if r[0] == 'BUY'])
+            
             log(f"🔵 매수: {ticker} {stage}단계 {buy_amount:,}원", "INFO")
+            log(f"📝 이유: {buy_reason_text}", "REASON")
+            
+            # RSI 값 가져오기
+            rsi_value = strategy.get('rsi', 0)
+            rsi_range = BUY_STAGES[stage]['rsi_range']
+            drop_percent = BUY_STAGES[stage]['drop_percent']
             
             # 모드에 따라 실제 주문 실행
             current_mode = bot_state.get('mode', 'practice')
@@ -738,12 +748,62 @@ def execute_order(upbit, strategy, holding, krw_balance):
                 'timestamp': datetime.now().isoformat()
             })
             
+            # 📊 데이터베이스에 매수 기록 (학습용)
+            if bot_state['current_session_id']:
+                try:
+                    # 24시간 가격 변동
+                    price_change_24h = 0
+                    try:
+                        ticker_data = pyupbit.get_ohlcv(ticker, interval="day", count=2)
+                        if ticker_data is not None and len(ticker_data) >= 2:
+                            prev_close = ticker_data.iloc[-2]['close']
+                            curr_close = ticker_data.iloc[-1]['close']
+                            price_change_24h = ((curr_close - prev_close) / prev_close) * 100
+                    except:
+                        pass
+                    
+                    trade_data = {
+                        'timestamp': datetime.now().isoformat(),
+                        'trade_type': 'BUY',
+                        'ticker': ticker,
+                        'amount': buy_amount / holding['current_price'],  # 코인 수량
+                        'price': holding['current_price'],
+                        'total': buy_amount,
+                        'buy_reason': buy_reason_text,
+                        'buy_stage': stage,
+                        'rsi_value': rsi_value,
+                        'rsi_range': rsi_range,
+                        'drop_percent': drop_percent,
+                        'market_condition': 'bearish' if price_change_24h < -3 else 'bullish' if price_change_24h > 3 else 'neutral',
+                        'price_change_24h': price_change_24h
+                    }
+                    
+                    trading_db.record_trade(bot_state['current_session_id'], trade_data)
+                    
+                    # 실시간 표시용
+                    bot_state['trade_reasons'].append({
+                        'time': datetime.now().strftime("%H:%M:%S"),
+                        'action': 'BUY',
+                        'ticker': ticker.replace('KRW-', ''),
+                        'reason': buy_reason_text,
+                        'stage': stage
+                    })
+                    
+                    log(f"✅ 매수 이유 기록 완료", "SUCCESS")
+                except Exception as e:
+                    log(f"⚠️  매수 기록 오류 (계속 진행): {e}", "WARNING")
+            
         elif action == 'SELL':
             stage = strategy.get('sell_stage', 0)
             ratio = strategy.get('sell_ratio', 1.0)
             sell_amount = holding['amount'] * ratio
             
+            # 매도 이유 생성
+            sell_reasons = strategy.get('reason', [])
+            sell_reason_text = " | ".join([f"{r[0]}: {r[1]}" for r in sell_reasons if r[0] == 'SELL'])
+            
             log(f"🔴 매도: {ticker} {stage}차 익절 {ratio*100:.0f}%", "INFO")
+            log(f"📝 이유: {sell_reason_text}", "REASON")
             
             # 모드에 따라 실제 주문 실행
             current_mode = bot_state.get('mode', 'practice')
@@ -754,10 +814,13 @@ def execute_order(upbit, strategy, holding, krw_balance):
                 log(f"⚠️  [연습 모드] 매도 시뮬레이션", "WARNING")
             
             profit = (holding['current_price'] - holding['avg_buy_price']) * sell_amount
+            profit_rate = ((holding['current_price'] - holding['avg_buy_price']) / holding['avg_buy_price']) * 100
             
             history = coin_trading_history.get(ticker, {
                 'sell_stages_completed': [],
-                'total_profit': 0
+                'total_profit': 0,
+                'first_buy_price': holding['avg_buy_price'],
+                'last_buy_time': datetime.now() - timedelta(hours=1)  # 임시
             })
             
             if stage > 0 and stage not in history['sell_stages_completed']:
@@ -778,6 +841,80 @@ def execute_order(upbit, strategy, holding, krw_balance):
                 'timestamp': datetime.now().isoformat()
             })
             
+            # 📊 데이터베이스에 매도 기록 (학습용)
+            if bot_state['current_session_id']:
+                try:
+                    # 보유 시간 계산
+                    hold_time = 0
+                    if history.get('last_buy_time'):
+                        hold_time = int((datetime.now() - history['last_buy_time']).total_seconds())
+                    
+                    # 목표 수익률
+                    target_profit = SELL_STAGES.get(stage, {}).get('profit_target', 0) if stage > 0 else 0
+                    
+                    # 성공 여부
+                    is_successful = profit > 0
+                    
+                    # 배운 점
+                    if is_successful:
+                        if profit_rate >= target_profit:
+                            lesson = f"목표 수익률 {target_profit}% 달성 성공 (실제: {profit_rate:.2f}%)"
+                        else:
+                            lesson = f"수익은 났지만 목표 미달성 ({profit_rate:.2f}% < {target_profit}%)"
+                    else:
+                        if stage == 0:
+                            lesson = f"긴급 손절 발동 ({profit_rate:.2f}%) - 매수 타이밍 재검토 필요"
+                        else:
+                            lesson = f"익절 실패 ({profit_rate:.2f}%) - 전략 재검토 필요"
+                    
+                    # 24시간 가격 변동
+                    price_change_24h = 0
+                    try:
+                        ticker_data = pyupbit.get_ohlcv(ticker, interval="day", count=2)
+                        if ticker_data is not None and len(ticker_data) >= 2:
+                            prev_close = ticker_data.iloc[-2]['close']
+                            curr_close = ticker_data.iloc[-1]['close']
+                            price_change_24h = ((curr_close - prev_close) / prev_close) * 100
+                    except:
+                        pass
+                    
+                    trade_data = {
+                        'timestamp': datetime.now().isoformat(),
+                        'trade_type': 'SELL',
+                        'ticker': ticker,
+                        'amount': sell_amount,
+                        'price': holding['current_price'],
+                        'total': holding['current_price'] * sell_amount,
+                        'sell_reason': sell_reason_text,
+                        'sell_stage': stage,
+                        'profit': profit,
+                        'profit_rate': profit_rate,
+                        'hold_time': hold_time,
+                        'target_profit': target_profit,
+                        'is_successful': is_successful,
+                        'lesson_learned': lesson,
+                        'market_condition': 'bearish' if price_change_24h < -3 else 'bullish' if price_change_24h > 3 else 'neutral',
+                        'price_change_24h': price_change_24h
+                    }
+                    
+                    trading_db.record_trade(bot_state['current_session_id'], trade_data)
+                    
+                    # 실시간 표시용
+                    profit_text = f"+{profit:,.0f}원 (+{profit_rate:.1f}%)" if profit > 0 else f"{profit:,.0f}원 ({profit_rate:.1f}%)"
+                    bot_state['trade_reasons'].append({
+                        'time': datetime.now().strftime("%H:%M:%S"),
+                        'action': 'SELL',
+                        'ticker': ticker.replace('KRW-', ''),
+                        'reason': sell_reason_text,
+                        'profit': profit_text,
+                        'stage': stage,
+                        'success': is_successful
+                    })
+                    
+                    log(f"✅ 매도 이유 기록 완료 - {lesson}", "SUCCESS")
+                except Exception as e:
+                    log(f"⚠️  매도 기록 오류 (계속 진행): {e}", "WARNING")
+            
             # 3단계 익절 완료 시 수익 투자
             if stage == 3 and history['total_profit'] >= PROFIT_INVEST_AMOUNT:
                 log(f"💎 3단계 익절 완료! 총 수익: {history['total_profit']:,.0f}원", "SUCCESS")
@@ -797,6 +934,31 @@ def bot_main_loop():
     """봇 메인 루프"""
     log_separator()
     log("🤖 봇 시작", "SUCCESS")
+    
+    # 📊 학습 세션 시작
+    session_id = f"{bot_state['mode']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    bot_state['current_session_id'] = session_id
+    
+    # 시드 결정 (연습/실전 모드)
+    if bot_state['mode'] == 'practice':
+        initial_seed = bot_state['simulation_seed']
+        log(f"🎮 연습 모드: 시뮬레이션 시드 {initial_seed:,}원", "INFO")
+    else:
+        initial_seed = bot_state['initial_seed']
+        log(f"🔴 실전 모드: 실제 시드 {initial_seed:,}원", "WARNING")
+    
+    # 전략 설정
+    strategy_config = {
+        'mode': bot_state['mode'],
+        'buy_stages': BUY_STAGES,
+        'sell_stages': SELL_STAGES,
+        'profit_targets': PROFIT_TARGETS,
+        'profit_invest_amount': PROFIT_INVEST_AMOUNT
+    }
+    
+    # 데이터베이스에 세션 시작 기록
+    trading_db.start_session(session_id, initial_seed, strategy_config)
+    log(f"📊 학습 세션 시작: {session_id}", "SUCCESS")
     
     # API 키 로드
     access_key, secret_key = load_api_keys()
@@ -862,6 +1024,30 @@ def bot_main_loop():
             log(f"❌ 오류: {e}", "ERROR")
             bot_state['error'] = str(e)
             time.sleep(10)
+    
+    # 📊 학습 세션 종료
+    if bot_state['current_session_id']:
+        if bot_state['mode'] == 'practice':
+            final_balance = bot_state['simulation_krw']
+        else:
+            final_balance = bot_state['current_krw']
+        
+        trading_db.end_session(bot_state['current_session_id'], final_balance)
+        log(f"📊 학습 세션 종료: {bot_state['current_session_id']}", "SUCCESS")
+        
+        # 세션 결과 출력
+        sessions = trading_db.get_session_history(1)
+        if sessions:
+            session = sessions[0]
+            log_separator()
+            log(f"📈 세션 결과:", "SUCCESS")
+            log(f"  시작 시드: {session['initial_seed']:,}원", "INFO")
+            log(f"  최종 잔고: {session['final_balance']:,}원", "INFO")
+            log(f"  수익/손실: {session['profit']:,}원 ({session['profit_rate']:.2f}%)", 
+                "SUCCESS" if session['profit'] >= 0 else "WARNING")
+            log(f"  총 거래: {session['total_trades']}회", "INFO")
+            log(f"  승률: {session['win_rate']:.1f}% ({session['win_trades']}승 {session['lose_trades']}패)", "INFO")
+            log_separator()
     
     log("🛑 봇 종료", "WARNING")
 
