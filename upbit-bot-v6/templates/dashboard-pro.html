@@ -819,6 +819,59 @@
         </div>
     </div>
 
+    <!-- Simulation Seed Setup Modal -->
+    <div class="modal" id="seedModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎮 SIMULATION SEED SETUP</h2>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>💡 PRACTICE MODE:</strong><br>
+                    • Set virtual starting balance<br>
+                    • Test strategies risk-free<br>
+                    • Track simulated profit/loss
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">STARTING BALANCE</label>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">₩200,000</span>
+                        <input type="range" id="seedSlider" min="200000" max="10000000" step="100000" value="1000000" 
+                               style="flex: 1;" oninput="updateSeedDisplay()">
+                        <span style="color: var(--text-secondary); font-size: 13px;">₩10,000,000</span>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <div style="font-size: 32px; font-weight: 700; color: var(--accent-primary);" id="seedDisplay">
+                            ₩1,000,000
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                            Use slider or enter manually below
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">OR ENTER MANUALLY</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" class="form-input" id="seedInput" 
+                               placeholder="200000 ~ 10000000" 
+                               min="200000" max="10000000" step="10000"
+                               oninput="updateSeedSlider()">
+                        <span style="align-self: center; color: var(--text-secondary);">원</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
+                        Min: ₩200,000 | Max: ₩10,000,000 | Default: ₩1,000,000
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" style="flex:1;" onclick="saveSimulationSeed()">✅ START SIMULATION</button>
+                <button class="btn-secondary" onclick="closeSeedModal()">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // QR Code
         const walletAddr = 'TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt';
@@ -845,22 +898,27 @@
                     statusText.textContent = 'OFFLINE';
                 }
 
-                // Balance
-                document.getElementById('currentKRW').textContent = data.current_krw.toLocaleString();
-                document.getElementById('initialSeed').textContent = data.initial_seed.toLocaleString();
-                document.getElementById('totalProfit').textContent = data.total_profit.toLocaleString();
-                
-                const profitPercent = data.initial_seed > 0 ? ((data.total_profit / data.initial_seed) * 100).toFixed(2) : 0;
-                const profitPercentEl = document.getElementById('profitPercent');
-                profitPercentEl.textContent = profitPercent + '%';
-                profitPercentEl.className = 'stat-change ' + (data.total_profit >= 0 ? 'positive' : 'negative');
-
-                // License
-                updateLicenseInfo(data.license);
-
                 // Mode
                 currentMode = data.mode || 'practice';
                 updateModeButtons();
+
+                // 연습 모드인 경우 시뮬레이션 상태 가져오기
+                if (currentMode === 'practice' && data.running) {
+                    await updateSimulationStatus();
+                } else {
+                    // 실전 모드 또는 봇 정지 상태
+                    document.getElementById('currentKRW').textContent = data.current_krw.toLocaleString();
+                    document.getElementById('initialSeed').textContent = data.initial_seed.toLocaleString();
+                    document.getElementById('totalProfit').textContent = data.total_profit.toLocaleString();
+                    
+                    const profitPercent = data.initial_seed > 0 ? ((data.total_profit / data.initial_seed) * 100).toFixed(2) : 0;
+                    const profitPercentEl = document.getElementById('profitPercent');
+                    profitPercentEl.textContent = profitPercent + '%';
+                    profitPercentEl.className = 'stat-change ' + (data.total_profit >= 0 ? 'positive' : 'negative');
+                }
+
+                // License
+                updateLicenseInfo(data.license);
 
                 // Tables
                 updateHoldings(data.holdings);
@@ -874,6 +932,29 @@
                 }
             } catch (error) {
                 console.error('Status update failed:', error);
+            }
+        }
+
+        async function updateSimulationStatus() {
+            try {
+                const response = await fetch('/api/simulation/status');
+                const data = await response.json();
+                
+                if (data.success && data.simulation) {
+                    const sim = data.simulation;
+                    
+                    // 잔고 표시
+                    document.getElementById('currentKRW').textContent = sim.current_krw.toLocaleString();
+                    document.getElementById('initialSeed').textContent = sim.start_seed.toLocaleString();
+                    document.getElementById('totalProfit').textContent = sim.total_profit.toLocaleString();
+                    
+                    // 수익률
+                    const profitPercentEl = document.getElementById('profitPercent');
+                    profitPercentEl.textContent = sim.profit_rate.toFixed(2) + '%';
+                    profitPercentEl.className = 'stat-change ' + (sim.total_profit >= 0 ? 'positive' : 'negative');
+                }
+            } catch (error) {
+                console.error('Simulation status update failed:', error);
             }
         }
 
@@ -1000,6 +1081,14 @@
         // Bot control
         async function startBot() {
             try {
+                // 연습 모드인 경우 시드 설정 확인
+                if (currentMode === 'practice') {
+                    // 시드 모달 열기
+                    openSeedModal();
+                    return;
+                }
+                
+                // 실전 모드인 경우 바로 시작
                 const response = await fetch('/api/start', {method: 'POST'});
                 const data = await response.json();
                 alert(data.message || (data.success ? 'Bot started!' : 'Start failed'));
@@ -1062,6 +1151,89 @@
 
         function closeLicenseModal() {
             document.getElementById('licenseModal').classList.remove('active');
+        }
+
+        // Simulation Seed Setup
+        function openSeedModal() {
+            document.getElementById('seedModal').classList.add('active');
+            // 기본값 설정
+            document.getElementById('seedSlider').value = 1000000;
+            document.getElementById('seedInput').value = '';
+            updateSeedDisplay();
+        }
+
+        function closeSeedModal() {
+            document.getElementById('seedModal').classList.remove('active');
+        }
+
+        function updateSeedDisplay() {
+            const slider = document.getElementById('seedSlider');
+            const display = document.getElementById('seedDisplay');
+            const value = parseInt(slider.value);
+            display.textContent = '₩' + value.toLocaleString();
+            // 입력창도 동기화
+            document.getElementById('seedInput').value = value;
+        }
+
+        function updateSeedSlider() {
+            const input = document.getElementById('seedInput');
+            const slider = document.getElementById('seedSlider');
+            let value = parseInt(input.value) || 1000000;
+            
+            // 범위 체크
+            if (value < 200000) value = 200000;
+            if (value > 10000000) value = 10000000;
+            
+            slider.value = value;
+            updateSeedDisplay();
+        }
+
+        async function saveSimulationSeed() {
+            const seedInput = document.getElementById('seedInput');
+            let seed = parseInt(seedInput.value);
+            
+            // 슬라이더 값 사용 (입력이 없으면)
+            if (!seed) {
+                seed = parseInt(document.getElementById('seedSlider').value);
+            }
+            
+            // 범위 체크
+            if (seed < 200000 || seed > 10000000) {
+                alert('⚠️ 시드는 20만원에서 1,000만원 사이여야 합니다');
+                return;
+            }
+            
+            try {
+                // 시드 설정 API 호출
+                const response = await fetch('/api/simulation/set-seed', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({seed})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeSeedModal();
+                    
+                    // 봇 시작
+                    const startResponse = await fetch('/api/start', {method: 'POST'});
+                    const startData = await startResponse.json();
+                    
+                    if (startData.success) {
+                        alert('✅ 시뮬레이션 시작!\n\n' +
+                              `시작 시드: ₩${seed.toLocaleString()}\n` +
+                              '가상 거래가 시작되었습니다.');
+                    } else {
+                        alert('❌ 봇 시작 실패: ' + startData.message);
+                    }
+                    
+                    updateStatus();
+                } else {
+                    alert('❌ 시드 설정 실패\n\n' + data.message);
+                }
+            } catch (error) {
+                alert('오류 발생: ' + error.message);
+            }
         }
 
         function copyAddress() {

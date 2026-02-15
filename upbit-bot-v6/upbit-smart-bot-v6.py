@@ -64,7 +64,13 @@ bot_state = {
     'error': None,
     'first_run': True,  # 🔒 첫 실행 여부 (안전 모드)
     'start_time': None,  # 봇 시작 시간
-    'license': None  # 라이선스 정보
+    'license': None,  # 라이선스 정보
+    
+    # 🎮 시뮬레이션 모드 전용 (연습 모드)
+    'simulation_seed': 1000000,  # 시뮬레이션 시드 (기본 100만원)
+    'simulation_krw': 1000000,  # 시뮬레이션 현재 잔고
+    'simulation_holdings': {},  # 시뮬레이션 보유 코인 {'KRW-BTC': {'amount': 0.001, 'avg_price': 50000000}}
+    'simulation_start_seed': 1000000  # 시뮬레이션 시작 시드 (수익률 계산용)
 }
 
 # 수익 투자 대상 코인 (우선순위 순)
@@ -1011,6 +1017,91 @@ def api_reset_seed():
     bot_state['trade_history'] = []
     
     return jsonify({'success': True, 'message': '초기화 완료'})
+
+@app.route('/api/simulation/set-seed', methods=['POST'])
+def api_set_simulation_seed():
+    """시뮬레이션 시드 설정"""
+    if bot_state['running']:
+        return jsonify({'success': False, 'message': '봇 실행 중에는 시드를 변경할 수 없습니다'})
+    
+    try:
+        data = request.json
+        seed = int(data.get('seed', 1000000))
+        
+        # 범위 체크: 20만원 ~ 1,000만원
+        if seed < 200000 or seed > 10000000:
+            return jsonify({
+                'success': False,
+                'message': '시드는 20만원에서 1,000만원 사이여야 합니다'
+            })
+        
+        # 시뮬레이션 시드 설정
+        bot_state['simulation_seed'] = seed
+        bot_state['simulation_krw'] = seed
+        bot_state['simulation_start_seed'] = seed
+        bot_state['simulation_holdings'] = {}
+        bot_state['trade_history'] = []
+        bot_state['total_profit'] = 0
+        
+        return jsonify({
+            'success': True,
+            'message': f'시뮬레이션 시드 {seed:,}원으로 설정되었습니다',
+            'seed': seed
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'오류 발생: {str(e)}'
+        })
+
+@app.route('/api/simulation/status', methods=['GET'])
+def api_simulation_status():
+    """시뮬레이션 상태 조회"""
+    # 보유 코인 평가액 계산
+    total_holding_value = 0
+    holdings_list = []
+    
+    for ticker, holding in bot_state['simulation_holdings'].items():
+        try:
+            current_price = pyupbit.get_current_price(ticker)
+            if current_price:
+                value = holding['amount'] * current_price
+                total_holding_value += value
+                profit = value - (holding['amount'] * holding['avg_price'])
+                profit_rate = (profit / (holding['amount'] * holding['avg_price'])) * 100
+                
+                holdings_list.append({
+                    'ticker': ticker,
+                    'amount': holding['amount'],
+                    'avg_price': holding['avg_price'],
+                    'current_price': current_price,
+                    'value': value,
+                    'profit': profit,
+                    'profit_rate': profit_rate
+                })
+        except:
+            pass
+    
+    # 총 자산
+    total_assets = bot_state['simulation_krw'] + total_holding_value
+    
+    # 총 수익/손실
+    total_profit = total_assets - bot_state['simulation_start_seed']
+    profit_rate = (total_profit / bot_state['simulation_start_seed']) * 100 if bot_state['simulation_start_seed'] > 0 else 0
+    
+    return jsonify({
+        'success': True,
+        'simulation': {
+            'start_seed': bot_state['simulation_start_seed'],
+            'current_krw': bot_state['simulation_krw'],
+            'holdings': holdings_list,
+            'total_holding_value': total_holding_value,
+            'total_assets': total_assets,
+            'total_profit': total_profit,
+            'profit_rate': profit_rate
+        }
+    })
 
 # ═══════════════════════════════════════════════════════
 # 🚀 메인 실행
