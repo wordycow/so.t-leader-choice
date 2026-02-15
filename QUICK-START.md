@@ -1,208 +1,313 @@
-# 🚀 업비트 스캘핑 봇 - 빠른 시작 가이드
+# 🚀 업비트 스마트 봇 v5.0 - 빠른 시작 가이드
 
-## 📋 5분 만에 시작하기
+## 📦 다운로드
 
-### 1️⃣ API 키 발급 (2분)
-1. https://upbit.com 접속 → 로그인
-2. **프로필** → **Open API 관리**
-3. **API 키 발급** 클릭
-4. **권한 선택**:
-   - ✅ 자산 조회
-   - ✅ 주문 조회
-   - ✅ 주문 하기
-   - ❌ 출금 하기 (절대 체크 금지!)
-5. OTP 인증 후 **Access Key**와 **Secret Key** 복사
+### 전체 패키지 (권장)
+```
+https://github.com/wordycow/so.t-leader-choice/raw/main/upbit-smart-bot-v5.0-complete.tar.gz
+```
+**크기**: 17KB  
+**포함 파일**: 봇 프로그램, 웹 대시보드, 자동 설치 스크립트, 가이드
 
 ---
 
-### 2️⃣ 패키지 설치 (1분)
+## 💻 시스템 요구사항
+
+### 필수
+- **Python 3.8 이상** (없으면 자동 설치 안내)
+- **인터넷 연결** (처음 실행 시 라이브러리 다운로드)
+- **업비트 API 키** (웹 대시보드에서 설정 가능)
+
+### 권장
+- **운영체제**: Windows 10/11, macOS, Linux
+- **메모리**: 최소 2GB RAM
+- **저장공간**: 100MB 이상
+
+---
+
+## 🎯 설치 및 실행 (3단계)
+
+### Windows 사용자 ⭐ 가장 쉬움
+
+#### 1단계: 압축 해제
+```
+upbit-smart-bot-v5.0-complete.tar.gz 우클릭
+→ 압축 풀기 (7-Zip, WinRAR 등)
+```
+
+#### 2단계: 폴더 열기
+```
+upbit-smart-bot-v5.0 폴더 열기
+```
+
+#### 3단계: 실행
+```
+install-and-run.bat 더블클릭!
+```
+
+**끝!** 브라우저가 자동으로 열립니다. 🎉
+
+---
+
+### Mac / Linux 사용자
+
+#### 1단계: 압축 해제
 ```bash
-cd /home/user/webapp
-pip install -r requirements-bot.txt
+tar -xzf upbit-smart-bot-v5.0-complete.tar.gz
+cd upbit-smart-bot-v5.0
+```
+
+#### 2단계: 실행 권한 부여
+```bash
+chmod +x install-and-run.sh
+```
+
+#### 3단계: 실행
+```bash
+./install-and-run.sh
+```
+
+**끝!** 브라우저가 자동으로 열립니다. 🎉
+
+---
+
+## 🌐 웹 대시보드 사용
+
+### 1. 브라우저 접속
+```
+자동으로 열립니다
+또는 직접 접속: http://localhost:5000
+```
+
+### 2. API 키 설정
+```
+1. "⚙️ 설정" 버튼 클릭
+2. 업비트에서 발급한 API 키 입력
+   - Access Key
+   - Secret Key
+3. "저장" 클릭
+```
+
+**API 키 발급 방법**:
+1. https://upbit.com 로그인
+2. 프로필 → Open API 관리
+3. API 키 발급
+4. 권한: ✅ 자산조회, ✅ 주문조회, ✅ 주문하기
+5. 권한: ❌ 출금하기 (절대 체크 금지!)
+
+### 3. 봇 시작
+```
+"▶ 봇 시작" 버튼 클릭
+```
+
+### 4. 모니터링
+```
+실시간으로 표시되는 정보:
+• 💰 원화 잔고
+• 🏦 초기 시드 (보호됨)
+• 📈 총 수익
+• 📊 보유 코인 (수량, 가격, 수익률)
+• 💎 수익 투자 (SOL, XRP, BTC, HBAR)
+• 📜 거래 이력
 ```
 
 ---
 
-### 3️⃣ API 키 설정 (1분)
+## 📖 주요 기능
 
-#### 방법 A: .env 파일 사용 (추천 ⭐)
-```bash
-# 템플릿 복사
-cp .env.example .env
-
-# 파일 편집
-nano .env
+### 1. 자동 매수/매도
+```
+5단계 매수: 6천원 → 1만원(x3) → 10만원
+3단계 익절: 50% → 30% → 20%
 ```
 
-`.env` 파일 내용:
+### 2. 수익 분산 투자
 ```
-UPBIT_ACCESS_KEY=여기에_실제_Access_Key_붙여넣기
-UPBIT_SECRET_KEY=여기에_실제_Secret_Key_붙여넣기
+3단계 익절 완료 시 자동으로:
+1순위: SOL (솔라나)   - 10,000원
+2순위: XRP (리플)     - 10,000원
+3순위: BTC (비트코인) - 10,000원
+4순위: HBAR (헤데라)  - 10,000원
 ```
 
-저장: `Ctrl + O` → `Enter` → `Ctrl + X`
+### 3. 시드 보호
+```
+초기 시드는 절대 건드리지 않음
+현재 원화 < 초기 시드 → 매수 금지
+```
 
-#### 방법 B: 환경변수 직접 설정
-```bash
-export UPBIT_ACCESS_KEY="여기에_실제_Access_Key"
-export UPBIT_SECRET_KEY="여기에_실제_Secret_Key"
+### 4. 웹 제어
+```
+• 봇 켜기/끄기: 버튼 클릭
+• API 설정: 웹에서 입력
+• 실시간 통계: 3초마다 자동 업데이트
 ```
 
 ---
 
-### 4️⃣ 봇 설정 확인 (30초)
+## ⚠️ 중요 안내
 
-`upbit-scalping-bot.py` 파일 열기:
-```bash
-nano upbit-scalping-bot.py
+### 시뮬레이션 모드
+```
+기본적으로 시뮬레이션 모드로 실행됩니다
+→ 실제 주문은 하지 않음
+→ 로그로 전략만 확인 가능
 ```
 
-**26번째 줄 근처** 설정 확인:
+### 실전 모드 전환
+```
+웹 대시보드에서:
+1. "⚙️ 설정" → "실전 모드" 체크
+2. 확인 후 저장
+```
+
+또는 코드에서:
 ```python
-TICKER = "KRW-BTC"           # 거래할 코인 (비트코인)
-TOTAL_SEED = 1_000_000       # 시드머니 (100만원)
-SPLIT_COUNT = 5              # 5단계 분할
-TARGET_PROFIT_RATE = 0.015   # 목표 수익률 1.5%
-STOP_LOSS_RATE = -0.03       # 손절 -3%
+upbit-smart-bot-v5.py 파일 열기
+→ 주석 해제 (# 제거):
+   - 442번째 줄: 매수 주문
+   - 476번째 줄: 매도 주문
+   - 252번째 줄: 수익 투자
 ```
 
-필요하면 수정 후 저장
-
----
-
-### 5️⃣ 봇 실행 (30초)
-
-#### 옵션 1: 간단 실행 (테스트용)
-```bash
-python3 upbit-scalping-bot.py
+### 보안
 ```
-종료: `Ctrl + C`
-
-#### 옵션 2: 백그라운드 실행 (24시간 운영)
-```bash
-./bot-manager.sh start
+✅ API 키는 로컬 파일(api_keys.json)에만 저장
+✅ 출금 권한은 절대 활성화 금지
+✅ API 키 파일은 Git에 올리지 않음 (.gitignore 포함)
 ```
 
 ---
 
-## 🎛️ 봇 관리 명령어
+## 🐛 문제 해결
 
-### 봇 관리 스크립트 사용
-```bash
-# 봇 시작
-./bot-manager.sh start
-
-# 봇 상태 확인
-./bot-manager.sh status
-
-# 봇 종료
-./bot-manager.sh stop
-
-# 봇 재시작
-./bot-manager.sh restart
-
-# 실시간 로그 보기
-./bot-manager.sh log
+### Python이 없다고 나옵니다
+```
+해결:
+1. https://www.python.org/downloads/ 접속
+2. Python 최신 버전 다운로드
+3. 설치 시 "Add Python to PATH" 체크 필수!
+4. 설치 후 컴퓨터 재시작
+5. 다시 install-and-run 실행
 ```
 
-### 모니터링 스크립트
-```bash
-# 현재 상태 + 오늘의 거래 요약
-./monitor-bot.sh
+### 라이브러리 설치 실패
+```
+해결:
+수동 설치:
+pip install pyupbit pandas numpy flask flask-cors
+
+또는:
+python -m pip install pyupbit pandas numpy flask flask-cors
 ```
 
----
+### 포트 충돌 (Address already in use)
+```
+해결:
+다른 프로그램이 5000 포트 사용 중
 
-## 📊 모니터링
+Windows:
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
 
-### 실시간 로그 확인
-```bash
-tail -f bot.log
+Mac/Linux:
+lsof -ti:5000 | xargs kill -9
 ```
 
-### 오늘 거래 내역
-```bash
-grep "$(date +%Y-%m-%d)" bot.log | grep "매수\|매도"
+### 대시보드 접속 안 됨
 ```
-
-### 수익률 확인
-```bash
-grep "수익률" bot.log | tail -n 10
-```
-
-### 에러 확인
-```bash
-grep "ERROR" bot.log
+해결:
+1. 방화벽에서 5000 포트 허용
+2. http://127.0.0.1:5000 으로 시도
+3. 봇이 정상 실행 중인지 확인
 ```
 
 ---
 
-## 🚨 문제 해결
+## 📱 모바일에서 접속
 
-### "API 키가 설정되지 않았습니다"
-```bash
-# 환경변수 확인
-echo $UPBIT_ACCESS_KEY
-
-# 없으면 다시 설정
-export UPBIT_ACCESS_KEY="..."
-export UPBIT_SECRET_KEY="..."
+### 같은 Wi-Fi 환경
+```
+1. PC에서 봇 실행
+2. PC의 IP 주소 확인
+   - Windows: cmd → ipconfig
+   - Mac: 시스템 설정 → 네트워크
+   - Linux: ifconfig 또는 ip addr
+3. 모바일 브라우저에서 http://PC_IP:5000 접속
 ```
 
-### "pyupbit 모듈이 없습니다"
-```bash
-pip install pyupbit pandas numpy python-dotenv
+예시:
 ```
-
-### "잔고가 부족합니다"
-- 업비트 계정에 KRW 충전
-- 또는 `TOTAL_SEED` 값을 줄이기
-
-### 봇이 거래를 안 함
-- 로그 확인: `tail -f bot.log`
-- 시장 상황 확인 (횡보장에서는 거래 적음)
-- RSI/볼린저밴드 조건 확인
-
----
-
-## ⚠️ 안전 수칙
-
-1. **소액으로 시작**: 처음엔 10만원 정도로 테스트
-2. **출금 권한 금지**: API 키에 출금 권한 절대 부여 금지
-3. **API 키 보안**: .env 파일을 Git에 올리지 않기
-4. **정기 모니터링**: 하루 3번 이상 상태 체크
-5. **손절 준수**: 설정한 손절 라인 지키기
-
----
-
-## 📞 도움말
-
-### 자세한 가이드
-- **API 설정**: `UPBIT-API-SETUP-GUIDE.md`
-- **전체 문서**: `UPBIT-BOT-README.md`
-
-### 긴급 중지
-```bash
-# 프로세스 찾기
-ps aux | grep upbit-scalping-bot
-
-# 종료
-kill -9 <PID>
-
-# 또는
-./bot-manager.sh stop
+PC IP: 192.168.0.100
+모바일: http://192.168.0.100:5000
 ```
 
 ---
 
-## 🎯 다음 단계
+## 💡 사용 팁
 
-1. ✅ 소액으로 24시간 테스트
-2. ✅ 수익률 및 승률 분석
-3. ✅ 파라미터 최적화 (RSI, 볼린저밴드 기준)
-4. ✅ 다른 코인으로 확장 테스트
-5. ✅ 텔레그램 알림 추가
+### 초보자
+```
+1. 24시간 시뮬레이션 먼저 실행
+2. 로그 확인하며 전략 이해
+3. 소액(10만원)으로 실전 테스트
+4. 점진적으로 금액 증액
+```
+
+### 중급자
+```
+1. 수익 투자 대상 변경 가능
+   (코드에서 PROFIT_TARGETS 수정)
+2. 투자 금액 조정 가능
+   (PROFIT_INVEST_AMOUNT 수정)
+3. 매수/매도 단계 커스터마이징
+```
+
+### 고급자
+```
+1. 백그라운드 실행
+2. 서버 배포
+3. 알림 기능 추가 (텔레그램 등)
+4. 멀티 코인 동시 관리
+```
 
 ---
 
-**✨ 안전하고 수익성 있는 트레이딩 되세요! 화이팅! 🚀**
+## 📞 지원
+
+### GitHub
+```
+저장소: https://github.com/wordycow/so.t-leader-choice
+Issues: 버그 리포트
+Discussions: 질문 및 아이디어
+```
+
+### 문서
+```
+완전 가이드: UPBIT-BOT-V5-GUIDE.md
+버전 비교: BOT-VERSION-COMPARISON.md
+배포 요약: DEPLOYMENT-SUMMARY-V4.md
+```
+
+---
+
+## 🎉 시작하기
+
+```
+1. 다운로드: upbit-smart-bot-v5.0-complete.tar.gz
+2. 압축 해제
+3. install-and-run 실행 (Windows: .bat, Mac/Linux: .sh)
+4. 브라우저 자동으로 열림
+5. API 키 설정
+6. 봇 시작 버튼 클릭
+7. 완료! 🚀
+```
+
+---
+
+**버전**: v5.0.0  
+**날짜**: 2026-02-15  
+**제작**: so.t Team  
+**라이선스**: MIT
+
+**행운을 빕니다! 📈💰🚀**
