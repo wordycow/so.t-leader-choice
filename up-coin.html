@@ -271,6 +271,12 @@
           <option value="HIDE_OUT">보기: 진입금지(OUT) 숨김</option>
         </select>
 
+        <select class="select" id="sortMode">
+          <option value="SCORE">정렬: 점수순</option>
+          <option value="VOL_RATIO">정렬: 체결강도순</option>
+          <option value="PUMP_DAYS">정렬: 펌프일자순</option>
+        </select>
+
         <select class="select" id="personSelect"></select>
         <button class="btn warn" id="btnDiag">진단</button>
         <button class="btn primary" id="btnRefresh">새로고침</button>
@@ -787,12 +793,22 @@
     function filterPicks(){
       const items = state.picks?.items || [];
       const viewMode = $("viewMode").value;
+      const sortMode = $("sortMode").value;
 
-      // 1) person/category 필터
+      // 1) person/category 필터 + 정렬
       let arrBase = items
         .filter(it => String(it["person_id"]) === String(state.personId))
-        .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category)
-        .sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0));
+        .filter(it => state.category === "ALL" ? true : String(it["category"]) === state.category);
+
+      // ✅ 정렬 모드에 따라 정렬
+      if (sortMode === "VOL_RATIO") {
+        arrBase.sort((a,b) => Number(b["vol_ratio_24h_to_avg7"]||0) - Number(a["vol_ratio_24h_to_avg7"]||0));
+      } else if (sortMode === "PUMP_DAYS") {
+        arrBase.sort((a,b) => Number(a["last_pump_days_ago"]||999) - Number(b["last_pump_days_ago"]||999));
+      } else {
+        // 기본: 점수순
+        arrBase.sort((a,b) => Number(b["score"]||0) - Number(a["score"]||0));
+      }
 
       // 2) 상태 계산
       let arr = arrBase.map(it => ({...it, __st: entryStatus(it)}));
@@ -1250,6 +1266,7 @@
     $("timingMode").onchange = () => renderAll();
     $("showCount").onchange = () => renderAll();
     $("viewMode").onchange = () => renderAll();
+    $("sortMode").onchange = () => renderAll();
 
     (async function init(){
       try{ await loadAll(); }
