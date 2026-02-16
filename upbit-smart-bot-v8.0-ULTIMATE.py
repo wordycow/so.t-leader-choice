@@ -1200,13 +1200,17 @@ def api_history():
                 'price': trade['price'],
                 'fee': trade.get('fee', 0),
                 'timestamp': trade.get('timestamp', ''),
-                'reason': trade.get('reason', '')
+                'reason': trade.get('reason', ''),
+                'strategy': trade.get('strategy', '전략 미상')
             }
             
             if trade['type'] == 'BUY':
                 trade_data['invested'] = trade.get('invested', 0)
+                trade_data['net_invested'] = trade.get('net_invested', 0)
             else:  # SELL
+                trade_data['entry_price'] = trade.get('entry_price', 0)
                 trade_data['sell_value'] = trade.get('sell_value', 0)
+                trade_data['net_proceeds'] = trade.get('net_proceeds', 0)
                 trade_data['profit'] = trade.get('profit', 0)
                 trade_data['profit_rate'] = trade.get('profit_rate', 0)
             
@@ -1620,12 +1624,6 @@ def bot_main_loop(user_id, bot_state):
         try:
             loop_count += 1
             log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
-            
-            # 처음 2번은 스캔만 하고 매수하지 않음
-            if loop_count <= 2:
-                log(f"🔍 시장 관찰 중... ({loop_count}/2)", "INFO")
-                time.sleep(20)
-                continue
             
             # 1. 복구 모드 체크
             if not bot_state['recovery_mode_active']:
