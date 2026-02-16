@@ -779,7 +779,7 @@ CORS(app)
 
 @app.route('/')
 def index():
-    return render_template('dashboard-v8-ultimate.html')
+    return render_template('dashboard-ultimate.html')
 
 @app.route('/api/status')
 def api_status():
