@@ -149,51 +149,63 @@ STRATEGIES = {
 # ═══════════════════════════════════════════════════════
 # 🎮 봇 상태 관리
 # ═══════════════════════════════════════════════════════
-bot_state = {
-    'running': False,
-    'mode': 'practice',
-    'upbit': None,
-    'thread': None,
-    
-    # 시뮬레이션
-    'simulation_seed': 1000000,
-    'simulation_krw': 1000000,
-    'simulation_holdings': {},
-    'simulation_start_seed': 1000000,
-    
-    # 복구 모드
-    'recovery_mode_active': False,
-    'recovery_seed': 0,
-    'recovery_target_amount': 0,
-    'recovery_trades': 0,
-    'recovery_success_trades': 0,
-    'recovery_total_profit': 0,
-    'frozen_holdings': {},
-    'last_loss_time': None,
-    
-    # 학습
-    'pattern_history': deque(maxlen=LEARNING_CONFIG['pattern_history_size']),
-    'trade_results': deque(maxlen=LEARNING_CONFIG['pattern_history_size']),
-    'strategy_performance': STRATEGIES.copy(),
-    'current_patterns': {},
-    
-    # 통계
-    'statistics': {
-        'total_trades': 0,
-        'winning_trades': 0,
-        'losing_trades': 0,
-        'total_profit': 0,
-        'best_strategy': None,
-        'recovery_progress': 0,
-    },
-    
-    # 거래 내역 (최근 50개)
-    'recent_trades': deque(maxlen=50),
-    'recent_signals': deque(maxlen=50),
-    
-    'last_update': None,
-    'start_time': None,
-}
+
+def create_bot_state():
+    """사용자별 독립 봇 상태 생성"""
+    return {
+        'running': False,
+        'mode': 'practice',
+        'upbit': None,
+        'thread': None,
+        
+        # 시뮬레이션
+        'simulation_seed': 1000000,
+        'simulation_krw': 1000000,
+        'simulation_holdings': {},
+        'simulation_start_seed': 1000000,
+        
+        # 복구 모드
+        'recovery_mode_active': False,
+        'recovery_seed': 0,
+        'recovery_target_amount': 0,
+        'recovery_trades': 0,
+        'recovery_success_trades': 0,
+        'recovery_total_profit': 0,
+        'frozen_holdings': {},
+        'last_loss_time': None,
+        
+        # 학습
+        'pattern_history': deque(maxlen=LEARNING_CONFIG['pattern_history_size']),
+        'trade_results': deque(maxlen=LEARNING_CONFIG['pattern_history_size']),
+        'strategy_performance': {k: v.copy() for k, v in STRATEGIES.items()},
+        'current_patterns': {},
+        
+        # 통계
+        'statistics': {
+            'total_trades': 0,
+            'winning_trades': 0,
+            'losing_trades': 0,
+            'total_profit': 0,
+            'best_strategy': None,
+            'recovery_progress': 0,
+        },
+        
+        # 거래 내역 (최근 50개)
+        'recent_trades': deque(maxlen=50),
+        'recent_signals': deque(maxlen=50),
+        
+        'last_update': None,
+        'start_time': None,
+    }
+
+# 전역 봇 상태 (하위 호환성 유지)
+bot_state = create_bot_state()
+
+def get_user_bot_state(user_id):
+    """사용자 ID로 봇 상태 조회 또는 생성"""
+    if user_id not in user_bots:
+        user_bots[user_id] = create_bot_state()
+    return user_bots[user_id]
 
 # ═══════════════════════════════════════════════════════
 # 📝 로깅
@@ -831,6 +843,13 @@ def index():
 @app.route('/api/status')
 def api_status():
     try:
+        # 세션 확인
+        if 'user_id' not in session:
+            return jsonify({'error': '로그인이 필요합니다'}), 401
+        
+        user_id = session['user_id']
+        bot_state = get_user_bot_state(user_id)
+        
         # 봇이 실행 중이 아니면 초기 상태 반환
         if not bot_state['running']:
             return jsonify({
@@ -840,23 +859,42 @@ def api_status():
                 'profit_rate': 0,
                 'win_rate': 0,
                 'strategies': bot_state['strategy_performance'],
+                'holdings': [],
                 'recent_surges': [],
                 'recent_trades': []
             })
         
         # 봇 실행 중일 때만 실제 계산
-        current_krw = bot_state['simulation_krw'] + bot_state.get('recovery_seed', 0)
+        current_krw = bot_state['simulation_krw']
         
-        # 보유 코인 가치 계산 (실제 가격 조회)
+        # 보유 코인 가치 계산 + 상세 정보
         holdings_value = 0
+        holdings_list = []
+        
         if bot_state['simulation_holdings']:
             for ticker, h in bot_state['simulation_holdings'].items():
                 try:
                     current_price = pyupbit.get_current_price(ticker)
-                    if current_price:
-                        holdings_value += h['amount'] * current_price
-                    else:
-                        holdings_value += h['amount'] * h['avg_price']
+                    if not current_price:
+                        current_price = h['avg_price']
+                    
+                    coin_value = h['amount'] * current_price
+                    holdings_value += coin_value
+                    
+                    # 평가 손익
+                    profit = coin_value - (h['amount'] * h['avg_price'])
+                    profit_rate = (profit / (h['amount'] * h['avg_price'])) * 100
+                    
+                    holdings_list.append({
+                        'ticker': ticker,
+                        'coin_name': ticker.replace('KRW-', ''),
+                        'amount': h['amount'],
+                        'avg_price': h['avg_price'],
+                        'current_price': current_price,
+                        'value': coin_value,
+                        'profit': profit,
+                        'profit_rate': profit_rate
+                    })
                 except:
                     holdings_value += h['amount'] * h['avg_price']
         
@@ -896,10 +934,13 @@ def api_status():
         return jsonify({
             'running': True,
             'current_krw': current_krw,
+            'holdings_value': holdings_value,
+            'total_value': total_value,
             'total_profit': profit,
             'profit_rate': profit_rate,
             'win_rate': win_rate,
             'strategies': bot_state['strategy_performance'],
+            'holdings': holdings_list,
             'recent_surges': [],
             'recent_trades': recent_trades
         })
