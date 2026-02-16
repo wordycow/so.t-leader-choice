@@ -793,6 +793,7 @@ def api_status():
                 'total_profit': 0,
                 'profit_rate': 0,
                 'win_rate': 0,
+                'strategies': bot_state['strategy_performance'],
                 'recent_surges': [],
                 'recent_trades': []
             })
@@ -841,6 +842,7 @@ def api_status():
             'total_profit': profit,
             'profit_rate': profit_rate,
             'win_rate': win_rate,
+            'strategies': bot_state['strategy_performance'],
             'recent_surges': [],
             'recent_trades': []
         })
