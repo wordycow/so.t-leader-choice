@@ -1089,8 +1089,17 @@ def api_status():
 @app.route('/api/start', methods=['POST'])
 def api_start():
     try:
+        # ✅ 사용자별 독립 봇 상태 가져오기
+        if 'user_id' not in session:
+            user_id = f"guest_{request.remote_addr}"  # 게스트는 IP 기반
+        else:
+            user_id = session['user_id']
+        
+        bot_state = get_user_bot_state(user_id)
+        
+        # ✅ 이 사용자의 봇이 실행 중인지 체크
         if bot_state['running']:
-            return jsonify({'success': False, 'message': '이미 실행 중'})
+            return jsonify({'success': False, 'message': '이미 실행 중입니다. 먼저 정지해주세요.'})
         
         data = request.json or {}
         mode = data.get('mode', 'practice')
@@ -1232,12 +1241,13 @@ def api_start():
         bot_state['running'] = True
         bot_state['start_time'] = datetime.now()
         
-        thread = threading.Thread(target=bot_main_loop, daemon=True)
+        # ✅ 사용자별 독립 스레드 시작 (user_id와 bot_state 전달)
+        thread = threading.Thread(target=bot_main_loop, args=(user_id, bot_state), daemon=True)
         thread.start()
         bot_state['thread'] = thread
         
         mode_text = "💎 실전 모드" if mode == 'live' else "연습 모드"
-        log(f"봇 시작! {mode_text}, 시드: {seed:,}원", "SUCCESS")
+        log(f"[{user_id}] 봇 시작! {mode_text}, 시드: {seed:,}원", "SUCCESS")
         
         return jsonify({'success': True, 'message': f'✅ 봇 시작! ({mode_text})'})
     except Exception as e:
@@ -1249,11 +1259,19 @@ def api_start():
 @app.route('/api/stop', methods=['POST'])
 def api_stop():
     try:
+        # ✅ 사용자별 독립 봇 상태 가져오기
+        if 'user_id' not in session:
+            user_id = f"guest_{request.remote_addr}"
+        else:
+            user_id = session['user_id']
+        
+        bot_state = get_user_bot_state(user_id)
+        
         bot_state['running'] = False
         # 스레드가 종료될 때까지 대기 (최대 5초)
         if 'thread' in bot_state and bot_state['thread'] and bot_state['thread'].is_alive():
             bot_state['thread'].join(timeout=5)
-        log("봇이 정지되었습니다", "INFO")
+        log(f"[{user_id}] 봇이 정지되었습니다", "INFO")
         return jsonify({'success': True, 'message': '봇 중지'})
     except Exception as e:
         log(f"정지 오류: {e}", "ERROR")
@@ -1338,18 +1356,18 @@ def api_config():
 # ═══════════════════════════════════════════════════════
 # 🔄 메인 봇 루프
 # ═══════════════════════════════════════════════════════
-def bot_main_loop():
-    """메인 루프 (완전체)"""
+def bot_main_loop(user_id, bot_state):
+    """메인 루프 (완전체) - 사용자별 독립 실행"""
     log_separator()
-    log("🚀 AI 트레이딩 봇 v8.0 ULTIMATE 시작!", "SUCCESS")
+    log(f"🚀 [{user_id}] AI 트레이딩 봇 v8.0 ULTIMATE 시작!", "SUCCESS")
     log_separator()
     
     bot_state['start_time'] = datetime.now()
     
     # 초기 안정화 대기 (5초)
-    log("⏱️ 초기화 중... (5초 대기)", "INFO")
+    log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
     time.sleep(5)
-    log("✅ 스캔 시작!", "SUCCESS")
+    log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
     
     popular_tickers = [
         'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
