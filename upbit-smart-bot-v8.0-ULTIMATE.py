@@ -862,10 +862,62 @@ def api_start():
             return jsonify({'success': False, 'message': '이미 실행 중'})
         
         data = request.json or {}
+        mode = data.get('mode', 'practice')
         seed = data.get('seed', 1000000)
+        txid = data.get('txid', '')
+        
+        # 실전 모드 검증
+        if mode == 'live':
+            # 라이선스 검증 (TODO: TronScan API 연동)
+            if not txid or len(txid) < 40:
+                return jsonify({
+                    'success': False, 
+                    'message': '⚠️ 실전 모드는 라이선스 인증이 필요합니다!\n\n1. TXID를 입력하세요\n2. "🔐 라이선스 인증" 버튼을 클릭하세요'
+                })
+            
+            # API 키 확인
+            if not bot_state.get('upbit'):
+                # config.json에서 API 키 로드 시도
+                try:
+                    import json
+                    with open('config.json', 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                        access_key = config.get('upbit_access_key', '')
+                        secret_key = config.get('upbit_secret_key', '')
+                        
+                        if not access_key or not secret_key:
+                            return jsonify({
+                                'success': False,
+                                'message': '⚠️ API 키를 먼저 설정해주세요!\n\n1. Access Key 입력\n2. Secret Key 입력\n3. "💾 저장" 클릭'
+                            })
+                        
+                        # Upbit 객체 생성
+                        bot_state['upbit'] = pyupbit.Upbit(access_key, secret_key)
+                        log("실전 모드: API 키 로드 완료", "SUCCESS")
+                except Exception as e:
+                    return jsonify({
+                        'success': False,
+                        'message': f'❌ API 키 로드 실패: {str(e)}'
+                    })
+            
+            # 실전 모드 시드는 실제 잔고에서 가져오기
+            try:
+                real_balance = bot_state['upbit'].get_balance('KRW')
+                if real_balance < 100000:  # 최소 10만원
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ 잔고 부족!\n\n현재 잔고: {real_balance:,.0f}원\n최소 필요: 100,000원'
+                    })
+                seed = real_balance
+                log(f"실전 모드: 실제 잔고 {seed:,}원", "SUCCESS")
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'message': f'❌ 잔고 조회 실패: {str(e)}\n\nAPI 키를 확인하세요.'
+                })
         
         # 완전 초기화
-        bot_state['mode'] = 'practice'
+        bot_state['mode'] = mode
         bot_state['simulation_seed'] = seed
         bot_state['simulation_krw'] = seed
         bot_state['simulation_start_seed'] = seed
@@ -903,11 +955,14 @@ def api_start():
         thread.start()
         bot_state['thread'] = thread
         
-        log(f"봇 시작! 시드: {seed:,}원", "SUCCESS")
+        mode_text = "💎 실전 모드" if mode == 'live' else "연습 모드"
+        log(f"봇 시작! {mode_text}, 시드: {seed:,}원", "SUCCESS")
         
-        return jsonify({'success': True, 'message': '봇 시작!'})
+        return jsonify({'success': True, 'message': f'✅ 봇 시작! ({mode_text})'})
     except Exception as e:
         log(f"시작 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/stop', methods=['POST'])
