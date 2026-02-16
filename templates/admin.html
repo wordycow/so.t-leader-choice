@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔧 관리자 대시보드 - Upbit AI Bot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0e27;
+      color: #e4e4e7;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fbbf24 0%, #ef4444 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: rgba(30, 30, 45, 0.8);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #6366f1;
+    }
+
+    .users-table {
+      background: rgba(30, 30, 45, 0.8);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: rgba(20, 20, 35, 0.8);
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #d1d5db;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    tr:hover {
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .badge-inactive {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .badge-subscribed {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+
+    .badge-free {
+      background: rgba(156, 163, 175, 0.2);
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 관리자 대시보드</h1>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">📊 전체 사용자</div>
+        <div class="stat-value" id="totalUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">✅ 활성 사용자</div>
+        <div class="stat-value" id="activeUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💎 구독자</div>
+        <div class="stat-value" id="subscribers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">🆓 무료 사용자</div>
+        <div class="stat-value" id="freeUsers">0</div>
+      </div>
+    </div>
+
+    <div class="users-table">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>사용자명</th>
+            <th>이메일</th>
+            <th>가입일</th>
+            <th>최근 로그인</th>
+            <th>구독 상태</th>
+            <th>구독 종료일</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr>
+            <td colspan="8" style="text-align:center; padding:40px;">로딩 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/admin/users');
+        const data = await response.json();
+        
+        if (data.success) {
+          const users = data.users;
+          
+          // 통계 업데이트
+          document.getElementById('totalUsers').textContent = users.length;
+          document.getElementById('activeUsers').textContent = 
+            users.filter(u => u.is_active).length;
+          document.getElementById('subscribers').textContent = 
+            users.filter(u => u.is_subscribed).length;
+          document.getElementById('freeUsers').textContent = 
+            users.filter(u => !u.is_subscribed).length;
+          
+          // 테이블 업데이트
+          const tbody = document.getElementById('usersTableBody');
+          tbody.innerHTML = users.map(u => `
+            <tr>
+              <td>${u.id}</td>
+              <td><strong>${u.username}</strong></td>
+              <td>${u.email || '-'}</td>
+              <td>${formatDate(u.created_at)}</td>
+              <td>${formatDate(u.last_login)}</td>
+              <td>
+                ${u.is_subscribed ? 
+                  `<span class="badge badge-subscribed">${u.subscription_type || 'PREMIUM'}</span>` : 
+                  `<span class="badge badge-free">FREE</span>`}
+              </td>
+              <td>${u.subscription_end ? formatDate(u.subscription_end) : '-'}</td>
+              <td>
+                ${u.is_active ? 
+                  `<span class="badge badge-active">활성</span>` : 
+                  `<span class="badge badge-inactive">비활성</span>`}
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('사용자 로드 실패:', error);
+      }
+    }
+    
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // 초기 로드
+    loadUsers();
+    
+    // 30초마다 자동 새로고침
+    setInterval(loadUsers, 30000);
+  </script>
+</body>
+</html>

@@ -44,9 +44,15 @@ from datetime import datetime, timedelta
 from collections import deque, defaultdict
 import json
 import threading
-from flask import Flask, render_template, jsonify, request, make_response
+from flask import Flask, render_template, jsonify, request, make_response, session, redirect
 from flask_cors import CORS
 import traceback
+import os
+
+# 커스텀 모듈
+from user_manager import UserManager
+from portfolio_manager import execute_diversified_buy, check_profit_trigger, get_available_coins
+from trade_reasons import generate_buy_reason, generate_sell_reason
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -800,10 +806,21 @@ def execute_exit(ticker, holding, reason):
 # 🚀 Flask 웹 서버
 # ═══════════════════════════════════════════════════════
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # 세션 암호화 키
 CORS(app)
+
+# UserManager 초기화
+user_manager = UserManager()
+
+# 사용자별 봇 상태 저장 (user_id를 키로 사용)
+user_bots = {}
 
 @app.route('/')
 def index():
+    # 세션 확인
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     response = make_response(render_template('dashboard-ultimate-v2.html'))
     # 캐시 방지
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -1166,6 +1183,140 @@ def bot_main_loop():
             time.sleep(10)
     
     log("🛑 봇 중지", "WARNING")
+
+# ═══════════════════════════════════════════════════════
+# 🔐 사용자 인증 API
+# ═══════════════════════════════════════════════════════
+
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """회원가입"""
+    try:
+        data = request.json
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        
+        if not username:
+            return jsonify({'success': False, 'message': '사용자명을 입력해주세요'})
+        
+        ip_address = request.remote_addr
+        result = user_manager.create_user(username, email, ip_address)
+        
+        if result['success']:
+            session['user_id'] = result['user_id']
+            session['username'] = result['username']
+            log(f"✨ 새 사용자 등록: {username} (ID: {result['user_id']})", "SUCCESS")
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """로그인"""
+    try:
+        data = request.json
+        username = data.get('username', '').strip()
+        
+        if not username:
+            return jsonify({'success': False, 'message': '사용자명을 입력해주세요'})
+        
+        user = user_manager.get_user_by_username(username)
+        
+        if not user:
+            return jsonify({'success': False, 'message': '존재하지 않는 사용자입니다'})
+        
+        if not user['is_active']:
+            return jsonify({'success': False, 'message': '비활성화된 계정입니다'})
+        
+        # 세션 저장
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        
+        # 마지막 로그인 업데이트
+        user_manager.update_last_login(user['id'], request.remote_addr)
+        
+        log(f"👤 로그인: {username} (ID: {user['id']})", "INFO")
+        
+        return jsonify({
+            'success': True,
+            'user_id': user['id'],
+            'username': user['username']
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """로그아웃"""
+    username = session.get('username', 'Unknown')
+    session.clear()
+    return jsonify({'success': True, 'message': f'{username}님 로그아웃'})
+
+# ═══════════════════════════════════════════════════════
+# 👨‍💼 관리자 API
+# ═══════════════════════════════════════════════════════
+
+@app.route('/admin')
+def admin_page():
+    return render_template('admin.html')
+
+@app.route('/api/admin/users')
+def api_admin_users():
+    """모든 사용자 목록 조회"""
+    try:
+        users = user_manager.get_all_users()
+        return jsonify({'success': True, 'users': users})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ═══════════════════════════════════════════════════════
+# 📊 포트폴리오 API
+# ═══════════════════════════════════════════════════════
+
+@app.route('/api/portfolio/get')
+def api_get_portfolio():
+    """사용자 포트폴리오 조회"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다'}), 401
+    
+    try:
+        portfolio = user_manager.get_user_portfolio(session['user_id'])
+        available_coins = get_available_coins()
+        
+        return jsonify({
+            'success': True,
+            'portfolio': portfolio,
+            'available_coins': available_coins
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/portfolio/update', methods=['POST'])
+def api_update_portfolio():
+    """포트폴리오 설정 업데이트"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다'}), 401
+    
+    try:
+        data = request.json
+        result = user_manager.update_portfolio(
+            session['user_id'],
+            data.get('coin_1'),
+            data.get('coin_2'),
+            data.get('coin_3'),
+            data.get('coin_4'),
+            data.get('investment_per_coin', 10000)
+        )
+        
+        log(f"📊 포트폴리오 업데이트: {session['username']}", "INFO")
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == "__main__":
     log_separator()
