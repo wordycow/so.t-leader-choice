@@ -91,6 +91,61 @@
       -webkit-text-fill-color: transparent;
       margin-bottom: 8px;
       letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 톱니바퀴 애니메이션 */
+    .gears-container {
+      display: flex;
+      align-items: center;
+      gap: -8px;
+      position: relative;
+    }
+
+    .gear {
+      width: 32px;
+      height: 32px;
+      position: relative;
+      display: none; /* 기본적으로 숨김 */
+    }
+
+    .gear.active {
+      display: block;
+    }
+
+    .gear svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.3));
+    }
+
+    .gear-1 {
+      animation: rotate-clockwise 3s linear infinite;
+      z-index: 3;
+    }
+
+    .gear-2 {
+      animation: rotate-counterclockwise 4s linear infinite;
+      margin-left: -12px;
+      z-index: 2;
+    }
+
+    .gear-3 {
+      animation: rotate-clockwise 3.5s linear infinite;
+      margin-left: -12px;
+      z-index: 1;
+    }
+
+    @keyframes rotate-clockwise {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotate-counterclockwise {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-360deg); }
     }
 
     .header-left .subtitle {
@@ -581,7 +636,50 @@
     <div class="header">
       <div class="header-content">
         <div class="header-left">
-          <h1>🏆 Upbit AI Trading Bot</h1>
+          <h1>
+            🏆 Upbit AI Trading Bot
+            <div class="gears-container" id="gearsContainer">
+              <div class="gear gear-1">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50,10 L55,20 L65,18 L63,28 L73,33 L68,42 L77,50 L68,58 L73,67 L63,72 L65,82 L55,80 L50,90 L45,80 L35,82 L37,72 L27,67 L32,58 L23,50 L32,42 L27,33 L37,28 L35,18 L45,20 Z M50,30 A20,20 0 1,0 50,70 A20,20 0 1,0 50,30 Z" 
+                        fill="url(#gearGradient1)" stroke="#d97706" stroke-width="1.5"/>
+                  <circle cx="50" cy="50" r="8" fill="#78350f"/>
+                  <defs>
+                    <linearGradient id="gearGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <div class="gear gear-2">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50,15 L54,23 L62,22 L61,30 L69,34 L65,41 L72,48 L65,55 L69,62 L61,66 L62,74 L54,73 L50,81 L46,73 L38,74 L39,66 L31,62 L35,55 L28,48 L35,41 L31,34 L39,30 L38,22 L46,23 Z M50,35 A15,15 0 1,0 50,65 A15,15 0 1,0 50,35 Z" 
+                        fill="url(#gearGradient2)" stroke="#b45309" stroke-width="1.5"/>
+                  <circle cx="50" cy="50" r="6" fill="#78350f"/>
+                  <defs>
+                    <linearGradient id="gearGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <div class="gear gear-3">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50,12 L54,21 L63,20 L62,29 L71,33 L66,41 L74,49 L66,57 L71,65 L62,69 L63,78 L54,77 L50,86 L46,77 L37,78 L38,69 L29,65 L34,57 L26,49 L34,41 L29,33 L38,29 L37,20 L46,21 Z M50,32 A18,18 0 1,0 50,68 A18,18 0 1,0 50,32 Z" 
+                        fill="url(#gearGradient3)" stroke="#92400e" stroke-width="1.5"/>
+                  <circle cx="50" cy="50" r="7" fill="#78350f"/>
+                  <defs>
+                    <linearGradient id="gearGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#d97706;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#b45309;stop-opacity:1" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </h1>
           <p class="subtitle">v8.0 ULTIMATE • 급등/급락 포착 + AI 학습 + 손실 복구</p>
         </div>
         <div class="status-badge" id="statusBadge">
@@ -800,6 +898,23 @@
     let currentMode = 'practice';
     let updateInterval = null;
 
+    // 숫자에 천단위 콤마 추가 함수
+    function formatNumber(num) {
+      return Number(num).toLocaleString('ko-KR');
+    }
+
+    // 톱니바퀴 표시/숨김
+    function toggleGears(running) {
+      const gears = document.querySelectorAll('.gear');
+      gears.forEach(gear => {
+        if (running) {
+          gear.classList.add('active');
+        } else {
+          gear.classList.remove('active');
+        }
+      });
+    }
+
     // 모드 선택
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -849,6 +964,7 @@
           document.getElementById('statusBadge').classList.add('running');
           document.getElementById('statusBadge').classList.remove('stopped');
           document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
+          toggleGears(true); // 톱니바퀴 표시
           startUpdating();
         } else {
           alert('❌ 시작 실패: ' + data.message);
@@ -865,6 +981,7 @@
           document.getElementById('statusBadge').classList.remove('running');
           document.getElementById('statusBadge').classList.add('stopped');
           document.getElementById('statusText').textContent = '정지됨';
+          toggleGears(false); // 톱니바퀴 숨김
           stopUpdating();
         }
       });
@@ -890,13 +1007,13 @@
       fetch('/api/status')
       .then(res => res.json())
       .then(data => {
-        // 통계 업데이트
+        // 통계 업데이트 (천단위 콤마 추가)
         document.getElementById('currentBalance').textContent = 
-          Number(data.current_krw || 0).toLocaleString() + '원';
+          formatNumber(data.current_krw || 0) + '원';
         
         const profit = data.total_profit || 0;
         const profitEl = document.getElementById('totalProfit');
-        profitEl.textContent = (profit >= 0 ? '+' : '') + profit.toLocaleString() + '원';
+        profitEl.textContent = (profit >= 0 ? '+' : '') + formatNumber(profit) + '원';
         profitEl.className = 'card-value ' + (profit >= 0 ? 'profit-positive' : 'profit-negative');
         
         const rate = data.profit_rate || 0;
@@ -907,15 +1024,17 @@
         document.getElementById('winRate').textContent = 
           (data.win_rate || 0).toFixed(1) + '%';
 
-        // 상태 업데이트
+        // 상태 업데이트 + 톱니바퀴 제어
         if (data.running) {
           document.getElementById('statusBadge').classList.add('running');
           document.getElementById('statusBadge').classList.remove('stopped');
           document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
+          toggleGears(true); // 톱니바퀴 표시
         } else {
           document.getElementById('statusBadge').classList.remove('running');
           document.getElementById('statusBadge').classList.add('stopped');
           document.getElementById('statusText').textContent = '정지됨';
+          toggleGears(false); // 톱니바퀴 숨김
         }
 
         // 최근 신호 업데이트
@@ -926,7 +1045,7 @@
               <div class="list-item">
                 <div class="item-left">
                   <div class="item-title">${s.ticker}</div>
-                  <div class="item-subtitle">${s.price.toLocaleString()}원 • ${s.signals}개 신호</div>
+                  <div class="item-subtitle">${formatNumber(s.price)}원 • ${s.signals}개 신호</div>
                 </div>
                 <div class="item-badge ${s.type === 'surge' ? 'badge-surge' : 'badge-dip'}">
                   ${s.type === 'surge' ? '급등' : '급락'}
@@ -943,7 +1062,7 @@
               <div class="list-item">
                 <div class="item-left">
                   <div class="item-title">${t.ticker}</div>
-                  <div class="item-subtitle">${t.amount.toFixed(4)} • ${t.price.toLocaleString()}원</div>
+                  <div class="item-subtitle">${t.amount.toFixed(4)} • ${formatNumber(t.price)}원</div>
                 </div>
                 <div class="item-badge ${t.type === 'BUY' ? 'badge-buy' : 'badge-sell'}">
                   ${t.type === 'BUY' ? '매수' : '매도'}
