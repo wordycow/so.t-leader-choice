@@ -181,6 +181,10 @@ bot_state = {
         'recovery_progress': 0,
     },
     
+    # 거래 내역 (최근 50개)
+    'recent_trades': deque(maxlen=50),
+    'recent_signals': deque(maxlen=50),
+    
     'last_update': None,
     'start_time': None,
 }
@@ -648,6 +652,16 @@ def execute_trade(ticker, strategy_id, patterns):
         
         log(f"💰 {'[복구]' if bot_state['recovery_mode_active'] else ''} 매수: {ticker} | {current_price:,.0f}원 | {STRATEGIES[strategy_id]['name']}", "SUCCESS")
         
+        # 거래 내역 추가
+        bot_state['recent_trades'].append({
+            'ticker': ticker,
+            'type': 'BUY',
+            'amount': buy_amount,
+            'price': current_price,
+            'strategy': STRATEGIES[strategy_id]['name'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
         return True
     except Exception as e:
         log(f"거래 오류: {e}", "ERROR")
@@ -745,6 +759,16 @@ def execute_exit(ticker, holding, reason):
         else:
             bot_state['simulation_krw'] += sell_krw
             log(f"💸 매도: {ticker} | {profit_rate:+.2f}% | {reason}", "SUCCESS" if profit_rate > 0 else "WARNING")
+            
+            # 거래 내역 추가
+            bot_state['recent_trades'].append({
+                'ticker': ticker,
+                'type': 'SELL',
+                'amount': holding['amount'],
+                'price': current_price,
+                'profit_rate': profit_rate,
+                'timestamp': datetime.now().isoformat()
+            })
         
         del bot_state['simulation_holdings'][ticker]
         
@@ -841,6 +865,17 @@ def api_status():
         profit = total_value - bot_state['simulation_start_seed']
         profit_rate = (profit / bot_state['simulation_start_seed']) * 100 if bot_state['simulation_start_seed'] > 0 else 0
         
+        # 최근 거래 내역 변환
+        recent_trades = []
+        for trade in list(bot_state.get('recent_trades', []))[-10:]:
+            recent_trades.append({
+                'ticker': trade['ticker'],
+                'type': trade['type'],
+                'amount': trade['amount'],
+                'price': trade['price'],
+                'timestamp': trade.get('timestamp', '')
+            })
+        
         return jsonify({
             'running': True,
             'current_krw': current_krw,
@@ -849,7 +884,7 @@ def api_status():
             'win_rate': win_rate,
             'strategies': bot_state['strategy_performance'],
             'recent_surges': [],
-            'recent_trades': []
+            'recent_trades': recent_trades
         })
     except Exception as e:
         log(f"API 상태 조회 오류: {e}", "ERROR")
@@ -931,6 +966,8 @@ def api_start():
         bot_state['recovery_total_profit'] = 0
         
         # 통계 초기화
+        bot_state['recent_trades'].clear()
+        bot_state['recent_signals'].clear()
         bot_state['statistics'] = {
             'total_trades': 0,
             'winning_trades': 0,
