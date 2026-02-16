@@ -1025,13 +1025,26 @@ def index():
 @app.route('/api/status')
 def api_status():
     try:
-        # 세션 확인 또는 IP 기반 user_id 자동 생성
+        # 세션 확인 - Guest 자동 생성하지 않음
         if 'user_id' not in session:
-            user_id = f"guest_{request.remote_addr}"
-            session['user_id'] = user_id
-            session.permanent = True
-        else:
-            user_id = session['user_id']
+            # 로그인 필요
+            return jsonify({
+                'success': False,
+                'message': '로그인이 필요합니다',
+                'running': False,
+                'current_krw': 0,
+                'start_seed': 1000000,
+                'current_seed': 1000000,
+                'total_profit': 0,
+                'profit_rate': 0,
+                'win_rate': 0,
+                'strategies': {},
+                'holdings': [],
+                'recent_surges': [],
+                'recent_trades': []
+            })
+        
+        user_id = session['user_id']
         
         bot_state = get_user_bot_state(user_id)
         
@@ -1142,11 +1155,9 @@ def api_start():
     try:
         # ✅ 사용자별 독립 봇 상태 가져오기
         if 'user_id' not in session:
-            user_id = f"guest_{request.remote_addr}"  # 게스트는 IP 기반
-            session['user_id'] = user_id  # 세션에 저장
-            session.permanent = True  # 세션 영구 저장
-        else:
-            user_id = session['user_id']
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        user_id = session['user_id']
         
         log(f"[START] user_id: {user_id}", "INFO")
         bot_state = get_user_bot_state(user_id)
@@ -1338,11 +1349,9 @@ def api_stop():
     try:
         # ✅ 사용자별 독립 봇 상태 가져오기
         if 'user_id' not in session:
-            user_id = f"guest_{request.remote_addr}"
-            session['user_id'] = user_id
-            session.permanent = True
-        else:
-            user_id = session['user_id']
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        user_id = session['user_id']
         
         log(f"[STOP] user_id: {user_id}", "INFO")
         bot_state = get_user_bot_state(user_id)
@@ -1367,11 +1376,9 @@ def api_get_referral_link():
     try:
         # 사용자 ID 가져오기
         if 'user_id' not in session:
-            user_id = f"guest_{request.remote_addr}"
-            session['user_id'] = user_id
-            session.permanent = True
-        else:
-            user_id = session['user_id']
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        user_id = session['user_id']
         
         # DB에서 추천 코드 가져오기
         import sqlite3
@@ -1682,6 +1689,23 @@ def api_logout():
     username = session.get('username', 'Unknown')
     session.clear()
     return jsonify({'success': True, 'message': f'{username}님 로그아웃'})
+
+@app.route('/api/user/info')
+def api_user_info():
+    """현재 로그인한 사용자 정보 반환"""
+    if 'user_id' in session and 'username' in session:
+        return jsonify({
+            'success': True,
+            'logged_in': True,
+            'user_id': session['user_id'],
+            'username': session['username']
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'logged_in': False,
+            'username': 'Guest'
+        })
 
 # ═══════════════════════════════════════════════════════
 # 👨‍💼 관리자 API

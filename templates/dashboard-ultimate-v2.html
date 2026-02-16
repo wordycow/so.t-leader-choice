@@ -1128,12 +1128,22 @@
     }
 
     // 사용자 정보 로드
-    function loadUserInfo() {
-      const username = sessionStorage.getItem('username');
-      if (username) {
-        document.getElementById('username').textContent = username;
-      } else {
-        // 세션 없으면 로그인 페이지로
+    async function loadUserInfo() {
+      try {
+        const response = await fetch('/api/user/info');
+        const data = await response.json();
+        
+        if (data.success && data.logged_in) {
+          // 로그인 상태
+          document.getElementById('username').textContent = data.username;
+          sessionStorage.setItem('username', data.username);
+          sessionStorage.setItem('user_id', data.user_id);
+        } else {
+          // 로그인 안 됨 - 로그인 페이지로
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('사용자 정보 로드 실패:', error);
         window.location.href = '/login';
       }
     }
@@ -1647,6 +1657,7 @@
 
     // 페이지 로드 시 상태 확인
     window.addEventListener('DOMContentLoaded', () => {
+      loadUserInfo(); // 사용자 정보 먼저 로드
       loadReferralLink(); // 추천 링크 로드
       updateStatus();
       startUpdating();
