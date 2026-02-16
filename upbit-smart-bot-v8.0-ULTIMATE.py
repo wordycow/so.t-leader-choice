@@ -1295,6 +1295,75 @@ def api_stop():
         log(f"정지 오류: {e}", "ERROR")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/user/referral-link')
+def api_get_referral_link():
+    """사용자의 추천 링크 가져오기"""
+    try:
+        # 사용자 ID 가져오기
+        if 'user_id' not in session:
+            user_id = f"guest_{request.remote_addr}"
+            session['user_id'] = user_id
+            session.permanent = True
+        else:
+            user_id = session['user_id']
+        
+        # DB에서 추천 코드 가져오기
+        import sqlite3
+        import hashlib
+        
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        # username으로 추천 코드 조회
+        cursor.execute("SELECT referral_code FROM users WHERE username = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        # 추천 코드가 없으면 생성
+        if not result or not result[0]:
+            referral_code = hashlib.md5(user_id.encode()).hexdigest()[:8].upper()
+            
+            # DB에 저장 시도
+            try:
+                # 사용자가 이미 존재하는지 확인
+                cursor.execute("SELECT username FROM users WHERE username = ?", (user_id,))
+                if cursor.fetchone():
+                    # 기존 사용자 업데이트
+                    cursor.execute("""
+                        UPDATE users SET referral_code = ? WHERE username = ?
+                    """, (referral_code, user_id))
+                else:
+                    # 새 사용자 삽입
+                    cursor.execute("""
+                        INSERT INTO users (username, referral_code, created_at)
+                        VALUES (?, ?, datetime('now'))
+                    """, (user_id, referral_code))
+                
+                conn.commit()
+            except Exception as e:
+                log(f"추천 코드 저장 오류: {e}", "ERROR")
+                conn.rollback()
+        else:
+            referral_code = result[0]
+        
+        conn.close()
+        
+        # 전체 추천 링크 생성
+        referral_link = f"{request.host_url.rstrip('/')}/?ref={referral_code}"
+        
+        return jsonify({
+            'success': True,
+            'referral_code': referral_code,
+            'referral_link': referral_link
+        })
+        
+    except Exception as e:
+        log(f"추천 링크 로드 오류: {e}", "ERROR")
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'referral_link': f"{request.host_url.rstrip('/')}/?ref=LOADING"
+        }), 500
+
 @app.route('/api/verify-license', methods=['POST'])
 def api_verify_license():
     """라이선스 검증 API - USDT TRC-20 기반"""

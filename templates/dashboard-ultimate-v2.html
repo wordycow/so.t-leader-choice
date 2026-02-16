@@ -932,6 +932,41 @@
           <div style="font-size: 13px; color: #e4e4e7;">AI가 모든 거래를 자동으로 학습하고 최적 전략을 선택합니다</div>
         </div>
       </div>
+
+      <!-- 추천 링크 -->
+      <div class="control-card" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border: 1px solid rgba(251, 191, 36, 0.3);">
+        <h3 style="color: #fbbf24;">🎁 친구 추천하기</h3>
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 13px; color: #fde68a; margin-bottom: 8px;">
+            친구를 추천하면 구독 기간 <strong style="color: #fbbf24;">+5일</strong> 보너스!
+          </div>
+          <div style="font-size: 12px; color: #d1d5db; margin-bottom: 12px;">
+            아래 링크를 복사해서 친구에게 공유하세요
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input 
+            type="text" 
+            id="referralLink" 
+            readonly 
+            value="https://your-site.com/?ref=ABC123"
+            style="flex: 1; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; color: #fbbf24; font-size: 14px; font-family: 'Courier New', monospace;"
+          />
+          <button 
+            onclick="copyReferralLink()" 
+            style="padding: 12px 20px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #0a0e27; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 0.2s;"
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(251, 191, 36, 0.4)'"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+          >
+            🔗 복사
+          </button>
+        </div>
+        <div style="margin-top: 12px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          <div style="font-size: 12px; color: #6ee7b7;">
+            ✅ 친구가 가입하면 자동으로 +5일 추가됩니다
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 전략 카드 -->
@@ -1242,6 +1277,41 @@
       }
     }
 
+    // 추천 링크 복사
+    function copyReferralLink() {
+      const linkInput = document.getElementById('referralLink');
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999); // 모바일 대응
+      
+      try {
+        document.execCommand('copy');
+        // 버튼 텍스트 임시 변경
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 복사완료!';
+        btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+        }, 2000);
+      } catch (err) {
+        alert('복사 실패: ' + err);
+      }
+    }
+
+    // 추천 링크 로드
+    function loadReferralLink() {
+      fetch('/api/user/referral-link')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.referral_link) {
+          document.getElementById('referralLink').value = data.referral_link;
+        }
+      })
+      .catch(err => console.error('추천 링크 로드 실패:', err));
+    }
+
     // 상태 업데이트
     function updateStatus() {
       fetch('/api/status')
@@ -1460,7 +1530,7 @@
 
     // 페이지 로드 시 상태 확인
     window.addEventListener('DOMContentLoaded', () => {
-      loadUserInfo();  // 사용자 정보 로드
+      loadReferralLink(); // 추천 링크 로드
       updateStatus();
       startUpdating();
     });

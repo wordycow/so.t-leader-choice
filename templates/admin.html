@@ -256,17 +256,6 @@
       color: white;
     }
 
-    .btn-referral {
-      background: rgba(251, 191, 36, 0.2);
-      color: #fbbf24;
-      border: 1px solid #fbbf24;
-    }
-
-    .btn-referral:hover {
-      background: #fbbf24;
-      color: #0a0e27;
-    }
-
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -276,17 +265,6 @@
     .empty-icon {
       font-size: 48px;
       margin-bottom: 16px;
-    }
-
-    .referral-link {
-      font-size: 11px;
-      color: #9ca3af;
-      font-family: monospace;
-      background: rgba(20, 20, 30, 0.5);
-      padding: 4px 8px;
-      border-radius: 4px;
-      margin-top: 4px;
-      display: inline-block;
     }
 
     .modal {
@@ -438,7 +416,6 @@
             <th>현재 잔고</th>
             <th>수익률</th>
             <th>구독 만료일</th>
-            <th>추천 코드</th>
             <th>가입일</th>
             <th>관리</th>
           </tr>
@@ -509,7 +486,7 @@
         if (data.users.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="10" class="empty-state">
+              <td colspan="9" class="empty-state">
                 <div class="empty-icon">📭</div>
                 <div>등록된 사용자가 없습니다</div>
               </td>
@@ -520,7 +497,6 @@
 
         tbody.innerHTML = data.users.map(user => {
           const isActive = user.subscription_expires_at && new Date(user.subscription_expires_at) > new Date();
-          const referralLink = `${window.location.origin}/?ref=${user.referral_code}`;
           
           return `
             <tr>
@@ -541,10 +517,6 @@
                   ${user.subscription_expires_at ? formatDate(user.subscription_expires_at) : '미설정'}
                 </span>
               </td>
-              <td>
-                <div>${user.referral_code || '-'}</div>
-                ${user.referral_code ? `<div class="referral-link">${referralLink}</div>` : ''}
-              </td>
               <td>${formatDate(user.created_at)}</td>
               <td>
                 <button class="action-btn btn-edit-date" onclick="openEditModal('${user.user_id}', '${user.subscription_expires_at || ''}')">
@@ -552,9 +524,6 @@
                 </button>
                 <button class="action-btn btn-add-days" onclick="addDays('${user.user_id}', 5)">
                   +5일
-                </button>
-                <button class="action-btn btn-referral" onclick="copyReferralLink('${referralLink}')">
-                  🔗 링크 복사
                 </button>
               </td>
             </tr>
@@ -565,7 +534,7 @@
         console.error('데이터 로드 실패:', error);
         document.getElementById('usersTableBody').innerHTML = `
           <tr>
-            <td colspan="10" style="text-align: center; color: #ef4444; padding: 40px;">
+            <td colspan="9" style="text-align: center; color: #ef4444; padding: 40px;">
               ❌ ${error.message}
             </td>
           </tr>
@@ -653,14 +622,7 @@
       }
     }
 
-    // 추천 링크 복사
-    function copyReferralLink(link) {
-      navigator.clipboard.writeText(link).then(() => {
-        alert('✅ 추천 링크가 클립보드에 복사되었습니다!\n\n' + link);
-      }).catch(() => {
-        prompt('추천 링크 (Ctrl+C로 복사):', link);
-      });
-    }
+
 
     // 숫자 포맷팅
     function formatNumber(num) {
