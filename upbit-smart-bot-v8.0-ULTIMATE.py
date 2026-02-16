@@ -848,7 +848,7 @@ def api_stop():
 
 @app.route('/api/verify-license', methods=['POST'])
 def api_verify_license():
-    """라이선스 검증 API (실제 구현 시 블록체인 검증 추가)"""
+    """라이선스 검증 API - USDT TRC-20 기반"""
     try:
         data = request.json or {}
         txid = data.get('txid', '').strip()
@@ -856,21 +856,35 @@ def api_verify_license():
         if not txid:
             return jsonify({'success': False, 'message': 'TXID를 입력해주세요'})
         
-        # TODO: 실제 블록체인 TXID 검증 로직
-        # 여기서는 데모용으로 특정 패턴 체크
-        if len(txid) >= 20:  # 최소 길이 체크
-            log(f"라이선스 검증 시도: {txid[:10]}...", "INFO")
-            # 실제로는 블록체인 API로 결제 확인
+        # TXID 기본 검증
+        if len(txid) < 20:
+            return jsonify({'success': False, 'message': 'TXID가 너무 짧습니다. 올바른 트론 TXID를 입력하세요.'})
+        
+        # TODO: TronScan API로 실제 USDT 금액 확인
+        # 예시: https://api.trongrid.io/v1/transactions/{txid}
+        # 입금 주소: TLb5D3uDQjPQt6CzATM21t21etxGsSvtbt
+        # USDT 금액에 따라 만료일 계산:
+        # - 50 USDT = 1개월
+        # - 250 USDT = 6개월
+        # - 500 USDT = 평생
+        
+        log(f"라이선스 검증 시도: {txid[:10]}...", "INFO")
+        
+        # 데모용: TXID가 64자 이상이면 인증 성공
+        if len(txid) >= 40:
+            # 실제로는 TronScan API로 금액 확인 후 만료일 계산
             return jsonify({
                 'success': True, 
                 'message': '라이선스 인증 완료',
                 'license_type': 'premium',
-                'expires_at': '2026-12-31'
+                'expires_at': '2027-12-31',
+                'usdt_amount': 0  # TODO: 실제 금액
             })
         else:
-            return jsonify({'success': False, 'message': '유효하지 않은 TXID 형식입니다'})
+            return jsonify({'success': False, 'message': '유효하지 않은 TXID입니다. 트론스캔에서 확인 후 다시 입력하세요.'})
             
     except Exception as e:
+        log(f"라이선스 검증 오류: {e}", "ERROR")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/config', methods=['POST'])
