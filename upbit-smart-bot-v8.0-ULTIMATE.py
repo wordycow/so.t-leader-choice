@@ -2180,6 +2180,84 @@ def api_admin_add_days():
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/admin/bot/stop', methods=['POST'])
+def api_admin_stop_bot():
+    """관리자가 특정 사용자 봇 정지"""
+    try:
+        data = request.json or {}
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': '사용자 ID 필요'}), 400
+        
+        # 봇 상태 가져오기
+        bot_state = user_bots.get(user_id)
+        
+        if not bot_state:
+            return jsonify({'success': False, 'message': f'{user_id} 봇을 찾을 수 없습니다'}), 404
+        
+        if not bot_state.get('running'):
+            return jsonify({'success': False, 'message': f'{user_id} 봇이 이미 정지되어 있습니다'}), 400
+        
+        # 봇 정지
+        bot_state['running'] = False
+        save_bot_state_to_db(user_id, bot_state)
+        
+        # 스레드 대기 (최대 5초)
+        thread = bot_state.get('thread')
+        if thread and thread.is_alive():
+            thread.join(timeout=5)
+        
+        log(f"[Admin] {user_id} 봇 정지됨", "WARNING")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_id} 봇이 정지되었습니다'
+        })
+        
+    except Exception as e:
+        log(f"관리자 봇 정지 오류: {e}", "ERROR")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/bot/start', methods=['POST'])
+def api_admin_start_bot():
+    """관리자가 특정 사용자 봇 시작"""
+    try:
+        data = request.json or {}
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': '사용자 ID 필요'}), 400
+        
+        # 봇 상태 가져오기
+        bot_state = get_user_bot_state(user_id)
+        
+        if bot_state.get('running'):
+            return jsonify({'success': False, 'message': f'{user_id} 봇이 이미 실행 중입니다'}), 400
+        
+        # 봇 시작
+        bot_state['running'] = True
+        save_bot_state_to_db(user_id, bot_state)
+        
+        # 스레드 시작
+        thread = threading.Thread(target=bot_main_loop, args=(user_id, bot_state), daemon=True)
+        thread.start()
+        bot_state['thread'] = thread
+        
+        log(f"[Admin] {user_id} 봇 시작됨", "SUCCESS")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_id} 봇이 시작되었습니다'
+        })
+        
+    except Exception as e:
+        log(f"관리자 봇 시작 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 if __name__ == "__main__":
     log_separator()
     log("🚀 업비트 AI 트레이딩 봇 v8.0 ULTIMATE", "SUCCESS")

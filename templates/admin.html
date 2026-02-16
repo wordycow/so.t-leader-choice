@@ -256,6 +256,28 @@
       color: white;
     }
 
+    .btn-stop-bot {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .btn-stop-bot:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-start-bot {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid #10b981;
+    }
+
+    .btn-start-bot:hover {
+      background: #10b981;
+      color: white;
+    }
+
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -519,11 +541,15 @@
               </td>
               <td>${formatDate(user.created_at)}</td>
               <td>
+                <button class="action-btn ${user.bot_running ? 'btn-stop-bot' : 'btn-start-bot'}" 
+                        onclick="${user.bot_running ? `stopUserBot('${user.user_id}')` : `startUserBot('${user.user_id}')`}">
+                  ${user.bot_running ? '⏹️ 정지' : '▶️ 시작'}
+                </button>
                 <button class="action-btn btn-edit-date" onclick="openEditModal('${user.user_id}', '${user.subscription_expires_at || ''}')">
-                  📅 날짜 수정
+                  📅 날짜
                 </button>
                 <button class="action-btn btn-add-days" onclick="addDays('${user.user_id}', 1)">
-                  +일수 추가
+                  +일수
                 </button>
               </td>
             </tr>
@@ -635,6 +661,53 @@
       }
     }
 
+    // 사용자 봇 정지
+    async function stopUserBot(userId) {
+      if (!confirm(`${userId}의 봇을 정지하시겠습니까?`)) return;
+      
+      try {
+        const response = await fetch('/api/admin/bot/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${result.message}`);
+          loadUsers();
+        } else {
+          throw new Error(result.message || '정지 실패');
+        }
+      } catch (error) {
+        alert('❌ ' + error.message);
+      }
+    }
+
+    // 사용자 봇 시작
+    async function startUserBot(userId) {
+      if (!confirm(`${userId}의 봇을 시작하시겠습니까?`)) return;
+      
+      try {
+        const response = await fetch('/api/admin/bot/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${result.message}`);
+          loadUsers();
+        } else {
+          throw new Error(result.message || '시작 실패');
+        }
+      } catch (error) {
+        alert('❌ ' + error.message);
+      }
+    }
 
 
     // 숫자 포맷팅
