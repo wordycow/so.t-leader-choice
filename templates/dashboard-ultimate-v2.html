@@ -788,13 +788,25 @@
       <div class="card">
         <div class="card-title">💰 현재 잔고</div>
         <div class="card-value" id="currentBalance">0원</div>
-        <div class="card-subtitle">사용 가능한 자금</div>
+        <div class="card-subtitle">사용 가능한 KRW</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💎 보유 코인</div>
+        <div class="card-value" id="holdingsValue">0원</div>
+        <div class="card-subtitle">코인 평가액</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏦 총 평가액</div>
+        <div class="card-value" id="totalValue">0원</div>
+        <div class="card-subtitle">잔고 + 코인</div>
       </div>
 
       <div class="card">
         <div class="card-title">📊 총 손익</div>
         <div class="card-value" id="totalProfit">+0원</div>
-        <div class="card-subtitle">누적 수익/손실</div>
+        <div class="card-subtitle">시드 대비</div>
       </div>
 
       <div class="card">
@@ -882,7 +894,7 @@
               <div style="margin-bottom: 12px;">
                 <div style="font-size: 11px; color: #93c5fd; font-weight: 600; margin-bottom: 6px;">💬 입금 후 연락처</div>
                 <div style="display: flex; gap: 8px;">
-                  <a href="https://t.me/YOUR_TELEGRAM_USERNAME" target="_blank" style="flex: 1; padding: 10px; background: rgba(42, 171, 238, 0.2); border: 1px solid rgba(42, 171, 238, 0.4); border-radius: 8px; text-align: center; text-decoration: none; color: #60a5fa; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(42, 171, 238, 0.3)'" onmouseout="this.style.background='rgba(42, 171, 238, 0.2)'">
+                  <a href="https://t.me/lolkk22" target="_blank" style="flex: 1; padding: 10px; background: rgba(42, 171, 238, 0.2); border: 1px solid rgba(42, 171, 238, 0.4); border-radius: 8px; text-align: center; text-decoration: none; color: #60a5fa; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(42, 171, 238, 0.3)'" onmouseout="this.style.background='rgba(42, 171, 238, 0.2)'">
                     📱 텔레그램
                   </a>
                   <a href="https://discord.gg/YOUR_DISCORD_INVITE" target="_blank" style="flex: 1; padding: 10px; background: rgba(114, 137, 218, 0.2); border: 1px solid rgba(114, 137, 218, 0.4); border-radius: 8px; text-align: center; text-decoration: none; color: #a78bfa; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(114, 137, 218, 0.3)'" onmouseout="this.style.background='rgba(114, 137, 218, 0.2)'">
@@ -1330,6 +1342,16 @@
         document.getElementById('currentBalance').textContent = 
           formatNumber(data.current_krw || 0) + '원';
         
+        // 보유 코인 가치
+        const holdingsValue = data.holdings_value || 0;
+        document.getElementById('holdingsValue').textContent = 
+          formatNumber(holdingsValue) + '원';
+        
+        // 총 평가액
+        const totalValue = data.total_value || data.current_krw || 0;
+        document.getElementById('totalValue').textContent = 
+          formatNumber(totalValue) + '원';
+        
         const profit = data.total_profit || 0;
         const profitEl = document.getElementById('totalProfit');
         profitEl.textContent = (profit >= 0 ? '+' : '') + formatNumber(profit) + '원';
@@ -1364,7 +1386,9 @@
                 <div class="item-left">
                   <div class="item-title">💎 ${h.coin_name}</div>
                   <div class="item-subtitle">
-                    수량: ${h.amount.toFixed(4)} • 
+                    수량: ${h.amount.toFixed(4)}개<br>
+                    투자: ${formatNumber(h.amount * h.avg_price)}원 → 
+                    현재: ${formatNumber(h.value)}원<br>
                     매수가: ${formatNumber(h.avg_price)}원 → 
                     현재가: ${formatNumber(h.current_price)}원
                   </div>
