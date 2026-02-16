@@ -791,27 +791,21 @@ def api_status():
                           for ticker, h in bot_state['frozen_holdings'].items())
         total_value = current_krw + holdings_value + frozen_value
         
+        total_trades = bot_state['statistics']['total_trades']
+        winning_trades = bot_state['statistics']['winning_trades']
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        
+        profit = total_value - bot_state['simulation_start_seed']
+        profit_rate = (profit / bot_state['simulation_start_seed']) * 100 if bot_state['simulation_start_seed'] > 0 else 0
+        
         return jsonify({
             'running': bot_state['running'],
-            'mode': 'recovery' if bot_state['recovery_mode_active'] else 'normal',
-            'recovery_active': bot_state['recovery_mode_active'],
-            'recovery': {
-                'seed': bot_state.get('recovery_seed', 0),
-                'target': bot_state.get('recovery_target_amount', 0),
-                'profit': bot_state.get('recovery_total_profit', 0),
-                'progress': bot_state['statistics'].get('recovery_progress', 0),
-                'trades': bot_state.get('recovery_trades', 0),
-                'success_trades': bot_state.get('recovery_success_trades', 0)
-            },
-            'simulation': {
-                'seed': bot_state['simulation_start_seed'],
-                'current_value': total_value,
-                'profit_rate': ((total_value - bot_state['simulation_start_seed']) / bot_state['simulation_start_seed']) * 100
-            },
-            'strategies': bot_state['strategy_performance'],
-            'patterns': bot_state['current_patterns'],
-            'statistics': bot_state['statistics'],
-            'last_update': bot_state['last_update'].isoformat() if bot_state['last_update'] else None
+            'current_krw': current_krw,
+            'total_profit': profit,
+            'profit_rate': profit_rate,
+            'win_rate': win_rate,
+            'recent_surges': [],
+            'recent_trades': []
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
