@@ -1330,21 +1330,72 @@
             `).join('');
         }
 
-        // 거래 내역 업데이트
+        // 거래 내역 업데이트 (수수료, 실수령액 포함)
         if (data.recent_trades && data.recent_trades.length > 0) {
           document.getElementById('recentTrades').innerHTML = data.recent_trades
             .slice(0, 5)
-            .map(t => `
-              <div class="list-item">
-                <div class="item-left">
-                  <div class="item-title">${t.ticker}</div>
-                  <div class="item-subtitle">${t.amount.toFixed(4)} • ${formatNumber(t.price)}원</div>
+            .map(t => {
+              const isBuy = t.type === 'BUY';
+              const coinName = t.ticker.replace('KRW-', '');
+              
+              // ✅ 상세 정보
+              let detailHtml = '';
+              
+              if (isBuy) {
+                // 매수 상세
+                const invested = t.invested || 0;
+                const fee = t.fee || 0;
+                const netInvested = t.net_invested || invested;
+                
+                detailHtml = `
+                  <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                    💰 투자: ${formatNumber(invested)}원 | 🧾 수수료: ${formatNumber(fee)}원
+                  </div>
+                `;
+              } else {
+                // 매도 상세
+                const sellValue = t.sell_value || 0;
+                const fee = t.fee || 0;
+                const netProceeds = t.net_proceeds || sellValue;
+                const profit = t.profit || 0;
+                const profitRate = t.profit_rate || 0;
+                const reason = t.reason || '';
+                
+                const profitColor = profit >= 0 ? '#10b981' : '#ef4444';
+                const profitSign = profit >= 0 ? '+' : '';
+                
+                detailHtml = `
+                  <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                    💸 매도액: ${formatNumber(sellValue)}원 | 🧾 수수료: ${formatNumber(fee)}원
+                  </div>
+                  <div style="font-size: 11px; margin-top: 4px; color: ${profitColor};">
+                    ✨ 순수익: ${profitSign}${formatNumber(profit)}원 (${profitSign}${profitRate.toFixed(2)}%)
+                  </div>
+                  ${reason ? `<div style="font-size: 10px; color: #6b7280; margin-top: 2px;">📝 ${reason}</div>` : ''}
+                `;
+              }
+              
+              return `
+                <div class="list-item" style="padding: 12px; background: rgba(30, 41, 59, 0.5); border-radius: 8px; margin-bottom: 8px;">
+                  <div class="item-left">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <div class="item-title">${coinName}</div>
+                      <div class="item-badge ${isBuy ? 'badge-buy' : 'badge-sell'}" style="font-size: 10px; padding: 2px 6px;">
+                        ${isBuy ? '매수' : '매도'}
+                      </div>
+                    </div>
+                    <div class="item-subtitle">${t.amount.toFixed(6)}개 × ${formatNumber(t.price)}원</div>
+                    ${detailHtml}
+                  </div>
                 </div>
-                <div class="item-badge ${t.type === 'BUY' ? 'badge-buy' : 'badge-sell'}">
-                  ${t.type === 'BUY' ? '매수' : '매도'}
-                </div>
-              </div>
-            `).join('');
+              `;
+            }).join('');
+        } else {
+          document.getElementById('recentTrades').innerHTML = `
+            <div class="list-item" style="text-align: center; color: #9ca3af;">
+              거래 내역이 없습니다
+            </div>
+          `;
         }
         
         // 전략 카드 업데이트
