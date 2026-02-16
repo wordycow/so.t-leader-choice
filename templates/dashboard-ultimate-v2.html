@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 Upbit AI Trading Bot v8.0 ULTIMATE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+      color: #e4e4e7;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 배경 애니메이션 효과 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 헤더 - 완전히 새로운 디자인 */
+    .header {
+      background: linear-gradient(135deg, 
+        rgba(99, 102, 241, 0.15) 0%, 
+        rgba(139, 92, 246, 0.1) 50%,
+        rgba(236, 72, 153, 0.1) 100%);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 32px 40px;
+      margin-bottom: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(99, 102, 241, 0.8) 50%, 
+        transparent 100%);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header-left h1 {
+      font-size: 42px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 30%, #ef4444 60%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .header-left .subtitle {
+      font-size: 15px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.running {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    .status-badge.stopped {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.running .status-dot {
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* 메인 그리드 */
+    .main-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    /* 카드 스타일 - 프리미엄 */
+    .card {
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-value {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff 0%, #e4e4e7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card-value.profit-positive {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card-value.profit-negative {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: #71717a;
+      font-weight: 500;
+    }
+
+    /* 컨트롤 패널 */
+    .control-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .control-card {
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .control-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #fafafa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 버튼 - 프리미엄 디자인 */
+    .btn {
+      width: 100%;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(239, 68, 68, 0.5);
+    }
+
+    /* 모드 선택 */
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .mode-btn {
+      padding: 14px;
+      background: rgba(39, 39, 42, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: #a1a1aa;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .mode-btn:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-color: #6366f1;
+      color: white;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    /* 입력 필드 */
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(39, 39, 42, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: #fafafa;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: rgba(39, 39, 42, 0.9);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    /* 전략 카드 그리드 */
+    .strategies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .strategy-card {
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .strategy-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #6366f1, #8b5cf6);
+    }
+
+    .strategy-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .strategy-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .strategy-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fafafa;
+    }
+
+    .strategy-badge {
+      padding: 6px 12px;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .strategy-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #71717a;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fafafa;
+    }
+
+    /* 로딩 스피너 */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 리스트 섹션 */
+    .list-section {
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 24px;
+    }
+
+    .list-section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fafafa;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: rgba(39, 39, 42, 0.5);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .list-item:hover {
+      background: rgba(39, 39, 42, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    .list-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .item-left {
+      flex: 1;
+    }
+
+    .item-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fafafa;
+      margin-bottom: 4px;
+    }
+
+    .item-subtitle {
+      font-size: 13px;
+      color: #71717a;
+    }
+
+    .item-badge {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-surge {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    .badge-dip {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+    }
+
+    .badge-buy {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+    }
+
+    .badge-sell {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-left h1 {
+        font-size: 32px;
+      }
+
+      .control-panel,
+      .main-grid,
+      .strategies-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1>🏆 Upbit AI Trading Bot</h1>
+          <p class="subtitle">v8.0 ULTIMATE • 급등/급락 포착 + AI 학습 + 손실 복구</p>
+        </div>
+        <div class="status-badge" id="statusBadge">
+          <span class="status-dot"></span>
+          <span id="statusText">대기 중</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메인 통계 -->
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-title">💰 현재 잔고</div>
+        <div class="card-value" id="currentBalance">0원</div>
+        <div class="card-subtitle">사용 가능한 자금</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 총 손익</div>
+        <div class="card-value" id="totalProfit">+0원</div>
+        <div class="card-subtitle">누적 수익/손실</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 수익률</div>
+        <div class="card-value" id="profitRate">+0.00%</div>
+        <div class="card-subtitle">총 수익률</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎯 승률</div>
+        <div class="card-value" id="winRate">0%</div>
+        <div class="card-subtitle">성공한 거래 비율</div>
+      </div>
+    </div>
+
+    <!-- 컨트롤 패널 -->
+    <div class="control-panel">
+      <!-- 모드 선택 -->
+      <div class="control-card">
+        <h3>⚙️ 모드 선택</h3>
+        <div class="mode-selector">
+          <button class="mode-btn active" data-mode="practice">
+            연습 모드
+          </button>
+          <button class="mode-btn" data-mode="live">
+            실전 모드
+          </button>
+        </div>
+        <div class="input-group">
+          <label>시뮬레이션 시드 (원)</label>
+          <input type="number" id="seedInput" value="1000000" min="100000" step="100000">
+        </div>
+      </div>
+
+      <!-- 봇 제어 -->
+      <div class="control-card">
+        <h3>🎮 봇 제어</h3>
+        <button class="btn btn-primary" id="startBtn" onclick="startBot()">
+          🚀 학습 시작
+        </button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopBot()">
+          ⏸️ 정지
+        </button>
+      </div>
+
+      <!-- API 설정 -->
+      <div class="control-card">
+        <h3>🔐 API 설정</h3>
+        <div class="input-group">
+          <label>Access Key</label>
+          <input type="password" id="accessKey" placeholder="업비트 Access Key">
+        </div>
+        <button class="btn btn-primary" onclick="saveApiKeys()">
+          💾 저장
+        </button>
+      </div>
+    </div>
+
+    <!-- 전략 카드 -->
+    <div class="strategies-grid">
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-name">🚀 Surge Hunter</div>
+          <div class="strategy-badge">Active</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="stat-item">
+            <div class="stat-label">승률</div>
+            <div class="stat-value">75%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">수익</div>
+            <div class="stat-value">+3.2%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">거래</div>
+            <div class="stat-value">12</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-name">💎 Dip Hunter</div>
+          <div class="strategy-badge">Active</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="stat-item">
+            <div class="stat-label">승률</div>
+            <div class="stat-value">68%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">수익</div>
+            <div class="stat-value">+5.1%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">거래</div>
+            <div class="stat-value">8</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-name">📦 Box Trader</div>
+          <div class="strategy-badge">Active</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="stat-item">
+            <div class="stat-label">승률</div>
+            <div class="stat-value">72%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">수익</div>
+            <div class="stat-value">+2.5%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">거래</div>
+            <div class="stat-value">15</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-name">📈 Trend Follower</div>
+          <div class="strategy-badge">Active</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="stat-item">
+            <div class="stat-label">승률</div>
+            <div class="stat-value">70%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">수익</div>
+            <div class="stat-value">+4.3%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">거래</div>
+            <div class="stat-value">10</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="strategy-header">
+          <div class="strategy-name">💰 Volume Hunter</div>
+          <div class="strategy-badge">Active</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="stat-item">
+            <div class="stat-label">승률</div>
+            <div class="stat-value">73%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">수익</div>
+            <div class="stat-value">+2.8%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">거래</div>
+            <div class="stat-value">14</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 최근 신호 -->
+    <div class="list-section">
+      <h3>⚡ 최근 급등/급락 신호</h3>
+      <div id="recentSignals">
+        <div class="list-item">
+          <div class="item-left">
+            <div class="item-title">신호를 기다리는 중...</div>
+            <div class="item-subtitle">봇을 시작하면 실시간 신호가 표시됩니다</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 거래 내역 -->
+    <div class="list-section">
+      <h3>📋 최근 거래 내역</h3>
+      <div id="recentTrades">
+        <div class="list-item">
+          <div class="item-left">
+            <div class="item-title">거래 내역이 없습니다</div>
+            <div class="item-subtitle">거래가 실행되면 여기에 표시됩니다</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'practice';
+    let updateInterval = null;
+
+    // 모드 선택
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+      });
+    });
+
+    // API 키 저장
+    function saveApiKeys() {
+      const accessKey = document.getElementById('accessKey').value;
+      if (!accessKey) {
+        alert('⚠️ Access Key를 입력해주세요!');
+        return;
+      }
+      
+      fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: accessKey,
+          secret_key: document.getElementById('secretKey')?.value || ''
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.success ? '✅ API 키가 저장되었습니다!' : '❌ 저장 실패: ' + data.message);
+      });
+    }
+
+    // 봇 시작
+    function startBot() {
+      const seed = parseInt(document.getElementById('seedInput').value);
+      
+      fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: currentMode,
+          seed: seed
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('statusBadge').classList.add('running');
+          document.getElementById('statusBadge').classList.remove('stopped');
+          document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
+          startUpdating();
+        } else {
+          alert('❌ 시작 실패: ' + data.message);
+        }
+      });
+    }
+
+    // 봇 정지
+    function stopBot() {
+      fetch('/api/stop', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('statusBadge').classList.remove('running');
+          document.getElementById('statusBadge').classList.add('stopped');
+          document.getElementById('statusText').textContent = '정지됨';
+          stopUpdating();
+        }
+      });
+    }
+
+    // 상태 업데이트 시작
+    function startUpdating() {
+      if (updateInterval) return;
+      updateInterval = setInterval(updateStatus, 3000);
+      updateStatus(); // 즉시 한 번 실행
+    }
+
+    // 상태 업데이트 중지
+    function stopUpdating() {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+      }
+    }
+
+    // 상태 업데이트
+    function updateStatus() {
+      fetch('/api/status')
+      .then(res => res.json())
+      .then(data => {
+        // 통계 업데이트
+        document.getElementById('currentBalance').textContent = 
+          Number(data.current_krw || 0).toLocaleString() + '원';
+        
+        const profit = data.total_profit || 0;
+        const profitEl = document.getElementById('totalProfit');
+        profitEl.textContent = (profit >= 0 ? '+' : '') + profit.toLocaleString() + '원';
+        profitEl.className = 'card-value ' + (profit >= 0 ? 'profit-positive' : 'profit-negative');
+        
+        const rate = data.profit_rate || 0;
+        const rateEl = document.getElementById('profitRate');
+        rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+        rateEl.className = 'card-value ' + (rate >= 0 ? 'profit-positive' : 'profit-negative');
+        
+        document.getElementById('winRate').textContent = 
+          (data.win_rate || 0).toFixed(1) + '%';
+
+        // 상태 업데이트
+        if (data.running) {
+          document.getElementById('statusBadge').classList.add('running');
+          document.getElementById('statusBadge').classList.remove('stopped');
+          document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
+        } else {
+          document.getElementById('statusBadge').classList.remove('running');
+          document.getElementById('statusBadge').classList.add('stopped');
+          document.getElementById('statusText').textContent = '정지됨';
+        }
+
+        // 최근 신호 업데이트
+        if (data.recent_surges && data.recent_surges.length > 0) {
+          document.getElementById('recentSignals').innerHTML = data.recent_surges
+            .slice(0, 5)
+            .map(s => `
+              <div class="list-item">
+                <div class="item-left">
+                  <div class="item-title">${s.ticker}</div>
+                  <div class="item-subtitle">${s.price.toLocaleString()}원 • ${s.signals}개 신호</div>
+                </div>
+                <div class="item-badge ${s.type === 'surge' ? 'badge-surge' : 'badge-dip'}">
+                  ${s.type === 'surge' ? '급등' : '급락'}
+                </div>
+              </div>
+            `).join('');
+        }
+
+        // 거래 내역 업데이트
+        if (data.recent_trades && data.recent_trades.length > 0) {
+          document.getElementById('recentTrades').innerHTML = data.recent_trades
+            .slice(0, 5)
+            .map(t => `
+              <div class="list-item">
+                <div class="item-left">
+                  <div class="item-title">${t.ticker}</div>
+                  <div class="item-subtitle">${t.amount.toFixed(4)} • ${t.price.toLocaleString()}원</div>
+                </div>
+                <div class="item-badge ${t.type === 'BUY' ? 'badge-buy' : 'badge-sell'}">
+                  ${t.type === 'BUY' ? '매수' : '매도'}
+                </div>
+              </div>
+            `).join('');
+        }
+      });
+    }
+
+    // 페이지 로드 시 상태 확인
+    updateStatus();
+    startUpdating();
+  </script>
+</body>
+</html>
