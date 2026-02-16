@@ -758,13 +758,10 @@
                 <strong style="color: #fbbf24;">⚠️ 라이선스 구매 후 사용 가능</strong>
               </div>
             </div>
-            <button onclick="showPaymentInfo()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border: none; border-radius: 12px; color: #18181b; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(251, 191, 36, 0.3);">
-              💳 라이선스 구매하기
-            </button>
           </div>
           
           <div style="padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3); margin-bottom: 16px;">
-            <div style="font-size: 12px; color: #93c5fd; font-weight: 600; margin-bottom: 8px;">📌 이미 구매하셨나요?</div>
+            <div style="font-size: 12px; color: #93c5fd; font-weight: 600; margin-bottom: 8px;">📌 라이선스 구매 완료 시</div>
             <div style="font-size: 11px; color: #a1a1aa; margin-bottom: 12px;">결제 완료 후 받은 <strong>거래 ID (TXID)</strong>를 아래에 입력하세요</div>
           </div>
           
@@ -991,32 +988,14 @@
       });
     });
 
-    // 결제 정보 표시
-    function showPaymentInfo() {
-      alert('💎 프리미엄 라이선스 구매 안내\n\n' +
-            '─────────────────────────────\n' +
-            '📌 라이선스 종류\n' +
-            '• 월간 라이선스: 50,000원/월\n' +
-            '• 연간 라이선스: 500,000원/년 (2개월 무료)\n' +
-            '• 평생 라이선스: 1,500,000원 (영구 사용)\n\n' +
-            '─────────────────────────────\n' +
-            '💳 구매 방법\n' +
-            '1. 아래 주소로 결제\n' +
-            '2. 결제 완료 후 TXID 복사\n' +
-            '3. 위 "라이선스 TXID" 칸에 붙여넣기\n' +
-            '4. "✅ 라이선스 인증하기" 클릭\n\n' +
-            '─────────────────────────────\n' +
-            '📮 문의: support@upbitbot.com\n' +
-            '🌐 홈페이지: https://upbitbot.com\n\n' +
-            '⚠️ 주의: 라이선스는 환불 불가합니다');
-    }
+
 
     // 라이선스 검증
     function verifyLicense() {
       const txid = document.getElementById('txidInput').value.trim();
       
       if (!txid) {
-        alert('⚠️ TXID를 입력해주세요!\n\n결제 완료 후 받은 거래 ID를 붙여넣으세요.');
+        alert('⚠️ TXID를 입력해주세요!');
         return;
       }
       
@@ -1035,38 +1014,20 @@
       .then(data => {
         if (data.success) {
           licenseVerified = true;
-          
-          // 성공 메시지
-          alert('✅ 라이선스 인증 완료!\n\n' +
-                '─────────────────────────────\n' +
-                '💎 라이선스 종류: ' + (data.license_type || 'Premium') + '\n' +
-                '📅 만료일: ' + (data.expires_at || '평생') + '\n\n' +
-                '이제 실전 모드를 사용할 수 있습니다!\n' +
-                '1. API 키를 입력하세요\n' +
-                '2. "🚀 봇 시작" 버튼을 클릭하세요');
-          
-          // 버튼 업데이트
+          alert('✅ 라이선스 인증 완료!\n\n실전 모드를 사용할 수 있습니다.');
           btn.innerHTML = '✅ 인증 완료';
           btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
           btn.disabled = true;
-          
-          // 인증 상태 표시
           document.getElementById('licenseStatus').style.display = 'block';
         } else {
           licenseVerified = false;
-          alert('❌ 라이선스 인증 실패\n\n' + 
-                (data.message || '유효하지 않은 TXID입니다.') + '\n\n' +
-                '─────────────────────────────\n' +
-                '💡 문제 해결:\n' +
-                '1. TXID를 다시 확인해주세요\n' +
-                '2. 결제가 완료되었는지 확인하세요\n' +
-                '3. 문의: support@upbitbot.com');
+          alert('❌ 라이선스 인증 실패\n\n' + (data.message || '유효하지 않은 TXID입니다.'));
           btn.innerHTML = originalText;
           btn.disabled = false;
         }
       })
       .catch(err => {
-        alert('❌ 네트워크 오류\n\n' + err.message + '\n\n인터넷 연결을 확인해주세요.');
+        alert('❌ 네트워크 오류: ' + err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
       });
