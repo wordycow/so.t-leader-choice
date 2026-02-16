@@ -112,19 +112,83 @@ const SAJU_AI_ENGINE = {
   },
   
   // 종합 AI 해석 생성
-  generateAIReading: function(birthData, elements) {
+  generateAIReading: function(birthData, elements, gender) {
     const balance = this.analyzeBalance(elements);
     const interactions = this.analyzeInteractions(elements);
+    const dominant = this.findDominant(elements).element;
+    const lacking = this.findLacking(elements).element;
+    
+    // 오행 이름 한글 변환
+    const translateElem = (e) => {
+      const names = {
+        wood: '목(木)', fire: '화(火)', earth: '토(土)', 
+        metal: '금(金)', water: '수(水)'
+      };
+      return names[e] || e;
+    };
+    
+    // 부족/과잉 오행 찾기
+    const counts = Object.values(elements);
+    const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
+    const lackingElements = [];
+    const excessiveElements = [];
+    
+    for (let [elem, count] of Object.entries(elements)) {
+      if (count < avg * 0.5) lackingElements.push(elem);
+      if (count > avg * 1.5) excessiveElements.push(elem);
+    }
+    
+    // 보완 방법 (색상, 방향)
+    const colors = {
+      wood: '녹색, 청색', fire: '적색, 주황색', earth: '황색, 갈색',
+      metal: '백색, 금색', water: '흑색, 남색'
+    };
+    const directions = {
+      wood: '동쪽', fire: '남쪽', earth: '중앙', metal: '서쪽', water: '북쪽'
+    };
+    
+    // 상생상극 관계
+    const interactionRules = {
+      wood: { generates: 'fire', controls: 'earth', generatedBy: 'water', controlledBy: 'metal' },
+      fire: { generates: 'earth', controls: 'metal', generatedBy: 'wood', controlledBy: 'water' },
+      earth: { generates: 'metal', controls: 'water', generatedBy: 'fire', controlledBy: 'wood' },
+      metal: { generates: 'water', controls: 'wood', generatedBy: 'earth', controlledBy: 'fire' },
+      water: { generates: 'wood', controls: 'fire', generatedBy: 'metal', controlledBy: 'earth' }
+    };
+    
+    const supporting = [interactionRules[dominant].generatedBy, interactionRules[dominant].generates];
+    const conflicting = [interactionRules[dominant].controlledBy, interactionRules[dominant].controls];
+    
+    // 성격, 직업, 건강, 인간관계, 재물 분석
+    const personality = this.analyzePersonality(balance);
+    const career = this.analyzeCareer(balance);
+    const health = this.analyzeHealth(balance);
+    const relationships = this.analyzeRelationships(balance);
+    const fortune = this.generateFortune(balance, interactions);
     
     return {
-      balance,
-      interactions,
-      personality: this.analyzePersonality(balance),
-      career: this.analyzeCareer(balance),
-      health: this.analyzeHealth(balance),
-      relationships: this.analyzeRelationships(balance),
-      fortune: this.generateFortune(balance, interactions),
-      lifeAdvice: this.generateLifeAdvice(balance, interactions)
+      balance: {
+        description: balance.harmony.level,
+        lacking: lackingElements,
+        excessive: excessiveElements
+      },
+      recommendation: {
+        color: colors[lacking] || '다양한 색상',
+        direction: directions[lacking] || '자유로운 방향'
+      },
+      interaction: {
+        supporting: supporting,
+        conflicting: conflicting,
+        harmony: `${translateElem(interactionRules[dominant].generatedBy)} 기운을 보완하고 ${translateElem(interactionRules[dominant].controlledBy)} 기운과의 충돌을 피하세요`
+      },
+      insight: {
+        personality: `${personality.core}. 강점: ${personality.positive}, 약점: ${personality.negative}`,
+        career: `추천 분야: ${career.suitable}. ${career.advice}`,
+        health: `주의 부위: ${health.vulnerable}. ${health.advice}`,
+        relationship: `최고 궁합: ${translateElem(relationships.best)}, 좋은 궁합: ${translateElem(relationships.good)}, 피해야 할 궁합: ${translateElem(relationships.avoid)}`,
+        fortune: fortune.overall
+      },
+      advice: this.generateLifeAdvice(balance, interactions)
     };
   },
   
