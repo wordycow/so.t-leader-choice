@@ -1044,6 +1044,9 @@
 
       // 스크롤 최상단으로
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // ⚡ AI 분석 버튼 추가
+      setTimeout(() => initSajuAIButton(saju, elements, gender), 100);
     });
 
     function resetForm() {
@@ -1051,8 +1054,138 @@
       document.getElementById('resultSection').classList.remove('active');
       document.getElementById('sajuForm').reset();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // AI 패널 제거
+      const aiBtn = document.getElementById('saju-ai-btn');
+      const aiPanel = document.getElementById('saju-ai-panel');
+      if (aiBtn) aiBtn.remove();
+      if (aiPanel) aiPanel.remove();
+    }
+    
+    // ========================================
+    // 🤖 사주 AI 분석 시스템
+    // ========================================
+    
+    function initSajuAIButton(saju, elements, gender) {
+      // 기존 버튼/패널 제거
+      const existing = document.getElementById('saju-ai-btn');
+      if (existing) existing.remove();
+      const existingPanel = document.getElementById('saju-ai-panel');
+      if (existingPanel) existingPanel.remove();
+      
+      // AI 분석 버튼 생성
+      const resultSection = document.getElementById('resultSection');
+      const aiButton = document.createElement('button');
+      aiButton.id = 'saju-ai-btn';
+      aiButton.innerHTML = '🤖 AI 심층 사주 분석';
+      aiButton.style.cssText = `
+        width: 100%; max-width: 400px; margin: 20px auto; display: block;
+        padding: 16px 24px; font-size: 18px; font-weight: 700;
+        background: linear-gradient(135deg, #d4af37, #c41e3a);
+        border: none; border-radius: 999px; color: #fff;
+        cursor: pointer; box-shadow: 0 10px 30px rgba(212,175,55,0.5);
+        transition: all 0.3s ease;
+      `;
+      aiButton.onmouseover = () => aiButton.style.transform = 'translateY(-2px)';
+      aiButton.onmouseout = () => aiButton.style.transform = 'translateY(0)';
+      aiButton.onclick = () => performSajuAIAnalysis(saju, elements, gender);
+      
+      resultSection.appendChild(aiButton);
+      
+      // AI 분석 결과 패널 생성
+      const aiPanel = document.createElement('div');
+      aiPanel.id = 'saju-ai-panel';
+      aiPanel.style.cssText = `
+        display: none; margin-top: 24px; padding: 24px;
+        background: linear-gradient(135deg, rgba(107,68,35,0.15), rgba(26,15,10,0.95));
+        border-radius: 20px; border: 1px solid rgba(212,175,55,0.4);
+        box-shadow: 0 0 30px rgba(212,175,55,0.3);
+      `;
+      aiPanel.innerHTML = `
+        <h3 style="color:#d4af37; font-size:22px; margin-bottom:16px; text-align:center;">
+          🔮 AI 심층 사주 분석 결과
+        </h3>
+        
+        <div id="element-balance" style="margin-bottom:20px; padding:16px; background:rgba(26,15,10,0.8); border-radius:12px;">
+          <h4 style="color:#f0d98c; font-size:16px; margin-bottom:10px;">⚖️ 오행 균형 분석</h4>
+          <div id="element-content" style="color:#f9f5e8; line-height:1.6;"></div>
+        </div>
+        
+        <div id="interaction-analysis" style="margin-bottom:20px; padding:16px; background:rgba(26,15,10,0.8); border-radius:12px;">
+          <h4 style="color:#f0d98c; font-size:16px; margin-bottom:10px;">🔄 상생상극 관계</h4>
+          <div id="interaction-content" style="color:#f9f5e8; line-height:1.6;"></div>
+        </div>
+        
+        <div id="saju-insight" style="margin-bottom:20px; padding:16px; background:rgba(107,68,35,0.25); border-radius:12px; border:1px solid rgba(212,175,55,0.3);">
+          <h4 style="color:#d4af37; font-size:16px; margin-bottom:10px;">💎 인생 통찰</h4>
+          <div id="saju-insight-content" style="color:#f9f5e8; line-height:1.7; font-size:15px;"></div>
+        </div>
+        
+        <div id="life-advice" style="padding:20px; background:linear-gradient(135deg, rgba(212,175,55,0.2), rgba(196,30,58,0.2)); border-radius:12px; text-align:center; border:2px solid rgba(212,175,55,0.4);">
+          <h4 style="color:#f0d98c; font-size:16px; margin-bottom:12px;">✨ 맞춤 인생 조언</h4>
+          <div id="advice-text" style="color:#f9f5e8; font-size:16px; font-weight:600; line-height:1.7;"></div>
+        </div>
+      `;
+      
+      resultSection.appendChild(aiPanel);
+    }
+    
+    function performSajuAIAnalysis(saju, elements, gender) {
+      // AI 엔진 실행
+      const aiResult = SAJU_AI_ENGINE.generateAIReading(saju, elements, gender);
+      
+      // 결과 표시
+      const panel = document.getElementById('saju-ai-panel');
+      panel.style.display = 'block';
+      
+      // 오행 균형 분석
+      const elementDiv = document.getElementById('element-content');
+      elementDiv.innerHTML = `
+        <p><strong>균형 상태:</strong> ${aiResult.balance.description}</p>
+        <p><strong>부족한 기운:</strong> ${aiResult.balance.lacking.map(e => translateElement(e)).join(', ')}</p>
+        <p><strong>과잉 기운:</strong> ${aiResult.balance.excessive.map(e => translateElement(e)).join(', ')}</p>
+        <div style="margin-top:12px; padding:10px; background:rgba(212,175,55,0.1); border-radius:8px;">
+          <strong>보완 방법:</strong> ${aiResult.recommendation.color} 색상 활용, ${aiResult.recommendation.direction} 방향 중시
+        </div>
+      `;
+      
+      // 상생상극 관계
+      const interactionDiv = document.getElementById('interaction-content');
+      interactionDiv.innerHTML = `
+        <p><strong>지지하는 기운:</strong> ${aiResult.interaction.supporting.map(e => translateElement(e)).join(', ')}</p>
+        <p><strong>충돌하는 기운:</strong> ${aiResult.interaction.conflicting.map(e => translateElement(e)).join(', ')}</p>
+        <div style="margin-top:12px; padding:10px; background:rgba(212,175,55,0.1); border-radius:8px;">
+          <strong>조화 방법:</strong> ${aiResult.interaction.harmony}
+        </div>
+      `;
+      
+      // 인생 통찰
+      const insightDiv = document.getElementById('saju-insight-content');
+      insightDiv.innerHTML = `
+        <p><strong>🎭 성격:</strong> ${aiResult.insight.personality}</p>
+        <p><strong>💼 직업:</strong> ${aiResult.insight.career}</p>
+        <p><strong>💪 건강:</strong> ${aiResult.insight.health}</p>
+        <p><strong>❤️ 인간관계:</strong> ${aiResult.insight.relationship}</p>
+        <p><strong>💰 재물:</strong> ${aiResult.insight.fortune}</p>
+      `;
+      
+      // 맞춤 인생 조언
+      document.getElementById('advice-text').textContent = aiResult.advice;
+      
+      // 스크롤
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    function translateElement(element) {
+      const names = {
+        wood: '목(木)', fire: '화(火)', earth: '토(土)', metal: '금(金)', water: '수(水)'
+      };
+      return names[element] || element;
     }
   </script>
+  
+  <!-- AI 엔진 로드 -->
+  <script src="saju-ai-enhancement.js"></script>
 
 </body>
 </html>
