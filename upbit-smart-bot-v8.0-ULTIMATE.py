@@ -1150,6 +1150,83 @@ def api_status():
         log(f"API 상태 조회 오류: {e}", "ERROR")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/history')
+def history_page():
+    """거래 히스토리 페이지"""
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('history.html')
+
+@app.route('/api/history')
+def api_history():
+    """거래 히스토리 API"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        user_id = session['user_id']
+        bot_state = get_user_bot_state(user_id)
+        
+        # 모든 거래 내역 가져오기
+        all_trades = bot_state.get('recent_trades', [])
+        
+        # 통계 계산
+        total_trades = 0
+        winning_trades = 0
+        losing_trades = 0
+        total_profit_rate = 0
+        
+        for trade in all_trades:
+            if trade['type'] == 'SELL':
+                total_trades += 1
+                profit_rate = trade.get('profit_rate', 0)
+                total_profit_rate += profit_rate
+                
+                if profit_rate >= 0:
+                    winning_trades += 1
+                else:
+                    losing_trades += 1
+        
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        avg_profit = (total_profit_rate / total_trades) if total_trades > 0 else 0
+        
+        # 거래 내역 변환 (최신순)
+        trades_list = []
+        for trade in reversed(all_trades):  # 최신 거래가 먼저 오도록
+            trade_data = {
+                'ticker': trade['ticker'],
+                'type': trade['type'],
+                'amount': trade['amount'],
+                'price': trade['price'],
+                'fee': trade.get('fee', 0),
+                'timestamp': trade.get('timestamp', ''),
+                'reason': trade.get('reason', '')
+            }
+            
+            if trade['type'] == 'BUY':
+                trade_data['invested'] = trade.get('invested', 0)
+            else:  # SELL
+                trade_data['sell_value'] = trade.get('sell_value', 0)
+                trade_data['profit'] = trade.get('profit', 0)
+                trade_data['profit_rate'] = trade.get('profit_rate', 0)
+            
+            trades_list.append(trade_data)
+        
+        return jsonify({
+            'success': True,
+            'trades': trades_list,
+            'stats': {
+                'total': total_trades,
+                'winning': winning_trades,
+                'losing': losing_trades,
+                'win_rate': win_rate,
+                'avg_profit': avg_profit
+            }
+        })
+    except Exception as e:
+        log(f"히스토리 API 오류: {e}", "ERROR")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/start', methods=['POST'])
 def api_start():
     try:
