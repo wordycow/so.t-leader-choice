@@ -723,15 +723,62 @@
         <h3>⚙️ 모드 선택</h3>
         <div class="mode-selector">
           <button class="mode-btn active" data-mode="practice">
-            연습 모드
+            🆓 연습 모드
           </button>
           <button class="mode-btn" data-mode="live">
-            실전 모드
+            💎 실전 모드
           </button>
         </div>
-        <div class="input-group">
-          <label>시뮬레이션 시드 (원)</label>
-          <input type="number" id="seedInput" value="1000000" min="100000" step="100000">
+        
+        <!-- 연습 모드 설정 -->
+        <div id="practiceSettings">
+          <div class="input-group">
+            <label>시뮬레이션 시드 (원)</label>
+            <input type="number" id="seedInput" value="1000000" min="100000" step="100000">
+          </div>
+        </div>
+        
+        <!-- 실전 모드 - 라이선스 -->
+        <div id="liveSettings" style="display: none;">
+          <div style="padding: 20px; background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%); border-radius: 16px; border: 2px solid rgba(236, 72, 153, 0.4); margin-bottom: 20px; box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💎</div>
+              <div>
+                <div style="font-size: 16px; color: #fbbf24; font-weight: 700; margin-bottom: 4px;">🔥 프리미엄 실전 모드 (유료)</div>
+                <div style="font-size: 13px; color: #a1a1aa; font-weight: 500;">실제 자금으로 거래하는 프로 모드</div>
+              </div>
+            </div>
+            <div style="padding: 12px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; margin-bottom: 12px;">
+              <div style="font-size: 12px; color: #e4e4e7; line-height: 1.6;">
+                ✓ 실제 Upbit 계좌로 자동 거래<br>
+                ✓ 24/7 무중단 모니터링<br>
+                ✓ 프리미엄 AI 전략 사용<br>
+                ✓ 손실 자동 복구 시스템<br>
+                <br>
+                <strong style="color: #fbbf24;">⚠️ 라이선스 구매 후 사용 가능</strong>
+              </div>
+            </div>
+            <button onclick="showPaymentInfo()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border: none; border-radius: 12px; color: #18181b; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(251, 191, 36, 0.3);">
+              💳 라이선스 구매하기
+            </button>
+          </div>
+          
+          <div style="padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3); margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #93c5fd; font-weight: 600; margin-bottom: 8px;">📌 이미 구매하셨나요?</div>
+            <div style="font-size: 11px; color: #a1a1aa; margin-bottom: 12px;">결제 완료 후 받은 <strong>거래 ID (TXID)</strong>를 아래에 입력하세요</div>
+          </div>
+          
+          <div class="input-group">
+            <label>🔐 라이선스 TXID</label>
+            <input type="text" id="txidInput" placeholder="예: 0x1a2b3c4d5e6f7890abcdef..." style="font-family: 'Courier New', monospace; font-size: 13px;">
+          </div>
+          <button class="btn btn-primary" onclick="verifyLicense()" style="margin-top: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);">
+            ✅ 라이선스 인증하기
+          </button>
+          
+          <div id="licenseStatus" style="display: none; margin-top: 16px; padding: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px;">
+            <div style="font-size: 13px; color: #6ee7b7; font-weight: 600;">✅ 인증 완료! 실전 모드를 사용할 수 있습니다.</div>
+          </div>
         </div>
       </div>
 
@@ -905,6 +952,7 @@
   <script>
     let currentMode = 'practice';
     let updateInterval = null;
+    let licenseVerified = false;
 
     // 숫자에 천단위 콤마 추가 함수
     function formatNumber(num) {
@@ -926,11 +974,103 @@
     // 모드 선택
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentMode = btn.dataset.mode;
+        currentMode = mode;
+        
+        // 모드별 설정 표시/숨김
+        if (mode === 'practice') {
+          document.getElementById('practiceSettings').style.display = 'block';
+          document.getElementById('liveSettings').style.display = 'none';
+        } else {
+          document.getElementById('practiceSettings').style.display = 'none';
+          document.getElementById('liveSettings').style.display = 'block';
+        }
       });
     });
+
+    // 결제 정보 표시
+    function showPaymentInfo() {
+      alert('💎 프리미엄 라이선스 구매 안내\n\n' +
+            '─────────────────────────────\n' +
+            '📌 라이선스 종류\n' +
+            '• 월간 라이선스: 50,000원/월\n' +
+            '• 연간 라이선스: 500,000원/년 (2개월 무료)\n' +
+            '• 평생 라이선스: 1,500,000원 (영구 사용)\n\n' +
+            '─────────────────────────────\n' +
+            '💳 구매 방법\n' +
+            '1. 아래 주소로 결제\n' +
+            '2. 결제 완료 후 TXID 복사\n' +
+            '3. 위 "라이선스 TXID" 칸에 붙여넣기\n' +
+            '4. "✅ 라이선스 인증하기" 클릭\n\n' +
+            '─────────────────────────────\n' +
+            '📮 문의: support@upbitbot.com\n' +
+            '🌐 홈페이지: https://upbitbot.com\n\n' +
+            '⚠️ 주의: 라이선스는 환불 불가합니다');
+    }
+
+    // 라이선스 검증
+    function verifyLicense() {
+      const txid = document.getElementById('txidInput').value.trim();
+      
+      if (!txid) {
+        alert('⚠️ TXID를 입력해주세요!\n\n결제 완료 후 받은 거래 ID를 붙여넣으세요.');
+        return;
+      }
+      
+      // 로딩 표시
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span> 검증 중...';
+      btn.disabled = true;
+      
+      fetch('/api/verify-license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txid: txid })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          licenseVerified = true;
+          
+          // 성공 메시지
+          alert('✅ 라이선스 인증 완료!\n\n' +
+                '─────────────────────────────\n' +
+                '💎 라이선스 종류: ' + (data.license_type || 'Premium') + '\n' +
+                '📅 만료일: ' + (data.expires_at || '평생') + '\n\n' +
+                '이제 실전 모드를 사용할 수 있습니다!\n' +
+                '1. API 키를 입력하세요\n' +
+                '2. "🚀 봇 시작" 버튼을 클릭하세요');
+          
+          // 버튼 업데이트
+          btn.innerHTML = '✅ 인증 완료';
+          btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+          btn.disabled = true;
+          
+          // 인증 상태 표시
+          document.getElementById('licenseStatus').style.display = 'block';
+        } else {
+          licenseVerified = false;
+          alert('❌ 라이선스 인증 실패\n\n' + 
+                (data.message || '유효하지 않은 TXID입니다.') + '\n\n' +
+                '─────────────────────────────\n' +
+                '💡 문제 해결:\n' +
+                '1. TXID를 다시 확인해주세요\n' +
+                '2. 결제가 완료되었는지 확인하세요\n' +
+                '3. 문의: support@upbitbot.com');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        alert('❌ 네트워크 오류\n\n' + err.message + '\n\n인터넷 연결을 확인해주세요.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      });
+    }
 
     // API 키 저장
     function saveApiKeys() {
@@ -965,9 +1105,15 @@
 
     // 봇 시작
     function startBot() {
+      // 실전 모드 라이선스 체크
+      if (currentMode === 'live' && !licenseVerified) {
+        alert('⚠️ 실전 모드는 라이선스 인증이 필요합니다!\n\n1. TXID를 입력하세요\n2. "🔐 라이선스 인증" 버튼을 클릭하세요');
+        return;
+      }
+      
       const seed = parseInt(document.getElementById('seedInput').value);
       
-      if (!seed || seed < 100000) {
+      if (currentMode === 'practice' && (!seed || seed < 100000)) {
         alert('⚠️ 시뮬레이션 시드는 최소 100,000원 이상이어야 합니다!');
         return;
       }
@@ -977,7 +1123,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: currentMode,
-          seed: seed
+          seed: seed,
+          txid: currentMode === 'live' ? document.getElementById('txidInput').value : null
         })
       })
       .then(res => res.json())
@@ -988,7 +1135,9 @@
           document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
           toggleGears(true); // 톱니바퀴 표시
           startUpdating();
-          alert('✅ 봇이 시작되었습니다!\n\n💡 AI가 자동으로 학습하며 최적의 전략을 선택합니다.');
+          
+          const modeText = currentMode === 'practice' ? '연습 모드' : '💎 실전 모드';
+          alert(`✅ 봇이 시작되었습니다! (${modeText})\n\n💡 AI가 자동으로 학습하며 최적의 전략을 선택합니다.`);
         } else {
           alert('❌ 시작 실패: ' + data.message);
         }

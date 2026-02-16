@@ -841,8 +841,78 @@ def api_start():
 
 @app.route('/api/stop', methods=['POST'])
 def api_stop():
-    bot_state['running'] = False
-    return jsonify({'success': True, 'message': '봇 중지'})
+    try:
+        bot_state['running'] = False
+        # 스레드가 종료될 때까지 대기 (최대 5초)
+        if 'thread' in bot_state and bot_state['thread'] and bot_state['thread'].is_alive():
+            bot_state['thread'].join(timeout=5)
+        log("봇이 정지되었습니다", "INFO")
+        return jsonify({'success': True, 'message': '봇 중지'})
+    except Exception as e:
+        log(f"정지 오류: {e}", "ERROR")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/verify-license', methods=['POST'])
+def api_verify_license():
+    """라이선스 검증 API (실제 구현 시 블록체인 검증 추가)"""
+    try:
+        data = request.json or {}
+        txid = data.get('txid', '').strip()
+        
+        if not txid:
+            return jsonify({'success': False, 'message': 'TXID를 입력해주세요'})
+        
+        # TODO: 실제 블록체인 TXID 검증 로직
+        # 여기서는 데모용으로 특정 패턴 체크
+        if len(txid) >= 20:  # 최소 길이 체크
+            log(f"라이선스 검증 시도: {txid[:10]}...", "INFO")
+            # 실제로는 블록체인 API로 결제 확인
+            return jsonify({
+                'success': True, 
+                'message': '라이선스 인증 완료',
+                'license_type': 'premium',
+                'expires_at': '2026-12-31'
+            })
+        else:
+            return jsonify({'success': False, 'message': '유효하지 않은 TXID 형식입니다'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/config', methods=['POST'])
+def api_config():
+    """API 키 설정"""
+    try:
+        data = request.json or {}
+        access_key = data.get('access_key', '').strip()
+        secret_key = data.get('secret_key', '').strip()
+        
+        if not access_key or not secret_key:
+            return jsonify({'success': False, 'message': 'Access Key와 Secret Key를 모두 입력해주세요'})
+        
+        # config.json 업데이트
+        try:
+            import json
+            config_path = 'config.json'
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            else:
+                config = {}
+            
+            config['upbit_access_key'] = access_key
+            config['upbit_secret_key'] = secret_key
+            
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            
+            log("API 키가 저장되었습니다", "SUCCESS")
+            return jsonify({'success': True, 'message': 'API 키 저장 완료'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'저장 실패: {str(e)}'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 # ═══════════════════════════════════════════════════════
 # 🔄 메인 봇 루프
