@@ -522,8 +522,8 @@
                 <button class="action-btn btn-edit-date" onclick="openEditModal('${user.user_id}', '${user.subscription_expires_at || ''}')">
                   📅 날짜 수정
                 </button>
-                <button class="action-btn btn-add-days" onclick="addDays('${user.user_id}', 5)">
-                  +5일
+                <button class="action-btn btn-add-days" onclick="addDays('${user.user_id}', 1)">
+                  +일수 추가
                 </button>
               </td>
             </tr>
@@ -598,21 +598,34 @@
       }
     }
 
-    // N일 추가
-    async function addDays(userId, days) {
-      if (!confirm(`${userId}에게 ${days}일을 추가하시겠습니까?`)) return;
+    // N일 추가 (사용자 입력)
+    async function addDays(userId, defaultDays = 1) {
+      const days = prompt(`${userId}에게 추가할 일수를 입력하세요:`, defaultDays);
+      
+      if (!days || days <= 0) {
+        alert('유효한 일수를 입력하세요');
+        return;
+      }
+      
+      const daysNum = parseInt(days);
+      if (isNaN(daysNum) || daysNum <= 0) {
+        alert('숫자를 입력하세요');
+        return;
+      }
+      
+      if (!confirm(`${userId}에게 ${daysNum}일을 추가하시겠습니까?`)) return;
       
       try {
         const response = await fetch('/api/admin/subscription/add-days', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, days: days })
+          body: JSON.stringify({ user_id: userId, days: daysNum })
         });
 
         const result = await response.json();
         
         if (response.ok) {
-          alert(`✅ ${userId}에게 ${days}일이 추가되었습니다`);
+          alert(`✅ ${result.message}`);
           loadUsers();
         } else {
           throw new Error(result.message || '추가 실패');

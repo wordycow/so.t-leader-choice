@@ -1905,9 +1905,21 @@ def api_admin_users():
             if bot_state.get('running'):
                 running_count += 1
         
-        # 통계 계산
+        # 통계 계산 (가중평균)
         total_users = len(users_list)
-        average_profit_rate = (total_profit_rate / total_users) if total_users > 0 else 0
+        
+        # 금액 비율 가중평균 계산
+        total_seed = sum(u['seed_amount'] for u in users_list if u['seed_amount'] > 0)
+        weighted_profit_rate = 0
+        
+        if total_seed > 0:
+            for user in users_list:
+                if user['seed_amount'] > 0:
+                    weight = user['seed_amount'] / total_seed
+                    weighted_profit_rate += user['profit_rate'] * weight
+        
+        # 단순 평균도 계산 (비교용)
+        simple_average_profit_rate = (total_profit_rate / total_users) if total_users > 0 else 0
         
         return jsonify({
             'success': True,
@@ -1915,7 +1927,9 @@ def api_admin_users():
                 'total_users': total_users,
                 'running_bots': running_count,
                 'active_subscriptions': active_subscriptions,
-                'average_profit_rate': average_profit_rate
+                'average_profit_rate': weighted_profit_rate,  # 가중평균
+                'simple_average_profit_rate': simple_average_profit_rate,  # 단순평균
+                'total_seed': total_seed
             },
             'users': users_list
         })
@@ -1930,13 +1944,33 @@ def api_admin_set_subscription_date():
     try:
         data = request.json or {}
         user_id = data.get('user_id')
-        expires_at = data.get('expires_at')
+        expires_at = data.get('expires_at')  # 'YYYY-MM-DD' 형식
         
         if not user_id or not expires_at:
             return jsonify({'success': False, 'message': '사용자 ID와 날짜 필요'}), 400
         
-        # TODO: DB에 저장
-        # 임시: 메모리에만 저장
+        # DB에 저장
+        import sqlite3
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        # 사용자 존재 확인 및 업데이트
+        cursor.execute('''
+            UPDATE users 
+            SET subscription_expires_at = ?
+            WHERE username = ?
+        ''', (expires_at, user_id))
+        
+        if cursor.rowcount == 0:
+            # 사용자가 없으면 생성
+            cursor.execute('''
+                INSERT INTO users (username, subscription_expires_at, created_at)
+                VALUES (?, ?, datetime('now'))
+            ''', (user_id, expires_at))
+        
+        conn.commit()
+        conn.close()
+        
         log(f"[Admin] {user_id} 구독 만료일 설정: {expires_at}", "SUCCESS")
         
         return jsonify({
@@ -1946,6 +1980,8 @@ def api_admin_set_subscription_date():
         
     except Exception as e:
         log(f"날짜 설정 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/subscription/add-days', methods=['POST'])
@@ -1954,21 +1990,66 @@ def api_admin_add_days():
     try:
         data = request.json or {}
         user_id = data.get('user_id')
-        days = data.get('days', 5)
+        days = data.get('days', 1)  # 기본 1일
         
         if not user_id:
             return jsonify({'success': False, 'message': '사용자 ID 필요'}), 400
         
-        # TODO: DB에서 현재 만료일 조회 후 +days
-        log(f"[Admin] {user_id}에게 +{days}일 추가", "SUCCESS")
+        if days <= 0:
+            return jsonify({'success': False, 'message': '유효한 일수를 입력하세요'}), 400
+        
+        # DB에서 현재 만료일 조회 후 +days
+        import sqlite3
+        from datetime import datetime, timedelta
+        
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT subscription_expires_at FROM users
+            WHERE username = ?
+        ''', (user_id,))
+        
+        result = cursor.fetchone()
+        
+        if result and result[0]:
+            # 기존 만료일이 있으면 거기에 추가
+            current_expires = datetime.strptime(result[0], '%Y-%m-%d')
+            new_expires = current_expires + timedelta(days=days)
+        else:
+            # 만료일이 없으면 오늘부터 계산
+            new_expires = datetime.now() + timedelta(days=days)
+        
+        new_expires_str = new_expires.strftime('%Y-%m-%d')
+        
+        # 업데이트
+        cursor.execute('''
+            UPDATE users 
+            SET subscription_expires_at = ?
+            WHERE username = ?
+        ''', (new_expires_str, user_id))
+        
+        if cursor.rowcount == 0:
+            # 사용자가 없으면 생성
+            cursor.execute('''
+                INSERT INTO users (username, subscription_expires_at, created_at)
+                VALUES (?, ?, datetime('now'))
+            ''', (user_id, new_expires_str))
+        
+        conn.commit()
+        conn.close()
+        
+        log(f"[Admin] {user_id}에게 +{days}일 추가 → {new_expires_str}", "SUCCESS")
         
         return jsonify({
             'success': True,
-            'message': f'{user_id}에게 {days}일이 추가되었습니다'
+            'message': f'{user_id}에게 {days}일이 추가되었습니다 (만료일: {new_expires_str})'
         })
         
     except Exception as e:
         log(f"일수 추가 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == "__main__":
