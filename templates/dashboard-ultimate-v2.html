@@ -735,17 +735,6 @@
         </div>
       </div>
 
-      <!-- 봇 제어 -->
-      <div class="control-card">
-        <h3>🎮 봇 제어</h3>
-        <button class="btn btn-primary" id="startBtn" onclick="startBot()">
-          🚀 학습 시작
-        </button>
-        <button class="btn btn-danger" id="stopBtn" onclick="stopBot()">
-          ⏸️ 정지
-        </button>
-      </div>
-
       <!-- API 설정 -->
       <div class="control-card">
         <h3>🔐 API 설정</h3>
@@ -753,9 +742,28 @@
           <label>Access Key</label>
           <input type="password" id="accessKey" placeholder="업비트 Access Key">
         </div>
+        <div class="input-group">
+          <label>Secret Key</label>
+          <input type="password" id="secretKey" placeholder="업비트 Secret Key">
+        </div>
         <button class="btn btn-primary" onclick="saveApiKeys()">
           💾 저장
         </button>
+      </div>
+
+      <!-- 봇 제어 -->
+      <div class="control-card">
+        <h3>🎮 봇 제어</h3>
+        <button class="btn btn-primary" id="startBtn" onclick="startBot()">
+          🚀 봇 시작
+        </button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopBot()">
+          ⏹️ 봇 정지
+        </button>
+        <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2);">
+          <div style="font-size: 11px; color: #93c5fd; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">💡 자동 학습</div>
+          <div style="font-size: 13px; color: #e4e4e7;">AI가 모든 거래를 자동으로 학습하고 최적 전략을 선택합니다</div>
+        </div>
       </div>
     </div>
 
@@ -927,8 +935,10 @@
     // API 키 저장
     function saveApiKeys() {
       const accessKey = document.getElementById('accessKey').value;
-      if (!accessKey) {
-        alert('⚠️ Access Key를 입력해주세요!');
+      const secretKey = document.getElementById('secretKey').value;
+      
+      if (!accessKey || !secretKey) {
+        alert('⚠️ Access Key와 Secret Key를 모두 입력해주세요!');
         return;
       }
       
@@ -937,18 +947,30 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           access_key: accessKey,
-          secret_key: document.getElementById('secretKey')?.value || ''
+          secret_key: secretKey
         })
       })
       .then(res => res.json())
       .then(data => {
-        alert(data.success ? '✅ API 키가 저장되었습니다!' : '❌ 저장 실패: ' + data.message);
+        if (data.success) {
+          alert('✅ API 키가 저장되었습니다!');
+        } else {
+          alert('❌ 저장 실패: ' + data.message);
+        }
+      })
+      .catch(err => {
+        alert('❌ 네트워크 오류: ' + err.message);
       });
     }
 
     // 봇 시작
     function startBot() {
       const seed = parseInt(document.getElementById('seedInput').value);
+      
+      if (!seed || seed < 100000) {
+        alert('⚠️ 시뮬레이션 시드는 최소 100,000원 이상이어야 합니다!');
+        return;
+      }
       
       fetch('/api/start', {
         method: 'POST',
@@ -966,14 +988,22 @@
           document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
           toggleGears(true); // 톱니바퀴 표시
           startUpdating();
+          alert('✅ 봇이 시작되었습니다!\n\n💡 AI가 자동으로 학습하며 최적의 전략을 선택합니다.');
         } else {
           alert('❌ 시작 실패: ' + data.message);
         }
+      })
+      .catch(err => {
+        alert('❌ 네트워크 오류: ' + err.message);
       });
     }
 
     // 봇 정지
     function stopBot() {
+      if (!confirm('⚠️ 정말 봇을 정지하시겠습니까?')) {
+        return;
+      }
+      
       fetch('/api/stop', { method: 'POST' })
       .then(res => res.json())
       .then(data => {
@@ -983,7 +1013,13 @@
           document.getElementById('statusText').textContent = '정지됨';
           toggleGears(false); // 톱니바퀴 숨김
           stopUpdating();
+          alert('✅ 봇이 정지되었습니다.');
+        } else {
+          alert('❌ 정지 실패: ' + data.message);
         }
+      })
+      .catch(err => {
+        alert('❌ 네트워크 오류: ' + err.message);
       });
     }
 
