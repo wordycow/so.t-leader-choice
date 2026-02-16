@@ -1387,6 +1387,7 @@ def bot_main_loop(user_id, bot_state):
     while bot_state['running']:
         try:
             loop_count += 1
+            log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
             
             # 처음 2번은 스캔만 하고 매수하지 않음
             if loop_count <= 2:
@@ -1426,6 +1427,7 @@ def bot_main_loop(user_id, bot_state):
                 else:
                     import random
                     scan_tickers = random.sample(popular_tickers, min(5, len(popular_tickers)))
+                    log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
                     
                     for ticker in scan_tickers:
                         try:
@@ -1436,17 +1438,26 @@ def bot_main_loop(user_id, bot_state):
                                 best_strategy, score = select_best_strategy(ticker, patterns)
                                 
                                 if best_strategy and score > 0.5:
+                                    log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
                                     execute_trade(ticker, best_strategy, patterns)
                                     time.sleep(2)
                                     break
-                        except:
+                        except Exception as ticker_error:
+                            log(f"[{user_id}] ⚠️ {ticker} 분석 오류: {ticker_error}", "WARNING")
                             continue
+                    
+                    log(f"[{user_id}] ✅ 스캔 완료, 대기 중...", "INFO")
             
             bot_state['last_update'] = datetime.now()
-            time.sleep(15 if bot_state['recovery_mode_active'] else 20)
+            sleep_time = 15 if bot_state['recovery_mode_active'] else 20
+            log(f"[{user_id}] 💤 {sleep_time}초 대기...", "INFO")
+            time.sleep(sleep_time)
             
         except Exception as e:
-            log(f"메인 루프 오류: {e}", "ERROR")
+            log(f"[{user_id}] ❌ 메인 루프 오류: {e}", "ERROR")
+            import traceback
+            traceback.print_exc()
+            log(f"[{user_id}] 🔄 10초 후 재시도...", "WARNING")
             time.sleep(10)
     
     log("🛑 봇 중지", "WARNING")
