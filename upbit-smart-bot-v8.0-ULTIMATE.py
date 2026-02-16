@@ -998,6 +998,8 @@ def api_status():
             return jsonify({
                 'running': False,
                 'current_krw': bot_state.get('simulation_seed', 1000000),
+                'start_seed': bot_state.get('simulation_start_seed', bot_state.get('simulation_seed', 1000000)),
+                'current_seed': bot_state.get('simulation_seed', 1000000),
                 'total_profit': 0,
                 'profit_rate': 0,
                 'win_rate': 0,
@@ -1079,6 +1081,8 @@ def api_status():
             'current_krw': current_krw,
             'holdings_value': holdings_value,
             'total_value': total_value,
+            'start_seed': bot_state.get('simulation_start_seed', bot_state.get('simulation_seed', 1000000)),
+            'current_seed': bot_state.get('simulation_seed', 1000000),
             'total_profit': profit,
             'profit_rate': profit_rate,
             'win_rate': win_rate,
@@ -1113,6 +1117,10 @@ def api_start():
         mode = data.get('mode', 'practice')
         seed = data.get('seed', 1000000)
         txid = data.get('txid', '')
+        
+        # 기존 시작 시드와 비교
+        old_start_seed = bot_state.get('simulation_start_seed', None)
+        seed_changed = (old_start_seed is not None and old_start_seed != seed)
         
         # 실전 모드 검증
         if mode == 'live':
@@ -1212,39 +1220,55 @@ def api_start():
                     'message': f'❌ 잔고 조회 실패: {str(e)}\n\nAPI 키를 확인하세요.'
                 })
         
-        # 완전 초기화
-        bot_state['mode'] = mode
-        bot_state['simulation_seed'] = seed
-        bot_state['simulation_krw'] = seed
-        bot_state['simulation_start_seed'] = seed
-        bot_state['simulation_holdings'] = {}
-        bot_state['frozen_holdings'] = {}
-        bot_state['recovery_mode_active'] = False
-        bot_state['recovery_seed'] = 0
-        bot_state['recovery_target_amount'] = 0
-        bot_state['recovery_trades'] = 0
-        bot_state['recovery_success_trades'] = 0
-        bot_state['recovery_total_profit'] = 0
-        
-        # 통계 초기화
-        bot_state['recent_trades'].clear()
-        bot_state['recent_signals'].clear()
-        bot_state['statistics'] = {
-            'total_trades': 0,
-            'winning_trades': 0,
-            'losing_trades': 0,
-            'total_profit': 0,
-            'best_strategy': None,
-            'recovery_progress': 0,
-        }
-        
-        # 전략 성과 초기화
-        for strategy_key in bot_state['strategy_performance']:
-            bot_state['strategy_performance'][strategy_key]['performance'] = {
-                'trades': 0,
-                'wins': 0,
-                'total_profit': 0
+        # 시드 변경 시에만 완전 초기화
+        if seed_changed:
+            log(f"[{user_id}] 시드 변경 감지: {old_start_seed:,}원 → {seed:,}원 (데이터 초기화)", "WARNING")
+            
+            # 완전 초기화
+            bot_state['simulation_seed'] = seed
+            bot_state['simulation_krw'] = seed
+            bot_state['simulation_start_seed'] = seed
+            bot_state['simulation_holdings'] = {}
+            bot_state['frozen_holdings'] = {}
+            bot_state['recovery_mode_active'] = False
+            bot_state['recovery_seed'] = 0
+            bot_state['recovery_target_amount'] = 0
+            bot_state['recovery_trades'] = 0
+            bot_state['recovery_success_trades'] = 0
+            bot_state['recovery_total_profit'] = 0
+            
+            # 통계 초기화
+            bot_state['recent_trades'].clear()
+            bot_state['recent_signals'].clear()
+            bot_state['statistics'] = {
+                'total_trades': 0,
+                'winning_trades': 0,
+                'losing_trades': 0,
+                'total_profit': 0,
+                'best_strategy': None,
+                'recovery_progress': 0,
             }
+            
+            # 전략 성과 초기화
+            for strategy_key in bot_state['strategy_performance']:
+                bot_state['strategy_performance'][strategy_key]['performance'] = {
+                    'trades': 0,
+                    'wins': 0,
+                    'total_profit': 0
+                }
+        else:
+            # 같은 시드로 재시작 (데이터 보존)
+            log(f"[{user_id}] 기존 데이터 유지 재시작: {seed:,}원", "INFO")
+            
+            # 기존 simulation_start_seed가 없으면 현재 시드를 시작 시드로 설정
+            if bot_state.get('simulation_start_seed') is None:
+                bot_state['simulation_start_seed'] = seed
+            
+            # 현재 시드만 업데이트 (보유 코인, 거래 내역 등은 보존)
+            if bot_state.get('simulation_seed') != seed:
+                bot_state['simulation_seed'] = seed
+        
+        bot_state['mode'] = mode
         
         bot_state['running'] = True
         bot_state['start_time'] = datetime.now()

@@ -842,6 +842,11 @@
             <label>시뮬레이션 시드 (원)</label>
             <input type="number" id="seedInput" value="1000000" min="100000" step="100000">
           </div>
+          <div id="currentSeedInfo" style="display: none; margin-top: 8px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.3);">
+            <div style="font-size: 12px; color: #93c5fd; margin-bottom: 4px;">📌 현재 진행 중인 시드</div>
+            <div style="font-size: 14px; color: #60a5fa; font-weight: 700;" id="currentSeedValue">-</div>
+            <div style="font-size: 11px; color: #a1a1aa; margin-top: 4px;">※ 시드를 변경하면 기존 데이터가 초기화됩니다</div>
+          </div>
         </div>
         
         <!-- 실전 모드 - 라이선스 -->
@@ -1214,6 +1219,10 @@
       });
     }
 
+    // 전역 변수: 현재 시작 시드
+    let currentStartSeed = null;
+    let hasExistingData = false;
+
     // 봇 시작
     function startBot() {
       // 실전 모드 라이선스 체크
@@ -1227,6 +1236,43 @@
       if (currentMode === 'practice' && (!seed || seed < 100000)) {
         alert('⚠️ 시뮬레이션 시드는 최소 100,000원 이상이어야 합니다!');
         return;
+      }
+      
+      // ✅ 시드 변경 감지
+      if (hasExistingData && currentStartSeed && currentStartSeed !== seed) {
+        const confirmed = confirm(
+          `⚠️ 시드 변경 감지!\n\n` +
+          `이전 시작 시드: ${formatNumber(currentStartSeed)}원\n` +
+          `새 시드: ${formatNumber(seed)}원\n\n` +
+          `시드를 변경하면 다음이 초기화됩니다:\n` +
+          `• 모든 보유 코인\n` +
+          `• 거래 내역\n` +
+          `• 전략 성과\n` +
+          `• 수익률 통계\n\n` +
+          `계속하시겠습니까?`
+        );
+        
+        if (!confirmed) {
+          // 취소 시 이전 시드로 되돌림
+          document.getElementById('seedInput').value = currentStartSeed;
+          return;
+        }
+      }
+      
+      // 같은 시드로 재시작하는 경우 (데이터 보존 확인)
+      if (hasExistingData && currentStartSeed && currentStartSeed === seed) {
+        const confirmed = confirm(
+          `💡 기존 데이터로 재시작\n\n` +
+          `시작 시드: ${formatNumber(currentStartSeed)}원\n\n` +
+          `기존 보유 코인과 거래 내역이 유지되며\n` +
+          `중단한 시점부터 이어서 진행됩니다.\n\n` +
+          `새로 시작하려면 시드 금액을 변경하세요.\n\n` +
+          `계속하시겠습니까?`
+        );
+        
+        if (!confirmed) {
+          return;
+        }
       }
       
       fetch('/api/start', {
@@ -1364,6 +1410,23 @@
         
         document.getElementById('winRate').textContent = 
           (data.win_rate || 0).toFixed(1) + '%';
+
+        // 시작 시드 로드 및 표시
+        if (data.start_seed) {
+          currentStartSeed = data.start_seed;
+          const seedInfoEl = document.getElementById('currentSeedInfo');
+          const seedValueEl = document.getElementById('currentSeedValue');
+          
+          // 봇이 한 번이라도 시작된 적이 있으면 시드 정보 표시
+          if (data.start_seed !== 1000000 || data.running || (data.holdings && data.holdings.length > 0)) {
+            seedInfoEl.style.display = 'block';
+            seedValueEl.textContent = formatNumber(data.start_seed) + '원';
+            hasExistingData = true;
+          } else {
+            seedInfoEl.style.display = 'none';
+            hasExistingData = false;
+          }
+        }
 
         // 상태 업데이트 + 톱니바퀴 제어
         if (data.running) {
