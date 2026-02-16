@@ -1585,7 +1585,7 @@ def admin_dashboard():
 
 @app.route('/api/admin/users')
 def api_admin_users():
-    """전체 사용자 목록 및 통계"""
+    """전체 사용자 목록 및 통계 (DB + 실행 중인 봇 통합)"""
     try:
         # 관리자 권한 체크 (TODO: 실제 권한 확인 추가)
         # if session.get('role') != 'admin':
@@ -1596,8 +1596,105 @@ def api_admin_users():
         running_count = 0
         active_subscriptions = 0
         
-        # 모든 사용자 봇 상태 조회
+        # ✅ 1. DB에서 모든 등록 사용자 조회
+        import sqlite3
+        try:
+            conn = sqlite3.connect('upbit_bot.db')
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users ORDER BY created_at DESC')
+            db_users = cursor.fetchall()
+            conn.close()
+        except Exception as db_error:
+            log(f"DB 조회 오류 (무시됨): {db_error}", "WARNING")
+            db_users = []
+        
+        # ✅ 2. DB 사용자와 실행 중인 봇 매칭
+        processed_users = set()
+        
+        # DB 사용자 우선 처리
+        for db_user in db_users:
+            # 기존 DB 스키마: username을 user_id로 사용
+            db_dict = dict(db_user)  # ✅ Row를 dict로 변환
+            user_id = db_dict.get('user_id') or db_dict.get('username') or f"user_{db_dict.get('id')}"
+            if not user_id:
+                continue
+            
+            processed_users.add(user_id)
+            
+            # 봇 상태 확인 (있으면 가져오기)
+            bot_state = user_bots.get(user_id, None)
+            
+            if bot_state:
+                # 봇이 실행 중인 경우
+                current_krw = bot_state.get('simulation_krw', 0)
+                holdings_value = 0
+                for ticker, holding in bot_state.get('simulation_holdings', {}).items():
+                    try:
+                        current_price = pyupbit.get_current_price(ticker)
+                        if current_price:
+                            holdings_value += holding['amount'] * current_price
+                        else:
+                            holdings_value += holding['amount'] * holding['avg_price']
+                    except:
+                        holdings_value += holding['amount'] * holding.get('avg_price', 0)
+                
+                total_value = current_krw + holdings_value
+                seed = bot_state.get('simulation_start_seed', 1000000)
+                profit = total_value - seed
+                profit_rate = (profit / seed * 100) if seed > 0 else 0
+                bot_running = bot_state.get('running', False)
+            else:
+                # 봇이 없는 경우 (가입만 한 사용자)
+                seed = 0
+                total_value = 0
+                profit_rate = 0
+                bot_running = False
+            
+            # 추천 코드 생성
+            import hashlib
+            referral_code = hashlib.md5(user_id.encode()).hexdigest()[:8].upper()
+            
+            # DB에서 가져오기 (있으면)
+            subscription_expires_at = db_dict.get('subscription_expires_at')
+            created_at = db_dict.get('created_at')
+            username_display = db_dict.get('username') or user_id.replace('guest_', '게스트_')[:20]
+            
+            if db_dict.get('referral_code'):
+                referral_code = db_dict['referral_code']
+            
+            user_info = {
+                'user_id': user_id,
+                'username': username_display,
+                'bot_running': bot_running,
+                'seed_amount': seed,
+                'current_balance': total_value,
+                'profit_rate': profit_rate,
+                'subscription_expires_at': subscription_expires_at,
+                'referral_code': referral_code,
+                'created_at': created_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            users_list.append(user_info)
+            total_profit_rate += profit_rate
+            
+            if bot_running:
+                running_count += 1
+            
+            # 구독 활성 확인
+            if db_dict.get('subscription_expires_at'):
+                from datetime import datetime
+                try:
+                    expires = datetime.fromisoformat(db_dict['subscription_expires_at'])
+                    if expires > datetime.now():
+                        active_subscriptions += 1
+                except:
+                    pass
+        
+        # ✅ 3. 게스트 사용자 (DB에 없지만 봇만 실행 중)
         for user_id, bot_state in user_bots.items():
+            if user_id in processed_users:
+                continue  # 이미 처리됨
             # 현재 잔고 계산
             current_krw = bot_state.get('simulation_krw', 0)
             
