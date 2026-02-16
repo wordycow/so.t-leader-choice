@@ -819,18 +819,50 @@ def api_start():
         data = request.json or {}
         seed = data.get('seed', 1000000)
         
+        # 완전 초기화
         bot_state['mode'] = 'practice'
         bot_state['simulation_seed'] = seed
         bot_state['simulation_krw'] = seed
         bot_state['simulation_start_seed'] = seed
+        bot_state['simulation_holdings'] = {}
+        bot_state['frozen_holdings'] = {}
+        bot_state['recovery_mode_active'] = False
+        bot_state['recovery_seed'] = 0
+        bot_state['recovery_target_amount'] = 0
+        bot_state['recovery_trades'] = 0
+        bot_state['recovery_success_trades'] = 0
+        bot_state['recovery_total_profit'] = 0
+        
+        # 통계 초기화
+        bot_state['statistics'] = {
+            'total_trades': 0,
+            'winning_trades': 0,
+            'losing_trades': 0,
+            'total_profit': 0,
+            'best_strategy': None,
+            'recovery_progress': 0,
+        }
+        
+        # 전략 성과 초기화
+        for strategy_key in bot_state['strategy_performance']:
+            bot_state['strategy_performance'][strategy_key]['performance'] = {
+                'trades': 0,
+                'wins': 0,
+                'total_profit': 0
+            }
+        
         bot_state['running'] = True
+        bot_state['start_time'] = datetime.now()
         
         thread = threading.Thread(target=bot_main_loop, daemon=True)
         thread.start()
         bot_state['thread'] = thread
         
+        log(f"봇 시작! 시드: {seed:,}원", "SUCCESS")
+        
         return jsonify({'success': True, 'message': '봇 시작!'})
     except Exception as e:
+        log(f"시작 오류: {e}", "ERROR")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/stop', methods=['POST'])
