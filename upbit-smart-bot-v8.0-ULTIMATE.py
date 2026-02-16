@@ -54,6 +54,7 @@ from user_manager import UserManager
 from portfolio_manager import execute_diversified_buy, check_profit_trigger, get_available_coins
 from trade_reasons import generate_buy_reason, generate_sell_reason
 from recovery_system import analyze_current_holdings, create_recovery_plan, execute_recovery_plan, UPBIT_FEE_RATE
+from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_state, get_all_running_bots
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -960,6 +961,9 @@ CORS(app)
 # UserManager 초기화
 user_manager = UserManager()
 
+# 🔧 bot_states 테이블 초기화
+init_bot_state_table()
+
 # 사용자별 봇 상태 저장 (user_id를 키로 사용)
 user_bots = {}
 
@@ -1245,6 +1249,9 @@ def api_start():
         bot_state['running'] = True
         bot_state['start_time'] = datetime.now()
         
+        # 💾 DB에 봇 상태 저장
+        save_bot_state(user_id, bot_state)
+        
         # ✅ 사용자별 독립 스레드 시작 (user_id와 bot_state 전달)
         thread = threading.Thread(target=bot_main_loop, args=(user_id, bot_state), daemon=True)
         thread.start()
@@ -1275,6 +1282,10 @@ def api_stop():
         bot_state = get_user_bot_state(user_id)
         
         bot_state['running'] = False
+        
+        # 💾 DB에 봇 상태 저장
+        save_bot_state(user_id, bot_state)
+        
         # 스레드가 종료될 때까지 대기 (최대 5초)
         if 'thread' in bot_state and bot_state['thread'] and bot_state['thread'].is_alive():
             bot_state['thread'].join(timeout=5)
@@ -1828,5 +1839,37 @@ if __name__ == "__main__":
     log("🚀 업비트 AI 트레이딩 봇 v8.0 ULTIMATE", "SUCCESS")
     log("💎 급등/급락 + AI학습 + 손실복구 = 완전체!", "INFO")
     log_separator()
+    
+    # 🔄 서버 시작 시 실행 중이던 봇 자동 복구
+    try:
+        running_bots = get_all_running_bots()
+        if running_bots:
+            log(f"🔄 {len(running_bots)}개의 봇 자동 복구 중...", "INFO")
+            for bot_data in running_bots:
+                user_id = bot_data['user_id']
+                
+                # 봇 상태 복원
+                bot_state = get_user_bot_state(user_id)
+                bot_state['running'] = True
+                bot_state['mode'] = bot_data['mode']
+                bot_state['simulation_start_seed'] = bot_data['seed_amount']
+                bot_state['simulation_krw'] = bot_data['simulation_krw']
+                bot_state['simulation_holdings'] = json.loads(bot_data['simulation_holdings'])
+                bot_state['recovery_mode_active'] = bool(bot_data['recovery_mode_active'])
+                
+                # 스레드 시작
+                thread = threading.Thread(target=bot_main_loop, args=(user_id, bot_state), daemon=True)
+                thread.start()
+                bot_state['thread'] = thread
+                
+                log(f"  ✅ [{user_id}] 봇 복구 완료 (모드: {bot_data['mode']}, 시드: {bot_data['seed_amount']:,}원)", "SUCCESS")
+            
+            log(f"🎉 모든 봇 복구 완료!", "SUCCESS")
+        else:
+            log("📭 복구할 봇 없음", "INFO")
+    except Exception as e:
+        log(f"❌ 봇 복구 실패: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
     
     app.run(host='0.0.0.0', port=5000, debug=False)
