@@ -283,20 +283,47 @@ def detect_surge_signal(ticker):
         return None
 
 def scan_all_markets_for_surge():
-    """전체 마켓 스캔 - 급등 코인 찾기"""
+    """전체 마켓 스캔 - 급등 코인 찾기 (최적화 버전)"""
     try:
         # 전체 KRW 마켓 조회
         tickers = pyupbit.get_tickers(fiat="KRW")
+        
+        # ⚡ 최적화: 인기 코인만 먼저 스캔 (상위 50개)
+        # 실제 급등은 주로 거래량 많은 코인에서 발생
+        popular_tickers = [
+            'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
+            'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
+            'KRW-ATOM', 'KRW-ETC', 'KRW-BCH', 'KRW-LTC', 'KRW-NEAR',
+            'KRW-HBAR', 'KRW-APT', 'KRW-ARB', 'KRW-OP', 'KRW-SUI',
+            'KRW-SEI', 'KRW-STRK', 'KRW-TIA', 'KRW-INJ', 'KRW-FET'
+        ]
+        
+        # 인기 코인 + 나머지 랜덤 25개
+        import random
+        other_tickers = [t for t in tickers if t not in popular_tickers]
+        scan_tickers = popular_tickers + random.sample(other_tickers, min(25, len(other_tickers)))
+        
         surge_candidates = []
         
-        log(f"🔍 전체 마켓 스캔 시작... ({len(tickers)}개 코인)", "INFO")
+        log(f"🔍 빠른 스캔 시작... ({len(scan_tickers)}개 코인)", "INFO")
         
-        for ticker in tickers:
+        # ⚡ 최적화: 한 번에 여러 코인 현재가 조회
+        try:
+            prices = pyupbit.get_current_price(scan_tickers)
+            if prices is None:
+                prices = {}
+        except:
+            prices = {}
+        
+        scanned = 0
+        for ticker in scan_tickers:
             try:
                 # 기본 필터링
-                current_price = pyupbit.get_current_price(ticker)
+                current_price = prices.get(ticker) if isinstance(prices, dict) else None
                 if current_price is None:
-                    continue
+                    current_price = pyupbit.get_current_price(ticker)
+                    if current_price is None:
+                        continue
                 
                 # 가격 범위 필터
                 if current_price < SURGE_CONFIG['min_price_krw'] or current_price > SURGE_CONFIG['max_price_krw']:
@@ -322,10 +349,16 @@ def scan_all_markets_for_surge():
                             
                             log(f"🚀 급등 감지! {ticker} | 가격: {current_price:,.0f}원 | 신호: {len(surge_signals)}개", "SURGE")
                 
-                time.sleep(0.1)  # API 호출 제한
+                scanned += 1
+                if scanned % 10 == 0:
+                    log(f"   진행: {scanned}/{len(scan_tickers)} 스캔 완료", "INFO")
+                
+                time.sleep(0.05)  # API 호출 제한 (0.1 → 0.05초로 단축)
                 
             except Exception as e:
                 continue
+        
+        log(f"✅ 스캔 완료: {scanned}개 코인 분석, {len(surge_candidates)}개 급등 발견", "SUCCESS")
         
         return surge_candidates
         
@@ -598,14 +631,14 @@ def bot_main_loop():
     
     bot_state['start_time'] = datetime.now()
     scan_counter = 0
-    last_scan_time = datetime.now()
+    last_scan_time = datetime.now() - timedelta(seconds=30)  # 즉시 첫 스캔 실행
     
     while bot_state['running']:
         try:
             current_time = datetime.now()
             
-            # 1. 전체 마켓 스캔 (30초마다)
-            if (current_time - last_scan_time).total_seconds() >= 30:
+            # 1. 전체 마켓 스캔 (15초마다 - 더 빠른 감지)
+            if (current_time - last_scan_time).total_seconds() >= 15:
                 log("🔍 전체 마켓 스캔 중...", "INFO")
                 surge_candidates = scan_all_markets_for_surge()
                 
