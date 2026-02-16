@@ -979,10 +979,11 @@ def index():
 @app.route('/api/status')
 def api_status():
     try:
-        # 세션 확인 (테스트 시 우회 가능)
+        # 세션 확인 또는 IP 기반 user_id 자동 생성
         if 'user_id' not in session:
-            # ✅ 테스트용: 기본 사용자 ID 사용
-            user_id = 'test_user'
+            user_id = f"guest_{request.remote_addr}"
+            session['user_id'] = user_id
+            session.permanent = True
         else:
             user_id = session['user_id']
         
@@ -1092,9 +1093,12 @@ def api_start():
         # ✅ 사용자별 독립 봇 상태 가져오기
         if 'user_id' not in session:
             user_id = f"guest_{request.remote_addr}"  # 게스트는 IP 기반
+            session['user_id'] = user_id  # 세션에 저장
+            session.permanent = True  # 세션 영구 저장
         else:
             user_id = session['user_id']
         
+        log(f"[START] user_id: {user_id}", "INFO")
         bot_state = get_user_bot_state(user_id)
         
         # ✅ 이 사용자의 봇이 실행 중인지 체크
@@ -1262,9 +1266,12 @@ def api_stop():
         # ✅ 사용자별 독립 봇 상태 가져오기
         if 'user_id' not in session:
             user_id = f"guest_{request.remote_addr}"
+            session['user_id'] = user_id
+            session.permanent = True
         else:
             user_id = session['user_id']
         
+        log(f"[STOP] user_id: {user_id}", "INFO")
         bot_state = get_user_bot_state(user_id)
         
         bot_state['running'] = False
