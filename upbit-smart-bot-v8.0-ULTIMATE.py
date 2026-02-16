@@ -36,6 +36,7 @@
 """
 
 import time
+import os
 import pyupbit
 import pandas as pd
 import numpy as np
@@ -784,11 +785,47 @@ def index():
 @app.route('/api/status')
 def api_status():
     try:
+        # 봇이 실행 중이 아니면 초기 상태 반환
+        if not bot_state['running']:
+            return jsonify({
+                'running': False,
+                'current_krw': bot_state.get('simulation_seed', 1000000),
+                'total_profit': 0,
+                'profit_rate': 0,
+                'win_rate': 0,
+                'recent_surges': [],
+                'recent_trades': []
+            })
+        
+        # 봇 실행 중일 때만 실제 계산
         current_krw = bot_state['simulation_krw'] + bot_state.get('recovery_seed', 0)
-        holdings_value = sum(h['amount'] * (pyupbit.get_current_price(ticker) or h['avg_price'])
-                            for ticker, h in bot_state['simulation_holdings'].items())
-        frozen_value = sum(h['amount'] * (pyupbit.get_current_price(ticker) or h['avg_price'])
-                          for ticker, h in bot_state['frozen_holdings'].items())
+        
+        # 보유 코인 가치 계산 (실제 가격 조회)
+        holdings_value = 0
+        if bot_state['simulation_holdings']:
+            for ticker, h in bot_state['simulation_holdings'].items():
+                try:
+                    current_price = pyupbit.get_current_price(ticker)
+                    if current_price:
+                        holdings_value += h['amount'] * current_price
+                    else:
+                        holdings_value += h['amount'] * h['avg_price']
+                except:
+                    holdings_value += h['amount'] * h['avg_price']
+        
+        # 동결 코인 가치 계산
+        frozen_value = 0
+        if bot_state['frozen_holdings']:
+            for ticker, h in bot_state['frozen_holdings'].items():
+                try:
+                    current_price = pyupbit.get_current_price(ticker)
+                    if current_price:
+                        frozen_value += h['amount'] * current_price
+                    else:
+                        frozen_value += h['amount'] * h['avg_price']
+                except:
+                    frozen_value += h['amount'] * h['avg_price']
+        
         total_value = current_krw + holdings_value + frozen_value
         
         total_trades = bot_state['statistics']['total_trades']
@@ -799,7 +836,7 @@ def api_status():
         profit_rate = (profit / bot_state['simulation_start_seed']) * 100 if bot_state['simulation_start_seed'] > 0 else 0
         
         return jsonify({
-            'running': bot_state['running'],
+            'running': True,
             'current_krw': current_krw,
             'total_profit': profit,
             'profit_rate': profit_rate,
@@ -808,6 +845,7 @@ def api_status():
             'recent_trades': []
         })
     except Exception as e:
+        log(f"API 상태 조회 오류: {e}", "ERROR")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/start', methods=['POST'])
