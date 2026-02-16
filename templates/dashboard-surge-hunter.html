@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚀 급등 포착 봇 v7.2 - SURGE HUNTER</title>
+  <title>🚀 급등/급락 포착 봇 v7.3 - SURGE & DIP HUNTER</title>
   <style>
     * {
       margin: 0;
@@ -41,6 +41,65 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: 900;
+    }
+
+    /* 로딩 스피너 */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status-indicator.running {
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      border: 1px solid #00d4ff;
+    }
+
+    .status-indicator.stopped {
+      background: rgba(255, 71, 87, 0.2);
+      color: #ff4757;
+      border: 1px solid #ff4757;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-indicator.running .status-dot {
+      background: #00d4ff;
+    }
+
+    .status-indicator.stopped .status-dot {
+      background: #ff4757;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
     }
 
     .header p {
@@ -332,11 +391,13 @@
   <div class="container">
     <!-- 헤더 -->
     <div class="header">
-      <h1>🚀 급등 포착 봇 v7.2 - SURGE HUNTER</h1>
-      <p>24시간 감시 → 급등 신호 포착 → 초고속 진입 → 자동 익절</p>
+      <h1>🚀 급등/급락 포착 봇 v7.3 - SURGE & DIP HUNTER</h1>
+      <p>24시간 감시 → 급등/급락 신호 포착 → 초고속 진입 → 자동 익절</p>
       <p style="margin-top: 10px;">
-        <span class="status-indicator" id="statusIndicator"></span>
-        <span id="statusText">대기 중...</span>
+        <span class="status-indicator stopped" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span id="statusText">대기 중...</span>
+        </span>
       </p>
     </div>
 
@@ -543,10 +604,10 @@
         
         if (data.running) {
           indicator.className = 'status-indicator running';
-          statusText.textContent = `실행 중 (${data.mode === 'practice' ? '연습' : '실전'} 모드)`;
+          statusText.innerHTML = `<span class="spinner"></span> 실행 중 (${data.mode === 'practice' ? '연습' : '실전'} 모드)`;
         } else {
           indicator.className = 'status-indicator stopped';
-          statusText.textContent = '대기 중...';
+          statusText.textContent = '⏸️ 대기 중...';
         }
         
         // 시뮬레이션 통계
