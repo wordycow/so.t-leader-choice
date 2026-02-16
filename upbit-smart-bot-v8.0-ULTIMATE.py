@@ -196,6 +196,7 @@ def create_bot_state():
         'recent_trades': deque(maxlen=50),
         'recent_signals': deque(maxlen=50),
         
+        'user_id': None,  # 사용자 ID 추가
         'last_update': None,
         'start_time': None,
     }
@@ -207,6 +208,7 @@ def get_user_bot_state(user_id):
     """사용자 ID로 봇 상태 조회 또는 생성"""
     if user_id not in user_bots:
         user_bots[user_id] = create_bot_state()
+        user_bots[user_id]['user_id'] = user_id  # user_id 설정
     return user_bots[user_id]
 
 # ═══════════════════════════════════════════════════════
@@ -224,6 +226,88 @@ def log(message, level="INFO"):
 
 def log_separator():
     print("\n" + "="*80 + "\n")
+
+# ═══════════════════════════════════════════════════════
+# 💾 거래 히스토리 DB 저장
+# ═══════════════════════════════════════════════════════
+def save_trade_to_db(user_id, trade_data):
+    """거래 내역을 DB에 영구 저장"""
+    try:
+        import sqlite3
+        import json
+        
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        # trades 테이블이 없으면 생성
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS trade_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                trade_type TEXT NOT NULL,
+                amount REAL,
+                price REAL,
+                invested REAL,
+                fee REAL,
+                net_invested REAL,
+                entry_price REAL,
+                sell_value REAL,
+                net_proceeds REAL,
+                profit REAL,
+                profit_rate REAL,
+                strategy TEXT,
+                reason TEXT,
+                mode TEXT,
+                patterns TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 인덱스 생성 (검색 속도 향상)
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_trade_user_time 
+            ON trade_history(user_id, timestamp DESC)
+        ''')
+        
+        # 데이터 삽입
+        cursor.execute('''
+            INSERT INTO trade_history (
+                user_id, ticker, trade_type, amount, price,
+                invested, fee, net_invested, entry_price, sell_value,
+                net_proceeds, profit, profit_rate, strategy, reason,
+                mode, patterns, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            user_id,
+            trade_data.get('ticker'),
+            trade_data.get('type'),
+            trade_data.get('amount'),
+            trade_data.get('price'),
+            trade_data.get('invested', 0),
+            trade_data.get('fee', 0),
+            trade_data.get('net_invested', 0),
+            trade_data.get('entry_price', 0),
+            trade_data.get('sell_value', 0),
+            trade_data.get('net_proceeds', 0),
+            trade_data.get('profit', 0),
+            trade_data.get('profit_rate', 0),
+            trade_data.get('strategy', ''),
+            trade_data.get('reason', ''),
+            trade_data.get('mode', 'practice'),
+            json.dumps(trade_data.get('patterns', []), ensure_ascii=False),
+            trade_data.get('timestamp')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        log(f"[DB] 거래 저장: {user_id} | {trade_data.get('type')} | {trade_data.get('ticker')}", "INFO")
+        return True
+    except Exception as e:
+        log(f"거래 DB 저장 오류: {e}", "ERROR")
+        return False
 
 # ═══════════════════════════════════════════════════════
 # 📊 기술적 지표 계산
@@ -825,6 +909,10 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
             'mode': bot_state.get('mode', 'practice')
         })
         
+        # DB에 영구 저장
+        user_id = bot_state.get('user_id', 'unknown')
+        save_trade_to_db(user_id, bot_state['recent_trades'][-1])
+        
         return True
     except Exception as e:
         log(f"거래 오류: {e}", "ERROR")
@@ -968,6 +1056,10 @@ def execute_exit(ticker, holding, reason, bot_state):
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'mode': bot_state.get('mode', 'practice')
             })
+            
+            # DB에 영구 저장
+            user_id = bot_state.get('user_id', 'unknown')
+            save_trade_to_db(user_id, bot_state['recent_trades'][-1])
         
         del bot_state['simulation_holdings'][ticker]
         
@@ -1161,22 +1253,29 @@ def history_page():
 
 @app.route('/api/history')
 def api_history():
-    """거래 히스토리 API (연습/실전 모드 분리)"""
+    """거래 히스토리 API (DB에서 영구 저장된 데이터 조회)"""
     try:
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
         user_id = session['user_id']
-        bot_state = get_user_bot_state(user_id)
-        
-        # 모드 파라미터 가져오기 (기본값: practice)
         mode = request.args.get('mode', 'practice')
         
-        # 모든 거래 내역 가져오기
-        all_trades = bot_state.get('recent_trades', [])
+        # DB에서 거래 내역 조회
+        import sqlite3
+        conn = sqlite3.connect('upbit_bot.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
         
-        # 모드별 필터링
-        filtered_trades = [t for t in all_trades if t.get('mode', 'practice') == mode]
+        cursor.execute('''
+            SELECT * FROM trade_history
+            WHERE user_id = ? AND mode = ?
+            ORDER BY timestamp DESC
+            LIMIT 1000
+        ''', (user_id, mode))
+        
+        db_trades = cursor.fetchall()
+        conn.close()
         
         # 통계 계산
         total_trades = 0
@@ -1184,10 +1283,10 @@ def api_history():
         losing_trades = 0
         total_profit_rate = 0
         
-        for trade in filtered_trades:
-            if trade['type'] == 'SELL':
+        for trade in db_trades:
+            if trade['trade_type'] == 'SELL':
                 total_trades += 1
-                profit_rate = trade.get('profit_rate', 0)
+                profit_rate = trade['profit_rate'] or 0
                 total_profit_rate += profit_rate
                 
                 if profit_rate >= 0:
@@ -1198,30 +1297,30 @@ def api_history():
         win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
         avg_profit = (total_profit_rate / total_trades) if total_trades > 0 else 0
         
-        # 거래 내역 변환 (최신순)
+        # 거래 내역 변환
         trades_list = []
-        for trade in reversed(filtered_trades):  # 최신 거래가 먼저 오도록
+        for trade in db_trades:
             trade_data = {
                 'ticker': trade['ticker'],
-                'type': trade['type'],
+                'type': trade['trade_type'],
                 'amount': trade['amount'],
                 'price': trade['price'],
-                'fee': trade.get('fee', 0),
-                'timestamp': trade.get('timestamp', ''),
-                'reason': trade.get('reason', ''),
-                'strategy': trade.get('strategy', '전략 미상'),
-                'mode': trade.get('mode', 'practice')
+                'fee': trade['fee'] or 0,
+                'timestamp': trade['timestamp'],
+                'reason': trade['reason'] or '',
+                'strategy': trade['strategy'] or '전략 미상',
+                'mode': trade['mode']
             }
             
-            if trade['type'] == 'BUY':
-                trade_data['invested'] = trade.get('invested', 0)
-                trade_data['net_invested'] = trade.get('net_invested', 0)
+            if trade['trade_type'] == 'BUY':
+                trade_data['invested'] = trade['invested'] or 0
+                trade_data['net_invested'] = trade['net_invested'] or 0
             else:  # SELL
-                trade_data['entry_price'] = trade.get('entry_price', 0)
-                trade_data['sell_value'] = trade.get('sell_value', 0)
-                trade_data['net_proceeds'] = trade.get('net_proceeds', 0)
-                trade_data['profit'] = trade.get('profit', 0)
-                trade_data['profit_rate'] = trade.get('profit_rate', 0)
+                trade_data['entry_price'] = trade['entry_price'] or 0
+                trade_data['sell_value'] = trade['sell_value'] or 0
+                trade_data['net_proceeds'] = trade['net_proceeds'] or 0
+                trade_data['profit'] = trade['profit'] or 0
+                trade_data['profit_rate'] = trade['profit_rate'] or 0
             
             trades_list.append(trade_data)
         
