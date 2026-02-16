@@ -272,8 +272,12 @@
       </div>
     </div>
 
-    <!-- 필터 -->
+    <!-- 모드 선택 + 필터 -->
     <div class="filters">
+      <div class="filter-group" style="margin-bottom: 12px;">
+        <button class="filter-btn active" data-mode="practice" style="background: rgba(59, 130, 246, 0.1); border-color: var(--upbit-blue);">📚 연습 모드</button>
+        <button class="filter-btn" data-mode="live" style="background: rgba(242, 54, 69, 0.1); border-color: var(--upbit-red);">🔥 실전 모드</button>
+      </div>
       <div class="filter-group">
         <button class="filter-btn active" data-filter="all">전체</button>
         <button class="filter-btn" data-filter="buy">매수만</button>
@@ -296,11 +300,12 @@
   <script>
     let allTrades = [];
     let currentFilter = 'all';
+    let currentMode = 'practice';
 
     // 거래 히스토리 로드
     async function loadHistory() {
       try {
-        const response = await fetch('/api/history');
+        const response = await fetch(`/api/history?mode=${currentMode}`);
         const data = await response.json();
         
         if (data.success) {
@@ -420,10 +425,19 @@
       }).join('');
     }
 
-    // 필터 버튼
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    // 모드 + 필터 버튼
+    document.querySelectorAll('.filter-btn[data-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn[data-mode]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        loadHistory(); // 모드 변경 시 다시 로드
+      });
+    });
+    
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
         renderTrades();

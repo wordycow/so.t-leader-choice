@@ -821,7 +821,8 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
             'strategy': STRATEGIES[strategy_id]['name'],
             'reason': buy_reason,
             'patterns': pattern_details,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'mode': bot_state.get('mode', 'practice')
         })
         
         return True
@@ -964,7 +965,8 @@ def execute_exit(ticker, holding, reason, bot_state):
                 'profit_rate': profit_rate,
                 'reason': sell_reason,
                 'hold_time': hold_time,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'mode': bot_state.get('mode', 'practice')
             })
         
         del bot_state['simulation_holdings'][ticker]
@@ -1159,7 +1161,7 @@ def history_page():
 
 @app.route('/api/history')
 def api_history():
-    """거래 히스토리 API"""
+    """거래 히스토리 API (연습/실전 모드 분리)"""
     try:
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
@@ -1167,8 +1169,14 @@ def api_history():
         user_id = session['user_id']
         bot_state = get_user_bot_state(user_id)
         
+        # 모드 파라미터 가져오기 (기본값: practice)
+        mode = request.args.get('mode', 'practice')
+        
         # 모든 거래 내역 가져오기
         all_trades = bot_state.get('recent_trades', [])
+        
+        # 모드별 필터링
+        filtered_trades = [t for t in all_trades if t.get('mode', 'practice') == mode]
         
         # 통계 계산
         total_trades = 0
@@ -1176,7 +1184,7 @@ def api_history():
         losing_trades = 0
         total_profit_rate = 0
         
-        for trade in all_trades:
+        for trade in filtered_trades:
             if trade['type'] == 'SELL':
                 total_trades += 1
                 profit_rate = trade.get('profit_rate', 0)
@@ -1192,7 +1200,7 @@ def api_history():
         
         # 거래 내역 변환 (최신순)
         trades_list = []
-        for trade in reversed(all_trades):  # 최신 거래가 먼저 오도록
+        for trade in reversed(filtered_trades):  # 최신 거래가 먼저 오도록
             trade_data = {
                 'ticker': trade['ticker'],
                 'type': trade['type'],
@@ -1201,7 +1209,8 @@ def api_history():
                 'fee': trade.get('fee', 0),
                 'timestamp': trade.get('timestamp', ''),
                 'reason': trade.get('reason', ''),
-                'strategy': trade.get('strategy', '전략 미상')
+                'strategy': trade.get('strategy', '전략 미상'),
+                'mode': trade.get('mode', 'practice')
             }
             
             if trade['type'] == 'BUY':
@@ -1225,7 +1234,8 @@ def api_history():
                 'losing': losing_trades,
                 'win_rate': win_rate,
                 'avg_profit': avg_profit
-            }
+            },
+            'mode': mode
         })
     except Exception as e:
         log(f"히스토리 API 오류: {e}", "ERROR")
@@ -1889,31 +1899,50 @@ def api_admin_users():
             
             processed_users.add(user_id)
             
-            # 봇 상태 확인 (있으면 가져오기)
-            bot_state = user_bots.get(user_id, None)
-            
-            if bot_state:
-                # 봇이 실행 중인 경우
-                current_krw = bot_state.get('simulation_krw', 0)
-                holdings_value = 0
-                for ticker, holding in bot_state.get('simulation_holdings', {}).items():
-                    try:
-                        current_price = pyupbit.get_current_price(ticker)
-                        if current_price:
-                            holdings_value += holding['amount'] * current_price
-                        else:
-                            holdings_value += holding['amount'] * holding['avg_price']
-                    except:
-                        holdings_value += holding['amount'] * holding.get('avg_price', 0)
+            # DB에서 봇 상태 가져오기 (정확한 seed_amount 사용)
+            try:
+                conn2 = sqlite3.connect('upbit_bot.db')
+                cursor2 = conn2.cursor()
+                cursor2.execute('''
+                    SELECT running, seed_amount, simulation_krw, simulation_holdings
+                    FROM bot_states 
+                    WHERE user_id = ?
+                ''', (user_id,))
+                bot_row = cursor2.fetchone()
+                conn2.close()
                 
-                total_value = current_krw + holdings_value
-                seed = bot_state.get('simulation_start_seed', 1000000)
-                profit = total_value - seed
-                profit_rate = (profit / seed * 100) if seed > 0 else 0
-                bot_running = bot_state.get('running', False)
-            else:
-                # 봇이 없는 경우 (가입만 한 사용자)
+                if bot_row:
+                    bot_running, seed, current_krw, holdings_json = bot_row
+                    
+                    # 보유 코인 가치 계산
+                    holdings_value = 0
+                    if holdings_json:
+                        import json
+                        holdings = json.loads(holdings_json)
+                        for ticker, holding in holdings.items():
+                            try:
+                                current_price = pyupbit.get_current_price(ticker)
+                                if current_price:
+                                    holdings_value += holding['amount'] * current_price
+                                else:
+                                    holdings_value += holding['amount'] * holding.get('avg_price', 0)
+                            except:
+                                holdings_value += holding['amount'] * holding.get('avg_price', 0)
+                    
+                    total_value = current_krw + holdings_value
+                    profit = total_value - seed
+                    profit_rate = (profit / seed * 100) if seed > 0 else 0
+                else:
+                    # 봇 상태가 없는 경우
+                    seed = 0
+                    current_krw = 0
+                    total_value = 0
+                    profit_rate = 0
+                    bot_running = False
+            except Exception as e:
+                # DB 오류 시 기본값
                 seed = 0
+                current_krw = 0
                 total_value = 0
                 profit_rate = 0
                 bot_running = False
