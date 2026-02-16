@@ -1,4 +1,5 @@
-// 🚀 실전 트레이더 대시보드 - API 연동 & AI 추천
+// 🚀 실전 트레이더 대시보드 - API 연동 & AI 추천 v7.0
+// ✨ NEW: 트렌드 주도 국가 분석 + 고래 움직임 한줄 알림
 
 // ============================================
 // 1. API 엔드포인트
@@ -9,10 +10,6 @@ const API = {
   
   // CoinGecko API (시장 데이터)
   COINGECKO_GLOBAL: 'https://api.coingecko.com/api/v3/global',
-  
-  // Coinglass API (롱/숏, 청산 데이터)
-  COINGLASS_LONG_SHORT: 'https://open-api.coinglass.com/public/v2/indicator/long_short_accounts_ratio',
-  COINGLASS_LIQUIDATION: 'https://open-api.coinglass.com/public/v2/indicator/liquidation_history',
   
   // Upbit API (한국 데이터)
   UPBIT_TICKER: 'https://api.upbit.com/v1/ticker'
@@ -76,7 +73,6 @@ async function fetchMarketDominance() {
 // ============================================
 async function fetchLongShortData() {
   // Coinglass API는 유료이므로 샘플 데이터 사용
-  // 실제 프로덕션에서는 API 키 필요
   return {
     longRatio: 58,
     shortRatio: 42,
@@ -89,7 +85,6 @@ async function fetchLongShortData() {
 // 5. 청산 데이터 (샘플 데이터)
 // ============================================
 async function fetchLiquidationData() {
-  // Coinglass API 유료
   return {
     longLiquidation: 245.6,
     shortLiquidation: 178.3,
@@ -253,7 +248,7 @@ function showAIRecommendations(recommendations) {
   const container = document.querySelector('.container');
   
   let aiCardHTML = `
-    <div class="card" style="border: 2px solid #8b5cf6; margin-top: 24px;">
+    <div class="card" style="border: 2px solid #8b5cf6; margin-top: 24px;" data-card="ai-recommendations">
       <div class="card-header">
         <h2 class="card-title">
           🤖 AI 트레이딩 추천
@@ -342,58 +337,14 @@ function showAIRecommendations(recommendations) {
   `;
   
   // 기존 AI 카드 제거 후 추가
-  const existingAI = container.querySelector('.card[style*="border: 2px solid #8b5cf6"]');
+  const existingAI = container.querySelector('[data-card="ai-recommendations"]');
   if (existingAI) existingAI.remove();
   
   container.insertAdjacentHTML('beforeend', aiCardHTML);
 }
 
 // ============================================
-// 10. 메인 데이터 로드 함수
-// ============================================
-async function loadAllData() {
-  console.log('🔄 데이터 로딩 시작...');
-  
-  try {
-    // 모든 데이터 병렬 로드
-    const [movers, dominance, premium] = await Promise.all([
-      fetchTopMovers(),
-      fetchMarketDominance(),
-      fetchKimchiPremium()
-    ]);
-    
-    // UI 업데이트
-    if (movers) updateTopMovers(movers);
-    if (dominance) updateDominance(dominance);
-    if (premium) updateKimchiPremium(premium);
-    
-    // AI 추천 생성
-    const recommendations = await generateAIRecommendations(movers, dominance);
-    showAIRecommendations(recommendations);
-    
-    console.log('✅ 데이터 로딩 완료!');
-  } catch (error) {
-    console.error('❌ 데이터 로딩 실패:', error);
-  }
-}
-
-// ============================================
-// 11. 초기화 및 자동 새로고침
-// ============================================
-function refreshData() {
-  loadAllData();
-}
-
-// 페이지 로드 시 데이터 로드
-document.addEventListener('DOMContentLoaded', () => {
-  loadAllData();
-  
-  // 30초마다 자동 새로고침
-  setInterval(loadAllData, 30000);
-});
-
-// ============================================
-// 12. 업비트/빗썸 개별 AI 추천
+// 10. 업비트/빗썸 개별 AI 추천
 // ============================================
 async function fetchKoreanExchangeRecommendations() {
   try {
@@ -440,8 +391,12 @@ async function fetchKoreanExchangeRecommendations() {
 function showKoreanExchangeRecommendations(recommendations) {
   const container = document.querySelector('.container');
   
+  // 기존 한국 거래소 카드 제거
+  const existingKorea = container.querySelector('[data-card="korean-exchanges"]');
+  if (existingKorea) existingKorea.remove();
+  
   const html = `
-    <div class="card" style="margin-top: 24px;">
+    <div class="card" style="margin-top: 24px;" data-card="korean-exchanges">
       <div class="card-header">
         <h2 class="card-title">
           🇰🇷 한국 거래소 AI 추천
@@ -533,67 +488,7 @@ function showKoreanExchangeRecommendations(recommendations) {
 }
 
 // ============================================
-// 13. 메인 데이터 로드 함수 업데이트
-// ============================================
-async function loadAllDataEnhanced() {
-  console.log('🔄 전체 데이터 로딩 시작...');
-  
-  try {
-    // 모든 데이터 병렬 로드
-    const [movers, dominance, premium, longShort, liquidation, exchanges, koreanRecommendations] = await Promise.all([
-      fetchTopMovers(),
-      fetchMarketDominance(),
-      fetchKimchiPremium(),
-      fetchLongShortData(),
-      fetchLiquidationData(),
-      fetchExchangeDominance(),
-      fetchKoreanExchangeRecommendations()
-    ]);
-    
-    // UI 업데이트
-    if (movers) updateTopMovers(movers);
-    if (dominance) updateDominance(dominance);
-    if (premium) updateKimchiPremium(premium);
-    
-    // 롱/숏 포지션 업데이트
-    if (longShort) {
-      document.querySelector('.position-long').style.width = `${longShort.longRatio}%`;
-      document.querySelector('.position-long').textContent = `롱 ${longShort.longRatio}%`;
-      document.querySelector('.position-short').style.width = `${longShort.shortRatio}%`;
-      document.querySelector('.position-short').textContent = `숏 ${longShort.shortRatio}%`;
-      document.querySelectorAll('.position-detail-value')[0].textContent = `$${longShort.longAmount.toFixed(1)}B`;
-      document.querySelectorAll('.position-detail-value')[1].textContent = `$${longShort.shortAmount.toFixed(1)}B`;
-    }
-    
-    // 청산 데이터 업데이트
-    if (liquidation) {
-      document.querySelectorAll('.liquidation-value')[0].textContent = `$${liquidation.longLiquidation.toFixed(1)}M`;
-      document.querySelectorAll('.liquidation-value')[1].textContent = `$${liquidation.shortLiquidation.toFixed(1)}M`;
-      document.querySelectorAll('.liquidation-value')[2].textContent = `$${liquidation.totalLiquidation.toFixed(1)}M`;
-    }
-    
-    // AI 추천 생성 (글로벌)
-    const recommendations = await generateAIRecommendations(movers, dominance);
-    showAIRecommendations(recommendations);
-    
-    // 한국 거래소 AI 추천
-    if (koreanRecommendations) {
-      showKoreanExchangeRecommendations(koreanRecommendations);
-    }
-    
-    console.log('✅ 전체 데이터 로딩 완료!');
-  } catch (error) {
-    console.error('❌ 데이터 로딩 실패:', error);
-  }
-}
-
-// 기존 loadAllData를 enhanced 버전으로 교체
-async function loadAllData() {
-  await loadAllDataEnhanced();
-}
-
-// ============================================
-// 14. 트렌드 주도 국가 분석 (실제 API 연동)
+// 11. 트렌드 주도 국가 분석 (실제 API 연동)
 // ============================================
 async function analyzeTrendLeaders(movers) {
   if (!movers || !movers.topGainers.length) return null;
@@ -606,7 +501,6 @@ async function analyzeTrendLeaders(movers) {
       const binanceVolume = coin.volume;
       
       // 코인베이스 거래량 (샘플 - API 제한)
-      // 실제로는 Coinbase Pro API 필요
       const coinbaseVolume = binanceVolume * (0.3 + Math.random() * 0.4);
       
       // 업비트 거래량 (실제 API)
@@ -727,57 +621,92 @@ function showTrendLeaders(leaders) {
 }
 
 // ============================================
-// 15. 고래 움직임 모니터링 (Whale Alert)
+// 12. 고래 움직임 모니터링 (한줄 이미지 알림 스타일)
 // ============================================
 async function fetchWhaleMovements() {
   // Whale Alert API (실제로는 API 키 필요)
-  // 여기서는 샘플 데이터 생성
-  const movements = [
-    {
-      coin: 'BTC',
-      amount: 1250,
-      usdValue: 125000000,
-      from: 'Unknown Wallet',
-      to: 'Binance',
-      type: 'exchange_in', // 거래소 입금 (매도 가능성)
-      timestamp: Date.now() - 300000
-    },
-    {
-      coin: 'ETH',
-      amount: 45000,
-      usdValue: 150000000,
-      from: 'Kraken',
-      to: 'Unknown Wallet',
-      type: 'exchange_out', // 거래소 출금 (축적)
-      timestamp: Date.now() - 600000
-    },
-    {
-      coin: 'USDT',
-      amount: 500000000,
-      usdValue: 500000000,
-      from: 'Binance',
-      to: 'Upbit',
-      type: 'exchange_transfer', // 거래소 간 이동
-      timestamp: Date.now() - 900000
-    },
-    {
-      coin: 'XRP',
-      amount: 80000000,
-      usdValue: 48000000,
-      from: 'Unknown Wallet',
-      to: 'Coinbase',
-      type: 'exchange_in',
-      timestamp: Date.now() - 1200000
-    }
-  ];
+  // API: https://api.whale-alert.io/v1/transactions
   
-  return movements;
+  try {
+    // 샘플 데이터 생성
+    const movements = [
+      {
+        coin: 'BTC',
+        amount: 1250,
+        usdValue: 125000000,
+        from: '불명 지갑',
+        to: 'Binance',
+        fromType: 'unknown',
+        toType: 'exchange',
+        type: 'exchange_in', // 거래소 입금 (매도 가능성 ⚠️)
+        timestamp: Date.now() - 300000,
+        txHash: '0x1234...5678'
+      },
+      {
+        coin: 'ETH',
+        amount: 45000,
+        usdValue: 150000000,
+        from: 'Kraken',
+        to: '불명 지갑',
+        fromType: 'exchange',
+        toType: 'unknown',
+        type: 'exchange_out', // 거래소 출금 (장기 보유 ✅)
+        timestamp: Date.now() - 600000,
+        txHash: '0xabcd...ef01'
+      },
+      {
+        coin: 'USDT',
+        amount: 500000000,
+        usdValue: 500000000,
+        from: 'Binance',
+        to: 'Upbit',
+        fromType: 'exchange',
+        toType: 'exchange',
+        type: 'exchange_transfer', // 거래소 간 이동 (김프 거래 🔄)
+        timestamp: Date.now() - 900000,
+        txHash: '0x2345...6789'
+      },
+      {
+        coin: 'XRP',
+        amount: 80000000,
+        usdValue: 48000000,
+        from: '불명 지갑',
+        to: 'Coinbase',
+        fromType: 'unknown',
+        toType: 'exchange',
+        type: 'exchange_in', // 거래소 입금 (매도 가능성 ⚠️)
+        timestamp: Date.now() - 1200000,
+        txHash: '0x3456...7890'
+      },
+      {
+        coin: 'SOL',
+        amount: 2500000,
+        usdValue: 312500000,
+        from: 'FTX (Cold)',
+        to: '불명 지갑',
+        fromType: 'exchange',
+        toType: 'unknown',
+        type: 'exchange_out', // 대규모 출금 (✅)
+        timestamp: Date.now() - 1800000,
+        txHash: '0x4567...8901'
+      }
+    ];
+    
+    return movements;
+  } catch (error) {
+    console.error('고래 데이터 로드 실패:', error);
+    return [];
+  }
 }
 
 function showWhaleMovements(movements) {
   if (!movements || !movements.length) return;
   
   const container = document.querySelector('.container');
+  
+  // 기존 고래 카드 제거
+  const existingWhaleCard = container.querySelector('[data-card="whale-movements"]');
+  if (existingWhaleCard) existingWhaleCard.remove();
   
   const getTypeIcon = (type) => {
     switch(type) {
@@ -791,55 +720,104 @@ function showWhaleMovements(movements) {
   const getTypeText = (type) => {
     switch(type) {
       case 'exchange_in': return '매도 가능성';
-      case 'exchange_out': return '축적 신호';
+      case 'exchange_out': return '장기 보유';
       case 'exchange_transfer': return '거래소 이동';
       default: return '대규모 이동';
     }
   };
   
+  const getTypeColor = (type) => {
+    switch(type) {
+      case 'exchange_in': return 'var(--red)';
+      case 'exchange_out': return 'var(--green)';
+      case 'exchange_transfer': return 'var(--blue)';
+      default: return 'var(--yellow)';
+    }
+  };
+  
   const getTimeAgo = (timestamp) => {
     const minutes = Math.floor((Date.now() - timestamp) / 60000);
+    if (minutes < 1) return '방금 전';
     if (minutes < 60) return `${minutes}분 전`;
-    return `${Math.floor(minutes / 60)}시간 전`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    return `${Math.floor(hours / 24)}일 전`;
   };
   
   const html = `
-    <div class="card" style="margin-top: 24px; border: 2px solid #f59e0b;">
+    <div class="card" style="margin-top: 24px; border: 2px solid #f59e0b;" data-card="whale-movements">
       <div class="card-header">
         <h2 class="card-title">
-          🐋 고래 움직임 (Whale Alert)
+          🐋 고래 움직임 알림
         </h2>
         <span class="card-badge" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b;">
           실시간 모니터링
         </span>
       </div>
       
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        ${movements.map(move => `
-          <div style="padding: 16px; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 32px; flex-shrink: 0;">
+      <!-- 한줄 이미지 스타일 알림 -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        ${movements.map((move, index) => `
+          <div style="
+            display: flex; 
+            align-items: center; 
+            padding: 12px 16px; 
+            background: linear-gradient(90deg, 
+              rgba(245, 158, 11, 0.08) 0%, 
+              rgba(245, 158, 11, 0.02) 100%
+            );
+            border-left: 4px solid ${getTypeColor(move.type)};
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+          " onmouseover="this.style.background='rgba(245, 158, 11, 0.12)'; this.style.transform='translateX(4px)';" onmouseout="this.style.background='linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%)'; this.style.transform='translateX(0)';">
+            
+            <!-- 아이콘 -->
+            <div style="font-size: 24px; flex-shrink: 0; width: 36px; text-align: center;">
               ${getTypeIcon(move.type)}
             </div>
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                <div style="font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--yellow);">
-                  ${move.coin} ${move.amount.toLocaleString()}
-                </div>
-                <div style="padding: 4px 10px; background: rgba(245, 158, 11, 0.2); border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--yellow);">
-                  $${(move.usdValue / 1000000).toFixed(1)}M
-                </div>
+            
+            <!-- 코인 & 금액 -->
+            <div style="flex: 0 0 180px; margin-left: 12px;">
+              <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 16px; color: var(--yellow);">
+                ${move.coin} ${move.amount.toLocaleString()}
               </div>
-              <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary);">
-                <span style="font-weight: 600;">${move.from}</span>
-                <span>→</span>
-                <span style="font-weight: 600;">${move.to}</span>
+              <div style="font-size: 12px; color: var(--text-secondary);">
+                $${(move.usdValue / 1000000).toFixed(1)}M
               </div>
             </div>
-            <div style="text-align: right; flex-shrink: 0;">
-              <div style="font-size: 14px; font-weight: 700; color: ${move.type === 'exchange_in' ? 'var(--red)' : move.type === 'exchange_out' ? 'var(--green)' : 'var(--blue)'};">
+            
+            <!-- 이동 경로 -->
+            <div style="flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; margin-left: 16px;">
+              <div style="
+                font-size: 13px; 
+                font-weight: 600; 
+                color: ${move.fromType === 'exchange' ? 'var(--blue)' : 'var(--text-secondary)'};
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              ">
+                ${move.from}
+              </div>
+              <div style="color: var(--text-secondary); flex-shrink: 0;">→</div>
+              <div style="
+                font-size: 13px; 
+                font-weight: 600; 
+                color: ${move.toType === 'exchange' ? 'var(--blue)' : 'var(--text-secondary)'};
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              ">
+                ${move.to}
+              </div>
+            </div>
+            
+            <!-- 상태 & 시간 -->
+            <div style="flex: 0 0 130px; text-align: right; margin-left: 16px;">
+              <div style="font-size: 13px; font-weight: 700; color: ${getTypeColor(move.type)};">
                 ${getTypeText(move.type)}
               </div>
-              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
                 ${getTimeAgo(move.timestamp)}
               </div>
             </div>
@@ -847,9 +825,13 @@ function showWhaleMovements(movements) {
         `).join('')}
       </div>
       
-      <div style="margin-top: 16px; padding: 12px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; text-align: center;">
-        <div style="font-size: 12px; color: var(--text-secondary);">
-          💡 <strong>Tip:</strong> 지갑→거래소 = 매도 가능성 | 거래소→지갑 = 장기 보유
+      <!-- 설명 -->
+      <div style="margin-top: 16px; padding: 14px; background: rgba(245, 158, 11, 0.08); border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
+        <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+          <strong style="color: var(--yellow);">💡 해석 가이드:</strong><br>
+          <span style="color: var(--red);">⚠️ 지갑→거래소</span> = 매도 가능성 (가격 하락 주의) |
+          <span style="color: var(--green);">✅ 거래소→지갑</span> = 장기 보유 신호 (강세) |
+          <span style="color: var(--blue);">🔄 거래소↔거래소</span> = 차익거래 (김프/역프)
         </div>
       </div>
     </div>
@@ -859,10 +841,10 @@ function showWhaleMovements(movements) {
 }
 
 // ============================================
-// 16. 메인 데이터 로드 함수 최종 업데이트
+// 13. 메인 데이터 로드 함수 (최종 통합 v7.0)
 // ============================================
-async function loadAllDataEnhancedFinal() {
-  console.log('🔄 전체 데이터 로딩 시작 (Enhanced Final)...');
+async function loadAllData() {
+  console.log('🔄 전체 데이터 로딩 시작 v7.0...');
   
   try {
     // 모든 데이터 병렬 로드
@@ -877,12 +859,12 @@ async function loadAllDataEnhancedFinal() {
       fetchWhaleMovements()
     ]);
     
-    // UI 업데이트
+    // 1. 기본 UI 업데이트
     if (movers) updateTopMovers(movers);
     if (dominance) updateDominance(dominance);
     if (premium) updateKimchiPremium(premium);
     
-    // 롱/숏 포지션 업데이트
+    // 2. 롱/숏 포지션 업데이트
     if (longShort) {
       document.querySelector('.position-long').style.width = `${longShort.longRatio}%`;
       document.querySelector('.position-long').textContent = `롱 ${longShort.longRatio}%`;
@@ -892,40 +874,46 @@ async function loadAllDataEnhancedFinal() {
       document.querySelectorAll('.position-detail-value')[1].textContent = `$${longShort.shortAmount.toFixed(1)}B`;
     }
     
-    // 청산 데이터 업데이트
+    // 3. 청산 데이터 업데이트
     if (liquidation) {
       document.querySelectorAll('.liquidation-value')[0].textContent = `$${liquidation.longLiquidation.toFixed(1)}M`;
       document.querySelectorAll('.liquidation-value')[1].textContent = `$${liquidation.shortLiquidation.toFixed(1)}M`;
       document.querySelectorAll('.liquidation-value')[2].textContent = `$${liquidation.totalLiquidation.toFixed(1)}M`;
     }
     
-    // AI 추천 생성 (글로벌)
+    // 4. AI 추천 생성 (글로벌)
     const recommendations = await generateAIRecommendations(movers, dominance);
     showAIRecommendations(recommendations);
     
-    // 트렌드 주도 국가 분석
+    // 5. 트렌드 주도 국가 분석 (NEW v7.0)
     const trendLeaders = await analyzeTrendLeaders(movers);
     if (trendLeaders) showTrendLeaders(trendLeaders);
     
-    // 고래 움직임
+    // 6. 고래 움직임 (NEW v7.0 - 한줄 스타일)
     if (whaleMovements) showWhaleMovements(whaleMovements);
     
-    // 한국 거래소 AI 추천 (맨 마지막)
+    // 7. 한국 거래소 AI 추천 (맨 마지막)
     if (koreanRecommendations) {
       showKoreanExchangeRecommendations(koreanRecommendations);
     }
     
-    console.log('✅ 전체 데이터 로딩 완료 (Enhanced Final)!');
+    console.log('✅ 전체 데이터 로딩 완료 v7.0!');
   } catch (error) {
     console.error('❌ 데이터 로딩 실패:', error);
   }
 }
 
-// loadAllData를 최종 버전으로 교체
-async function loadAllData() {
-  await loadAllDataEnhancedFinal();
+// ============================================
+// 14. 초기화 및 자동 새로고침
+// ============================================
+function refreshData() {
+  loadAllData();
 }
 
-async function loadAllDataEnhanced() {
-  await loadAllDataEnhancedFinal();
-}
+// 페이지 로드 시 데이터 로드
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllData();
+  
+  // 30초마다 자동 새로고침
+  setInterval(loadAllData, 30000);
+});
