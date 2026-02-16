@@ -145,6 +145,18 @@ STRATEGIES = {
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'gap_down_reversal': {
+        'name': 'BNF 급락 반등',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'squeeze_momentum': {
+        'name': '압축 모멘텀',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     }
 }
 
@@ -335,6 +347,68 @@ def calculate_volume_spike(df):
     except:
         return 1.0
 
+def calculate_ema(df, period=25):
+    """EMA 계산"""
+    try:
+        return df['close'].ewm(span=period, adjust=False).mean().iloc[-1]
+    except:
+        return df['close'].iloc[-1]
+
+def calculate_macd(df):
+    """MACD 계산 (12, 26, 9)"""
+    try:
+        exp1 = df['close'].ewm(span=12, adjust=False).mean()
+        exp2 = df['close'].ewm(span=26, adjust=False).mean()
+        macd_line = exp1 - exp2
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        histogram = macd_line - signal_line
+        
+        return {
+            'macd': macd_line.iloc[-1],
+            'signal': signal_line.iloc[-1],
+            'histogram': histogram.iloc[-1],
+            'prev_histogram': histogram.iloc[-2] if len(histogram) > 1 else 0
+        }
+    except:
+        return {'macd': 0, 'signal': 0, 'histogram': 0, 'prev_histogram': 0}
+
+def calculate_bollinger_keltner(df, bb_period=20, kc_period=20):
+    """Bollinger Bands와 Keltner Channels 계산 (Squeeze Momentum용)"""
+    try:
+        # Bollinger Bands
+        sma = df['close'].rolling(window=bb_period).mean()
+        std = df['close'].rolling(window=bb_period).std()
+        bb_upper = sma + (std * 2)
+        bb_lower = sma - (std * 2)
+        
+        # Keltner Channels (ATR 기반)
+        high_low = df['high'] - df['low']
+        high_close = abs(df['high'] - df['close'].shift())
+        low_close = abs(df['low'] - df['close'].shift())
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr = tr.rolling(window=kc_period).mean()
+        
+        kc_middle = df['close'].rolling(window=kc_period).mean()
+        kc_upper = kc_middle + (atr * 1.5)
+        kc_lower = kc_middle - (atr * 1.5)
+        
+        # Squeeze 감지 (BB가 KC 안에 있을 때)
+        squeeze_on = (bb_lower.iloc[-1] > kc_lower.iloc[-1]) and (bb_upper.iloc[-1] < kc_upper.iloc[-1])
+        
+        # Momentum 계산
+        highest = df['high'].rolling(window=kc_period).max()
+        lowest = df['low'].rolling(window=kc_period).min()
+        avg_hl = (highest + lowest) / 2
+        momentum = df['close'] - avg_hl
+        
+        return {
+            'squeeze_on': squeeze_on,
+            'momentum': momentum.iloc[-1],
+            'prev_momentum': momentum.iloc[-2] if len(momentum) > 1 else 0
+        }
+    except:
+        return {'squeeze_on': False, 'momentum': 0, 'prev_momentum': 0}
+
 # ═══════════════════════════════════════════════════════
 # 🚀 급등 감지
 # ═══════════════════════════════════════════════════════
@@ -502,6 +576,89 @@ def detect_volume_pattern(ticker):
     except:
         return None
 
+def detect_gap_down_reversal(ticker):
+    """BNF Gap-Down Mean Reversion 전략 (급락 후 반등)"""
+    try:
+        # 1시간봉 데이터 (25개 필요)
+        df = pyupbit.get_ohlcv(ticker, interval="minute60", count=30)
+        if df is None or len(df) < 26:
+            return None
+        
+        current_price = df['close'].iloc[-1]
+        ema_25 = calculate_ema(df, 25)
+        
+        # 1. Disparity 계산 (가격이 EMA보다 얼마나 떨어졌는지)
+        disparity = ((current_price - ema_25) / ema_25) * 100
+        
+        # 2. 20% 이상 급락 조건 (암호화폐는 25%로 조정)
+        if disparity > -25:
+            return None
+        
+        # 3. RSI 과매도 확인
+        rsi = calculate_rsi(df)
+        if rsi > 30:
+            return None
+        
+        # 4. MACD 반전 확인
+        macd_data = calculate_macd(df)
+        macd_reversal = (macd_data['prev_histogram'] < 0 and macd_data['histogram'] > 0)
+        
+        if macd_reversal:
+            return {
+                'type': 'GAP_DOWN_REVERSAL',
+                'disparity': disparity,
+                'rsi': rsi,
+                'ema_25': ema_25,
+                'macd_histogram': macd_data['histogram'],
+                'confidence': min(abs(disparity) / 25.0, 1.0),
+                'action': 'BUY',
+                'stop_loss_price': df['low'].iloc[-5:].min(),  # 최근 5개 저점
+                'target_price': current_price * 1.15  # 15% 목표 (1:3 위험 보상)
+            }
+        return None
+    except Exception as e:
+        log(f"Gap-Down 감지 오류: {e}", "ERROR")
+        return None
+
+def detect_squeeze_momentum(ticker):
+    """Squeeze Momentum 전략 (4시간봉 모멘텀 추세)"""
+    try:
+        # 4시간봉 데이터
+        df = pyupbit.get_ohlcv(ticker, interval="minute240", count=30)
+        if df is None or len(df) < 25:
+            return None
+        
+        # Bollinger Bands + Keltner Channels + Momentum
+        squeeze_data = calculate_bollinger_keltner(df)
+        
+        # Momentum 방향 전환 감지 (빨강→초록)
+        momentum_now = squeeze_data['momentum']
+        momentum_prev = squeeze_data['prev_momentum']
+        
+        # 양수 모멘텀으로 전환 (상승 신호)
+        if momentum_prev < 0 and momentum_now > 0:
+            return {
+                'type': 'SQUEEZE_MOMENTUM',
+                'momentum': momentum_now,
+                'squeeze_on': squeeze_data['squeeze_on'],
+                'confidence': min(abs(momentum_now) / 1000, 1.0),
+                'action': 'BUY',
+                'exit_condition': 'momentum_turns_negative'
+            }
+        
+        # 음수 모멘텀으로 전환 (하락 신호 - 청산용)
+        if momentum_prev > 0 and momentum_now < 0:
+            return {
+                'type': 'SQUEEZE_MOMENTUM_EXIT',
+                'momentum': momentum_now,
+                'action': 'SELL'
+            }
+        
+        return None
+    except Exception as e:
+        log(f"Squeeze Momentum 감지 오류: {e}", "ERROR")
+        return None
+
 def analyze_all_patterns(ticker):
     """모든 패턴 종합 분석"""
     patterns = {}
@@ -514,6 +671,15 @@ def analyze_all_patterns(ticker):
     dip = detect_dip_signal(ticker)
     if dip:
         patterns['dip'] = dip
+    
+    # 새로운 전략들
+    gap_down = detect_gap_down_reversal(ticker)
+    if gap_down:
+        patterns['gap_down'] = gap_down
+    
+    squeeze = detect_squeeze_momentum(ticker)
+    if squeeze:
+        patterns['squeeze'] = squeeze
     
     # 기타 패턴
     box = detect_box_range(ticker)
@@ -555,6 +721,10 @@ def select_best_strategy(ticker, patterns):
             score += patterns['surge'].get('score', 5) * 0.5
         elif 'dip' in patterns and strategy_id == 'dip_hunter':
             score += patterns['dip'].get('score', 5) * 0.5
+        elif 'gap_down' in patterns and strategy_id == 'gap_down_reversal':
+            score += patterns['gap_down'].get('confidence', 0.5) * 5 * 0.5
+        elif 'squeeze' in patterns and strategy_id == 'squeeze_momentum':
+            score += patterns['squeeze'].get('confidence', 0.5) * 5 * 0.5
         elif 'box' in patterns and strategy_id == 'box_trader':
             score += patterns['box']['confidence'] * 5 * 0.5
         elif 'trend' in patterns and strategy_id == 'trend_follower':
@@ -961,6 +1131,22 @@ def check_exit(ticker, holding, bot_state):
         
         # 일반
         else:
+            # Squeeze Momentum 전략의 경우 모멘텀 반전 체크
+            if strategy_id == 'squeeze_momentum':
+                try:
+                    squeeze_check = detect_squeeze_momentum(ticker)
+                    if squeeze_check and squeeze_check.get('type') == 'SQUEEZE_MOMENTUM_EXIT':
+                        return True, f"모멘텀 반전 ({profit_rate:+.2f}%)"
+                except:
+                    pass
+            
+            # Gap-Down Reversal 전략의 목표가 체크
+            if strategy_id == 'gap_down_reversal':
+                target_price = holding.get('target_price')
+                if target_price and current_price >= target_price:
+                    return True, f"목표가 도달 (+{profit_rate:.2f}%)"
+            
+            # 기본 익절/손절
             if profit_rate >= 3.0 or profit_rate <= SURGE_CONFIG['stop_loss']:
                 return True, f"{'익절' if profit_rate > 0 else '손절'}"
         
