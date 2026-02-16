@@ -75,6 +75,21 @@
       50% { opacity: 0.8; transform: scale(1.05); }
       100% { opacity: 0.6; transform: scale(1); }
     }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOutRight {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(400px); opacity: 0; }
+    }
 
     .container {
       position: relative;
@@ -588,6 +603,18 @@
     <div class="header">
       <h1 class="header-title">TAROT READING</h1>
       <p class="header-subtitle">정통 78장 타로 리딩</p>
+      
+      <!-- UT 잔액 표시 -->
+      <div class="ut-balance-display" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, rgba(147,51,234,0.15), rgba(147,51,234,0.25)); border: 2px solid rgba(192,132,252,0.5); border-radius: 50px; display: inline-block; animation: pulse 2s ease-in-out infinite;">
+        <span style="color: #c084fc; font-size: 14px; font-weight: 600; letter-spacing: 0.05em;">🔮 보유 UT: </span>
+        <span id="tarot-ut-balance" style="color: #fff; font-size: 18px; font-weight: 900; text-shadow: 0 0 10px rgba(147,51,234,0.8);">0</span>
+        <span style="color: #c084fc; font-size: 14px; font-weight: 600;"> UT</span>
+      </div>
+      
+      <!-- 타로 리딩 비용 안내 -->
+      <div style="margin-top: 12px; color: #c084fc; font-size: 13px; opacity: 0.9;">
+        🎴 타로 리딩 비용: <strong style="color: #fff;">30 UT</strong>
+      </div>
     </div>
 
     <div class="main-card">
@@ -1165,6 +1192,53 @@
         alert('타로 스프레드를 먼저 선택해주세요.');
         return;
       }
+      
+      // UT 차감 로직
+      const TAROT_COST = 30; // 타로 리딩 비용
+      const currentUT = parseInt(localStorage.getItem('ut_balance') || '0');
+      
+      // UT 잔액 확인
+      if (currentUT < TAROT_COST) {
+        alert(`❌ UT가 부족합니다!\n\n필요: ${TAROT_COST} UT\n보유: ${currentUT} UT\n부족: ${TAROT_COST - currentUT} UT\n\nUT를 충전해주세요.`);
+        return;
+      }
+      
+      // UT 차감 애니메이션
+      const balanceEl = document.getElementById('tarot-ut-balance');
+      const oldBalance = currentUT;
+      const newBalance = currentUT - TAROT_COST;
+      
+      // UT 차감
+      localStorage.setItem('ut_balance', newBalance.toString());
+      
+      // 애니메이션으로 표시
+      balanceEl.style.transition = 'all 0.5s ease';
+      balanceEl.style.transform = 'scale(1.3)';
+      balanceEl.style.color = '#ff6b6b';
+      
+      setTimeout(() => {
+        balanceEl.textContent = newBalance;
+        balanceEl.style.transform = 'scale(1)';
+        balanceEl.style.color = '#fff';
+      }, 300);
+      
+      // 차감 알림
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed; top: 100px; right: 20px; z-index: 10000;
+        padding: 16px 24px; background: linear-gradient(135deg, #9333ea, #6b21a8);
+        border: 2px solid rgba(192,132,252,0.5); border-radius: 12px;
+        color: #fff; font-size: 16px; font-weight: 700;
+        box-shadow: 0 8px 24px rgba(147,51,234,0.5);
+        animation: slideInRight 0.5s ease;
+      `;
+      notification.innerHTML = `🔮 ${TAROT_COST} UT 차감<br><small style="font-size:13px; opacity:0.9;">잔액: ${newBalance} UT</small>`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.5s ease';
+        setTimeout(() => notification.remove(), 500);
+      }, 3000);
 
       // 덱 섞기
       shuffledDeck = [...TAROT_DECK].sort(() => Math.random() - 0.5);
@@ -1504,6 +1578,27 @@
       };
       return levels[level] || level;
     }
+    
+    // ============================================
+    // UT 잔액 초기화 및 업데이트
+    // ============================================
+    function updateUTDisplay() {
+      const balance = parseInt(localStorage.getItem('ut_balance') || '0');
+      const balanceEl = document.getElementById('tarot-ut-balance');
+      if (balanceEl) {
+        balanceEl.textContent = balance;
+      }
+    }
+    
+    // 페이지 로드 시 UT 잔액 표시
+    window.addEventListener('DOMContentLoaded', updateUTDisplay);
+    
+    // 다른 탭에서 UT 변경 시 업데이트
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'ut_balance') {
+        updateUTDisplay();
+      }
+    });
   </script>
   
   <!-- AI 엔진 로드 -->

@@ -66,6 +66,21 @@
       0% { opacity: 0.5; }
       100% { opacity: 0.7; }
     }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOutRight {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(400px); opacity: 0; }
+    }
 
     .container {
       position: relative;
@@ -545,6 +560,18 @@
     <div class="header">
       <h1 class="header-title">정통 사주팔자</h1>
       <p class="header-subtitle">四柱八字 萬歲曆</p>
+      
+      <!-- UT 잔액 표시 -->
+      <div class="ut-balance-display" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.25)); border: 2px solid rgba(212,175,55,0.5); border-radius: 50px; display: inline-block; animation: pulse 2s ease-in-out infinite;">
+        <span style="color: #f0d98c; font-size: 14px; font-weight: 600; letter-spacing: 0.05em;">💰 보유 UT: </span>
+        <span id="saju-ut-balance" style="color: #fff; font-size: 18px; font-weight: 900; text-shadow: 0 0 10px rgba(212,175,55,0.8);">0</span>
+        <span style="color: #f0d98c; font-size: 14px; font-weight: 600;"> UT</span>
+      </div>
+      
+      <!-- 사주 분석 비용 안내 -->
+      <div style="margin-top: 12px; color: #f0d98c; font-size: 13px; opacity: 0.9;">
+        📋 사주 분석 비용: <strong style="color: #fff;">50 UT</strong>
+      </div>
     </div>
 
     <div class="main-card">
@@ -982,6 +1009,53 @@
 
     document.getElementById('sajuForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      
+      // UT 차감 로직
+      const SAJU_COST = 50; // 사주 분석 비용
+      const currentUT = parseInt(localStorage.getItem('ut_balance') || '0');
+      
+      // UT 잔액 확인
+      if (currentUT < SAJU_COST) {
+        alert(`❌ UT가 부족합니다!\n\n필요: ${SAJU_COST} UT\n보유: ${currentUT} UT\n부족: ${SAJU_COST - currentUT} UT\n\nUT를 충전해주세요.`);
+        return;
+      }
+      
+      // UT 차감 애니메이션
+      const balanceEl = document.getElementById('saju-ut-balance');
+      const oldBalance = currentUT;
+      const newBalance = currentUT - SAJU_COST;
+      
+      // UT 차감
+      localStorage.setItem('ut_balance', newBalance.toString());
+      
+      // 애니메이션으로 표시
+      balanceEl.style.transition = 'all 0.5s ease';
+      balanceEl.style.transform = 'scale(1.3)';
+      balanceEl.style.color = '#ff6b6b';
+      
+      setTimeout(() => {
+        balanceEl.textContent = newBalance;
+        balanceEl.style.transform = 'scale(1)';
+        balanceEl.style.color = '#fff';
+      }, 300);
+      
+      // 차감 알림
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed; top: 100px; right: 20px; z-index: 10000;
+        padding: 16px 24px; background: linear-gradient(135deg, #ff6b6b, #c41e3a);
+        border: 2px solid rgba(255,255,255,0.3); border-radius: 12px;
+        color: #fff; font-size: 16px; font-weight: 700;
+        box-shadow: 0 8px 24px rgba(196,30,58,0.4);
+        animation: slideInRight 0.5s ease;
+      `;
+      notification.innerHTML = `💸 ${SAJU_COST} UT 차감<br><small style="font-size:13px; opacity:0.9;">잔액: ${newBalance} UT</small>`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.5s ease';
+        setTimeout(() => notification.remove(), 500);
+      }, 3000);
 
       const name = document.getElementById('userName').value.trim();
       const gender = document.querySelector('input[name="gender"]:checked').value;
@@ -1189,6 +1263,27 @@
       };
       return names[element] || element;
     }
+    
+    // ============================================
+    // UT 잔액 초기화 및 업데이트
+    // ============================================
+    function updateUTDisplay() {
+      const balance = parseInt(localStorage.getItem('ut_balance') || '0');
+      const balanceEl = document.getElementById('saju-ut-balance');
+      if (balanceEl) {
+        balanceEl.textContent = balance;
+      }
+    }
+    
+    // 페이지 로드 시 UT 잔액 표시
+    window.addEventListener('DOMContentLoaded', updateUTDisplay);
+    
+    // 다른 탭에서 UT 변경 시 업데이트
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'ut_balance') {
+        updateUTDisplay();
+      }
+    });
   </script>
   
   <!-- AI 엔진 로드 -->
