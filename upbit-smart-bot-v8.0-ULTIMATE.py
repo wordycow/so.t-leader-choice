@@ -782,7 +782,34 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
         log(f"   전략: {STRATEGIES[strategy_id]['name']}", "INFO")
         log("="*60, "SUCCESS")
         
-        # 거래 내역 추가
+        # 거래 내역 추가 (상세 이유 포함)
+        buy_reason = f"전략: {STRATEGIES[strategy_id]['name']}"
+        
+        # 패턴 정보 추가
+        pattern_details = []
+        if patterns.get('rsi'):
+            rsi_val = patterns['rsi'].get('value', 0)
+            if rsi_val < 30:
+                pattern_details.append(f"RSI 과매도({rsi_val:.1f})")
+            elif rsi_val > 70:
+                pattern_details.append(f"RSI 과매수({rsi_val:.1f})")
+        
+        if patterns.get('volume_surge'):
+            vol_change = patterns['volume_surge'].get('volume_change_pct', 0)
+            pattern_details.append(f"거래량 급증(+{vol_change:.0f}%)")
+        
+        if patterns.get('dip'):
+            dip_pct = patterns['dip'].get('dip_percent', 0)
+            pattern_details.append(f"급락 후 반등({dip_pct:.1f}%)")
+        
+        if patterns.get('trend'):
+            trend = patterns['trend'].get('trend', '')
+            if trend:
+                pattern_details.append(f"추세: {trend}")
+        
+        if pattern_details:
+            buy_reason += " | " + ", ".join(pattern_details)
+        
         bot_state['recent_trades'].append({
             'ticker': ticker,
             'type': 'BUY',
@@ -792,6 +819,8 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
             'fee': fee,
             'net_invested': net_invest,
             'strategy': STRATEGIES[strategy_id]['name'],
+            'reason': buy_reason,
+            'patterns': pattern_details,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
         
@@ -910,18 +939,31 @@ def execute_exit(ticker, holding, reason, bot_state):
             log(f"   사유: {reason}", "INFO")
             log("="*60, "SUCCESS" if profit_rate > 0 else "WARNING")
             
-            # 거래 내역 추가
+            # 거래 내역 추가 (상세 이유 포함)
+            hold_time = (datetime.now() - holding['entry_time']).total_seconds() / 60
+            hold_time_str = f"{int(hold_time//60)}시간 {int(hold_time%60)}분" if hold_time >= 60 else f"{int(hold_time)}분"
+            
+            sell_reason = f"{reason}"
+            if profit_rate > 0:
+                sell_reason += f" | 목표 달성 (+{profit_rate:.2f}%)"
+            else:
+                sell_reason += f" | 손절 ({profit_rate:.2f}%)"
+            
+            sell_reason += f" | 보유: {hold_time_str}"
+            
             bot_state['recent_trades'].append({
                 'ticker': ticker,
                 'type': 'SELL',
                 'amount': holding['amount'],
                 'price': current_price,
+                'entry_price': entry_price,
                 'sell_value': sell_value,
                 'fee': fee,
                 'net_proceeds': net_proceeds,
                 'profit': profit_krw,
                 'profit_rate': profit_rate,
-                'reason': reason,
+                'reason': sell_reason,
+                'hold_time': hold_time,
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             })
         
