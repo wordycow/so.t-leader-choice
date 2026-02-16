@@ -44,7 +44,7 @@ from datetime import datetime, timedelta
 from collections import deque, defaultdict
 import json
 import threading
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 from flask_cors import CORS
 import traceback
 
@@ -780,7 +780,12 @@ CORS(app)
 
 @app.route('/')
 def index():
-    return render_template('dashboard-ultimate-v2.html')
+    response = make_response(render_template('dashboard-ultimate-v2.html'))
+    # 캐시 방지
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/api/status')
 def api_status():
