@@ -1119,14 +1119,29 @@ def bot_main_loop():
     
     bot_state['start_time'] = datetime.now()
     
+    # 초기 안정화 대기 (5초)
+    log("⏱️ 초기화 중... (5초 대기)", "INFO")
+    time.sleep(5)
+    log("✅ 스캔 시작!", "SUCCESS")
+    
     popular_tickers = [
         'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
         'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
         'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT'
     ]
     
+    loop_count = 0  # 루프 카운터 추가
+    
     while bot_state['running']:
         try:
+            loop_count += 1
+            
+            # 처음 2번은 스캔만 하고 매수하지 않음
+            if loop_count <= 2:
+                log(f"🔍 시장 관찰 중... ({loop_count}/2)", "INFO")
+                time.sleep(20)
+                continue
+            
             # 1. 복구 모드 체크
             if not bot_state['recovery_mode_active']:
                 check_recovery_mode_activation()
