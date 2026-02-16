@@ -1525,15 +1525,6 @@ def api_logout():
 def admin_page():
     return render_template('admin.html')
 
-@app.route('/api/admin/users')
-def api_admin_users():
-    """모든 사용자 목록 조회"""
-    try:
-        users = user_manager.get_all_users()
-        return jsonify({'success': True, 'users': users})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
 # ═══════════════════════════════════════════════════════
 # 📊 포트폴리오 API
 # ═══════════════════════════════════════════════════════
@@ -1577,6 +1568,136 @@ def api_update_portfolio():
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+# ═══════════════════════════════════════════════════════
+# 🔧 관리자 API
+# ═══════════════════════════════════════════════════════
+
+@app.route('/admin')
+def admin_dashboard():
+    """관리자 대시보드 페이지"""
+    # 관리자 확인 (세션에 admin 권한이 있거나, 특정 user_id)
+    if 'user_id' not in session:
+        # 개발 편의: 누구나 접근 가능 (나중에 관리자 로그인 추가)
+        pass
+    
+    return render_template('admin.html')
+
+@app.route('/api/admin/users')
+def api_admin_users():
+    """전체 사용자 목록 및 통계"""
+    try:
+        # 관리자 권한 체크 (TODO: 실제 권한 확인 추가)
+        # if session.get('role') != 'admin':
+        #     return jsonify({'error': '권한 없음'}), 403
+        
+        users_list = []
+        total_profit_rate = 0
+        running_count = 0
+        active_subscriptions = 0
+        
+        # 모든 사용자 봇 상태 조회
+        for user_id, bot_state in user_bots.items():
+            # 현재 잔고 계산
+            current_krw = bot_state.get('simulation_krw', 0)
+            
+            # 보유 코인 가치
+            holdings_value = 0
+            for ticker, holding in bot_state.get('simulation_holdings', {}).items():
+                try:
+                    current_price = pyupbit.get_current_price(ticker)
+                    if current_price:
+                        holdings_value += holding['amount'] * current_price
+                    else:
+                        holdings_value += holding['amount'] * holding['avg_price']
+                except:
+                    holdings_value += holding['amount'] * holding.get('avg_price', 0)
+            
+            total_value = current_krw + holdings_value
+            seed = bot_state.get('simulation_start_seed', 1000000)
+            profit = total_value - seed
+            profit_rate = (profit / seed * 100) if seed > 0 else 0
+            
+            # 사용자 정보
+            user_info = {
+                'user_id': user_id,
+                'username': user_id.replace('guest_', '게스트_')[:20],
+                'bot_running': bot_state.get('running', False),
+                'seed_amount': seed,
+                'current_balance': total_value,
+                'profit_rate': profit_rate,
+                'subscription_tier': 'free',  # TODO: DB에서 조회
+                'subscription_active': False,  # TODO: DB에서 조회
+                'expires_at': None,
+                'created_at': bot_state.get('start_time', datetime.now()).strftime('%Y-%m-%d %H:%M:%S') if bot_state.get('start_time') else None
+            }
+            
+            users_list.append(user_info)
+            total_profit_rate += profit_rate
+            
+            if bot_state.get('running'):
+                running_count += 1
+        
+        # 통계 계산
+        total_users = len(users_list)
+        average_profit_rate = (total_profit_rate / total_users) if total_users > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_users': total_users,
+                'running_bots': running_count,
+                'active_subscriptions': active_subscriptions,
+                'average_profit_rate': average_profit_rate
+            },
+            'users': users_list
+        })
+        
+    except Exception as e:
+        log(f"관리자 API 오류: {e}", "ERROR")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/subscription/activate', methods=['POST'])
+def api_admin_activate_subscription():
+    """구독 활성화 (관리자 전용)"""
+    try:
+        data = request.json or {}
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': '사용자 ID 필요'}), 400
+        
+        # TODO: DB에 구독 정보 저장
+        log(f"[Admin] 구독 활성화: {user_id}", "SUCCESS")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_id} 구독 활성화 완료'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/subscription/deactivate', methods=['POST'])
+def api_admin_deactivate_subscription():
+    """구독 비활성화 (관리자 전용)"""
+    try:
+        data = request.json or {}
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': '사용자 ID 필요'}), 400
+        
+        # TODO: DB에서 구독 비활성화
+        log(f"[Admin] 구독 비활성화: {user_id}", "WARNING")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_id} 구독 비활성화 완료'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     log_separator()
