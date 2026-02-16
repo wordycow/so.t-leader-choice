@@ -628,7 +628,7 @@ def recover_funds_from_minus_coins():
     
     return total_recovered
 
-def check_recovery_mode_activation():
+def check_recovery_mode_activation(bot_state):
     """복구 모드 활성화 체크"""
     try:
         if bot_state['recovery_mode_active']:
@@ -677,7 +677,7 @@ def check_recovery_mode_activation():
     except:
         pass
 
-def find_recovery_opportunity(tickers):
+def find_recovery_opportunity(tickers, bot_state):
     """복구용 초단타 기회"""
     opportunities = []
     
@@ -721,7 +721,7 @@ def find_recovery_opportunity(tickers):
 # ═══════════════════════════════════════════════════════
 # 💰 거래 실행
 # ═══════════════════════════════════════════════════════
-def execute_trade(ticker, strategy_id, patterns):
+def execute_trade(ticker, strategy_id, patterns, bot_state):
     """거래 실행 (수수료 0.05% 포함)"""
     try:
         current_price = pyupbit.get_current_price(ticker)
@@ -800,7 +800,7 @@ def execute_trade(ticker, strategy_id, patterns):
         log(f"거래 오류: {e}", "ERROR")
         return None
 
-def check_exit(ticker, holding):
+def check_exit(ticker, holding, bot_state):
     """청산 조건 체크"""
     try:
         current_price = pyupbit.get_current_price(ticker)
@@ -850,7 +850,7 @@ def check_exit(ticker, holding):
     except:
         return False, None
 
-def execute_exit(ticker, holding, reason):
+def execute_exit(ticker, holding, reason, bot_state):
     """청산 실행 (수수료 0.05% 포함)"""
     try:
         current_price = pyupbit.get_current_price(ticker)
@@ -1477,13 +1477,13 @@ def bot_main_loop(user_id, bot_state):
             
             # 1. 복구 모드 체크
             if not bot_state['recovery_mode_active']:
-                check_recovery_mode_activation()
+                check_recovery_mode_activation(bot_state)
             
             # 2. 보유 포지션 관리
             for ticker, holding in list(bot_state['simulation_holdings'].items()):
-                should_exit, reason = check_exit(ticker, holding)
+                should_exit, reason = check_exit(ticker, holding, bot_state)
                 if should_exit:
-                    execute_exit(ticker, holding, reason)
+                    execute_exit(ticker, holding, reason, bot_state)
             
             # 3. 신규 진입
             max_positions = 1 if bot_state['recovery_mode_active'] else 3
@@ -1498,10 +1498,10 @@ def bot_main_loop(user_id, bot_state):
                             time.sleep(5)
                             continue
                     
-                    opportunities = find_recovery_opportunity(popular_tickers[:10])
+                    opportunities = find_recovery_opportunity(popular_tickers[:10], bot_state)
                     if opportunities:
                         best = opportunities[0]
-                        execute_trade(best['ticker'], 'surge_hunter', {'recovery': best})
+                        execute_trade(best['ticker'], 'surge_hunter', {'recovery': best}, bot_state)
                 
                 # 일반 모드
                 else:
@@ -1519,7 +1519,7 @@ def bot_main_loop(user_id, bot_state):
                                 
                                 if best_strategy and score > 0.5:
                                     log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
-                                    execute_trade(ticker, best_strategy, patterns)
+                                    execute_trade(ticker, best_strategy, patterns, bot_state)
                                     time.sleep(2)
                                     break
                         except Exception as ticker_error:
