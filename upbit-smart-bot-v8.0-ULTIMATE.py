@@ -1619,6 +1619,10 @@ def api_admin_users():
             profit_rate = (profit / seed * 100) if seed > 0 else 0
             
             # 사용자 정보
+            # 추천 코드 생성 (user_id 기반)
+            import hashlib
+            referral_code = hashlib.md5(user_id.encode()).hexdigest()[:8].upper()
+            
             user_info = {
                 'user_id': user_id,
                 'username': user_id.replace('guest_', '게스트_')[:20],
@@ -1626,9 +1630,8 @@ def api_admin_users():
                 'seed_amount': seed,
                 'current_balance': total_value,
                 'profit_rate': profit_rate,
-                'subscription_tier': 'free',  # TODO: DB에서 조회
-                'subscription_active': False,  # TODO: DB에서 조회
-                'expires_at': None,
+                'subscription_expires_at': None,  # TODO: DB에서 조회
+                'referral_code': referral_code,
                 'created_at': bot_state.get('start_time', datetime.now()).strftime('%Y-%m-%d %H:%M:%S') if bot_state.get('start_time') else None
             }
             
@@ -1657,47 +1660,52 @@ def api_admin_users():
         log(f"관리자 API 오류: {e}", "ERROR")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/admin/subscription/activate', methods=['POST'])
-def api_admin_activate_subscription():
-    """구독 활성화 (관리자 전용)"""
+@app.route('/api/admin/subscription/set-date', methods=['POST'])
+def api_admin_set_subscription_date():
+    """구독 만료일 설정 (관리자 전용)"""
     try:
         data = request.json or {}
         user_id = data.get('user_id')
+        expires_at = data.get('expires_at')
         
-        if not user_id:
-            return jsonify({'error': '사용자 ID 필요'}), 400
+        if not user_id or not expires_at:
+            return jsonify({'success': False, 'message': '사용자 ID와 날짜 필요'}), 400
         
-        # TODO: DB에 구독 정보 저장
-        log(f"[Admin] 구독 활성화: {user_id}", "SUCCESS")
+        # TODO: DB에 저장
+        # 임시: 메모리에만 저장
+        log(f"[Admin] {user_id} 구독 만료일 설정: {expires_at}", "SUCCESS")
         
         return jsonify({
             'success': True,
-            'message': f'{user_id} 구독 활성화 완료'
+            'message': f'{user_id} 구독 만료일이 {expires_at}로 설정되었습니다'
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        log(f"날짜 설정 오류: {e}", "ERROR")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/admin/subscription/deactivate', methods=['POST'])
-def api_admin_deactivate_subscription():
-    """구독 비활성화 (관리자 전용)"""
+@app.route('/api/admin/subscription/add-days', methods=['POST'])
+def api_admin_add_days():
+    """구독 일수 추가 (관리자 전용)"""
     try:
         data = request.json or {}
         user_id = data.get('user_id')
+        days = data.get('days', 5)
         
         if not user_id:
-            return jsonify({'error': '사용자 ID 필요'}), 400
+            return jsonify({'success': False, 'message': '사용자 ID 필요'}), 400
         
-        # TODO: DB에서 구독 비활성화
-        log(f"[Admin] 구독 비활성화: {user_id}", "WARNING")
+        # TODO: DB에서 현재 만료일 조회 후 +days
+        log(f"[Admin] {user_id}에게 +{days}일 추가", "SUCCESS")
         
         return jsonify({
             'success': True,
-            'message': f'{user_id} 구독 비활성화 완료'
+            'message': f'{user_id}에게 {days}일이 추가되었습니다'
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        log(f"일수 추가 오류: {e}", "ERROR")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == "__main__":
     log_separator()

@@ -21,7 +21,7 @@
     }
 
     .container {
-      max-width: 1600px;
+      max-width: 1800px;
       margin: 0 auto;
     }
 
@@ -188,31 +188,22 @@
       border: 1px solid #6b7280;
     }
 
-    .tier-badge {
+    .subscription-active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
       padding: 4px 10px;
       border-radius: 8px;
       font-size: 11px;
       font-weight: 600;
     }
 
-    .tier-1month {
-      background: rgba(59, 130, 246, 0.2);
-      color: #3b82f6;
-    }
-
-    .tier-6months {
-      background: rgba(168, 85, 247, 0.2);
-      color: #a855f7;
-    }
-
-    .tier-lifetime {
-      background: rgba(251, 191, 36, 0.2);
-      color: #fbbf24;
-    }
-
-    .tier-free {
-      background: rgba(107, 114, 128, 0.2);
-      color: #9ca3af;
+    .subscription-expired {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
     .profit-positive {
@@ -240,39 +231,40 @@
       font-weight: 600;
       transition: all 0.2s;
       margin-right: 6px;
+      margin-bottom: 4px;
     }
 
-    .btn-activate {
-      background: rgba(16, 185, 129, 0.2);
-      color: #10b981;
-      border: 1px solid #10b981;
-    }
-
-    .btn-activate:hover {
-      background: #10b981;
-      color: white;
-    }
-
-    .btn-deactivate {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid #ef4444;
-    }
-
-    .btn-deactivate:hover {
-      background: #ef4444;
-      color: white;
-    }
-
-    .btn-detail {
+    .btn-edit-date {
       background: rgba(59, 130, 246, 0.2);
       color: #3b82f6;
       border: 1px solid #3b82f6;
     }
 
-    .btn-detail:hover {
+    .btn-edit-date:hover {
       background: #3b82f6;
       color: white;
+    }
+
+    .btn-add-days {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid #10b981;
+    }
+
+    .btn-add-days:hover {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-referral {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      border: 1px solid #fbbf24;
+    }
+
+    .btn-referral:hover {
+      background: #fbbf24;
+      color: #0a0e27;
     }
 
     .empty-state {
@@ -284,6 +276,113 @@
     .empty-icon {
       font-size: 48px;
       margin-bottom: 16px;
+    }
+
+    .referral-link {
+      font-size: 11px;
+      color: #9ca3af;
+      font-family: monospace;
+      background: rgba(20, 20, 30, 0.5);
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1e1e2d;
+      padding: 32px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      background: rgba(20, 20, 30, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e4e4e7;
+      font-size: 14px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #fbbf24;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-modal {
+      flex: 1;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-confirm {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-confirm:hover {
+      background: #059669;
+    }
+
+    .btn-cancel {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .btn-cancel:hover {
+      background: #ef4444;
+      color: white;
     }
   </style>
 </head>
@@ -310,13 +409,13 @@
       </div>
 
       <div class="stat-card">
-        <div class="stat-label">💰 구독 활성</div>
+        <div class="stat-label">✅ 구독 활성</div>
         <div class="stat-value" id="activeSubscriptions">-</div>
-        <div class="stat-sub">유료 구독자</div>
+        <div class="stat-sub">유효한 구독자</div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-label">📈 총 수익률</div>
+        <div class="stat-label">📈 평균 수익률</div>
         <div class="stat-value" id="totalProfit">-</div>
         <div class="stat-sub">전체 사용자 평균</div>
       </div>
@@ -338,10 +437,10 @@
             <th>시드 금액</th>
             <th>현재 잔고</th>
             <th>수익률</th>
-            <th>구독 상태</th>
-            <th>만료일</th>
+            <th>구독 만료일</th>
+            <th>추천 코드</th>
             <th>가입일</th>
-            <th>작업</th>
+            <th>관리</th>
           </tr>
         </thead>
         <tbody id="usersTableBody">
@@ -355,7 +454,28 @@
     </div>
   </div>
 
+  <!-- 날짜 수정 모달 -->
+  <div id="editDateModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">📅 구독 만료일 수정</div>
+      <div class="form-group">
+        <label class="form-label">사용자 ID</label>
+        <input type="text" class="form-input" id="modalUserId" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">새로운 만료일</label>
+        <input type="date" class="form-input" id="modalExpiresAt">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-confirm" onclick="saveExpiresDate()">✅ 저장</button>
+        <button class="btn-modal btn-cancel" onclick="closeModal()">❌ 취소</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let currentEditUserId = null;
+
     // 페이지 로드 시 데이터 불러오기
     window.addEventListener('DOMContentLoaded', () => {
       loadUsers();
@@ -398,42 +518,48 @@
           return;
         }
 
-        tbody.innerHTML = data.users.map(user => `
-          <tr>
-            <td>${user.user_id}</td>
-            <td><strong>${user.username || 'Guest'}</strong></td>
-            <td>
-              <span class="status-badge ${user.bot_running ? 'status-running' : 'status-stopped'}">
-                ${user.bot_running ? '🟢 실행 중' : '⚪ 정지'}
-              </span>
-            </td>
-            <td>${formatNumber(user.seed_amount)}원</td>
-            <td>${formatNumber(user.current_balance)}원</td>
-            <td class="${user.profit_rate >= 0 ? 'profit-positive' : 'profit-negative'}">
-              ${user.profit_rate >= 0 ? '+' : ''}${user.profit_rate.toFixed(2)}%
-            </td>
-            <td>
-              <span class="tier-badge tier-${getTierClass(user.subscription_tier)}">
-                ${getTierName(user.subscription_tier)}
-              </span>
-            </td>
-            <td>${formatDate(user.expires_at)}</td>
-            <td>${formatDate(user.created_at)}</td>
-            <td>
-              <button class="action-btn btn-detail" onclick="viewDetail('${user.user_id}')">
-                📋 상세
-              </button>
-              ${user.subscription_active ? 
-                `<button class="action-btn btn-deactivate" onclick="deactivateSubscription('${user.user_id}')">
-                  ❌ 비활성화
-                </button>` :
-                `<button class="action-btn btn-activate" onclick="activateSubscription('${user.user_id}')">
-                  ✅ 활성화
-                </button>`
-              }
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = data.users.map(user => {
+          const isActive = user.subscription_expires_at && new Date(user.subscription_expires_at) > new Date();
+          const referralLink = `${window.location.origin}/?ref=${user.referral_code}`;
+          
+          return `
+            <tr>
+              <td>${user.user_id}</td>
+              <td><strong>${user.username || 'Guest'}</strong></td>
+              <td>
+                <span class="status-badge ${user.bot_running ? 'status-running' : 'status-stopped'}">
+                  ${user.bot_running ? '🟢 실행' : '⚪ 정지'}
+                </span>
+              </td>
+              <td>${formatNumber(user.seed_amount)}원</td>
+              <td>${formatNumber(user.current_balance)}원</td>
+              <td class="${user.profit_rate >= 0 ? 'profit-positive' : 'profit-negative'}">
+                ${user.profit_rate >= 0 ? '+' : ''}${user.profit_rate.toFixed(2)}%
+              </td>
+              <td>
+                <span class="${isActive ? 'subscription-active' : 'subscription-expired'}">
+                  ${user.subscription_expires_at ? formatDate(user.subscription_expires_at) : '미설정'}
+                </span>
+              </td>
+              <td>
+                <div>${user.referral_code || '-'}</div>
+                ${user.referral_code ? `<div class="referral-link">${referralLink}</div>` : ''}
+              </td>
+              <td>${formatDate(user.created_at)}</td>
+              <td>
+                <button class="action-btn btn-edit-date" onclick="openEditModal('${user.user_id}', '${user.subscription_expires_at || ''}')">
+                  📅 날짜 수정
+                </button>
+                <button class="action-btn btn-add-days" onclick="addDays('${user.user_id}', 5)">
+                  +5일
+                </button>
+                <button class="action-btn btn-referral" onclick="copyReferralLink('${referralLink}')">
+                  🔗 링크 복사
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
 
       } catch (error) {
         console.error('데이터 로드 실패:', error);
@@ -445,6 +571,95 @@
           </tr>
         `;
       }
+    }
+
+    // 날짜 수정 모달 열기
+    function openEditModal(userId, currentDate) {
+      currentEditUserId = userId;
+      document.getElementById('modalUserId').value = userId;
+      
+      // 현재 날짜를 input에 설정
+      if (currentDate && currentDate !== 'null' && currentDate !== 'None') {
+        const date = new Date(currentDate);
+        document.getElementById('modalExpiresAt').value = date.toISOString().split('T')[0];
+      } else {
+        // 기본값: 오늘부터 30일 후
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 30);
+        document.getElementById('modalExpiresAt').value = defaultDate.toISOString().split('T')[0];
+      }
+      
+      document.getElementById('editDateModal').classList.add('active');
+    }
+
+    // 모달 닫기
+    function closeModal() {
+      document.getElementById('editDateModal').classList.remove('active');
+      currentEditUserId = null;
+    }
+
+    // 만료일 저장
+    async function saveExpiresDate() {
+      const userId = currentEditUserId;
+      const expiresAt = document.getElementById('modalExpiresAt').value;
+      
+      if (!expiresAt) {
+        alert('날짜를 선택하세요');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/subscription/set-date', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, expires_at: expiresAt })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${userId} 구독 만료일이 ${expiresAt}로 설정되었습니다`);
+          closeModal();
+          loadUsers();
+        } else {
+          throw new Error(result.message || '저장 실패');
+        }
+      } catch (error) {
+        alert('❌ ' + error.message);
+      }
+    }
+
+    // N일 추가
+    async function addDays(userId, days) {
+      if (!confirm(`${userId}에게 ${days}일을 추가하시겠습니까?`)) return;
+      
+      try {
+        const response = await fetch('/api/admin/subscription/add-days', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, days: days })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${userId}에게 ${days}일이 추가되었습니다`);
+          loadUsers();
+        } else {
+          throw new Error(result.message || '추가 실패');
+        }
+      } catch (error) {
+        alert('❌ ' + error.message);
+      }
+    }
+
+    // 추천 링크 복사
+    function copyReferralLink(link) {
+      navigator.clipboard.writeText(link).then(() => {
+        alert('✅ 추천 링크가 클립보드에 복사되었습니다!\n\n' + link);
+      }).catch(() => {
+        prompt('추천 링크 (Ctrl+C로 복사):', link);
+      });
     }
 
     // 숫자 포맷팅
@@ -463,81 +678,19 @@
       });
     }
 
-    // 구독 등급 클래스
-    function getTierClass(tier) {
-      if (!tier || tier === 'free') return 'free';
-      if (tier === '1month') return '1month';
-      if (tier === '6months') return '6months';
-      if (tier === 'lifetime') return 'lifetime';
-      return 'free';
-    }
-
-    // 구독 등급 이름
-    function getTierName(tier) {
-      const names = {
-        'free': '무료',
-        '1month': '1개월',
-        '6months': '6개월',
-        'lifetime': '평생'
-      };
-      return names[tier] || '무료';
-    }
-
-    // 사용자 상세 보기
-    function viewDetail(userId) {
-      alert(`사용자 ${userId} 상세 페이지 (구현 예정)`);
-    }
-
-    // 구독 활성화
-    async function activateSubscription(userId) {
-      if (!confirm('이 사용자의 구독을 활성화하시겠습니까?')) return;
-      
-      try {
-        const response = await fetch('/api/admin/subscription/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId })
-        });
-
-        if (response.ok) {
-          alert('✅ 구독이 활성화되었습니다');
-          loadUsers();
-        } else {
-          throw new Error('활성화 실패');
-        }
-      } catch (error) {
-        alert('❌ ' + error.message);
-      }
-    }
-
-    // 구독 비활성화
-    async function deactivateSubscription(userId) {
-      if (!confirm('이 사용자의 구독을 비활성화하시겠습니까?')) return;
-      
-      try {
-        const response = await fetch('/api/admin/subscription/deactivate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId })
-        });
-
-        if (response.ok) {
-          alert('✅ 구독이 비활성화되었습니다');
-          loadUsers();
-        } else {
-          throw new Error('비활성화 실패');
-        }
-      } catch (error) {
-        alert('❌ ' + error.message);
-      }
-    }
-
     // 로그아웃
     function logout() {
       if (confirm('로그아웃 하시겠습니까?')) {
         window.location.href = '/logout';
       }
     }
+
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
   </script>
 </body>
 </html>
