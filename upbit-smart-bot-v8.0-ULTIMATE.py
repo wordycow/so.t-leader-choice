@@ -1594,6 +1594,8 @@ def admin_dashboard():
 def api_admin_users():
     """전체 사용자 목록 및 통계 (DB + 실행 중인 봇 통합)"""
     try:
+        from datetime import datetime  # ✅ 함수 시작 부분에서 import
+        
         # 관리자 권한 체크 (TODO: 실제 권한 확인 추가)
         # if session.get('role') != 'admin':
         #     return jsonify({'error': '권한 없음'}), 403
@@ -1690,7 +1692,6 @@ def api_admin_users():
             
             # 구독 활성 확인
             if db_dict.get('subscription_expires_at'):
-                from datetime import datetime
                 try:
                     expires = datetime.fromisoformat(db_dict['subscription_expires_at'])
                     if expires > datetime.now():
