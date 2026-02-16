@@ -68,13 +68,25 @@ SURGE_CONFIG = {
     'max_entry_price_increase': 0.5, # 급등 감지 후 최대 0.5% 상승까지 진입
     'entry_speed': 'FAST',           # FAST (즉시), CAUTIOUS (조심)
     
-    # 익절/손절
+    # 🚀 급등 익절/손절
     'take_profit_targets': [1.5, 2.5, 4.0],  # 1.5%, 2.5%, 4.0% 익절
     'take_profit_ratios': [0.4, 0.4, 0.2],   # 40%, 40%, 20% 비중
     'stop_loss': -2.0,               # -2% 손절
     'trailing_stop': True,           # 트레일링 스톱 사용
     'trailing_stop_trigger': 3.0,    # 3% 수익 시 트레일링 시작
     'trailing_stop_distance': 1.5,   # 최고점 대비 1.5% 하락 시 매도
+    
+    # 🔥 급락 매수 전용 설정 (핵심!)
+    'dip_hold_until_recovery': True,     # 원래 가격까지 복귀할 때까지 보유!
+    'dip_recovery_threshold': -0.3,      # 매수가 대비 -0.3% 이내면 "복귀" 간주
+    'dip_max_hold_time': 24 * 60,        # 최대 24시간 보유 (분 단위)
+    'dip_emergency_stop_loss': -10.0,    # 긴급 손절: -10% (추가 폭락 방지)
+    'dip_partial_profit_levels': [       # 구간별 부분 익절 (옵션)
+        # (수익률, 매도비율)
+        (3.0, 0.3),   # +3% 도달 시 30% 매도
+        (5.0, 0.3),   # +5% 도달 시 30% 추가 매도
+        # 나머지 40%는 완전 복귀까지 보유
+    ],
     
     # 필터링
     'exclude_new_coins_days': 7,     # 7일 이내 신규 상장 코인 제외
@@ -99,7 +111,7 @@ bot_state = {
     # 시뮬레이션 (연습 모드)
     'simulation_seed': 1000000,      # 기본 100만원
     'simulation_krw': 1000000,
-    'simulation_holdings': {},       # {'KRW-BTC': {'amount': 0.001, 'avg_price': 50000000}}
+    'simulation_holdings': {},       # {'KRW-BTC': {'amount': 0.001, 'avg_price': 50000000, 'type': 'SURGE' or 'DIP', 'entry_price_before_dip': 51000000}}
     'simulation_start_seed': 1000000,
     
     # 보유 현황
@@ -282,14 +294,87 @@ def detect_surge_signal(ticker):
         log(f"급등 감지 오류 ({ticker}): {e}", "ERROR")
         return None
 
+def detect_dip_signal(ticker):
+    """📉 급락 신호 감지 - 과매도 구간 포착!"""
+    try:
+        # 1분봉 데이터 (빠른 급락 감지)
+        df_1m = pyupbit.get_ohlcv(ticker, interval="minute1", count=20)
+        if df_1m is None or len(df_1m) < 15:
+            return None
+        
+        # 급락 전 평균 가격 (10분 전~2분 전)
+        price_before_dip = df_1m['close'].iloc[-12:-2].mean()
+        
+        # 현재 가격
+        price_now = df_1m['close'].iloc[-1]
+        price_prev = df_1m['close'].iloc[-2]
+        
+        # 1분 변동률
+        change_1m = ((price_now - price_prev) / price_prev) * 100
+        
+        # 급락 전 대비 현재 하락률
+        dip_from_peak = ((price_now - price_before_dip) / price_before_dip) * 100
+        
+        # 거래량 폭증 (공포 매도)
+        vol_avg = df_1m['volume'].iloc[-10:-1].mean()
+        vol_now = df_1m['volume'].iloc[-1]
+        vol_spike = (vol_now / vol_avg) if vol_avg > 0 else 1.0
+        
+        # RSI (과매도 확인)
+        rsi = calculate_rsi(df_1m, period=14)
+        
+        signals = []
+        score = 0
+        
+        # 조건 1: 1분 급락 (-1.5% 이상)
+        if change_1m <= -1.5:
+            signals.append(f"1분 급락 {change_1m:.2f}%")
+            score += 3
+        
+        # 조건 2: 거래량 폭증 (2배 이상)
+        if vol_spike >= 2.0:
+            signals.append(f"거래량 {vol_spike:.1f}배")
+            score += 2
+        
+        # 조건 3: RSI 과매도 (35 이하)
+        if rsi <= 35:
+            signals.append(f"RSI {rsi:.1f} (과매도)")
+            score += 2
+        
+        # 조건 4: 피크 대비 -3% 이상 하락 (보너스)
+        if dip_from_peak <= -3.0:
+            signals.append(f"피크대비 {dip_from_peak:.2f}%")
+            score += 2
+        
+        # 스코어 5점 이상 = 강력한 급락 매수 신호!
+        if score >= 5:
+            log(f"🔥 급락 포착! {ticker} | 현재: {price_now:,.0f}원 | 스코어: {score}점", "DIP")
+            return {
+                'ticker': ticker,
+                'type': 'DIP',
+                'current_price': price_now,
+                'price_before_dip': price_before_dip,  # 🔥 원래 가격 저장!
+                'change_1m': change_1m,
+                'dip_from_peak': dip_from_peak,
+                'vol_spike': vol_spike,
+                'rsi': rsi,
+                'signals': signals,
+                'score': score,
+                'detected_at': datetime.now(),
+            }
+        
+        return None
+        
+    except Exception as e:
+        return None
+
 def scan_all_markets_for_surge():
-    """전체 마켓 스캔 - 급등 코인 찾기 (최적화 버전)"""
+    """전체 마켓 스캔 - 급등/급락 코인 찾기 (최적화 버전)"""
     try:
         # 전체 KRW 마켓 조회
         tickers = pyupbit.get_tickers(fiat="KRW")
         
         # ⚡ 최적화: 인기 코인만 먼저 스캔 (상위 50개)
-        # 실제 급등은 주로 거래량 많은 코인에서 발생
         popular_tickers = [
             'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
             'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
@@ -304,6 +389,7 @@ def scan_all_markets_for_surge():
         scan_tickers = popular_tickers + random.sample(other_tickers, min(25, len(other_tickers)))
         
         surge_candidates = []
+        dip_candidates = []  # 🔥 급락 후보 추가!
         
         log(f"🔍 빠른 스캔 시작... ({len(scan_tickers)}개 코인)", "INFO")
         
@@ -329,8 +415,11 @@ def scan_all_markets_for_surge():
                 if current_price < SURGE_CONFIG['min_price_krw'] or current_price > SURGE_CONFIG['max_price_krw']:
                     continue
                 
-                # 급등 신호 감지
+                # 🚀 급등 신호 감지
                 surge_signals = detect_surge_signal(ticker)
+                
+                # 📉 급락 신호 감지 (동시 체크!)
+                dip_signal = detect_dip_signal(ticker)
                 
                 if surge_signals:
                     # 거래량 확인
@@ -341,6 +430,7 @@ def scan_all_markets_for_surge():
                         if total_volume_krw >= SURGE_CONFIG['min_volume_krw']:
                             surge_candidates.append({
                                 'ticker': ticker,
+                                'type': 'SURGE',
                                 'current_price': current_price,
                                 'signals': surge_signals,
                                 'volume_krw': total_volume_krw,
@@ -349,18 +439,24 @@ def scan_all_markets_for_surge():
                             
                             log(f"🚀 급등 감지! {ticker} | 가격: {current_price:,.0f}원 | 신호: {len(surge_signals)}개", "SURGE")
                 
+                if dip_signal:
+                    # 🔥 급락 신호는 바로 추가!
+                    dip_candidates.append(dip_signal)
+                
                 scanned += 1
                 if scanned % 10 == 0:
                     log(f"   진행: {scanned}/{len(scan_tickers)} 스캔 완료", "INFO")
                 
-                time.sleep(0.05)  # API 호출 제한 (0.1 → 0.05초로 단축)
+                time.sleep(0.05)  # API 호출 제한
                 
             except Exception as e:
                 continue
         
-        log(f"✅ 스캔 완료: {scanned}개 코인 분석, {len(surge_candidates)}개 급등 발견", "SUCCESS")
+        log(f"✅ 스캔 완료: {scanned}개 코인 분석 | 🚀 급등 {len(surge_candidates)}개 | 📉 급락 {len(dip_candidates)}개", "SUCCESS")
         
-        return surge_candidates
+        # 급등 + 급락 통합 반환
+        all_candidates = surge_candidates + dip_candidates
+        return all_candidates
         
     except Exception as e:
         log(f"마켓 스캔 오류: {e}", "ERROR")
@@ -370,15 +466,21 @@ def scan_all_markets_for_surge():
 # 💰 거래 실행 시스템
 # ═══════════════════════════════════════════════════════
 def execute_surge_trade(upbit, surge_info, mode='practice'):
-    """급등 코인 진입"""
+    """급등/급락 코인 진입"""
     try:
         ticker = surge_info['ticker']
         current_price = surge_info['current_price']
+        trade_type = surge_info.get('type', 'SURGE')  # SURGE or DIP
         
-        # 진입 금액 계산 (시드의 10-20% 사용)
+        # 진입 금액 계산
         if mode == 'practice':
             available_krw = bot_state['simulation_krw']
-            invest_amount = min(available_krw * 0.15, 150000)  # 15% 또는 최대 15만원
+            
+            # 급락 매수는 15% (급등보다 보수적)
+            if trade_type == 'DIP':
+                invest_amount = min(available_krw * 0.15, 150000)
+            else:
+                invest_amount = min(available_krw * 0.15, 150000)
         else:
             available_krw = upbit.get_balance("KRW")
             invest_amount = min(available_krw * 0.15, 150000)
@@ -407,14 +509,25 @@ def execute_surge_trade(upbit, surge_info, mode='practice'):
             new_invested = holding['invested'] + invest_amount
             new_avg_price = new_invested / new_amount if new_amount > 0 else 0
             
-            bot_state['simulation_holdings'][ticker] = {
+            holding_info = {
                 'amount': new_amount,
                 'avg_price': new_avg_price,
                 'invested': new_invested,
                 'entry_time': datetime.now(),
                 'peak_price': current_price,
-                'surge_info': surge_info
+                'type': trade_type,  # 🔥 거래 타입 저장!
             }
+            
+            # 🔥 급락 매수인 경우 원래 가격 저장!
+            if trade_type == 'DIP':
+                holding_info['price_before_dip'] = surge_info.get('price_before_dip', current_price)
+                holding_info['dip_info'] = surge_info
+                log(f"📉 급락 매수! {ticker} | 현재: {current_price:,.0f}원 | 복귀목표: {holding_info['price_before_dip']:,.0f}원", "DIP")
+            else:
+                holding_info['surge_info'] = surge_info
+                log(f"🚀 급등 매수! {ticker} | {current_price:,.0f}원", "SURGE")
+            
+            bot_state['simulation_holdings'][ticker] = holding_info
             
             trade_record = {
                 'type': 'BUY',
@@ -424,8 +537,8 @@ def execute_surge_trade(upbit, surge_info, mode='practice'):
                 'krw': invest_amount,
                 'time': datetime.now(),
                 'mode': 'practice',
-                'reason': f"급등 포착 ({len(surge_info['signals'])}개 신호)",
-                'signals': surge_info['signals']
+                'trade_type': trade_type,
+                'reason': f"{'급락 저점 포착' if trade_type == 'DIP' else '급등 포착'} ({surge_info.get('score', len(surge_info.get('signals', [])))}점)",
             }
             
         else:
@@ -471,7 +584,7 @@ def execute_surge_trade(upbit, surge_info, mode='practice'):
         return None
 
 def check_exit_conditions(upbit, ticker, holding, mode='practice'):
-    """익절/손절 조건 체크"""
+    """익절/손절 조건 체크 (급등/급락 별도 전략)"""
     try:
         current_price = pyupbit.get_current_price(ticker)
         if current_price is None:
@@ -479,11 +592,63 @@ def check_exit_conditions(upbit, ticker, holding, mode='practice'):
         
         entry_price = holding['avg_price']
         profit_rate = (current_price - entry_price) / entry_price * 100
+        trade_type = holding.get('type', 'SURGE')  # SURGE or DIP
         
         # 최고가 업데이트 (트레일링 스톱용)
         if 'peak_price' not in holding or current_price > holding['peak_price']:
             holding['peak_price'] = current_price
         
+        # 🔥 급락 매수 전용 로직!
+        if trade_type == 'DIP':
+            # 원래 가격 (급락 전 평균가)
+            price_before_dip = holding.get('price_before_dip', entry_price)
+            recovery_rate = (current_price - entry_price) / entry_price * 100
+            back_to_original = (current_price - price_before_dip) / price_before_dip * 100
+            
+            # 긴급 손절: -10% (추가 폭락 방지)
+            if profit_rate <= SURGE_CONFIG['dip_emergency_stop_loss']:
+                return {
+                    'action': 'SELL',
+                    'reason': f"급락 긴급손절 ({profit_rate:.2f}%)",
+                    'price': current_price,
+                    'profit_rate': profit_rate
+                }
+            
+            # 부분 익절 (옵션)
+            for target_profit, sell_ratio in SURGE_CONFIG['dip_partial_profit_levels']:
+                if recovery_rate >= target_profit and not holding.get(f'partial_sold_{target_profit}'):
+                    holding[f'partial_sold_{target_profit}'] = True
+                    return {
+                        'action': 'PARTIAL_SELL',
+                        'reason': f"급락매수 부분익절 (+{recovery_rate:.2f}%)",
+                        'price': current_price,
+                        'profit_rate': profit_rate,
+                        'sell_ratio': sell_ratio
+                    }
+            
+            # 🎯 핵심! 원래 가격까지 복귀 체크
+            if back_to_original >= SURGE_CONFIG['dip_recovery_threshold']:
+                return {
+                    'action': 'SELL',
+                    'reason': f"급락 완전복귀! (원가 대비 {back_to_original:.2f}%, 매수가 대비 +{profit_rate:.2f}%)",
+                    'price': current_price,
+                    'profit_rate': profit_rate
+                }
+            
+            # 최대 보유 시간 초과 (24시간)
+            entry_time = holding.get('entry_time', datetime.now())
+            hold_duration = (datetime.now() - entry_time).total_seconds() / 60  # 분
+            if hold_duration >= SURGE_CONFIG['dip_max_hold_time']:
+                return {
+                    'action': 'SELL',
+                    'reason': f"급락 최대보유시간 초과 ({profit_rate:.2f}%)",
+                    'price': current_price,
+                    'profit_rate': profit_rate
+                }
+            
+            return None  # 아직 보유
+        
+        # 🚀 급등 매수 기존 로직
         # 손절 체크
         if profit_rate <= SURGE_CONFIG['stop_loss']:
             return {
