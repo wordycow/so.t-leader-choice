@@ -1459,7 +1459,9 @@ def bot_main_loop(user_id, bot_state):
     popular_tickers = [
         'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
         'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
-        'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT'
+        'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT',
+        'KRW-SUI', 'KRW-TRX', 'KRW-SHIB', 'KRW-TON', 'KRW-PEPE',
+        'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO'
     ]
     
     loop_count = 0  # 루프 카운터 추가
@@ -1517,7 +1519,7 @@ def bot_main_loop(user_id, bot_state):
                                 bot_state['current_patterns'][ticker] = patterns
                                 best_strategy, score = select_best_strategy(ticker, patterns)
                                 
-                                if best_strategy and score > 0.5:
+                                if best_strategy and score > 0.3:
                                     log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
                                     execute_trade(ticker, best_strategy, patterns, bot_state)
                                     time.sleep(2)
