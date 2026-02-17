@@ -4324,10 +4324,15 @@ def api_ai_chat():
             'content': reply
         })
         
+        # 🎭 감정 분석 추가
+        emotion_data = analyze_conversation(user_message, reply)
+        
         return jsonify({
             'success': True,
             'reply': reply,
-            'learned': is_learned  # 학습 여부 전달!
+            'learned': is_learned,  # 학습 여부 전달!
+            'emotion': emotion_data['ai_emotion'],  # 이메이 감정
+            'emotion_image': emotion_data['ai_image']  # 이메이 표정 이미지
         })
         
     except Exception as e:
