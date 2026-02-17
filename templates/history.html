@@ -305,7 +305,20 @@
     // 거래 히스토리 로드
     async function loadHistory() {
       try {
+        // 로딩 시작 (첫 로드가 아니면 스피너 표시 안함)
+        const container = document.getElementById('tradeList');
+        const isFirstLoad = container.children.length === 0;
+        
+        if (isFirstLoad) {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">로딩 중...</div>';
+        }
+        
         const response = await fetch(`/api/history?mode=${currentMode}`);
+        
+        if (!response.ok) {
+          throw new Error('서버 응답 오류');
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -315,6 +328,14 @@
         }
       } catch (error) {
         console.error('히스토리 로드 실패:', error);
+        const container = document.getElementById('tradeList');
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px;">
+            <div style="color: #ef4444; font-size: 24px; margin-bottom: 12px;">⚠️</div>
+            <div style="color: #ef4444; font-weight: 600; margin-bottom: 8px;">데이터 로드 실패</div>
+            <div style="color: #9ca3af; font-size: 14px;">페이지를 새로고침 해주세요</div>
+          </div>
+        `;
       }
     }
 
@@ -447,8 +468,8 @@
     // 초기 로드
     loadHistory();
     
-    // 10초마다 자동 새로고침
-    setInterval(loadHistory, 10000);
+    // 30초마다 자동 새로고침 (10초 → 30초로 변경하여 부하 감소)
+    setInterval(loadHistory, 30000);
   </script>
 </body>
 </html>
