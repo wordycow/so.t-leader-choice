@@ -2430,8 +2430,104 @@ def api_user_info():
 # 👨‍💼 관리자 API
 # ═══════════════════════════════════════════════════════
 
+# 관리자 권한 체크 데코레이터
+def admin_required(f):
+    """관리자 권한 필요 (wordycow, lee1만 허용)"""
+    from functools import wraps
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'}), 401
+        
+        username = session['username']
+        if username not in ['wordycow', 'lee1']:
+            return jsonify({
+                'success': False, 
+                'message': f'⛔ 접근 거부: 관리자 권한이 필요합니다 (현재 사용자: {username})'
+            }), 403
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
 @app.route('/admin')
 def admin_page():
+    """관리자 페이지 - wordycow와 lee1만 접근 가능"""
+    # 로그인 체크
+    if 'username' not in session:
+        return redirect('/login')
+    
+    username = session['username']
+    
+    # 관리자 권한 체크
+    if username not in ['wordycow', 'lee1']:
+        return '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>접근 거부</title>
+                <style>
+                    body {
+                        font-family: 'Inter', sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }
+                    .error-box {
+                        background: white;
+                        padding: 60px;
+                        border-radius: 20px;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center;
+                        max-width: 500px;
+                    }
+                    h1 {
+                        font-size: 72px;
+                        margin: 0 0 20px 0;
+                        color: #e74c3c;
+                    }
+                    h2 {
+                        font-size: 28px;
+                        margin: 0 0 20px 0;
+                        color: #333;
+                    }
+                    p {
+                        font-size: 16px;
+                        color: #666;
+                        margin-bottom: 30px;
+                    }
+                    a {
+                        display: inline-block;
+                        padding: 12px 30px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        transition: transform 0.2s;
+                    }
+                    a:hover {
+                        transform: scale(1.05);
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="error-box">
+                    <h1>🚫</h1>
+                    <h2>접근 거부</h2>
+                    <p>관리자 페이지는 wordycow와 lee1만 접근할 수 있습니다.</p>
+                    <p style="color: #999; font-size: 14px;">현재 사용자: ''' + username + '''</p>
+                    <a href="/">대시보드로 돌아가기</a>
+                </div>
+            </body>
+            </html>
+        ''', 403
+    
     return render_template('admin.html')
 
 # ═══════════════════════════════════════════════════════
@@ -2493,6 +2589,7 @@ def admin_dashboard():
     return render_template('admin.html')
 
 @app.route('/api/admin/users')
+@admin_required
 def api_admin_users():
     """전체 사용자 목록 및 통계 (DB + 실행 중인 봇 통합)"""
     try:
@@ -2700,6 +2797,7 @@ def api_admin_users():
         log(f"관리자 API 오류: {e}", "ERROR")
         return jsonify({'error': str(e)}), 500
 
+@admin_required
 @app.route('/api/admin/subscription/set-date', methods=['POST'])
 def api_admin_set_subscription_date():
     """구독 만료일 설정 (관리자 전용)"""
@@ -2746,6 +2844,7 @@ def api_admin_set_subscription_date():
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@admin_required
 @app.route('/api/admin/subscription/add-days', methods=['POST'])
 def api_admin_add_days():
     """구독 일수 추가 (관리자 전용)"""
@@ -2814,6 +2913,7 @@ def api_admin_add_days():
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@admin_required
 @app.route('/api/admin/bot/stop', methods=['POST'])
 def api_admin_stop_bot():
     """관리자가 특정 사용자 봇 정지"""
@@ -2853,6 +2953,7 @@ def api_admin_stop_bot():
         log(f"관리자 봇 정지 오류: {e}", "ERROR")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@admin_required
 @app.route('/api/admin/bot/start', methods=['POST'])
 def api_admin_start_bot():
     """관리자가 특정 사용자 봇 시작"""
