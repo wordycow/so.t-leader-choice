@@ -1251,7 +1251,22 @@
     let hasExistingData = false;
 
     // 봇 시작
-    function startBot() {
+    async function startBot() {
+      // ✅ 세션 체크 먼저
+      try {
+        const userCheck = await fetch('/api/user/info');
+        const userData = await userCheck.json();
+        
+        if (!userData.success || !userData.logged_in) {
+          alert('❌ 로그인 세션이 만료되었습니다!\n\n페이지를 새로고침합니다...');
+          window.location.reload();
+          return;
+        }
+      } catch (error) {
+        alert('❌ 네트워크 오류!\n\n연결을 확인하고 페이지를 새로고침하세요.');
+        return;
+      }
+      
       // 실전 모드 라이선스 체크
       if (currentMode === 'live' && !licenseVerified) {
         alert('⚠️ 실전 모드는 라이선스 인증이 필요합니다!\n\n1. TXID를 입력하세요\n2. "🔐 라이선스 인증" 버튼을 클릭하세요');
