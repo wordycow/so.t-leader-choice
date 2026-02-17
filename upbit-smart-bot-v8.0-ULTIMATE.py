@@ -1655,9 +1655,26 @@ def api_status():
                 'recent_trades': []
             })
         
-        user_id = session['user_id']
+        # ✅ user_id는 숫자, 하지만 bot_state는 username(문자열)을 키로 사용
+        username = session.get('username')
+        if not username:
+            return jsonify({
+                'success': False,
+                'message': '로그인이 필요합니다',
+                'running': False,
+                'current_krw': 0,
+                'start_seed': 1000000,
+                'current_seed': 1000000,
+                'total_profit': 0,
+                'profit_rate': 0,
+                'win_rate': 0,
+                'strategies': {},
+                'holdings': [],
+                'recent_surges': [],
+                'recent_trades': []
+            })
         
-        bot_state = get_user_bot_state(user_id)
+        bot_state = get_user_bot_state(username)
         
         # 봇이 실행 중이 아니면 초기 상태 반환
         if not bot_state['running']:
@@ -1772,10 +1789,10 @@ def history_page():
 def api_history():
     """거래 히스토리 API (DB에서 영구 저장된 데이터 조회)"""
     try:
-        if 'user_id' not in session:
+        if 'username' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
-        user_id = session['user_id']
+        username = session['username']
         mode = request.args.get('mode', 'practice')
         
         # DB에서 거래 내역 조회
@@ -1789,7 +1806,7 @@ def api_history():
             WHERE user_id = ? AND mode = ?
             ORDER BY timestamp DESC
             LIMIT 1000
-        ''', (user_id, mode))
+        ''', (username, mode))
         
         db_trades = cursor.fetchall()
         conn.close()
@@ -1861,13 +1878,13 @@ def api_history():
 def api_start():
     try:
         # ✅ 사용자별 독립 봇 상태 가져오기
-        if 'user_id' not in session:
+        if 'username' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
-        user_id = session['user_id']
+        username = session['username']
         
-        log(f"[START] user_id: {user_id}", "INFO")
-        bot_state = get_user_bot_state(user_id)
+        log(f"[START] username: {username}", "INFO")
+        bot_state = get_user_bot_state(username)
         
         # ✅ 이 사용자의 봇이 실행 중인지 체크
         if bot_state['running']:
@@ -2055,23 +2072,23 @@ def api_start():
 def api_stop():
     try:
         # ✅ 사용자별 독립 봇 상태 가져오기
-        if 'user_id' not in session:
+        if 'username' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
-        user_id = session['user_id']
+        username = session['username']
         
-        log(f"[STOP] user_id: {user_id}", "INFO")
-        bot_state = get_user_bot_state(user_id)
+        log(f"[STOP] username: {username}", "INFO")
+        bot_state = get_user_bot_state(username)
         
         bot_state['running'] = False
         
         # 💾 DB에 봇 상태 저장
-        save_bot_state(user_id, bot_state)
+        save_bot_state(username, bot_state)
         
         # 스레드가 종료될 때까지 대기 (최대 5초)
         if 'thread' in bot_state and bot_state['thread'] and bot_state['thread'].is_alive():
             bot_state['thread'].join(timeout=5)
-        log(f"[{user_id}] 봇이 정지되었습니다", "INFO")
+        log(f"[{username}] 봇이 정지되었습니다", "INFO")
         return jsonify({'success': True, 'message': '봇 중지'})
     except Exception as e:
         log(f"정지 오류: {e}", "ERROR")
@@ -2086,6 +2103,7 @@ def api_get_referral_link():
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
         user_id = session['user_id']
+        username = session.get('username', 'unknown')
         
         # DB에서 추천 코드 가져오기
         import sqlite3
