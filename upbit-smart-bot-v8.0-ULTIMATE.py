@@ -73,6 +73,17 @@ from emotion_system import detect_emotion, get_emotion_image, analyze_conversati
 from emei_learning_brain import EmeiLearningBrain
 from emei_persona_system import PersonaSystem, PersonaType
 
+# 🤖 ChatGPT 직접 연동
+try:
+    from chatgpt_client import chatgpt_client
+    CHATGPT_ENABLED = chatgpt_client is not None
+    if CHATGPT_ENABLED:
+        print("✅ ChatGPT 클라이언트 활성화")
+except Exception as e:
+    CHATGPT_ENABLED = False
+    chatgpt_client = None
+    print(f"⚠️ ChatGPT 비활성화: {e}")
+
 # 🧠 장기 기억 시스템 (이메이 전용)
 from long_term_memory import (
     save_conversation as save_emei_conversation, 
@@ -4136,7 +4147,7 @@ def jai_v2_page():
 
 @app.route('/api/ai-chat', methods=['POST'])
 def api_ai_chat():
-    """AI 챗봇 대화 API (로컬 AI 통합!)"""
+    """AI 챗봇 대화 API (ChatGPT 직접 통합 + 자동 저장!)"""
     try:
         # 로컬 AI 클라이언트 import
         from ai_client import ai_client
@@ -4305,34 +4316,50 @@ def api_ai_chat():
             is_learned = False  # 이미 학습된 것은 표시 안 함
             log(f"📚 학습된 지식 사용: {user_message[:30]}...", "INFO")
         else:
-            # AI 응답 생성 (로컬 AI 우선, 실패 시 OpenAI 자동 폴백!)
+            # AI 응답 생성 
             try:
-                from ai_client import ai_client
-                
-                messages = [
-                    {'role': 'system', 'content': system_prompt}
-                ] + chat_history[user_id]
-                
-                # 로컬 AI 사용 (Ollama) - 자동 폴백 지원!
-                result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
-                
-                reply = result['content']
-                
-                # 로그 (디버깅 + 통계)
-                log(f"✅ AI 응답 (Backend: {result['backend']}, Model: {result['model']}, Cost: ${result['cost']:.4f}, Duration: {result.get('duration', 0):.2f}s)", "INFO")
-                
-                # 🔍 모호한 답변이면 Learning Brain으로 웹 검색 + 학습
-                uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도', '생각해', '찾아봐']
-                if any(keyword in reply for keyword in uncertain_keywords):
-                    log(f"🔍 모호한 답변 감지 → Learning Brain 활성화: {user_message[:30]}...", "INFO")
+                # 🚀 ChatGPT 사용 가능하면 우선 사용!
+                if CHATGPT_ENABLED:
+                    log(f"🤖 ChatGPT 호출: {user_message[:30]}...", "INFO")
                     
-                    # Learning Brain으로 웹 학습 시도
-                    web_learned_answer = learning_brain.learn_from_web(user_message)
+                    result = chatgpt_client.chat(
+                        user_message=user_message,
+                        system_prompt=system_prompt,
+                        user_id=user_id,
+                        emotion=persona_info['name'],
+                        persona=detected_persona.value
+                    )
                     
-                    if web_learned_answer:
-                        reply = web_learned_answer
-                        is_learned = True  # 학습 완료!
-                        log(f"📚 Learning Brain 학습 완료: {user_message[:30]}...", "SUCCESS")
+                    reply = result['reply']
+                    is_learned = result['learned']
+                    
+                    log(f"✅ ChatGPT 응답 (Model: {result['model']}, Cost: ${result['cost']:.4f}, Time: {result['response_time']:.2f}s, Learned: {is_learned})", "INFO")
+                
+                else:
+                    # 로컬 AI 백업 (Ollama)
+                    from ai_client import ai_client
+                    
+                    messages = [
+                        {'role': 'system', 'content': system_prompt}
+                    ] + chat_history[user_id]
+                    
+                    result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
+                    reply = result['content']
+                    
+                    log(f"✅ AI 응답 (Backend: {result['backend']}, Model: {result['model']}, Cost: ${result['cost']:.4f}, Duration: {result.get('duration', 0):.2f}s)", "INFO")
+                    
+                    # 🔍 모호한 답변이면 Learning Brain으로 웹 검색 + 학습
+                    uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도', '생각해', '찾아봐']
+                    if any(keyword in reply for keyword in uncertain_keywords):
+                        log(f"🔍 모호한 답변 감지 → Learning Brain 활성화: {user_message[:30]}...", "INFO")
+                        
+                        # Learning Brain으로 웹 학습 시도
+                        web_learned_answer = learning_brain.learn_from_web(user_message)
+                        
+                        if web_learned_answer:
+                            reply = web_learned_answer
+                            is_learned = True  # 학습 완료!
+                            log(f"📚 Learning Brain 학습 완료: {user_message[:30]}...", "SUCCESS")
             
             except Exception as e:
                 log(f"❌ AI 챗봇 오류: {e}", "WARNING")
@@ -4619,7 +4646,7 @@ def api_learning_stats():
 # 👍👎 피드백 저장 API
 @app.route('/api/feedback', methods=['POST'])
 def api_feedback():
-    """사용자 피드백 저장 (이메이 대화 품질 개선용)"""
+    """사용자 피드백 저장 (이메이 대화 품질 개선용) + ChatGPT 연동"""
     try:
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
@@ -4642,6 +4669,11 @@ def api_feedback():
             feedback_type=feedback_type,
             reason=feedback_reason
         )
+        
+        # ChatGPT 클라이언트에도 피드백 저장
+        if CHATGPT_ENABLED:
+            feedback_score = 1 if feedback_type == 'like' else -1
+            chatgpt_client.save_feedback(user_message, feedback_score)
         
         log(f"📝 [{user_id}] 피드백 저장 완료: {feedback_type} (ID: {feedback_id})", "INFO")
         
