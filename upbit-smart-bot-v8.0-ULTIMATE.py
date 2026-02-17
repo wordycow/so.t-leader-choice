@@ -73,12 +73,22 @@ from emotion_system import detect_emotion, get_emotion_image, analyze_conversati
 from emei_learning_brain import EmeiLearningBrain
 from emei_persona_system import PersonaSystem, PersonaType
 
-# 🤖 ChatGPT 직접 연동
+# 🆓 100% 무료 학습 시스템
+try:
+    from free_learning_system import free_learning_system
+    FREE_LEARNING_ENABLED = True
+    print("✅ 무료 학습 시스템 활성화 ($0!)")
+except Exception as e:
+    FREE_LEARNING_ENABLED = False
+    free_learning_system = None
+    print(f"⚠️ 무료 학습 시스템 오류: {e}")
+
+# 🤖 ChatGPT 직접 연동 (선택 사항 - 유료)
 try:
     from chatgpt_client import chatgpt_client
     CHATGPT_ENABLED = chatgpt_client is not None
     if CHATGPT_ENABLED:
-        print("✅ ChatGPT 클라이언트 활성화")
+        print("✅ ChatGPT 클라이언트 활성화 (선택 사항)")
 except Exception as e:
     CHATGPT_ENABLED = False
     chatgpt_client = None
@@ -4303,67 +4313,79 @@ def api_ai_chat():
         if len(chat_history[user_id]) > 20:
             chat_history[user_id] = chat_history[user_id][-20:]
         
-        # 🧠 학습 시스템: 먼저 학습된 지식 확인
-        learning_brain = EmeiLearningBrain()
-        
-        # 1. 학습된 지식에서 답변 찾기
-        learned_answer = learning_brain.get_learned_answer(user_message)
-        is_learned = False  # 학습 플래그
-        
-        if learned_answer:
-            # 학습된 답변 있음 → 즉시 응답!
-            reply = learned_answer
-            is_learned = False  # 이미 학습된 것은 표시 안 함
-            log(f"📚 학습된 지식 사용: {user_message[:30]}...", "INFO")
-        else:
-            # AI 응답 생성 
+        # 🆓 100% 무료 학습 시스템 우선 사용!
+        if FREE_LEARNING_ENABLED:
+            log(f"🆓 무료 학습 시스템 사용: {user_message[:30]}...", "INFO")
+            
             try:
-                # 🚀 ChatGPT 사용 가능하면 우선 사용!
-                if CHATGPT_ENABLED:
-                    log(f"🤖 ChatGPT 호출: {user_message[:30]}...", "INFO")
-                    
-                    result = chatgpt_client.chat(
-                        user_message=user_message,
-                        system_prompt=system_prompt,
-                        user_id=user_id,
-                        emotion=persona_info['name'],
-                        persona=detected_persona.value
-                    )
-                    
-                    reply = result['reply']
-                    is_learned = result['learned']
-                    
-                    log(f"✅ ChatGPT 응답 (Model: {result['model']}, Cost: ${result['cost']:.4f}, Time: {result['response_time']:.2f}s, Learned: {is_learned})", "INFO")
+                result = free_learning_system.chat(user_message, user_id)
                 
-                else:
-                    # 로컬 AI 백업 (Ollama)
-                    from ai_client import ai_client
-                    
-                    messages = [
-                        {'role': 'system', 'content': system_prompt}
-                    ] + chat_history[user_id]
-                    
-                    result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
-                    reply = result['content']
-                    
-                    log(f"✅ AI 응답 (Backend: {result['backend']}, Model: {result['model']}, Cost: ${result['cost']:.4f}, Duration: {result.get('duration', 0):.2f}s)", "INFO")
-                    
-                    # 🔍 모호한 답변이면 Learning Brain으로 웹 검색 + 학습
-                    uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도', '생각해', '찾아봐']
-                    if any(keyword in reply for keyword in uncertain_keywords):
-                        log(f"🔍 모호한 답변 감지 → Learning Brain 활성화: {user_message[:30]}...", "INFO")
-                        
-                        # Learning Brain으로 웹 학습 시도
-                        web_learned_answer = learning_brain.learn_from_web(user_message)
-                        
-                        if web_learned_answer:
-                            reply = web_learned_answer
-                            is_learned = True  # 학습 완료!
-                            log(f"📚 Learning Brain 학습 완료: {user_message[:30]}...", "SUCCESS")
+                reply = result['reply']
+                is_learned = result.get('learned', False)
+                
+                log(f"✅ 무료 시스템 응답 (Cached: {result['cached']}, Time: {result['response_time']:.1f}s, Cost: $0!)", "INFO")
             
             except Exception as e:
-                log(f"❌ AI 챗봇 오류: {e}", "WARNING")
-                reply = generate_fallback_response(user_message, holdings_info, current_krw, profit_rate)
+                log(f"⚠️ 무료 시스템 오류, 로컬 AI 폴백: {e}", "WARNING")
+                
+                # 폴백: 로컬 AI 직접 호출
+                from ai_client import ai_client
+                
+                messages = [
+                    {'role': 'system', 'content': system_prompt}
+                ] + chat_history[user_id]
+                
+                result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
+                reply = result['content']
+                is_learned = False
+        
+        else:
+            # 무료 시스템 없으면 기존 방식
+            learning_brain = EmeiLearningBrain()
+            
+            # 1. 학습된 지식에서 답변 찾기
+            learned_answer = learning_brain.get_learned_answer(user_message)
+            is_learned = False
+            
+            if learned_answer:
+                reply = learned_answer
+                log(f"📚 학습된 지식 사용: {user_message[:30]}...", "INFO")
+            else:
+                # AI 응답 생성 
+                try:
+                    # ChatGPT (유료, 선택 사항)
+                    if CHATGPT_ENABLED:
+                        log(f"💰 ChatGPT 호출 (유료): {user_message[:30]}...", "INFO")
+                        
+                        result = chatgpt_client.chat(
+                            user_message=user_message,
+                            system_prompt=system_prompt,
+                            user_id=user_id,
+                            emotion=persona_info['name'],
+                            persona=detected_persona.value
+                        )
+                        
+                        reply = result['reply']
+                        is_learned = result['learned']
+                        
+                        log(f"✅ ChatGPT 응답 (Cost: ${result['cost']:.4f})", "INFO")
+                    
+                    else:
+                        # 로컬 AI (무료)
+                        from ai_client import ai_client
+                        
+                        messages = [
+                            {'role': 'system', 'content': system_prompt}
+                        ] + chat_history[user_id]
+                        
+                        result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
+                        reply = result['content']
+                        
+                        log(f"✅ 로컬 AI 응답 (Cost: $0)", "INFO")
+                
+                except Exception as e:
+                    log(f"❌ AI 챗봇 오류: {e}", "WARNING")
+                    reply = generate_fallback_response(user_message, holdings_info, current_krw, profit_rate)
         
         # 대화 히스토리에 AI 응답 추가
         chat_history[user_id].append({
