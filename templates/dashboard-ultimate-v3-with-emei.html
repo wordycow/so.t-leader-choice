@@ -2136,8 +2136,15 @@
         
         // 🎭 표정 전환 (감정에 따라 아바타 이미지 변경)
         if (data.emotion_image) {
-          emeiAvatar.src = data.emotion_image + '?v=' + Date.now();
-          console.log('🎭 표정 전환:', data.emotion, '→', data.emotion_image);
+          // 이미지 경로 검증 후 변경
+          const imgPath = data.emotion_image;
+          if (imgPath && imgPath.includes('/static/images/')) {
+            emeiAvatar.src = imgPath + '?v=' + Date.now();
+            console.log('🎭 표정 전환:', data.emotion, '→', imgPath);
+          } else {
+            // 기본 이미지로 폴백
+            console.warn('⚠️ Invalid image path:', imgPath);
+          }
         }
         
         addEmeiMessage(replyHtml, 'ai', message);
