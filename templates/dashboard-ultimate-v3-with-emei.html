@@ -828,6 +828,48 @@
       margin-left: 6px;
       color: white;
     }
+    
+    .emei-feedback-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    
+    .emei-feedback-buttons:hover {
+      opacity: 1;
+    }
+    
+    .emei-feedback-btn {
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .emei-feedback-btn:hover {
+      background: rgba(139, 92, 246, 0.3);
+      transform: scale(1.1);
+    }
+    
+    .emei-feedback-btn.active {
+      background: rgba(139, 92, 246, 0.6);
+      border-color: rgba(139, 92, 246, 0.8);
+    }
+    
+    .emei-feedback-btn.like.active {
+      background: rgba(34, 197, 94, 0.6);
+      border-color: rgba(34, 197, 94, 0.8);
+    }
+    
+    .emei-feedback-btn.dislike.active {
+      background: rgba(239, 68, 68, 0.6);
+      border-color: rgba(239, 68, 68, 0.8);
+    }
 
     .emei-chat-input {
       padding: 16px;
@@ -1994,7 +2036,7 @@
     const emeiSendBtn = document.getElementById('emeiSendBtn');
     const emeiAvatar = document.getElementById('emeiAvatar');
 
-    function addEmeiMessage(text, type) {
+    function addEmeiMessage(text, type, userMsg = null) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `emei-message ${type}`;
       
@@ -2006,10 +2048,30 @@
       bubble.className = 'emei-message-bubble';
       bubble.innerHTML = text;
       
+      // AI 응답에만 피드백 버튼 추가
+      if (type === 'ai') {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'emei-feedback-buttons';
+        feedbackDiv.innerHTML = `
+          <button class="emei-feedback-btn like" onclick="sendFeedback('like', this, '${escapeHtml(userMsg)}', '${escapeHtml(text)}')" title="도움이 됐어요">
+            👍
+          </button>
+          <button class="emei-feedback-btn dislike" onclick="sendFeedback('dislike', this, '${escapeHtml(userMsg)}', '${escapeHtml(text)}')" title="별로였어요">
+            👎
+          </button>
+        `;
+        bubble.appendChild(feedbackDiv);
+      }
+      
       messageDiv.appendChild(avatar);
       messageDiv.appendChild(bubble);
       emeiChatMessages.appendChild(messageDiv);
       emeiChatMessages.scrollTop = emeiChatMessages.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/'/g, "&apos;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function addEmeiTypingIndicator() {
@@ -2078,7 +2140,7 @@
           console.log('🎭 표정 전환:', data.emotion, '→', data.emotion_image);
         }
         
-        addEmeiMessage(replyHtml, 'ai');
+        addEmeiMessage(replyHtml, 'ai', message);
       } catch (error) {
         removeEmeiTypingIndicator(typingId);
         emeiAvatar.classList.remove('talking');
@@ -2090,6 +2152,52 @@
     emeiMessageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendEmeiMessage();
     });
+    
+    // 👍👎 피드백 전송
+    window.sendFeedback = async function(feedbackType, btn, userMsg, aiResponse) {
+      // 이미 피드백을 보냈는지 확인
+      if (btn.classList.contains('active')) {
+        return;
+      }
+      
+      // 같은 메시지의 다른 버튼 비활성화
+      const feedbackDiv = btn.parentElement;
+      feedbackDiv.querySelectorAll('.emei-feedback-btn').forEach(b => {
+        b.style.pointerEvents = 'none';
+      });
+      btn.classList.add('active');
+      
+      try {
+        const response = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            feedback_type: feedbackType,
+            user_message: userMsg,
+            ai_response: aiResponse
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log(`✅ 피드백 전송 완료: ${feedbackType}`);
+          // 피드백 성공 시 간단한 애니메이션
+          btn.style.transform = 'scale(1.2)';
+          setTimeout(() => {
+            btn.style.transform = '';
+          }, 200);
+        }
+      } catch (error) {
+        console.error('피드백 전송 실패:', error);
+        // 실패 시 버튼 다시 활성화
+        feedbackDiv.querySelectorAll('.emei-feedback-btn').forEach(b => {
+          b.style.pointerEvents = '';
+        });
+        btn.classList.remove('active');
+      }
+    };
 
     // 페이지 로드 시 상태 확인
     window.addEventListener('DOMContentLoaded', () => {

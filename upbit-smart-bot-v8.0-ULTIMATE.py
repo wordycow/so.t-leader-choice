@@ -81,6 +81,7 @@ from long_term_memory import (
     get_memory_context
 )
 from learned_knowledge import get_learned_answer, learn_new_knowledge, get_knowledge_stats
+from feedback_system import save_feedback, get_feedback_stats, analyze_improvement_areas
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -4603,6 +4604,72 @@ def api_learning_stats():
         })
     except Exception as e:
         log(f"학습 통계 API 오류: {e}", "ERROR")
+        return jsonify({
+            'success': False,
+            'message': '통계 조회 실패'
+        })
+
+# 👍👎 피드백 저장 API
+@app.route('/api/feedback', methods=['POST'])
+def api_feedback():
+    """사용자 피드백 저장 (이메이 대화 품질 개선용)"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        data = request.json
+        user_id = session['user_id']
+        user_message = data.get('user_message', '')
+        ai_response = data.get('ai_response', '')
+        feedback_type = data.get('feedback_type')  # 'like' or 'dislike'
+        feedback_reason = data.get('reason', None)
+        
+        if not feedback_type or feedback_type not in ['like', 'dislike']:
+            return jsonify({'success': False, 'message': '유효하지 않은 피드백 타입'})
+        
+        # 피드백 저장
+        feedback_id = save_feedback(
+            user_id=user_id,
+            user_message=user_message,
+            ai_response=ai_response,
+            feedback_type=feedback_type,
+            reason=feedback_reason
+        )
+        
+        log(f"📝 [{user_id}] 피드백 저장 완료: {feedback_type} (ID: {feedback_id})", "INFO")
+        
+        return jsonify({
+            'success': True,
+            'feedback_id': feedback_id,
+            'message': '피드백 감사합니다! 이메이가 더 나아질 거예요 😊'
+        })
+    except Exception as e:
+        log(f"피드백 API 오류: {e}", "ERROR")
+        return jsonify({
+            'success': False,
+            'message': '피드백 저장 실패'
+        })
+
+# 📊 피드백 통계 API
+@app.route('/api/feedback-stats', methods=['GET'])
+def api_feedback_stats():
+    """피드백 통계 조회"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        
+        stats = get_feedback_stats(days)
+        improvement = analyze_improvement_areas()
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'improvement_areas': {
+                'total_negative': improvement['total_negative'],
+                'top_issues': [{'reason': r, 'count': c} for r, c in improvement['top_issues']]
+            }
+        })
+    except Exception as e:
+        log(f"피드백 통계 API 오류: {e}", "ERROR")
         return jsonify({
             'success': False,
             'message': '통계 조회 실패'
