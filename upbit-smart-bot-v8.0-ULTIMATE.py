@@ -157,6 +157,36 @@ STRATEGIES = {
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'ema_squeeze': {
+        'name': '200/20 이평선 스퀴즈',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'testa_3sma': {
+        'name': '테스타 3중 이평선',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'rsi_reversal': {
+        'name': 'RSI 필터 반전',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'volume_breakout_v2': {
+        'name': '거래량 돌파',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
+    },
+    'mach7_pullback': {
+        'name': '마하7 이평선 눌림목',
+        'enabled': True,
+        'weight': 1.0,
+        'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     }
 }
 
@@ -659,6 +689,275 @@ def detect_squeeze_momentum(ticker):
         log(f"Squeeze Momentum 감지 오류: {e}", "ERROR")
         return None
 
+def detect_ema_squeeze(ticker):
+    """200/20 EMA Squeeze 전략 - SMA(200)과 SMA(20)의 스퀴즈 감지"""
+    try:
+        df = pyupbit.get_ohlcv(ticker, interval="minute15", count=220)
+        if df is None or len(df) < 220:
+            return None
+        
+        df['sma_200'] = df['close'].rolling(window=200).mean()
+        df['sma_20'] = df['close'].rolling(window=20).mean()
+        
+        current_price = df['close'].iloc[-1]
+        sma_200 = df['sma_200'].iloc[-1]
+        sma_20 = df['sma_20'].iloc[-1]
+        
+        # 조건 1: 가격이 SMA(200) 위 + SMA(200) 상승 중
+        if current_price < sma_200 or pd.isna(sma_200):
+            return None
+        if df['sma_200'].iloc[-1] <= df['sma_200'].iloc[-10]:
+            return None
+        
+        # 조건 2: SMA(20)이 SMA(200)에 근접 (5% 이내)
+        squeeze_ratio = abs(sma_20 - sma_200) / sma_200
+        if squeeze_ratio > 0.05:
+            return None
+        
+        # 조건 3: 최근 캔들이 긴 양봉으로 SMA(20) 돌파
+        last_candle = df.iloc[-1]
+        prev_candle = df.iloc[-2]
+        
+        body_size = abs(last_candle['close'] - last_candle['open'])
+        candle_range = last_candle['high'] - last_candle['low']
+        
+        if candle_range == 0 or body_size / candle_range < 0.6:
+            return None
+        
+        if last_candle['close'] <= last_candle['open']:
+            return None
+        
+        if prev_candle['close'] < sma_20 and last_candle['close'] > sma_20:
+            return {
+                'type': 'EMA_SQUEEZE',
+                'confidence': 0.85,
+                'sma_200': sma_200,
+                'sma_20': sma_20,
+                'squeeze_ratio': squeeze_ratio,
+                'action': 'BUY'
+            }
+        
+        return None
+    except Exception as e:
+        log(f"EMA Squeeze 감지 오류: {e}", "ERROR")
+        return None
+
+def detect_testa_3sma(ticker):
+    """테스타의 3중 이평선 정배열 전략"""
+    try:
+        df = pyupbit.get_ohlcv(ticker, interval="minute5", count=80)
+        if df is None or len(df) < 80:
+            return None
+        
+        df['sma_5'] = df['close'].rolling(window=5).mean()
+        df['sma_25'] = df['close'].rolling(window=25).mean()
+        df['sma_75'] = df['close'].rolling(window=75).mean()
+        
+        current_price = df['close'].iloc[-1]
+        sma_5 = df['sma_5'].iloc[-1]
+        sma_25 = df['sma_25'].iloc[-1]
+        sma_75 = df['sma_75'].iloc[-1]
+        
+        if pd.isna(sma_5) or pd.isna(sma_25) or pd.isna(sma_75):
+            return None
+        
+        # 조건 1: SMA(75) 상승 중
+        if df['sma_75'].iloc[-1] <= df['sma_75'].iloc[-10]:
+            return None
+        
+        # 조건 2: 정배열 (SMA(25) > SMA(75))
+        if sma_25 <= sma_75:
+            return None
+        
+        # 조건 3: 양봉이 SMA(5) 돌파 + 거래량 증가
+        last_candle = df.iloc[-1]
+        prev_candle = df.iloc[-2]
+        
+        avg_volume = df['volume'].iloc[-10:-1].mean()
+        if avg_volume == 0:
+            return None
+        
+        volume_ratio = last_candle['volume'] / avg_volume
+        
+        if volume_ratio < 1.2:
+            return None
+        
+        if last_candle['close'] <= last_candle['open']:
+            return None
+        
+        if prev_candle['close'] < sma_5 and last_candle['close'] > sma_5:
+            return {
+                'type': 'TESTA_3SMA',
+                'confidence': 0.9,
+                'sma_5': sma_5,
+                'sma_25': sma_25,
+                'sma_75': sma_75,
+                'volume_ratio': volume_ratio,
+                'entry_candle_low': last_candle['low'],
+                'action': 'BUY'
+            }
+        
+        return None
+    except Exception as e:
+        log(f"Testa 3SMA 감지 오류: {e}", "ERROR")
+        return None
+
+def detect_rsi_reversal(ticker):
+    """RSI 필터 + 볼린저 밴드 + Engulfing 패턴 (Ross Cameron)"""
+    try:
+        df = pyupbit.get_ohlcv(ticker, interval="minute15", count=30)
+        if df is None or len(df) < 30:
+            return None
+        
+        # RSI 계산
+        delta = df['close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        df['rsi'] = 100 - (100 / (1 + rs))
+        
+        # 볼린저 밴드 계산
+        df['bb_middle'] = df['close'].rolling(window=20).mean()
+        df['bb_std'] = df['close'].rolling(window=20).std()
+        df['bb_upper'] = df['bb_middle'] + (df['bb_std'] * 2)
+        df['bb_lower'] = df['bb_middle'] - (df['bb_std'] * 2)
+        
+        current_rsi = df['rsi'].iloc[-1]
+        last_candle = df.iloc[-1]
+        prev_candle = df.iloc[-2]
+        
+        if pd.isna(current_rsi) or pd.isna(df['bb_lower'].iloc[-1]):
+            return None
+        
+        # 조건 1: RSI < 30 (과매도)
+        if current_rsi >= 30:
+            return None
+        
+        # 조건 2: 가격이 볼린저 하단 터치
+        if last_candle['low'] > df['bb_lower'].iloc[-1]:
+            return None
+        
+        # 조건 3: Bullish Engulfing 패턴
+        is_engulfing = (
+            prev_candle['close'] < prev_candle['open'] and
+            last_candle['close'] > last_candle['open'] and
+            last_candle['close'] > prev_candle['open'] and
+            last_candle['open'] < prev_candle['close']
+        )
+        
+        if is_engulfing:
+            return {
+                'type': 'RSI_REVERSAL',
+                'confidence': 0.88,
+                'rsi': current_rsi,
+                'bb_lower': df['bb_lower'].iloc[-1],
+                'bb_upper': df['bb_upper'].iloc[-1],
+                'pattern': 'Bullish Engulfing',
+                'action': 'BUY'
+            }
+        
+        return None
+    except Exception as e:
+        log(f"RSI Reversal 감지 오류: {e}", "ERROR")
+        return None
+
+def detect_volume_breakout_v2(ticker):
+    """거래량 감소 → 급증 + 고점 돌파"""
+    try:
+        df = pyupbit.get_ohlcv(ticker, interval="minute5", count=30)
+        if df is None or len(df) < 30:
+            return None
+        
+        # 거래량 감소 → 급증 패턴
+        volume_avg = df['volume'].iloc[-10:-2].mean()
+        prev_volume = df['volume'].iloc[-2]
+        current_volume = df['volume'].iloc[-1]
+        
+        if volume_avg == 0:
+            return None
+        
+        # 조건 1: 이전 거래량이 평균보다 감소
+        if prev_volume > volume_avg * 0.8:
+            return None
+        
+        # 조건 2: 현재 거래량이 급증 (평균의 150% 이상)
+        if current_volume < volume_avg * 1.5:
+            return None
+        
+        # 조건 3: 현재 캔들이 이전 캔들의 고점 돌파
+        if df['close'].iloc[-1] <= df['high'].iloc[-2]:
+            return None
+        
+        # 조건 4: 양봉이어야 함
+        if df['close'].iloc[-1] <= df['open'].iloc[-1]:
+            return None
+        
+        return {
+            'type': 'VOLUME_BREAKOUT_V2',
+            'confidence': 0.82,
+            'volume_ratio': current_volume / volume_avg,
+            'breakout_price': df['high'].iloc[-2],
+            'action': 'BUY'
+        }
+    except Exception as e:
+        log(f"Volume Breakout V2 감지 오류: {e}", "ERROR")
+        return None
+
+def detect_mach7_pullback(ticker):
+    """마하7의 이평선 눌림목 스캘핑 (1분봉)"""
+    try:
+        df = pyupbit.get_ohlcv(ticker, interval="minute1", count=120)
+        if df is None or len(df) < 120:
+            return None
+        
+        df['ema_20'] = df['close'].ewm(span=20, adjust=False).mean()
+        df['ema_50'] = df['close'].ewm(span=50, adjust=False).mean()
+        df['ema_100'] = df['close'].ewm(span=100, adjust=False).mean()
+        
+        current_price = df['close'].iloc[-1]
+        ema_20 = df['ema_20'].iloc[-1]
+        ema_50 = df['ema_50'].iloc[-1]
+        ema_100 = df['ema_100'].iloc[-1]
+        
+        if pd.isna(ema_20) or pd.isna(ema_50) or pd.isna(ema_100):
+            return None
+        
+        # 조건 1: 정배열 (EMA(20) > EMA(50) > EMA(100))
+        if not (ema_20 > ema_50 > ema_100):
+            return None
+        
+        # 조건 2: 가격이 EMA(100) 위에 있음
+        if current_price < ema_100:
+            return None
+        
+        # 조건 3: 눌림목 (이전에 EMA(20) 아래로 내려갔다가 다시 위로)
+        prev_price = df['close'].iloc[-2]
+        if prev_price >= ema_20:
+            return None
+        
+        if current_price <= ema_20:
+            return None
+        
+        # 조건 4: Williams Fractal 시뮬레이션 (최근 7개 캔들 중 최저점)
+        recent_lows = df['low'].iloc[-7:]
+        is_fractal = df['low'].iloc[-4] == recent_lows.min()
+        
+        if is_fractal:
+            return {
+                'type': 'MACH7_PULLBACK',
+                'confidence': 0.92,
+                'ema_20': ema_20,
+                'ema_50': ema_50,
+                'ema_100': ema_100,
+                'stop_loss': ema_50,
+                'action': 'BUY'
+            }
+        
+        return None
+    except Exception as e:
+        log(f"Mach7 Pullback 감지 오류: {e}", "ERROR")
+        return None
+
 def analyze_all_patterns(ticker):
     """모든 패턴 종합 분석"""
     patterns = {}
@@ -693,6 +992,27 @@ def analyze_all_patterns(ticker):
     volume = detect_volume_pattern(ticker)
     if volume:
         patterns['volume'] = volume
+    
+    # v10.24 신규 전략들
+    ema_squeeze = detect_ema_squeeze(ticker)
+    if ema_squeeze:
+        patterns['ema_squeeze'] = ema_squeeze
+    
+    testa = detect_testa_3sma(ticker)
+    if testa:
+        patterns['testa'] = testa
+    
+    rsi_rev = detect_rsi_reversal(ticker)
+    if rsi_rev:
+        patterns['rsi_reversal'] = rsi_rev
+    
+    vol_break = detect_volume_breakout_v2(ticker)
+    if vol_break:
+        patterns['volume_breakout_v2'] = vol_break
+    
+    mach7 = detect_mach7_pullback(ticker)
+    if mach7:
+        patterns['mach7'] = mach7
     
     return patterns
 
@@ -731,6 +1051,17 @@ def select_best_strategy(ticker, patterns):
             score += patterns['trend']['confidence'] * 5 * 0.5
         elif 'volume' in patterns and strategy_id == 'volume_hunter':
             score += patterns['volume']['confidence'] * 5 * 0.5
+        # v10.24 신규 전략 매핑
+        elif 'ema_squeeze' in patterns and strategy_id == 'ema_squeeze':
+            score += patterns['ema_squeeze'].get('confidence', 0.5) * 5 * 0.5
+        elif 'testa' in patterns and strategy_id == 'testa_3sma':
+            score += patterns['testa'].get('confidence', 0.5) * 5 * 0.5
+        elif 'rsi_reversal' in patterns and strategy_id == 'rsi_reversal':
+            score += patterns['rsi_reversal'].get('confidence', 0.5) * 5 * 0.5
+        elif 'volume_breakout_v2' in patterns and strategy_id == 'volume_breakout_v2':
+            score += patterns['volume_breakout_v2'].get('confidence', 0.5) * 5 * 0.5
+        elif 'mach7' in patterns and strategy_id == 'mach7_pullback':
+            score += patterns['mach7'].get('confidence', 0.5) * 5 * 0.5
         
         strategy_scores[strategy_id] = score
     
