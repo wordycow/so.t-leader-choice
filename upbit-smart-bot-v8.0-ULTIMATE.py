@@ -2286,7 +2286,8 @@ def index():
     if 'user_id' not in session:
         return redirect('/login')
     
-    response = make_response(render_template('dashboard-chat-integrated.html'))
+    # ✨ 이메이 통합 대시보드 v3 (트레이딩 봇 + AI 채팅)
+    response = make_response(render_template('dashboard-ultimate-v3-with-emei.html'))
     # 캐시 방지
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
