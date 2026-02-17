@@ -98,6 +98,21 @@
       text-align: center;
     }
 
+    /* 이메이 아바타 호버 효과 */
+    #emeiAvatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.7);
+    }
+
+    #emeiAvatar.talking {
+      animation: avatarTalking 0.5s ease-in-out infinite;
+    }
+
+    @keyframes avatarTalking {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
     .chat-header h2 {
       font-size: 20px;
       font-weight: 700;
@@ -327,7 +342,14 @@
     <!-- 오른쪽: 이메이 채팅 -->
     <div class="chat-section">
       <div class="chat-header">
-        <h2>💬 이메이와 대화</h2>
+        <!-- 이메이 아바타 -->
+        <div style="text-align: center; margin-bottom: 12px;">
+          <img src="/static/images/emei-beautiful-v1.jpg?v=2" 
+               id="emeiAvatar"
+               style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid rgba(139, 92, 246, 0.7); object-fit: cover; box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5); transition: all 0.3s ease;"
+               alt="Emei">
+        </div>
+        <h2>💬 이메이 (Emei)</h2>
         <p>실시간 매매 상담 & 학습 AI</p>
       </div>
 
@@ -365,6 +387,10 @@
       addMessage(message, 'user');
       messageInput.value = '';
 
+      // 이메이 아바타 대화 중 애니메이션
+      const avatar = document.getElementById('emeiAvatar');
+      if (avatar) avatar.classList.add('talking');
+
       const typingId = addTypingIndicator();
 
       try {
@@ -378,6 +404,10 @@
         const data = await response.json();
         removeTypingIndicator(typingId);
 
+        // 이메이 아바타 대화 종료
+        const avatar = document.getElementById('emeiAvatar');
+        if (avatar) avatar.classList.remove('talking');
+
         if (data.success) {
           const isLearning = data.learned || false;
           addMessage(data.reply, 'ai', isLearning);
@@ -386,6 +416,11 @@
         }
       } catch (error) {
         removeTypingIndicator(typingId);
+
+        // 이메이 아바타 대화 종료 (오류 시)
+        const avatar = document.getElementById('emeiAvatar');
+        if (avatar) avatar.classList.remove('talking');
+
         addMessage('연결에 문제가 발생했어요!', 'ai');
       }
     }
@@ -456,34 +491,54 @@
         const response = await fetch('/api/status');
         const data = await response.json();
 
-        if (data.balance !== undefined) {
-          document.getElementById('balance').textContent = data.balance.toLocaleString() + '원';
-          document.getElementById('invested').textContent = (data.invested || 0).toLocaleString() + '원';
-          
-          const profitEl = document.getElementById('profit');
-          const profit = data.profit || 0;
-          profitEl.textContent = (profit >= 0 ? '+' : '') + profit.toLocaleString() + '원';
-          profitEl.className = 'stat-value ' + (profit >= 0 ? 'positive' : 'negative');
+        // 잔고 업데이트 (current_krw 사용)
+        const balance = data.current_krw || 0;
+        document.getElementById('balance').textContent = balance.toLocaleString() + '원';
+        
+        // 투자금 (보유 코인 투자액)
+        const invested = data.holdings ? data.holdings.reduce((sum, h) => sum + (h.avg_price * h.amount), 0) : 0;
+        document.getElementById('invested').textContent = invested.toLocaleString() + '원';
+        
+        // 총 수익 (total_profit 사용)
+        const profitEl = document.getElementById('profit');
+        const profit = data.total_profit || 0;
+        profitEl.textContent = (profit >= 0 ? '+' : '') + profit.toLocaleString() + '원';
+        profitEl.className = 'stat-value ' + (profit >= 0 ? 'positive' : 'negative');
 
-          const rateEl = document.getElementById('profitRate');
-          const rate = data.profit_rate || 0;
-          rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-          rateEl.className = 'stat-value ' + (rate >= 0 ? 'positive' : 'negative');
+        // 수익률 (profit_rate 사용)
+        const rateEl = document.getElementById('profitRate');
+        const rate = data.profit_rate || 0;
+        rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+        rateEl.className = 'stat-value ' + (rate >= 0 ? 'positive' : 'negative');
 
-          document.getElementById('holdingsCount').textContent = data.holdings_count || 0;
+        // 보유 코인 개수
+        const holdingsCount = data.holdings ? data.holdings.length : 0;
+        document.getElementById('holdingsCount').textContent = holdingsCount;
 
-          // 보유 코인 목록
-          const holdingsList = document.getElementById('holdingsList');
-          if (data.holdings && data.holdings.length > 0) {
-            holdingsList.innerHTML = data.holdings.map(h => 
-              `<div style="margin-bottom: 8px;">
-                <strong>${h.coin}</strong>: ${h.amount.toFixed(4)}개 
-                (${h.profit_rate >= 0 ? '+' : ''}${h.profit_rate.toFixed(2)}%)
-              </div>`
-            ).join('');
-          } else {
-            holdingsList.textContent = '보유 중인 코인이 없습니다.';
-          }
+        // 보유 코인 목록
+        const holdingsList = document.getElementById('holdingsList');
+        if (data.holdings && data.holdings.length > 0) {
+          holdingsList.innerHTML = data.holdings.map(h => 
+            `<div style="margin-bottom: 8px;">
+              <strong>${h.coin_name || h.ticker.replace('KRW-', '')}</strong>: ${h.amount.toFixed(4)}개 
+              (${h.profit_rate >= 0 ? '+' : ''}${h.profit_rate.toFixed(2)}%)
+            </div>`
+          ).join('');
+        } else {
+          holdingsList.textContent = '보유 중인 코인이 없습니다.';
+        }
+
+        // 봇 로그 (최근 거래)
+        const botLogs = document.getElementById('botLogs');
+        if (data.recent_trades && data.recent_trades.length > 0) {
+          botLogs.innerHTML = data.recent_trades.slice(-5).reverse().map(t => 
+            `<div style="margin-bottom: 6px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px;">
+              <strong>${t.type === 'buy' ? '🟢 매수' : '🔴 매도'}</strong> ${t.ticker.replace('KRW-', '')} 
+              ${(t.profit_rate || 0).toFixed(2)}%
+            </div>`
+          ).join('');
+        } else {
+          botLogs.textContent = data.running ? '거래 대기 중...' : '봇 시작 대기 중...';
         }
       } catch (error) {
         console.error('대시보드 업데이트 실패:', error);
