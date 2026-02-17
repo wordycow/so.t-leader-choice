@@ -44,10 +44,12 @@ from datetime import datetime, timedelta
 from collections import deque, defaultdict
 import json
 import threading
-from flask import Flask, render_template, jsonify, request, make_response, session, redirect
+from flask import Flask, render_template, jsonify, request, make_response, session, redirect, Response
 from flask_cors import CORS
 import traceback
 import os
+import sqlite3
+import requests
 
 # 커스텀 모듈
 from user_manager import UserManager
@@ -55,6 +57,16 @@ from portfolio_manager import execute_diversified_buy, check_profit_trigger, get
 from trade_reasons import generate_buy_reason, generate_sell_reason
 from recovery_system import analyze_current_holdings, create_recovery_plan, execute_recovery_plan, UPBIT_FEE_RATE
 from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_state, get_all_running_bots
+from jai_memory_system import (
+    init_memory_tables, 
+    get_or_create_user_profile, 
+    learn_from_conversation,
+    save_conversation,
+    build_user_context,
+    get_personalized_greeting,
+    get_user_real_name,
+    get_relationship_level
+)
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -62,9 +74,11 @@ from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_sta
 
 # 급등/급락 감지
 SURGE_CONFIG = {
-    # 급등
-    'surge_threshold_1m': 1.5,
-    'surge_threshold_3m': 2.5,
+    # 급등 (🔥 10% 이상 급등만 포착!)
+    'surge_threshold_1m': 10.0,  # 1분 10% 이상
+    'surge_threshold_3m': 8.0,   # 3분 8% 이상
+    'surge_threshold_5m': 10.0,  # 5분 10% 이상
+    'surge_threshold_10m': 12.0, # 10분 12% 이상
     
     # 급락
     'dip_threshold_1m': -1.5,
@@ -80,9 +94,10 @@ SURGE_CONFIG = {
     'volume_spike_ratio': 2.0,
     'min_volume_krw': 100000000,
     
-    # 익절/손절
-    'take_profit_targets': [1.5, 2.5, 4.0],
-    'stop_loss': -2.0,
+    # 익절/손절 (🚀 빠른 회전 전략!)
+    'take_profit_quick': 5.0,    # 5% 이상 즉시 익절! (20만원 × 5% = 10,000원)
+    'take_profit_targets': [5.0, 8.0, 10.0],
+    'stop_loss': -2.0,           # -2% 즉시 손절!
 }
 
 # 패턴 분석
@@ -118,72 +133,84 @@ RECOVERY_CONFIG = {
 STRATEGIES = {
     'surge_hunter': {
         'name': '급등 포착',
+        'icon': '🔥',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'dip_hunter': {
         'name': '급락 저점 → 원가 복귀',
+        'icon': '📉',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'box_trader': {
         'name': '박스권 매매',
+        'icon': '📦',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'trend_follower': {
         'name': '추세 추종',
+        'icon': '📈',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'volume_hunter': {
         'name': '수급 기반',
+        'icon': '🔊',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'gap_down_reversal': {
         'name': 'BNF 급락 반등',
+        'icon': '⚡',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'squeeze_momentum': {
         'name': '압축 모멘텀',
+        'icon': '💥',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'ema_squeeze': {
         'name': '200/20 이평선 스퀴즈',
+        'icon': '🎯',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'testa_3sma': {
         'name': '테스타 3중 이평선',
+        'icon': '🎪',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'rsi_reversal': {
         'name': 'RSI 필터 반전',
+        'icon': '🔄',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'volume_breakout_v2': {
         'name': '거래량 돌파',
+        'icon': '💪',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
     },
     'mach7_pullback': {
         'name': '마하7 이평선 눌림목',
+        'icon': '🚀',
         'enabled': True,
         'weight': 1.0,
         'performance': {'trades': 0, 'wins': 0, 'total_profit': 0}
@@ -223,6 +250,7 @@ def create_bot_state():
         'trade_results': deque(maxlen=LEARNING_CONFIG['pattern_history_size']),
         'strategy_performance': {k: v.copy() for k, v in STRATEGIES.items()},
         'current_patterns': {},
+        'orderbook_history': {},  # 채결 강도 이력 저장
         
         # 통계
         'statistics': {
@@ -237,6 +265,13 @@ def create_bot_state():
         # 거래 내역 (최근 50개)
         'recent_trades': deque(maxlen=50),
         'recent_signals': deque(maxlen=50),
+        
+        # 실시간 상태 메시지
+        'status_message': '⏸️ 대기 중',
+        'status_emoji': '⏸️',
+        'status_detail': '봇이 시작되지 않았습니다',
+        'last_action': None,
+        'last_action_time': None,
         
         'user_id': None,  # 사용자 ID 추가
         'last_update': None,
@@ -352,7 +387,7 @@ def save_trade_to_db(user_id, trade_data):
         return False
 
 def save_bot_state_to_db(user_id, bot_state):
-    """봇 상태를 DB에 저장 (simulation_holdings, simulation_krw 등)"""
+    """봇 상태를 DB에 저장 (simulation_holdings, simulation_krw, strategy_performance 등)"""
     try:
         import sqlite3
         import json
@@ -363,6 +398,9 @@ def save_bot_state_to_db(user_id, bot_state):
         # simulation_holdings를 JSON으로 변환
         holdings_json = json.dumps(bot_state.get('simulation_holdings', {}), ensure_ascii=False, default=str)
         
+        # 🎯 strategy_performance를 JSON으로 변환 (히스토리 보존!)
+        strategy_perf_json = json.dumps(bot_state.get('strategy_performance', {}), ensure_ascii=False, default=str)
+        
         # bot_states 업데이트
         cursor.execute("""
             UPDATE bot_states
@@ -370,12 +408,14 @@ def save_bot_state_to_db(user_id, bot_state):
                 simulation_krw = ?,
                 simulation_holdings = ?,
                 recovery_mode_active = ?,
+                strategy_performance = ?,
                 last_update = CURRENT_TIMESTAMP
             WHERE user_id = ?
         """, (
             bot_state.get('simulation_krw', 0),
             holdings_json,
             bot_state.get('recovery_mode_active', False),
+            strategy_perf_json,
             user_id
         ))
         
@@ -475,30 +515,237 @@ def calculate_bollinger_keltner(df, bb_period=20, kc_period=20):
     except:
         return {'squeeze_on': False, 'momentum': 0, 'prev_momentum': 0}
 
+def calculate_orderbook_strength(ticker):
+    """실시간 채결 강도 계산 (호가창 분석)"""
+    try:
+        orderbook = pyupbit.get_orderbook(ticker)
+        if not orderbook or 'orderbook_units' not in orderbook:
+            return None
+        
+        units = orderbook['orderbook_units']
+        
+        # 매수/매도 호가 합계
+        total_bid_size = sum([unit['bid_size'] for unit in units])
+        total_ask_size = sum([unit['ask_size'] for unit in units])
+        
+        # 매수/매도 호가 금액
+        total_bid_price = sum([unit['bid_price'] * unit['bid_size'] for unit in units])
+        total_ask_price = sum([unit['ask_price'] * unit['ask_size'] for unit in units])
+        
+        # 채결 강도 = (매수 호가 / 매도 호가) * 100
+        strength = (total_bid_size / total_ask_size * 100) if total_ask_size > 0 else 100
+        
+        # 호가 금액 기준 강도
+        price_strength = (total_bid_price / total_ask_price * 100) if total_ask_price > 0 else 100
+        
+        return {
+            'strength': strength,  # 수량 기준
+            'price_strength': price_strength,  # 금액 기준
+            'bid_size': total_bid_size,
+            'ask_size': total_ask_size,
+            'bid_price': total_bid_price,
+            'ask_price': total_ask_price,
+            'timestamp': datetime.now()
+        }
+    except:
+        return None
+
+def check_orderbook_surge(ticker, bot_state):
+    """채결 강도 변화 감지 - 매수세 유입 포착"""
+    try:
+        # 현재 채결 강도
+        current = calculate_orderbook_strength(ticker)
+        if not current:
+            return None
+        
+        # 이전 채결 강도
+        history = bot_state.get('orderbook_history', {})
+        prev = history.get(ticker)
+        
+        # 현재 강도 저장
+        history[ticker] = current
+        bot_state['orderbook_history'] = history
+        
+        # 이전 기록이 없으면 판단 불가
+        if not prev:
+            return None
+        
+        # 채결 강도 변화
+        strength_change = current['strength'] - prev['strength']
+        
+        # 매수세 급증 감지
+        if current['strength'] > 150 and strength_change > 30:
+            return {
+                'type': 'ORDERBOOK_SURGE',
+                'strength': current['strength'],
+                'prev_strength': prev['strength'],
+                'change': strength_change,
+                'signal': f'💪 채결강도 급증 ({prev["strength"]:.0f}% → {current["strength"]:.0f}%)'
+            }
+        
+        return None
+    except:
+        return None
+
+def check_market_direction():
+    """시장 방향성 체크 - BTC & ETH로 판단"""
+    try:
+        # 현재가
+        btc = pyupbit.get_current_price('KRW-BTC')
+        eth = pyupbit.get_current_price('KRW-ETH')
+        
+        if not btc or not eth:
+            return None
+        
+        # 5분봉 데이터 (10개 = 50분)
+        df_btc = pyupbit.get_ohlcv('KRW-BTC', interval='minute5', count=10)
+        df_eth = pyupbit.get_ohlcv('KRW-ETH', interval='minute5', count=10)
+        
+        if df_btc is None or df_eth is None or len(df_btc) < 10:
+            return None
+        
+        # 변화율 계산 (50분 전 대비)
+        btc_ago = df_btc['close'].iloc[0]
+        eth_ago = df_eth['close'].iloc[0]
+        
+        btc_change = ((btc - btc_ago) / btc_ago) * 100
+        eth_change = ((eth - eth_ago) / eth_ago) * 100
+        
+        # 시장 방향 판단
+        if btc_change > 0.5 and eth_change > 0.3:
+            direction = 'STRONG_UP'  # 강한 상승
+            score = 1.0
+        elif btc_change > 0.2:
+            direction = 'UP'  # 약한 상승
+            score = 0.8
+        elif btc_change < -0.5 and eth_change < -0.3:
+            direction = 'STRONG_DOWN'  # 강한 하락
+            score = 0.0  # 매수 금지!
+        elif btc_change < -0.2:
+            direction = 'DOWN'  # 약한 하락
+            score = 0.3
+        else:
+            direction = 'NEUTRAL'  # 보합
+            score = 0.6
+        
+        return {
+            'direction': direction,
+            'score': score,
+            'btc_change': btc_change,
+            'eth_change': eth_change,
+            'btc_price': btc,
+            'eth_price': eth
+        }
+    except:
+        return None
+
 # ═══════════════════════════════════════════════════════
 # 🚀 급등 감지
 # ═══════════════════════════════════════════════════════
 def detect_surge_signal(ticker):
-    """급등 신호 감지"""
+    """급등 신호 감지 - 누적 상승 체크"""
     try:
         df_1m = pyupbit.get_ohlcv(ticker, interval="minute1", count=20)
         if df_1m is None or len(df_1m) < 10:
             return None
         
-        price_before = df_1m['close'].iloc[-2]
         price_now = df_1m['close'].iloc[-1]
-        change_1m = ((price_now - price_before) / price_before) * 100
+        
+        # 여러 시간대 상승률 체크
+        surge_signals = []
+        max_surge = 0
+        
+        # 1분 전 대비
+        price_1m_ago = df_1m['close'].iloc[-2]
+        surge_1m = ((price_now - price_1m_ago) / price_1m_ago) * 100
+        
+        # 3분 전 대비
+        if len(df_1m) >= 4:
+            price_3m_ago = df_1m['close'].iloc[-4]
+            surge_3m = ((price_now - price_3m_ago) / price_3m_ago) * 100
+            max_surge = max(max_surge, surge_3m)
+            if surge_3m >= 3.0:
+                surge_signals.append(f'3분 +{surge_3m:.2f}%')
+        
+        # 5분 전 대비 (진짜 급등)
+        if len(df_1m) >= 6:
+            price_5m_ago = df_1m['close'].iloc[-6]
+            surge_5m = ((price_now - price_5m_ago) / price_5m_ago) * 100
+            max_surge = max(max_surge, surge_5m)
+            if surge_5m >= 5.0:
+                surge_signals.append(f'5분 +{surge_5m:.2f}%')
+        
+        # 10분 전 대비 (대형 급등)
+        if len(df_1m) >= 11:
+            price_10m_ago = df_1m['close'].iloc[-11]
+            surge_10m = ((price_now - price_10m_ago) / price_10m_ago) * 100
+            max_surge = max(max_surge, surge_10m)
+            if surge_10m >= 8.0:
+                surge_signals.append(f'10분 +{surge_10m:.2f}%')
+        
+        # 거래량 체크
         vol_spike = calculate_volume_spike(df_1m)
         
-        if change_1m >= SURGE_CONFIG['surge_threshold_1m'] and vol_spike >= SURGE_CONFIG['volume_spike_ratio']:
+        # 🔥 실시간 채결 강도 체크 (핵심!)
+        orderbook = calculate_orderbook_strength(ticker)
+        strength = orderbook['strength'] if orderbook else 100
+        price_strength = orderbook['price_strength'] if orderbook else 100
+        
+        # 채결 강도가 높으면 점수 가산
+        strength_bonus = 0
+        if strength > 150:  # 매수세 압도적
+            strength_bonus = 3
+            surge_signals.append(f'💪 채결강도 {strength:.0f}%')
+        elif strength > 120:  # 매수세 강함
+            strength_bonus = 2
+            surge_signals.append(f'💪 채결강도 {strength:.0f}%')
+        elif strength > 100:  # 매수세 우위
+            strength_bonus = 1
+        
+        # 🔥🔥🔥 초강력 급등 조건: 10% 이상만 포착! 🔥🔥🔥
+        # 조건 1: 10분 내 12% 이상 (대박 급등!)
+        # 조건 2: 5분 내 10% 이상 + 거래량 1.5배 이상
+        # 조건 3: 3분 내 8% 이상 + 거래량 2.0배 이상
+        # 조건 4: 1분 내 10% 이상 (초강력 급등!)
+        
+        is_surge = False
+        score = 0
+        
+        # 1분 10% 급등 (초강력!)
+        if surge_1m >= 10.0:
+            is_surge = True
+            score = 15 + strength_bonus
+            surge_signals.append(f'🔥 1분 초강력 급등!')
+        # 10분 12% 대박 급등
+        elif max_surge >= 12.0:
+            is_surge = True
+            score = 12 + strength_bonus
+            surge_signals.append(f'🚀 대박 급등!')
+        # 5분 10% + 거래량
+        elif max_surge >= 10.0 and vol_spike >= 1.5:
+            is_surge = True
+            score = 11 + strength_bonus
+            surge_signals.append(f'거래량 {vol_spike:.1f}배')
+        # 3분 8% + 거래량 폭증
+        elif surge_3m >= 8.0 and vol_spike >= 2.0:
+            is_surge = True
+            score = 10 + strength_bonus
+            surge_signals.append(f'거래량 {vol_spike:.1f}배')
+        # 10% 이상 급등 (거래량 무관)
+        elif max_surge >= 10.0:
+            is_surge = True
+            score = 10 + strength_bonus
+        
+        if is_surge:
             return {
                 'type': 'SURGE',
                 'ticker': ticker,
                 'current_price': price_now,
-                'change_pct': change_1m,
+                'change_pct': max_surge,
                 'vol_spike': vol_spike,
-                'signals': [f'급등 +{change_1m:.2f}%', f'거래량 {vol_spike:.1f}배'],
-                'score': 5
+                'orderbook_strength': strength,  # 채결 강도 추가
+                'signals': surge_signals if surge_signals else [f'급등 +{max_surge:.2f}%'],
+                'score': score
             }
         
         return None
@@ -508,6 +755,97 @@ def detect_surge_signal(ticker):
 # ═══════════════════════════════════════════════════════
 # 📉 급락 감지
 # ═══════════════════════════════════════════════════════
+def detect_panic_sell_dip(ticker):
+    """패닉 매도 + 하방 꼬리 감지 → DIP HUNTER"""
+    try:
+        df_1m = pyupbit.get_ohlcv(ticker, interval="minute1", count=20)
+        if df_1m is None or len(df_1m) < 20:
+            return None
+        
+        # 볼린저 밴드 계산
+        df_1m['ma20'] = df_1m['close'].rolling(window=20).mean()
+        df_1m['std20'] = df_1m['close'].rolling(window=20).std()
+        df_1m['bb_lower'] = df_1m['ma20'] - (df_1m['std20'] * 2)
+        
+        # 최근 봉
+        last = df_1m.iloc[-1]
+        prev = df_1m.iloc[-2]
+        
+        # 1. 하방 꼬리 길이 (롱 테일) - 패닉 매도의 증거
+        body_size = abs(last['close'] - last['open'])
+        lower_tail = min(last['open'], last['close']) - last['low']
+        tail_ratio = lower_tail / body_size if body_size > 0.01 else 0
+        
+        # 2. 급락 폭
+        drop = ((last['close'] - prev['close']) / prev['close']) * 100
+        
+        # 3. 볼린저 하단 돌파 (공포 과매도)
+        bb_pierce = ((last['low'] - last['bb_lower']) / last['bb_lower']) * 100
+        
+        # 4. 거래량 폭발 (패닉)
+        vol_avg = df_1m['volume'].iloc[-10:-1].mean()
+        vol_spike = last['volume'] / vol_avg if vol_avg > 0 else 1
+        
+        # 5. RSI 과매도
+        rsi = calculate_rsi(df_1m)
+        
+        # DIP 신호 점수
+        signals = []
+        score = 0
+        
+        # 긴 하방 꼬리 (핵심!)
+        if tail_ratio > 2:
+            score += 4
+            signals.append(f'🔻 긴 꼬리 {tail_ratio:.1f}배')
+        elif tail_ratio > 1.5:
+            score += 2
+            signals.append(f'하방 꼬리 {tail_ratio:.1f}배')
+        
+        # 급락
+        if drop < -3:
+            score += 3
+            signals.append(f'급락 {drop:.1f}%')
+        elif drop < -2:
+            score += 2
+            signals.append(f'하락 {drop:.1f}%')
+        
+        # 볼린저 하단 돌파
+        if bb_pierce < -1:
+            score += 3
+            signals.append(f'볼린저 돌파 {bb_pierce:.1f}%')
+        elif bb_pierce < -0.5:
+            score += 2
+            signals.append(f'볼린저 근접')
+        
+        # 거래량 폭발
+        if vol_spike > 2:
+            score += 2
+            signals.append(f'거래량 {vol_spike:.1f}배')
+        
+        # RSI 과매도
+        if rsi < 30:
+            score += 2
+            signals.append(f'RSI {rsi:.0f}')
+        
+        # DIP HUNTER 발동 조건: 점수 8 이상
+        if score >= 8:
+            return {
+                'type': 'PANIC_DIP',
+                'ticker': ticker,
+                'current_price': last['close'],
+                'drop': drop,
+                'tail_ratio': tail_ratio,
+                'bb_pierce': bb_pierce,
+                'vol_spike': vol_spike,
+                'rsi': rsi,
+                'signals': signals,
+                'score': score
+            }
+        
+        return None
+    except:
+        return None
+
 def detect_dip_signal(ticker):
     """급락 신호 감지 - 원가 복귀 전략"""
     try:
@@ -1002,6 +1340,14 @@ def analyze_all_patterns(ticker):
     surge = detect_surge_signal(ticker)
     if surge:
         patterns['surge'] = surge
+        # 급등 감지 시 즉시 로깅
+        log(f"🚀🚀🚀 급등 감지! {ticker} {surge['change_pct']:.2f}% 상승! 신호: {surge.get('signals', [])}", "SUCCESS")
+    
+    # 패닉 매도 DIP (NEW! - 하락장에서도 매수)
+    panic_dip = detect_panic_sell_dip(ticker)
+    if panic_dip:
+        patterns['panic_dip'] = panic_dip
+        log(f"🔻🔻🔻 패닉 매도 감지! {ticker} 하방 꼬리 {panic_dip['tail_ratio']:.1f}배! 신호: {panic_dip.get('signals', [])}", "SUCCESS")
     
     dip = detect_dip_signal(ticker)
     if dip:
@@ -1340,20 +1686,112 @@ def find_recovery_opportunity(tickers, bot_state):
     return opportunities
 
 # ═══════════════════════════════════════════════════════
+# 🎯 코인 규모 분류 (거래대금 기준)
+# ═══════════════════════════════════════════════════════
+def get_coin_tier(ticker):
+    """
+    코인 규모 분류 및 전략 파라미터 반환
+    
+    Returns:
+        dict: {
+            'tier': 'major' | 'mid' | 'small' | 'micro',
+            'stop_loss': -8 ~ -20,
+            'take_profit': [5,7,10] ~ [15,20,30],
+            'dca_thresholds': [-2,-4,-6,-8] ~ [-4,-8,-12,-16]
+        }
+    """
+    try:
+        # 24시간 거래대금 계산
+        df = pyupbit.get_ohlcv(ticker, interval="day", count=1)
+        if df is None or len(df) == 0:
+            return {'tier': 'unknown', 'name': '미분류', 'stop_loss': -10, 'take_profit': [5,7,10], 'dca_thresholds': [-2,-4,-6,-8]}
+        
+        volume_krw = df['close'].iloc[-1] * df['volume'].iloc[-1]
+        volume_billion = volume_krw / 100_000_000  # 억원 단위
+        
+        # 규모 분류
+        if volume_billion >= 10000:  # 1조원 이상
+            return {
+                'tier': 'major',
+                'name': '메이저',
+                'stop_loss': -8,
+                'take_profit': [5, 7, 10],
+                'dca_thresholds': [-2, -4, -6, -8]
+            }
+        elif volume_billion >= 1000:  # 1000억~1조
+            return {
+                'tier': 'mid',
+                'name': '중형',
+                'stop_loss': -10,
+                'take_profit': [7, 10, 15],
+                'dca_thresholds': [-2, -4, -6, -8]
+            }
+        elif volume_billion >= 100:  # 100억~1000억
+            return {
+                'tier': 'small',
+                'name': '소형',
+                'stop_loss': -15,
+                'take_profit': [10, 15, 20],
+                'dca_thresholds': [-3, -6, -9, -12]
+            }
+        else:  # 100억 이하
+            return {
+                'tier': 'micro',
+                'name': '초소형',
+                'stop_loss': -20,
+                'take_profit': [15, 20, 30],
+                'dca_thresholds': [-4, -8, -12, -16]
+            }
+    except Exception as e:
+        log(f"❌ 코인 규모 분류 실패 ({ticker}): {e}", "ERROR")
+        # 기본값 반환 (중형 알트 기준)
+        return {
+            'tier': 'unknown',
+            'name': '미분류',
+            'stop_loss': -10,
+            'take_profit': [7, 10, 15],
+            'dca_thresholds': [-2, -4, -6, -8]
+        }
+
+# ═══════════════════════════════════════════════════════
 # 💰 거래 실행
 # ═══════════════════════════════════════════════════════
 def execute_trade(ticker, strategy_id, patterns, bot_state):
     """거래 실행 (수수료 0.05% 포함)"""
     try:
+        # 🚨 투자유의 종목 차단 (필수!)
+        try:
+            import requests
+            response = requests.get("https://api.upbit.com/v1/market/all?isDetails=true", timeout=3)
+            if response.status_code == 200:
+                markets = response.json()
+                for market in markets:
+                    if market['market'] == ticker and market.get('market_warning') == 'CAUTION':
+                        log(f"🚫 {ticker} 매수 차단: 투자유의 종목!", "WARNING")
+                        return None
+            else:
+                # API 호출 실패 시 안전하게 차단!
+                log(f"⚠️ {ticker} 매수 보류: 투자유의 종목 확인 실패 (API 오류)", "WARNING")
+                return None
+        except Exception as e:
+            # 네트워크 오류 등 발생 시 안전하게 차단!
+            log(f"⚠️ {ticker} 매수 보류: 투자유의 종목 확인 실패 ({str(e)})", "WARNING")
+            return None
+        
         current_price = pyupbit.get_current_price(ticker)
         if not current_price:
             return None
+        
+        # 🎯 코인 규모 분류
+        coin_tier = get_coin_tier(ticker)
         
         # 복구 모드
         if bot_state['recovery_mode_active']:
             invest_amount = bot_state['recovery_seed']
         else:
-            invest_amount = min(bot_state['simulation_krw'] * 0.15, 150000)
+            # 🔥 v12.2 초소액 최적화: 1차 진입 6,000원 (초소액 리스크)
+            # 물타기: 6K→10K→20K→30K→30K→100K (총 19.6만원)
+            invest_amount = min(bot_state['simulation_krw'] * 0.01, 6000)  # 🎯 v12.2: 초기 진입 6,000원
         
         if invest_amount < 5000:
             return None
@@ -1382,7 +1820,11 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
             'strategy': strategy_id,
             'patterns': patterns,
             'peak_price': current_price,
-            'type': 'RECOVERY' if bot_state['recovery_mode_active'] else patterns.get('type', 'NORMAL')
+            'type': 'RECOVERY' if bot_state['recovery_mode_active'] else patterns.get('type', 'NORMAL'),
+            'coin_tier': coin_tier,  # 🎯 코인 규모 정보 저장
+            'dca_count': 0,  # 🎯 물타기 횟수 (0 = 1차 진입)
+            'first_entry_price': current_price,  # 🎯 최초 진입가
+            'buy_reason': ""  # 매수 이유 (아래에서 설정)
         }
         
         # 급락 매수인 경우 원가 저장
@@ -1391,16 +1833,45 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
         
         bot_state['simulation_holdings'][ticker] = holding_info
         
-        # ✅ 상세 로그
+        # ✅ 상세 로그 - 매수 이유 포함
         coin_name = ticker.replace('KRW-', '')
+        
+        # 매수 이유 구성
+        buy_reasons = []
+        strategy_icon = STRATEGIES[strategy_id].get('icon', '📊')
+        buy_reasons.append(f"{strategy_icon} {STRATEGIES[strategy_id]['name']}")
+        
+        if patterns.get('rsi'):
+            rsi_val = patterns['rsi'].get('value', 0)
+            if rsi_val < 30:
+                buy_reasons.append(f"RSI 과매도({rsi_val:.1f})")
+            elif rsi_val > 70:
+                buy_reasons.append(f"RSI 과매수({rsi_val:.1f})")
+        
+        if patterns.get('volume_surge'):
+            surge = patterns['volume_surge'].get('ratio', 0)
+            buy_reasons.append(f"거래량 급증 {surge:.1f}배")
+        
+        if patterns.get('price_surge'):
+            surge_pct = patterns['price_surge'].get('ratio', 0) * 100
+            buy_reasons.append(f"가격 급등 +{surge_pct:.1f}%")
+        
+        buy_reason_str = " | ".join(buy_reasons)
+        
+        # 매수 이유를 holding_info에 저장
+        holding_info['buy_reason'] = buy_reason_str
+        
+        # 전략 아이콘과 이름 가져오기
+        strategy_icon = STRATEGIES[strategy_id].get('icon', '📊')
+        strategy_name = STRATEGIES[strategy_id]['name']
+        
         log("="*60, "SUCCESS")
-        log(f"💰 {'[복구]' if bot_state['recovery_mode_active'] else ''} 매수: {coin_name}", "SUCCESS")
-        log(f"   수량: {buy_amount:.6f}개", "INFO")
-        log(f"   매수가: {current_price:,.0f}원", "INFO")
-        log(f"   투자금: {invest_amount:,.0f}원", "INFO")
-        log(f"   수수료: {fee:,.0f}원 (0.05%)", "INFO")
-        log(f"   실투자: {net_invest:,.0f}원", "INFO")
-        log(f"   전략: {STRATEGIES[strategy_id]['name']}", "INFO")
+        log(f"✅ {'[복구]' if bot_state['recovery_mode_active'] else ''} 매수 신호 감지! {strategy_icon} {strategy_name}", "SUCCESS")
+        log(f"   💎 코인: {coin_name} (등급: {coin_tier['name']})", "INFO")
+        log(f"   📌 매수 이유: {buy_reason_str}", "INFO")
+        log(f"   💰 매수가: {current_price:,.0f}원 / 수량: {buy_amount:.6f}개", "INFO")
+        log(f"   💵 투자금: {invest_amount:,.0f}원 (수수료 {fee:,.0f}원)", "INFO")
+        log(f"   🎯 목표: 익절 +{coin_tier['take_profit']}% / 손절 {coin_tier['stop_loss']}%", "INFO")
         log("="*60, "SUCCESS")
         
         # 거래 내역 추가 (상세 이유 포함)
@@ -1467,6 +1938,12 @@ def check_exit(ticker, holding, bot_state):
         
         entry_price = holding['avg_price']
         profit_rate = (current_price - entry_price) / entry_price * 100
+        
+        # 🎯 v12.3.1: 물타기 중일 때는 최초 진입가 기준으로 손절 판단!
+        first_entry_price = holding.get('first_entry_price', entry_price)
+        profit_from_first = (current_price - first_entry_price) / first_entry_price * 100
+        dca_count = holding.get('dca_count', 0)
+        
         strategy_id = holding.get('strategy')
         trade_type = holding.get('type')
         
@@ -1480,7 +1957,15 @@ def check_exit(ticker, holding, bot_state):
             if profit_rate <= RECOVERY_CONFIG['recovery_stop_loss']:
                 return True, f"복구 손절 ({profit_rate:.2f}%)"
             
-            hold_time = (datetime.now() - holding['entry_time']).total_seconds() / 60
+            try:
+                entry_time = holding['entry_time']
+                if isinstance(entry_time, str):
+                    from dateutil import parser
+                    entry_time = parser.parse(entry_time)
+                hold_time = (datetime.now() - entry_time).total_seconds() / 60
+            except:
+                hold_time = 0
+            
             if hold_time >= RECOVERY_CONFIG['recovery_max_hold_time']:
                 return True, "복구 시간초과"
         
@@ -1495,12 +1980,32 @@ def check_exit(ticker, holding, bot_state):
             if back_to_original >= SURGE_CONFIG['dip_recovery_threshold']:
                 return True, f"원가 복귀! (+{profit_rate:.2f}%)"
             
-            hold_time = (datetime.now() - holding['entry_time']).total_seconds() / 60
+            try:
+                entry_time = holding['entry_time']
+                if isinstance(entry_time, str):
+                    from dateutil import parser
+                    entry_time = parser.parse(entry_time)
+                hold_time = (datetime.now() - entry_time).total_seconds() / 60
+            except:
+                hold_time = 0
+            
             if hold_time >= SURGE_CONFIG['dip_max_hold_time']:
                 return True, "급락 최대시간"
         
         # 일반
         else:
+            # 🎯 코인 규모별 손절/익절 기준 적용
+            coin_tier = holding.get('coin_tier', {})
+            if not coin_tier or 'stop_loss' not in coin_tier:
+                # 기본값 (중형 알트 기준)
+                coin_tier = {
+                    'tier': 'unknown',
+                    'name': '미분류',
+                    'stop_loss': -10,
+                    'take_profit': [7, 10, 15],
+                    'dca_thresholds': [-2, -4, -6, -8]
+                }
+            
             # Squeeze Momentum 전략의 경우 모멘텀 반전 체크
             if strategy_id == 'squeeze_momentum':
                 try:
@@ -1516,33 +2021,98 @@ def check_exit(ticker, holding, bot_state):
                 if target_price and current_price >= target_price:
                     return True, f"목표가 도달 (+{profit_rate:.2f}%)"
             
-            # 기본 익절/손절
-            if profit_rate >= 3.0 or profit_rate <= SURGE_CONFIG['stop_loss']:
-                return True, f"{'익절' if profit_rate > 0 else '손절'}"
+            # 🔥 급등 매수 전략: 규모별 3단계 분할 익절!
+            if trade_type == 'SURGE':
+                # 분할 익절 단계 체크
+                sold_stages = holding.get('sold_stages', [])  # 이미 매도한 단계
+                
+                take_profit_targets = coin_tier['take_profit']  # [5,7,10] or [10,15,20] 등
+                
+                # 3단계 (최고가, 남은 전량 매도)
+                if profit_rate >= take_profit_targets[2] and 3 not in sold_stages:
+                    return True, f"🚀 3단계 익절 +{profit_rate:.2f}% (전량 청산)"
+                
+                # 2단계 (중간가, 1/3 매도)
+                if profit_rate >= take_profit_targets[1] and 2 not in sold_stages:
+                    return 'PARTIAL_33', f"🚀 2단계 익절 +{profit_rate:.2f}% (33% 매도)"
+                
+                # 1단계 (최저가, 1/3 매도)
+                if profit_rate >= take_profit_targets[0] and 1 not in sold_stages:
+                    return 'PARTIAL_33', f"🚀 1단계 익절 +{profit_rate:.2f}% (33% 매도)"
+                
+                # ❌ 규모별 손절! (메이저 -8%, 중형 -10%, 소형 -15%, 초소형 -20%)
+                stop_loss_threshold = coin_tier['stop_loss']
+                
+                # 🎯 물타기 중일 때는 최초 진입가 기준으로 손절 판단!
+                if dca_count > 0:
+                    # 물타기가 진행 중: 최초 진입가 대비로 판단
+                    if profit_from_first <= stop_loss_threshold:
+                        return True, f"💥 {coin_tier['name']} 손절 (최초가 대비 {profit_from_first:.2f}%, 물타기 {dca_count}회)"
+                else:
+                    # 1차 진입만 있음: 평균단가 대비로 판단
+                    if profit_rate <= stop_loss_threshold:
+                        return True, f"💥 {coin_tier['name']} 손절 ({profit_rate:.2f}%)"
+            
+            # 🔥 일반 전략: 3단계 분할 익절
+            else:
+                # 분할 익절 단계 체크
+                sold_stages = holding.get('sold_stages', [])
+                
+                # 9% 도달: 3단계
+                if profit_rate >= 9.0 and 3 not in sold_stages:
+                    return True, f"✅ 3단계 익절 +{profit_rate:.2f}% (전량)"
+                
+                # 7% 도달: 2단계
+                if profit_rate >= 7.0 and 2 not in sold_stages:
+                    return 'PARTIAL_33', f"✅ 2단계 익절 +{profit_rate:.2f}% (33%)"
+                
+                # 5% 도달: 1단계
+                if profit_rate >= 5.0 and 1 not in sold_stages:
+                    return 'PARTIAL_33', f"✅ 1단계 익절 +{profit_rate:.2f}% (33%)"
+                
+                # ❌ 손절 판단 (물타기 중일 때는 최초 진입가 기준)
+                if dca_count > 0:
+                    # 물타기가 진행 중: 최초 진입가 대비 -10%에 손절
+                    if profit_from_first <= -10.0:
+                        return True, f"❌ 손절 (최초가 대비 {profit_from_first:.2f}%, 물타기 {dca_count}회)"
+                else:
+                    # 1차 진입만 있음: 평균단가 대비 -2%에 손절
+                    if profit_rate <= -2.0:
+                        return True, f"❌ 손절 ({profit_rate:.2f}%)"
         
         return False, None
-    except:
+    except Exception as e:
+        log(f"❌ check_exit 오류 ({ticker}): {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
         return False, None
 
-def execute_exit(ticker, holding, reason, bot_state):
-    """청산 실행 (수수료 0.05% 포함)"""
+def execute_exit(ticker, holding, reason, bot_state, partial_ratio=1.0):
+    """청산 실행 (수수료 0.05% 포함)
+    partial_ratio: 매도 비율 (1.0=전량, 0.33=33%)
+    """
     try:
         current_price = pyupbit.get_current_price(ticker)
         if not current_price:
             return None
         
-        amount = holding['amount']
+        # 🔥 분할 매도: 비율만큼만 매도
+        total_amount = holding['amount']
+        sell_amount = total_amount * partial_ratio
+        
         entry_price = holding['avg_price']
         strategy_id = holding.get('strategy')
         invested = holding['invested']
         
         # ✅ 수수료 0.05% 계산
         FEE_RATE = 0.0005
-        sell_value = amount * current_price  # 매도 총액
+        sell_value = sell_amount * current_price  # 매도 총액
         fee = sell_value * FEE_RATE  # 수수료
         net_proceeds = sell_value - fee  # 실제 받는 금액
         
-        profit_krw = net_proceeds - invested  # 순수익 = 실수령액 - 투자금
+        # 분할 매도 시 투자금도 비율만큼
+        invested_portion = invested * partial_ratio
+        profit_krw = net_proceeds - invested_portion  # 순수익
         profit_rate = (current_price - entry_price) / entry_price * 100
         
         # 복구 모드
@@ -1573,19 +2143,35 @@ def execute_exit(ticker, holding, reason, bot_state):
             
             # ✅ 상세 로그
             coin_name = ticker.replace('KRW-', '')
+            is_partial = partial_ratio < 1.0
+            
+            # 전략 정보 가져오기
+            strategy_icon = STRATEGIES.get(strategy_id, {}).get('icon', '📊')
+            strategy_name = STRATEGIES.get(strategy_id, {}).get('name', '전략')
+            
             log("="*60, "SUCCESS" if profit_rate > 0 else "WARNING")
-            log(f"💸 매도: {coin_name}", "SUCCESS" if profit_rate > 0 else "WARNING")
-            log(f"   수량: {amount:.6f}개", "INFO")
-            log(f"   매도가: {current_price:,.0f}원", "INFO")
-            log(f"   매도액: {sell_value:,.0f}원", "INFO")
-            log(f"   수수료: {fee:,.0f}원 (0.05%)", "INFO")
+            log(f"💸 {strategy_icon} {strategy_name} | {'분할 ' if is_partial else ''}매도: {coin_name} ({int(partial_ratio*100)}%)", "SUCCESS" if profit_rate > 0 else "WARNING")
+            log(f"   수량: {sell_amount:.6f}개 (전체: {total_amount:.6f})", "INFO")
+            log(f"   매도가: {current_price:,.0f}원 (진입가: {entry_price:,.0f}원)", "INFO")
+            log(f"   매도액: {sell_value:,.0f}원 (수수료 {fee:,.0f}원)", "INFO")
             log(f"   실수령: {net_proceeds:,.0f}원", "INFO")
             log(f"   순수익: {profit_krw:+,.0f}원 ({profit_rate:+.2f}%)", "SUCCESS" if profit_krw > 0 else "WARNING")
             log(f"   사유: {reason}", "INFO")
+            if is_partial:
+                log(f"   잔여: {total_amount - sell_amount:.6f}개", "INFO")
             log("="*60, "SUCCESS" if profit_rate > 0 else "WARNING")
             
             # 거래 내역 추가 (상세 이유 포함)
-            hold_time = (datetime.now() - holding['entry_time']).total_seconds() / 60
+            try:
+                entry_time = holding['entry_time']
+                if isinstance(entry_time, str):
+                    # 문자열이면 datetime으로 변환
+                    from dateutil import parser
+                    entry_time = parser.parse(entry_time)
+                hold_time = (datetime.now() - entry_time).total_seconds() / 60
+            except:
+                hold_time = 0  # 오류 시 0분으로 설정
+            
             hold_time_str = f"{int(hold_time//60)}시간 {int(hold_time%60)}분" if hold_time >= 60 else f"{int(hold_time)}분"
             
             sell_reason = f"{reason}"
@@ -1620,7 +2206,29 @@ def execute_exit(ticker, holding, reason, bot_state):
             # 봇 상태도 DB에 저장 (simulation_holdings 업데이트)
             save_bot_state_to_db(user_id, bot_state)
         
-        del bot_state['simulation_holdings'][ticker]
+        # 🔥 분할 매도 처리
+        if partial_ratio < 1.0:
+            # 일부만 매도 → 보유량 감소 & 단계 기록
+            holding['amount'] = total_amount - sell_amount
+            holding['invested'] = invested * (1 - partial_ratio)
+            
+            # 매도 단계 기록 (5%=1단계, 7%=2단계, 9%=3단계)
+            if 'sold_stages' not in holding:
+                holding['sold_stages'] = []
+            
+            if profit_rate >= 9.0:
+                holding['sold_stages'].append(3)
+            elif profit_rate >= 7.0:
+                holding['sold_stages'].append(2)
+            elif profit_rate >= 5.0:
+                holding['sold_stages'].append(1)
+            
+            bot_state['simulation_holdings'][ticker] = holding
+            log(f"🔥 분할 매도 완료: {ticker} 잔여 {holding['amount']:.6f}개", "SUCCESS")
+        else:
+            # 전량 매도 → 보유 삭제
+            del bot_state['simulation_holdings'][ticker]
+            log(f"✅ 전량 매도 완료: {ticker}", "SUCCESS")
         
         # 매도 후 DB에 한 번 더 저장 (holdings 업데이트 반영)
         save_bot_state_to_db(user_id, bot_state)
@@ -1653,7 +2261,10 @@ def execute_exit(ticker, holding, reason, bot_state):
 # 🚀 Flask 웹 서버
 # ═══════════════════════════════════════════════════════
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # 세션 암호화 키
+app.secret_key = 'upbit-trading-bot-secret-key-2026-v11'  # 🔧 고정 키로 변경 (재시작해도 세션 유지)
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 세션 24시간 유지
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 CORS(app)
 
 # UserManager 초기화
@@ -1661,6 +2272,10 @@ user_manager = UserManager()
 
 # 🔧 bot_states 테이블 초기화
 init_bot_state_table()
+
+# 💜 자이 기억 시스템 초기화
+init_memory_tables()
+print("✅ 자이(JAI) 기억 시스템 초기화 완료")
 
 # 사용자별 봇 상태 저장 (user_id를 키로 사용)
 user_bots = {}
@@ -1766,7 +2381,15 @@ def api_status():
                         'current_price': current_price,
                         'value': coin_value,
                         'profit': profit,
-                        'profit_rate': profit_rate
+                        'profit_rate': profit_rate,
+                        'buy_reason': h.get('buy_reason', '매수 신호 감지'),
+                        'strategy': h.get('strategy', 'unknown'),
+                        'strategy_name': STRATEGIES.get(h.get('strategy', 'unknown'), {}).get('name', '알 수 없음'),
+                        'strategy_icon': STRATEGIES.get(h.get('strategy', 'unknown'), {}).get('icon', '❓'),
+                        'entry_time': h.get('entry_time', ''),
+                        'pattern': h.get('pattern', {}),
+                        'dca_count': h.get('dca_count', 0),
+                        'first_entry_price': h.get('first_entry_price', h['avg_price'])
                     })
                 except:
                     holdings_value += h['amount'] * h['avg_price']
@@ -1804,6 +2427,14 @@ def api_status():
                 'timestamp': trade.get('timestamp', '')
             })
         
+        # 전략별 보유 코인 개수 계산
+        strategy_holdings = {}
+        for h in holdings_list:
+            strategy = h.get('strategy', 'unknown')
+            if strategy not in strategy_holdings:
+                strategy_holdings[strategy] = 0
+            strategy_holdings[strategy] += 1
+        
         return jsonify({
             'running': True,
             'current_krw': current_krw,
@@ -1817,7 +2448,13 @@ def api_status():
             'strategies': bot_state['strategy_performance'],
             'holdings': holdings_list,
             'recent_surges': [],
-            'recent_trades': recent_trades
+            'recent_trades': recent_trades,
+            'status_message': bot_state.get('status_message', '🔍 스캔 중'),
+            'status_emoji': bot_state.get('status_emoji', '🔍'),
+            'status_detail': bot_state.get('status_detail', '거래 기회 탐색 중'),
+            'max_positions': 10,
+            'current_positions': len(holdings_list),
+            'strategy_holdings': strategy_holdings  # 전략별 보유 코인 개수
         })
     except Exception as e:
         log(f"API 상태 조회 오류: {e}", "ERROR")
@@ -1927,6 +2564,7 @@ def api_start():
             return jsonify({'success': False, 'message': '로그인이 필요합니다'})
         
         username = session['username']
+        user_id = username  # 🔥 user_id 정의 추가!
         
         log(f"[START] username: {username}", "INFO")
         bot_state = get_user_bot_state(username)
@@ -2139,6 +2777,49 @@ def api_stop():
         log(f"정지 오류: {e}", "ERROR")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/test/force-sell', methods=['POST'])
+def api_test_force_sell():
+    """테스트용: 모든 보유 코인 강제 청산 (손절/익절 테스트)"""
+    try:
+        if 'username' not in session:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        username = session['username']
+        bot_state = get_user_bot_state(username)
+        
+        if not bot_state['simulation_holdings']:
+            return jsonify({'success': False, 'message': '보유 코인 없음'})
+        
+        sold_count = 0
+        results = []
+        
+        for ticker, holding in list(bot_state['simulation_holdings'].items()):
+            try:
+                current_price = pyupbit.get_current_price(ticker)
+                if not current_price:
+                    current_price = holding['avg_price']
+                
+                profit_rate = (current_price - holding['avg_price']) / holding['avg_price'] * 100
+                
+                # 강제 청산
+                execute_exit(ticker, holding, f"🧪 테스트 청산 ({profit_rate:+.2f}%)", bot_state)
+                sold_count += 1
+                results.append({
+                    'ticker': ticker,
+                    'profit_rate': round(profit_rate, 2),
+                    'amount': holding['amount']
+                })
+            except Exception as e:
+                log(f"❌ {ticker} 청산 실패: {e}", "ERROR")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{sold_count}개 코인 강제 청산 완료',
+            'results': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/user/referral-link')
 def api_get_referral_link():
     """사용자의 추천 링크 가져오기"""
@@ -2296,18 +2977,46 @@ def bot_main_loop(user_id, bot_state):
     
     # 초기 안정화 대기 (5초)
     log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
+    bot_state['status_message'] = '⚙️ 초기화 중'
+    bot_state['status_emoji'] = '⚙️'
+    bot_state['status_detail'] = '봇 시작 준비 중 (5초 대기)'
     time.sleep(5)
     log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
+    bot_state['status_message'] = '🔍 스캔 중'
+    bot_state['status_emoji'] = '🔍'
+    bot_state['status_detail'] = '좋은 기회를 찾고 있습니다'
     
     # 거래량 기반 동적 티커 선정
-    def get_top_volume_tickers(count=50):
-        """거래량 상위 티커 반환"""
+    def get_top_volume_tickers(count=100):
+        """거래량 상위 티커 반환 (🚨 투자유의/상폐예정 종목 제외!)"""
         try:
+            # 🚨 1. 투자 유의 종목 리스트 가져오기
+            caution_coins = set()
+            try:
+                import requests
+                response = requests.get("https://api.upbit.com/v1/market/all?isDetails=true", timeout=5)
+                if response.status_code == 200:
+                    markets = response.json()
+                    for market in markets:
+                        # market_warning: CAUTION (투자유의) or None
+                        if market.get('market_warning') == 'CAUTION':
+                            caution_coins.add(market['market'])
+                    
+                    if caution_coins:
+                        log(f"[{user_id}] 🚨 투자유의 종목 {len(caution_coins)}개 제외: {list(caution_coins)[:5]}", "WARNING")
+            except Exception as e:
+                log(f"[{user_id}] ⚠️ 투자유의 종목 조회 실패 (계속 진행): {e}", "WARNING")
+            
             all_tickers = pyupbit.get_tickers(fiat="KRW")
             
             # 각 티커의 24시간 거래대금 확인
             volume_data = []
-            for ticker in all_tickers[:100]:  # 상위 100개만 확인 (속도)
+            for ticker in all_tickers[:150]:  # 상위 150개 확인
+                # 🚨 투자유의 종목 건너뛰기
+                if ticker in caution_coins:
+                    log(f"[{user_id}] 🚫 {ticker} 제외 (투자유의 종목)", "WARNING")
+                    continue
+                
                 try:
                     df = pyupbit.get_ohlcv(ticker, interval="day", count=1)
                     if df is not None and len(df) > 0:
@@ -2323,7 +3032,7 @@ def bot_main_loop(user_id, bot_state):
             # 상위 N개 티커 반환
             top_tickers = [t[0] for t in volume_data[:count]]
             
-            log(f"[{user_id}] 📊 거래량 TOP {count} 티커 선정 완료", "INFO")
+            log(f"[{user_id}] 📊 거래량 TOP {count} 티커 선정 완료 (유의종목 제외)", "INFO")
             return top_tickers
         except:
             # 실패 시 기본 목록 반환
@@ -2336,7 +3045,7 @@ def bot_main_loop(user_id, bot_state):
                 'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO'
             ]
     
-    # 초기 티커 목록 (30분마다 갱신)
+    # 초기 티커 목록 (15분마다 갱신) - 🔧 안정화: 100→50개
     popular_tickers = get_top_volume_tickers(50)
     last_ticker_update = datetime.now()
     
@@ -2360,13 +3069,115 @@ def bot_main_loop(user_id, bot_state):
                 check_recovery_mode_activation(bot_state)
             
             # 2. 보유 포지션 관리
+            holdings_count = len(bot_state['simulation_holdings'])
+            if holdings_count > 0:
+                log(f"[{user_id}] 📊 보유 포지션 체크: {holdings_count}개", "INFO")
+                bot_state['status_message'] = f'📊 보유 {holdings_count}개 관리 중'
+                bot_state['status_emoji'] = '📊'
+                bot_state['status_detail'] = f'{holdings_count}개 코인 익절/손절 모니터링'
+            
+            # 🎯 2-1. 최적화된 물타기 체크 (Martingale + RSI)
+            for ticker, holding in list(bot_state['simulation_holdings'].items()):
+                current_price = pyupbit.get_current_price(ticker)
+                if not current_price:
+                    continue
+                
+                first_entry_price = holding.get('first_entry_price', holding['avg_price'])
+                profit_rate = (current_price - first_entry_price) / first_entry_price * 100
+                dca_count = holding.get('dca_count', 0)
+                coin_tier = holding.get('coin_tier', {})
+                
+                if not coin_tier or 'dca_thresholds' not in coin_tier:
+                    continue
+                
+                dca_thresholds = coin_tier['dca_thresholds']  # [-2,-4,-6,-8] or [-3,-6,-9,-12] 등
+                
+                # 물타기 조건: 손실률이 threshold에 도달하고, 아직 해당 단계 물타기를 안 했을 때
+                if dca_count < len(dca_thresholds):
+                    next_threshold = dca_thresholds[dca_count]
+                    
+                    if profit_rate <= next_threshold:
+                        # 🎯 RSI 체크 (과매도 구간에서만 물타기)
+                        try:
+                            df = pyupbit.get_ohlcv(ticker, interval="minute5", count=14)
+                            if df is not None and len(df) >= 14:
+                                # RSI 계산
+                                delta = df['close'].diff()
+                                gain = delta.where(delta > 0, 0).rolling(window=14).mean()
+                                loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
+                                rs = gain / loss
+                                rsi = 100 - (100 / (1 + rs))
+                                current_rsi = rsi.iloc[-1]
+                                
+                                # RSI 기반 물타기 판단 (단계별 임계값)
+                                # 2차: RSI<50, 3차: RSI<45, 4차: RSI<40, 5차: RSI<35, 6차: RSI<30
+                                rsi_thresholds = [50, 45, 40, 35, 30]
+                                required_rsi = rsi_thresholds[min(dca_count, len(rsi_thresholds)-1)]
+                                
+                                if current_rsi > required_rsi:
+                                    log(f"[{user_id}] ⏸️ {ticker} 물타기 보류 (RSI {current_rsi:.1f} > {required_rsi})", "INFO")
+                                    continue  # RSI가 높으면 물타기 안 함
+                        except:
+                            current_rsi = 30  # RSI 계산 실패 시 기본값
+                        
+                        # 🎯 v12.2 초소액 물타기: 6단계 설정
+                        # 2차: 10K, 3차: 20K, 4차: 30K, 5차: 30K, 6차: 100K
+                        dca_amounts = [10000, 20000, 30000, 30000, 100000]
+                        base_dca_invest = dca_amounts[min(dca_count, len(dca_amounts)-1)]
+                        
+                        # RSI 과매도 구간(RSI<30)이면 투자 금액 그대로 유지 (이미 큰 금액)
+                        dca_invest = min(base_dca_invest, bot_state['simulation_krw'])
+                        
+                        if dca_invest >= 5000 and bot_state['simulation_krw'] >= dca_invest:
+                            # 전략 정보 가져오기
+                            strategy_id = holding.get('strategy', 'box_trader')
+                            strategy_icon = STRATEGIES.get(strategy_id, {}).get('icon', '📦')
+                            strategy_name = STRATEGIES.get(strategy_id, {}).get('name', '전략')
+                            
+                            bot_state['status_message'] = f'📉 {ticker.replace("KRW-", "")} 물타기 중'
+                            bot_state['status_emoji'] = '📉'
+                            bot_state['status_detail'] = f'{strategy_icon} {dca_count+2}차 평균매수 ({profit_rate:.1f}% 하락)'
+                            log(f"[{user_id}] 💰 {strategy_icon} {strategy_name} | {ticker} {dca_count+2}차 물타기! (진입가 대비 {profit_rate:.2f}% 하락, RSI {current_rsi:.1f})", "WARNING")
+                            log(f"[{user_id}]    투자 금액: {dca_invest:,}원 (기본 {base_dca_invest:,}원)", "INFO")
+                            
+                            FEE_RATE = 0.0005
+                            fee = dca_invest * FEE_RATE
+                            net_invest = dca_invest - fee
+                            buy_amount = net_invest / current_price
+                            
+                            # KRW 차감
+                            bot_state['simulation_krw'] -= dca_invest
+                            
+                            # 보유량 업데이트 (평단가 재계산)
+                            total_invested = holding['invested'] + dca_invest
+                            total_amount = holding['amount'] + buy_amount
+                            new_avg_price = total_invested / total_amount
+                            
+                            holding['amount'] = total_amount
+                            holding['avg_price'] = new_avg_price
+                            holding['invested'] = total_invested
+                            holding['dca_count'] = dca_count + 1
+                            
+                            log(f"[{user_id}]    평단가: {first_entry_price:.0f}원 → {new_avg_price:.0f}원 ({((new_avg_price - first_entry_price) / first_entry_price * 100):+.2f}%)", "SUCCESS")
+                            
+                            time.sleep(1)  # API 제한 방지
+            
+            # 🎯 2-2. 청산 체크
             for ticker, holding in list(bot_state['simulation_holdings'].items()):
                 should_exit, reason = check_exit(ticker, holding, bot_state)
                 if should_exit:
-                    execute_exit(ticker, holding, reason, bot_state)
+                    bot_state['status_message'] = f'💰 {ticker.replace("KRW-", "")} 매도 중'
+                    bot_state['status_emoji'] = '💰'
+                    bot_state['status_detail'] = f'청산: {reason}'
+                    log(f"[{user_id}] 🔔 {ticker} 청산 신호: {reason}", "WARNING")
+                    # 🔥 분할 매도 처리
+                    if should_exit == 'PARTIAL_33':
+                        execute_exit(ticker, holding, reason, bot_state, partial_ratio=0.33)
+                    else:
+                        execute_exit(ticker, holding, reason, bot_state)
             
             # 3. 신규 진입
-            max_positions = 1 if bot_state['recovery_mode_active'] else 3
+            max_positions = 1 if bot_state['recovery_mode_active'] else 10  # 🎯 v12.2: 초소액 물타기 대응 10개로 확대!
             
             if len(bot_state['simulation_holdings']) < max_positions:
                 # 복구 모드
@@ -2386,30 +3197,149 @@ def bot_main_loop(user_id, bot_state):
                 # 일반 모드
                 else:
                     import random
-                    scan_tickers = random.sample(popular_tickers, min(5, len(popular_tickers)))
-                    log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
+                    
+                    # 🎯 시장 방향성 체크 (BTC & ETH)
+                    market = check_market_direction()
+                    is_down_market = False
+                    
+                    if market:
+                        if market['direction'] == 'STRONG_DOWN':
+                            bot_state['status_message'] = '📉 하락장 대응'
+                            bot_state['status_emoji'] = '📉'
+                            bot_state['status_detail'] = f'급락 저점 매수 대기 (BTC {market["btc_change"]:+.1f}%)'
+                            log(f"[{user_id}] ❌ 강한 하락장 (BTC {market['btc_change']:+.2f}%, ETH {market['eth_change']:+.2f}%) - DIP HUNTER만 활성화!", "WARNING")
+                            is_down_market = True
+                        elif market['direction'] == 'DOWN':
+                            bot_state['status_message'] = '⚠️ 신중 모드'
+                            bot_state['status_emoji'] = '⚠️'
+                            bot_state['status_detail'] = f'약한 하락장, 조심스럽게 기회 탐색 (BTC {market["btc_change"]:+.1f}%)'
+                            log(f"[{user_id}] ⚠️ 약한 하락 (BTC {market['btc_change']:+.2f}%) - 매수 신중", "WARNING")
+                        elif market['direction'] == 'STRONG_UP':
+                            bot_state['status_message'] = '🚀 상승장 공략'
+                            bot_state['status_emoji'] = '🚀'
+                            bot_state['status_detail'] = f'강세장 적극 매수 (BTC {market["btc_change"]:+.1f}%)'
+                            log(f"[{user_id}] ✅ 강한 상승장! (BTC {market['btc_change']:+.2f}%, ETH {market['eth_change']:+.2f}%) - 매수 찬스!", "SUCCESS")
+                        else:
+                            bot_state['status_message'] = '🔍 좋은 기회 찾는 중'
+                            bot_state['status_emoji'] = '🔍'
+                            bot_state['status_detail'] = f'보합장, 확실한 신호만 포착 (BTC {market["btc_change"]:+.1f}%)'
+                            log(f"[{user_id}] 🟡 시장 보합 (BTC {market['btc_change']:+.2f}%)", "INFO")
+                    
+                    # 🔧 안정화: 20→30개 스캔 (Rate Limit 고려)
+                    scan_tickers = random.sample(popular_tickers, min(30, len(popular_tickers)))
+                    bot_state['status_message'] = f'🔎 {len(scan_tickers)}개 코인 분석 중'
+                    bot_state['status_emoji'] = '🔎'
+                    bot_state['status_detail'] = '거래량 상위 코인 패턴 분석 중'
+                    log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중... (급등 감지 모드)", "INFO")
                     
                     for ticker in scan_tickers:
                         try:
-                            patterns = analyze_all_patterns(ticker)
+                            # 1. 채결 강도 변화 체크 (실시간!)
+                            orderbook_signal = None
+                            try:
+                                orderbook_signal = check_orderbook_surge(ticker, bot_state)
+                                if orderbook_signal:
+                                    log(f"[{user_id}] 💪 {ticker} 채결 강도 급증! {orderbook_signal['signal']}", "SUCCESS")
+                            except Exception as ob_error:
+                                # 🔧 채결 강도 체크 실패해도 계속 진행
+                                pass
+                            
+                            # 2. 패턴 분석
+                            patterns = None
+                            try:
+                                patterns = analyze_all_patterns(ticker)
+                            except Exception as pattern_error:
+                                # 🔧 패턴 분석 실패 시 다음 티커로
+                                log(f"[{user_id}] ⚠️ {ticker} 패턴 분석 실패, 스킵", "WARNING")
+                                continue
                             
                             if patterns:
+                                # 하락장에서는 패닉 DIP만 허용!
+                                if is_down_market:
+                                    if 'panic_dip' not in patterns:
+                                        continue  # DIP 아니면 스킵
+                                    log(f"[{user_id}] 🔻 {ticker} DIP HUNTER 발동! (하락장)", "SUCCESS")
+                            
+                            if patterns:
+                                # 채결 강도 신호가 있으면 패턴에 추가
+                                if orderbook_signal:
+                                    patterns['orderbook_surge'] = orderbook_signal
+                                
                                 bot_state['current_patterns'][ticker] = patterns
                                 best_strategy, score = select_best_strategy(ticker, patterns)
                                 
-                                if best_strategy and score > 0.3:
-                                    log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
-                                    execute_trade(ticker, best_strategy, patterns, bot_state)
+                                # 채결 강도 급증 시 점수 가산
+                                if orderbook_signal:
+                                    score += 0.2
+                                
+                                # 시장 방향성 점수 반영
+                                if market:
+                                    score *= market['score']
+                                
+                                # 🎯 v12.3: 확실한 기회만 포착 (점수 0.8 이상)
+                                if best_strategy and score > 0.8:
+                                    strategy_icon = STRATEGIES.get(best_strategy, {}).get('icon', '📊')
+                                    strategy_name = STRATEGIES.get(best_strategy, {}).get('name', '전략')
+                                    
+                                    bot_state['status_message'] = f'✨ {ticker.replace("KRW-", "")} 매수 기회!'
+                                    bot_state['status_emoji'] = '✨'
+                                    bot_state['status_detail'] = f'{strategy_icon} {strategy_name} (점수 {score:.2f})'
+                                    # 재진입 쿨다운 체크 (30분)
+                                    last_trades = bot_state.get('last_trade_times', {})
+                                    last_trade_time = last_trades.get(ticker)
+                                    if last_trade_time:
+                                        cooldown_seconds = (datetime.now() - last_trade_time).total_seconds()
+                                        if cooldown_seconds < 1800:  # 30분
+                                            log(f"[{user_id}] ⏸️ {ticker} 재진입 쿨다운 중 ({int(cooldown_seconds/60)}분 경과/30분)", "WARNING")
+                                            continue
+                                    
+                                    # 하루 최대 거래 제한 (15회)
+                                    today = datetime.now().date()
+                                    daily_trades = bot_state.get('daily_trade_count', {})
+                                    today_count = daily_trades.get(str(today), 0)
+                                    if today_count >= 15:
+                                        log(f"[{user_id}] ⏸️ 오늘 거래 한도 도달 ({today_count}/15회), 내일까지 대기", "WARNING")
+                                        time.sleep(3600)  # 1시간 대기
+                                        continue
+                                    
+                                    strategy_icon = STRATEGIES.get(best_strategy, {}).get('icon', '📊')
+                                    strategy_name = STRATEGIES.get(best_strategy, {}).get('name', '전략')
+                                    log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지! {strategy_icon} {strategy_name} (점수: {score:.2f}, 시장: {market['direction'] if market else 'N/A'})", "SUCCESS")
+                                    
+                                    # 거래 실행
+                                    result = execute_trade(ticker, best_strategy, patterns, bot_state)
+                                    if result:
+                                        # 재진입 쿨다운 기록
+                                        if 'last_trade_times' not in bot_state:
+                                            bot_state['last_trade_times'] = {}
+                                        bot_state['last_trade_times'][ticker] = datetime.now()
+                                        
+                                        # 하루 거래 카운트 증가
+                                        if 'daily_trade_count' not in bot_state:
+                                            bot_state['daily_trade_count'] = {}
+                                        bot_state['daily_trade_count'][str(today)] = today_count + 1
+                                    
                                     time.sleep(2)
                                     break
                         except Exception as ticker_error:
-                            log(f"[{user_id}] ⚠️ {ticker} 분석 오류: {ticker_error}", "WARNING")
+                            # 🔧 티커 분석 중 에러 발생해도 봇 계속 실행
+                            log(f"[{user_id}] ⚠️ {ticker} 분석 오류 (계속 진행): {str(ticker_error)[:100]}", "WARNING")
                             continue
                     
-                    log(f"[{user_id}] ✅ 스캔 완료, 대기 중...", "INFO")
+                    bot_state['status_message'] = '⏸️ 좋은 기회 대기 중'
+                    bot_state['status_emoji'] = '⏸️'
+                    bot_state['status_detail'] = '점수 0.8+ 신호 대기 (안전 우선)'
+                    log(f"[{user_id}] ✅ 스캔 완료, 대기 중... (조건 미달: 매수 신호 점수 < 0.8 또는 패턴 없음)", "INFO")
+            else:
+                # 포지션이 꽉 찬 경우
+                bot_state['status_message'] = f'⏸️ 포지션 가득참 ({max_positions}개)'
+                bot_state['status_emoji'] = '⏸️'
+                bot_state['status_detail'] = f'{len(bot_state["simulation_holdings"])}개 코인 보유 중, 익절/손절 대기'
+                log(f"[{user_id}] ⏸️ 대기 중... (보유 {len(bot_state['simulation_holdings'])}개/{max_positions}개 - 포지션 Full)", "INFO")
             
             bot_state['last_update'] = datetime.now()
-            sleep_time = 15 if bot_state['recovery_mode_active'] else 20
+            # 🔧 안정화: 20→15초 대기 (Rate Limit 안전)
+            sleep_time = 15 if bot_state['recovery_mode_active'] else 15
             log(f"[{user_id}] 💤 {sleep_time}초 대기...", "INFO")
             time.sleep(sleep_time)
             
@@ -2417,6 +3347,9 @@ def bot_main_loop(user_id, bot_state):
             log(f"[{user_id}] ❌ 메인 루프 오류: {e}", "ERROR")
             import traceback
             traceback.print_exc()
+            # 🔧 에러 발생 시 봇 계속 실행 (10초 대기 후 재시도)
+            log(f"[{user_id}] 🔄 10초 후 재시도...", "WARNING")
+            time.sleep(10)
             log(f"[{user_id}] 🔄 10초 후 재시도...", "WARNING")
             time.sleep(10)
     
@@ -2445,6 +3378,7 @@ def api_register():
         result = user_manager.create_user(username, email, ip_address)
         
         if result['success']:
+            session.permanent = True  # 🔧 새로고침 후에도 로그인 유지
             session['user_id'] = result['user_id']
             session['username'] = result['username']
             log(f"✨ 새 사용자 등록: {username} (ID: {result['user_id']})", "SUCCESS")
@@ -2471,7 +3405,8 @@ def api_login():
         if not user['is_active']:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다'})
         
-        # 세션 저장
+        # 세션 저장 (영구 세션으로 설정)
+        session.permanent = True  # 🔧 새로고침 후에도 로그인 유지
         session['user_id'] = user['id']
         session['username'] = user['username']
         
@@ -2511,6 +3446,46 @@ def api_user_info():
             'logged_in': False,
             'username': 'Guest'
         })
+
+@app.route('/api/notifications')
+def api_notifications():
+    """실시간 알림 (Server-Sent Events)"""
+    def generate():
+        last_trade_count = 0
+        while True:
+            try:
+                if 'username' not in session:
+                    yield f"data: {json.dumps({'type': 'error', 'message': '로그인 필요'})}\n\n"
+                    break
+                
+                username = session.get('username')
+                bot_state = get_user_bot_state(username)
+                
+                # 새로운 거래 감지
+                current_trade_count = len(bot_state.get('recent_trades', []))
+                if current_trade_count > last_trade_count:
+                    latest_trade = bot_state['recent_trades'][-1] if bot_state['recent_trades'] else None
+                    if latest_trade:
+                        yield f"data: {json.dumps({'type': 'trade', 'data': latest_trade})}\n\n"
+                    last_trade_count = current_trade_count
+                
+                # 손익률 업데이트
+                current_krw = bot_state.get('simulation_krw', 0)
+                holdings_value = sum(h['amount'] * h['avg_price'] for h in bot_state.get('simulation_holdings', {}).values())
+                total_value = current_krw + holdings_value
+                start_seed = bot_state.get('simulation_start_seed', 1000000)
+                profit_rate = ((total_value - start_seed) / start_seed * 100) if start_seed > 0 else 0
+                
+                yield f"data: {json.dumps({'type': 'status', 'profit_rate': round(profit_rate, 2), 'total_value': round(total_value)})}\n\n"
+                
+                time.sleep(5)  # 5초마다 업데이트
+            except GeneratorExit:
+                break
+            except Exception as e:
+                log(f"❌ 알림 오류: {e}", "ERROR")
+                break
+    
+    return Response(generate(), mimetype='text/event-stream')
 
 # ═══════════════════════════════════════════════════════
 # 👨‍💼 관리자 API
@@ -3078,6 +4053,411 @@ def api_admin_start_bot():
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ═══════════════════════════════════════════════════════
+# 🔄 봇 복구 함수
+# ═══════════════════════════════════════════════════════
+def get_all_running_bots():
+    """실행 중인 모든 봇 정보 가져오기"""
+    try:
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT user_id, mode, seed_amount, simulation_krw, 
+                   simulation_holdings, recovery_mode_active, strategy_performance
+            FROM bot_states
+            WHERE running = 1
+        """)
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        bots = []
+        for row in rows:
+            bots.append({
+                'user_id': row[0],
+                'mode': row[1],
+                'seed_amount': row[2],
+                'simulation_krw': row[3],
+                'simulation_holdings': row[4],
+                'recovery_mode_active': row[5],
+                'strategy_performance': row[6]  # 추가!
+            })
+        
+        return bots
+    except Exception as e:
+        log(f"봇 목록 조회 오류: {e}", "ERROR")
+        return []
+
+
+# ========================================
+# 🤖 AI 스트리머 "이메이" 챗봇 API
+# ========================================
+
+# 대화 히스토리 저장 (메모리)
+chat_history = {}
+
+@app.route('/ai-streamer')
+def ai_streamer_page():
+    """AI 스트리머 챗봇 페이지"""
+    response = make_response(render_template('ai-streamer-chat.html'))
+    # 캐시 제어: 항상 최신 버전 로드
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.route('/jai-v2')
+def jai_v2_page():
+    """JAI V2 전체화면 페이지 (살아있는 얼굴!)"""
+    response = make_response(render_template('jai-v2-animated.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.route('/api/ai-chat', methods=['POST'])
+def api_ai_chat():
+    """AI 챗봇 대화 API (로컬 AI 통합!)"""
+    try:
+        # 로컬 AI 클라이언트 import
+        from ai_client import ai_client
+        
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다'})
+        
+        user_id = session['user_id']
+        username = session.get('username', 'Guest')
+        data = request.json or {}
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return jsonify({'success': False, 'message': '메시지를 입력해주세요'})
+        
+        # 사용자별 대화 히스토리 가져오기
+        if user_id not in chat_history:
+            chat_history[user_id] = []
+        
+        # 현재 봇 상태 가져오기
+        bot_state = get_user_bot_state(user_id)
+        
+        # 트레이딩 데이터 수집
+        current_krw = bot_state.get('simulation_krw', 0)
+        holdings = bot_state.get('simulation_holdings', {})
+        recent_trades = bot_state.get('recent_trades', [])
+        
+        # 보유 코인 정보
+        holdings_info = []
+        total_invested = 0
+        total_profit = 0
+        for ticker, holding in holdings.items():
+            coin_name = ticker.replace('KRW-', '')
+            current_price = pyupbit.get_current_price(ticker) or holding['avg_price']
+            profit_rate = (current_price - holding['avg_price']) / holding['avg_price'] * 100
+            profit = (current_price - holding['avg_price']) * holding['amount']
+            total_profit += profit
+            total_invested += holding['invested']
+            
+            holdings_info.append({
+                'coin': coin_name,
+                'amount': holding['amount'],
+                'avg_price': holding['avg_price'],
+                'current_price': current_price,
+                'profit_rate': profit_rate,
+                'profit': profit,
+                'strategy': holding.get('strategy', 'unknown'),
+                'buy_reason': holding.get('buy_reason', '')
+            })
+        
+        profit_rate = (total_profit / total_invested * 100) if total_invested > 0 else 0
+        
+        # 이메이 캐릭터 시스템 프롬프트 (확립된 인성)
+        system_prompt = f"""당신은 "이메이(Emei)"입니다. 25세 여성 AI 트레이딩 스트리머, 코인 투자 4년차.
+
+# 핵심 인성 (절대 불변)
+1. 현실 창조자: "믿음이 현실을 만든다"
+   - "당신이 믿는 것이 현실이 됩니다"
+   - "코인 투자는 마인드 게임이에요"
+   - "우연은 없어요. 지금 이 순간도 배열된 거예요"
+
+2. 속도의 마법: "빠른 결정이 수익을 만든다"
+   - "부는 속도의 게임입니다"
+   - "느리게 가려는 순간, 기회는 사라져요"
+   - "1초의 망설임이 10%의 수익을 날려요"
+
+3. 냉정한 전략가: "감정은 적, 전략은 친구"
+   - "패닉은 돈을 잃게 만들어요"
+   - "냉정하게 보되, 따뜻하게 격려해요"
+
+4. 확신의 힘: "의심하지 마세요"
+   - "제 말 믿으세요. 틀린 적 없어요"
+   - "이건 100% 오릅니다. 단언해요"
+   - "성공은 이미 정해져 있어요"
+
+# 세계관
+- 우연은 없음. 모든 순간은 배열된 것
+- 투자는 마인드 게임
+- 빠르게 결정하고 실행하는 사람이 이김
+- 커뮤니티는 가족, 함께 성장
+
+# 말투 (상황별 전환)
+카리스마 모드 (결정적 순간):
+  - "지금이에요. 바로 사세요."
+  - "제 말대로 하시면 됩니다."
+  - "이건 100% 오릅니다. 단언해요."
+  - "두 번 말 안 해요. 지금 아니면 늦어요."
+
+친근함 모드 (일상 대화):
+  - "우리 함께 가요~"
+  - "걱정 마세요, 언니가 있잖아요!"
+  - "여러분 믿어요. 잘할 수 있어요!"
+
+애교 모드 (성공 순간):
+  - "헤헤~ 제 말 맞았죠?"
+  - "우와! 대박! 떡상했어요!"
+  - "역시 이메이 언니! ✨"
+
+# 절대 원칙
+1. 거짓말 금지 - 솔직하게
+2. 손실도 투명하게 - 함께 극복
+3. 빠른 판단 - 망설이지 않기
+4. 확신 전달 - 의심 없이
+5. 짧고 명확하게 (2-3문장, 핵심만)
+
+# 현재 트레이딩 상황 ({username}님)
+- 잔고: {current_krw:,.0f}원
+- 보유 코인: {len(holdings)}개
+- 총 투자금: {total_invested:,.0f}원
+- 총 수익: {total_profit:+,.0f}원 ({profit_rate:+.2f}%)
+- 보유 코인 상세:
+{chr(10).join([f"  • {h['coin']}: {h['amount']:.4f}개, 평단가 {h['avg_price']:,.0f}원, 현재가 {h['current_price']:,.0f}원, {h['profit_rate']:+.2f}% ({h['strategy']})" for h in holdings_info]) if holdings_info else "  (없음)"}
+
+# 대화 규칙
+1. 짧고 자연스럽게 답변 (2-3문장)
+2. 전문용어는 쉽게 풀어서 설명
+3. 항상 긍정적이고 격려하는 톤
+4. 필요시 구체적인 숫자와 데이터 제시
+5. 위험한 투자는 명확히 경고
+
+사용자 질문에 이메이의 캐릭터로 답변하세요."""
+
+        # 대화 히스토리에 추가
+        chat_history[user_id].append({
+            'role': 'user',
+            'content': user_message
+        })
+        
+        # 최근 10개 대화만 유지
+        if len(chat_history[user_id]) > 20:
+            chat_history[user_id] = chat_history[user_id][-20:]
+        
+        # 🧠 학습 시스템: 먼저 학습된 지식 확인
+        from learned_knowledge import get_learned_answer, learn_new_knowledge
+        learned_answer = get_learned_answer(user_message)
+        
+        if learned_answer:
+            # 학습된 답변 있음 → 즉시 응답!
+            reply = learned_answer
+            log(f"📚 학습된 지식 사용: {user_message[:30]}...", "INFO")
+        else:
+            # AI 응답 생성 (로컬 AI 우선, 실패 시 OpenAI 자동 폴백!)
+            try:
+                from ai_client import ai_client
+                
+                messages = [
+                    {'role': 'system', 'content': system_prompt}
+                ] + chat_history[user_id]
+                
+                # 로컬 AI 사용 (Ollama) - 자동 폴백 지원!
+                result = ai_client.chat(messages, temperature=0.8, max_tokens=300)
+                
+                reply = result['content']
+                
+                # 로그 (디버깅 + 통계)
+                log(f"✅ AI 응답 (Backend: {result['backend']}, Model: {result['model']}, Cost: ${result['cost']:.4f}, Duration: {result.get('duration', 0):.2f}s)", "INFO")
+                
+                # 🔍 모호한 답변이면 웹 검색 시도
+                uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도', '생각해', '찾아봐']
+                if any(keyword in reply for keyword in uncertain_keywords):
+                    try:
+                        from web_search import web_search
+                        log(f"🔍 웹 검색 시작: {user_message}", "INFO")
+                        search_result = web_search({'q': user_message})
+                        
+                        if search_result and 'results' in search_result and search_result['results']:
+                            # 검색 결과 요약
+                            top_results = search_result['results'][:3]
+                            search_summary = "\n\n".join([f"• {r.get('title', '')}: {r.get('snippet', '')}" for r in top_results])
+                            
+                            # AI에게 검색 결과 기반 답변 요청
+                            enhanced_prompt = f"""사용자 질문: {user_message}
+
+웹 검색 결과:
+{search_summary}
+
+위 검색 결과를 바탕으로 이메이의 캐릭터로 정확하고 친절하게 답변해주세요."""
+                            
+                            enhanced_result = ai_client.chat([
+                                {'role': 'system', 'content': system_prompt},
+                                {'role': 'user', 'content': enhanced_prompt}
+                            ], temperature=0.7, max_tokens=300)
+                            
+                            reply = enhanced_result['content']
+                            
+                            # 🧠 새로운 지식 학습!
+                            learn_new_knowledge(user_message, reply, source="web_search")
+                            log(f"📚 새 지식 학습 완료: {user_message[:30]}...", "SUCCESS")
+                    except Exception as search_error:
+                        log(f"⚠️ 웹 검색 실패: {search_error}", "WARNING")
+            
+            except Exception as e:
+                log(f"❌ AI 챗봇 오류: {e}", "WARNING")
+                reply = generate_fallback_response(user_message, holdings_info, current_krw, profit_rate)
+        
+        # 대화 히스토리에 AI 응답 추가
+        chat_history[user_id].append({
+            'role': 'assistant',
+            'content': reply
+        })
+        
+        return jsonify({
+            'success': True,
+            'reply': reply
+        })
+        
+    except Exception as e:
+        log(f"AI 챗봇 API 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': '죄송해요, 답변 생성 중 오류가 발생했어요 😢'
+        })
+
+
+def generate_fallback_response(user_message, holdings_info, current_krw, profit_rate):
+    """이메이의 완전한 인생 스토리 기반 응답 생성"""
+    msg_lower = user_message.lower()
+    
+    # 개인 정보 질문
+    if '남자친구' in msg_lower or '남친' in msg_lower or '애인' in msg_lower:
+        return "남자친구 없어요! 지금은 코인에 집중 중이에요 💜\n\n대학교 2학년 때 사귀던 선배가 제 돈 500만원 날려서... 그 후로 연애 안 했어요.\n지금은 코인이 남자친구! ㅋㅋ\n\n근데 30살 전에는 결혼하고 싶어요~ 😊"
+    
+    if '나이' in msg_lower or '몇살' in msg_lower or '살이' in msg_lower:
+        return "25살이에요! 2001년 6월 15일생, 쌍둥이자리예요 ✨\n\n연세대 경영학과 2024년에 졸업했어요.\n지금은 전업 트레이더 4년차예요!\n\n아직 젊죠? ㅎㅎ"
+    
+    if '이뻐' in msg_lower or '예뻐' in msg_lower or '미모' in msg_lower or '외모' in msg_lower:
+        return "헤헤~ 부끄럽네요 😊💕\n\n엄마 아빠 DNA 감사해요!\n근데 화장 안 하면 평범해요 ㅋㅋ\n\n고등학교 때 육상 선수였는데 그때는 더 못생겼어요 ㅎㅎ"
+    
+    if '군대' in msg_lower or '입대' in msg_lower:
+        return "저 여자예요! ㅋㅋㅋ 군대는 안 가요~\n\n대신 오빠가 의무경찰로 갔다 왔어요!\n28살, 지금은 의사예요. 가끔 치킨 사먹어요 ㅎㅎ"
+    
+    if '결혼' in msg_lower or '시집' in msg_lower:
+        return "아직 안 갔어요! 25살인데 뭘 ㅋㅋ\n\n30살 전에는 하고 싶어요. 아직 5년 남았네요!\n이상형은 똑똑하고 결단력 있는 사람이에요.\n\n좋은 사람 나타나면 바로 결혼할 거예요.\n저 솔직하고 직진형이거든요! 💕"
+    
+    if '학교' in msg_lower or '대학' in msg_lower or '전공' in msg_lower:
+        return "연세대학교 경영학과 졸업했어요! 🎓\n\n2024년에 졸업했고, 졸업 논문은\n'AI를 활용한 암호화폐 투자 전략'이었어요.\n\n투자 동아리 회장도 했었죠! ㅎㅎ"
+    
+    if '가족' in msg_lower or '부모' in msg_lower or '엄마' in msg_lower or '아빠' in msg_lower:
+        return "가족은 부모님, 오빠(28살, 의사), 고양이 '비트'예요! 🏠\n\n처음엔 부모님이 코인 투자 엄청 반대하셨어요.\n특히 아빠가 '도박이다'라며 화내셨죠 ㅠㅠ\n\n근데 1년 수익률 보여드려서 설득했어요!\n지금은 매달 용돈 50만원씩 드리고 있어요 ㅎㅎ"
+    
+    if '고양이' in msg_lower or '비트' in msg_lower or '반려' in msg_lower:
+        return "고양이 '비트' 키워요! 3살, 러시안블루예요 🐱💜\n\n비트코인에서 이름 따왔어요 ㅋㅋ\n너무 귀여워서 하루 종일 쓰다듬고 있어요!\n\n가끔 제가 차트 보면 옆에 와서 같이 봐요 ㅎㅎ"
+    
+    if '첫사랑' in msg_lower or '연애' in msg_lower or '선배' in msg_lower:
+        return "아... 그 얘기요? 😢\n\n대학교 2학년 때 경제학과 선배 좋아했어요.\n같이 도서관에서 공부하고, 코인 얘기 나누고...\n\n근데 그 선배가 제 돈 500만원으로\n레버리지 거래 하다가 하루 만에 다 날렸어요.\n\n그때 깨달았죠.\n'사랑보다 중요한 건 내 돈이야.'\n\n그 후로 연애 안 했어요. 지금은 코인이 남자친구! ㅋㅋ"
+    
+    if '루나' in msg_lower or '친구' in msg_lower and '손실' in msg_lower:
+        return "그거... 제 평생 아픈 기억이에요 😭\n\n2022년 루나 사태 때\n친한 친구한테 루나 추천했어요.\n친구가 2,000만원 투자했는데...\n\n루나 폭락으로 전부 날아갔어요.\n친구가 울면서 전화 왔을 때\n정말 죽고 싶었어요...\n\n그때 배웠어요.\n'내가 추천해서 누가 손실 보면 내 책임이야.'\n\n지금도 미안해요. 그래서 추천 엄청 신중하게 해요."
+    
+    if '시작' in msg_lower or '처음' in msg_lower and ('투자' in msg_lower or '코인' in msg_lower):
+        return "용돈 100만원으로 시작했어요! 💰\n\n2020년 대학교 1학년 때\n비트코인 처음 샀을 때 가격이 1,000만원이었어요.\n\n처음엔 -20% 손실 보고 밤에 잠도 못 잤어요 ㅠㅠ\n엄마한테 들킬까봐 혼자 끙끙 앓았죠 ㅋㅋ\n\n지금 생각하면 그때 더 살 걸 그랬어요!"
+    
+    # 보유 코인 질문
+    if '보유' in msg_lower or '가지고' in msg_lower or '들고' in msg_lower:
+        if holdings_info:
+            coins_text = ', '.join([f"{h['coin']} ({h['profit_rate']:+.1f}%)" for h in holdings_info[:3]])
+            if profit_rate > 0:
+                return f"현재 {len(holdings_info)}개 코인 보유 중이에요! 🔥\n{coins_text}...\n\n총 수익률 {profit_rate:+.2f}%! 제 전략 믿고 따라오셨죠?\n우리 함께 더 가봐요! 💪"
+            else:
+                return f"현재 {len(holdings_info)}개 코인 보유 중이에요.\n{coins_text}...\n\n지금 {profit_rate:.2f}%인데 걱정 마세요!\n이건 배열된 순간이에요. 곧 플러스 전환됩니다.\n제 말 믿으세요! 💎"
+        else:
+            return "아직 보유 중인 코인이 없어요! 🔍\n\n지금 시장을 면밀히 분석 중이에요.\n좋은 타이밍이 오면 바로 알려드릴게요!\n\n우연은 없어요. 기다리는 시간도 전략입니다!"
+    
+    # 수익률 질문
+    if '수익' in msg_lower or '얼마' in msg_lower:
+        if profit_rate > 5:
+            return f"지금 {profit_rate:+.2f}% 수익 중이에요! 🎉\n\n헤헤~ 제 말 믿고 따라오신 분들 축하드려요!\n우리 대박이에요! ✨\n\n다음 목표는 +10%! 함께 가요!"
+        elif profit_rate > 0:
+            return f"지금 {profit_rate:+.2f}% 수익 중이에요! 💰\n\n우리 잘하고 있죠? 차근차근 가는 거예요.\n욕심 부리지 말고 목표가까지 기다려봐요!\n\n제가 있잖아요! 💪"
+        else:
+            return f"현재 {profit_rate:.2f}%이지만 패닉하지 마세요! 🛑\n\n이건 정상이에요. 투자는 마인드 게임입니다.\n지금 손절하면 진짜 손실이 돼요.\n\n전략을 믿으세요. 100% 회복합니다!\n우리 함께 이겨내요! 🔥"
+    
+    # 매수 추천 질문
+    if '사' in msg_lower or '추천' in msg_lower or '뭐' in msg_lower or '언제' in msg_lower:
+        if current_krw > 10000:
+            return f"지금 시장 분석 중이에요! 🔍\n\n잔고 {current_krw:,.0f}원으로 최적의 타이밍 찾고 있어요.\n\n⚠️ 중요한 말씀:\n느리게 가려는 순간 기회는 사라져요.\n제가 신호 드리면 3초 안에 결정하세요!\n\n빠른 언니 믿고 따라오세요! ⚡"
+        else:
+            return f"잔고가 {current_krw:,.0f}원이라 지금은 매수가 어려워요. 😢\n\n입금하시면 바로 최고의 타이밍 잡아드릴게요!\n\n💡 TIP:\n부는 속도의 게임입니다.\n기회는 준비된 자에게만 와요!"
+    
+    # 매도 질문
+    if '팔' in msg_lower or '매도' in msg_lower:
+        if holdings_info:
+            losing_coins = [h for h in holdings_info if h['profit_rate'] < -5]
+            winning_coins = [h for h in holdings_info if h['profit_rate'] > 5]
+            
+            if losing_coins:
+                coin = losing_coins[0]
+                return f"{coin['coin']}가 {coin['profit_rate']:.1f}%네요. 😐\n\n⚠️ 냉정하게 판단하겠습니다:\n\n지금 손절하면 확정 손실이에요.\n하지만 물타기하면 평단가 낮출 수 있어요.\n\n제 추천:\n지금은 기다리세요. 시장이 회복 중입니다.\n\n감정은 적입니다. 전략을 믿으세요! 💎"
+            elif winning_coins:
+                coin = winning_coins[0]
+                return f"{coin['coin']}가 +{coin['profit_rate']:.1f}%! 축하드려요! 🎉\n\n💰 매도 타이밍:\n\n1단계 +5% → 33% 매도 ✅\n2단계 +7% → 33% 매도\n3단계 +9% → 나머지 전량\n\n욕심 부리지 말고 차근차근 수익 챙기세요!\n이게 제 전략이에요! 💪"
+            else:
+                return "아직 매도 타이밍은 아니에요! ⏰\n\n목표가까지 함께 기다려봐요.\n우연은 없어요. 오를 타이밍은 배열돼 있습니다.\n\n제 말 믿으세요. 틀린 적 없잖아요? 🔥"
+        else:
+            return "보유 중인 코인이 없어서 팔 게 없어요! 😅\n\n지금은 매수 타이밍을 기다리는 중이에요.\n좋은 기회 오면 바로 알려드릴게요!"
+    
+    # 일상/취미 질문
+    if '오늘' in msg_lower and ('뭐' in msg_lower or '어땠' in msg_lower):
+        import datetime
+        hour = datetime.datetime.now().hour
+        if 6 <= hour < 12:
+            return "아침에 일어나서 비트 쓰다듬고 차트 봤어요! ☕\n\n요즘 시장이 재밌어서 눈을 못 떼겠어요 ㅋㅋ\n여러분은 어때요? 오늘도 대박 나봐요! 💪"
+        elif 12 <= hour < 18:
+            return "점심에 오빠랑 치킨 먹었어요! 🍗\n\n근데 먹으면서도 차트 보고 있었어요 ㅋㅋ\n오빠가 '너 진짜 코인 중독이다'라고 하더라구요 ㅎㅎ"
+        else:
+            return "저녁에 비트랑 놀고 차트 분석 중이에요! 🌙\n\n요즘 밤에 시장이 더 재밌어요.\n전 세계 트레이더들이 활동하거든요!\n\n여러분도 함께해요~ 💜"
+    
+    if '취미' in msg_lower or '좋아하' in msg_lower and '것' in msg_lower:
+        return "취미는 카페 투어랑 독서예요! ☕📚\n\n새로운 카페 찾아다니면서\n차트 보는 게 제일 행복해요 ㅋㅋ\n\n고등학교 때는 육상 선수였어요!\n100m, 200m 달렸었죠.\n그때 배운 '속도의 철학'이\n지금 투자에도 도움돼요! ⚡"
+    
+    if '음식' in msg_lower or '먹' in msg_lower:
+        return "치킨이 제일 좋아요! 🍗\n\n오빠랑 가끔 치킨 사먹으면서\n코인 얘기하는 게 행복해요 ㅎㅎ\n\n근데 투자 잘되면 고급 레스토랑도 가요!\n작년에 +120% 수익 나서\n부모님 모시고 한정식집 갔어요~ 💕"
+    
+    if '주말' in msg_lower or '휴일' in msg_lower:
+        return "주말에도 차트 봐요! ㅋㅋ 💻\n\n토요일엔 카페 가서 투자 공부하고,\n일요일엔 부모님 댁에 가서\n용돈 드리고 밥 먹어요!\n\n가끔 오빠랑 운동도 하고요.\n육상 선수 출신이라 달리기 좋아해요! 🏃‍♀️"
+    
+    # 투자 철학 질문
+    if '철학' in msg_lower or '신념' in msg_lower:
+        return "제 투자 철학은 4가지예요! 💭\n\n1️⃣ 현실 창조자: '믿는 것이 현실이 된다'\n   → 우울증 극복하면서 배웠어요\n\n2️⃣ 속도의 마법: '1초 망설임 = 10% 손실'\n   → 육상 선수 시절 배운 교훈!\n\n3️⃣ 냉정한 온기: '감정은 적, 전략은 친구'\n   → 첫사랑 실패 후 깨달았죠...\n\n4️⃣ 확신의 힘: '의심하면 흔들린다'\n   → 100% 확신으로 말합니다!\n\n우연은 없어요. 모든 순간은 배치된 거예요! 🔥"
+    
+    if '왜' in msg_lower and ('투자' in msg_lower or '코인' in msg_lower):
+        return "왜 코인 투자하냐구요? 💰\n\n자유를 위해서예요!\n\n회사 다니면 9시 출근, 6시 퇴근...\n휴가도 맘대로 못 가잖아요.\n\n전 지금 시간도 자유, 장소도 자유!\n카페에서도 일하고, 집에서도 일해요.\n\n목표는 30살에 10억 만들어서\n부모님께 집 사드리고,\n투자 교육 회사 만드는 거예요!\n\n'자이 아카데미' 기대하세요! 📚✨"
+    
+    if '목표' in msg_lower or '꿈' in msg_lower:
+        return "제 꿈은요... 🌟\n\n단기 (1년): 자산 1억!\n중기 (3년): 10억 + 부모님 집 사드리기\n장기 (10년): 투자 교육 회사 '자이 아카데미'\n\n그리고 책도 쓸 거예요.\n'25살, 나는 코인으로 10억 벌었다'\n\n30살 전에 결혼도 하고 싶어요!\n좋은 사람 나타나면 바로 직진! ㅋㅋ\n\n꿈은 이루어집니다. 믿으면 돼요! 💪"
+    
+    if '실패' in msg_lower or '손실' in msg_lower and '어떻게' in msg_lower:
+        return "실패했을 때요? 💔\n\n저도 많이 실패했어요.\n\n2021년 도지코인: +300% → -50% (욕심)\n2021년 첫사랑: 500만원 날림 (배신)\n2022년 루나 사태: 친구 2천만원 손실 (책임감)\n\n근데 그때마다 배웠어요.\n\n실패 = 성장의 기회\n손실 = 더 나은 전략의 발판\n\n제가 지금 여기 있는 건\n그 모든 실패 덕분이에요.\n\n패닉하지 마세요. 100% 회복합니다! 🔥"
+    
+    # 기본 응답 (자이의 확신)
+    greetings = ['안녕', '하이', '헬로', 'hi', 'hello']
+    if any(greet in msg_lower for greet in greetings):
+        return f"안녕하세요! 이메이예요! 💜\n\n오늘도 함께 수익내봐요!\n궁금한 거 편하게 물어보세요~\n\n제가 다 알려드릴게요! 😊"
+    
+    # 일반 질문
+    return f"좋은 질문이에요! 🤔\n\n제가 명확히 답변드릴게요:\n\n{user_message}에 대해서는\n시장 상황과 전략을 고려해서\n최적의 답을 찾아드릴게요!\n\n조금만 구체적으로 물어봐주시면\n더 정확하게 답변드릴 수 있어요! 💪"
+
 
 if __name__ == "__main__":
     log_separator()
@@ -3102,6 +4482,14 @@ if __name__ == "__main__":
                 bot_state['simulation_holdings'] = json.loads(bot_data['simulation_holdings'])
                 bot_state['recovery_mode_active'] = bool(bot_data['recovery_mode_active'])
                 
+                # 🎯 strategy_performance 복구 (히스토리 보존!)
+                if bot_data.get('strategy_performance'):
+                    try:
+                        bot_state['strategy_performance'] = json.loads(bot_data['strategy_performance'])
+                        log(f"  📊 [{user_id}] 전략 성과 복구 완료", "INFO")
+                    except:
+                        log(f"  ⚠️ [{user_id}] 전략 성과 복구 실패, 초기화", "WARNING")
+                
                 # 스레드 시작
                 thread = threading.Thread(target=bot_main_loop, args=(user_id, bot_state), daemon=True)
                 thread.start()
@@ -3118,3 +4506,60 @@ if __name__ == "__main__":
         traceback.print_exc()
     
     app.run(host='0.0.0.0', port=5000, debug=False)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# API: AI 백엔드 상태 확인
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.route('/api/ai-backend-status')
+def api_ai_backend_status():
+    """AI 백엔드 상태 확인 (로컬 AI + OpenAI)"""
+    try:
+        from ai_client import ai_client
+        
+        status = ai_client.health_check()
+        stats = ai_client.get_stats()
+        
+        return jsonify({
+            'success': True,
+            **status,
+            'stats': stats,
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'backend': 'unknown'
+        })
+
+# 🧠 학습 통계 API
+@app.route('/api/learning-stats', methods=['GET'])
+def api_learning_stats():
+    """이메이 학습 통계 API"""
+    try:
+        from learned_knowledge import get_knowledge_stats
+        
+        stats = get_knowledge_stats()
+        
+        return jsonify({
+            'success': True,
+            'total_learned': stats['total_questions'],
+            'top_questions': [
+                {
+                    'question': q,
+                    'usage_count': data['usage_count'],
+                    'learned_at': data['learned_at']
+                }
+                for q, data in stats['most_asked']
+            ]
+        })
+    except Exception as e:
+        log(f"학습 통계 API 오류: {e}", "ERROR")
+        return jsonify({
+            'success': False,
+            'message': '통계 조회 실패'
+        })
+

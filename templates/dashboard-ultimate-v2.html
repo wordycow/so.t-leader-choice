@@ -788,6 +788,7 @@
           <div class="user-info" id="userInfo">
             <span>👤</span>
             <span>로그인: <strong id="username">Guest</strong></span>
+            <a href="/ai-streamer" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-left: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);" target="_blank">💜 자이와 대화</a>
             <a href="/admin" style="text-decoration: none; color: var(--upbit-red); font-weight: 600; margin-left: 12px;">🔧 관리자</a>
             <a href="/history" style="text-decoration: none; color: var(--upbit-blue); font-weight: 600; margin-left: 12px;">📊 히스토리</a>
             <button class="logout-btn" onclick="logout()">로그아웃</button>
@@ -795,6 +796,9 @@
           <div class="status-badge stopped" id="statusBadge">
             <span class="status-dot"></span>
             <span id="statusText">정지됨</span>
+          </div>
+          <div id="statusDetailBox" style="display: none; margin-left: 12px; padding: 8px 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 20px; font-size: 13px; color: var(--upbit-blue);">
+            <span id="statusDetailText"></span>
           </div>
         </div>
       </div>
@@ -1474,28 +1478,65 @@
         if (data.running) {
           document.getElementById('statusBadge').classList.add('running');
           document.getElementById('statusBadge').classList.remove('stopped');
-          document.getElementById('statusText').innerHTML = '<span class="spinner"></span> 실행 중';
+          
+          // 🔥 상태 메시지와 이모지 표시
+          const statusEmoji = data.status_emoji || '⚙️';
+          const statusMessage = data.status_message || '실행 중';
+          const statusDetail = data.status_detail || '';
+          
+          document.getElementById('statusText').innerHTML = 
+            `<span class="spinner"></span> ${statusEmoji} ${statusMessage}`;
+          
+          // 상세 정보가 있으면 추가 표시
+          const statusDetailEl = document.getElementById('statusDetailText');
+          const statusDetailBox = document.getElementById('statusDetailBox');
+          if (statusDetailEl && statusDetailBox) {
+            if (statusDetail) {
+              statusDetailEl.textContent = statusDetail;
+              statusDetailBox.style.display = 'block';
+            } else {
+              statusDetailBox.style.display = 'none';
+            }
+          }
+          
           toggleGears(true); // 톱니바퀴 표시
         } else {
           document.getElementById('statusBadge').classList.remove('running');
           document.getElementById('statusBadge').classList.add('stopped');
           document.getElementById('statusText').textContent = '정지됨';
+          const statusDetailBox = document.getElementById('statusDetailBox');
+          if (statusDetailBox) {
+            statusDetailBox.style.display = 'none';
+          }
           toggleGears(false); // 톱니바퀴 숨김
         }
 
         // 보유 코인 업데이트
         if (data.holdings && data.holdings.length > 0) {
           document.getElementById('holdingsContainer').innerHTML = data.holdings
-            .map(h => `
+            .map(h => {
+              const strategyIcon = h.strategy_icon || '📊';
+              const strategyName = h.strategy_name || '전략';
+              const buyReason = h.buy_reason || '매수 신호 감지';
+              const entryTime = h.entry_time ? new Date(h.entry_time).toLocaleString('ko-KR', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+              const dcaCount = h.dca_count || 0;
+              
+              return `
               <div class="list-item">
                 <div class="item-left">
-                  <div class="item-title">💎 ${h.coin_name}</div>
+                  <div class="item-title">
+                    ${strategyIcon} ${h.coin_name}
+                    ${dcaCount > 0 ? `<span style="font-size: 11px; padding: 2px 6px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-radius: 10px; margin-left: 6px;">물타기 ${dcaCount}회</span>` : ''}
+                  </div>
                   <div class="item-subtitle">
-                    수량: ${h.amount.toFixed(4)}개<br>
-                    투자: ${formatNumber(h.amount * h.avg_price)}원 → 
-                    현재: ${formatNumber(h.value)}원<br>
+                    <div style="color: var(--upbit-blue); font-size: 12px; margin-bottom: 4px;">
+                      ${buyReason}
+                    </div>
+                    수량: ${h.amount.toFixed(4)}개 | 
+                    투자: ${formatNumber(h.amount * h.avg_price)}원<br>
                     매수가: ${formatNumber(h.avg_price)}원 → 
                     현재가: ${formatNumber(h.current_price)}원
+                    ${entryTime ? `<br><span style="font-size: 11px; color: #9ca3af;">진입: ${entryTime}</span>` : ''}
                   </div>
                 </div>
                 <div class="item-right">
@@ -1509,7 +1550,8 @@
                   </div>
                 </div>
               </div>
-            `).join('');
+            `;
+            }).join('');
         } else {
           document.getElementById('holdingsContainer').innerHTML = `
             <div class="list-item">

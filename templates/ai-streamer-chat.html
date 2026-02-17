@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자이 AI 스트리머 - 코인 트레이딩 어시스턴트</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-container {
+      width: 90%;
+      max-width: 450px;
+      height: 90vh;
+      max-height: 800px;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 헤더 */
+    .chat-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .ai-avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 4px solid white;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .ai-avatar::before {
+      content: 'JAI';
+      font-family: 'Segoe UI', Arial, sans-serif;
+      letter-spacing: 2px;
+    }
+    
+    .ai-avatar.talking {
+      animation: avatarTalking 0.3s ease-in-out infinite;
+    }
+    
+    @keyframes avatarTalking {
+      0%, 100% { transform: scale(1); border-color: white; }
+      50% { transform: scale(1.05); border-color: #10b981; }
+    }
+      display: block;
+    }
+
+    .ai-info h2 {
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .ai-info .status {
+      color: rgba(255,255,255,0.9);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 메시지 영역 */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f7fafc;
+    }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: transform 0.1s ease;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .message-avatar.ai-msg::before {
+      content: 'J';
+    }
+    
+    .message-avatar.user-msg::before {
+      content: 'U';
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .message-avatar.talking {
+      animation: talking 0.3s infinite alternate;
+    }
+
+    @keyframes talking {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1.02); }
+    }
+
+    .message-content {
+      max-width: 70%;
+    }
+
+    .message.user .message-content {
+      background: #667eea;
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+      padding: 12px 16px;
+    }
+
+    .message.ai .message-content {
+      background: white;
+      color: #2d3748;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #a0aec0;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .message.user .message-time {
+      text-align: left;
+    }
+
+    /* 타이핑 인디케이터 */
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 18px;
+      width: fit-content;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .typing-indicator .message-avatar {
+      animation: talking 0.3s infinite alternate;
+    }
+
+    .typing-indicator.active {
+      display: block;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      background: #cbd5e0;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    /* 입력 영역 */
+    .chat-input-wrapper {
+      padding: 16px 20px;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .chat-input-container {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      border: 2px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .chat-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 퀵 메뉴 */
+    .quick-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .quick-button {
+      padding: 8px 16px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #4a5568;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .quick-button:hover {
+      border-color: #667eea;
+      color: #667eea;
+      background: #f7fafc;
+    }
+
+    /* 환영 메시지 */
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #718096;
+    }
+
+    .welcome-message .ai-avatar-large {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      border: 4px solid #667eea;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .ai-avatar-large::before {
+      content: '💜';
+      font-size: 60px;
+    }
+
+    .welcome-message h3 {
+      color: #2d3748;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .welcome-message p {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <!-- 헤더 -->
+    <div class="chat-header">
+      <div class="ai-avatar" id="headerAvatar"></div>
+      <div class="ai-info">
+        <h2>자이 (JAI) 💜</h2>
+        <div class="status">
+          <span class="status-dot"></span>
+          온라인 · 트레이딩 중
+        </div>
+      </div>
+    </div>
+
+    <!-- 메시지 영역 -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="welcome-message">
+        <div class="ai-avatar-large"></div>
+        <h3>안녕하세요! 자이에요 🎀</h3>
+        <p>
+          코인 투자 4년차 언니가<br>
+          여러분의 트레이딩을 도와드릴게요!<br>
+          <br>
+          궁금한 거 편하게 물어보세요~ 😊
+        </p>
+      </div>
+    </div>
+
+    <!-- 입력 영역 -->
+    <div class="chat-input-wrapper">
+      <div class="quick-buttons">
+        <button class="quick-button" onclick="sendQuickMessage('지금 뭐 사야 돼?')">💰 추천 코인</button>
+        <button class="quick-button" onclick="sendQuickMessage('현재 보유 코인은?')">📊 보유 현황</button>
+        <button class="quick-button" onclick="sendQuickMessage('오늘 수익률은?')">📈 수익률</button>
+        <button class="quick-button" onclick="sendQuickMessage('언제 팔아야 해?')">💸 매도 타이밍</button>
+      </div>
+      <div class="chat-input-container">
+        <input 
+          type="text" 
+          class="chat-input" 
+          id="messageInput" 
+          placeholder="메시지를 입력하세요..."
+          onkeypress="handleKeyPress(event)"
+        >
+        <button class="send-btn" onclick="sendMessage()">
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+
+    // 메시지 추가
+    function addMessage(text, isUser = false) {
+      const message = document.createElement('div');
+      message.className = `message ${isUser ? 'user' : 'ai'}`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = `message-avatar ${isUser ? 'user-msg' : 'ai-msg'}`;
+      
+      const content = document.createElement('div');
+      content.className = 'message-content';
+      content.innerHTML = text;
+      
+      const time = document.createElement('div');
+      time.className = 'message-time';
+      time.textContent = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+      
+      message.appendChild(avatar);
+      const contentWrapper = document.createElement('div');
+      contentWrapper.appendChild(content);
+      contentWrapper.appendChild(time);
+      message.appendChild(contentWrapper);
+      
+      chatMessages.appendChild(message);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // 자이 메시지일 때 말하는 애니메이션
+      if (!isUser) {
+        animateTalking(avatar, text.length);
+      }
+    }
+
+    // 말하는 애니메이션 (입 움직임)
+    function animateTalking(avatarElement, textLength) {
+      // 헤더 아바타도 같이 애니메이션
+      const headerAvatar = document.getElementById('headerAvatar');
+      
+      // talking 클래스 추가
+      avatarElement.classList.add('talking');
+      if (headerAvatar) headerAvatar.classList.add('talking');
+      
+      // 텍스트 길이에 따라 반복 횟수 계산 (최소 1초, 최대 3초)
+      const duration = Math.min(Math.max(textLength * 50, 1000), 3000);
+      
+      setTimeout(() => {
+        avatarElement.classList.remove('talking');
+        if (headerAvatar) headerAvatar.classList.remove('talking');
+      }, duration);
+    }
+    }
+
+    // 타이핑 인디케이터
+    function showTyping() {
+      const typing = document.createElement('div');
+      typing.className = 'message ai';
+      typing.id = 'typingIndicator';
+      
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'message-avatar ai-msg talking';
+      avatarDiv.id = 'typingAvatar';
+      
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'typing-indicator active';
+      typingDiv.innerHTML = `
+        <div class="typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+      `;
+      
+      typing.appendChild(avatarDiv);
+      typing.appendChild(typingDiv);
+      chatMessages.appendChild(typing);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      // 헤더 아바타도 애니메이션
+      const headerAvatar = document.getElementById('headerAvatar');
+      if (headerAvatar) headerAvatar.classList.add('talking');
+    }
+
+
+    function hideTyping() {
+      const headerAvatar = document.getElementById('headerAvatar');
+      if (headerAvatar) headerAvatar.classList.remove('talking');
+      
+      const typing = document.getElementById('typingIndicator');
+      if (typing) {
+        typing.remove();
+      }
+    }
+      const typing = document.getElementById('typingIndicator');
+      if (typing) typing.remove();
+    }
+
+    // 메시지 전송
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      // 사용자 메시지 추가
+      addMessage(text, true);
+      messageInput.value = '';
+
+      // 타이핑 표시
+      showTyping();
+
+      try {
+        // API 호출
+        const response = await fetch('/api/ai-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+        
+        hideTyping();
+        
+        if (data.success) {
+          addMessage(data.reply, false);
+        } else {
+          addMessage('죄송해요, 지금 답변하기 어려워요 😢', false);
+        }
+      } catch (error) {
+        hideTyping();
+        addMessage('앗! 네트워크 오류가 발생했어요 🙏', false);
+      }
+    }
+
+    // 퀵 메시지
+    function sendQuickMessage(text) {
+      messageInput.value = text;
+      sendMessage();
+    }
+
+    // 엔터키 처리
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // 페이지 로드 시 환영 메시지 제거 (첫 메시지 시)
+    let firstMessage = true;
+    const originalAddMessage = addMessage;
+    addMessage = function(text, isUser) {
+      if (firstMessage && isUser) {
+        document.querySelector('.welcome-message')?.remove();
+        firstMessage = false;
+      }
+      originalAddMessage(text, isUser);
+    };
+  </script>
+</body>
+</html>
