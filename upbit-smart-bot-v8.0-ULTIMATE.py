@@ -70,6 +70,8 @@ from jai_memory_system import (
 
 # 🎭 감정 시스템
 from emotion_system import detect_emotion, get_emotion_image, analyze_conversation
+from emei_learning_brain import EmeiLearningBrain
+from emei_persona_system import PersonaSystem, PersonaType
 
 # 🧠 장기 기억 시스템 (이메이 전용)
 from long_term_memory import (
@@ -4187,8 +4189,19 @@ def api_ai_chat():
         
         profit_rate = (total_profit / total_invested * 100) if total_invested > 0 else 0
         
-        # 이메이 캐릭터 시스템 프롬프트 (확립된 인성)
+        # 🎭 페르소나 시스템: 질문에 맞는 인성 자동 선택
+        persona_system = PersonaSystem()
+        detected_persona = persona_system.detect_persona(user_message)
+        persona_info = persona_system.get_persona_info(detected_persona)
+        
+        log(f"🎭 [{username}] 페르소나 감지: {persona_info['name']}", "INFO")
+        
+        # 이메이 캐릭터 시스템 프롬프트 (페르소나 통합!)
         system_prompt = f"""당신은 "이메이(Emei)"입니다. 25세 여성 AI 트레이딩 스트리머, 코인 투자 4년차.
+
+🎭 **현재 페르소나: {persona_info['name']}**
+- 말투: {persona_info['tone']}
+- 스타일: {', '.join([f"{k}={v}" for k, v in persona_info['style'].items()])}
 
 # 핵심 인성 (절대 불변)
 1. 현실 창조자: "믿음이 현실을 만든다"
@@ -4280,8 +4293,10 @@ def api_ai_chat():
             chat_history[user_id] = chat_history[user_id][-20:]
         
         # 🧠 학습 시스템: 먼저 학습된 지식 확인
-        from learned_knowledge import get_learned_answer, learn_new_knowledge
-        learned_answer = get_learned_answer(user_message)
+        learning_brain = EmeiLearningBrain()
+        
+        # 1. 학습된 지식에서 답변 찾기
+        learned_answer = learning_brain.get_learned_answer(user_message)
         is_learned = False  # 학습 플래그
         
         if learned_answer:
@@ -4306,40 +4321,18 @@ def api_ai_chat():
                 # 로그 (디버깅 + 통계)
                 log(f"✅ AI 응답 (Backend: {result['backend']}, Model: {result['model']}, Cost: ${result['cost']:.4f}, Duration: {result.get('duration', 0):.2f}s)", "INFO")
                 
-                # 🔍 모호한 답변이면 웹 검색 시도
+                # 🔍 모호한 답변이면 Learning Brain으로 웹 검색 + 학습
                 uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도', '생각해', '찾아봐']
                 if any(keyword in reply for keyword in uncertain_keywords):
-                    try:
-                        from web_search import web_search
-                        log(f"🔍 웹 검색 시작: {user_message}", "INFO")
-                        search_result = web_search({'q': user_message})
-                        
-                        if search_result and 'results' in search_result and search_result['results']:
-                            # 검색 결과 요약
-                            top_results = search_result['results'][:3]
-                            search_summary = "\n\n".join([f"• {r.get('title', '')}: {r.get('snippet', '')}" for r in top_results])
-                            
-                            # AI에게 검색 결과 기반 답변 요청
-                            enhanced_prompt = f"""사용자 질문: {user_message}
-
-웹 검색 결과:
-{search_summary}
-
-위 검색 결과를 바탕으로 이메이의 캐릭터로 정확하고 친절하게 답변해주세요."""
-                            
-                            enhanced_result = ai_client.chat([
-                                {'role': 'system', 'content': system_prompt},
-                                {'role': 'user', 'content': enhanced_prompt}
-                            ], temperature=0.7, max_tokens=300)
-                            
-                            reply = enhanced_result['content']
-                            
-                            # 🧠 새로운 지식 학습!
-                            learn_new_knowledge(user_message, reply, source="web_search")
-                            is_learned = True  # 학습 완료 표시!
-                            log(f"📚 새 지식 학습 완료: {user_message[:30]}...", "SUCCESS")
-                    except Exception as search_error:
-                        log(f"⚠️ 웹 검색 실패: {search_error}", "WARNING")
+                    log(f"🔍 모호한 답변 감지 → Learning Brain 활성화: {user_message[:30]}...", "INFO")
+                    
+                    # Learning Brain으로 웹 학습 시도
+                    web_learned_answer = learning_brain.learn_from_web(user_message)
+                    
+                    if web_learned_answer:
+                        reply = web_learned_answer
+                        is_learned = True  # 학습 완료!
+                        log(f"📚 Learning Brain 학습 완료: {user_message[:30]}...", "SUCCESS")
             
             except Exception as e:
                 log(f"❌ AI 챗봇 오류: {e}", "WARNING")
@@ -4380,7 +4373,9 @@ def api_ai_chat():
             'reply': reply,
             'learned': is_learned,  # 학습 여부
             'emotion': emotion_data['ai_emotion'],  # 이메이 감정
-            'emotion_image': emotion_data['ai_image']  # 이메이 표정 이미지
+            'emotion_image': emotion_data['ai_image'],  # 이메이 표정 이미지
+            'persona': detected_persona.value,  # 페르소나 타입
+            'persona_name': persona_info['name']  # 페르소나 이름
         })
         
     except Exception as e:
