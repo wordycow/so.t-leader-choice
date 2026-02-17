@@ -4254,10 +4254,12 @@ def api_ai_chat():
         # 🧠 학습 시스템: 먼저 학습된 지식 확인
         from learned_knowledge import get_learned_answer, learn_new_knowledge
         learned_answer = get_learned_answer(user_message)
+        is_learned = False  # 학습 플래그
         
         if learned_answer:
             # 학습된 답변 있음 → 즉시 응답!
             reply = learned_answer
+            is_learned = False  # 이미 학습된 것은 표시 안 함
             log(f"📚 학습된 지식 사용: {user_message[:30]}...", "INFO")
         else:
             # AI 응답 생성 (로컬 AI 우선, 실패 시 OpenAI 자동 폴백!)
@@ -4306,6 +4308,7 @@ def api_ai_chat():
                             
                             # 🧠 새로운 지식 학습!
                             learn_new_knowledge(user_message, reply, source="web_search")
+                            is_learned = True  # 학습 완료 표시!
                             log(f"📚 새 지식 학습 완료: {user_message[:30]}...", "SUCCESS")
                     except Exception as search_error:
                         log(f"⚠️ 웹 검색 실패: {search_error}", "WARNING")
@@ -4322,7 +4325,8 @@ def api_ai_chat():
         
         return jsonify({
             'success': True,
-            'reply': reply
+            'reply': reply,
+            'learned': is_learned  # 학습 여부 전달!
         })
         
     except Exception as e:
