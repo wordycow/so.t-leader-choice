@@ -68,6 +68,20 @@ from jai_memory_system import (
     get_relationship_level
 )
 
+# 🎭 감정 시스템
+from emotion_system import detect_emotion, get_emotion_image, analyze_conversation
+
+# 🧠 장기 기억 시스템 (이메이 전용)
+from long_term_memory import (
+    save_conversation as save_emei_conversation, 
+    get_user_profile as get_emei_profile, 
+    update_affection, 
+    analyze_affection_from_message,
+    get_personalized_greeting as get_emei_greeting,
+    get_memory_context
+)
+from learned_knowledge import get_learned_answer, learn_new_knowledge, get_knowledge_stats
+
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
 # ═══════════════════════════════════════════════════════
@@ -4324,13 +4338,34 @@ def api_ai_chat():
             'content': reply
         })
         
-        # 🎭 감정 분석 추가
+        # 🎭 감정 분석
         emotion_data = analyze_conversation(user_message, reply)
+        
+        # 🧠 장기 기억 저장 (DB에 영구 저장!)
+        try:
+            save_emei_conversation(
+                user_id=user_id,
+                user_msg=user_message,
+                ai_response=reply,
+                emotion=emotion_data['ai_emotion']
+            )
+            
+            # 호감도 업데이트
+            affection_change = analyze_affection_from_message(user_message)
+            if affection_change != 0:
+                update_affection(
+                    user_id=user_id,
+                    event_type='message',
+                    score_change=affection_change,
+                    description=f"메시지 감정 분석: {affection_change}"
+                )
+        except Exception as e:
+            log(f"⚠️ 장기 기억 저장 실패: {e}", "WARNING")
         
         return jsonify({
             'success': True,
             'reply': reply,
-            'learned': is_learned,  # 학습 여부 전달!
+            'learned': is_learned,  # 학습 여부
             'emotion': emotion_data['ai_emotion'],  # 이메이 감정
             'emotion_image': emotion_data['ai_image']  # 이메이 표정 이미지
         })
