@@ -2299,13 +2299,46 @@ def bot_main_loop(user_id, bot_state):
     time.sleep(5)
     log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
     
-    popular_tickers = [
-        'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
-        'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
-        'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT',
-        'KRW-SUI', 'KRW-TRX', 'KRW-SHIB', 'KRW-TON', 'KRW-PEPE',
-        'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO'
-    ]
+    # 거래량 기반 동적 티커 선정
+    def get_top_volume_tickers(count=50):
+        """거래량 상위 티커 반환"""
+        try:
+            all_tickers = pyupbit.get_tickers(fiat="KRW")
+            
+            # 각 티커의 24시간 거래대금 확인
+            volume_data = []
+            for ticker in all_tickers[:100]:  # 상위 100개만 확인 (속도)
+                try:
+                    df = pyupbit.get_ohlcv(ticker, interval="day", count=1)
+                    if df is not None and len(df) > 0:
+                        # 거래대금 = 종가 × 거래량
+                        volume_krw = df['close'].iloc[-1] * df['volume'].iloc[-1]
+                        volume_data.append((ticker, volume_krw))
+                except:
+                    continue
+            
+            # 거래량 정렬
+            volume_data.sort(key=lambda x: x[1], reverse=True)
+            
+            # 상위 N개 티커 반환
+            top_tickers = [t[0] for t in volume_data[:count]]
+            
+            log(f"[{user_id}] 📊 거래량 TOP {count} 티커 선정 완료", "INFO")
+            return top_tickers
+        except:
+            # 실패 시 기본 목록 반환
+            log(f"[{user_id}] ⚠️ 거래량 조회 실패, 기본 목록 사용", "WARNING")
+            return [
+                'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
+                'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
+                'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT',
+                'KRW-SUI', 'KRW-TRX', 'KRW-SHIB', 'KRW-TON', 'KRW-PEPE',
+                'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO'
+            ]
+    
+    # 초기 티커 목록 (30분마다 갱신)
+    popular_tickers = get_top_volume_tickers(50)
+    last_ticker_update = datetime.now()
     
     loop_count = 0  # 루프 카운터 추가
     
@@ -2313,6 +2346,14 @@ def bot_main_loop(user_id, bot_state):
         try:
             loop_count += 1
             log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
+            
+            # 0. 티커 목록 갱신 (30분마다)
+            time_since_update = (datetime.now() - last_ticker_update).total_seconds() / 60
+            if time_since_update >= 30:
+                log(f"[{user_id}] 📊 거래량 기반 티커 목록 갱신 중...", "INFO")
+                popular_tickers = get_top_volume_tickers(50)
+                last_ticker_update = datetime.now()
+                log(f"[{user_id}] ✅ 티커 목록 갱신 완료 (50개)", "SUCCESS")
             
             # 1. 복구 모드 체크
             if not bot_state['recovery_mode_active']:
