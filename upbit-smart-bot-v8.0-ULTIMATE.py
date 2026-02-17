@@ -2286,7 +2286,7 @@ def index():
     if 'user_id' not in session:
         return redirect('/login')
     
-    response = make_response(render_template('dashboard-ultimate-v2.html'))
+    response = make_response(render_template('dashboard-chat-integrated.html'))
     # 캐시 방지
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
