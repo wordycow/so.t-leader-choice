@@ -351,6 +351,42 @@ def save_trade_to_db(user_id, trade_data):
         log(f"거래 DB 저장 오류: {e}", "ERROR")
         return False
 
+def save_bot_state_to_db(user_id, bot_state):
+    """봇 상태를 DB에 저장 (simulation_holdings, simulation_krw 등)"""
+    try:
+        import sqlite3
+        import json
+        
+        conn = sqlite3.connect('upbit_bot.db')
+        cursor = conn.cursor()
+        
+        # simulation_holdings를 JSON으로 변환
+        holdings_json = json.dumps(bot_state.get('simulation_holdings', {}), ensure_ascii=False, default=str)
+        
+        # bot_states 업데이트
+        cursor.execute("""
+            UPDATE bot_states
+            SET 
+                simulation_krw = ?,
+                simulation_holdings = ?,
+                recovery_mode_active = ?,
+                last_update = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        """, (
+            bot_state.get('simulation_krw', 0),
+            holdings_json,
+            bot_state.get('recovery_mode_active', False),
+            user_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return True
+    except Exception as e:
+        log(f"봇 상태 DB 저장 오류: {e}", "ERROR")
+        return False
+
 # ═══════════════════════════════════════════════════════
 # 📊 기술적 지표 계산
 # ═══════════════════════════════════════════════════════
@@ -1414,6 +1450,9 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
         user_id = bot_state.get('user_id', 'unknown')
         save_trade_to_db(user_id, bot_state['recent_trades'][-1])
         
+        # 봇 상태도 DB에 저장 (simulation_holdings 포함)
+        save_bot_state_to_db(user_id, bot_state)
+        
         return True
     except Exception as e:
         log(f"거래 오류: {e}", "ERROR")
@@ -1577,8 +1616,14 @@ def execute_exit(ticker, holding, reason, bot_state):
             # DB에 영구 저장
             user_id = bot_state.get('user_id', 'unknown')
             save_trade_to_db(user_id, bot_state['recent_trades'][-1])
+            
+            # 봇 상태도 DB에 저장 (simulation_holdings 업데이트)
+            save_bot_state_to_db(user_id, bot_state)
         
         del bot_state['simulation_holdings'][ticker]
+        
+        # 매도 후 DB에 한 번 더 저장 (holdings 업데이트 반영)
+        save_bot_state_to_db(user_id, bot_state)
         
         # 학습
         trade_result = {
