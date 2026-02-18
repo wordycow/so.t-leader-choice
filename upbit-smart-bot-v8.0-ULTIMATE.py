@@ -86,13 +86,13 @@ SURGE_CONFIG = {
     'stop_loss': -2.0,
 }
 
-# 패턴 분석 (조건 완화)
+# 패턴 분석 (조건 극단적 완화)
 PATTERN_CONFIG = {
-    'box_range_threshold': 2.0,      # 3.0 -> 2.0 (박스권 더 쉽게 인식)
-    'trend_ma_short': 10,            # 20 -> 10 (더 빠른 추세 감지)
-    'trend_ma_long': 40,             # 60 -> 40
-    'uptrend_threshold': 1.0,        # 2.0 -> 1.0 (상승 추세 쉽게 인식)
-    'volume_surge_ratio': 1.5,       # 2.5 -> 1.5
+    'box_range_threshold': 1.0,      # 2.0 -> 1.0 (박스권 매우 쉽게 인식)
+    'trend_ma_short': 5,             # 10 -> 5 (더 빠른 추세 감지)
+    'trend_ma_long': 20,             # 40 -> 20
+    'uptrend_threshold': 0.5,        # 1.0 -> 0.5 (상승 추세 매우 쉽게 인식)
+    'volume_surge_ratio': 1.2,       # 1.5 -> 1.2
 }
 
 # AI 학습
