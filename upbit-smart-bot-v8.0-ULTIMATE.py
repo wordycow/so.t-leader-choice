@@ -48,6 +48,9 @@ from flask import Flask, render_template, jsonify, request, make_response, sessi
 from flask_cors import CORS
 import traceback
 import os
+import sqlite3
+import hashlib
+from werkzeug.security import generate_password_hash
 
 # 커스텀 모듈
 from user_manager import UserManager
@@ -1658,10 +1661,94 @@ def execute_exit(ticker, holding, reason, bot_state):
         return None
 
 # ═══════════════════════════════════════════════════════
+# 🔐 영구 세션 관리 시스템 (서버 재시작해도 로그인 유지)
+# ═══════════════════════════════════════════════════════
+
+def init_persistent_sessions():
+    """영구 세션 테이블 초기화"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS persistent_sessions (
+            session_id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        )
+    """)
+    # 만료된 세션 정리 (30일 이상 접속 없음)
+    conn.execute("""
+        DELETE FROM persistent_sessions 
+        WHERE datetime(last_accessed) < datetime('now', '-30 days')
+    """)
+    conn.commit()
+    conn.close()
+
+def save_persistent_session(user_id: str) -> str:
+    """영구 세션 생성 및 저장"""
+    session_id = hashlib.sha256(f"{user_id}-{time.time()}-{os.urandom(16).hex()}".encode()).hexdigest()
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        INSERT INTO persistent_sessions (session_id, user_id, expires_at)
+        VALUES (?, ?, datetime('now', '+30 days'))
+    """, (session_id, user_id))
+    conn.commit()
+    conn.close()
+    return session_id
+
+def load_persistent_session(session_id: str) -> str:
+    """영구 세션에서 user_id 복원"""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.execute("""
+        SELECT user_id FROM persistent_sessions
+        WHERE session_id = ? AND datetime(expires_at) > datetime('now')
+    """, (session_id,))
+    row = cur.fetchone()
+    
+    if row:
+        # 마지막 접속 시간 업데이트
+        conn.execute("""
+            UPDATE persistent_sessions 
+            SET last_accessed = CURRENT_TIMESTAMP,
+                expires_at = datetime('now', '+30 days')
+            WHERE session_id = ?
+        """, (session_id,))
+        conn.commit()
+        conn.close()
+        return row[0]
+    
+    conn.close()
+    return None
+
+def delete_persistent_session(session_id: str):
+    """로그아웃 시 세션 삭제"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("DELETE FROM persistent_sessions WHERE session_id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+# ═══════════════════════════════════════════════════════
 # 🚀 Flask 웹 서버
 # ═══════════════════════════════════════════════════════
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # 세션 암호화 키
+
+# ✅ 고정된 SECRET_KEY (환경변수 또는 파일에서 로드)
+SECRET_KEY_FILE = "/home/user/webapp/.secret_key"
+if os.path.exists(SECRET_KEY_FILE):
+    with open(SECRET_KEY_FILE, "rb") as f:
+        app.secret_key = f.read()
+else:
+    # 처음 실행 시 키 생성 및 저장
+    app.secret_key = os.urandom(32)
+    with open(SECRET_KEY_FILE, "wb") as f:
+        f.write(app.secret_key)
+    os.chmod(SECRET_KEY_FILE, 0o600)  # 소유자만 읽기/쓰기
+
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
 CORS(app)
 
 # UserManager 초기화
@@ -1670,8 +1757,30 @@ user_manager = UserManager()
 # 🔧 bot_states 테이블 초기화
 init_bot_state_table()
 
+# 🔐 영구 세션 테이블 초기화
+init_persistent_sessions()
+
 # 사용자별 봇 상태 저장 (user_id를 키로 사용)
 user_bots = {}
+
+# ✅ 자동 세션 복원 미들웨어
+@app.before_request
+def restore_session():
+    """서버 재시작 후 쿠키에서 세션 자동 복원"""
+    # 이미 로그인되어 있으면 패스
+    if 'user_id' in session:
+        session.permanent = True  # 영구 세션 활성화
+        return
+    
+    # 쿠키에서 persistent_session_id 확인
+    persistent_id = request.cookies.get('persistent_session_id')
+    if persistent_id:
+        user_id = load_persistent_session(persistent_id)
+        if user_id:
+            # 세션 복원 성공
+            session['user_id'] = user_id
+            session.permanent = True
+            log(f"🔓 세션 자동 복원: {user_id}", "INFO")
 
 @app.route('/')
 def index():
@@ -2455,7 +2564,21 @@ def api_register():
         if result['success']:
             session['user_id'] = result['user_id']
             session['username'] = result['username']
+            session.permanent = True  # 영구 세션 활성화
+            
+            # 영구 세션 ID 생성 및 쿠키 설정
+            persistent_id = save_persistent_session(result['user_id'])
             log(f"✨ 새 사용자 등록: {username} (ID: {result['user_id']})", "SUCCESS")
+            
+            response = make_response(jsonify(result))
+            response.set_cookie(
+                'persistent_session_id', 
+                persistent_id,
+                max_age=30*24*60*60,  # 30일
+                httponly=True,
+                samesite='Lax'
+            )
+            return response
         
         return jsonify(result)
     except Exception as e:
@@ -2482,17 +2605,31 @@ def api_login():
         # 세션 저장
         session['user_id'] = user['id']
         session['username'] = user['username']
+        session.permanent = True  # 영구 세션 활성화
+        
+        # 영구 세션 ID 생성 및 쿠키 설정
+        persistent_id = save_persistent_session(user['id'])
         
         # 마지막 로그인 업데이트
         user_manager.update_last_login(user['id'], request.remote_addr)
         
         log(f"👤 로그인: {username} (ID: {user['id']})", "INFO")
         
-        return jsonify({
+        response = make_response(jsonify({
             'success': True,
             'user_id': user['id'],
             'username': user['username']
-        })
+        }))
+        
+        response.set_cookie(
+            'persistent_session_id', 
+            persistent_id,
+            max_age=30*24*60*60,  # 30일
+            httponly=True,
+            samesite='Lax'
+        )
+        
+        return response
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -2500,8 +2637,23 @@ def api_login():
 def api_logout():
     """로그아웃"""
     username = session.get('username', 'Unknown')
+    
+    # 영구 세션 삭제
+    persistent_id = request.cookies.get('persistent_session_id')
+    if persistent_id:
+        delete_persistent_session(persistent_id)
+    
     session.clear()
-    return jsonify({'success': True, 'message': f'{username}님 로그아웃'})
+    
+    response = make_response(jsonify({
+        'success': True, 
+        'message': f'{username}님 로그아웃'
+    }))
+    
+    # 쿠키 삭제
+    response.set_cookie('persistent_session_id', '', max_age=0)
+    
+    return response
 
 @app.route('/api/user/info')
 def api_user_info():
