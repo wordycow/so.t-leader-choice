@@ -55,7 +55,7 @@ from portfolio_manager import execute_diversified_buy, check_profit_trigger, get
 from trade_reasons import generate_buy_reason, generate_sell_reason
 from recovery_system import analyze_current_holdings, create_recovery_plan, execute_recovery_plan, UPBIT_FEE_RATE
 from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_state, get_all_running_bots
-from emei_learning import get_emei
+from enhanced_emei_learning import get_enhanced_emei
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -77,22 +77,22 @@ SURGE_CONFIG = {
     'dip_max_hold_time': 24 * 60,
     'dip_emergency_stop': -10.0,
     
-    # 거래량 (조건 크게 완화)
-    'volume_spike_ratio': 1.5,      # 2.0 -> 1.5
-    'min_volume_krw': 30000000,     # 100,000,000 -> 30,000,000 (3천만원)
+    # 거래량 (조건 크게 완화 - 실제 매매 활성화)
+    'volume_spike_ratio': 1.2,      # 2.0 -> 1.2
+    'min_volume_krw': 10000000,     # 100,000,000 -> 10,000,000 (1천만원)
     
-    # 익절/손절 (목표 낮춰서 빠른 수익 실현)
-    'take_profit_targets': [1.0, 1.5, 2.0],  # [1.5, 2.5, 4.0] -> [1.0, 1.5, 2.0]
+    # 익절/손절 (목표 낮춰서 빠른 수익 실현 - 실제 매매 활성화)
+    'take_profit_targets': [0.5, 1.0, 1.5],  # [1.5, 2.5, 4.0] -> [0.5, 1.0, 1.5]
     'stop_loss': -2.0,
 }
 
-# 패턴 분석 (조건 극단적 완화)
+# 패턴 분석 (조건 극단적 완화 - 실제 매매 활성화)
 PATTERN_CONFIG = {
-    'box_range_threshold': 1.0,      # 2.0 -> 1.0 (박스권 매우 쉽게 인식)
-    'trend_ma_short': 5,             # 10 -> 5 (더 빠른 추세 감지)
-    'trend_ma_long': 20,             # 40 -> 20
-    'uptrend_threshold': 0.5,        # 1.0 -> 0.5 (상승 추세 매우 쉽게 인식)
-    'volume_surge_ratio': 1.2,       # 1.5 -> 1.2
+    'box_range_threshold': 0.5,      # 2.0 -> 0.5 (박스권 매우 쉽게 인식)
+    'trend_ma_short': 3,             # 10 -> 3 (더 빠른 추세 감지)
+    'trend_ma_long': 10,             # 40 -> 10
+    'uptrend_threshold': 0.2,        # 1.0 -> 0.2 (상승 추세 매우 쉽게 인식)
+    'volume_surge_ratio': 1.1,       # 1.5 -> 1.1 (거래량 거의 모든 경우 감지)
 }
 
 # AI 학습
@@ -2398,7 +2398,7 @@ def bot_main_loop(user_id, bot_state):
                                 bot_state['current_patterns'][ticker] = patterns
                                 best_strategy, score = select_best_strategy(ticker, patterns)
                                 
-                                if best_strategy and score > 0.3:
+                                if best_strategy and score > 0.05:
                                     log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
                                     execute_trade(ticker, best_strategy, patterns, bot_state)
                                     time.sleep(2)
@@ -3099,8 +3099,8 @@ def api_emei_chat():
         if not message:
             return jsonify({'success': False, 'message': '메시지를 입력해주세요'}), 400
         
-        # 이메이 학습 시스템
-        emei = get_emei()
+        # 이메이 학습 시스템 (Enhanced - 사용자별 맞춤형)
+        emei = get_enhanced_emei()
         result = emei.chat(user_id, message)
         
         return jsonify(result)
@@ -3114,10 +3114,11 @@ def api_emei_chat():
 
 @app.route('/api/emei/stats')
 def api_emei_stats():
-    """이메이 학습 통계"""
+    """이메이 학습 통계 (Enhanced)"""
     try:
-        emei = get_emei()
-        stats = emei.get_stats()
+        emei = get_enhanced_emei()
+        user_id = session.get('user_id', 'guest')
+        stats = emei.get_user_stats(user_id)
         return jsonify({
             'success': True,
             'stats': stats
