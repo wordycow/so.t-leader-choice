@@ -51,15 +51,38 @@ def imei_dashboard():
 # --- Health ---
 @app.route("/health")
 def health():
+    """
+    ✅ 확장된 Health 체크 (유송 운영 편의)
+    - 각 엔진 상태 + 실제 동작 지표 (시각/카운트)
+    """
     se = read_state("signal_engine.json", {})
     ex = read_state("execution_engine.json", {})
+    
     return jsonify({
         "status": "healthy",
         "service": "Standalone Dashboard",
         "version": "v9",
         "timestamp": ts(),
-        "signal_engine": se,
-        "execution_engine": ex,
+        
+        # Signal Engine
+        "signal_engine": {
+            "status": se.get("status", "unknown"),
+            "last_top20_scan_at": se.get("last_top20_scan_at"),
+            "top20_count": se.get("top20_count", 0),
+            "last_signal_at": se.get("last_signal_at"),
+            "signal_sent_count": se.get("signal_sent_count", 0),
+            "tracked_tickers": se.get("tracked_tickers", 0),
+        },
+        
+        # Execution Engine
+        "execution_engine": {
+            "status": ex.get("status", "unknown"),
+            "last_execution_received_at": ex.get("last_execution_received_at"),
+            "execution_received_count": ex.get("execution_received_count", 0),
+            "last_paper_fill_at": ex.get("last_paper_fill_at"),
+            "paper_fill_count": ex.get("paper_fill_count", 0),
+            "last_trade_at": ex.get("last_trade_at"),
+        },
     })
 
 # --- APIs ---
@@ -136,6 +159,21 @@ def api_recovery():
 @app.route("/api/btc_stacking")
 def api_btc_stacking():
     return jsonify({"btc_stack": 0.0, "timestamp": ts()})
+
+@app.route("/api/watch_state")
+def api_watch_state():
+    """
+    ✅ Signal Engine의 watch_state 조회
+    - 각 티커/전략별 추적 상태 (WATCHING/ARMED/TRIGGERED/COOLDOWN)
+    """
+    se = read_state("signal_engine.json", {})
+    return jsonify({
+        "watch_states": se.get("watch_states", {}),
+        "tracked_tickers": se.get("tracked_tickers", 0),
+        "last_top20_scan_at": se.get("last_top20_scan_at"),
+        "signal_sent_count": se.get("signal_sent_count", 0),
+        "timestamp": ts()
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

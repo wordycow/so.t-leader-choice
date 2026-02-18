@@ -43,17 +43,36 @@ persona_engine = DynamicPersonaEngine()
 search_engine = WebSearchLearning()
 trading_integration = TradingIntegration(dashboard_url="http://localhost:5000")
 
-# Ollama configuration (성장형 AI를 위한 실제 LLM!)
-OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama.thetheunique.com")
+# Ollama configuration (✅ 로컬 우선 + 터널 fallback)
+OLLAMA_LOCAL_URL = "http://127.0.0.1:11434"
+OLLAMA_TUNNEL_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama.thetheunique.com")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 OLLAMA_ENABLED = os.getenv("USE_OLLAMA", "true").lower() == "true"
 
-# Initialize Ollama Router (v8 proven system)
-emei_router = EmeiRouter(
-    db_path="imei_memory.db",
-    ollama_url=OLLAMA_URL,
-    ollama_model=OLLAMA_MODEL
-) if OLLAMA_ENABLED else None
+# Initialize Ollama Router (✅ 로컬 우선 시도)
+emei_router = None
+if OLLAMA_ENABLED:
+    # Try local first
+    try:
+        emei_router = EmeiRouter(
+            db_path="imei_memory.db",
+            ollama_url=OLLAMA_LOCAL_URL,
+            ollama_model=OLLAMA_MODEL
+        )
+        print(f"✅ Ollama Router (LOCAL): {OLLAMA_LOCAL_URL}")
+    except Exception as e:
+        print(f"⚠️  Local Ollama failed: {e}")
+        # Fallback to tunnel
+        try:
+            emei_router = EmeiRouter(
+                db_path="imei_memory.db",
+                ollama_url=OLLAMA_TUNNEL_URL,
+                ollama_model=OLLAMA_MODEL
+            )
+            print(f"✅ Ollama Router (TUNNEL): {OLLAMA_TUNNEL_URL}")
+        except Exception as e2:
+            print(f"❌ Tunnel Ollama also failed: {e2}")
+            emei_router = None
 
 print("========================================")
 print("🚀 IMEI MAIN APP v3.0 with Ollama Router")
@@ -61,10 +80,11 @@ print("========================================")
 print(f"📁 Memory Database: imei_memory.db")
 print(f"🔗 Trading API: http://localhost:5000")
 if OLLAMA_ENABLED and emei_router:
-    print(f"🤖 Ollama Router: {OLLAMA_URL}")
+    print(f"🤖 Ollama Router: ACTIVE")
     print(f"🧠 Model: {OLLAMA_MODEL}")
 else:
-    print("⚠️  Ollama Router: DISABLED (using mock responses)")
+    print("⚠️  Ollama Router: DISABLED (NO LLM)")
+print("🚀 Server: http://0.0.0.0:5001")
 print("========================================")
 
 # Default user ID (can be enhanced with auth later)
@@ -126,23 +146,32 @@ def chat():
             except Exception as e:
                 response_data['trading_data_error'] = str(e)
         
-        # Step 4: Generate response using Ollama Router or Mock
+        # Step 4: Generate response using Ollama Router (✅ 에코 제거)
         if OLLAMA_ENABLED and emei_router:
-            # Use v8 proven Ollama Router
             try:
-                ollama_response = emei_router.chat(user_id=user_id, message=user_message)
+                # Trading context 추가
+                context_str = ""
+                if include_trading_status and trading_data:
+                    status = trading_data.get('status', {})
+                    top20 = trading_data.get('top20', {}).get('items', [])
+                    context_str = f"\n\n[현재 시스템 상태]\n모드: {status.get('mode', 'PRACTICE')}\nTop20 추적: {len(top20)}개"
+                
+                ollama_response = emei_router.chat(
+                    user_id=user_id,
+                    message=user_message + context_str
+                )
                 assistant_message = ollama_response.get('response', '')
                 response_data['ollama_used'] = True
                 response_data['ollama_learned'] = ollama_response.get('learned', False)
                 response_data['response_time'] = ollama_response.get('response_time', 0)
             except Exception as e:
-                # Fallback to mock on error
-                assistant_message = generate_mock_response(user_message, context_analysis, trading_data)
+                # Fallback: NO ECHO, 실패 알림만
+                assistant_message = "죄송합니다. 현재 AI 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요."
                 response_data['ollama_error'] = str(e)
                 response_data['ollama_used'] = False
         else:
-            # Mock response fallback
-            assistant_message = generate_mock_response(user_message, context_analysis, trading_data)
+            # Ollama 비활성화: NO ECHO
+            assistant_message = "IMEI AI가 현재 비활성화되어 있습니다. Ollama를 활성화해주세요."
             response_data['ollama_used'] = False
         
         # Step 6: Apply persona style (already in context_analysis from get_response_style)
@@ -179,32 +208,6 @@ def chat():
             'error': str(e),
             'traceback': traceback.format_exc()
         }), 500
-
-
-def generate_mock_response(user_message, context_analysis, trading_data):
-    """
-    Mock response generator (replace with real LLM in production).
-    """
-    persona = context_analysis.get('primary_persona', 'bold_leader')
-    
-    # Trading analysis
-    if '차트' in user_message or '분석' in user_message:
-        if trading_data:
-            status = trading_data.get('status', {})
-            mode = status.get('mode', 'unknown')
-            return f"현재 시스템은 {mode} 모드입니다. 데이터를 분석한 결과를 알려드리겠습니다."
-        return "차트 분석을 도와드리겠습니다. 데이터를 보면 흥미로운 패턴이 보이네요."
-    
-    # Emotional support
-    if '힘들' in user_message or '어렵' in user_message:
-        return "함께 할게요. 당신은 충분히 잘하고 있어요. 우리는 이 과정을 함께 헤쳐나갈 수 있습니다."
-    
-    # Decision making
-    if '해야' in user_message or '할까' in user_message:
-        return "제 판단으로는 명확한 방향이 있습니다. 확실한 건, 이렇게 하시는 게 좋습니다."
-    
-    # Default
-    return f"({persona}) 잘 이해했어요. 함께 생각해보겠습니다."
 
 
 # ========================================
