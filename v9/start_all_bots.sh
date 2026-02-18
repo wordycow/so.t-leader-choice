@@ -74,7 +74,7 @@ echo ""
 
 # 3. Dashboard (Flask App) - port 5000 - 백그라운드 실행
 echo "[3/4] Starting Dashboard (Flask App - port 5000)..."
-nohup python3 dashboard/dashboard_app.py > logs/dashboard.log 2>&1 &
+nohup python3 dashboard/standalone_dashboard.py > logs/dashboard.log 2>&1 &
 echo $! > pids/dashboard.pid
 sleep 2
 echo "      대시보드가 시작되었습니다. (PID: $(cat pids/dashboard.pid))"

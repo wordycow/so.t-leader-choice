@@ -68,7 +68,7 @@ echo.
 
 REM 3. Dashboard (Flask App) - port 5000 - 새 창에서 실행
 echo [3/4] Starting Dashboard (Flask App - port 5000)...
-start "Dashboard - http://localhost:5000" cmd /k "cd /d %CD% && python dashboard\dashboard_app.py > logs\dashboard.log 2>&1"
+start "Dashboard - http://localhost:5000" cmd /k "cd /d %CD% && python dashboard\standalone_dashboard.py > logs\dashboard.log 2>&1"
 timeout /t 3 /nobreak >nul
 echo      대시보드가 시작되었습니다. (새 창)
 echo      URL: http://localhost:5000
