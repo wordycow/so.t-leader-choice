@@ -55,6 +55,7 @@ from portfolio_manager import execute_diversified_buy, check_profit_trigger, get
 from trade_reasons import generate_buy_reason, generate_sell_reason
 from recovery_system import analyze_current_holdings, create_recovery_plan, execute_recovery_plan, UPBIT_FEE_RATE
 from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_state, get_all_running_bots
+from emei_learning import get_emei
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
@@ -1671,7 +1672,7 @@ def index():
     if 'user_id' not in session:
         return redirect('/login')
     
-    response = make_response(render_template('dashboard-ultimate-v2.html'))
+    response = make_response(render_template('dashboard-ultimate-v3-with-emei.html'))
     # 캐시 방지
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
@@ -3076,6 +3077,52 @@ def api_admin_start_bot():
         log(f"관리자 봇 시작 오류: {e}", "ERROR")
         import traceback
         traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════
+# 🧠 이메이 AI 학습 시스템
+# ═══════════════════════════════════════════════════════
+
+@app.route('/api/emei/chat', methods=['POST'])
+def api_emei_chat():
+    """이메이 채팅"""
+    try:
+        # 세션 확인
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '로그인 필요'}), 401
+        
+        user_id = session.get('user_id')
+        data = request.json or {}
+        message = data.get('message', '').strip()
+        
+        if not message:
+            return jsonify({'success': False, 'message': '메시지를 입력해주세요'}), 400
+        
+        # 이메이 학습 시스템
+        emei = get_emei()
+        result = emei.chat(user_id, message)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        log(f"이메이 채팅 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/emei/stats')
+def api_emei_stats():
+    """이메이 학습 통계"""
+    try:
+        emei = get_emei()
+        stats = emei.get_stats()
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+    except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
