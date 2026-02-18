@@ -126,15 +126,16 @@ def chat():
         style_guide = context_analysis.get('style_guide', {})
         
         response_data['assistant_message'] = assistant_message
+        response_data['response'] = assistant_message  # Add this for API compatibility
         response_data['persona'] = context_analysis.get('primary_persona', 'unknown')
+        response_data['primary_persona'] = context_analysis.get('primary_persona', 'unknown')
         response_data['style_guide'] = style_guide
         
         # Step 7: Save conversation
         memory_engine.save_conversation(
             user_id=user_id,
-            user_message=user_message,
-            assistant_message=assistant_message,
-            context=json.dumps(context_analysis)
+            message=user_message,
+            response=assistant_message
         )
         
         # Step 8: If memory triggered, save long-term memory
@@ -161,7 +162,7 @@ def generate_mock_response(user_message, context_analysis, trading_data):
     """
     Mock response generator (replace with real LLM in production).
     """
-    persona = context_analysis['persona']
+    persona = context_analysis.get('primary_persona', 'bold_leader')
     
     # Trading analysis
     if '차트' in user_message or '분석' in user_message:
