@@ -2435,7 +2435,16 @@ def api_config():
 # ═══════════════════════════════════════════════════════
 def bot_main_loop(user_id, bot_state):
     """메인 루프 (완전체) - 사용자별 독립 실행"""
+    import sys
+    import traceback
+    
     try:
+        # 로그 파일 열기
+        log_file = open(f'/tmp/bot_{user_id}_debug.log', 'a', buffering=1)
+        log_file.write(f"\n{'='*80}\n")
+        log_file.write(f"[{datetime.now()}] 봇 시작: {user_id}\n")
+        log_file.flush()
+        
         log_separator()
         log(f"🚀 [{user_id}] AI 트레이딩 봇 v8.0 ULTIMATE 시작!", "SUCCESS")
         log_separator()
@@ -2444,8 +2453,17 @@ def bot_main_loop(user_id, bot_state):
         
         # 초기 안정화 대기 (5초)
         log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
+        log_file.write(f"[{datetime.now()}] 초기화 중... 5초 대기\n")
+        log_file.flush()
+        
         time.sleep(5)
+        
+        log_file.write(f"[{datetime.now()}] 5초 대기 완료\n")
+        log_file.flush()
+        
         log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
+        log_file.write(f"[{datetime.now()}] 스캔 시작 메시지 출력 완료\n")
+        log_file.flush()
         
         # 거래량 기반 동적 티커 선정 (빠른 버전 - 고정 목록 사용)
         def get_top_volume_tickers_fast(count=50):
@@ -2464,16 +2482,28 @@ def bot_main_loop(user_id, bot_state):
             ]
             return popular_coins[:count]
         
+        log_file.write(f"[{datetime.now()}] get_top_volume_tickers_fast 함수 정의 완료\n")
+        log_file.flush()
+        
         # 초기 티커 목록 (고정 목록으로 즉시 시작)
         popular_tickers = get_top_volume_tickers_fast(50)
         log(f"[{user_id}] 📊 {len(popular_tickers)}개 인기 코인으로 시작", "INFO")
+        log_file.write(f"[{datetime.now()}] 티커 목록 로드 완료: {len(popular_tickers)}개\n")
+        log_file.flush()
+        
         last_ticker_update = datetime.now()
         
         loop_count = 0  # 루프 카운터 추가
         
+        log_file.write(f"[{datetime.now()}] while 루프 진입 준비, bot_state['running'] = {bot_state['running']}\n")
+        log_file.flush()
+        
         while bot_state['running']:
             try:
                 loop_count += 1
+                log_file.write(f"[{datetime.now()}] 루프 #{loop_count} 시작\n")
+                log_file.flush()
+                
                 log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
                 
                 # 0. 티커 목록 갱신 (30분마다) - 스킵 (고정 목록 사용)
@@ -2485,21 +2515,57 @@ def bot_main_loop(user_id, bot_state):
                 #     log(f"[{user_id}] ✅ 티커 목록 갱신 완료 (50개)", "SUCCESS")
                 
                 # 1. 복구 모드 체크
+                log_file.write(f"[{datetime.now()}] 복구 모드 체크 시작\n")
+                log_file.flush()
+                
                 if not bot_state['recovery_mode_active']:
                     check_recovery_mode_activation(bot_state)
                 
+                log_file.write(f"[{datetime.now()}] 복구 모드 체크 완료\n")
+                log_file.flush()
+                
                 # 2. 보유 포지션 관리
+                log_file.write(f"[{datetime.now()}] 보유 포지션 관리 시작, holdings count: {len(bot_state['simulation_holdings'])}\n")
+                log_file.flush()
+                
                 for ticker, holding in list(bot_state['simulation_holdings'].items()):
+                    log_file.write(f"[{datetime.now()}]   - {ticker} check_exit 호출\n")
+                    log_file.flush()
+                    
                     should_exit, reason = check_exit(ticker, holding, bot_state)
+                    
+                    log_file.write(f"[{datetime.now()}]   - {ticker} check_exit 결과: {should_exit}\n")
+                    log_file.flush()
+                    
                     if should_exit:
                         execute_exit(ticker, holding, reason, bot_state)
                 
-                # 3. 신규 진입
-                max_positions = 1 if bot_state['recovery_mode_active'] else 3
+                log_file.write(f"[{datetime.now()}] 보유 포지션 관리 완료\n")
+                log_file.flush()
                 
-                if len(bot_state['simulation_holdings']) < max_positions:
+                # 3. 신규 진입
+                log_file.write(f"[{datetime.now()}] 신규 진입 체크 시작\n")
+                log_file.flush()
+                
+                max_positions = 1 if bot_state['recovery_mode_active'] else 3
+                current_holdings = len(bot_state['simulation_holdings'])
+                
+                log_file.write(f"[{datetime.now()}] max_positions={max_positions}, current_holdings={current_holdings}, recovery_mode={bot_state['recovery_mode_active']}\n")
+                log_file.flush()
+                
+                log(f"[{user_id}] 📈 보유: {current_holdings}개 / 최대: {max_positions}개 (복구모드: {bot_state['recovery_mode_active']})", "INFO")
+                
+                log_file.write(f"[{datetime.now()}] 진입 조건 체크: {current_holdings} < {max_positions} = {current_holdings < max_positions}\n")
+                log_file.flush()
+                
+                if current_holdings < max_positions:
+                    log_file.write(f"[{datetime.now()}] 신규 진입 조건 충족! 진입 가능\n")
+                    log_file.flush()
+                    
                     # 복구 모드
                     if bot_state['recovery_mode_active']:
+                        log_file.write(f"[{datetime.now()}] 복구 모드 진입 로직\n")
+                        log_file.flush()
                         # 쿨다운
                         if bot_state['last_loss_time']:
                             cooldown = (datetime.now() - bot_state['last_loss_time']).total_seconds()
@@ -2512,19 +2578,34 @@ def bot_main_loop(user_id, bot_state):
                             best = opportunities[0]
                             execute_trade(best['ticker'], 'surge_hunter', {'recovery': best}, bot_state)
                     
-                        # 일반 모드 - 더 많은 코인을 스캔하여 거래 기회 증가
+                    # 일반 모드 - 더 많은 코인을 스캔하여 거래 기회 증가
                     else:
+                        log_file.write(f"[{datetime.now()}] 일반 모드 스캔 시작\n")
+                        log_file.flush()
+                        
                         import random
                         # 15개 → 더 많은 기회
                         scan_tickers = random.sample(popular_tickers, min(15, len(popular_tickers)))
-                        log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
+                        
+                        log_file.write(f"[{datetime.now()}] 스캔 티커 선택 완료: {len(scan_tickers)}개 - {scan_tickers[:5]}\n")
+                        log_file.flush()
+                        
+                        log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")  # 재활성화
+                        
+                        log_file.write(f"[{datetime.now()}] 스캔 루프 시작\n")
+                        log_file.flush()
                         
                         best_opportunity = None
                         best_score = 0.0
                         
                         for ticker in scan_tickers:
+                            log_file.write(f"[{datetime.now()}]   스캔: {ticker}\n")
+                            log_file.flush()
+                            
                             try:
                                 patterns = analyze_all_patterns(ticker)
+                                log_file.write(f"[{datetime.now()}]   {ticker} patterns: {patterns is not None}\n")
+                                log_file.flush()
                                 
                                 if patterns:
                                     bot_state['current_patterns'][ticker] = patterns
@@ -2563,9 +2644,24 @@ def bot_main_loop(user_id, bot_state):
                 time.sleep(10)
         
         log("🛑 봇 중지", "WARNING")
+        log_file.write(f"[{datetime.now()}] 봇 정상 종료\n")
+        log_file.close()
     
     except Exception as e:
-        log(f"[{user_id}] ❌ 치명적 오류 발생: {e}", "ERROR")
+        error_msg = f"[{user_id}] ❌ 치명적 오류 발생: {e}"
+        log(error_msg, "ERROR")
+        
+        # 파일에도 기록
+        try:
+            log_file.write(f"\n{'='*80}\n")
+            log_file.write(f"[{datetime.now()}] 치명적 오류:\n")
+            log_file.write(f"{error_msg}\n")
+            log_file.write(traceback.format_exc())
+            log_file.write(f"{'='*80}\n")
+            log_file.close()
+        except:
+            pass
+        
         import traceback
         traceback.print_exc()
         bot_state['running'] = False
