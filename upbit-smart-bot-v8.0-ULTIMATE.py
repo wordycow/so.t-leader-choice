@@ -3456,19 +3456,19 @@ def api_debug_rag_test():
         # Context 생성
         context_blocks = []
         if retrieved:
-            for i, (qtext, atext, score, answer, qscore) in enumerate(retrieved):
+            for i, (score, _id, qtext, atext, qscore, use_count) in enumerate(retrieved):
                 context_blocks.append(f"[{i+1}] Q: {qtext[:100]}... A: {atext[:100]}... (score: {score:.4f})")
         
         context_str = "\n".join(context_blocks)
         context_length = len(context_str)
         
         # Best score 계산
-        best_score = retrieved[0][2] if retrieved else 0.0
+        best_score = retrieved[0][0] if retrieved else 0.0  # score is first element
         threshold = float(os.getenv('EMIE_DB_THRESHOLD', '0.62'))
         
         # Answer 생성 (간단하게 top-1 사용)
         if best_score >= threshold and retrieved:
-            answer = retrieved[0][3]  # answer from top result
+            answer = retrieved[0][3]  # atext from top result
             answer_source = 'db'
         else:
             answer = f"(DB threshold {threshold} not met, would fallback to Ollama with context)"
@@ -3476,13 +3476,15 @@ def api_debug_rag_test():
         
         # Retrieved sources 상세 정보
         sources_list = []
-        for idx, (qtext, atext, score, answer, qscore) in enumerate(retrieved):
+        for idx, (score, _id, qtext, atext, qscore, use_count) in enumerate(retrieved):
             sources_list.append({
                 'rank': idx + 1,
+                'id': _id,
                 'question': qtext[:200],
                 'answer': atext[:200],
                 'score': round(score, 4),
-                'quality_score': round(qscore, 2)
+                'quality_score': round(qscore, 2),
+                'use_count': use_count
             })
         
         latency_ms = (time.time() - start_time) * 1000
