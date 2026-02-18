@@ -246,6 +246,9 @@ class EmeiRouter:
             llm = self._ollama_chat(system=system, user=message, context_blocks=context_blocks, temperature=0.4)
             llm = self._style_postprocess(llm, pattern)
 
+            # ✅ 성공 시 에러 캐시 초기화
+            self._last_error_signature = None
+
             # 반복 응답 방지: 최근 5개 응답과 비교
             if llm and llm == self._last_assistant_msg:
                 # 강제로 다른 답변 생성 요청
@@ -268,36 +271,70 @@ class EmeiRouter:
 
         except Exception as e:
             sig = str(e)
+            
+            # ✅ 영구 터널 사용 시 다른 안내 메시지
+            is_permanent_tunnel = "thetheunique.com" in self.ollama_url or "cfargotunnel.com" in self.ollama_url
+            
             # 에러가 반복되면 사과만 하지 말고 해결 가이드
             if sig == self._last_error_signature:
-                resp = (
-                    "💡 로컬 AI 연결 오류가 반복돼요.\n\n"
-                    "**해결 방법:**\n"
-                    "1️⃣ 노트북 터널 창에서 새 URL 확인\n"
-                    "2️⃣ `./update_ollama_url.sh <새URL>` 실행\n"
-                    "3️⃣ Ollama 재시작 필요할 수도\n\n"
-                    "**지금은:** DB 기반 답변만 가능해요.\n"
-                    "안녕, 짜증나, 살까 등 기본 질문은 바로 답변 가능! 💜"
-                )
-            else:
-                # TimeoutError 특별 처리
-                if "TimeoutError" in sig or "timed out" in sig.lower():
+                if is_permanent_tunnel:
                     resp = (
-                        "⏰ 노트북 Ollama가 응답하지 않아요.\n\n"
-                        "**가능한 원인:**\n"
-                        "• 터널 URL 변경됨 (가장 흔함)\n"
-                        "• Ollama가 바쁨 (모델 로딩 중)\n"
-                        "• 네트워크 불안정\n\n"
-                        "**지금은:** 기본 질문(안녕, 짜증나 등)은 바로 답변 가능해요! 💜\n"
-                        "새로운 질문은 터널 재연결 후 가능해요."
+                        "💡 영구 터널 연결 오류가 반복돼요.\n\n"
+                        "**해결 방법:**\n"
+                        "1️⃣ 노트북에서 Ollama 실행 중인지 확인: `ollama serve`\n"
+                        "2️⃣ 터널 실행 중인지 확인: `cloudflared tunnel run ollama-stable`\n"
+                        "3️⃣ 터널 상태 확인: `cloudflared tunnel list`\n\n"
+                        "**지금은:** DB 기반 답변만 가능해요.\n"
+                        "안녕, 짜증나, 살까 등 기본 질문은 바로 답변 가능! 💜"
                     )
                 else:
                     resp = (
-                        f"🔧 로컬 AI 연결 문제가 있어요.\n\n"
-                        f"오류: {sig[:100]}\n\n"
-                        "**해결:** 노트북 터널 URL 확인 → `./update_ollama_url.sh` 실행\n"
-                        "**지금:** DB 기반 답변만 가능 (기본 대화는 OK!) 💜"
+                        "💡 로컬 AI 연결 오류가 반복돼요.\n\n"
+                        "**해결 방법:**\n"
+                        "1️⃣ 노트북 터널 창에서 새 URL 확인\n"
+                        "2️⃣ `./update_ollama_url.sh <새URL>` 실행\n"
+                        "3️⃣ Ollama 재시작 필요할 수도\n\n"
+                        "**지금은:** DB 기반 답변만 가능해요.\n"
+                        "안녕, 짜증나, 살까 등 기본 질문은 바로 답변 가능! 💜"
                     )
+            else:
+                # TimeoutError 특별 처리
+                if "TimeoutError" in sig or "timed out" in sig.lower():
+                    if is_permanent_tunnel:
+                        resp = (
+                            "⏰ 영구 터널이 응답하지 않아요.\n\n"
+                            "**가능한 원인:**\n"
+                            "• Ollama 서버 정지 (`ollama serve` 재시작 필요)\n"
+                            "• Cloudflare 터널 정지 (`cloudflared tunnel run ollama-stable` 재실행)\n"
+                            "• 노트북 절전 모드\n"
+                            "• 네트워크 불안정\n\n"
+                            "**지금은:** 기본 질문(안녕, 짜증나 등)은 바로 답변 가능해요! 💜"
+                        )
+                    else:
+                        resp = (
+                            "⏰ 노트북 Ollama가 응답하지 않아요.\n\n"
+                            "**가능한 원인:**\n"
+                            "• 터널 URL 변경됨 (가장 흔함)\n"
+                            "• Ollama가 바쁨 (모델 로딩 중)\n"
+                            "• 네트워크 불안정\n\n"
+                            "**지금은:** 기본 질문(안녕, 짜증나 등)은 바로 답변 가능해요! 💜\n"
+                            "새로운 질문은 터널 재연결 후 가능해요."
+                        )
+                else:
+                    if is_permanent_tunnel:
+                        resp = (
+                            f"🔧 영구 터널 연결 문제가 있어요.\n\n"
+                            f"오류: {sig[:100]}\n\n"
+                            "**해결:** 노트북에서 Ollama와 터널이 실행 중인지 확인\n"
+                            "**지금:** DB 기반 답변만 가능 (기본 대화는 OK!) 💜"
+                        )
+                    else:
+                        resp = (
+                            f"🔧 로컬 AI 연결 문제가 있어요.\n\n"
+                            f"오류: {sig[:100]}\n\n"
+                            "**해결:** 노트북 터널 URL 확인 → `./update_ollama_url.sh` 실행\n"
+                            "**지금:** DB 기반 답변만 가능 (기본 대화는 OK!) 💜"
+                        )
             self._last_error_signature = sig
             self._log_conversation(user_id, message, resp, learned=0)
             return {"response": resp, "learned": False, "response_time": round(time.time() - t0, 4)}

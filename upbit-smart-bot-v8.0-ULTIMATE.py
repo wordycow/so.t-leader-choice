@@ -65,10 +65,33 @@ from emei_response_router import EmeiRouter
 # ⚙️ 전체 설정
 # ═══════════════════════════════════════════════════════
 
+# ✅ .env 파일 수동 로드 (python-dotenv 없이)
+def load_env_file(env_path=".env"):
+    """수동으로 .env 파일 로드"""
+    if not os.path.exists(env_path):
+        return
+    
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            
+            if "=" in line:
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ[key] = value
+                print(f"✅ 환경변수 로드: {key}={value}")
+
+# .env 파일 로드
+load_env_file("/home/user/webapp/.env")
+
 # 🧠 이메이 Router 초기화
 DB_PATH = "/home/user/webapp/upbit_bot.db"
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
+print(f"🔧 Ollama 설정: URL={OLLAMA_URL}, Model={OLLAMA_MODEL}")
 emei_router = EmeiRouter(DB_PATH, OLLAMA_URL, OLLAMA_MODEL)
 
 # 급등/급락 감지
