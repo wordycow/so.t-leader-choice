@@ -3436,6 +3436,80 @@ def api_admin_start_bot():
 # 🧠 이메이 AI 학습 시스템
 # ═══════════════════════════════════════════════════════
 
+@app.route('/api/debug/rag_test', methods=['POST'])
+def api_debug_rag_test():
+    """RAG 디버그 테스트 엔드포인트"""
+    try:
+        import time
+        start_time = time.time()
+        
+        data = request.json or {}
+        query = data.get('query', '').strip()
+        mode = data.get('mode', 'auto')  # auto, character, trading
+        
+        if not query:
+            return jsonify({'error': 'Query required'}), 400
+        
+        # RAG 검색
+        retrieved = emei_router._retrieve_best(query, topk=4)
+        
+        # Context 생성
+        context_blocks = []
+        if retrieved:
+            for i, (qtext, atext, score, answer, qscore) in enumerate(retrieved):
+                context_blocks.append(f"[{i+1}] Q: {qtext[:100]}... A: {atext[:100]}... (score: {score:.4f})")
+        
+        context_str = "\n".join(context_blocks)
+        context_length = len(context_str)
+        
+        # Best score 계산
+        best_score = retrieved[0][2] if retrieved else 0.0
+        threshold = float(os.getenv('EMIE_DB_THRESHOLD', '0.62'))
+        
+        # Answer 생성 (간단하게 top-1 사용)
+        if best_score >= threshold and retrieved:
+            answer = retrieved[0][3]  # answer from top result
+            answer_source = 'db'
+        else:
+            answer = f"(DB threshold {threshold} not met, would fallback to Ollama with context)"
+            answer_source = 'ollama_context'
+        
+        # Retrieved sources 상세 정보
+        sources_list = []
+        for idx, (qtext, atext, score, answer, qscore) in enumerate(retrieved):
+            sources_list.append({
+                'rank': idx + 1,
+                'question': qtext[:200],
+                'answer': atext[:200],
+                'score': round(score, 4),
+                'quality_score': round(qscore, 2)
+            })
+        
+        latency_ms = (time.time() - start_time) * 1000
+        
+        result = {
+            'query': query,
+            'mode': mode,
+            'answer': answer,
+            'answer_source': answer_source,
+            'retrieved_sources': sources_list,
+            'context_length': context_length,
+            'db_threshold': threshold,
+            'best_score': round(best_score, 4),
+            'latency_ms': round(latency_ms, 2),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        log(f"[RAG_TEST] query='{query}' | top_score={best_score:.4f} | sources={len(sources_list)} | latency={latency_ms:.0f}ms", "INFO")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        log(f"RAG 테스트 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
 @app.route('/api/emei/chat', methods=['POST'])
 def api_emei_chat():
     """이메이 채팅 - 새 Router 시스템"""
