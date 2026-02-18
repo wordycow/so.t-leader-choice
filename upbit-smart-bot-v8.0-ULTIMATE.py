@@ -63,36 +63,36 @@ from emei_learning import get_emei
 
 # 급등/급락 감지
 SURGE_CONFIG = {
-    # 급등
-    'surge_threshold_1m': 1.5,
-    'surge_threshold_3m': 2.5,
+    # 급등 (조건 완화 - 더 많은 기회 포착)
+    'surge_threshold_1m': 0.8,  # 1.5 -> 0.8 (1분에 0.8% 급등)
+    'surge_threshold_3m': 1.5,  # 2.5 -> 1.5 (3분에 1.5% 급등)
     
-    # 급락
-    'dip_threshold_1m': -1.5,
-    'dip_oversold_rsi': 35,
-    'dip_volume_spike': 2.0,
+    # 급락 (조건 완화)
+    'dip_threshold_1m': -0.8,   # -1.5 -> -0.8 (더 작은 급락도 포착)
+    'dip_oversold_rsi': 40,     # 35 -> 40 (과매도 기준 완화)
+    'dip_volume_spike': 1.5,    # 2.0 -> 1.5
     
     # 복귀 전략
     'dip_recovery_threshold': -0.3,
     'dip_max_hold_time': 24 * 60,
     'dip_emergency_stop': -10.0,
     
-    # 거래량
-    'volume_spike_ratio': 2.0,
-    'min_volume_krw': 100000000,
+    # 거래량 (조건 크게 완화)
+    'volume_spike_ratio': 1.5,      # 2.0 -> 1.5
+    'min_volume_krw': 30000000,     # 100,000,000 -> 30,000,000 (3천만원)
     
-    # 익절/손절
-    'take_profit_targets': [1.5, 2.5, 4.0],
+    # 익절/손절 (목표 낮춰서 빠른 수익 실현)
+    'take_profit_targets': [1.0, 1.5, 2.0],  # [1.5, 2.5, 4.0] -> [1.0, 1.5, 2.0]
     'stop_loss': -2.0,
 }
 
-# 패턴 분석
+# 패턴 분석 (조건 완화)
 PATTERN_CONFIG = {
-    'box_range_threshold': 3.0,
-    'trend_ma_short': 20,
-    'trend_ma_long': 60,
-    'uptrend_threshold': 2.0,
-    'volume_surge_ratio': 2.5,
+    'box_range_threshold': 2.0,      # 3.0 -> 2.0 (박스권 더 쉽게 인식)
+    'trend_ma_short': 10,            # 20 -> 10 (더 빠른 추세 감지)
+    'trend_ma_long': 40,             # 60 -> 40
+    'uptrend_threshold': 1.0,        # 2.0 -> 1.0 (상승 추세 쉽게 인식)
+    'volume_surge_ratio': 1.5,       # 2.5 -> 1.5
 }
 
 # AI 학습
