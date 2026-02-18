@@ -1,430 +1,541 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upbit Bot v9 - Compact Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0e27;
-            color: #e0e0e0;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        
-        .container {
-            max-width: 1920px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-        
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-live {
-            background: #e74c3c;
-            color: white;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-practice {
-            background: #27ae60;
-            color: white;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        /* KPIs */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        
-        .kpi-card {
-            background: #151932;
-            padding: 10px;
-            border-radius: 6px;
-            border-left: 3px solid #3498db;
-        }
-        
-        .kpi-card.positive {
-            border-left-color: #2ecc71;
-        }
-        
-        .kpi-card.negative {
-            border-left-color: #e74c3c;
-        }
-        
-        .kpi-label {
-            font-size: 10px;
-            color: #7f8c8d;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-        
-        .kpi-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ecf0f1;
-        }
-        
-        .kpi-subtext {
-            font-size: 10px;
-            color: #95a5a6;
-            margin-top: 2px;
-        }
-        
-        /* Panels */
-        .panel-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .panel {
-            background: #151932;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .panel-header {
-            background: #1e2742;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .panel-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #3498db;
-        }
-        
-        .panel-toggle {
-            font-size: 18px;
-            color: #7f8c8d;
-        }
-        
-        .panel-body {
-            padding: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .panel-body.collapsed {
-            display: none;
-        }
-        
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th {
-            text-align: left;
-            padding: 6px 8px;
-            font-size: 10px;
-            color: #7f8c8d;
-            text-transform: uppercase;
-            border-bottom: 1px solid #2c3e50;
-        }
-        
-        td {
-            padding: 6px 8px;
-            font-size: 12px;
-            border-bottom: 1px solid #1a1f36;
-        }
-        
-        tr:hover {
-            background: #1a1f36;
-        }
-        
-        .ticker {
-            font-weight: 600;
-            color: #3498db;
-        }
-        
-        .profit-positive {
-            color: #2ecc71;
-            font-weight: 600;
-        }
-        
-        .profit-negative {
-            color: #e74c3c;
-            font-weight: 600;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        
-        .badge-buy {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .badge-sell {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .badge-strategy {
-            background: #34495e;
-            color: #ecf0f1;
-        }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #0a0e27;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #34495e;
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #95a5a6;
-        }
-        
-        /* Last update */
-        .last-update {
-            text-align: center;
-            font-size: 11px;
-            color: #7f8c8d;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UPBIT BOT v9 Dashboard</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+
+      /* Upbit-feel */
+      --upbit-blue:#093687;
+      --upbit-blue-2:#1d4ed8;
+      --up:#d32f2f;      /* 하락(빨강) */
+      --down:#2e7d32;    /* 상승(초록) */
+      --card:#ffffff;
+      --shadow: 0 10px 25px rgba(2,6,23,.08);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      background:#fff;
+      border-bottom:1px solid var(--line);
+    }
+    .topbar .inner{
+      max-width:1280px;
+      margin:0 auto;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:var(--upbit-blue);
+    }
+    .badge{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background:#fff;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .btn.primary{
+      border-color:transparent;
+      background:var(--upbit-blue);
+      color:#fff;
+    }
+    .btn:active{transform:translateY(1px)}
+    .wrap{
+      max-width:1280px;
+      margin:0 auto;
+      padding:16px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card .hd h2{
+      margin:0;
+      font-size:14px;
+      color:var(--upbit-blue);
+      letter-spacing:.2px;
+    }
+    .card .bd{ padding:14px; }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:12px;
+    }
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .kpi .label{font-size:12px;color:var(--muted);font-weight:700}
+    .kpi .val{margin-top:6px;font-size:18px;font-weight:900}
+    .kpi .sub{margin-top:2px;font-size:12px;color:var(--muted)}
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+    th,td{
+      text-align:left;
+      padding:10px 10px;
+      font-size:13px;
+      border-bottom:1px solid var(--line);
+      vertical-align:middle;
+    }
+    th{background:#f8fafc;color:#334155;font-weight:900}
+    tr:last-child td{border-bottom:none}
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+    .pos{color:var(--down);font-weight:900}
+    .neg{color:var(--up);font-weight:900}
+
+    /* IMEI */
+    .chat{
+      height: 540px;
+      display:flex;
+      flex-direction:column;
+    }
+    .chatlog{
+      flex:1;
+      overflow:auto;
+      padding:12px;
+      background:#fff;
+    }
+    .msg{
+      display:flex;
+      gap:10px;
+      margin:10px 0;
+      align-items:flex-start;
+    }
+    .avatar{
+      width:34px;height:34px;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(9,54,135,.08);
+      color:var(--upbit-blue);
+      font-weight:900;
+      border:1px solid rgba(9,54,135,.18);
+      flex:0 0 auto;
+    }
+    .bubble{
+      max-width: 78%;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:10px 12px;
+      box-shadow: 0 6px 18px rgba(2,6,23,.06);
+      background:#fff;
+    }
+    .bubble.me{
+      margin-left:auto;
+      border-color: rgba(29,78,216,.25);
+      background: rgba(29,78,216,.05);
+    }
+    .meta{
+      margin-top:6px;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .chatbar{
+      border-top:1px solid var(--line);
+      padding:10px;
+      display:flex;
+      gap:10px;
+      background:#fff;
+    }
+    .input{
+      flex:1;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 12px;
+      outline:none;
+      font-size:14px;
+    }
+
+    /* Modal */
+    .modal-bg{
+      position:fixed; inset:0;
+      background:rgba(2,6,23,.45);
+      display:none;
+      align-items:center; justify-content:center;
+      padding:16px;
+      z-index:999;
+    }
+    .modal{
+      width:min(760px, 100%);
+      background:#fff;
+      border-radius:18px;
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .modal .mhd{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .modal .mhd b{color:var(--upbit-blue)}
+    .modal .mbd{padding:14px}
+    .row{display:grid; grid-template-columns: 180px 1fr; gap:10px; align-items:center; margin:10px 0}
+    .row label{font-weight:900;color:#334155}
+    .help{font-size:12px;color:var(--muted); margin-top:6px}
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:8px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill.on{
+      border-color: rgba(9,54,135,.35);
+      background: rgba(9,54,135,.06);
+      color: var(--upbit-blue);
+    }
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .kpis{grid-template-columns: repeat(2, minmax(0,1fr));}
+      .chat{height: 520px;}
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>⚡ Upbit Bot v9 - Compact Dashboard</h1>
-            <div>
-                <span class="status-badge status-practice" id="mode-badge">📝 PRACTICE MODE</span>
-                <span style="margin-left: 10px; font-size: 11px;" id="bot-status">🟢 RUNNING</span>
-            </div>
-        </div>
-        
-        <!-- KPIs -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">Total Equity</div>
-                <div class="kpi-value" id="kpi-equity">1,000,000 ₩</div>
-            </div>
-            <div class="kpi-card positive">
-                <div class="kpi-label">Daily P&L</div>
-                <div class="kpi-value" id="kpi-pnl">+15,000 ₩</div>
-                <div class="kpi-subtext" id="kpi-pnl-pct">+1.5%</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Cash</div>
-                <div class="kpi-value" id="kpi-cash">850,000 ₩</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Invested</div>
-                <div class="kpi-value" id="kpi-invested">150,000 ₩</div>
-                <div class="kpi-subtext" id="kpi-invested-pct">15%</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Positions</div>
-                <div class="kpi-value" id="kpi-positions">2 / 2</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Trades Today</div>
-                <div class="kpi-value" id="kpi-trades">8</div>
-            </div>
-        </div>
-        
-        <!-- Panels -->
-        <div class="panel-grid">
-            <!-- TOP 20 Candidates -->
-            <div class="panel">
-                <div class="panel-header" onclick="togglePanel('top20')">
-                    <div class="panel-title">🎯 TOP 20 Candidates</div>
-                    <div class="panel-toggle" id="toggle-top20">−</div>
-                </div>
-                <div class="panel-body" id="body-top20">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ticker</th>
-                                <th>Score</th>
-                                <th>Δ%</th>
-                                <th>Vol</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-top20">
-                            <tr>
-                                <td class="ticker">KRW-DOGE</td>
-                                <td>0.92</td>
-                                <td class="profit-positive">+5.2%</td>
-                                <td>↑350%</td>
-                            </tr>
-                            <tr>
-                                <td class="ticker">KRW-XRP</td>
-                                <td>0.88</td>
-                                <td class="profit-positive">+3.1%</td>
-                                <td>↑280%</td>
-                            </tr>
-                            <!-- More rows loaded dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Holdings -->
-            <div class="panel">
-                <div class="panel-header" onclick="togglePanel('holdings')">
-                    <div class="panel-title">💼 Holdings</div>
-                    <div class="panel-toggle" id="toggle-holdings">−</div>
-                </div>
-                <div class="panel-body" id="body-holdings">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ticker</th>
-                                <th>Strategy</th>
-                                <th>P&L%</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-holdings">
-                            <tr>
-                                <td class="ticker">KRW-DOGE</td>
-                                <td><span class="badge badge-strategy">ULTRA_SCALP</span></td>
-                                <td class="profit-positive">+2.8%</td>
-                                <td>4m</td>
-                            </tr>
-                            <tr>
-                                <td class="ticker">KRW-XRP</td>
-                                <td><span class="badge badge-strategy">DEEP_HUNTER</span></td>
-                                <td class="profit-negative">-0.5%</td>
-                                <td>12m</td>
-                            </tr>
-                            <!-- More rows loaded dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Recent Trades -->
-            <div class="panel">
-                <div class="panel-header" onclick="togglePanel('trades')">
-                    <div class="panel-title">📊 Recent Trades</div>
-                    <div class="panel-toggle" id="toggle-trades">−</div>
-                </div>
-                <div class="panel-body" id="body-trades">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Type</th>
-                                <th>Ticker</th>
-                                <th>Exit Reason</th>
-                                <th>P&L</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-trades">
-                            <tr>
-                                <td>13:45</td>
-                                <td><span class="badge badge-sell">SELL</span></td>
-                                <td class="ticker">KRW-ADA</td>
-                                <td>PARTIAL_3</td>
-                                <td class="profit-positive">+3.2%</td>
-                            </tr>
-                            <tr>
-                                <td>13:40</td>
-                                <td><span class="badge badge-buy">BUY</span></td>
-                                <td class="ticker">KRW-DOGE</td>
-                                <td>RSI < 20</td>
-                                <td>-</td>
-                            </tr>
-                            <!-- More rows loaded dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="last-update" id="last-update">
-            Last update: 2026-02-18 13:45:32
-        </div>
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <span style="width:10px;height:10px;border-radius:999px;background:var(--upbit-blue);display:inline-block"></span>
+        UPBIT BOT v9
+        <span id="modeBadge" class="badge">MODE: -</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a class="btn" href="/imei_dashboard.html">IMEI 전용 화면</a>
+        <button class="btn primary" id="openSettings">설정</button>
+      </div>
     </div>
-    
-    <script>
-        // Panel toggle
-        function togglePanel(panelId) {
-            const body = document.getElementById(`body-${panelId}`);
-            const toggle = document.getElementById(`toggle-${panelId}`);
-            
-            if (body.classList.contains('collapsed')) {
-                body.classList.remove('collapsed');
-                toggle.textContent = '−';
-            } else {
-                body.classList.add('collapsed');
-                toggle.textContent = '+';
-            }
-        }
-        
-        // Auto-refresh (placeholder - implement with actual API calls)
-        function refreshData() {
-            // Fetch data from backend API
-            // Update KPIs, tables, etc.
-            document.getElementById('last-update').textContent = 
-                `Last update: ${new Date().toLocaleString('ko-KR')}`;
-        }
-        
-        // Refresh every 10 seconds
-        setInterval(refreshData, 10000);
-    </script>
+  </div>
+
+  <div class="wrap">
+    <div class="layout">
+      <!-- LEFT: Dashboard -->
+      <div class="card">
+        <div class="hd">
+          <h2>메인 대시보드</h2>
+          <span class="badge mono" id="lastUpdate">Last update: -</span>
+        </div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">총 자산(EQUITY)</div>
+              <div class="val mono" id="kpiEquity">-</div>
+              <div class="sub" id="kpiEquitySub">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">실현 손익</div>
+              <div class="val mono" id="kpiRealized">-</div>
+              <div class="sub">Realized PnL</div>
+            </div>
+            <div class="kpi">
+              <div class="label">미실현 손익</div>
+              <div class="val mono" id="kpiUnrealized">-</div>
+              <div class="sub">Unrealized PnL</div>
+            </div>
+            <div class="kpi">
+              <div class="label">포지션 수</div>
+              <div class="val mono" id="kpiPos">-</div>
+              <div class="sub">Positions</div>
+            </div>
+          </div>
+
+          <div style="height:14px"></div>
+
+          <div class="card" style="box-shadow:none">
+            <div class="hd">
+              <h2>TOP 20 후보</h2>
+              <span class="badge" id="top20Source">source: -</span>
+            </div>
+            <div class="bd">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:70px">Rank</th>
+                    <th>Ticker</th>
+                    <th style="width:120px">Score</th>
+                  </tr>
+                </thead>
+                <tbody id="top20Tbody">
+                  <tr><td colspan="3" class="mono">loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="height:14px"></div>
+
+          <div class="card" style="box-shadow:none">
+            <div class="hd">
+              <h2>안전 게이트</h2>
+              <span class="badge" id="safetyBadge">-</span>
+            </div>
+            <div class="bd">
+              <div class="mono" id="safetyText">-</div>
+              <div class="help">LIVE는 “API키 + enable_live.flag” 둘 다 있어야 열리게 설계하는 게 안전합니다.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: IMEI 상담원 -->
+      <div class="card chat">
+        <div class="hd">
+          <h2>IMEI 상담원</h2>
+          <span class="badge" id="imeiStatus">IMEI: -</span>
+        </div>
+        <div class="chatlog" id="chatlog"></div>
+        <div class="chatbar">
+          <input class="input" id="chatInput" placeholder="IMEI에게 질문하세요 (예: 오늘 시스템 상태 요약해줘)" />
+          <button class="btn primary" id="sendBtn">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal">
+      <div class="mhd">
+        <b>설정 (연습/실거래)</b>
+        <button class="btn" id="closeSettings">닫기</button>
+      </div>
+      <div class="mbd">
+        <div class="row">
+          <label>모드</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div class="pill" id="pillPractice">PRACTICE</div>
+            <div class="pill" id="pillLive">LIVE</div>
+          </div>
+        </div>
+
+        <div id="liveKeysArea" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--line)">
+          <div class="row">
+            <label>UPBIT_ACCESS_KEY</label>
+            <input class="input mono" id="ak" placeholder="실거래에서만 입력" />
+          </div>
+          <div class="row">
+            <label>UPBIT_SECRET_KEY</label>
+            <input class="input mono" id="sk" placeholder="실거래에서만 입력" />
+          </div>
+          <div class="help">
+            ※ 로컬 `.env`에만 저장하고 깃에 커밋하지 마세요. (이미 `.gitignore` 대상이어야 정상)
+          </div>
+          <div style="height:10px"></div>
+          <button class="btn primary" id="saveLive">LIVE 설정 저장(키 포함)</button>
+        </div>
+
+        <div id="practiceHint" class="help" style="margin-top:14px">
+          PRACTICE 모드에서는 API 키를 묻지 않습니다. (실거래 주문 실행 불가)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+
+    function fmtKRW(n){
+      if (n === null || n === undefined) return "-";
+      try{ return Number(n).toLocaleString("ko-KR") + " ₩"; }catch{ return String(n); }
+    }
+    function setModeBadge(mode){
+      $("modeBadge").textContent = "MODE: " + (mode || "-");
+      $("modeBadge").style.borderColor = mode === "LIVE" ? "rgba(211,47,47,.35)" : "rgba(9,54,135,.25)";
+      $("modeBadge").style.color = mode === "LIVE" ? "#b91c1c" : "var(--upbit-blue)";
+    }
+
+    async function fetchJSON(url, opt){
+      const r = await fetch(url, opt);
+      if(!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+
+    // --- Dashboard refresh ---
+    async function refresh(){
+      try{
+        const k = await fetchJSON("/api/kpis");
+        setModeBadge(k.mode);
+        $("kpiEquity").textContent = fmtKRW(k.equity);
+        $("kpiRealized").textContent = fmtKRW(k.realized_pnl);
+        $("kpiUnrealized").textContent = fmtKRW(k.unrealized_pnl);
+        $("kpiPos").textContent = String(k.position_count ?? "-");
+        $("lastUpdate").textContent = "Last update: " + (k.timestamp || "-");
+
+        const t = await fetchJSON("/api/top20");
+        $("top20Source").textContent = "source: " + (t.source || "-");
+        const rows = (t.items || []).map(x => `
+          <tr>
+            <td class="mono">${x.rank ?? "-"}</td>
+            <td class="mono">${x.ticker ?? "-"}</td>
+            <td class="mono">${x.score ?? "-"}</td>
+          </tr>
+        `).join("");
+        $("top20Tbody").innerHTML = rows || `<tr><td colspan="3" class="mono">empty</td></tr>`;
+
+        const s = await fetchJSON("/api/safety");
+        $("safetyBadge").textContent = s.gate || "-";
+        $("safetyText").textContent = (s.reason || "-") + " (at " + (s.timestamp || "-") + ")";
+
+      } catch(e){
+        console.error(e);
+      }
+    }
+
+    // --- IMEI chat ---
+    function addMsg(who, text){
+      const wrap = document.createElement("div");
+      wrap.className = "msg";
+      const av = document.createElement("div");
+      av.className = "avatar";
+      av.textContent = who === "me" ? "ME" : "AI";
+      const bub = document.createElement("div");
+      bub.className = "bubble" + (who === "me" ? " me" : "");
+      bub.innerText = text;
+
+      if(who === "me"){
+        wrap.style.justifyContent = "flex-end";
+        wrap.appendChild(bub);
+        wrap.appendChild(av);
+      }else{
+        wrap.appendChild(av);
+        wrap.appendChild(bub);
+      }
+      $("chatlog").appendChild(wrap);
+      $("chatlog").scrollTop = $("chatlog").scrollHeight;
+    }
+
+    async function pingIMEI(){
+      try{
+        const r = await fetch("http://localhost:5001/health");
+        $("imeiStatus").textContent = r.ok ? "IMEI: ONLINE" : "IMEI: OFFLINE";
+      }catch{
+        $("imeiStatus").textContent = "IMEI: OFFLINE";
+      }
+    }
+
+    async function sendChat(){
+      const msg = $("chatInput").value.trim();
+      if(!msg) return;
+      $("chatInput").value = "";
+      addMsg("me", msg);
+
+      try{
+        const body = { message: msg, user_id: "user_1", include_trading_status: true };
+        const data = await fetchJSON("http://localhost:5001/api/imei/chat", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(body)
+        });
+        addMsg("ai", data.assistant_message || "(no message)");
+      }catch(e){
+        addMsg("ai", "IMEI 연결 오류: " + e.message);
+      }
+    }
+
+    // --- Settings (UI only: PRACTICE는 묻지 않음 / LIVE는 키 입력 받기) ---
+    function openModal(){ $("modalBg").style.display="flex"; }
+    function closeModal(){ $("modalBg").style.display="none"; }
+
+    function setPill(mode){
+      const isLive = mode === "LIVE";
+      $("pillPractice").classList.toggle("on", !isLive);
+      $("pillLive").classList.toggle("on", isLive);
+      $("liveKeysArea").style.display = isLive ? "block" : "none";
+      $("practiceHint").style.display = isLive ? "none" : "block";
+    }
+
+    $("openSettings").onclick = ()=>{ openModal(); };
+    $("closeSettings").onclick = ()=>{ closeModal(); };
+    $("modalBg").onclick = (e)=>{ if(e.target === $("modalBg")) closeModal(); };
+
+    $("pillPractice").onclick = ()=> setPill("PRACTICE");
+    $("pillLive").onclick = ()=> setPill("LIVE");
+
+    $("saveLive").onclick = async ()=>{
+      // 여기서는 “키 입력을 받는다”까지 구현. 실제 저장/반영은 다음 단계에서 서버 엔드포인트 붙이면 됨.
+      const ak = $("ak").value.trim();
+      const sk = $("sk").value.trim();
+      if(!ak || !sk){
+        alert("LIVE 모드에서는 Access/Secret Key 둘 다 필요합니다.");
+        return;
+      }
+      alert("LIVE 키 입력 확인 완료.\n(다음 단계: 이 값을 .env로 저장 + enable_live.flag 생성 + 실행엔진 재시작 연결)");
+    };
+
+    $("sendBtn").onclick = sendChat;
+    $("chatInput").addEventListener("keydown", (e)=>{ if(e.key === "Enter") sendChat(); });
+
+    // init
+    addMsg("ai", "안녕하세요 유송. 저는 IMEI 상담원입니다. (예: '현재 모드/상태 요약해줘' 라고 말해보세요)");
+    setPill("PRACTICE");
+    refresh();
+    pingIMEI();
+    setInterval(refresh, 3000);
+    setInterval(pingIMEI, 5000);
+  </script>
 </body>
 </html>
