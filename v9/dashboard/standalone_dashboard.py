@@ -55,7 +55,11 @@ def health():
     ✅ 확장된 Health 체크 (유송 운영 편의)
     - 각 엔진 상태 + 실제 동작 지표 (시각/카운트)
     """
-    se = read_state("signal_engine.json", {})
+    # WebSocket 연결 상태
+    se_ws = read_state("signal_engine.json", {})
+    # Top20 스캔 및 전략 상태
+    se_state = read_state("signal_engine_state.json", {})
+    # Execution Engine 상태
     ex = read_state("execution_engine.json", {})
     
     return jsonify({
@@ -64,14 +68,14 @@ def health():
         "version": "v9",
         "timestamp": ts(),
         
-        # Signal Engine
+        # Signal Engine (WebSocket + Scan 상태 병합)
         "signal_engine": {
-            "status": se.get("status", "unknown"),
-            "last_top20_scan_at": se.get("last_top20_scan_at"),
-            "top20_count": se.get("top20_count", 0),
-            "last_signal_at": se.get("last_signal_at"),
-            "signal_sent_count": se.get("signal_sent_count", 0),
-            "tracked_tickers": se.get("tracked_tickers", 0),
+            "status": se_ws.get("status", "unknown"),  # WebSocket 연결 상태
+            "last_top20_scan_at": se_state.get("last_top20_scan_at"),
+            "top20_count": se_state.get("top20_count", 0),
+            "last_signal_at": se_state.get("last_signal_at"),
+            "signal_sent_count": se_state.get("signal_sent_count", 0),
+            "tracked_tickers": se_state.get("tracked_tickers", 0),
         },
         
         # Execution Engine
@@ -167,13 +171,13 @@ def api_watch_state():
     - 각 티커/전략별 추적 상태 (WATCHING/ARMED/TRIGGERED/COOLDOWN)
     - 조건 체크리스트 (각 조건 충족 여부)
     """
-    se = read_state("signal_engine.json", {})
+    se_state = read_state("signal_engine_state.json", {})
     return jsonify({
-        "watch_states": se.get("watch_states", {}),
-        "condition_checklists": se.get("condition_checklists", {}),
-        "tracked_tickers": se.get("tracked_tickers", 0),
-        "last_top20_scan_at": se.get("last_top20_scan_at"),
-        "signal_sent_count": se.get("signal_sent_count", 0),
+        "watch_states": se_state.get("watch_states", {}),
+        "condition_checklists": se_state.get("condition_checklists", {}),
+        "tracked_tickers": se_state.get("tracked_tickers", 0),
+        "last_top20_scan_at": se_state.get("last_top20_scan_at"),
+        "signal_sent_count": se_state.get("signal_sent_count", 0),
         "timestamp": ts()
     })
 

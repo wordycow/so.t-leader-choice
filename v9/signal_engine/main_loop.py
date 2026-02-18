@@ -104,7 +104,8 @@ class SignalEngineMain:
         """Health 상태 업데이트"""
         watch_state = self.strategy_engine.get_watch_state()
         
-        write_state("signal_engine.json", {
+        # signal_engine_state.json에 저장 (websocket_emitter와 충돌 방지)
+        write_state("signal_engine_state.json", {
             "service": "signal_engine",
             "status": "running",
             "last_top20_scan_at": self.last_top20_scan_at,
