@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from shared.runtime_state import read_state, now_iso
+from shared.upbit_market_data import UpbitMarketData
 
 app = Flask(
     __name__,
@@ -20,7 +21,7 @@ app = Flask(
 def ts():
     return now_iso()
 
-# --- Mock (fallback) ---
+# --- Mock (fallback) - KPI only ---
 def mock_kpis():
     return {
         "mode": "PRACTICE",
@@ -30,9 +31,6 @@ def mock_kpis():
         "position_count": 0,
         "timestamp": ts(),
     }
-
-def mock_top20():
-    return [{"rank": i+1, "ticker": f"KRW-MOCK{i+1:02d}", "score": round(random.random(), 4)} for i in range(20)]
 
 # --- UI ---
 @app.route("/")
@@ -92,11 +90,26 @@ def api_kpis():
 
 @app.route("/api/top20")
 def api_top20():
-    # 나중에 signal engine이 top20.json 써주면 여기서 바로 실데이터로 바뀜
-    top20 = read_state("top20.json", None)
-    if top20 is None:
-        return jsonify({"items": mock_top20(), "source": "mock", "timestamp": ts()})
-    return jsonify({"items": top20, "source": "runtime", "timestamp": ts()})
+    """
+    ✅ 실제 Upbit 시장 데이터를 가져옴 (거래량 Top20)
+    - ticker, rank, trade_price, acc_trade_price_24h, signed_change_rate
+    - source: "upbit" (실데이터), timestamp
+    """
+    try:
+        top20_data = UpbitMarketData.get_top20_by_volume()
+        return jsonify({
+            "items": top20_data,
+            "source": "upbit",
+            "timestamp": ts()
+        })
+    except Exception as e:
+        # 에러시 빈 리스트 (mock 없이)
+        return jsonify({
+            "items": [],
+            "source": "error",
+            "error": str(e),
+            "timestamp": ts()
+        }), 500
 
 @app.route("/api/holdings")
 def api_holdings():
