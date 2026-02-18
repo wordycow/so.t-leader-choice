@@ -27,9 +27,11 @@ def _jaccard(a, b):
 
 class EmeiRouter:
     """
-    DB 기반 Q/A + Ollama 폴백 + 대화 로그 저장
+    DB 기반 Q/A + Ollama 폴백 + 대화 로그 저장 + 프로필 시스템
     - 의존성 추가 없음 (stdlib만 사용)
     - "모르면 모른다" + 반복사과 금지
+    - Emei 프로필 영구 저장 (나이, 성별, 성격 등)
+    - 사용자별 정보 기억 (이름, 성별, 선호도 등)
     """
     def __init__(self, db_path: str, ollama_url: str, ollama_model: str):
         self.db_path = db_path
@@ -38,10 +40,69 @@ class EmeiRouter:
         self._last_error_signature = None
         self._last_user_msg = None
         self._last_assistant_msg = None
+        
+        # 🧠 프로필 시스템 초기화
+        self._init_profile_tables()
 
     # ---------- DB helpers ----------
     def _conn(self):
         return sqlite3.connect(self.db_path)
+    
+    def _init_profile_tables(self):
+        """프로필 테이블 초기화"""
+        with self._conn() as conn:
+            # Emei 기본 프로필
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS emei_profile (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # 사용자별 기억
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS emei_user_memory (
+                    user_id TEXT NOT NULL,
+                    memory_key TEXT NOT NULL,
+                    memory_value TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, memory_key)
+                )
+            """)
+    
+    def set_profile(self, key: str, value: str):
+        """Emei 프로필 저장"""
+        with self._conn() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO emei_profile (key, value, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+            """, (key, value))
+    
+    def get_profile(self, key: str, default=None):
+        """Emei 프로필 불러오기"""
+        with self._conn() as conn:
+            cur = conn.execute("SELECT value FROM emei_profile WHERE key = ?", (key,))
+            row = cur.fetchone()
+            return row[0] if row else default
+    
+    def remember_user(self, user_id: str, key: str, value: str):
+        """사용자 정보 기억"""
+        with self._conn() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO emei_user_memory (user_id, memory_key, memory_value, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """, (user_id, key, value))
+    
+    def recall_user(self, user_id: str, key: str, default=None):
+        """사용자 정보 회상"""
+        with self._conn() as conn:
+            cur = conn.execute("""
+                SELECT memory_value FROM emei_user_memory 
+                WHERE user_id = ? AND memory_key = ?
+            """, (user_id, key))
+            row = cur.fetchone()
+            return row[0] if row else default
 
     def _log_conversation(self, user_id, user_message, emei_response, learned=0, youtube_url=None):
         with self._conn() as conn:
@@ -156,12 +217,36 @@ class EmeiRouter:
             raise RuntimeError(f"ollama_error: {type(e).__name__}: {e}")
 
     # ---------- Response policy ----------
-    def _emei_system_prompt(self, user_pattern):
+    def _emei_system_prompt(self, user_pattern, user_id=None):
         # 유송이 원하는 방향: 사람같이 + 모르면 모른다 + 반복사과 금지
         formality = user_pattern.get("formality_level", "formal")
+        
+        # 🧠 프로필 정보 불러오기
+        age = self.get_profile("age", "25")
+        gender = self.get_profile("gender", "female")
+        personality = self.get_profile("personality", "친절하고 따뜻하며 함께하려는 의지가 강함")
+        
+        gender_kr = "여자" if gender == "female" else "남자"
+        
+        # 사용자 정보 회상
+        user_info = ""
+        if user_id:
+            user_name = self.recall_user(user_id, "name")
+            user_gender = self.recall_user(user_id, "gender")
+            user_role = self.recall_user(user_id, "role")
+            
+            if user_name or user_gender or user_role:
+                user_info = "\n\n[대화 상대방 정보]\n"
+                if user_name:
+                    user_info += f"- 이름: {user_name}\n"
+                if user_gender:
+                    user_info += f"- 성별: {'남자' if user_gender == 'male' else '여자'}\n"
+                if user_role:
+                    user_info += f"- 역할: {user_role}\n"
+        
         # 말투는 서버 기본 페르소나(존댓말+가끔 반말)에 맞추되, 안전하게 존댓말 기본
         base = [
-            "너는 '이메이(Emei)'다. 밝고 친근하지만, 과장하지 않는다.",
+            f"너는 '이메이(Emei)'다. {age}살 {gender_kr}이며, {personality} 성격이다.",
             "원칙: 확실하지 않으면 단정하지 말고 '지금 정보로는 확실히 모르겠어요'라고 말한 뒤, 확인 질문 1~2개를 한다.",
             "같은 사과/회피 문장을 연속으로 반복하지 않는다. 오류가 나면 원인(추정) 1개 + 해결 시도 1개를 제시한다.",
             "트레이딩은 조언이 아니라 정보 정리/지표 설명/시나리오로 답한다. 실행(매수/매도)은 별도 엔진이 한다.",
@@ -170,6 +255,10 @@ class EmeiRouter:
             base.append("말투는 너무 딱딱하지 않게, 필요하면 짧게 반말 섞어도 된다.")
         else:
             base.append("말투는 존댓말을 기본으로 한다.")
+        
+        if user_info:
+            base.append(user_info)
+        
         return "\n".join(base)
 
     def _style_postprocess(self, text: str, user_pattern):
@@ -183,6 +272,111 @@ class EmeiRouter:
             # 최소한만
             text = "💜 " + text
         return text
+    
+    def _learn_profile_command(self, user_id: str, message: str):
+        """프로필/사용자 정보 학습 명령 자동 감지
+        
+        패턴:
+        - "너 나이는 25살이야" → set_profile("age", "25")
+        - "너는 25살이야" → set_profile("age", "25")
+        - "내 이름은 이유송이야" → remember_user(user_id, "name", "이유송")
+        - "나는 남자야" → remember_user(user_id, "gender", "male")
+        - "너 성격은 친절하고 따뜻해" → set_profile("personality", "친절하고 따뜻함")
+        """
+        msg_lower = message.lower()
+        
+        # Emei 나이 설정
+        if re.search(r"너\s?(나이|살)\s?(는|은|이)\s?(\d+)(살)?", message):
+            match = re.search(r"(\d+)(살)?", message)
+            if match:
+                age = match.group(1)
+                self.set_profile("age", age)
+                return f"네! 앞으로 저는 {age}살이라고 할게요 💜"
+        
+        # Emei 성별 설정
+        if "너는" in message and ("여자" in message or "남자" in message):
+            gender = "female" if "여자" in message else "male"
+            self.set_profile("gender", gender)
+            gender_kr = "여자" if gender == "female" else "남자"
+            return f"네! 저는 {gender_kr}예요 💜"
+        
+        # Emei 성격 설정
+        if re.search(r"너\s?성격\s?(은|는)", message):
+            # "너 성격은" 이후 텍스트 추출
+            match = re.search(r"너\s?성격\s?(은|는)\s?(.+)", message)
+            if match:
+                personality = match.group(2).strip()
+                self.set_profile("personality", personality)
+                return f"네! 제 성격을 '{personality}'로 기억할게요 💜"
+        
+        # 사용자 이름 학습
+        if re.search(r"(내|나)\s?(이름|성함)\s?(은|는)\s?(.+)", message):
+            match = re.search(r"(내|나)\s?(이름|성함)\s?(은|는)\s?(.+)", message)
+            if match:
+                name = match.group(4).strip().rstrip("이야").rstrip("야").strip()
+                self.remember_user(user_id, "name", name)
+                return f"네! {name}님, 기억할게요 💜"
+        
+        # 사용자 성별 학습
+        if re.search(r"(나|내)\s?(는|가)\s?(남자|여자)", message):
+            gender = "male" if "남자" in message else "female"
+            self.remember_user(user_id, "gender", gender)
+            gender_kr = "남자" if gender == "male" else "여자"
+            return f"네! {gender_kr}분이시군요, 기억할게요 💜"
+        
+        # 사용자 역할 학습
+        if "만든" in message and "사람" in message:
+            self.remember_user(user_id, "role", "창조자")
+            return "네! 창조자님, 영광입니다 💜"
+        
+        # 학습 요청
+        if "기억해" in message or "저장해" in message:
+            # 간단한 확인 응답
+            return "네! 기억했어요 💜"
+        
+        return None  # 프로필 명령 아님
+    
+    def _answer_from_profile(self, message: str, user_id: str):
+        """프로필 정보를 이용한 자동 응답
+        
+        패턴:
+        - "너 나이는?" / "몇살이야?" → "저는 25살이에요!"
+        - "너는 누구야?" → "저는 이메이예요! 25살 여자..."
+        - "너 성격은?" → "친절하고 따뜻해요!"
+        """
+        msg_lower = message.lower()
+        
+        # 나이 질문
+        if re.search(r"(나이|몇\s?살|살\s?아)", message):
+            age = self.get_profile("age", "알 수 없음")
+            if age != "알 수 없음":
+                return f"저는 {age}살이에요! 💜"
+        
+        # 자기소개 질문
+        if re.search(r"너\s?(는|가)\s?누구", message) or "자기소개" in message:
+            age = self.get_profile("age", "알 수 없음")
+            gender = self.get_profile("gender", "female")
+            personality = self.get_profile("personality", "친절하고 따뜻함")
+            gender_kr = "여자" if gender == "female" else "남자"
+            
+            intro = f"저는 이메이예요! 💜 "
+            if age != "알 수 없음":
+                intro += f"{age}살 {gender_kr}이고, "
+            intro += f"{personality} 성격이에요. 트레이딩 파트너로서 차트 분석, 리스크 관리, 심리 상담 다 해드릴게요!"
+            
+            # 사용자 이름 있으면 추가
+            user_name = self.recall_user(user_id, "name")
+            if user_name:
+                intro = f"{user_name}님, " + intro
+            
+            return intro
+        
+        # 성격 질문
+        if re.search(r"성격|어떤\s?사람", message):
+            personality = self.get_profile("personality", "친절하고 따뜻하며 함께하려는 의지가 강함")
+            return f"저는 {personality} 성격이에요! 💜"
+        
+        return None  # 프로필 질문 아님
 
     def chat(self, user_id: str, message: str):
         t0 = time.time()
@@ -192,6 +386,12 @@ class EmeiRouter:
         # 사용자 패턴 업데이트
         self._update_user_pattern(user_id, message)
         pattern = self._get_user_pattern(user_id)
+        
+        # ---- (0) 프로필/사용자 정보 학습 명령 자동 감지
+        profile_learned = self._learn_profile_command(user_id, message)
+        if profile_learned:
+            self._log_conversation(user_id, message, profile_learned, learned=1)
+            return {"response": profile_learned, "learned": True, "response_time": round(time.time() - t0, 4)}
 
         # ---- (1) 수동 학습 커맨드 지원:  "학습: 질문 => 답변"
         if message.startswith("학습:"):
@@ -211,6 +411,12 @@ class EmeiRouter:
         # ---- (2) DB에서 먼저 찾기
         best = self._retrieve_best(message, topk=4)
         best_score = best[0][0] if best else 0.0
+        
+        # 🧠 특정 질문에 대한 프로필 기반 자동 응답
+        profile_answer = self._answer_from_profile(message, user_id)
+        if profile_answer:
+            self._log_conversation(user_id, message, profile_answer, learned=0)
+            return {"response": profile_answer, "learned": False, "response_time": round(time.time() - t0, 4)}
 
         # 임계치: 이 아래면 DB 답변 쓰지 않고 Ollama로 생성
         DB_THRESHOLD = float(os.getenv("EMEI_DB_THRESHOLD", "0.62"))
@@ -239,7 +445,7 @@ class EmeiRouter:
                 lines.append(f"- Q: {q}\n  A: {a}")
             context_blocks.append("\n".join(lines))
 
-        system = self._emei_system_prompt(pattern)
+        system = self._emei_system_prompt(pattern, user_id=user_id)
 
         try:
             # temperature 상향 조정으로 캐시 응답 방지 (0.25 → 0.4)
