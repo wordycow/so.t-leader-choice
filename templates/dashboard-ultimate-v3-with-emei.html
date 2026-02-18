@@ -692,6 +692,10 @@
       border-left: 2px solid rgba(139, 92, 246, 0.3);
       height: 100vh;
       overflow: hidden;
+      /* 🔧 너비 고정 - 찌그러짐 완전 방지 */
+      min-width: 400px;
+      max-width: 400px;
+      width: 400px;
     }
 
     .emei-chat-header {
@@ -700,38 +704,53 @@
       border-bottom: 2px solid rgba(139, 92, 246, 0.3);
       text-align: center;
       /* 🔧 헤더 크기 고정 - 찌그러짐 방지 */
-      flex-shrink: 0;
-      min-height: 200px;
-      max-height: 200px;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      flex-basis: auto !important;
+      min-height: 220px;
+      max-height: 220px;
+      height: 220px;
+      overflow: visible;
     }
 
     .emei-avatar-container {
       text-align: center;
       margin-bottom: 12px;
       /* 🔧 컨테이너 크기 고정 - 찌그러짐 방지 */
-      min-height: 120px;
+      min-height: 128px;
+      max-height: 128px;
+      height: 128px;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0 !important;
+      overflow: visible;
     }
 
     .emei-avatar {
-      /* 🔧 크기 고정 - 절대 찌그러지지 않음 */
+      /* 🔧 크기 완전 고정 - 절대 찌그러지지 않음 */
       width: 120px !important;
       height: 120px !important;
-      min-width: 120px;
-      min-height: 120px;
-      max-width: 120px;
-      max-height: 120px;
-      border-radius: 50%;
+      min-width: 120px !important;
+      min-height: 120px !important;
+      max-width: 120px !important;
+      max-height: 120px !important;
+      border-radius: 50% !important;
       border: 4px solid rgba(139, 92, 246, 0.7);
-      object-fit: cover;
+      object-fit: cover !important;
       box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
       transition: all 0.3s ease;
-      /* 🔧 flex-shrink 방지 */
-      flex-shrink: 0;
-      /* 🔧 aspect-ratio 유지 */
-      aspect-ratio: 1 / 1;
+      /* 🔧 flex 완전 차단 */
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      flex-basis: auto !important;
+      /* 🔧 aspect-ratio 강제 */
+      aspect-ratio: 1 / 1 !important;
+      /* 🔧 display block으로 변경 */
+      display: block !important;
+      /* 🔧 추가 보호 */
+      position: relative;
+      overflow: hidden;
     }
 
     .emei-avatar:hover {
@@ -761,12 +780,14 @@
     }
 
     .emei-chat-messages {
-      flex: 1;
+      flex: 1 1 auto;
       overflow-y: auto;
       padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      /* 🔧 최소 높이 설정 */
+      min-height: 0;
     }
 
     .emei-chat-messages::-webkit-scrollbar {
