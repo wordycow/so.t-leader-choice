@@ -1,9 +1,30 @@
 @echo off
+REM 관리자 권한 자동 요청
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+if '%errorlevel%' NEQ '0' (
+    echo 관리자 권한이 필요합니다. 권한 상승 중...
+    goto UACPrompt
+) else (
+    goto gotAdmin
+)
+
+:UACPrompt
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+    "%temp%\getadmin.vbs"
+    exit /B
+
+:gotAdmin
+    if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
+    pushd "%CD%"
+    CD /D "%~dp0"
+
+REM ===== 실제 스크립트 시작 =====
 chcp 65001 > nul
 cls
 
 echo ========================================
-echo 🛑 모든 시스템 종료 (포트 기준)
+echo 🛑 모든 시스템 종료 (관리자 권한)
 echo ========================================
 echo.
 
@@ -65,6 +86,7 @@ echo   - 11434 (Ollama Server)
 echo   - 8765  (Execution Engine WebSocket)
 echo   - 5000  (Dashboard)
 echo   - 5001  (IMEI System)
+echo   - Cloudflare Tunnel (cloudflared.exe)
 echo.
 echo 💡 3초 후 상태 확인...
 timeout /t 3 /nobreak >nul

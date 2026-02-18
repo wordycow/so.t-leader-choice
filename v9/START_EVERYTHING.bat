@@ -1,4 +1,25 @@
 @echo off
+REM 관리자 권한 자동 요청
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+if '%errorlevel%' NEQ '0' (
+    echo 관리자 권한이 필요합니다. 권한 상승 중...
+    goto UACPrompt
+) else (
+    goto gotAdmin
+)
+
+:UACPrompt
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+    "%temp%\getadmin.vbs"
+    exit /B
+
+:gotAdmin
+    if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
+    pushd "%CD%"
+    CD /D "%~dp0"
+
+REM ===== 실제 스크립트 시작 =====
 chcp 65001 > nul
 cls
 
@@ -141,7 +162,7 @@ echo   - logs\dashboard.log
 echo   - logs\imei_app.log
 echo.
 echo 🛑 종료 방법:
-echo   - STOP_EVERYTHING.bat 실행
+echo   - STOP_EVERYTHING.bat 실행 (관리자 권한으로)
 echo   - 또는 각 창에서 Ctrl+C
 echo.
 echo ⏳ 5초 후 대시보드 자동 오픈...
