@@ -141,7 +141,10 @@ class EmeiRouter:
         req = Request(
             url=f"{self.ollama_url}/api/chat",
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "EmeiBot/1.0"
+            },
             method="POST",
         )
         try:
