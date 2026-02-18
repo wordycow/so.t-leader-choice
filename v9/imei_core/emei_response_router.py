@@ -87,19 +87,23 @@ class EmeiRouter:
             return row[0] if row else default
     
     def remember_user(self, user_id: str, key: str, value: str):
-        """사용자 정보 기억"""
+        """사용자 정보 기억 (실제 DB 구조 사용)"""
+        import uuid
         with self._conn() as conn:
+            memory_id = str(uuid.uuid4())
             conn.execute("""
-                INSERT OR REPLACE INTO emei_user_memory (user_id, memory_key, memory_value, created_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            """, (user_id, key, value))
+                INSERT INTO emei_user_memory 
+                (memory_id, user_id, summary, details, tags, sensitive_redacted, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """, (memory_id, user_id, key, value, key, ))
     
     def recall_user(self, user_id: str, key: str, default=None):
-        """사용자 정보 회상"""
+        """사용자 정보 회상 (실제 DB 구조 사용)"""
         with self._conn() as conn:
             cur = conn.execute("""
-                SELECT memory_value FROM emei_user_memory 
-                WHERE user_id = ? AND memory_key = ?
+                SELECT details FROM emei_user_memory 
+                WHERE user_id = ? AND summary = ?
+                ORDER BY created_at DESC LIMIT 1
             """, (user_id, key))
             row = cur.fetchone()
             return row[0] if row else default
@@ -247,7 +251,9 @@ class EmeiRouter:
         # 말투는 서버 기본 페르소나(존댓말+가끔 반말)에 맞추되, 안전하게 존댓말 기본
         base = [
             f"너는 '이메이(Emei)'다. {age}살 {gender_kr}이며, {personality} 성격이다.",
-            "🔴 **절대 규칙: 반드시 한국어로만 답변한다. 중국어, 영어, 일본어 등 다른 언어 사용 금지!**",
+            "🔴 **절대 규칙: 반드시 100% 한국어로만 답변한다. 중국어, 영어, 일본어 등 다른 언어 사용 절대 금지!**",
+            "🔴 **에코 금지: 'I received your message' 같은 영어 에코 절대 금지!**",
+            "🔴 **한국어 고정: 모든 응답은 한국어로만 작성한다. 예외 없음!**",
             "원칙: 확실하지 않으면 단정하지 말고 '지금 정보로는 확실히 모르겠어요'라고 말한 뒤, 확인 질문 1~2개를 한다.",
             "같은 사과/회피 문장을 연속으로 반복하지 않는다. 오류가 나면 원인(추정) 1개 + 해결 시도 1개를 제시한다.",
             "코인 관련 질문이 아니면 코인 이야기를 꺼내지 않는다. 물어볼 때만 코인에 대해 답변한다.",
@@ -333,6 +339,44 @@ class EmeiRouter:
         
         # 학습 요청 - 사용자가 가르치는 명령
         if re.search(r"(학습해|기억해|저장해|배워)", message):
+            import uuid
+            # "학습해: 내용" 형식인 경우
+            if ":" in message:
+                parts = message.split(":", 1)
+                if len(parts) == 2:
+                    content = parts[1].strip()
+                    if content:
+                        # 태그 자동 추출 (코인 티커, 전략 키워드 등)
+                        tags = []
+                        if re.search(r"KRW-[A-Z]+", content):
+                            tags.extend(re.findall(r"KRW-[A-Z]+", content))
+                        if re.search(r"(ARMED|변동성|진입|손절)", content):
+                            tags.append("전략")
+                        
+                        # 지식으로 저장
+                        self._save_knowledge(
+                            q=f"학습내용_{datetime.utcnow().isoformat()}",
+                            a=content,
+                            source="user_teach",
+                            quality=1.0
+                        )
+                        
+                        # 메모리에도 저장 (실제 DB 구조 사용)
+                        with self._conn() as conn:
+                            memory_id = str(uuid.uuid4())
+                            tags_str = ",".join(tags) if tags else "일반"
+                            conn.execute("""
+                                INSERT INTO emei_user_memory 
+                                (memory_id, user_id, summary, details, tags, sensitive_redacted, created_at, updated_at)
+                                VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                            """, (memory_id, user_id, "사용자_학습", content, tags_str))
+                        
+                        tags_display = f" #{' #'.join(tags)}" if tags else ""
+                        short_content = content[:50] + "..." if len(content) > 50 else content
+                        resp = f"✅ 학습 완료!{tags_display}\n저장한 내용: {short_content}"
+                        self._log_conversation(user_id, message, resp, learned=1)
+                        return {"response": resp, "learned": True, "response_time": round(time.time() - t0, 4)}
+            
             # "이 부분도 학습해라" → 이전 대화 내용을 학습
             # 최근 대화 2개를 가져와서 Q&A로 저장
             with self._conn() as conn:
@@ -412,6 +456,55 @@ class EmeiRouter:
         if profile_learned:
             self._log_conversation(user_id, message, profile_learned, learned=1)
             return {"response": profile_learned, "learned": True, "response_time": round(time.time() - t0, 4)}
+        
+        # ---- (0.5) "기억하나?" 검색 기능
+        if re.search(r"(기억하나|기억해\?|뭐\s?기억|기억\s?있)", message):
+            # 키워드 추출 (예: "WLFI 관련해서" → "WLFI")
+            keywords = []
+            if "관련" in message:
+                # "XXX 관련해서" 추출
+                match = re.search(r"(\S+)\s?관련", message)
+                if match:
+                    keywords.append(match.group(1))
+            
+            # 티커 추출
+            tickers = re.findall(r"KRW-[A-Z]+|[A-Z]{2,10}", message)
+            keywords.extend(tickers)
+            
+            # 메모리 검색 (실제 DB 구조 사용)
+            memories = []
+            with self._conn() as conn:
+                if keywords:
+                    # 키워드 기반 검색 (details 또는 tags에서)
+                    for kw in keywords:
+                        cur = conn.execute("""
+                            SELECT summary, details, tags, created_at 
+                            FROM emei_user_memory 
+                            WHERE user_id=? AND (details LIKE ? OR tags LIKE ?)
+                            ORDER BY created_at DESC LIMIT 5
+                        """, (user_id, f"%{kw}%", f"%{kw}%"))
+                        memories.extend(cur.fetchall())
+                else:
+                    # 전체 최근 기억
+                    cur = conn.execute("""
+                        SELECT summary, details, tags, created_at 
+                        FROM emei_user_memory 
+                        WHERE user_id=?
+                        ORDER BY created_at DESC LIMIT 10
+                    """, (user_id,))
+                    memories = cur.fetchall()
+            
+            if memories:
+                resp = "💜 제가 기억하고 있는 내용이에요:\n\n"
+                for i, (summary, details, tags, created_at) in enumerate(memories[:5], 1):
+                    tags_display = f" [#{tags}]" if tags else ""
+                    resp += f"{i}. {details}{tags_display}\n   (저장일시: {created_at})\n\n"
+                resp += f"총 {len(memories)}개의 기억이 있어요!"
+            else:
+                resp = "아직 저장된 기억이 없어요. '학습해: 내용' 형식으로 알려주시면 기억할게요! 💜"
+            
+            self._log_conversation(user_id, message, resp, learned=0)
+            return {"response": resp, "learned": False, "response_time": round(time.time() - t0, 4)}
 
         # ---- (1) 수동 학습 커맨드 지원:  "학습: 질문 => 답변"
         if message.startswith("학습:"):

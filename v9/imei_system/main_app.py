@@ -154,7 +154,26 @@ def chat():
                 if include_trading_status and trading_data:
                     status = trading_data.get('status', {})
                     top20 = trading_data.get('top20', {}).get('items', [])
-                    context_str = f"\n\n[현재 시스템 상태]\n모드: {status.get('mode', 'PRACTICE')}\nTop20 추적: {len(top20)}개"
+                    
+                    # 시장 상황 분석
+                    signal_engine = status.get('signal_engine', {})
+                    tracked_tickers = signal_engine.get('tracked_tickers', 0)
+                    signal_sent_count = signal_engine.get('signal_sent_count', 0)
+                    last_signal_at = signal_engine.get('last_signal_at')
+                    
+                    context_str = f"\n\n[현재 시스템 상태]\n"
+                    context_str += f"모드: {status.get('mode', 'PRACTICE')}\n"
+                    context_str += f"Top20 추적: {tracked_tickers}개 코인\n"
+                    context_str += f"발생 신호: {signal_sent_count}건\n"
+                    
+                    # 신호가 0이면 관망 사유 추가
+                    if signal_sent_count == 0 and tracked_tickers > 0:
+                        context_str += f"\n[관망 중인 이유]\n"
+                        context_str += f"- {tracked_tickers}개 코인을 추적 중이지만 아직 진입 조건이 충족되지 않음\n"
+                        context_str += f"- 변동성, 거래량, 가격 흐름 등 전략 조건을 모니터링 중\n"
+                        context_str += f"- 조건 충족 시 즉시 신호 발생 예정\n"
+                    elif last_signal_at:
+                        context_str += f"최근 신호: {last_signal_at}\n"
                 
                 ollama_response = emei_router.chat(
                     user_id=user_id,
@@ -165,13 +184,13 @@ def chat():
                 response_data['ollama_learned'] = ollama_response.get('learned', False)
                 response_data['response_time'] = ollama_response.get('response_time', 0)
             except Exception as e:
-                # Fallback: NO ECHO, 실패 알림만
-                assistant_message = "죄송합니다. 현재 AI 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요."
+                # Fallback: 한국어 안내
+                assistant_message = "현재 모델 연결이 불안정해서 관망 모드로 동작 중입니다. (Ollama/터널 상태 점검 필요)"
                 response_data['ollama_error'] = str(e)
                 response_data['ollama_used'] = False
         else:
-            # Ollama 비활성화: NO ECHO
-            assistant_message = "IMEI AI가 현재 비활성화되어 있습니다. Ollama를 활성화해주세요."
+            # Ollama 비활성화: 한국어 안내
+            assistant_message = "현재 모델 연결이 불안정해서 관망 모드로 동작 중입니다. (Ollama/터널 상태 점검 필요)"
             response_data['ollama_used'] = False
         
         # Step 6: Apply persona style (already in context_analysis from get_response_style)

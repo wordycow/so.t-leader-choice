@@ -24,6 +24,7 @@
             grid-template-columns: 1fr 420px;
             height: 100vh;
             gap: 0;
+            min-width: 0; /* 오버플로우 방지 */
         }
         
         /* ====== LEFT: TRADING PANEL ====== */
@@ -31,6 +32,7 @@
             display: grid;
             grid-template-rows: 70px auto auto 1fr;
             background: #f8f9fa;
+            min-width: 0; /* 오버플로우 방지 */
         }
         
         /* HEADER */
@@ -377,6 +379,8 @@
             display: grid;
             grid-template-rows: auto 1fr auto;
             border-left: 1px solid #e0e0e0;
+            min-width: 0; /* 오버플로우 방지 */
+            overflow: hidden; /* 패널 자체 넘침 방지 */
         }
         
         .imei-header {
@@ -481,6 +485,8 @@
             max-width: 300px;
             line-height: 1.6;
             font-size: 13px;
+            word-break: break-word; /* 긴 단어 자동 줄바꿈 */
+            overflow-wrap: anywhere; /* 긴 URL/이모지 줄바꿈 */
         }
         
         .chat-msg.user {
@@ -567,6 +573,36 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* ====== RESPONSIVE LAYOUT ====== */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr 360px; /* 패널 축소 */
+            }
+            .chat-bubble {
+                max-width: 250px; /* 말풍선 축소 */
+            }
+        }
+        
+        @media (max-width: 1000px) {
+            .main-container {
+                grid-template-columns: 1fr; /* 1단 레이아웃 */
+                grid-template-rows: 60vh 40vh; /* 상하 분할 */
+            }
+            .imei-panel {
+                border-left: none;
+                border-top: 2px solid #1261c4;
+            }
+        }
+        
+        @media (max-width: 800px) {
+            .main-container {
+                grid-template-rows: 1fr; /* 단일 패널 */
+            }
+            .trading-panel {
+                display: none; /* 작은 화면에서는 IMEI만 */
+            }
         }
     </style>
 </head>
