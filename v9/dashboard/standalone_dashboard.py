@@ -1,164 +1,124 @@
 #!/usr/bin/env python3
-"""
-Standalone Dashboard for Upbit Bot v9
-단독 실행 가능한 대시보드
-"""
+# -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, jsonify
-from flask_cors import CORS
-import os
-import sys
+from flask import Flask, jsonify, render_template
 from datetime import datetime
-import json
+import random
+import os
 
-app = Flask(__name__)
-CORS(app)
+from shared.runtime_state import read_state, now_iso
 
-# Mock data for testing
-def get_mock_data():
-    """Return mock data for dashboard"""
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
+)
+
+def ts():
+    return now_iso()
+
+# --- Mock (fallback) ---
+def mock_kpis():
     return {
-        'mode': 'PRACTICE',
-        'equity': 1000000,
-        'realized_pnl': 0,
-        'unrealized_pnl': 0,
-        'position_count': 0,
-        'candidates': [
-            {'rank': i+1, 'symbol': f'KRW-COIN{i+1}', 'score': 0.9-i*0.05, 'change_pct': 5.0-i*0.5}
-            for i in range(20)
-        ],
-        'holdings': [],
-        'trades': [],
-        'btc_regime': {
-            'regime': 'normal',
-            'block_new_entries': False,
-            'explanation': '정상 레짐'
-        }
+        "mode": "PRACTICE",
+        "equity": 1_000_000,
+        "realized_pnl": 0,
+        "unrealized_pnl": 0,
+        "position_count": 0,
+        "timestamp": ts(),
     }
 
+def mock_top20():
+    return [{"rank": i+1, "ticker": f"KRW-MOCK{i+1:02d}", "score": round(random.random(), 4)} for i in range(20)]
 
-@app.route('/')
+# --- UI ---
+@app.route("/")
 def index():
-    """Main dashboard page"""
-    return render_template('index.html')
-
-
-@app.route('/imei_dashboard.html')
-def imei_dashboard():
-    """IMEI dashboard page"""
+    # 템플릿 없으면 기본 텍스트라도 반환
     try:
-        return render_template('imei_dashboard.html')
-    except Exception as e:
-        return f"IMEI Dashboard not found: {str(e)}", 404
+        return render_template("index.html")
+    except Exception:
+        return "<h1>Standalone Dashboard</h1><p>/api/kpis /health 확인</p>"
 
+@app.route("/imei_dashboard.html")
+def imei_dashboard():
+    try:
+        return render_template("imei_dashboard.html")
+    except Exception:
+        return "<h1>IMEI Dashboard</h1>"
 
-@app.route('/api/kpis')
-def get_kpis():
-    """Get system KPIs"""
-    data = get_mock_data()
-    return jsonify({
-        'mode': data['mode'],
-        'equity': data['equity'],
-        'realized_pnl': data['realized_pnl'],
-        'unrealized_pnl': data['unrealized_pnl'],
-        'position_count': data['position_count'],
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/top20')
-def get_top20():
-    """Get TOP 20 candidates"""
-    data = get_mock_data()
-    return jsonify({
-        'candidates': data['candidates'],
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/holdings')
-def get_holdings():
-    """Get current holdings"""
-    data = get_mock_data()
-    return jsonify({
-        'holdings': data['holdings'],
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/trades')
-def get_trades():
-    """Get recent trades"""
-    data = get_mock_data()
-    return jsonify({
-        'trades': data['trades'],
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/safety')
-def get_safety():
-    """Get safety gate status"""
-    return jsonify({
-        'real_trading_enabled': False,
-        'flag_file_exists': False,
-        'exposure_limit': 100000,
-        'current_exposure': 0,
-        'daily_drawdown_limit': 2.0,
-        'current_drawdown': 0.0,
-        'blocked': False,
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/recovery')
-def get_recovery():
-    """Get recovery engine status"""
-    return jsonify({
-        'positions_in_recovery': [],
-        'total_recovery_positions': 0,
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/api/btc_stacking')
-def get_btc_stacking():
-    """Get BTC stacking status"""
-    return jsonify({
-        'total_stacked': 0,
-        'stacking_events': [],
-        'timestamp': datetime.utcnow().isoformat()
-    })
-
-
-@app.route('/health')
+# --- Health ---
+@app.route("/health")
 def health():
-    """Health check"""
+    se = read_state("signal_engine.json", {})
+    ex = read_state("execution_engine.json", {})
     return jsonify({
-        'status': 'healthy',
-        'service': 'Standalone Dashboard',
-        'version': 'v9',
-        'timestamp': datetime.utcnow().isoformat()
+        "status": "healthy",
+        "service": "Standalone Dashboard",
+        "version": "v9",
+        "timestamp": ts(),
+        "signal_engine": se,
+        "execution_engine": ex,
     })
 
+# --- APIs ---
+@app.route("/api/kpis")
+def api_kpis():
+    se = read_state("signal_engine.json", {})
+    ex = read_state("execution_engine.json", {})
 
-if __name__ == '__main__':
-    print("=" * 60)
-    print("🚀 Upbit Bot v9 - Standalone Dashboard")
-    print("=" * 60)
-    print(f"Starting Flask server...")
-    print(f"Access dashboard at: http://localhost:5000")
-    print(f"IMEI dashboard at: http://localhost:5000/imei_dashboard.html")
-    print(f"Health check: http://localhost:5000/health")
-    print("=" * 60)
-    print("")
-    print("⚠️  NOTE: This is a standalone dashboard with mock data.")
-    print("   For real trading data, run the full system with:")
-    print("   - Signal Engine (websocket_emitter.py)")
-    print("   - Execution Engine (websocket_receiver.py)")
-    print("")
-    print("Press Ctrl+C to stop")
-    print("=" * 60)
-    
-    # Run Flask app
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    data = mock_kpis()
+    # ✅ “실제 상태”를 여기서 같이 보여줌
+    data["signal_engine"] = {
+        "connected": se.get("connected"),
+        "reconnect_attempts": se.get("reconnect_attempts"),
+        "last_ping_at": se.get("last_ping_at"),
+        "last_sent_at": se.get("last_sent_at"),
+        "status": se.get("status"),
+        "_updated_at": se.get("_updated_at"),
+    }
+    data["execution_engine"] = {
+        "client_count": ex.get("client_count"),
+        "received_count": ex.get("received_count"),
+        "last_signal": ex.get("last_signal"),
+        "status": ex.get("status"),
+        "_updated_at": ex.get("_updated_at"),
+    }
+    data["timestamp"] = ts()
+    return jsonify(data)
+
+@app.route("/api/top20")
+def api_top20():
+    # 나중에 signal engine이 top20.json 써주면 여기서 바로 실데이터로 바뀜
+    top20 = read_state("top20.json", None)
+    if top20 is None:
+        return jsonify({"items": mock_top20(), "source": "mock", "timestamp": ts()})
+    return jsonify({"items": top20, "source": "runtime", "timestamp": ts()})
+
+@app.route("/api/holdings")
+def api_holdings():
+    holdings = read_state("holdings.json", None)
+    if holdings is None:
+        return jsonify({"items": [], "source": "empty", "timestamp": ts()})
+    return jsonify({"items": holdings, "source": "runtime", "timestamp": ts()})
+
+@app.route("/api/trades")
+def api_trades():
+    trades = read_state("trades.json", None)
+    if trades is None:
+        return jsonify({"items": [], "source": "empty", "timestamp": ts()})
+    return jsonify({"items": trades, "source": "runtime", "timestamp": ts()})
+
+@app.route("/api/safety")
+def api_safety():
+    return jsonify({"gate": "LOCKED", "reason": "ENABLE_REAL_TRADING not set", "timestamp": ts()})
+
+@app.route("/api/recovery")
+def api_recovery():
+    return jsonify({"status": "idle", "timestamp": ts()})
+
+@app.route("/api/btc_stacking")
+def api_btc_stacking():
+    return jsonify({"btc_stack": 0.0, "timestamp": ts()})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
