@@ -145,7 +145,7 @@ class EmeiRouter:
             method="POST",
         )
         try:
-            with urlopen(req, timeout=12) as resp:
+            with urlopen(req, timeout=30) as resp:
                 body = resp.read().decode("utf-8", errors="ignore")
                 j = json.loads(body)
                 return (j.get("message") or {}).get("content") or ""
@@ -260,13 +260,33 @@ class EmeiRouter:
             # 에러가 반복되면 사과만 하지 말고 해결 가이드
             if sig == self._last_error_signature:
                 resp = (
-                    "로컬 AI 연결 오류가 반복돼요.\n"
-                    "1) `OLLAMA_URL`이 이 서버에서 접근 가능한지 확인\n"
-                    "2) `curl http://OLLAMA_URL/api/tags`로 통신 테스트\n"
-                    "3) 방화벽/터널 설정 점검\n"
+                    "💡 로컬 AI 연결 오류가 반복돼요.\n\n"
+                    "**해결 방법:**\n"
+                    "1️⃣ 노트북 터널 창에서 새 URL 확인\n"
+                    "2️⃣ `./update_ollama_url.sh <새URL>` 실행\n"
+                    "3️⃣ Ollama 재시작 필요할 수도\n\n"
+                    "**지금은:** DB 기반 답변만 가능해요.\n"
+                    "안녕, 짜증나, 살까 등 기본 질문은 바로 답변 가능! 💜"
                 )
             else:
-                resp = f"로컬 AI 연결이 잠깐 불안정해요. (오류: {sig})\n가능하면 DB 기반으로 답할게요. 질문을 조금만 더 구체화해줄래요?"
+                # TimeoutError 특별 처리
+                if "TimeoutError" in sig or "timed out" in sig.lower():
+                    resp = (
+                        "⏰ 노트북 Ollama가 응답하지 않아요.\n\n"
+                        "**가능한 원인:**\n"
+                        "• 터널 URL 변경됨 (가장 흔함)\n"
+                        "• Ollama가 바쁨 (모델 로딩 중)\n"
+                        "• 네트워크 불안정\n\n"
+                        "**지금은:** 기본 질문(안녕, 짜증나 등)은 바로 답변 가능해요! 💜\n"
+                        "새로운 질문은 터널 재연결 후 가능해요."
+                    )
+                else:
+                    resp = (
+                        f"🔧 로컬 AI 연결 문제가 있어요.\n\n"
+                        f"오류: {sig[:100]}\n\n"
+                        "**해결:** 노트북 터널 URL 확인 → `./update_ollama_url.sh` 실행\n"
+                        "**지금:** DB 기반 답변만 가능 (기본 대화는 OK!) 💜"
+                    )
             self._last_error_signature = sig
             self._log_conversation(user_id, message, resp, learned=0)
             return {"response": resp, "learned": False, "response_time": round(time.time() - t0, 4)}
