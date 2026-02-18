@@ -421,6 +421,66 @@ def save_bot_state_to_db(user_id, bot_state):
         log(f"봇 상태 DB 저장 오류: {e}", "ERROR")
         return False
 
+def append_trade_to_csv(user_id, trade_data, holding_info=None):
+    """거래 내역을 imei_os/TRADING_LOG.csv에 기록"""
+    try:
+        import csv
+        from pathlib import Path
+        
+        csv_path = Path('imei_os/TRADING_LOG.csv')
+        csv_path.parent.mkdir(exist_ok=True)
+        
+        # 첫 진입 시 헤더 확인/생성
+        if not csv_path.exists() or csv_path.stat().st_size == 0:
+            with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    'timestamp', 'user_id', 'ticker', 'action', 'strategy',
+                    'amount', 'entry_price', 'exit_price', 'profit_rate',
+                    'hold_time_seconds', 'reason', 'detected_patterns'
+                ])
+        
+        # 거래 데이터 추출
+        action = trade_data.get('type', 'UNKNOWN')  # BUY or SELL
+        ticker = trade_data.get('ticker', '')
+        strategy = trade_data.get('strategy', '')
+        amount = trade_data.get('amount', 0)
+        price = trade_data.get('price', 0)
+        reason = trade_data.get('reason', '')
+        timestamp = trade_data.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        
+        # 패턴 정보 (BUY 시)
+        patterns_str = ''
+        if action == 'BUY' and trade_data.get('patterns'):
+            patterns_list = trade_data.get('patterns', [])
+            if isinstance(patterns_list, list):
+                patterns_str = '|'.join(patterns_list)
+            else:
+                patterns_str = str(patterns_list)
+        
+        # SELL 시 추가 정보
+        entry_price = trade_data.get('entry_price', '') if action == 'SELL' else price
+        exit_price = price if action == 'SELL' else ''
+        profit_rate = trade_data.get('profit_rate', '') if action == 'SELL' else ''
+        hold_time_seconds = int(trade_data.get('hold_time', 0) * 60) if action == 'SELL' else ''
+        
+        # CSV 라인 추가
+        with open(csv_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                timestamp, user_id, ticker, action, strategy,
+                amount, entry_price, exit_price, profit_rate,
+                hold_time_seconds, reason, patterns_str
+            ])
+        
+        log(f"[CSV] 거래 기록: {user_id} | {action} | {ticker}", "INFO")
+        return True
+    except Exception as e:
+        log(f"CSV 로그 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return False
+
 # ═══════════════════════════════════════════════════════
 # 📊 기술적 지표 계산
 # ═══════════════════════════════════════════════════════
@@ -1484,6 +1544,9 @@ def execute_trade(ticker, strategy_id, patterns, bot_state):
         user_id = bot_state.get('user_id', 'unknown')
         save_trade_to_db(user_id, bot_state['recent_trades'][-1])
         
+        # CSV 로그에도 기록
+        append_trade_to_csv(user_id, bot_state['recent_trades'][-1], holding_info)
+        
         # 봇 상태도 DB에 저장 (simulation_holdings 포함)
         save_bot_state_to_db(user_id, bot_state)
         
@@ -1657,6 +1720,9 @@ def execute_exit(ticker, holding, reason, bot_state):
             # DB에 영구 저장
             user_id = bot_state.get('user_id', 'unknown')
             save_trade_to_db(user_id, bot_state['recent_trades'][-1])
+            
+            # CSV 로그에도 기록
+            append_trade_to_csv(user_id, bot_state['recent_trades'][-1], holding)
             
             # 봇 상태도 DB에 저장 (simulation_holdings 업데이트)
             save_bot_state_to_db(user_id, bot_state)
@@ -3415,6 +3481,77 @@ def api_emei_stats():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/debug/rag_test')
+def debug_rag_test():
+    """🔍 RAG 작동 검증 엔드포인트 (STEP 1)"""
+    try:
+        import time
+        query = request.args.get('query', '급등 포착하는 방법')
+        
+        t0 = time.time()
+        
+        # 1. DB 검색 수행
+        best = emei_router._retrieve_best(query, topk=4)
+        
+        # 2. 검색 결과 정리
+        retrieved_sources = []
+        for score, _id, q, a, qscore, use_count in best:
+            retrieved_sources.append({
+                'id': _id,
+                'question': q,
+                'answer': a[:100] + '...' if len(a) > 100 else a,
+                'score': round(score, 4),
+                'quality': qscore,
+                'use_count': use_count
+            })
+        
+        # 3. 컨텍스트 생성 (LLM에 주입될 내용)
+        context_blocks = []
+        if best:
+            lines = ["[참고 지식 후보 Top]"]
+            for score, _id, q, a, qscore, use_count in best:
+                lines.append(f"- Q: {q}\n  A: {a}")
+            context_blocks.append("\n".join(lines))
+        
+        injected_context = context_blocks[0] if context_blocks else ""
+        
+        # 4. LLM 호출 (실제 답변 생성)
+        user_pattern = {'formality_level': 'casual', 'emotion': 'neutral'}
+        system = emei_router._emei_system_prompt(user_pattern, user_id='debug_user')
+        
+        try:
+            answer = emei_router._ollama_chat(
+                system=system,
+                user=query,
+                context_blocks=context_blocks,
+                temperature=0.4
+            )
+        except Exception as e:
+            answer = f"[Ollama 오류: {e}]"
+        
+        latency = round(time.time() - t0, 3)
+        
+        return jsonify({
+            'success': True,
+            'query': query,
+            'retrieved_sources': retrieved_sources,
+            'injected_context': injected_context[:500] + '...' if len(injected_context) > 500 else injected_context,
+            'context_length': len(injected_context),
+            'answer': answer,
+            'latency_seconds': latency,
+            'db_threshold': float(os.getenv("EMEI_DB_THRESHOLD", "0.62")),
+            'top_score': best[0][0] if best else 0.0
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 
 if __name__ == "__main__":
