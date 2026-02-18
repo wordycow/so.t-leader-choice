@@ -56,10 +56,17 @@ from trade_reasons import generate_buy_reason, generate_sell_reason
 from recovery_system import analyze_current_holdings, create_recovery_plan, execute_recovery_plan, UPBIT_FEE_RATE
 from bot_state_manager import init_bot_state_table, save_bot_state, load_bot_state, get_all_running_bots
 from enhanced_emei_learning import get_enhanced_emei
+from emei_response_router import EmeiRouter
 
 # ═══════════════════════════════════════════════════════
 # ⚙️ 전체 설정
 # ═══════════════════════════════════════════════════════
+
+# 🧠 이메이 Router 초기화
+DB_PATH = "/home/user/webapp/upbit_bot.db"
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
+emei_router = EmeiRouter(DB_PATH, OLLAMA_URL, OLLAMA_MODEL)
 
 # 급등/급락 감지
 SURGE_CONFIG = {
@@ -3086,7 +3093,7 @@ def api_admin_start_bot():
 
 @app.route('/api/emei/chat', methods=['POST'])
 def api_emei_chat():
-    """이메이 채팅"""
+    """이메이 채팅 - 새 Router 시스템"""
     try:
         # 세션 확인
         if 'user_id' not in session:
@@ -3099,11 +3106,15 @@ def api_emei_chat():
         if not message:
             return jsonify({'success': False, 'message': '메시지를 입력해주세요'}), 400
         
-        # 이메이 학습 시스템 (Enhanced - 사용자별 맞춤형)
-        emei = get_enhanced_emei()
-        result = emei.chat(user_id, message)
+        # 🧠 새로운 Router 시스템 사용 (DB → Ollama 폴백)
+        result = emei_router.chat(user_id=user_id, message=message)
         
-        return jsonify(result)
+        return jsonify({
+            'success': True,
+            'response': result['response'],
+            'learned': result.get('learned', False),
+            'response_time': result.get('response_time', 0)
+        })
         
     except Exception as e:
         log(f"이메이 채팅 오류: {e}", "ERROR")
