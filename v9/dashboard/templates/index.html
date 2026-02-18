@@ -29,7 +29,7 @@
         /* ====== LEFT: TRADING PANEL ====== */
         .trading-panel {
             display: grid;
-            grid-template-rows: 70px auto 1fr;
+            grid-template-rows: 70px auto auto 1fr;
             background: #f8f9fa;
         }
         
@@ -149,6 +149,93 @@
         
         .kpi-value.blue {
             color: #0062df;
+        }
+        
+        /* TOP20 WATCHLIST */
+        .watchlist-section {
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        
+        .watchlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .watchlist-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #222;
+        }
+        
+        .watchlist-count {
+            font-size: 12px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        
+        .watchlist-grid {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .watch-item {
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #0062df;
+            align-items: center;
+        }
+        
+        .watch-ticker {
+            font-size: 13px;
+            font-weight: 700;
+            color: #222;
+        }
+        
+        .watch-reason {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .watch-badges {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .watch-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .badge-watching {
+            background: #e3f2fd;
+            color: #0062df;
+        }
+        
+        .badge-volume {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        
+        .badge-change {
+            background: #e8f5e9;
+            color: #4caf50;
         }
         
         /* TRADE STREAM */
@@ -529,6 +616,20 @@
                 </div>
             </div>
             
+            <!-- TOP20 WATCHLIST -->
+            <div class="watchlist-section">
+                <div class="watchlist-header">
+                    <div class="watchlist-title">📊 Top20 Watchlist</div>
+                    <div class="watchlist-count" id="watchlistCount">0 watching</div>
+                </div>
+                <div class="watchlist-grid" id="watchlistContainer">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading watchlist...</div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- TRADE STREAM -->
             <div class="trade-stream">
                 <div class="stream-header">
@@ -642,8 +743,55 @@
                 }
                 
                 loadTrades();
+                loadWatchlist();
             } catch (e) {
                 console.error('Load data error:', e);
+            }
+        }
+        
+        async function loadWatchlist() {
+            try {
+                const resp = await fetch(`${API_BASE}/top20`);
+                const data = await resp.json();
+                
+                const container = document.getElementById('watchlistContainer');
+                const countEl = document.getElementById('watchlistCount');
+                
+                if (!data.items || data.items.length === 0) {
+                    container.innerHTML = '<div class="loading-state">No data available</div>';
+                    countEl.textContent = '0 watching';
+                    return;
+                }
+                
+                countEl.textContent = `${data.items.length} watching`;
+                
+                container.innerHTML = data.items.map(item => {
+                    const changeColor = item.signed_change_rate >= 0 ? '#f23645' : '#0062df';
+                    const changeText = (item.signed_change_rate * 100).toFixed(2);
+                    const changeSymbol = item.signed_change_rate >= 0 ? '+' : '';
+                    
+                    return `
+                        <div class="watch-item">
+                            <div>
+                                <div class="watch-ticker">${item.ticker.replace('KRW-', '')}</div>
+                                <div style="font-size: 11px; color: ${changeColor}; font-weight: 600;">
+                                    ${changeSymbol}${changeText}%
+                                </div>
+                            </div>
+                            <div class="watch-reason">${item.reason || '추적중'}</div>
+                            <div class="watch-badges">
+                                <div class="watch-badge badge-watching">WATCHING</div>
+                                ${item.acc_trade_price_24h > 10000000000 ? '<div class="watch-badge badge-volume">HIGH VOL</div>' : ''}
+                                ${Math.abs(item.signed_change_rate) > 0.05 ? '<div class="watch-badge badge-change">VOLATILE</div>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (e) {
+                console.error('Load watchlist error:', e);
+                document.getElementById('watchlistContainer').innerHTML = 
+                    '<div class="loading-state">Failed to load watchlist</div>';
             }
         }
         
