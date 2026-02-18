@@ -5,6 +5,10 @@ from flask import Flask, jsonify, render_template
 from datetime import datetime
 import random
 import os
+import sys
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from shared.runtime_state import read_state, now_iso
 
