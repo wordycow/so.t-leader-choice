@@ -40,7 +40,7 @@ CORS(app)
 memory_engine = PersistentMemoryEngine(db_path="imei_memory.db")
 persona_engine = DynamicPersonaEngine()
 search_engine = WebSearchLearning()
-trading_integration = TradingIntegration(base_url="http://localhost:5000")
+trading_integration = TradingIntegration(dashboard_url="http://localhost:5000")
 
 # Default user ID (can be enhanced with auth later)
 DEFAULT_USER_ID = "user_1"

@@ -54,7 +54,7 @@ class WebSocketReceiver:
     def set_signal_handler(self, handler: Callable):
         self.signal_handler = handler
 
-    async def handle_client(self, websocket, path):
+    async def handle_client(self, websocket):
         self.clients.add(websocket)
         logger.info(f"Client connected: {websocket.remote_address}")
         self._flush_state("client_connected")
