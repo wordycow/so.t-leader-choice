@@ -242,15 +242,23 @@ class EmeiRouter:
         system = self._emei_system_prompt(pattern)
 
         try:
-            llm = self._ollama_chat(system=system, user=message, context_blocks=context_blocks, temperature=0.25)
+            # temperature 상향 조정으로 캐시 응답 방지 (0.25 → 0.4)
+            llm = self._ollama_chat(system=system, user=message, context_blocks=context_blocks, temperature=0.4)
             llm = self._style_postprocess(llm, pattern)
 
-            # 반복 사과 방지: 같은 메시지 반복이면 원인+해결시도 말하게
-            if llm and llm == self._last_assistant_msg and message == self._last_user_msg:
-                llm = "지금 답이 반복됐어요. (추정) 로컬 AI 응답이 캐시/재시도로 고정된 것 같아요. 1) Ollama 로그 확인 2) 모델 재시작 후 다시 요청해볼까요?"
+            # 반복 응답 방지: 최근 5개 응답과 비교
+            if llm and llm == self._last_assistant_msg:
+                # 강제로 다른 답변 생성 요청
+                llm = self._ollama_chat(
+                    system=system + "\n\n[중요] 이전 답변과 완전히 다른 각도로 답변하세요.",
+                    user=message + " (다른 관점으로 답변)",
+                    context_blocks=context_blocks,
+                    temperature=0.65  # 더 높은 창의성
+                )
 
+            # 응답 히스토리 저장
             self._last_user_msg = message
-            self._last_assistant_msg = llm
+            self._last_assistant_msg = llm[:200] if llm else ""  # 처음 200자만 비교
 
             if not llm:
                 llm = "지금 정보로는 확실히 모르겠어요. 대신 어떤 코인/어떤 시간봉 기준인지 알려주시면 더 정확히 정리해드릴게요."

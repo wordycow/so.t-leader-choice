@@ -2038,6 +2038,16 @@
     const emeiAvatar = document.getElementById('emeiAvatar');
 
     function addEmeiMessage(text, type) {
+      // 중복 메시지 방지: 마지막 메시지와 동일하면 무시
+      const lastMsg = emeiChatMessages.lastElementChild;
+      if (lastMsg) {
+        const lastBubble = lastMsg.querySelector('.emei-message-bubble');
+        if (lastBubble && lastBubble.innerHTML === text && lastMsg.classList.contains(type)) {
+          console.log('[Emei] 중복 메시지 차단:', text.substring(0, 30) + '...');
+          return;
+        }
+      }
+
       const messageDiv = document.createElement('div');
       messageDiv.className = `emei-message ${type}`;
       
