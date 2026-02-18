@@ -75,12 +75,19 @@ def load_bot_state(user_id):
         conn.close()
         
         if row:
+            # simulation_holdings 로드 후 entry_time을 datetime으로 변환
+            holdings = json.loads(row['simulation_holdings'])
+            for ticker, holding in holdings.items():
+                if 'entry_time' in holding and isinstance(holding['entry_time'], str):
+                    from datetime import datetime
+                    holding['entry_time'] = datetime.fromisoformat(holding['entry_time'])
+            
             return {
                 'running': bool(row['running']),
                 'mode': row['mode'],
                 'simulation_start_seed': row['seed_amount'],
                 'simulation_krw': row['simulation_krw'],
-                'simulation_holdings': json.loads(row['simulation_holdings']),
+                'simulation_holdings': holdings,
                 'recovery_mode_active': bool(row['recovery_mode_active']),
                 'last_update': row['last_update']
             }

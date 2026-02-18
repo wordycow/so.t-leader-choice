@@ -2446,128 +2446,129 @@ def bot_main_loop(user_id, bot_state):
         log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
         time.sleep(5)
         log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
+        
+        # 거래량 기반 동적 티커 선정 (빠른 버전 - 고정 목록 사용)
+        def get_top_volume_tickers_fast(count=50):
+            """인기 코인 목록 반환 (API 호출 없음, 즉시 반환)"""
+            popular_coins = [
+                'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
+                'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
+                'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT',
+                'KRW-SUI', 'KRW-TRX', 'KRW-SHIB', 'KRW-TON', 'KRW-PEPE',
+                'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO',
+                'KRW-SEI', 'KRW-STRK', 'KRW-ORDI', 'KRW-PYTH', 'KRW-MANTA',
+                'KRW-MEME', 'KRW-WLD', 'KRW-JUP', 'KRW-ONDO', 'KRW-DYM',
+                'KRW-BLUR', 'KRW-PENDLE', 'KRW-WIF', 'KRW-BONK', 'KRW-JITO',
+                'KRW-MYRO', 'KRW-INJ', 'KRW-TIA', 'KRW-BEAM', 'KRW-MINA',
+                'KRW-OCEAN', 'KRW-CRV', 'KRW-SAND', 'KRW-AXS', 'KRW-FLOW'
+            ]
+            return popular_coins[:count]
+        
+        # 초기 티커 목록 (고정 목록으로 즉시 시작)
+        popular_tickers = get_top_volume_tickers_fast(50)
+        log(f"[{user_id}] 📊 {len(popular_tickers)}개 인기 코인으로 시작", "INFO")
+        last_ticker_update = datetime.now()
+        
+        loop_count = 0  # 루프 카운터 추가
+        
+        while bot_state['running']:
+            try:
+                loop_count += 1
+                log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
+                
+                # 0. 티커 목록 갱신 (30분마다) - 스킵 (고정 목록 사용)
+                # time_since_update = (datetime.now() - last_ticker_update).total_seconds() / 60
+                # if time_since_update >= 30:
+                #     log(f"[{user_id}] 📊 거래량 기반 티커 목록 갱신 중...", "INFO")
+                #     popular_tickers = get_top_volume_tickers_fast(50)
+                #     last_ticker_update = datetime.now()
+                #     log(f"[{user_id}] ✅ 티커 목록 갱신 완료 (50개)", "SUCCESS")
+                
+                # 1. 복구 모드 체크
+                if not bot_state['recovery_mode_active']:
+                    check_recovery_mode_activation(bot_state)
+                
+                # 2. 보유 포지션 관리
+                for ticker, holding in list(bot_state['simulation_holdings'].items()):
+                    should_exit, reason = check_exit(ticker, holding, bot_state)
+                    if should_exit:
+                        execute_exit(ticker, holding, reason, bot_state)
+                
+                # 3. 신규 진입
+                max_positions = 1 if bot_state['recovery_mode_active'] else 3
+                
+                if len(bot_state['simulation_holdings']) < max_positions:
+                    # 복구 모드
+                    if bot_state['recovery_mode_active']:
+                        # 쿨다운
+                        if bot_state['last_loss_time']:
+                            cooldown = (datetime.now() - bot_state['last_loss_time']).total_seconds()
+                            if cooldown < 120:
+                                time.sleep(5)
+                                continue
+                        
+                        opportunities = find_recovery_opportunity(popular_tickers[:10], bot_state)
+                        if opportunities:
+                            best = opportunities[0]
+                            execute_trade(best['ticker'], 'surge_hunter', {'recovery': best}, bot_state)
+                    
+                        # 일반 모드 - 더 많은 코인을 스캔하여 거래 기회 증가
+                    else:
+                        import random
+                        # 15개 → 더 많은 기회
+                        scan_tickers = random.sample(popular_tickers, min(15, len(popular_tickers)))
+                        log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
+                        
+                        best_opportunity = None
+                        best_score = 0.0
+                        
+                        for ticker in scan_tickers:
+                            try:
+                                patterns = analyze_all_patterns(ticker)
+                                
+                                if patterns:
+                                    bot_state['current_patterns'][ticker] = patterns
+                                    best_strategy, score = select_best_strategy(ticker, patterns)
+                                    
+                                    # 점수가 0.01 이상이면 후보로 저장 (매우 낮은 진입 장벽)
+                                    if best_strategy and score > 0.01:
+                                        if score > best_score:
+                                            best_score = score
+                                            best_opportunity = (ticker, best_strategy, patterns, score)
+                            except Exception as ticker_error:
+                                log(f"[{user_id}] ⚠️ {ticker} 분석 오류: {ticker_error}", "WARNING")
+                                continue
+                        
+                        # 최고 점수 기회로 진입
+                        if best_opportunity:
+                            ticker, strategy, patterns, score = best_opportunity
+                            log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {strategy}, 점수: {score:.2f})", "SUCCESS")
+                            execute_trade(ticker, strategy, patterns, bot_state)
+                            time.sleep(2)
+                        else:
+                            log(f"[{user_id}] ⏳ 거래 기회 없음, 대기 중...", "INFO")
+                        
+                        log(f"[{user_id}] ✅ 스캔 완료", "INFO")
+                
+                bot_state['last_update'] = datetime.now()
+                sleep_time = 15 if bot_state['recovery_mode_active'] else 20
+                log(f"[{user_id}] 💤 {sleep_time}초 대기...", "INFO")
+                time.sleep(sleep_time)
+                
+            except Exception as e:
+                log(f"[{user_id}] ❌ 메인 루프 오류: {e}", "ERROR")
+                import traceback
+                traceback.print_exc()
+                log(f"[{user_id}] 🔄 10초 후 재시도...", "WARNING")
+                time.sleep(10)
+        
+        log("🛑 봇 중지", "WARNING")
+    
     except Exception as e:
-        log(f"[{user_id}] ❌ 초기화 중 오류: {e}", "ERROR")
+        log(f"[{user_id}] ❌ 치명적 오류 발생: {e}", "ERROR")
         import traceback
         traceback.print_exc()
-        return
-    
-    # 거래량 기반 동적 티커 선정 (빠른 버전 - 고정 목록 사용)
-    def get_top_volume_tickers_fast(count=50):
-        """인기 코인 목록 반환 (API 호출 없음, 즉시 반환)"""
-        popular_coins = [
-            'KRW-BTC', 'KRW-ETH', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE',
-            'KRW-ADA', 'KRW-AVAX', 'KRW-DOT', 'KRW-MATIC', 'KRW-LINK',
-            'KRW-ATOM', 'KRW-ETC', 'KRW-NEAR', 'KRW-HBAR', 'KRW-APT',
-            'KRW-SUI', 'KRW-TRX', 'KRW-SHIB', 'KRW-TON', 'KRW-PEPE',
-            'KRW-ARB', 'KRW-OP', 'KRW-IMX', 'KRW-AAVE', 'KRW-ALGO',
-            'KRW-SEI', 'KRW-STRK', 'KRW-ORDI', 'KRW-PYTH', 'KRW-MANTA',
-            'KRW-MEME', 'KRW-WLD', 'KRW-JUP', 'KRW-ONDO', 'KRW-DYM',
-            'KRW-BLUR', 'KRW-PENDLE', 'KRW-WIF', 'KRW-BONK', 'KRW-JITO',
-            'KRW-MYRO', 'KRW-INJ', 'KRW-TIA', 'KRW-BEAM', 'KRW-MINA',
-            'KRW-OCEAN', 'KRW-CRV', 'KRW-SAND', 'KRW-AXS', 'KRW-FLOW'
-        ]
-        return popular_coins[:count]
-    
-    # 초기 티커 목록 (고정 목록으로 즉시 시작)
-    popular_tickers = get_top_volume_tickers_fast(50)
-    log(f"[{user_id}] 📊 {len(popular_tickers)}개 인기 코인으로 시작", "INFO")
-    last_ticker_update = datetime.now()
-    
-    loop_count = 0  # 루프 카운터 추가
-    
-    while bot_state['running']:
-        try:
-            loop_count += 1
-            log(f"[{user_id}] 🔄 루프 #{loop_count} 시작", "INFO")
-            
-            # 0. 티커 목록 갱신 (30분마다) - 스킵 (고정 목록 사용)
-            # time_since_update = (datetime.now() - last_ticker_update).total_seconds() / 60
-            # if time_since_update >= 30:
-            #     log(f"[{user_id}] 📊 거래량 기반 티커 목록 갱신 중...", "INFO")
-            #     popular_tickers = get_top_volume_tickers_fast(50)
-            #     last_ticker_update = datetime.now()
-            #     log(f"[{user_id}] ✅ 티커 목록 갱신 완료 (50개)", "SUCCESS")
-            
-            # 1. 복구 모드 체크
-            if not bot_state['recovery_mode_active']:
-                check_recovery_mode_activation(bot_state)
-            
-            # 2. 보유 포지션 관리
-            for ticker, holding in list(bot_state['simulation_holdings'].items()):
-                should_exit, reason = check_exit(ticker, holding, bot_state)
-                if should_exit:
-                    execute_exit(ticker, holding, reason, bot_state)
-            
-            # 3. 신규 진입
-            max_positions = 1 if bot_state['recovery_mode_active'] else 3
-            
-            if len(bot_state['simulation_holdings']) < max_positions:
-                # 복구 모드
-                if bot_state['recovery_mode_active']:
-                    # 쿨다운
-                    if bot_state['last_loss_time']:
-                        cooldown = (datetime.now() - bot_state['last_loss_time']).total_seconds()
-                        if cooldown < 120:
-                            time.sleep(5)
-                            continue
-                    
-                    opportunities = find_recovery_opportunity(popular_tickers[:10], bot_state)
-                    if opportunities:
-                        best = opportunities[0]
-                        execute_trade(best['ticker'], 'surge_hunter', {'recovery': best}, bot_state)
-                
-                # 일반 모드 - 더 많은 코인을 스캔하여 거래 기회 증가
-                else:
-                    import random
-                    # 15개 → 더 많은 기회
-                    scan_tickers = random.sample(popular_tickers, min(15, len(popular_tickers)))
-                    log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
-                    
-                    best_opportunity = None
-                    best_score = 0.0
-                    
-                    for ticker in scan_tickers:
-                        try:
-                            patterns = analyze_all_patterns(ticker)
-                            
-                            if patterns:
-                                bot_state['current_patterns'][ticker] = patterns
-                                best_strategy, score = select_best_strategy(ticker, patterns)
-                                
-                                # 점수가 0.01 이상이면 후보로 저장 (매우 낮은 진입 장벽)
-                                if best_strategy and score > 0.01:
-                                    if score > best_score:
-                                        best_score = score
-                                        best_opportunity = (ticker, best_strategy, patterns, score)
-                        except Exception as ticker_error:
-                            log(f"[{user_id}] ⚠️ {ticker} 분석 오류: {ticker_error}", "WARNING")
-                            continue
-                    
-                    # 최고 점수 기회로 진입
-                    if best_opportunity:
-                        ticker, strategy, patterns, score = best_opportunity
-                        log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {strategy}, 점수: {score:.2f})", "SUCCESS")
-                        execute_trade(ticker, strategy, patterns, bot_state)
-                        time.sleep(2)
-                    else:
-                        log(f"[{user_id}] ⏳ 거래 기회 없음, 대기 중...", "INFO")
-                    
-                    log(f"[{user_id}] ✅ 스캔 완료", "INFO")
-            
-            bot_state['last_update'] = datetime.now()
-            sleep_time = 15 if bot_state['recovery_mode_active'] else 20
-            log(f"[{user_id}] 💤 {sleep_time}초 대기...", "INFO")
-            time.sleep(sleep_time)
-            
-        except Exception as e:
-            log(f"[{user_id}] ❌ 메인 루프 오류: {e}", "ERROR")
-            import traceback
-            traceback.print_exc()
-            log(f"[{user_id}] 🔄 10초 후 재시도...", "WARNING")
-            time.sleep(10)
-    
-    log("🛑 봇 중지", "WARNING")
+        bot_state['running'] = False
 
 # ═══════════════════════════════════════════════════════
 # 🔐 사용자 인증 API
