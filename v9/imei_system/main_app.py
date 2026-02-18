@@ -424,11 +424,13 @@ if __name__ == '__main__':
     print(f"📁 Memory Database: imei_memory.db")
     print(f"🔗 Trading API: http://localhost:5000")
     if OLLAMA_ENABLED and emei_router:
-        print(f"🤖 Ollama Router: {OLLAMA_URL}")
+        # 사용된 URL 표시 (LOCAL 또는 TUNNEL)
+        used_url = OLLAMA_LOCAL_URL if emei_router.ollama_url == OLLAMA_LOCAL_URL else OLLAMA_TUNNEL_URL
+        print(f"🤖 Ollama Router: {used_url}")
         print(f"🧠 Model: {OLLAMA_MODEL}")
     else:
-        print("⚠️  Ollama Router: DISABLED (using mock responses)")
+        print("⚠️  Ollama Router: DISABLED (관망 모드)")
     print("========================================")
     
     # Run on port 5001 (dashboard is on 5000)
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=False)
