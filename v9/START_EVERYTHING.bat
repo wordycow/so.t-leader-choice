@@ -9,14 +9,14 @@ echo.
 echo 🔥 이 파일 하나로 모든 게 실행됩니다!
 echo.
 echo ✅ 자동 실행 항목:
-echo   1. Ollama 서버 (localhost:11434)
-echo   2. Signal Engine (WebSocket)
-echo   3. Execution Engine (주문 실행)
-echo   4. Dashboard (port 5000)
-echo   5. IMEI System (port 5001 + Ollama Router)
+echo   1. Cloudflare Tunnel (ollama.thetheunique.com)
+echo   2. Ollama 서버 (localhost:11434)
+echo   3. Execution Engine (WebSocket 8765)
+echo   4. Signal Engine (Top20 스캔)
+echo   5. Dashboard (port 5000)
+echo   6. IMEI System (port 5001 + Ollama Router)
 echo.
-echo 💡 Cloudflare Tunnel은 영구 고정 (ollama.thetheunique.com)
-echo    → 별도 실행 불필요!
+echo 💡 이 파일 하나로 6개 서비스가 모두 실행됩니다!
 echo.
 
 REM Check Python
@@ -39,6 +39,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Check Cloudflared
+where cloudflared >nul 2>&1
+if errorlevel 1 (
+    echo ❌ Cloudflared가 설치되지 않았습니다!
+    echo.
+    echo 📥 설치 방법:
+    echo    https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+    echo.
+    pause
+    exit /b 1
+)
+
 REM Create logs directory
 if not exist "logs" mkdir logs
 
@@ -49,11 +61,20 @@ echo ========================================
 REM Kill existing processes
 taskkill /F /IM python.exe /T >nul 2>&1
 taskkill /F /IM ollama.exe /T >nul 2>&1
+taskkill /F /IM cloudflared.exe /T >nul 2>&1
 timeout /t 2 /nobreak >nul
 
 echo.
 echo ========================================
-echo 🤖 1/5 Ollama 서버 시작...
+echo 🌐 1/6 Cloudflare Tunnel 시작...
+echo ========================================
+start "Cloudflare Tunnel" cmd /k "cloudflared tunnel run ollama-stable"
+echo ✅ Cloudflare Tunnel 실행 완료 (ollama.thetheunique.com)
+timeout /t 5 /nobreak >nul
+
+echo.
+echo ========================================
+echo 🤖 2/6 Ollama 서버 시작...
 echo ========================================
 start "Ollama Server" cmd /k "ollama serve"
 echo ✅ Ollama 서버 실행 완료 (localhost:11434)
@@ -61,7 +82,7 @@ timeout /t 5 /nobreak >nul
 
 echo.
 echo ========================================
-echo 📡 2/5 Execution Engine 시작...
+echo 📡 3/6 Execution Engine 시작...
 echo ========================================
 start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/main_loop.py > logs/execution_engine.log 2>&1"
 echo ✅ Execution Engine 실행 완료 (WebSocket 8765 서버)
@@ -69,7 +90,7 @@ timeout /t 5 /nobreak >nul
 
 echo.
 echo ========================================
-echo ⚡ 3/5 Signal Engine 시작...
+echo ⚡ 4/6 Signal Engine 시작...
 echo ========================================
 start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/main_loop.py > logs/signal_engine.log 2>&1"
 echo ✅ Signal Engine 실행 완료 (Top20 스캔 + 신호 발생)
@@ -77,7 +98,7 @@ timeout /t 3 /nobreak >nul
 
 echo.
 echo ========================================
-echo 📊 4/5 Dashboard 시작...
+echo 📊 5/6 Dashboard 시작...
 echo ========================================
 start "Dashboard" cmd /k "cd /d %~dp0 && python dashboard/standalone_dashboard.py > logs/dashboard.log 2>&1"
 echo ✅ Dashboard 실행 완료 (http://localhost:5000)
@@ -85,7 +106,7 @@ timeout /t 3 /nobreak >nul
 
 echo.
 echo ========================================
-echo 🧠 5/5 IMEI System 시작...
+echo 🧠 6/6 IMEI System 시작...
 echo ========================================
 start "IMEI System" cmd /k "cd /d %~dp0 && python imei_system/main_app.py > logs/imei_app.log 2>&1"
 echo ✅ IMEI System 실행 완료 (http://localhost:5001)
@@ -96,12 +117,13 @@ echo ========================================
 echo ✅ 모든 시스템 시작 완료!
 echo ========================================
 echo.
-echo 🎉 실행 중인 창:
-echo   1️⃣  Ollama Server (localhost:11434)
-echo   2️⃣  Execution Engine (WebSocket 8765 서버 - 먼저 시작!)
-echo   3️⃣  Signal Engine (Top20 스캔 + 신호 전송)
-echo   4️⃣  Dashboard (http://localhost:5000)
-echo   5️⃣  IMEI System (http://localhost:5001)
+echo 🎉 실행 중인 창 (6개):
+echo   1️⃣  Cloudflare Tunnel (ollama.thetheunique.com)
+echo   2️⃣  Ollama Server (localhost:11434)
+echo   3️⃣  Execution Engine (WebSocket 8765 서버)
+echo   4️⃣  Signal Engine (Top20 스캔 + 신호 전송)
+echo   5️⃣  Dashboard (http://localhost:5000)
+echo   6️⃣  IMEI System (http://localhost:5001)
 echo.
 echo 🌐 접속 주소:
 echo   - Dashboard: http://localhost:5000
@@ -109,7 +131,7 @@ echo   - IMEI Chat: http://localhost:5001
 echo.
 echo 🔥 Ollama 연결:
 echo   - Local: http://localhost:11434
-echo   - Tunnel: http://ollama.thetheunique.com (Named Tunnel - 영구)
+echo   - Tunnel: http://ollama.thetheunique.com
 echo   - Model: qwen2.5:7b
 echo.
 echo 📊 로그 파일:

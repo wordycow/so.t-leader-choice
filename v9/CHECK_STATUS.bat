@@ -9,10 +9,19 @@ echo.
 
 REM Check each port
 set /a RUNNING=0
-set /a TOTAL=4
+set /a TOTAL=5
 
 echo 📊 포트 상태 확인 중...
 echo.
+
+REM Cloudflared process
+tasklist | find "cloudflared.exe" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Cloudflare Tunnel                  [실행중]
+    set /a RUNNING+=1
+) else (
+    echo ❌ Cloudflare Tunnel                  [중지됨]
+)
 
 REM Port 11434 - Ollama
 netstat -aon | find ":11434" | find "LISTENING" >nul 2>&1
@@ -64,6 +73,7 @@ if %RUNNING% equ 0 (
     echo 🌐 접속 주소:
     echo    - Dashboard: http://localhost:5000
     echo    - IMEI Chat: http://localhost:5001
+    echo    - Ollama Tunnel: http://ollama.thetheunique.com
 ) else (
     echo ⚠️  일부 서비스만 실행 중입니다. 전체 재시작을 권장합니다.
     echo.

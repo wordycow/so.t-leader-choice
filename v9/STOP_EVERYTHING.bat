@@ -50,9 +50,10 @@ for /f "tokens=5" %%a in ('netstat -aon ^| find ":5001" ^| find "LISTENING"') do
 )
 
 echo.
-echo 🧹 남은 Python/Ollama 프로세스 정리 중...
+echo 🧹 남은 Python/Ollama/Cloudflared 프로세스 정리 중...
 taskkill /F /IM python.exe /T >nul 2>&1
 taskkill /F /IM ollama.exe /T >nul 2>&1
+taskkill /F /IM cloudflared.exe /T >nul 2>&1
 
 echo.
 echo ========================================
