@@ -32,6 +32,7 @@ from imei_core.persistent_memory import PersistentMemoryEngine
 from imei_core.dynamic_persona import DynamicPersonaEngine
 from imei_core.web_search_learning import WebSearchLearning
 from imei_core.trading_integration import TradingIntegration
+from imei_core.emei_response_router import EmeiRouter
 
 app = Flask(__name__)
 CORS(app)
@@ -41,6 +42,30 @@ memory_engine = PersistentMemoryEngine(db_path="imei_memory.db")
 persona_engine = DynamicPersonaEngine()
 search_engine = WebSearchLearning()
 trading_integration = TradingIntegration(dashboard_url="http://localhost:5000")
+
+# Ollama configuration (성장형 AI를 위한 실제 LLM!)
+OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama.thetheunique.com")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+OLLAMA_ENABLED = os.getenv("USE_OLLAMA", "true").lower() == "true"
+
+# Initialize Ollama Router (v8 proven system)
+emei_router = EmeiRouter(
+    db_path="imei_memory.db",
+    ollama_url=OLLAMA_URL,
+    ollama_model=OLLAMA_MODEL
+) if OLLAMA_ENABLED else None
+
+print("========================================")
+print("🚀 IMEI MAIN APP v3.0 with Ollama Router")
+print("========================================")
+print(f"📁 Memory Database: imei_memory.db")
+print(f"🔗 Trading API: http://localhost:5000")
+if OLLAMA_ENABLED and emei_router:
+    print(f"🤖 Ollama Router: {OLLAMA_URL}")
+    print(f"🧠 Model: {OLLAMA_MODEL}")
+else:
+    print("⚠️  Ollama Router: DISABLED (using mock responses)")
+print("========================================")
 
 # Default user ID (can be enhanced with auth later)
 DEFAULT_USER_ID = "user_1"
@@ -101,26 +126,24 @@ def chat():
             except Exception as e:
                 response_data['trading_data_error'] = str(e)
         
-        # Step 4: Mock RAG confidence (replace with real RAG later)
-        rag_confidence = 0.8  # Mock value
-        
-        # Step 5: Check if web search needed
-        needs_search = search_engine.should_search(rag_confidence)
-        response_data['web_search_used'] = needs_search
-        
-        if needs_search:
-            # Trigger web search and learning
-            search_result = search_engine.learn_from_search(
-                query=user_message,
-                memory_engine=memory_engine
-            )
-            response_data['search_result'] = search_result
-            
-            # Generate response using search result
-            assistant_message = f"검색 결과를 바탕으로 말씀드리면: {search_result.get('summary', '')}"
+        # Step 4: Generate response using Ollama Router or Mock
+        if OLLAMA_ENABLED and emei_router:
+            # Use v8 proven Ollama Router
+            try:
+                ollama_response = emei_router.chat(user_id=user_id, message=user_message)
+                assistant_message = ollama_response.get('response', '')
+                response_data['ollama_used'] = True
+                response_data['ollama_learned'] = ollama_response.get('learned', False)
+                response_data['response_time'] = ollama_response.get('response_time', 0)
+            except Exception as e:
+                # Fallback to mock on error
+                assistant_message = generate_mock_response(user_message, context_analysis, trading_data)
+                response_data['ollama_error'] = str(e)
+                response_data['ollama_used'] = False
         else:
-            # Generate response (mock for now, replace with LLM)
+            # Mock response fallback
             assistant_message = generate_mock_response(user_message, context_analysis, trading_data)
+            response_data['ollama_used'] = False
         
         # Step 6: Apply persona style (already in context_analysis from get_response_style)
         style_guide = context_analysis.get('style_guide', {})
@@ -373,13 +396,17 @@ def health_check():
 # ========================================
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("🤖 IMEI MAIN APP v3.0 - Starting")
-    print("=" * 60)
-    print(f"Memory DB: imei_memory.db")
-    print(f"Trading API: http://localhost:5000")
-    print(f"Starting Flask server on http://0.0.0.0:5001")
-    print("=" * 60)
+    print("========================================")
+    print("🚀 IMEI MAIN APP v3.0 with Ollama Router")
+    print("========================================")
+    print(f"📁 Memory Database: imei_memory.db")
+    print(f"🔗 Trading API: http://localhost:5000")
+    if OLLAMA_ENABLED and emei_router:
+        print(f"🤖 Ollama Router: {OLLAMA_URL}")
+        print(f"🧠 Model: {OLLAMA_MODEL}")
+    else:
+        print("⚠️  Ollama Router: DISABLED (using mock responses)")
+    print("========================================")
     
     # Run on port 5001 (dashboard is on 5000)
     app.run(host='0.0.0.0', port=5001, debug=True)

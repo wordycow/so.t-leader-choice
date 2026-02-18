@@ -1,131 +1,93 @@
 @echo off
-REM =============================================================================
-REM  노트북 서버 완전 시작 스크립트 (All-in-One)
-REM =============================================================================
-REM  노트북을 켤 때 이것 하나만 실행하면 됩니다!
-REM =============================================================================
+chcp 65001 > nul
+cls
 
+echo ========================================
+echo 🚀 Upbit Bot v9 + IMEI v3.0 + Ollama
+echo ========================================
 echo.
-echo ========================================================================
-echo  UPBIT BOT v9 - Laptop Server Complete Startup
-echo ========================================================================
+echo 🔥 올인원 시작 스크립트 (노트북 로컬 서버용)
 echo.
-
-cd /d "%~dp0"
-echo Current Directory: %CD%
-echo.
-
-REM =============================================================================
-REM  환경 체크
-REM =============================================================================
-
-echo [CHECK] Checking environment...
+echo ✅ 필수 요구사항:
+echo   - Python 3.8+ ✅
+echo   - Internet Connection ✅
+echo   - 🔥 Ollama 터널 활성화 (http://ollama.thetheunique.com)
 echo.
 
-REM Python 확인
+REM Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python not found!
-    echo Please install Python 3.8+ and add to PATH
+    echo ❌ Python이 설치되지 않았거나 PATH에 없습니다!
+    echo.
     pause
     exit /b 1
 )
-echo [OK] Python: 
-python --version
-echo.
 
-REM .env 파일 확인 (선택사항)
-if not exist ".env" (
-    echo [INFO] .env file not found (optional for PRACTICE mode)
-)
-echo.
+REM Create logs directory
+if not exist "logs" mkdir logs
 
-REM =============================================================================
-REM  기존 프로세스 정리 (혹시 몰라서)
-REM =============================================================================
-
-echo [CLEANUP] Stopping any existing processes...
+echo ========================================
+echo 🧹 기존 프로세스 종료...
+echo ========================================
 taskkill /F /IM python.exe /T >nul 2>&1
 timeout /t 2 /nobreak >nul
-echo [OK] Cleanup complete.
+
+echo.
+echo ========================================
+echo 🤖 4개 엔진 시작 중...
+echo ========================================
 echo.
 
-REM =============================================================================
-REM  로그 디렉토리 준비
-REM =============================================================================
-
-if not exist "logs" mkdir logs
-if not exist "logs\backup" mkdir logs\backup
-echo [OK] Log directories ready.
-echo.
-
-REM =============================================================================
-REM  봇 시작 (4개)
-REM =============================================================================
-
-echo ========================================================================
-echo  Starting All Services...
-echo ========================================================================
-echo.
-
-REM 1. Signal Engine
-echo [1/4] Starting Signal Engine...
-start "📊 Signal Engine" cmd /k "cd /d %CD% && python signal_engine\websocket_emitter.py"
+REM 1. Signal Engine (WebSocket Emitter)
+echo 1️⃣  시그널 엔진 시작...
+start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/websocket_emitter.py > logs/signal_engine.log 2>&1"
 timeout /t 3 /nobreak >nul
-echo      ✅ Started
 
-REM 2. Execution Engine
-echo [2/4] Starting Execution Engine...
-start "⚙️ Execution Engine" cmd /k "cd /d %CD% && python execution_engine\websocket_receiver.py"
+REM 2. Execution Engine (WebSocket Receiver)
+echo 2️⃣  실행 엔진 시작...
+start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/websocket_receiver.py > logs/execution_engine.log 2>&1"
 timeout /t 3 /nobreak >nul
-echo      ✅ Started
 
-REM 3. Dashboard
-echo [3/4] Starting Dashboard (port 5000)...
-start "🎨 Dashboard" cmd /k "cd /d %CD% && python dashboard\standalone_dashboard.py"
+REM 3. Dashboard (Standalone Flask)
+echo 3️⃣  대시보드 시작 (http://localhost:5000)...
+start "Dashboard" cmd /k "cd /d %~dp0 && python dashboard/standalone_dashboard.py > logs/dashboard.log 2>&1"
 timeout /t 3 /nobreak >nul
-echo      ✅ Started - http://localhost:5000
 
-REM 4. IMEI System
-echo [4/4] Starting IMEI System (port 5001)...
-start "🤖 IMEI System" cmd /k "cd /d %CD% && python imei_system\main_app.py"
+REM 4. IMEI System (Main Flask App with Ollama Router)
+echo 4️⃣  IMEI 시스템 시작 (http://localhost:5001 + Ollama Router)...
+start "IMEI System" cmd /k "cd /d %~dp0 && python imei_system/main_app.py > logs/imei_app.log 2>&1"
 timeout /t 5 /nobreak >nul
-echo      ✅ Started - http://localhost:5001
 
 echo.
-echo ========================================================================
-echo  ✅ All Services Started!
-echo ========================================================================
+echo ========================================
+echo ✅ 모든 엔진 시작 완료!
+echo ========================================
 echo.
-echo  4개의 창이 열렸습니다:
+echo 🌐 접속 주소:
+echo   - Dashboard: http://localhost:5000
+echo   - IMEI Chat: http://localhost:5001
 echo.
-echo   📊 Signal Engine       - 신호 생성 엔진
-echo   ⚙️ Execution Engine    - 주문 실행 엔진
-echo   🎨 Dashboard           - http://localhost:5000
-echo   🤖 IMEI System         - http://localhost:5001
+echo 🔥 Ollama 연결:
+echo   - URL: http://ollama.thetheunique.com
+echo   - Model: qwen2.5:7b
 echo.
-echo ========================================================================
-echo  브라우저 자동 실행...
-echo ========================================================================
+echo 📊 로그 파일:
+echo   - logs\signal_engine.log
+echo   - logs\execution_engine.log
+echo   - logs\dashboard.log
+echo   - logs\imei_app.log
 echo.
-
-REM 5초 후 브라우저 자동 오픈
-timeout /t 5 /nobreak >nul
-start http://localhost:5000
-
-echo.
-echo  Dashboard가 브라우저에서 열렸습니다!
-echo.
-echo  문제가 있으면:
-echo   - QUICK_CHECK.bat로 상태 확인
-echo   - RESTART_SERVER.bat로 재시작
-echo.
-echo  종료하려면:
+echo 🛑 종료 방법:
 echo   - STOP_ALL_BOTS.bat 실행
 echo   - 또는 각 창에서 Ctrl+C
 echo.
-echo ========================================================================
+echo ⏳ 5초 후 대시보드 자동 오픈...
+timeout /t 5 /nobreak >nul
+
+REM Open Dashboard in browser
+start http://localhost:5000
+
 echo.
-echo  이 창을 닫아도 봇들은 계속 실행됩니다.
+echo 🎉 봇이 실행 중입니다. 이 창은 닫지 마세요!
 echo.
 pause
