@@ -61,18 +61,18 @@ timeout /t 5 /nobreak >nul
 
 echo.
 echo ========================================
-echo 📡 2/5 Signal Engine 시작...
+echo 📡 2/5 Execution Engine 시작...
 echo ========================================
-start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/main_loop.py > logs/signal_engine.log 2>&1"
-echo ✅ Signal Engine 실행 완료 (Top20 스캔 + 신호 발생)
-timeout /t 3 /nobreak >nul
+start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/main_loop.py > logs/execution_engine.log 2>&1"
+echo ✅ Execution Engine 실행 완료 (WebSocket 8765 서버)
+timeout /t 5 /nobreak >nul
 
 echo.
 echo ========================================
-echo ⚡ 3/5 Execution Engine 시작...
+echo ⚡ 3/5 Signal Engine 시작...
 echo ========================================
-start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/main_loop.py > logs/execution_engine.log 2>&1"
-echo ✅ Execution Engine 실행 완료 (WebSocket 8765 + PAPER 체결)
+start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/main_loop.py > logs/signal_engine.log 2>&1"
+echo ✅ Signal Engine 실행 완료 (Top20 스캔 + 신호 발생)
 timeout /t 3 /nobreak >nul
 
 echo.
@@ -98,8 +98,8 @@ echo ========================================
 echo.
 echo 🎉 실행 중인 창:
 echo   1️⃣  Ollama Server (localhost:11434)
-echo   2️⃣  Signal Engine (WebSocket 신호 생성)
-echo   3️⃣  Execution Engine (주문 실행)
+echo   2️⃣  Execution Engine (WebSocket 8765 서버 - 먼저 시작!)
+echo   3️⃣  Signal Engine (Top20 스캔 + 신호 전송)
 echo   4️⃣  Dashboard (http://localhost:5000)
 echo   5️⃣  IMEI System (http://localhost:5001)
 echo.
