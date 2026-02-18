@@ -1,788 +1,109 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IMEI Trading Dashboard v3.0</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .container {
-            width: 95%;
-            height: 95vh;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            display: grid;
-            grid-template-rows: 80px 1fr 400px;
-            overflow: hidden;
-        }
-        
-        /* ========== HEADER ========== */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-        
-        .header-stats {
-            display: flex;
-            gap: 30px;
-        }
-        
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .mode-badge {
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .mode-practice {
-            background: #fbbf24;
-            color: #92400e;
-        }
-        
-        .mode-live {
-            background: #10b981;
-            color: #064e3b;
-        }
-        
-        /* ========== MAIN CONTENT ========== */
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .panel {
-            background: #f9fafb;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        
-        .panel-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #374151;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 10px;
-        }
-        
-        .table-container {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        
-        th {
-            background: #667eea;
-            color: white;
-            padding: 10px;
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        tr:hover {
-            background: #f3f4f6;
-        }
-        
-        .positive {
-            color: #10b981;
-            font-weight: bold;
-        }
-        
-        .negative {
-            color: #ef4444;
-            font-weight: bold;
-        }
-        
-        /* ========== CHAT SECTION ========== */
-        .chat-section {
-            background: #f9fafb;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .chat-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .memory-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5568d3;
-        }
-        
-        .btn-secondary {
-            background: #e5e7eb;
-            color: #374151;
-        }
-        
-        .btn-secondary:hover {
-            background: #d1d5db;
-        }
-        
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-        
-        .chat-container {
-            flex: 1;
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            overflow-y: auto;
-            max-height: 200px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .chat-message {
-            margin-bottom: 15px;
-            animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .message-user {
-            text-align: right;
-        }
-        
-        .message-assistant {
-            text-align: left;
-        }
-        
-        .message-bubble {
-            display: inline-block;
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .message-user .message-bubble {
-            background: #667eea;
-            color: white;
-        }
-        
-        .message-assistant .message-bubble {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .message-meta {
-            font-size: 11px;
-            opacity: 0.6;
-            margin-top: 5px;
-        }
-        
-        .memory-card {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            font-size: 13px;
-            animation: slideIn 0.3s;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .memory-card-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #92400e;
-        }
-        
-        .search-indicator {
-            display: none;
-            background: #dbeafe;
-            border-left: 4px solid #3b82f6;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin: 10px 0;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .search-indicator.active {
-            display: block;
-        }
-        
-        .chat-input-container {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .chat-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        
-        .chat-input:focus {
-            border-color: #667eea;
-        }
-        
-        .send-btn {
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .send-btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-        
-        .send-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IMEI 상담원</title>
+  <style>
+    :root{ --upbit-blue:#093687; --line:#e2e8f0; --muted:#64748b; --shadow:0 10px 25px rgba(2,6,23,.08); }
+    *{box-sizing:border-box}
+    body{margin:0;background:#fff;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    .top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+    .top b{color:var(--upbit-blue)}
+    .btn{border:1px solid var(--line);background:#fff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:800}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    .card{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+    .hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .bd{padding:14px}
+    .chatlog{height:65vh;overflow:auto;padding:12px;background:#fff}
+    .msg{margin:10px 0;display:flex;gap:10px;align-items:flex-start}
+    .av{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(9,54,135,.08);color:var(--upbit-blue);font-weight:900;border:1px solid rgba(9,54,135,.18)}
+    .bubble{border:1px solid var(--line);border-radius:16px;padding:10px 12px;max-width:78%;box-shadow:0 6px 18px rgba(2,6,23,.06)}
+    .bar{border-top:1px solid var(--line);padding:10px;display:flex;gap:10px}
+    .input{flex:1;border:1px solid var(--line);border-radius:14px;padding:12px;outline:none}
+    .primary{background:var(--upbit-blue);color:#fff;border-color:transparent}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <div>
-                <h1>🤖 IMEI Trading System v3.0</h1>
-                <div class="mode-badge" id="modeBadge">⚙️ PRACTICE MODE</div>
-            </div>
-            <div class="header-stats">
-                <div class="stat">
-                    <div class="stat-label">총 자산</div>
-                    <div class="stat-value" id="totalEquity">₩1,000,000</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">실현 손익</div>
-                    <div class="stat-value" id="realizedPnl">₩0</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">미실현 손익</div>
-                    <div class="stat-value" id="unrealizedPnl">₩0</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">포지션</div>
-                    <div class="stat-value" id="positionCount">0</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- MAIN CONTENT -->
-        <div class="main-content">
-            <!-- TOP 20 CANDIDATES -->
-            <div class="panel">
-                <div class="panel-title">🎯 TOP 20 후보 종목</div>
-                <div class="table-container">
-                    <table id="candidatesTable">
-                        <thead>
-                            <tr>
-                                <th>순위</th>
-                                <th>종목</th>
-                                <th>점수</th>
-                                <th>변화율</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 20px; color: #9ca3af;">
-                                    데이터 로딩 중...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- CURRENT HOLDINGS -->
-            <div class="panel">
-                <div class="panel-title">📊 보유 포지션</div>
-                <div class="table-container">
-                    <table id="holdingsTable">
-                        <thead>
-                            <tr>
-                                <th>종목</th>
-                                <th>전략</th>
-                                <th>진입가</th>
-                                <th>현재가</th>
-                                <th>손익</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 20px; color: #9ca3af;">
-                                    보유 포지션 없음
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- RECENT TRADES -->
-            <div class="panel">
-                <div class="panel-title">📈 최근 거래 내역</div>
-                <div class="table-container">
-                    <table id="tradesTable">
-                        <thead>
-                            <tr>
-                                <th>시간</th>
-                                <th>종목</th>
-                                <th>타입</th>
-                                <th>가격</th>
-                                <th>손익</th>
-                                <th>이유</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 20px; color: #9ca3af;">
-                                    거래 내역 없음
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- BTC REGIME STATUS -->
-            <div class="panel">
-                <div class="panel-title">₿ BTC 레짐 상태</div>
-                <div id="btcRegime" style="padding: 10px; font-size: 14px; color: #374151;">
-                    <p>🔄 레짐 데이터 로딩 중...</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- CHAT SECTION -->
-        <div class="chat-section">
-            <div class="chat-header">
-                <div class="chat-title">💬 IMEI와 대화하기</div>
-                <div class="memory-buttons">
-                    <button class="btn btn-secondary" onclick="viewMemories()">📚 기억 보기</button>
-                    <button class="btn btn-secondary" onclick="exportState()">💾 백업</button>
-                    <button class="btn btn-danger" onclick="clearChat()">🗑️ 대화 지우기</button>
-                </div>
-            </div>
-            
-            <div class="chat-container" id="chatContainer">
-                <div class="chat-message message-assistant">
-                    <div class="message-bubble">
-                        안녕하세요! IMEI입니다. 트레이딩 시스템을 함께 관리하고, 필요한 정보를 분석해드리겠습니다. 무엇을 도와드릴까요?
-                    </div>
-                </div>
-            </div>
-            
-            <div class="search-indicator" id="searchIndicator">
-                🔍 검색 중... 최신 정보를 찾고 있습니다.
-            </div>
-            
-            <div class="chat-input-container">
-                <input 
-                    type="text" 
-                    class="chat-input" 
-                    id="chatInput" 
-                    placeholder="메시지를 입력하세요... (예: '학습해', '저장해'로 기억에 저장)"
-                    onkeypress="handleKeyPress(event)"
-                >
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
-            </div>
-        </div>
+  <div class="top">
+    <b>IMEI 상담원 (Trading Assistant)</b>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a class="btn" href="/">메인 대시보드</a>
+      <span id="st" style="color:var(--muted);font-weight:900">IMEI: -</span>
     </div>
-    
-    <script>
-        const IMEI_API_URL = 'http://localhost:5001/api';
-        const TRADING_API_URL = 'http://localhost:5000/api';
-        
-        // Auto-refresh intervals
-        setInterval(refreshData, 10000); // Every 10 seconds
-        
-        // Initial load
-        refreshData();
-        
-        function refreshData() {
-            fetchSystemStatus();
-            fetchCandidates();
-            fetchHoldings();
-            fetchRecentTrades();
-            fetchBTCRegime();
-        }
-        
-        async function fetchSystemStatus() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/system/status`);
-                const data = await response.json();
-                
-                document.getElementById('totalEquity').textContent = `₩${data.equity.toLocaleString()}`;
-                document.getElementById('realizedPnl').textContent = `₩${data.realized_pnl.toLocaleString()}`;
-                document.getElementById('unrealizedPnl').textContent = `₩${data.unrealized_pnl.toLocaleString()}`;
-                document.getElementById('positionCount').textContent = data.position_count;
-                
-                const modeBadge = document.getElementById('modeBadge');
-                if (data.mode === 'PRACTICE') {
-                    modeBadge.textContent = '⚙️ PRACTICE MODE';
-                    modeBadge.className = 'mode-badge mode-practice';
-                } else {
-                    modeBadge.textContent = '🔴 LIVE TRADING';
-                    modeBadge.className = 'mode-badge mode-live';
-                }
-            } catch (error) {
-                console.error('Error fetching system status:', error);
-            }
-        }
-        
-        async function fetchCandidates() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/system/candidates`);
-                const data = await response.json();
-                
-                const tbody = document.querySelector('#candidatesTable tbody');
-                tbody.innerHTML = data.candidates.map((c, idx) => `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td>${c.symbol}</td>
-                        <td>${c.score.toFixed(2)}</td>
-                        <td class="${c.change_pct >= 0 ? 'positive' : 'negative'}">
-                            ${c.change_pct >= 0 ? '+' : ''}${c.change_pct.toFixed(2)}%
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error fetching candidates:', error);
-            }
-        }
-        
-        async function fetchHoldings() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/system/portfolio`);
-                const data = await response.json();
-                
-                const tbody = document.querySelector('#holdingsTable tbody');
-                if (data.holdings.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #9ca3af;">보유 포지션 없음</td></tr>';
-                } else {
-                    tbody.innerHTML = data.holdings.map(h => `
-                        <tr>
-                            <td>${h.symbol}</td>
-                            <td>${h.strategy}</td>
-                            <td>₩${h.entry_price.toLocaleString()}</td>
-                            <td>₩${h.current_price.toLocaleString()}</td>
-                            <td class="${h.pnl >= 0 ? 'positive' : 'negative'}">
-                                ${h.pnl >= 0 ? '+' : ''}${h.pnl_pct.toFixed(2)}%
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Error fetching holdings:', error);
-            }
-        }
-        
-        async function fetchRecentTrades() {
-            try {
-                const response = await fetch(`${TRADING_API_URL}/trades?limit=10`);
-                const data = await response.json();
-                
-                const tbody = document.querySelector('#tradesTable tbody');
-                if (data.trades.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #9ca3af;">거래 내역 없음</td></tr>';
-                } else {
-                    tbody.innerHTML = data.trades.map(t => `
-                        <tr>
-                            <td>${new Date(t.timestamp).toLocaleTimeString()}</td>
-                            <td>${t.symbol}</td>
-                            <td>${t.type}</td>
-                            <td>₩${t.price.toLocaleString()}</td>
-                            <td class="${t.pnl >= 0 ? 'positive' : 'negative'}">
-                                ${t.pnl >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%
-                            </td>
-                            <td>${t.reason}</td>
-                        </tr>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Error fetching recent trades:', error);
-            }
-        }
-        
-        async function fetchBTCRegime() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/system/btc_regime`);
-                const data = await response.json();
-                
-                const regimeDiv = document.getElementById('btcRegime');
-                let status = '';
-                if (data.regime === 'normal') {
-                    status = '✅ 정상';
-                } else if (data.regime === 'strong_bullish') {
-                    status = '🚀 강한 상승';
-                } else {
-                    status = '⚠️ 전면 하락';
-                }
-                
-                regimeDiv.innerHTML = `
-                    <p><strong>현재 레짐:</strong> ${status}</p>
-                    <p><strong>H1 상승:</strong> ${data.indicators.btc_h1_bullish ? '✅' : '❌'}</p>
-                    <p><strong>H4 상승:</strong> ${data.indicators.btc_h4_bullish ? '✅' : '❌'}</p>
-                    <p><strong>진입 차단:</strong> ${data.block_new_entries ? '🔴 차단됨' : '✅ 가능'}</p>
-                    <p style="margin-top: 10px; font-size: 12px; opacity: 0.8;">${data.explanation}</p>
-                `;
-            } catch (error) {
-                console.error('Error fetching BTC regime:', error);
-            }
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            // Disable input
-            input.disabled = true;
-            document.getElementById('sendBtn').disabled = true;
-            
-            // Add user message to chat
-            addMessage('user', message);
-            
-            // Clear input
-            input.value = '';
-            
-            // Show search indicator if needed (mock for now)
-            const needsSearch = Math.random() < 0.3; // 30% chance
-            if (needsSearch) {
-                document.getElementById('searchIndicator').classList.add('active');
-            }
-            
-            try {
-                const response = await fetch(`${IMEI_API_URL}/imei/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        include_trading_status: message.includes('상태') || message.includes('현황')
-                    })
-                });
-                
-                const data = await response.json();
-                
-                // Hide search indicator
-                document.getElementById('searchIndicator').classList.remove('active');
-                
-                // Add assistant message
-                addMessage('assistant', data.assistant_message, data.persona);
-                
-                // Show memory card if triggered
-                if (data.memory_card) {
-                    addMemoryCard(data.memory_card);
-                }
-                
-            } catch (error) {
-                console.error('Error sending message:', error);
-                addMessage('assistant', '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.');
-            }
-            
-            // Re-enable input
-            input.disabled = false;
-            document.getElementById('sendBtn').disabled = false;
-            input.focus();
-        }
-        
-        function addMessage(role, text, persona = null) {
-            const chatContainer = document.getElementById('chatContainer');
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message message-${role}`;
-            
-            let metaText = '';
-            if (role === 'assistant' && persona) {
-                metaText = `<div class="message-meta">Persona: ${persona}</div>`;
-            }
-            
-            messageDiv.innerHTML = `
-                <div class="message-bubble">${text}</div>
-                ${metaText}
-            `;
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-        
-        function addMemoryCard(memory) {
-            const chatContainer = document.getElementById('chatContainer');
-            
-            const cardDiv = document.createElement('div');
-            cardDiv.className = 'memory-card';
-            cardDiv.innerHTML = `
-                <div class="memory-card-title">💾 기억에 저장되었습니다</div>
-                <div>${memory.summary}</div>
-                <div style="margin-top: 5px; font-size: 11px; opacity: 0.7;">
-                    태그: ${memory.tags.join(', ')}
-                </div>
-            `;
-            
-            chatContainer.appendChild(cardDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-        
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-        
-        async function viewMemories() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/imei/memories`);
-                const data = await response.json();
-                
-                alert(`총 ${data.count}개의 기억이 저장되어 있습니다.\n\n` + 
-                      data.memories.slice(0, 5).map(m => `• ${m.summary}`).join('\n'));
-            } catch (error) {
-                alert('기억을 불러오는 중 오류가 발생했습니다.');
-            }
-        }
-        
-        async function exportState() {
-            try {
-                const response = await fetch(`${IMEI_API_URL}/imei/export`);
-                const data = await response.json();
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `imei_backup_${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                
-                alert('백업이 완료되었습니다!');
-            } catch (error) {
-                alert('백업 중 오류가 발생했습니다.');
-            }
-        }
-        
-        function clearChat() {
-            if (confirm('대화 기록을 지우시겠습니까?')) {
-                const chatContainer = document.getElementById('chatContainer');
-                chatContainer.innerHTML = `
-                    <div class="chat-message message-assistant">
-                        <div class="message-bubble">
-                            대화 기록이 초기화되었습니다. 새로운 대화를 시작하세요!
-                        </div>
-                    </div>
-                `;
-            }
-        }
-    </script>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="hd">
+        <div style="font-weight:900;color:var(--upbit-blue)">채팅</div>
+        <div style="color:var(--muted);font-size:12px">http://localhost:5001/api/imei/chat</div>
+      </div>
+      <div class="chatlog" id="log"></div>
+      <div class="bar">
+        <input class="input" id="inp" placeholder="예: '오늘 시스템 상태 요약해줘'" />
+        <button class="btn primary" id="go">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const log = document.getElementById("log");
+    const st = document.getElementById("st");
+    const inp = document.getElementById("inp");
+
+    function add(who, text){
+      const row = document.createElement("div");
+      row.className = "msg";
+      const av = document.createElement("div");
+      av.className = "av";
+      av.textContent = who === "me" ? "ME" : "AI";
+      const b = document.createElement("div");
+      b.className = "bubble";
+      b.innerText = text;
+
+      if(who === "me"){
+        row.style.justifyContent = "flex-end";
+        row.appendChild(b);
+        row.appendChild(av);
+      }else{
+        row.appendChild(av);
+        row.appendChild(b);
+      }
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function ping(){
+      try{
+        const r = await fetch("http://localhost:5001/health");
+        st.textContent = r.ok ? "IMEI: ONLINE" : "IMEI: OFFLINE";
+      }catch{ st.textContent = "IMEI: OFFLINE"; }
+    }
+
+    async function send(){
+      const msg = inp.value.trim();
+      if(!msg) return;
+      inp.value = "";
+      add("me", msg);
+      try{
+        const res = await fetch("http://localhost:5001/api/imei/chat", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ message: msg, user_id:"user_1", include_trading_status:true })
+        });
+        const data = await res.json();
+        add("ai", data.assistant_message || "(no message)");
+      }catch(e){
+        add("ai", "오류: " + e.message);
+      }
+    }
+
+    document.getElementById("go").onclick = send;
+    inp.addEventListener("keydown", (e)=>{ if(e.key==="Enter") send(); });
+
+    add("ai", "안녕하세요 유송. 저는 IMEI 상담원입니다. 무엇을 도와드릴까요?");
+    ping(); setInterval(ping, 4000);
+  </script>
 </body>
 </html>
