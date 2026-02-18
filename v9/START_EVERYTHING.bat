@@ -63,16 +63,16 @@ echo.
 echo ========================================
 echo 📡 2/5 Signal Engine 시작...
 echo ========================================
-start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/websocket_emitter.py > logs/signal_engine.log 2>&1"
-echo ✅ Signal Engine 실행 완료
+start "Signal Engine" cmd /k "cd /d %~dp0 && python signal_engine/main_loop.py > logs/signal_engine.log 2>&1"
+echo ✅ Signal Engine 실행 완료 (Top20 스캔 + 신호 발생)
 timeout /t 3 /nobreak >nul
 
 echo.
 echo ========================================
 echo ⚡ 3/5 Execution Engine 시작...
 echo ========================================
-start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/websocket_receiver.py > logs/execution_engine.log 2>&1"
-echo ✅ Execution Engine 실행 완료
+start "Execution Engine" cmd /k "cd /d %~dp0 && python execution_engine/main_loop.py > logs/execution_engine.log 2>&1"
+echo ✅ Execution Engine 실행 완료 (WebSocket 8765 + PAPER 체결)
 timeout /t 3 /nobreak >nul
 
 echo.

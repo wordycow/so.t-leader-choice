@@ -165,10 +165,12 @@ def api_watch_state():
     """
     ✅ Signal Engine의 watch_state 조회
     - 각 티커/전략별 추적 상태 (WATCHING/ARMED/TRIGGERED/COOLDOWN)
+    - 조건 체크리스트 (각 조건 충족 여부)
     """
     se = read_state("signal_engine.json", {})
     return jsonify({
         "watch_states": se.get("watch_states", {}),
+        "condition_checklists": se.get("condition_checklists", {}),
         "tracked_tickers": se.get("tracked_tickers", 0),
         "last_top20_scan_at": se.get("last_top20_scan_at"),
         "signal_sent_count": se.get("signal_sent_count", 0),

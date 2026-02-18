@@ -52,6 +52,9 @@ class Top20StrategyEngine:
         self.price_history: Dict[str, List[Dict]] = {}  # {ticker: [{price, ts, change_rate}]}
         self.max_history = 20  # 최근 20개 데이터포인트
         
+        # 조건 체크리스트 (운영 가시성)
+        self.condition_checklists: Dict[str, Dict[str, Dict]] = {}  # {ticker: {strategy: {condition: met}}}
+        
     def update_top20(self, top20_data: List[Dict]) -> List[Dict]:
         """
         Top20 실데이터를 받아서 조건 검사 → 신호 생성
@@ -118,6 +121,18 @@ class Top20StrategyEngine:
             self.watch_states[ticker] = {}
         self.watch_states[ticker][strategy] = state
     
+    def _save_condition_checklist(self, ticker: str, strategy: str, conditions: List[StrategyCondition], all_met: bool):
+        """조건 체크리스트 저장 (운영 판단용)"""
+        if ticker not in self.condition_checklists:
+            self.condition_checklists[ticker] = {}
+        
+        self.condition_checklists[ticker][strategy] = {
+            "conditions": [{"name": c.name, "met": c.met, "reason": c.reason} for c in conditions],
+            "all_met": all_met,
+            "state": self._get_state(ticker, strategy),
+            "checked_at": datetime.utcnow().isoformat(),
+        }
+    
     def _check_strategy(self, ticker: str, item: Dict, strategy_name: str) -> Optional[Dict]:
         """전략별 조건 검사 → 신호 생성"""
         
@@ -165,6 +180,9 @@ class Top20StrategyEngine:
         if all_met:
             self._set_state(ticker, "SurgeHunter", WatchState.ARMED)
         
+        # 조건 체크리스트 저장 (운영 가시성)
+        self._save_condition_checklist(ticker, "SurgeHunter", conditions, all_met)
+        
         # 신호 발생 (ARMED 상태에서 조건 충족 시)
         if current_state == WatchState.ARMED and all_met:
             return self._create_signal(
@@ -211,6 +229,9 @@ class Top20StrategyEngine:
         if all_met:
             self._set_state(ticker, "DipHunter", WatchState.ARMED)
         
+        # 조건 체크리스트 저장
+        self._save_condition_checklist(ticker, "DipHunter", conditions, all_met)
+        
         if current_state == WatchState.ARMED and all_met:
             return self._create_signal(
                 ticker=ticker,
@@ -255,6 +276,9 @@ class Top20StrategyEngine:
         if all_met:
             self._set_state(ticker, "BoxTrader", WatchState.ARMED)
         
+        # 조건 체크리스트 저장
+        self._save_condition_checklist(ticker, "BoxTrader", conditions, all_met)
+        
         if current_state == WatchState.ARMED and all_met:
             return self._create_signal(
                 ticker=ticker,
@@ -298,6 +322,9 @@ class Top20StrategyEngine:
         
         if all_met:
             self._set_state(ticker, "TrendFollower", WatchState.ARMED)
+        
+        # 조건 체크리스트 저장
+        self._save_condition_checklist(ticker, "TrendFollower", conditions, all_met)
         
         if current_state == WatchState.ARMED and all_met:
             return self._create_signal(
@@ -355,9 +382,10 @@ class Top20StrategyEngine:
             return "적정 변동성"
     
     def get_watch_state(self) -> Dict:
-        """현재 추적 상태 전체 반환 (API용)"""
+        """현재 추적 상태 전체 반환 (API용 + 조건 체크리스트 포함)"""
         return {
             "watch_states": self.watch_states,
+            "condition_checklists": self.condition_checklists,
             "last_signals": {k: v.isoformat() for k, v in self.last_signals.items()},
             "tracked_tickers": len(self.watch_states),
             "timestamp": datetime.utcnow().isoformat(),

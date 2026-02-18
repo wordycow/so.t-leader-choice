@@ -113,6 +113,7 @@ class SignalEngineMain:
             "signal_sent_count": self.signal_count,
             "tracked_tickers": watch_state.get("tracked_tickers", 0),
             "watch_states": watch_state.get("watch_states", {}),
+            "condition_checklists": watch_state.get("condition_checklists", {}),
             "_updated_at": now_iso(),
         })
 
