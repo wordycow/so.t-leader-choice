@@ -276,84 +276,38 @@ class FreeLearningSystem:
     
     def chat(self, question, user_id='default'):
         """
-        무료 대화 + 학습
+        무료 대화 (DB만 사용 - 초간단!)
         
-        1. 캐시 확인 (학습된 답변)
-        2. 로컬 AI 호출 (무료)
-        3. 필요시 웹 검색 (무료)
-        4. DB 저장 (무료)
+        1. DB 확인 (학습된 답변)
+        2. 없으면 "배우고 싶어요" 응답
         """
         
-        print(f"\n{'='*60}")
-        print(f"👤 사용자: {question}")
-        print(f"{'='*60}")
-        
-        # 1. 캐시 확인
-        print("\n[1단계] 캐시 확인...")
+        # 1. DB 확인
         cached = self.get_learned_answer(question)
         
         if cached:
-            print(f"  ✅ 캐시 발견! (사용: {cached['use_count']}회)")
-            print(f"  ⚡ 0.1초 | $0 (무료!)")
-            print(f"\n🤖 이메이: {cached['answer']}")
-            
+            # 답변 있음!
             self.save_conversation(user_id, question, cached['answer'], 0.1, False)
             
             return {
                 'reply': cached['answer'],
                 'cached': True,
                 'cost': 0.0,
-                'response_time': 0.1
+                'response_time': 0.1,
+                'learned': False
             }
         
-        print("  ❌ 캐시 없음")
+        # 2. 답변 없음
+        reply = f"아직 '{question}'에 대해 배우지 못했어요. 🤔\n\n알려주시면 배울게요! 또는 다른 질문 해주세요!"
         
-        # 2. 로컬 AI 호출
-        print("\n[2단계] 로컬 AI 호출...")
-        result = self.call_local_ai(question)
-        
-        if not result:
-            return {'reply': '죄송해요, 지금 답변하기 어려워요 😢', 'cost': 0.0}
-        
-        answer = result['answer']
-        response_time = result['response_time']
-        
-        print(f"  ✅ 응답 완료!")
-        print(f"  ⏱️  {response_time:.1f}초 | $0 (무료!)")
-        
-        # 3. 품질 체크 (모호하면 웹 검색)
-        uncertain_keywords = ['잘 모르', '확실하지', '정확히는', '아마도']
-        needs_search = any(kw in answer for kw in uncertain_keywords)
-        
-        if needs_search:
-            print("\n[3단계] 웹 검색으로 정보 수집...")
-            web_results = self.search_web(question)
-            
-            if web_results:
-                # 웹 정보 추가해서 재생성
-                context = "\n".join(web_results[:2])
-                result = self.call_local_ai(question, context)
-                
-                if result:
-                    answer = result['answer']
-                    response_time += result['response_time']
-                    print(f"  ✅ 웹 정보 반영 완료!")
-        
-        # 4. 학습 (DB 저장)
-        print("\n[4단계] 학습...")
-        learned = self.learn_answer(question, answer)
-        
-        # 5. 대화 저장
-        self.save_conversation(user_id, question, answer, response_time, learned)
-        
-        print(f"\n🤖 이메이: {answer}")
+        self.save_conversation(user_id, question, reply, 0.1, False)
         
         return {
-            'reply': answer,
+            'reply': reply,
             'cached': False,
-            'learned': learned,
             'cost': 0.0,
-            'response_time': response_time
+            'response_time': 0.1,
+            'learned': False
         }
     
     def get_stats(self):

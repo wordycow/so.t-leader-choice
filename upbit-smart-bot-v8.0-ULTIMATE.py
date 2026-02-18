@@ -4561,6 +4561,13 @@ def generate_fallback_response(user_message, holdings_info, current_krw, profit_
     return f"좋은 질문이에요! 🤔\n\n제가 명확히 답변드릴게요:\n\n{user_message}에 대해서는\n시장 상황과 전략을 고려해서\n최적의 답을 찾아드릴게요!\n\n조금만 구체적으로 물어봐주시면\n더 정확하게 답변드릴 수 있어요! 💪"
 
 
+# 🧪 테스트 페이지
+@app.route('/test-emei')
+def test_emei():
+    """이메이 테스트 페이지"""
+    return render_template('test_emei.html')
+
+
 if __name__ == "__main__":
     log_separator()
     log("🚀 업비트 AI 트레이딩 봇 v8.0 ULTIMATE", "SUCCESS")

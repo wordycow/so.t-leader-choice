@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>이메이 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-box {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .status {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 이메이 무료 학습 시스템 테스트</h1>
+    
+    <div class="test-box">
+        <h2>테스트 1: DB에 있는 질문</h2>
+        <button onclick="test('이더리움 추천해줘', 'result1')">질문: "이더리움 추천해줘"</button>
+        <div id="result1" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>테스트 2: DB에 있는 질문</h2>
+        <button onclick="test('RSI 지표가 뭐야?', 'result2')">질문: "RSI 지표가 뭐야?"</button>
+        <div id="result2" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>테스트 3: DB에 있는 질문</h2>
+        <button onclick="test('안녕', 'result3')">질문: "안녕"</button>
+        <div id="result3" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>테스트 4: DB에 없는 질문</h2>
+        <button onclick="test('오늘 날씨 어때?', 'result4')">질문: "오늘 날씨 어때?"</button>
+        <div id="result4" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function test(question, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status">⏳ 답변 기다리는 중...</div>';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch('/api/ai-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ message: question })
+                });
+                
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                if (!response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status">❌ 오류: ${response.status}</div>
+                        <div>응답 시간: ${duration}초</div>
+                    `;
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="status">❌ 실패: ${data.message || '알 수 없는 오류'}</div>
+                        <div>응답 시간: ${duration}초</div>
+                    `;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="status">✅ 성공!</div>
+                    <div class="status">응답 시간: ${duration}초</div>
+                    <div class="status">캐시 사용: ${data.cached ? 'Yes (DB)' : 'No'}</div>
+                    <div class="status">비용: $0</div>
+                    <hr>
+                    <strong>답변:</strong><br>
+                    ${data.reply}
+                `;
+                
+            } catch (error) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                resultDiv.innerHTML = `
+                    <div class="status">❌ 네트워크 오류</div>
+                    <div>${error.message}</div>
+                    <div>응답 시간: ${duration}초</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
