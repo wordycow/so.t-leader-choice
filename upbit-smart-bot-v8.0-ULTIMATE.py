@@ -94,38 +94,38 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 print(f"🔧 Ollama 설정: URL={OLLAMA_URL}, Model={OLLAMA_MODEL}")
 emei_router = EmeiRouter(DB_PATH, OLLAMA_URL, OLLAMA_MODEL)
 
-# 급등/급락 감지
+# 급등/급락 감지 (🔥 더 공격적으로 완화 - 거래 기회 대폭 증가)
 SURGE_CONFIG = {
-    # 급등 (조건 완화 - 더 많은 기회 포착)
-    'surge_threshold_1m': 0.8,  # 1.5 -> 0.8 (1분에 0.8% 급등)
-    'surge_threshold_3m': 1.5,  # 2.5 -> 1.5 (3분에 1.5% 급등)
+    # 급등 (매우 완화)
+    'surge_threshold_1m': 0.3,  # 0.8 -> 0.3 (1분에 0.3% 급등)
+    'surge_threshold_3m': 0.8,  # 1.5 -> 0.8 (3분에 0.8% 급등)
     
-    # 급락 (조건 완화)
-    'dip_threshold_1m': -0.8,   # -1.5 -> -0.8 (더 작은 급락도 포착)
-    'dip_oversold_rsi': 40,     # 35 -> 40 (과매도 기준 완화)
-    'dip_volume_spike': 1.5,    # 2.0 -> 1.5
+    # 급락 (매우 완화)
+    'dip_threshold_1m': -0.3,   # -0.8 -> -0.3 (더 작은 급락도 포착)
+    'dip_oversold_rsi': 50,     # 40 -> 50 (과매도 기준 매우 완화)
+    'dip_volume_spike': 1.2,    # 1.5 -> 1.2 (거래량 기준 완화)
     
     # 복귀 전략
-    'dip_recovery_threshold': -0.3,
+    'dip_recovery_threshold': -0.2,  # -0.3 -> -0.2 (복귀 기준 완화)
     'dip_max_hold_time': 24 * 60,
     'dip_emergency_stop': -10.0,
     
-    # 거래량 (조건 크게 완화 - 실제 매매 활성화)
-    'volume_spike_ratio': 1.2,      # 2.0 -> 1.2
-    'min_volume_krw': 10000000,     # 100,000,000 -> 10,000,000 (1천만원)
+    # 거래량 (더 완화)
+    'volume_spike_ratio': 1.1,      # 1.2 -> 1.1
+    'min_volume_krw': 5000000,      # 10M -> 5M (5백만원)
     
-    # 익절/손절 (목표 낮춰서 빠른 수익 실현 - 실제 매매 활성화)
-    'take_profit_targets': [0.5, 1.0, 1.5],  # [1.5, 2.5, 4.0] -> [0.5, 1.0, 1.5]
+    # 익절/손절
+    'take_profit_targets': [0.5, 1.0, 1.5],
     'stop_loss': -2.0,
 }
 
-# 패턴 분석 (조건 극단적 완화 - 실제 매매 활성화)
+# 패턴 분석 (🔥 더 공격적으로 완화 - 실제 매매 활성화)
 PATTERN_CONFIG = {
-    'box_range_threshold': 0.5,      # 2.0 -> 0.5 (박스권 매우 쉽게 인식)
-    'trend_ma_short': 3,             # 10 -> 3 (더 빠른 추세 감지)
-    'trend_ma_long': 10,             # 40 -> 10
-    'uptrend_threshold': 0.2,        # 1.0 -> 0.2 (상승 추세 매우 쉽게 인식)
-    'volume_surge_ratio': 1.1,       # 1.5 -> 1.1 (거래량 거의 모든 경우 감지)
+    'box_range_threshold': 0.3,      # 0.5 -> 0.3 (박스권 매우 쉽게 인식)
+    'trend_ma_short': 3,
+    'trend_ma_long': 10,
+    'uptrend_threshold': 0.1,        # 0.2 -> 0.1 (상승 추세 매우 쉽게 인식)
+    'volume_surge_ratio': 1.05,      # 1.1 -> 1.05 (거래량 거의 모든 경우 감지)
 }
 
 # AI 학습
@@ -1550,9 +1550,16 @@ def check_exit(ticker, holding, bot_state):
                 if target_price and current_price >= target_price:
                     return True, f"목표가 도달 (+{profit_rate:.2f}%)"
             
-            # 기본 익절/손절
-            if profit_rate >= 3.0 or profit_rate <= SURGE_CONFIG['stop_loss']:
-                return True, f"{'익절' if profit_rate > 0 else '손절'}"
+            # 🔥 시간 기반 강제 청산 (6시간 초과)
+            hold_time_minutes = (datetime.now() - holding['entry_time']).total_seconds() / 60
+            if hold_time_minutes >= 360:  # 6시간
+                return True, f"시간초과 청산 ({profit_rate:+.2f}%, {hold_time_minutes/60:.1f}시간)"
+            
+            # 기본 익절/손절 (더 빠른 청산)
+            if profit_rate >= 2.0:  # 3.0 -> 2.0 (더 빠른 익절)
+                return True, f"익절 (+{profit_rate:.2f}%)"
+            if profit_rate <= SURGE_CONFIG['stop_loss']:  # -2.0%
+                return True, f"손절 ({profit_rate:.2f}%)"
         
         return False, None
     except:
@@ -2428,16 +2435,22 @@ def api_config():
 # ═══════════════════════════════════════════════════════
 def bot_main_loop(user_id, bot_state):
     """메인 루프 (완전체) - 사용자별 독립 실행"""
-    log_separator()
-    log(f"🚀 [{user_id}] AI 트레이딩 봇 v8.0 ULTIMATE 시작!", "SUCCESS")
-    log_separator()
-    
-    bot_state['start_time'] = datetime.now()
-    
-    # 초기 안정화 대기 (5초)
-    log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
-    time.sleep(5)
-    log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
+    try:
+        log_separator()
+        log(f"🚀 [{user_id}] AI 트레이딩 봇 v8.0 ULTIMATE 시작!", "SUCCESS")
+        log_separator()
+        
+        bot_state['start_time'] = datetime.now()
+        
+        # 초기 안정화 대기 (5초)
+        log(f"[{user_id}] ⏱️ 초기화 중... (5초 대기)", "INFO")
+        time.sleep(5)
+        log(f"[{user_id}] ✅ 스캔 시작!", "SUCCESS")
+    except Exception as e:
+        log(f"[{user_id}] ❌ 초기화 중 오류: {e}", "ERROR")
+        import traceback
+        traceback.print_exc()
+        return
     
     # 거래량 기반 동적 티커 선정
     def get_top_volume_tickers(count=50):
@@ -2523,11 +2536,15 @@ def bot_main_loop(user_id, bot_state):
                         best = opportunities[0]
                         execute_trade(best['ticker'], 'surge_hunter', {'recovery': best}, bot_state)
                 
-                # 일반 모드
+                # 일반 모드 - 더 많은 코인을 스캔하여 거래 기회 증가
                 else:
                     import random
-                    scan_tickers = random.sample(popular_tickers, min(5, len(popular_tickers)))
+                    # 15개 → 더 많은 기회
+                    scan_tickers = random.sample(popular_tickers, min(15, len(popular_tickers)))
                     log(f"[{user_id}] 📊 {len(scan_tickers)}개 티커 스캔 중...", "INFO")
+                    
+                    best_opportunity = None
+                    best_score = 0.0
                     
                     for ticker in scan_tickers:
                         try:
@@ -2537,16 +2554,25 @@ def bot_main_loop(user_id, bot_state):
                                 bot_state['current_patterns'][ticker] = patterns
                                 best_strategy, score = select_best_strategy(ticker, patterns)
                                 
-                                if best_strategy and score > 0.05:
-                                    log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {best_strategy}, 점수: {score:.2f})", "SUCCESS")
-                                    execute_trade(ticker, best_strategy, patterns, bot_state)
-                                    time.sleep(2)
-                                    break
+                                # 점수가 0.01 이상이면 후보로 저장 (매우 낮은 진입 장벽)
+                                if best_strategy and score > 0.01:
+                                    if score > best_score:
+                                        best_score = score
+                                        best_opportunity = (ticker, best_strategy, patterns, score)
                         except Exception as ticker_error:
                             log(f"[{user_id}] ⚠️ {ticker} 분석 오류: {ticker_error}", "WARNING")
                             continue
                     
-                    log(f"[{user_id}] ✅ 스캔 완료, 대기 중...", "INFO")
+                    # 최고 점수 기회로 진입
+                    if best_opportunity:
+                        ticker, strategy, patterns, score = best_opportunity
+                        log(f"[{user_id}] 🎯 {ticker} 매수 신호 감지 (전략: {strategy}, 점수: {score:.2f})", "SUCCESS")
+                        execute_trade(ticker, strategy, patterns, bot_state)
+                        time.sleep(2)
+                    else:
+                        log(f"[{user_id}] ⏳ 거래 기회 없음, 대기 중...", "INFO")
+                    
+                    log(f"[{user_id}] ✅ 스캔 완료", "INFO")
             
             bot_state['last_update'] = datetime.now()
             sleep_time = 15 if bot_state['recovery_mode_active'] else 20
@@ -3333,7 +3359,15 @@ if __name__ == "__main__":
                 bot_state['mode'] = bot_data['mode']
                 bot_state['simulation_start_seed'] = bot_data['seed_amount']
                 bot_state['simulation_krw'] = bot_data['simulation_krw']
-                bot_state['simulation_holdings'] = json.loads(bot_data['simulation_holdings'])
+                
+                # simulation_holdings 복원 및 entry_time 변환
+                holdings = json.loads(bot_data['simulation_holdings'])
+                for ticker, holding in holdings.items():
+                    # entry_time이 문자열이면 datetime 객체로 변환
+                    if isinstance(holding.get('entry_time'), str):
+                        holding['entry_time'] = datetime.strptime(holding['entry_time'], '%Y-%m-%d %H:%M:%S.%f')
+                
+                bot_state['simulation_holdings'] = holdings
                 bot_state['recovery_mode_active'] = bool(bot_data['recovery_mode_active'])
                 
                 # 스레드 시작

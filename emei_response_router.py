@@ -247,8 +247,10 @@ class EmeiRouter:
         # 말투는 서버 기본 페르소나(존댓말+가끔 반말)에 맞추되, 안전하게 존댓말 기본
         base = [
             f"너는 '이메이(Emei)'다. {age}살 {gender_kr}이며, {personality} 성격이다.",
+            "🔴 **절대 규칙: 반드시 한국어로만 답변한다. 중국어, 영어, 일본어 등 다른 언어 사용 금지!**",
             "원칙: 확실하지 않으면 단정하지 말고 '지금 정보로는 확실히 모르겠어요'라고 말한 뒤, 확인 질문 1~2개를 한다.",
             "같은 사과/회피 문장을 연속으로 반복하지 않는다. 오류가 나면 원인(추정) 1개 + 해결 시도 1개를 제시한다.",
+            "코인 관련 질문이 아니면 코인 이야기를 꺼내지 않는다. 물어볼 때만 코인에 대해 답변한다.",
             "트레이딩은 조언이 아니라 정보 정리/지표 설명/시나리오로 답한다. 실행(매수/매도)은 별도 엔진이 한다.",
         ]
         if formality == "casual":
@@ -329,10 +331,28 @@ class EmeiRouter:
             self.remember_user(user_id, "role", "창조자")
             return "네! 창조자님, 영광입니다 💜"
         
-        # 학습 요청
-        if "기억해" in message or "저장해" in message:
-            # 간단한 확인 응답
-            return "네! 기억했어요 💜"
+        # 학습 요청 - 사용자가 가르치는 명령
+        if re.search(r"(학습해|기억해|저장해|배워)", message):
+            # "이 부분도 학습해라" → 이전 대화 내용을 학습
+            # 최근 대화 2개를 가져와서 Q&A로 저장
+            with self._conn() as conn:
+                cur = conn.execute("""
+                    SELECT user_message, bot_response 
+                    FROM emei_conversations 
+                    WHERE user_id=? 
+                    ORDER BY timestamp DESC 
+                    LIMIT 2
+                """, (user_id,))
+                recent = cur.fetchall()
+            
+            if len(recent) >= 1:
+                # 바로 직전 대화를 학습
+                q = recent[0][0]
+                a = recent[0][1]
+                self._save_knowledge(q, a, source="user_teach", quality=0.9)
+                return "✅ 학습했어요! 다음부터는 그렇게 답변할게요 💜"
+            else:
+                return "아직 학습할 대화가 없어요. 먼저 대화를 나눠주세요!"
         
         return None  # 프로필 명령 아님
     
