@@ -181,7 +181,7 @@
             padding: 16px 24px;
             background: white;
             border-bottom: 1px solid #e8e8e8;
-            max-height: 320px;
+            max-height: 360px; /* 높이 약간 증가 */
             overflow-y: auto;
         }
         
@@ -189,7 +189,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px; /* 간격 축소 */
         }
         
         .watchlist-title {
@@ -209,16 +209,18 @@
         .watchlist-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr); /* 3열 그리드 */
-            gap: 12px;
+            gap: 8px; /* 간격 축소 */
+            align-items: start; /* 위로 붙이기 */
+            align-content: start; /* 그리드 전체도 위로 */
         }
         
         .watch-item {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: 14px;
+            gap: 4px; /* 내부 간격 축소 */
+            padding: 10px 12px; /* 패딩 축소 */
             background: #f8f9fa;
-            border-radius: 10px;
+            border-radius: 8px; /* 둥글기 축소 */
             border-left: 3px solid #0062df;
             transition: all 0.3s;
         }
@@ -235,27 +237,27 @@
         }
         
         .watch-rank {
-            font-size: 11px;
+            font-size: 10px; /* 크기 축소 */
             color: #999;
             font-weight: 600;
         }
         
         .watch-ticker {
-            font-size: 14px;
+            font-size: 13px; /* 크기 축소 */
             font-weight: 700;
             color: #222;
         }
         
         .watch-price {
-            font-size: 13px;
+            font-size: 12px; /* 크기 축소 */
             color: #555;
-            margin-top: 4px;
+            margin-top: 2px; /* 간격 축소 */
         }
         
         .watch-change {
-            font-size: 12px;
+            font-size: 11px; /* 크기 축소 */
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 1px; /* 간격 축소 */
         }
         
         .watch-change.positive {
@@ -268,14 +270,14 @@
         
         .watch-badges {
             display: flex;
-            gap: 4px;
+            gap: 3px; /* 간격 축소 */
             flex-wrap: wrap;
-            margin-top: 8px;
+            margin-top: 4px; /* 간격 축소 */
         }
         
         .watch-badge {
-            font-size: 10px;
-            padding: 3px 8px;
+            font-size: 9px; /* 크기 축소 */
+            padding: 2px 6px; /* 패딩 축소 */
             border-radius: 4px;
             font-weight: 600;
             white-space: nowrap;
@@ -501,10 +503,11 @@
         }
         
         .imei-chat {
+            flex: 1; /* ✅ 남은 공간 차지 */
+            min-height: 0; /* ✅ flex shrink 허용 */
             padding: 20px;
             overflow-y: auto;
             background: white;
-            max-height: 100%; /* 부모 grid-template-rows: 1fr에 맞춰 스크롤 */
             display: flex;
             flex-direction: column;
         }
@@ -565,12 +568,10 @@
         }
         
         .imei-input-area {
+            flex-shrink: 0; /* ✅ 입력창 축소 방지 */
             padding: 18px 20px;
             background: white;
             border-top: 1px solid #e0e0e0;
-            position: sticky; /* 입력창 하단 고정 */
-            bottom: 0;
-            z-index: 10;
         }
         
         .input-wrapper {
@@ -809,6 +810,28 @@
         const API_BASE = '/api';
         
         // ========================================
+        // 세션 관리 (로그인 유지)
+        // ========================================
+        
+        function initSession() {
+            // localStorage에서 user_id 가져오기
+            let userId = localStorage.getItem('user_id');
+            
+            if (!userId) {
+                // 첫 방문: 랜덤 user_id 생성
+                userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('user_id', userId);
+                console.log('✅ 새 사용자 생성:', userId);
+            } else {
+                console.log('✅ 기존 사용자 로드:', userId);
+            }
+            
+            return userId;
+        }
+        
+        const USER_ID = initSession();
+        
+        // ========================================
         // i18n (다국어 지원)
         // ========================================
         
@@ -1012,113 +1035,4 @@
                             </div>
                             <div class="watch-badges">
                                 <div class="watch-badge badge-watching">WATCHING</div>
-                                ${item.acc_trade_price_24h > 10000000000 ? '<div class="watch-badge badge-volume">HIGH VOL</div>' : ''}
-                                ${Math.abs(item.signed_change_rate) > 0.05 ? '<div class="watch-badge badge-change">VOLATILE</div>' : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (e) {
-                console.error('Load watchlist error:', e);
-                document.getElementById('watchlistContainer').innerHTML = 
-                    '<div class="loading-state">Failed to load watchlist</div>';
-            }
-        }
-        
-        async function loadTrades() {
-            try {
-                const resp = await fetch(`${API_BASE}/trades`);
-                const data = await resp.json();
-                
-                const container = document.getElementById('tradeStreamContainer');
-                
-                if (!data.items || data.items.length === 0) {
-                    container.innerHTML = '<div class="loading-state">No trades yet</div>';
-                    return;
-                }
-                
-                container.innerHTML = data.items.slice(0, 20).map(t => `
-                    <div class="trade-card ${t.side ? t.side.toLowerCase() : 'buy'}">
-                        <div class="trade-top">
-                            <div class="trade-ticker">${t.symbol || t.ticker || 'KRW-UNKNOWN'}</div>
-                            <div class="trade-side-badge ${t.side ? t.side.toLowerCase() : 'buy'}">${t.side || 'BUY'}</div>
-                        </div>
-                        <div class="trade-info">
-                            <div class="trade-info-item">
-                                <span>Price</span>
-                                <div class="trade-info-value">₩${(t.price || 0).toLocaleString()}</div>
-                            </div>
-                            <div class="trade-info-item">
-                                <span>Qty</span>
-                                <div class="trade-info-value">${(t.qty || 0).toFixed(4)}</div>
-                            </div>
-                            <div class="trade-info-item">
-                                <span>Amount</span>
-                                <div class="trade-info-value">₩${((t.price || 0) * (t.qty || 0)).toLocaleString()}</div>
-                            </div>
-                        </div>
-                        <div class="trade-why">
-                            💡 ${t.why || t.strategy_id || 'Strategy-based trade'}
-                        </div>
-                        <div class="trade-time">${new Date(t.timestamp || Date.now()).toLocaleString('ko-KR')}</div>
-                    </div>
-                `).join('');
-                
-            } catch (e) {
-                console.error('Load trades error:', e);
-            }
-        }
-        
-        async function sendMsg() {
-            const input = document.getElementById('chatInput');
-            const msg = input.value.trim();
-            if (!msg) return;
             
-            addChat('user', msg);
-            input.value = '';
-            document.getElementById('sendBtn').disabled = true;
-            
-            // Mock response (connect to IMEI API later)
-            setTimeout(() => {
-                addChat('assistant', `I received your message: "${msg}". I'm learning from every trade! 🧠`);
-                document.getElementById('sendBtn').disabled = false;
-                document.getElementById('learningStatus').textContent = 'Just learned something new! ✨';
-                setTimeout(() => {
-                    document.getElementById('learningStatus').textContent = 'Learning from trades...';
-                }, 3000);
-            }, 1000);
-        }
-        
-        function addChat(role, text) {
-            const container = document.getElementById('chatContainer');
-            const time = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = `chat-msg ${role}`;
-            
-            if (role === 'assistant') {
-                div.innerHTML = `
-                    <img src="/static/images/emei-official.jpg" alt="IMEI" class="chat-avatar-sm">
-                    <div>
-                        <div class="chat-bubble">${text}</div>
-                        <div class="chat-timestamp">${time}</div>
-                    </div>
-                `;
-            } else {
-                div.innerHTML = `
-                    <div class="chat-bubble">${text}</div>
-                    <div class="chat-timestamp">${time}</div>
-                `;
-            }
-            
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMsg();
-        }
-    </script>
-</body>
-</html>
