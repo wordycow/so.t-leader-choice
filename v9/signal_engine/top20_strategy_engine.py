@@ -353,17 +353,34 @@ class Top20StrategyEngine:
         confidence: float,
         item: Dict
     ) -> Dict:
-        """신호 JSON 생성 (스키마 준수)"""
+        """신호 JSON 생성 (SignalPayload 스키마 준수)"""
+        import uuid
+        
         return {
-            "ts": datetime.utcnow().isoformat(),
-            "mode": "PRACTICE",  # 기본값 (나중에 .env에서 읽기)
+            # ✅ Required fields for SignalPayload
+            "signal_type": "ENTRY" if side == "BUY" else "EXIT",
+            "strategy_id": strategy_name,
             "ticker": ticker,
+            "confidence": confidence,
+            "snapshot_score": item.get("rank", 0) / 21.0,  # Rank normalized to 0-1
+            "btc_regime": "NORMAL",  # TODO: Get from BTC regime detector
+            "indicators": {
+                "change_rate": item.get("signed_change_rate", 0),
+                "volume_24h": item.get("acc_trade_price_24h", 0),
+                "price": item.get("trade_price", 0),
+            },
+            "timestamp": int(datetime.utcnow().timestamp()),
+            "signal_id": str(uuid.uuid4()),
+            
+            # ✅ Additional fields for context
             "side": side,
             "strategy_name": strategy_name,
             "why": why,
             "trigger_conditions": trigger_conditions,
-            "confidence": confidence,
             "risk_reason": self._assess_risk(item),
+            "ts": datetime.utcnow().isoformat(),
+            "mode": "PRACTICE",
+        }
             "ref": {
                 "rank": item.get("rank", 0),
                 "acc_trade_price_24h": item.get("acc_trade_price_24h", 0),

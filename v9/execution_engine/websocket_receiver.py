@@ -72,9 +72,14 @@ class WebSocketReceiver:
     async def process_message(self, message: str):
         try:
             data = json.loads(message)
+            
+            # 🔍 디버깅: payload 출력
+            logger.info(f"Received payload keys: {list(data.keys())}")
+            logger.debug(f"Full payload: {json.dumps(data, indent=2)}")
 
             if not validate_signal_payload(data):
-                logger.error("Invalid signal payload")
+                logger.error(f"Invalid signal payload. Missing fields. Got: {list(data.keys())}")
+                logger.error(f"Required: ['signal_type', 'strategy_id', 'ticker', 'confidence', 'snapshot_score', 'btc_regime', 'indicators', 'timestamp', 'signal_id']")
                 return
 
             self.received_count += 1
@@ -89,13 +94,15 @@ class WebSocketReceiver:
             }
             self._flush_state("signal_received")
 
-            logger.info(f"Signal received: {data['signal_type']} | {data['ticker']}")
+            logger.info(f"✅ Signal received: {data['signal_type']} | {data['ticker']}")
 
             if self.signal_handler:
                 await self.signal_handler(data)
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             self._flush_state("error")
 
     async def start(self):
