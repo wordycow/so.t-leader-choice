@@ -46,7 +46,7 @@ class Top20StrategyEngine:
     def __init__(self):
         self.watch_states: Dict[str, Dict[str, str]] = {}  # {ticker: {strategy: state}}
         self.last_signals: Dict[str, datetime] = {}  # {ticker: last_signal_time}
-        self.cooldown_minutes = 30  # 같은 코인 재신호 최소 간격
+        self.cooldown_minutes = 10  # 같은 코인 재신호 최소 간격 (완화: 30분 → 10분)
         
         # 히스토리 (간단한 가격 추적)
         self.price_history: Dict[str, List[Dict]] = {}  # {ticker: [{price, ts, change_rate}]}
@@ -150,27 +150,28 @@ class Top20StrategyEngine:
     def _check_surge_hunter(self, ticker: str, item: Dict) -> Optional[Dict]:
         """
         SurgeHunter: 급등 캐치
-        조건:
-        1. 변동률 +10% 이상
-        2. 거래대금 100억 이상
-        3. 상승 가속 (최근 추세)
+        조건 (완화됨):
+        1. 변동률 +5% 이상 (기존 +10%)
+        2. 거래대금 50억 이상 (기존 100억)
+        3. 상승 추세 (2회 이상)
         """
         change_rate = item.get("signed_change_rate", 0)
         volume = item.get("acc_trade_price_24h", 0)
         
         conditions = [
-            StrategyCondition("변동률 +10% 이상", change_rate >= 0.10, f"현재: {change_rate*100:.1f}%"),
-            StrategyCondition("거래대금 100억 이상", volume >= 10_000_000_000, f"현재: {volume/1e9:.1f}억"),
+            StrategyCondition("변동률 +5% 이상", change_rate >= 0.05, f"현재: {change_rate*100:.1f}%"),
+            StrategyCondition("거래대금 50억 이상", volume >= 5_000_000_000, f"현재: {volume/1e9:.1f}억"),
         ]
         
-        # 히스토리 체크 (상승 가속)
+        # 히스토리 체크 (상승 추세 - 2회만 체크)
         history = self.price_history.get(ticker, [])
-        if len(history) >= 3:
-            recent_changes = [h["change_rate"] for h in history[-3:]]
-            accelerating = all(recent_changes[i] < recent_changes[i+1] for i in range(len(recent_changes)-1))
-            conditions.append(StrategyCondition("상승 가속", accelerating, f"최근 변화: {recent_changes}"))
+        if len(history) >= 2:
+            recent_changes = [h["change_rate"] for h in history[-2:]]
+            trending_up = recent_changes[-1] > recent_changes[0]  # 마지막이 첫번째보다 높으면 OK
+            conditions.append(StrategyCondition("상승 추세", trending_up, f"최근 변화: {recent_changes}"))
         else:
-            conditions.append(StrategyCondition("상승 가속", False, "데이터 부족"))
+            # 데이터 부족 시에도 통과 (초기 스캔에서도 거래 가능)
+            conditions.append(StrategyCondition("상승 추세", True, "초기 스캔 - 통과"))
         
         # 모든 조건 충족?
         all_met = all(c.met for c in conditions)
@@ -200,28 +201,29 @@ class Top20StrategyEngine:
     def _check_dip_hunter(self, ticker: str, item: Dict) -> Optional[Dict]:
         """
         DipHunter: 급락 후 반등
-        조건:
-        1. 변동률 -8% 이하
-        2. 거래대금 50억 이상
+        조건 (완화됨):
+        1. 변동률 -5% 이하 (기존 -8%)
+        2. 거래대금 30억 이상 (기존 50억)
         3. 반등 시작 (최근 상승 전환)
         """
         change_rate = item.get("signed_change_rate", 0)
         volume = item.get("acc_trade_price_24h", 0)
         
         conditions = [
-            StrategyCondition("변동률 -8% 이하", change_rate <= -0.08, f"현재: {change_rate*100:.1f}%"),
-            StrategyCondition("거래대금 50억 이상", volume >= 5_000_000_000, f"현재: {volume/1e9:.1f}억"),
+            StrategyCondition("변동률 -5% 이하", change_rate <= -0.05, f"현재: {change_rate*100:.1f}%"),
+            StrategyCondition("거래대금 30억 이상", volume >= 3_000_000_000, f"현재: {volume/1e9:.1f}억"),
         ]
         
-        # 히스토리 체크 (반등 시작)
+        # 히스토리 체크 (반등 시작) - 조건 완화
         history = self.price_history.get(ticker, [])
         if len(history) >= 2:
             last_change = history[-1]["change_rate"]
             prev_change = history[-2]["change_rate"]
-            bouncing = last_change > prev_change and last_change > -0.05
+            bouncing = last_change > prev_change and last_change > -0.08  # -5% → -8%로 완화
             conditions.append(StrategyCondition("반등 시작", bouncing, f"이전: {prev_change*100:.1f}% → 현재: {last_change*100:.1f}%"))
         else:
-            conditions.append(StrategyCondition("반등 시작", False, "데이터 부족"))
+            # 데이터 부족 시에도 통과
+            conditions.append(StrategyCondition("반등 시작", True, "초기 스캔 - 통과"))
         
         all_met = all(c.met for c in conditions)
         current_state = self._get_state(ticker, "DipHunter")
@@ -248,27 +250,28 @@ class Top20StrategyEngine:
     def _check_box_trader(self, ticker: str, item: Dict) -> Optional[Dict]:
         """
         BoxTrader: 박스권 돌파
-        조건:
-        1. 변동률 +5% ~ +15% (적정 범위)
-        2. 거래량 증가 (이전 대비 2배 이상)
+        조건 (완화됨):
+        1. 변동률 +3% ~ +15% (기존 +5%)
+        2. 거래량 증가 (이전 대비 1.5배 이상) - 기존 2배
         3. 지지/저항 돌파
         """
         change_rate = item.get("signed_change_rate", 0)
         volume = item.get("acc_trade_price_24h", 0)
         
         conditions = [
-            StrategyCondition("변동률 적정 범위", 0.05 <= change_rate <= 0.15, f"현재: {change_rate*100:.1f}%"),
+            StrategyCondition("변동률 적정 범위", 0.03 <= change_rate <= 0.15, f"현재: {change_rate*100:.1f}%"),
         ]
         
-        # 히스토리 체크 (거래량 증가)
+        # 히스토리 체크 (거래량 증가) - 1.5배로 완화
         history = self.price_history.get(ticker, [])
         if len(history) >= 2:
             current_vol = history[-1]["volume"]
             prev_vol = history[-2]["volume"]
-            volume_surge = current_vol > prev_vol * 2
-            conditions.append(StrategyCondition("거래량 급증", volume_surge, f"이전: {prev_vol/1e9:.1f}억 → 현재: {current_vol/1e9:.1f}억"))
+            volume_surge = current_vol > prev_vol * 1.5
+            conditions.append(StrategyCondition("거래량 증가", volume_surge, f"이전: {prev_vol/1e9:.1f}억 → 현재: {current_vol/1e9:.1f}억"))
         else:
-            conditions.append(StrategyCondition("거래량 급증", False, "데이터 부족"))
+            # 데이터 부족 시에도 통과
+            conditions.append(StrategyCondition("거래량 증가", True, "초기 스캔 - 통과"))
         
         all_met = all(c.met for c in conditions)
         current_state = self._get_state(ticker, "BoxTrader")
@@ -284,7 +287,7 @@ class Top20StrategyEngine:
                 ticker=ticker,
                 side="BUY",
                 strategy_name="BoxTrader",
-                why=f"박스권 돌파: {change_rate*100:.1f}% 상승 + 거래량 급증",
+                why=f"박스권 돌파: {change_rate*100:.1f}% 상승 + 거래량 증가",
                 trigger_conditions=[c.reason for c in conditions if c.met],
                 confidence=0.80,
                 item=item
@@ -295,27 +298,28 @@ class Top20StrategyEngine:
     def _check_trend_follower(self, ticker: str, item: Dict) -> Optional[Dict]:
         """
         TrendFollower: 추세 추종
-        조건:
-        1. 변동률 +3% 이상 (완만한 상승)
-        2. 지속적 상승 (최근 5개 데이터 모두 양수)
-        3. 거래대금 30억 이상
+        조건 (완화됨):
+        1. 변동률 +2% 이상 (기존 +3%)
+        2. 지속적 상승 (최근 2개만 양수) - 기존 5개
+        3. 거래대금 20억 이상 (기존 30억)
         """
         change_rate = item.get("signed_change_rate", 0)
         volume = item.get("acc_trade_price_24h", 0)
         
         conditions = [
-            StrategyCondition("변동률 +3% 이상", change_rate >= 0.03, f"현재: {change_rate*100:.1f}%"),
-            StrategyCondition("거래대금 30억 이상", volume >= 3_000_000_000, f"현재: {volume/1e9:.1f}억"),
+            StrategyCondition("변동률 +2% 이상", change_rate >= 0.02, f"현재: {change_rate*100:.1f}%"),
+            StrategyCondition("거래대금 20억 이상", volume >= 2_000_000_000, f"현재: {volume/1e9:.1f}억"),
         ]
         
-        # 히스토리 체크 (지속 상승)
+        # 히스토리 체크 (지속 상승) - 2개만 체크
         history = self.price_history.get(ticker, [])
-        if len(history) >= 5:
-            recent_changes = [h["change_rate"] for h in history[-5:]]
+        if len(history) >= 2:
+            recent_changes = [h["change_rate"] for h in history[-2:]]
             sustained = all(c > 0 for c in recent_changes)
-            conditions.append(StrategyCondition("지속적 상승", sustained, f"최근 5개: {[f'{c*100:.1f}%' for c in recent_changes]}"))
+            conditions.append(StrategyCondition("지속적 상승", sustained, f"최근 2개: {[f'{c*100:.1f}%' for c in recent_changes]}"))
         else:
-            conditions.append(StrategyCondition("지속적 상승", False, "데이터 부족"))
+            # 데이터 부족 시에도 통과
+            conditions.append(StrategyCondition("지속적 상승", True, "초기 스캔 - 통과"))
         
         all_met = all(c.met for c in conditions)
         current_state = self._get_state(ticker, "TrendFollower")
