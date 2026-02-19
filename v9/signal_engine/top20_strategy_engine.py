@@ -380,7 +380,6 @@ class Top20StrategyEngine:
             "risk_reason": self._assess_risk(item),
             "ts": datetime.utcnow().isoformat(),
             "mode": "PRACTICE",
-        }
             "ref": {
                 "rank": item.get("rank", 0),
                 "acc_trade_price_24h": item.get("acc_trade_price_24h", 0),
