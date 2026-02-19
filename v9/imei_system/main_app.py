@@ -33,6 +33,7 @@ from imei_core.dynamic_persona import DynamicPersonaEngine
 from imei_core.web_search_learning import WebSearchLearning
 from imei_core.trading_integration import TradingIntegration
 from imei_core.emei_response_router import EmeiRouter
+from imei_core.routine_manager import RoutineManager
 
 app = Flask(__name__)
 CORS(app)
@@ -42,6 +43,7 @@ memory_engine = PersistentMemoryEngine(db_path="imei_memory.db")
 persona_engine = DynamicPersonaEngine()
 search_engine = WebSearchLearning()
 trading_integration = TradingIntegration(dashboard_url="http://localhost:5000")
+routine_manager = RoutineManager()
 
 # Ollama configuration (✅ 로컬 우선 + 터널 fallback)
 OLLAMA_LOCAL_URL = "http://127.0.0.1:11434"
@@ -132,6 +134,26 @@ def chat():
         # Step 2: Check memory trigger
         memory_triggered = memory_engine.check_memory_trigger(user_message)
         response_data['memory_triggered'] = memory_triggered
+        
+        # 🆕 Step 2.5: Handle memory commands (기억 목록, 기억 삭제)
+        if "기억" in user_message and ("목록" in user_message or "보여" in user_message or "리스트" in user_message):
+            memories = memory_engine.get_user_memories(user_id, limit=20)
+            if memories:
+                assistant_message = f"📚 저장된 기억 {len(memories)}개:\n\n"
+                for idx, mem in enumerate(memories[:10], 1):
+                    assistant_message += f"{idx}. {mem.get('summary', 'No summary')}\n"
+                    assistant_message += f"   태그: {mem.get('tags', 'N/A')} | {mem.get('created_at', '')[:10]}\n\n"
+                if len(memories) > 10:
+                    assistant_message += f"... 외 {len(memories)-10}개 더 있습니다.\n"
+            else:
+                assistant_message = "저장된 기억이 없습니다. '학습해' 또는 '기억해' 명령으로 저장할 수 있습니다."
+            
+            response_data['assistant_message'] = assistant_message
+            response_data['response'] = assistant_message
+            response_data['persona'] = 'librarian'
+            response_data['style_guide'] = {}
+            
+            return jsonify(response_data), 200
         
         # Step 3: Get trading status if requested
         trading_data = {}
@@ -275,6 +297,38 @@ def delete_memory(memory_id):
 
 
 # ========================================
+# ROUTINE ENDPOINT
+# ========================================
+
+@app.route('/api/imei/routine', methods=['GET'])
+def get_routine_message():
+    """
+    Get routine-based message (watching, meal, sleep, etc.)
+    """
+    try:
+        # Get trading status
+        status = trading_integration.get_system_status()
+        signal_engine = status.get('signal_engine', {})
+        
+        signal_count = signal_engine.get('signal_sent_count', 0)
+        tracked_tickers = signal_engine.get('tracked_tickers', 0)
+        
+        # Get routine message
+        routine_data = routine_manager.get_routine_message(signal_count, tracked_tickers)
+        
+        return jsonify({
+            'success': True,
+            'routine': routine_data,
+            'signal_count': signal_count,
+            'tracked_tickers': tracked_tickers,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================================
 # EXPORT/IMPORT ENDPOINTS
 # ========================================
 
@@ -350,7 +404,7 @@ def get_btc_regime():
                 'dominance_spike': False
             },
             'block_new_entries': False,
-            'explanation': '비트코인 1시간 & 4시간 모두 상승세이며, 스테이블코인 및 도미넌스 급등이 없습니다. 정상 거래 가능합니다.',
+            'explanation': '비트코인 1시간 & 4시간 모두 상승세이며, 스�승세이며, 스테이블코인 및 도미넌스 급등이 없습니다. 정상 거래 가능합니다.',
             'timestamp': datetime.utcnow().isoformat()
         }
         
@@ -430,7 +484,7 @@ if __name__ == '__main__':
         print(f"🧠 Model: {OLLAMA_MODEL}")
     else:
         print("⚠️  Ollama Router: DISABLED (관망 모드)")
-    print("========================================")
-    
+    print("=========================    
     # Run on port 5001 (dashboard is on 5000)
     app.run(host='0.0.0.0', port=5001, debug=False)
+001, debug=False)

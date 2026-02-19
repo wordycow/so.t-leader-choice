@@ -50,6 +50,29 @@
             font-size: 22px;
             font-weight: 700;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .lang-toggle {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .lang-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
         }
         
         .header-kpis {
@@ -185,36 +208,69 @@
         
         .watchlist-grid {
             display: grid;
-            gap: 8px;
+            grid-template-columns: repeat(3, 1fr); /* 3열 그리드 */
+            gap: 12px;
         }
         
         .watch-item {
-            display: grid;
-            grid-template-columns: 80px 1fr auto;
-            gap: 12px;
-            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 14px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 10px;
             border-left: 3px solid #0062df;
+            transition: all 0.3s;
+        }
+        
+        .watch-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .watch-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
         
+        .watch-rank {
+            font-size: 11px;
+            color: #999;
+            font-weight: 600;
+        }
+        
         .watch-ticker {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             color: #222;
         }
         
-        .watch-reason {
-            font-size: 11px;
-            color: #666;
-            line-height: 1.4;
+        .watch-price {
+            font-size: 13px;
+            color: #555;
+            margin-top: 4px;
+        }
+        
+        .watch-change {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        
+        .watch-change.positive {
+            color: #d60000;
+        }
+        
+        .watch-change.negative {
+            color: #0062df;
         }
         
         .watch-badges {
             display: flex;
             gap: 4px;
             flex-wrap: wrap;
+            margin-top: 8px;
         }
         
         .watch-badge {
@@ -448,6 +504,9 @@
             padding: 20px;
             overflow-y: auto;
             background: white;
+            max-height: 100%; /* 부모 grid-template-rows: 1fr에 맞춰 스크롤 */
+            display: flex;
+            flex-direction: column;
         }
         
         .chat-msg {
@@ -509,6 +568,9 @@
             padding: 18px 20px;
             background: white;
             border-top: 1px solid #e0e0e0;
+            position: sticky; /* 입력창 하단 고정 */
+            bottom: 0;
+            z-index: 10;
         }
         
         .input-wrapper {
@@ -583,6 +645,9 @@
             .chat-bubble {
                 max-width: 250px; /* 말풍선 축소 */
             }
+            .watchlist-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2열로 변경 */
+            }
         }
         
         @media (max-width: 1000px) {
@@ -594,6 +659,9 @@
                 border-left: none;
                 border-top: 2px solid #1261c4;
             }
+            .watchlist-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2열 유지 */
+            }
         }
         
         @media (max-width: 800px) {
@@ -604,6 +672,12 @@
                 display: none; /* 작은 화면에서는 IMEI만 */
             }
         }
+        
+        @media (max-width: 600px) {
+            .watchlist-grid {
+                grid-template-columns: 1fr; /* 모바일: 1열 */
+            }
+        }
     </style>
 </head>
 <body>
@@ -612,7 +686,12 @@
         <div class="trading-panel">
             <!-- HEADER -->
             <div class="header">
-                <div class="header-title">🚀 Upbit Bot v9</div>
+                <div class="header-title">
+                    🚀 Upbit Bot v9
+                    <button id="langToggle" class="lang-toggle" onclick="toggleLang()">
+                        <span id="langIcon">🇰🇷</span> <span id="langText">KO</span>
+                    </button>
+                </div>
                 <div class="header-kpis">
                     <div class="mini-kpi">
                         <div class="mini-kpi-label">Total Equity</div>
@@ -729,6 +808,118 @@
     <script>
         const API_BASE = '/api';
         
+        // ========================================
+        // i18n (다국어 지원)
+        // ========================================
+        
+        const translations = {
+            ko: {
+                title: "🚀 Upbit Bot v9",
+                invested: "투자금",
+                unrealized: "미실현 손익",
+                realized: "실현 손익",
+                trades: "거래 횟수",
+                winRate: "승률",
+                totalEquity: "총 자산",
+                realizedPnl: "실현 손익",
+                practice: "⚙️ 연습모드",
+                live: "🔴 실전모드",
+                watchlistTitle: "📊 Top20 감시 목록",
+                watchlistCount: "개 감시 중",
+                tradeStreamTitle: "📊 실시간 거래 내역",
+                liveIndicator: "실시간",
+                loadingWatchlist: "감시 목록 불러오는 중...",
+                loadingTrades: "거래 내역 불러오는 중...",
+                chatPlaceholder: "무엇이든 물어보세요...",
+                sendButton: "전송",
+                learningStatus: "거래 학습 중..."
+            },
+            en: {
+                title: "🚀 Upbit Bot v9",
+                invested: "Invested",
+                unrealized: "Unrealized",
+                realized: "Realized",
+                trades: "Trades",
+                winRate: "Win Rate",
+                totalEquity: "Total Equity",
+                realizedPnl: "Realized P&L",
+                practice: "⚙️ PRACTICE",
+                live: "🔴 LIVE",
+                watchlistTitle: "📊 Top20 Watchlist",
+                watchlistCount: " watching",
+                tradeStreamTitle: "📊 Real-Time Trade Stream",
+                liveIndicator: "LIVE",
+                loadingWatchlist: "Loading watchlist...",
+                loadingTrades: "Loading trade data...",
+                chatPlaceholder: "Ask me anything...",
+                sendButton: "Send",
+                learningStatus: "Learning from trades..."
+            }
+        };
+        
+        let currentLang = localStorage.getItem('lang') || 'ko';
+        
+        function toggleLang() {
+            currentLang = currentLang === 'ko' ? 'en' : 'ko';
+            localStorage.setItem('lang', currentLang);
+            
+            // Update toggle button
+            document.getElementById('langIcon').textContent = currentLang === 'ko' ? '🇰🇷' : '🇺🇸';
+            document.getElementById('langText').textContent = currentLang.toUpperCase();
+            
+            // Update UI texts
+            applyTranslations();
+            
+            // Reload data with new language
+            loadData();
+        }
+        
+        function applyTranslations() {
+            const t = translations[currentLang];
+            
+            // KPI labels
+            document.querySelectorAll('.kpi-label')[0].textContent = t.invested;
+            document.querySelectorAll('.kpi-label')[1].textContent = t.unrealized;
+            document.querySelectorAll('.kpi-label')[2].textContent = t.realized;
+            document.querySelectorAll('.kpi-label')[3].textContent = t.trades;
+            document.querySelectorAll('.kpi-label')[4].textContent = t.winRate;
+            
+            // Header
+            document.querySelectorAll('.mini-kpi-label')[0].textContent = t.totalEquity;
+            document.querySelectorAll('.mini-kpi-label')[1].textContent = t.realizedPnl;
+            
+            // Watchlist
+            document.querySelector('.watchlist-title').textContent = t.watchlistTitle;
+            
+            // Trade Stream
+            document.querySelector('.stream-title').textContent = t.tradeStreamTitle;
+            document.querySelector('.live-indicator span').textContent = t.liveIndicator;
+            
+            // IMEI
+            document.getElementById('chatInput').placeholder = t.chatPlaceholder;
+            document.getElementById('sendBtn').textContent = t.sendButton;
+            document.getElementById('learningStatus').textContent = t.learningStatus;
+        }
+        
+        function formatCurrency(value) {
+            if (currentLang === 'ko') {
+                return `₩${value.toLocaleString('ko-KR')}`;
+            } else {
+                return `$${(value / 1300).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+            }
+        }
+        
+        function formatPercent(value) {
+            return `${value.toFixed(2)}%`;
+        }
+        
+        // Initialize translations on load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('langIcon').textContent = currentLang === 'ko' ? '🇰🇷' : '🇺🇸';
+            document.getElementById('langText').textContent = currentLang.toUpperCase();
+            applyTranslations();
+        });
+        
         // Initialize
         loadData();
         setInterval(loadData, 10000); // 10s refresh
@@ -740,23 +931,24 @@
                 const data = await resp.json();
                 
                 // Header
-                document.getElementById('headerEquity').textContent = `₩${data.equity.toLocaleString()}`;
-                document.getElementById('headerPnL').textContent = `₩${data.realized_pnl.toLocaleString()}`;
+                document.getElementById('headerEquity').textContent = formatCurrency(data.equity);
+                document.getElementById('headerPnL').textContent = formatCurrency(data.realized_pnl);
                 
                 // KPIs
-                document.getElementById('kpiInvested').textContent = `₩${(data.equity - data.unrealized_pnl).toLocaleString()}`;
-                document.getElementById('kpiUnrealized').textContent = `₩${data.unrealized_pnl.toLocaleString()}`;
-                document.getElementById('kpiRealized').textContent = `₩${data.realized_pnl.toLocaleString()}`;
+                document.getElementById('kpiInvested').textContent = formatCurrency(data.equity - data.unrealized_pnl);
+                document.getElementById('kpiUnrealized').textContent = formatCurrency(data.unrealized_pnl);
+                document.getElementById('kpiRealized').textContent = formatCurrency(data.realized_pnl);
                 document.getElementById('kpiPositions').textContent = data.position_count || 0;
                 
                 // Mode
                 const badge = document.getElementById('modeBadge');
+                const t = translations[currentLang];
                 if (data.mode === 'PRACTICE') {
                     badge.className = 'mode-badge mode-practice';
-                    badge.textContent = '⚙️ PRACTICE';
+                    badge.textContent = t.practice;
                 } else {
                     badge.className = 'mode-badge mode-live';
-                    badge.textContent = '🔴 LIVE';
+                    badge.textContent = t.live;
                 }
                 
                 // Colors
@@ -805,16 +997,19 @@
                     const changeColor = item.signed_change_rate >= 0 ? '#f23645' : '#0062df';
                     const changeText = (item.signed_change_rate * 100).toFixed(2);
                     const changeSymbol = item.signed_change_rate >= 0 ? '+' : '';
+                    const changeClass = item.signed_change_rate >= 0 ? 'positive' : 'negative';
+                    const price = (item.trade_price || 0).toLocaleString('ko-KR');
                     
                     return `
                         <div class="watch-item">
-                            <div>
-                                <div class="watch-ticker">${item.ticker.replace('KRW-', '')}</div>
-                                <div style="font-size: 11px; color: ${changeColor}; font-weight: 600;">
-                                    ${changeSymbol}${changeText}%
-                                </div>
+                            <div class="watch-header">
+                                <div class="watch-rank">#${item.rank || '-'}</div>
                             </div>
-                            <div class="watch-reason">${item.reason || '추적중'}</div>
+                            <div class="watch-ticker">${item.ticker.replace('KRW-', '')}</div>
+                            <div class="watch-price">₩${price}</div>
+                            <div class="watch-change ${changeClass}">
+                                ${changeSymbol}${changeText}%
+                            </div>
                             <div class="watch-badges">
                                 <div class="watch-badge badge-watching">WATCHING</div>
                                 ${item.acc_trade_price_24h > 10000000000 ? '<div class="watch-badge badge-volume">HIGH VOL</div>' : ''}
