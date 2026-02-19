@@ -176,12 +176,21 @@
             color: #0062df;
         }
         
+        /* 🆕 WATCHLIST + TRADE STREAM 컨테이너 (50/50 분할) */
+        .data-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 50% / 50% */
+            gap: 0;
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
         /* TOP21 WATCHLIST */
         .watchlist-section {
             padding: 16px 24px;
             background: white;
-            border-bottom: 1px solid #e8e8e8;
-            max-height: 360px; /* 높이 약간 증가 */
+            border-right: 1px solid #e8e8e8; /* 오른쪽 구분선 */
+            max-height: 360px; /* 높이 유지 */
             overflow-y: auto;
         }
         
@@ -208,7 +217,7 @@
         
         .watchlist-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3열 그리드 */
+            grid-template-columns: repeat(2, 1fr); /* PC: 2열 그리드 (50% 폭에 맞춤) */
             gap: 8px; /* 간격 축소 */
             align-items: start; /* 위로 붙이기 */
             align-content: start; /* 그리드 전체도 위로 */
@@ -300,9 +309,10 @@
         
         /* TRADE STREAM */
         .trade-stream {
-            padding: 20px 24px;
+            padding: 16px 24px;
             overflow-y: auto;
             background: white;
+            max-height: 360px; /* Watchlist와 동일한 높이 */
         }
         
         .stream-header {
@@ -639,46 +649,6 @@
         }
         
         /* ====== RESPONSIVE LAYOUT ====== */
-        @media (max-width: 1200px) {
-            .main-container {
-                grid-template-columns: 1fr 360px; /* 패널 축소 */
-            }
-            .chat-bubble {
-                max-width: 250px; /* 말풍선 축소 */
-            }
-            .watchlist-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2열로 변경 */
-            }
-        }
-        
-        @media (max-width: 1000px) {
-            .main-container {
-                grid-template-columns: 1fr; /* 1단 레이아웃 */
-                grid-template-rows: 60vh 40vh; /* 상하 분할 */
-            }
-            .imei-panel {
-                border-left: none;
-                border-top: 2px solid #1261c4;
-            }
-            .watchlist-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2열 유지 */
-            }
-        }
-        
-        @media (max-width: 800px) {
-            .main-container {
-                grid-template-rows: 1fr; /* 단일 패널 */
-            }
-            .trading-panel {
-                display: none; /* 작은 화면에서는 IMEI만 */
-            }
-        }
-        
-        @media (max-width: 600px) {
-            .watchlist-grid {
-                grid-template-columns: 1fr; /* 모바일: 1열 */
-            }
-        }
     </style>
 </head>
 <body>
@@ -732,33 +702,36 @@
                 </div>
             </div>
             
-            <!-- TOP21 WATCHLIST -->
-            <div class="watchlist-section">
-                <div class="watchlist-header">
-                    <div class="watchlist-title">📊 Top21 Watchlist</div>
-                    <div class="watchlist-count" id="watchlistCount">0 watching</div>
-                </div>
-                <div class="watchlist-grid" id="watchlistContainer">
-                    <div class="loading-state">
-                        <div class="spinner"></div>
-                        <div>Loading watchlist...</div>
+            <!-- 🆕 DATA PANELS: WATCHLIST + TRADE STREAM (50/50) -->
+            <div class="data-panels">
+                <!-- TOP21 WATCHLIST -->
+                <div class="watchlist-section">
+                    <div class="watchlist-header">
+                        <div class="watchlist-title">📊 Top21 Watchlist</div>
+                        <div class="watchlist-count" id="watchlistCount">0 watching</div>
+                    </div>
+                    <div class="watchlist-grid" id="watchlistContainer">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <div>Loading watchlist...</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- TRADE STREAM -->
-            <div class="trade-stream">
-                <div class="stream-header">
-                    <div class="stream-title">📊 Real-Time Trade Stream</div>
-                    <div class="live-indicator">
-                        <div class="live-dot"></div>
-                        <span>LIVE</span>
+                
+                <!-- TRADE STREAM -->
+                <div class="trade-stream">
+                    <div class="stream-header">
+                        <div class="stream-title">📊 Real-Time Trade Stream</div>
+                        <div class="live-indicator">
+                            <div class="live-dot"></div>
+                            <span>LIVE</span>
+                        </div>
                     </div>
-                </div>
-                <div id="tradeStreamContainer">
-                    <div class="loading-state">
-                        <div class="spinner"></div>
-                        <div>Loading trade data...</div>
+                    <div id="tradeStreamContainer">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <div>Loading trade data...</div>
+                        </div>
                     </div>
                 </div>
             </div>

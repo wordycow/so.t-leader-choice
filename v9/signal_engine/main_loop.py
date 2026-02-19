@@ -32,7 +32,7 @@ class SignalEngineMain:
     def __init__(self):
         self.strategy_engine = Top20StrategyEngine()
         self.ws_emitter = WebSocketEmitter()
-        self.scan_interval = 60  # 60초마다 Top20 갱신
+        self.scan_interval = 900  # 15분(900초)마다 Top20 갱신 (업비트 API rate limit 고려)
         self.signal_count = 0
         self.last_top20_scan_at = None
         self.last_signal_at = None
