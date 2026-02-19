@@ -109,7 +109,7 @@ class SignalEngineMain:
             "service": "signal_engine",
             "status": "running",
             "last_top20_scan_at": self.last_top20_scan_at,
-            "top20_count": 20,
+            "top20_count": 21,
             "last_signal_at": self.last_signal_at,
             "signal_sent_count": self.signal_count,
             "tracked_tickers": watch_state.get("tracked_tickers", 0),

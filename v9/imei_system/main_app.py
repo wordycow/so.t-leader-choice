@@ -115,6 +115,7 @@ def chat():
         user_message = data.get('message', '')
         user_id = data.get('user_id', DEFAULT_USER_ID)
         include_trading_status = data.get('include_trading_status', False)
+        lang = data.get('lang', 'ko')  # 🌐 언어 파라미터 (기본값: 한국어)
         
         if not user_message:
             return jsonify({
@@ -188,18 +189,32 @@ def chat():
                     context_str += f"Top20 추적: {tracked_tickers}개 코인\n"
                     context_str += f"발생 신호: {signal_sent_count}건\n"
                     
-                    # 신호가 0이면 관망 사유 추가
+                    # 신호가 0이면 관망 사유 추가 + 루틴 메시지
                     if signal_sent_count == 0 and tracked_tickers > 0:
+                        # Get routine message from RoutineManager
+                        routine_data = routine_manager.get_routine_message(
+                            signal_count=signal_sent_count,
+                            tracked_tickers=tracked_tickers
+                        )
                         context_str += f"\n[관망 중인 이유]\n"
-                        context_str += f"- {tracked_tickers}개 코인을 추적 중이지만 아직 진입 조건이 충족되지 않음\n"
-                        context_str += f"- 변동성, 거래량, 가격 흐름 등 전략 조건을 모니터링 중\n"
-                        context_str += f"- 조건 충족 시 즉시 신호 발생 예정\n"
+                        context_str += routine_data.get('message', '')
+                        response_data['emotion'] = routine_data.get('emotion', 'watching')
+                        response_data['emotion_image'] = routine_data.get('image', 'emei-watching.jpg')
                     elif last_signal_at:
                         context_str += f"최근 신호: {last_signal_at}\n"
+                        response_data['emotion'] = 'focused'
+                        response_data['emotion_image'] = 'emei-focused.jpg'
+                
+                # 🌐 언어 힌트 추가
+                lang_hint = ""
+                if lang == 'en':
+                    lang_hint = "\n\n[IMPORTANT: Please respond in English]"
+                else:
+                    lang_hint = "\n\n[중요: 한국어로 응답하세요]"
                 
                 ollama_response = emei_router.chat(
                     user_id=user_id,
-                    message=user_message + context_str
+                    message=user_message + context_str + lang_hint
                 )
                 assistant_message = ollama_response.get('response', '')
                 response_data['ollama_used'] = True
@@ -217,6 +232,11 @@ def chat():
         
         # Step 6: Apply persona style (already in context_analysis from get_response_style)
         style_guide = context_analysis.get('style_guide', {})
+        
+        # 🎨 기본 emotion 설정 (아직 설정되지 않았을 경우)
+        if 'emotion' not in response_data:
+            response_data['emotion'] = 'calm'
+            response_data['emotion_image'] = 'emei-official.jpg'
         
         response_data['assistant_message'] = assistant_message
         response_data['response'] = assistant_message  # Add this for API compatibility

@@ -76,10 +76,10 @@ class UpbitMarketData:
     @classmethod
     def get_top20_by_volume(cls) -> List[Dict]:
         """
-        24시간 거래대금 기준 상위 20개 코인 조회
+        24시간 거래대금 기준 상위 21개 코인 조회
         
         Returns:
-            Top 20 coins sorted by 24h trading volume
+            Top 21 coins sorted by 24h trading volume
             
         Example:
             [
@@ -116,8 +116,8 @@ class UpbitMarketData:
             reverse=True
         )
         
-        # 4. Get top 20
-        top20 = sorted_tickers[:20]
+        # 4. Get top 21
+        top20 = sorted_tickers[:21]
         
         # 5. Format output
         result = []

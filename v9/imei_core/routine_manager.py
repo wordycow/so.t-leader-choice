@@ -12,11 +12,11 @@ class RoutineManager:
     
     # 감정 이미지 (파일명)
     EMOTION_IMAGES = {
-        'watching': 'emei-watching.jpg',  # 관망 중
-        'focused': 'emei-focused.jpg',     # 집중
-        'happy': 'emei-happy.jpg',         # 기쁨
-        'serious': 'emei-serious.jpg',     # 진지
-        'calm': 'emei-calm.jpg'            # 평온
+        'watching': 'emei-official.jpg',  # 관망 중 (기본)
+        'focused': 'emei-serious-set.jpg',     # 집중 (신호 있을 때)
+        'happy': 'emei-happy-set.jpg',         # 기쁨 (수익 발생)
+        'serious': 'emei-serious-set.jpg',     # 진지 (손실 발생)
+        'calm': 'emei-official.jpg'            # 평온 (식사/수면 시간)
     }
     
     def __init__(self):

@@ -176,7 +176,7 @@
             color: #0062df;
         }
         
-        /* TOP20 WATCHLIST */
+        /* TOP21 WATCHLIST */
         .watchlist-section {
             padding: 16px 24px;
             background: white;
@@ -732,10 +732,10 @@
                 </div>
             </div>
             
-            <!-- TOP20 WATCHLIST -->
+            <!-- TOP21 WATCHLIST -->
             <div class="watchlist-section">
                 <div class="watchlist-header">
-                    <div class="watchlist-title">📊 Top20 Watchlist</div>
+                    <div class="watchlist-title">📊 Top21 Watchlist</div>
                     <div class="watchlist-count" id="watchlistCount">0 watching</div>
                 </div>
                 <div class="watchlist-grid" id="watchlistContainer">
@@ -847,7 +847,7 @@
                 realizedPnl: "실현 손익",
                 practice: "⚙️ 연습모드",
                 live: "🔴 실전모드",
-                watchlistTitle: "📊 Top20 감시 목록",
+                watchlistTitle: "📊 Top21 감시 목록",
                 watchlistCount: "개 감시 중",
                 tradeStreamTitle: "📊 실시간 거래 내역",
                 liveIndicator: "실시간",
@@ -868,7 +868,7 @@
                 realizedPnl: "Realized P&L",
                 practice: "⚙️ PRACTICE",
                 live: "🔴 LIVE",
-                watchlistTitle: "📊 Top20 Watchlist",
+                watchlistTitle: "📊 Top21 Watchlist",
                 watchlistCount: " watching",
                 tradeStreamTitle: "📊 Real-Time Trade Stream",
                 liveIndicator: "LIVE",
@@ -1119,7 +1119,8 @@
                     body: JSON.stringify({
                         message: msg,
                         user_id: USER_ID,
-                        include_trading_status: true
+                        include_trading_status: true,
+                        lang: currentLang  // 🌐 언어 파라미터 추가
                     })
                 });
                 
@@ -1129,6 +1130,14 @@
                 
                 const data = await resp.json();
                 const reply = data.assistant_message || data.response || '현재 응답을 생성할 수 없습니다.';
+                
+                // 🎨 페르소나 이미지 자동 전환
+                if (data.emotion_image) {
+                    const avatarImg = document.querySelector('.imei-avatar-img');
+                    if (avatarImg) {
+                        avatarImg.src = `/static/images/${data.emotion_image}`;
+                    }
+                }
                 
                 addChat('assistant', reply);
                 document.getElementById('sendBtn').disabled = false;
