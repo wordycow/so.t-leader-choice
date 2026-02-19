@@ -107,21 +107,36 @@ class WebSocketEmitter:
                 await self.reconnect()
                 break
 
-    async def send_signal(self, signal: SignalPayload) -> bool:
+    async def send_signal(self, signal) -> bool:
+        """
+        Send signal via WebSocket
+        Args:
+            signal: Can be either SignalPayload object or dict
+        """
         if not self.connected or not self.websocket:
             logger.error("Cannot send signal - not connected")
             self._flush_state("not_connected")
             return False
 
         try:
-            payload = json.dumps(signal.to_dict())
+            # Handle both SignalPayload objects and dicts
+            if isinstance(signal, dict):
+                payload = json.dumps(signal)
+                ticker = signal.get('ticker', 'unknown')
+                strategy = signal.get('strategy_name', 'unknown')
+                confidence = signal.get('confidence', 0)
+            else:
+                payload = json.dumps(signal.to_dict())
+                ticker = signal.ticker
+                strategy = signal.strategy_id
+                confidence = signal.confidence
+            
             await self.websocket.send(payload)
             self.last_sent_at = now_iso()
             self._flush_state("connected")
 
             logger.info(
-                f"Signal sent: {signal.signal_type} | {signal.strategy_id} | "
-                f"{signal.ticker} | confidence={signal.confidence:.2f}"
+                f"Signal sent: {ticker} | {strategy} | confidence={confidence:.2f}"
             )
             return True
         except websockets.exceptions.ConnectionClosed:
