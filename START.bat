@@ -1,57 +1,52 @@
 @echo off
-chcp 65001 > nul
-title Upbit Trading Bot - START
-color 0A
-cls
+chcp 65001 >nul
+title Lee May Training Center - START
 
-echo ================================================
-echo   UPBIT TRADING BOT v8.0 - START
-echo ================================================
+echo ============================================================
+echo   🤖 Lee May Training Center
+echo ============================================================
 echo.
 
-REM Check Python
-python --version > nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Python not found!
-    echo Please install Python from: https://www.python.org/downloads/
+:: Python 확인
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo ❌ Python이 설치되지 않았습니다!
     pause
     exit /b 1
 )
 
-REM Check if already running
-tasklist /FI "IMAGENAME eq python.exe" 2>nul | find "python.exe" > nul
-if %errorlevel% equ 0 (
-    echo [WARNING] Python process already running!
-    echo If bot is already running, use STOP.bat first
-    echo.
+echo [1/3] Starting Lee May API Server...
+echo.
+
+:: API 서버 시작
+start "Lee May API" python api_server.py
+
+timeout /t 3 /nobreak >nul
+
+echo ✅ Lee May API Server started!
+echo.
+
+echo [2/3] Checking Ollama Tunnel...
+echo.
+
+:: Ollama 터널 확인
+tasklist | find /i "cloudflared.exe" >nul
+if errorlevel 1 (
+    echo ⚠️  Ollama Tunnel이 실행되지 않았습니다
+    echo    수동으로 시작하세요: cloudflared tunnel run ollama-stable
+) else (
+    echo ✅ Ollama Tunnel is already running!
 )
 
-REM Install dependencies
-echo [1/2] Installing Python packages...
-pip install -q flask pyupbit pandas ta numpy requests pyjwt python-dotenv
-echo [OK] Dependencies installed
 echo.
-
-REM Start bot
-echo [2/2] Starting Trading Bot...
-start /B python upbit-smart-bot-v8.0-ULTIMATE.py
-timeout /t 3 /nobreak > nul
-echo [OK] Bot started successfully!
+echo [3/3] All Done!
 echo.
-
-echo ================================================
-echo   SUCCESS! Bot is now running
-echo ================================================
+echo ============================================================
+echo   📍 Local:    http://localhost:5001
+echo   🌐 External: https://leemay.더유니크.com
+echo ============================================================
 echo.
-echo [ACCESS URL]
-echo   http://localhost:5000
-echo.
-echo [LOGIN]
-echo   Username: wordycow
-echo   Password: 1234
-echo.
-echo [WARNING] Do NOT close this window!
-echo           Bot will stop if you close it.
-echo           Use STOP.bat to safely stop the bot.
+echo ⚠️  이 창을 닫지 마세요!
+echo    종료하려면 STOP.bat 실행
 echo.
 pause

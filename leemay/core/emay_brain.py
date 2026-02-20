@@ -1,4 +1,4 @@
-from memory import EmayMemory
+from leemay.core.memory import EmayMemory
 from ollama import Client
 from datetime import datetime
 

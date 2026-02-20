@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이메이 감정 이미지 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .emotion-display {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .emotion-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .emotion-image:hover {
+            transform: scale(1.1);
+        }
+        
+        .emotion-label {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.emay .message-bubble {
+            background: #e9ecef;
+            color: #212529;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .input-area {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #userInput {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        #userInput:focus {
+            border-color: #667eea;
+        }
+        
+        #sendBtn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        #sendBtn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #sendBtn:active {
+            transform: translateY(0);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #667eea;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌸 이메이 채팅 (감정 이미지 버전)</h1>
+        </div>
+        
+        <div class="emotion-display">
+            <img id="emotionImage" class="emotion-image" 
+                 src="http://localhost:5001/image/neutral" 
+                 alt="Emotion">
+            <div class="emotion-label">현재 감정: <span id="emotionName">평온</span></div>
+        </div>
+        
+        <div class="chat-area" id="chatArea">
+            <div class="message emay">
+                <div class="message-bubble">안녕하세요! 저는 이메이예요. 무엇을 도와드릴까요? 😊</div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <span>이메이가 생각 중...</span>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="메시지를 입력하세요..." 
+                   onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button id="sendBtn" onclick="sendMessage()">전송</button>
+        </div>
+        
+        <div class="status" id="status">서버 연결 대기 중...</div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+        
+        // 감정 한글 매핑
+        const EMOTION_NAMES = {
+            "neutral": "평온", "happy": "행복", "sad": "슬픔", 
+            "worried": "걱정", "excited": "신남", "thinking": "생각 중",
+            "surprised": "놀람", "calm": "침착", "focused": "집중",
+            "confident": "자신감", "proud": "자랑", "grateful": "감사",
+            "loving": "사랑", "hopeful": "희망", "relaxed": "편안",
+            "playful": "장난", "motivated": "동기부여", "cheerful": "명랑",
+            "angry": "화남", "annoyed": "짜증", "tired": "피곤",
+            "disappointed": "실망", "scared": "두려움", "stressed": "스트레스",
+            "frustrated": "좌절", "lonely": "외로움", "skeptical": "회의",
+            "encouraging": "격려", "comforting": "위로", "apologizing": "사과",
+            "empathetic": "공감", "curious": "궁금", "serious": "진지",
+            "listening": "경청", "explaining": "설명", "interested": "관심"
+        };
+        
+        // 서버 상태 체크
+        async function checkServer() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('status').textContent = '✅ 서버 연결됨';
+                    document.getElementById('status').style.color = '#28a745';
+                } else {
+                    throw new Error('서버 응답 오류');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ 서버 연결 실패 (서버를 시작하세요)';
+                document.getElementById('status').style.color = '#dc3545';
+            }
+        }
+        
+        // 메시지 추가
+        function addMessage(text, isUser) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'emay'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // 감정 이미지 업데이트
+        function updateEmotionImage(emotion) {
+            const img = document.getElementById('emotionImage');
+            const label = document.getElementById('emotionName');
+            
+            img.src = `${API_URL}/image/${emotion}?t=${Date.now()}`; // 캐시 방지
+            label.textContent = EMOTION_NAMES[emotion] || emotion;
+        }
+        
+        // 메시지 전송
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // 사용자 메시지 표시
+            addMessage(message, true);
+            input.value = '';
+            
+            // 로딩 표시
+            const loading = document.getElementById('loading');
+            loading.classList.add('active');
+            
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        user_id: 'web_user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 이메이 응답 표시
+                    addMessage(data.response, false);
+                    
+                    // 감정 이미지 업데이트
+                    if (data.emotion) {
+                        updateEmotionImage(data.emotion);
+                    }
+                } else {
+                    addMessage(`오류: ${data.error}`, false);
+                }
+                
+            } catch (error) {
+                addMessage('서버와 통신할 수 없습니다. 서버가 실행 중인지 확인하세요.', false);
+                console.error('Error:', error);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+        
+        // 페이지 로드 시 서버 체크
+        window.onload = function() {
+            checkServer();
+            setInterval(checkServer, 10000); // 10초마다 체크
+        };
+    </script>
+</body>
+</html>

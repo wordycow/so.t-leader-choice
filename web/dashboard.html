@@ -42,7 +42,7 @@
 
     .main-grid {
       display: grid;
-      grid-template-columns: 300px 1fr 400px;
+      grid-template-columns: 300px 1fr 450px;
       gap: 20px;
     }
 
@@ -59,7 +59,7 @@
       color: #333;
     }
 
-    /* 왼쪽: 트레이딩 봇 */
+    /* 왼쪽: 봇 관리 */
     .bot-item {
       padding: 16px;
       background: #f8f9fa;
@@ -169,14 +169,94 @@
       opacity: 0.9;
     }
 
-    /* 오른쪽: 채팅 */
+    .system-info {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .system-info div {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    /* 오른쪽: Lee May 채팅 */
+    .emotion-display {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .emotion-image {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #667eea;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .emotion-image:hover {
+      transform: scale(1.1);
+    }
+
+    .emotion-label {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+
     .chat-box {
-      height: 400px;
+      height: 350px;
       background: #f8f9fa;
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 16px;
       overflow-y: auto;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      text-align: right;
+    }
+
+    .message.leemay {
+      text-align: left;
+    }
+
+    .message-bubble {
+      display: inline-block;
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-bubble {
+      background: #667eea;
+      color: white;
+    }
+
+    .message.leemay .message-bubble {
+      background: white;
+      color: #333;
+      border: 1px solid #e0e0e0;
     }
 
     .chat-input {
@@ -201,20 +281,6 @@
       font-weight: 600;
       cursor: pointer;
     }
-
-    .system-info {
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 12px;
-      margin-top: 20px;
-      font-size: 14px;
-    }
-
-    .system-info div {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
   </style>
 </head>
 <body>
@@ -226,7 +292,7 @@
 
     <!-- 메인 그리드 -->
     <div class="main-grid">
-      <!-- 왼쪽: 트레이딩 봇 제어 -->
+      <!-- 왼쪽: 봇 관리 -->
       <div class="panel">
         <h2>🤖 봇 관리</h2>
         
@@ -245,14 +311,13 @@
 
         <div class="bot-item">
           <h3>
-            <span class="status-dot" id="dot-trading_bot"></span>
-            Trading Bot
+            <span class="status-dot" id="dot-ollama_tunnel"></span>
+            Ollama Tunnel
           </h3>
-          <p style="font-size: 12px; color: #666;" id="info-trading_bot">상태 확인 중...</p>
+          <p style="font-size: 12px; color: #666;" id="info-ollama_tunnel">상태 확인 중...</p>
           <div class="bot-controls">
-            <button class="btn btn-start" onclick="controlBot('trading_bot', 'start')">시작</button>
-            <button class="btn btn-stop" onclick="controlBot('trading_bot', 'stop')">중지</button>
-            <button class="btn btn-restart" onclick="controlBot('trading_bot', 'restart')">재시작</button>
+            <button class="btn btn-start" onclick="controlBot('ollama_tunnel', 'start')">시작</button>
+            <button class="btn btn-stop" onclick="controlBot('ollama_tunnel', 'stop')">중지</button>
           </div>
         </div>
 
@@ -262,11 +327,6 @@
             YouTube Learner
           </h3>
           <p style="font-size: 12px; color: #666;" id="info-youtube_learner">상태 확인 중...</p>
-          <div class="bot-controls">
-            <button class="btn btn-start" onclick="controlBot('youtube_learner', 'start')">시작</button>
-            <button class="btn btn-stop" onclick="controlBot('youtube_learner', 'stop')">중지</button>
-            <button class="btn btn-restart" onclick="controlBot('youtube_learner', 'restart')">재시작</button>
-          </div>
         </div>
       </div>
 
@@ -278,37 +338,23 @@
         <div class="stats-grid">
           <div class="stat-card">
             <h3>감정 표현력</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 85%"></div></div>
-            <div class="stat-value">85%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-emotion" style="width: 85%"></div></div>
+            <div class="stat-value" id="val-emotion">85%</div>
           </div>
           <div class="stat-card">
             <h3>대화 이해도</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 72%"></div></div>
-            <div class="stat-value">72%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-understanding" style="width: 72%"></div></div>
+            <div class="stat-value" id="val-understanding">72%</div>
           </div>
           <div class="stat-card">
             <h3>기억력</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 90%"></div></div>
-            <div class="stat-value">90%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-memory" style="width: 90%"></div></div>
+            <div class="stat-value" id="val-memory">90%</div>
           </div>
           <div class="stat-card">
             <h3>유머 감각</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 45%"></div></div>
-            <div class="stat-value">45%</div>
-          </div>
-        </div>
-
-        <h3 style="font-size: 16px; margin: 24px 0 12px;">💹 Trading Bot</h3>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <h3>기술 분석</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 65%"></div></div>
-            <div class="stat-value">65%</div>
-          </div>
-          <div class="stat-card">
-            <h3>전략 수립</h3>
-            <div class="stat-bar"><div class="stat-fill" style="width: 72%"></div></div>
-            <div class="stat-value">72%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-humor" style="width: 45%"></div></div>
+            <div class="stat-value" id="val-humor">45%</div>
           </div>
         </div>
 
@@ -333,9 +379,21 @@
       <!-- 오른쪽: Lee May 채팅 -->
       <div class="panel">
         <h2>💬 Lee May Chat</h2>
-        <div class="chat-box" id="chatBox">
-          <p style="color: #999;">Lee May와 대화를 시작하세요!</p>
+        
+        <!-- 감정 이미지 -->
+        <div class="emotion-display">
+          <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage">
+          <div class="emotion-label" id="emotionLabel">중립</div>
         </div>
+        
+        <!-- 채팅 영역 -->
+        <div class="chat-box" id="chatBox">
+          <div class="message leemay">
+            <div class="message-bubble">안녕! 나는 Lee May야! 😊 무엇을 도와줄까?</div>
+          </div>
+        </div>
+        
+        <!-- 입력 영역 -->
         <div class="chat-input">
           <input type="text" id="chatInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.key==='Enter') sendMessage()">
           <button onclick="sendMessage()">전송</button>
@@ -345,6 +403,8 @@
   </div>
 
   <script>
+    const API_BASE = '';  // 같은 서버
+    
     // 봇 상태 업데이트
     async function updateBotStatus() {
       try {
@@ -357,7 +417,11 @@
           
           if (info.running) {
             dot.classList.add('online');
-            infoText.textContent = `CPU: ${info.cpu}% | 메모리: ${info.memory}%`;
+            if (info.cpu !== undefined) {
+              infoText.textContent = `CPU: ${info.cpu}% | 메모리: ${info.memory}%`;
+            } else {
+              infoText.textContent = '실행 중';
+            }
           } else {
             dot.classList.remove('online');
             infoText.textContent = '중지됨';
@@ -380,6 +444,31 @@
       } catch (e) {
         console.error('시스템 정보 업데이트 실패:', e);
       }
+    }
+
+    // 능력치 업데이트
+    async function updateStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        
+        if (data.leemay) {
+          const stats = data.leemay;
+          updateStat('emotion', stats.emotion_expression);
+          updateStat('understanding', stats.conversation_understanding);
+          updateStat('memory', stats.memory);
+          updateStat('humor', stats.humor);
+        }
+      } catch (e) {
+        console.error('능력치 업데이트 실패:', e);
+      }
+    }
+
+    function updateStat(name, value) {
+      const fill = document.getElementById(`stat-${name}`);
+      const val = document.getElementById(`val-${name}`);
+      if (fill) fill.style.width = value + '%';
+      if (val) val.textContent = value + '%';
     }
 
     // 봇 제어
@@ -410,21 +499,47 @@
       if (!message) return;
       
       const chatBox = document.getElementById('chatBox');
-      chatBox.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
+      
+      // 사용자 메시지 추가
+      chatBox.innerHTML += `
+        <div class="message user">
+          <div class="message-bubble">${message}</div>
+        </div>
+      `;
       input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
       
       try {
-        const res = await fetch('/api/chat', {
+        const res = await fetch('/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({ 
+            message: message,
+            user_id: 'web_user'
+          })
         });
         const data = await res.json();
         
-        chatBox.innerHTML += `<p><strong>Lee May:</strong> ${data.reply}</p>`;
+        // Lee May 응답 추가
+        chatBox.innerHTML += `
+          <div class="message leemay">
+            <div class="message-bubble">${data.response}</div>
+          </div>
+        `;
+        
+        // 감정 이미지 업데이트
+        if (data.emotion) {
+          document.getElementById('emotionImage').src = `/image/${data.emotion}`;
+          document.getElementById('emotionLabel').textContent = data.emotion;
+        }
+        
         chatBox.scrollTop = chatBox.scrollHeight;
       } catch (e) {
-        chatBox.innerHTML += `<p style="color: red;">오류 발생</p>`;
+        chatBox.innerHTML += `
+          <div class="message leemay">
+            <div class="message-bubble" style="color: red;">오류 발생: ${e.message}</div>
+          </div>
+        `;
       }
     }
 
@@ -432,11 +547,13 @@
     setInterval(() => {
       updateBotStatus();
       updateSystemInfo();
+      updateStats();
     }, 5000);
 
     // 초기 로드
     updateBotStatus();
     updateSystemInfo();
+    updateStats();
   </script>
 </body>
 </html>
