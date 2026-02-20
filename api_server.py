@@ -1025,6 +1025,171 @@ def admin_audit_list():
 
 
 # ============================================================
+# 16) OPS API - 배치 스크립트 실행
+# ============================================================
+# 보안: allowlist 방식, 고정 경로만 실행 가능
+# 로그: logs/ops_api.log에 기록
+
+OPS_DIR = os.path.join(BASE_DIR, "ops")
+OPS_LOG_FILE = os.path.join(BASE_DIR, "logs", "ops_api.log")
+
+# allowlist: 실행 가능한 배치 파일만
+ALLOWED_OPS_SCRIPTS = {
+    "control_start": os.path.join(OPS_DIR, "01_CONTROL_START.bat"),
+    "bots_start": os.path.join(OPS_DIR, "02_BOTS_START.bat"),
+    "bots_stop": os.path.join(OPS_DIR, "03_BOTS_STOP.bat"),
+    "status": os.path.join(OPS_DIR, "99_STATUS.bat"),
+}
+
+def log_ops(message: str):
+    """ops API 로그 기록"""
+    Path(OPS_LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+    with open(OPS_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{now_iso()}] {message}\n")
+
+def execute_bat_script(script_path: str) -> dict:
+    """배치 스크립트 실행 (Windows 전용)"""
+    try:
+        log_ops(f"Executing: {script_path}")
+        
+        # Windows cmd로 실행
+        result = subprocess.run(
+            ["cmd", "/c", script_path],
+            capture_output=True,
+            text=True,
+            timeout=60,  # 최대 60초
+            cwd=OPS_DIR
+        )
+        
+        log_ops(f"Exit code: {result.returncode}")
+        log_ops(f"Output: {result.stdout[:500]}")  # 처음 500자만
+        
+        return {
+            "success": result.returncode == 0,
+            "exit_code": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr
+        }
+    except subprocess.TimeoutExpired:
+        log_ops("ERROR: Script timeout (60s)")
+        return {"success": False, "error": "Timeout (60s)"}
+    except Exception as e:
+        log_ops(f"ERROR: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.route("/api/ops/control/start", methods=["POST"])
+def ops_control_start():
+    """CONTROL 시작 (API, Cloudflare, Ollama)"""
+    # 보안: 관리자만 실행 가능
+    guard = require_admin()
+    if guard:
+        return guard
+    
+    audit("OPS_CONTROL_START", "01_CONTROL_START.bat 실행")
+    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["control_start"])
+    return jsonify(result)
+
+
+@app.route("/api/ops/bots/start", methods=["POST"])
+def ops_bots_start():
+    """BOTS 시작 (Trading, Learning)"""
+    guard = require_admin()
+    if guard:
+        return guard
+    
+    audit("OPS_BOTS_START", "02_BOTS_START.bat 실행")
+    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["bots_start"])
+    return jsonify(result)
+
+
+@app.route("/api/ops/bots/stop", methods=["POST"])
+def ops_bots_stop():
+    """BOTS 정지 (CONTROL은 유지)"""
+    guard = require_admin()
+    if guard:
+        return guard
+    
+    audit("OPS_BOTS_STOP", "03_BOTS_STOP.bat 실행")
+    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["bots_stop"])
+    return jsonify(result)
+
+
+@app.route("/api/ops/status", methods=["GET"])
+def ops_status():
+    """시스템 종합 상태 조회"""
+    try:
+        # 99_STATUS.bat 실행하여 결과 파싱
+        result = execute_bat_script(ALLOWED_OPS_SCRIPTS["status"])
+        
+        # 간단한 파싱 (실제로는 출력 분석 필요)
+        status_summary = {
+            "timestamp": now_iso(),
+            "control": {
+                "api_server": check_process("python.exe", "api_server"),
+                "cloudflared": check_process("cloudflared.exe"),
+                "ollama": check_ollama_external()
+            },
+            "bots": {
+                "trading_bot": check_process("python.exe", "upbit-smart-bot"),
+                "youtube_learner": check_process("python.exe", "youtube")
+            },
+            "ports": {
+                "5001": check_port(5001),
+                "5000": check_port(5000),
+                "11434": check_port(11434)
+            },
+            "overall": "OK" if check_process("python.exe", "api_server") and check_process("cloudflared.exe") else "FAIL"
+        }
+        
+        return jsonify({
+            "success": True,
+            "status": status_summary,
+            "raw_output": result.get("stdout", "")[:1000]  # 처음 1000자
+        })
+    except Exception as e:
+        log_ops(f"ERROR in ops_status: {str(e)}")
+        return jsonify({"success": False, "error": str(e)})
+
+
+def check_process(name: str, window_title: str = None) -> bool:
+    """프로세스 실행 여부 확인"""
+    try:
+        for proc in psutil.process_iter(['name', 'cmdline']):
+            if name.lower() in proc.info['name'].lower():
+                if window_title:
+                    cmdline = ' '.join(proc.info['cmdline'] or [])
+                    if window_title.lower() in cmdline.lower():
+                        return True
+                else:
+                    return True
+        return False
+    except:
+        return False
+
+
+def check_port(port: int) -> bool:
+    """포트 열림 확인"""
+    try:
+        for conn in psutil.net_connections():
+            if conn.laddr.port == port and conn.status == 'LISTEN':
+                return True
+        return False
+    except:
+        return False
+
+
+def check_ollama_external() -> bool:
+    """Ollama 외부 서버 접속 확인"""
+    try:
+        import requests
+        resp = requests.get("http://ollama.thetheunique.com/api/tags", timeout=5)
+        return resp.status_code == 200
+    except:
+        return False
+
+
+# ============================================================
 # 17) 엔트리포인트
 # ============================================================
 if __name__ == "__main__":

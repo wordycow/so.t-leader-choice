@@ -4,6 +4,52 @@
 
 ---
 
+## 📖 문서 바로가기
+
+- **🏗️ [현재 운영 구조 (Architecture)](docs/ARCHITECTURE.md)** - 시스템 아키텍처 1페이지 요약
+- **📚 [운영 매뉴얼 (Runbook)](docs/RUNBOOK.md)** - 부팅, 제어, 점검, 문제 해결
+- **🤖 [봇 분류 (Bots Classification)](BOTS_CLASSIFICATION.md)** - AI 학습 방법별 봇 분류
+- **🔧 [AI Trading 복구 계획](docs/AI_TRADING_RECOVERY_PLAN.md)** - 5000 포트 복구 체크리스트
+
+---
+
+## 🏛️ 현재 운영 구조
+
+### CONTROL vs BOTS 철학
+
+Lee May는 **CONTROL**(핵심 인프라)과 **BOTS**(선택적 작업자) 2계층으로 운영됩니다.
+
+#### 🌐 CONTROL 서비스 (24/7 가동)
+```
+포트: 5001 (API Server) + Cloudflare Tunnel
+역할: 웹 UI, AI 대화, 모니터링, 학습 인터페이스
+외부 URL: https://leemay.thetheunique.com
+시작: ops\01_CONTROL_START.bat
+```
+
+#### 🤖 BOTS 서비스 (선택적 가동)
+```
+포트: 5000 (Trading Bot - 현재 비활성)
+역할: AI Trading, YouTube 학습, 전략 최적화
+외부 URL: https://ai_trading.thetheunique.com (현재 5001로 라우팅)
+시작: ops\02_BOTS_START.bat
+정지: ops\03_BOTS_STOP.bat
+```
+
+### 📂 Ops Scripts (운영 자동화)
+```
+ops/
+├── 01_CONTROL_START.bat   # CONTROL 서비스 시작
+├── 02_BOTS_START.bat      # BOTS 시작 (현재 안내만)
+├── 03_BOTS_STOP.bat       # BOTS 정지
+└── 99_STATUS.bat          # 전체 시스템 상태 점검
+```
+
+**일반 사용**: `01_CONTROL_START.bat` → `99_STATUS.bat` → 웹 접속  
+**운영 가이드**: [docs/RUNBOOK.md](docs/RUNBOOK.md) 참조
+
+---
+
 ## 📋 개요
 
 Lee May Training Center는 **4대 핵심 모듈**을 하나의 유기적인 시스템으로 통합한 AI 기반 학습 플랫폼입니다.
