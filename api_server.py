@@ -60,10 +60,12 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 LOG_DIR = os.path.join(DATA_DIR, "logs")
 LEARNING_LOG_DIR = os.path.join(DATA_DIR, "learning_logs")
+WEB_DIR = os.path.join(BASE_DIR, "web")  # 웹 UI 파일 디렉토리
 
 Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 Path(LEARNING_LOG_DIR).mkdir(parents=True, exist_ok=True)
+Path(WEB_DIR).mkdir(parents=True, exist_ok=True)
 
 # 이미지 폴더(유송 PC 고정 경로 기본)
 IMAGES_DIR = os.environ.get("IMAGES_DIR", r"C:\leemay_project\leemay\images")
@@ -714,6 +716,32 @@ def health():
     return jsonify({"ok": True, "ts": now_iso()})
 
 
+@app.route("/", methods=["GET"])
+@app.route("/ops", methods=["GET"])
+def serve_index():
+    """OPS UI (index.html) 서빙"""
+    try:
+        return send_from_directory(WEB_DIR, "index.html")
+    except FileNotFoundError:
+        return jsonify({
+            "error": "index.html not found",
+            "path": os.path.join(WEB_DIR, "index.html"),
+            "note": "Please create web/index.html"
+        }), 404
+
+
+@app.route("/dashboard", methods=["GET"])
+def serve_dashboard():
+    """기존 Dashboard UI 서빙 (하위 호환성)"""
+    try:
+        return send_from_directory(WEB_DIR, "dashboard.html")
+    except FileNotFoundError:
+        return jsonify({
+            "error": "dashboard.html not found",
+            "path": os.path.join(WEB_DIR, "dashboard.html")
+        }), 404
+
+
 # ============================================================
 # 10) 인증/권한
 # ============================================================
@@ -1078,78 +1106,117 @@ def execute_bat_script(script_path: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def execute_bat_script_async(script_path: str) -> dict:
+    """배치 스크립트 비동기 실행 (백그라운드)"""
+    import threading
+    try:
+        log_ops(f"Starting async: {script_path}")
+        
+        def run_script():
+            try:
+                subprocess.Popen(
+                    ["cmd", "/c", script_path],
+                    cwd=OPS_DIR,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                )
+            except Exception as e:
+                log_ops(f"Async execution error: {str(e)}")
+        
+        thread = threading.Thread(target=run_script, daemon=True)
+        thread.start()
+        
+        return {"ok": True, "msg": "started"}
+    except Exception as e:
+        log_ops(f"ERROR in async execution: {str(e)}")
+        return {"ok": False, "msg": str(e)}
+
+
 @app.route("/api/ops/control/start", methods=["POST"])
 def ops_control_start():
-    """CONTROL 시작 (API, Cloudflare, Ollama)"""
-    # 보안: 관리자만 실행 가능
-    guard = require_admin()
-    if guard:
-        return guard
+    """CONTROL 시작 (API, Cloudflare, Ollama) - 비동기 실행"""
+    # 보안: 관리자만 실행 가능 (선택적)
+    # guard = require_admin()
+    # if guard:
+    #     return guard
     
     audit("OPS_CONTROL_START", "01_CONTROL_START.bat 실행")
-    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["control_start"])
+    result = execute_bat_script_async(ALLOWED_OPS_SCRIPTS["control_start"])
     return jsonify(result)
 
 
 @app.route("/api/ops/bots/start", methods=["POST"])
 def ops_bots_start():
-    """BOTS 시작 (Trading, Learning)"""
-    guard = require_admin()
-    if guard:
-        return guard
+    """BOTS 시작 (Trading, Learning) - 비동기 실행"""
+    # 보안: 관리자만 실행 가능 (선택적)
+    # guard = require_admin()
+    # if guard:
+    #     return guard
     
     audit("OPS_BOTS_START", "02_BOTS_START.bat 실행")
-    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["bots_start"])
+    result = execute_bat_script_async(ALLOWED_OPS_SCRIPTS["bots_start"])
     return jsonify(result)
 
 
 @app.route("/api/ops/bots/stop", methods=["POST"])
 def ops_bots_stop():
-    """BOTS 정지 (CONTROL은 유지)"""
-    guard = require_admin()
-    if guard:
-        return guard
+    """BOTS 정지 (CONTROL은 유지) - 비동기 실행"""
+    # 보안: 관리자만 실행 가능 (선택적)
+    # guard = require_admin()
+    # if guard:
+    #     return guard
     
     audit("OPS_BOTS_STOP", "03_BOTS_STOP.bat 실행")
-    result = execute_bat_script(ALLOWED_OPS_SCRIPTS["bots_stop"])
+    result = execute_bat_script_async(ALLOWED_OPS_SCRIPTS["bots_stop"])
     return jsonify(result)
 
 
 @app.route("/api/ops/status", methods=["GET"])
 def ops_status():
-    """시스템 종합 상태 조회"""
+    """시스템 종합 상태 조회 (간소화 버전)"""
     try:
-        # 99_STATUS.bat 실행하여 결과 파싱
-        result = execute_bat_script(ALLOWED_OPS_SCRIPTS["status"])
+        # 포트 체크 (socket 방식)
+        port_5001 = check_port_socket(5001)
+        port_5000 = check_port_socket(5000)
+        port_11434 = check_port_socket(11434)
         
-        # 간단한 파싱 (실제로는 출력 분석 필요)
-        status_summary = {
-            "timestamp": now_iso(),
-            "control": {
-                "api_server": check_process("python.exe", "api_server"),
-                "cloudflared": check_process("cloudflared.exe"),
-                "ollama": check_ollama_external()
-            },
-            "bots": {
-                "trading_bot": check_process("python.exe", "upbit-smart-bot"),
-                "youtube_learner": check_process("python.exe", "youtube")
-            },
-            "ports": {
-                "5001": check_port(5001),
-                "5000": check_port(5000),
-                "11434": check_port(11434)
-            },
-            "overall": "OK" if check_process("python.exe", "api_server") and check_process("cloudflared.exe") else "FAIL"
-        }
+        # 프로세스 체크
+        cloudflared_running = check_process("cloudflared.exe")
+        ollama_running = check_ollama_external()
+        
+        # 등급 결정
+        if port_5001 and cloudflared_running:
+            grade = "OK"
+            note = "핵심 서비스 정상"
+        elif port_5001:
+            grade = "WARN"
+            note = "API 정상, Cloudflare 터널 확인 필요"
+        else:
+            grade = "FAIL"
+            note = "API 서버 미실행"
         
         return jsonify({
-            "success": True,
-            "status": status_summary,
-            "raw_output": result.get("stdout", "")[:1000]  # 처음 1000자
+            "timestamp": now_iso(),
+            "ports": {
+                "5001": port_5001,
+                "5000": port_5000,
+                "11434": port_11434
+            },
+            "process": {
+                "cloudflared": cloudflared_running,
+                "ollama": ollama_running
+            },
+            "grade": grade,
+            "note": note
         })
     except Exception as e:
         log_ops(f"ERROR in ops_status: {str(e)}")
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({
+            "timestamp": now_iso(),
+            "ports": {"5001": False, "5000": False, "11434": False},
+            "process": {"cloudflared": False, "ollama": False},
+            "grade": "FAIL",
+            "note": f"오류: {str(e)}"
+        })
 
 
 def check_process(name: str, window_title: str = None) -> bool:
@@ -1169,12 +1236,25 @@ def check_process(name: str, window_title: str = None) -> bool:
 
 
 def check_port(port: int) -> bool:
-    """포트 열림 확인"""
+    """포트 열림 확인 (psutil 방식)"""
     try:
         for conn in psutil.net_connections():
             if conn.laddr.port == port and conn.status == 'LISTEN':
                 return True
         return False
+    except:
+        return False
+
+
+def check_port_socket(port: int) -> bool:
+    """포트 열림 확인 (socket 연결 방식)"""
+    import socket
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(('127.0.0.1', port))
+        sock.close()
+        return result == 0
     except:
         return False
 
