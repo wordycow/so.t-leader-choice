@@ -382,7 +382,7 @@
         
         <!-- 감정 이미지 (36개 감정) -->
         <div class="emotion-display">
-          <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage">
+          <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+8J+Yig==</text></svg>'">
           <div class="emotion-label" id="emotionLabel">중립 (36개 감정)</div>
         </div>
         
@@ -403,12 +403,15 @@
   </div>
 
   <script>
-    const API_BASE = '';  // 같은 서버
+    // API 주소 동적 설정 (현재 접속한 주소 자동 따라감)
+    const API_BASE = window.location.origin;  // 예: https://leemay.thetheunique.com 또는 http://localhost:5001
+    
+    console.log('🌐 API Base URL:', API_BASE);
     
     // 봇 상태 업데이트
     async function updateBotStatus() {
       try {
-        const res = await fetch('/api/bots/status');
+        const res = await fetch(`${API_BASE}/api/bots/status`);
         const status = await res.json();
         
         for (const [botName, info] of Object.entries(status)) {
@@ -435,7 +438,7 @@
     // 시스템 정보 업데이트
     async function updateSystemInfo() {
       try {
-        const res = await fetch('/api/system/status');
+        const res = await fetch(`${API_BASE}/api/system/status`);
         const info = await res.json();
         
         document.getElementById('system-cpu').textContent = info.cpu.toFixed(1) + '%';
@@ -449,7 +452,7 @@
     // 능력치 업데이트
     async function updateStats() {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch(`${API_BASE}/api/stats`);
         const data = await res.json();
         
         if (data.leemay) {
@@ -474,7 +477,7 @@
     // 봇 제어
     async function controlBot(botName, action) {
       try {
-        const res = await fetch(`/api/bots/${botName}/${action}`, {
+        const res = await fetch(`${API_BASE}/api/bots/${botName}/${action}`, {
           method: 'POST'
         });
         const result = await res.json();
@@ -510,7 +513,7 @@
       chatBox.scrollTop = chatBox.scrollHeight;
       
       try {
-        const res = await fetch('/chat', {
+        const res = await fetch(`${API_BASE}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -529,7 +532,7 @@
         
         // 감정 이미지 업데이트
         if (data.emotion) {
-          document.getElementById('emotionImage').src = `/image/${data.emotion}`;
+          document.getElementById('emotionImage').src = `${API_BASE}/image/${data.emotion}`;
           document.getElementById('emotionLabel').textContent = data.emotion;
         }
         
