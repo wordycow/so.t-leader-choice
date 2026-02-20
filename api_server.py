@@ -48,6 +48,16 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
+# OPTIONS 요청 처리 (브라우저 preflight)
+@app.route('/<path:path>', methods=['OPTIONS'])
+def handle_options(path):
+    """모든 경로에 대한 OPTIONS 요청 처리"""
+    response = jsonify({"status": "ok"})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
 # Emay 인스턴스 생성
 emay = EmayBrain()
 

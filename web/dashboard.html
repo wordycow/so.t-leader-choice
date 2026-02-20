@@ -382,7 +382,7 @@
         
         <!-- 감정 이미지 (36개 감정) -->
         <div class="emotion-display">
-          <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+8J+Yig==</text></svg>'">
+          <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage" onerror="this.style.display='none'">
           <div class="emotion-label" id="emotionLabel">중립 (36개 감정)</div>
         </div>
         
@@ -546,17 +546,44 @@
       }
     }
 
-    // 5초마다 자동 업데이트
-    setInterval(() => {
-      updateBotStatus();
-      updateSystemInfo();
-      updateStats();
-    }, 5000);
-
-    // 초기 로드
-    updateBotStatus();
-    updateSystemInfo();
-    updateStats();
+    // 자동 업데이트 (실패 시 간격 조정)
+    let updateInterval = 5000; // 초기 5초
+    let consecutiveFailures = 0;
+    const MAX_FAILURES = 3;
+    const MAX_INTERVAL = 30000; // 최대 30초
+    
+    async function safeUpdate() {
+      try {
+        await Promise.all([
+          updateBotStatus(),
+          updateSystemInfo(),
+          updateStats()
+        ]);
+        // 성공 시 간격 리셋
+        consecutiveFailures = 0;
+        updateInterval = 5000;
+      } catch (e) {
+        console.error('⚠️ 업데이트 실패:', e);
+        consecutiveFailures++;
+        
+        // 실패 횟수에 따라 간격 증가
+        if (consecutiveFailures >= MAX_FAILURES) {
+          updateInterval = Math.min(updateInterval * 2, MAX_INTERVAL);
+          console.warn(`🚨 ${consecutiveFailures}회 연속 실패 - 업데이트 간격을 ${updateInterval/1000}초로 증가`);
+        }
+      }
+    }
+    
+    // 동적 간격으로 업데이트
+    function scheduleUpdate() {
+      safeUpdate().then(() => {
+        setTimeout(scheduleUpdate, updateInterval);
+      });
+    }
+    
+    // 초기 로드 및 스케줄 시작
+    safeUpdate();
+    scheduleUpdate();
   </script>
 </body>
 </html>
