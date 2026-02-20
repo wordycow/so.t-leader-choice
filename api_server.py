@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Emay API 서버
+Lee May Training Center API Server
 Flask 기반 REST API 서버 (포트: 5001)
 감정 기반 이미지 응답 포함
 """
@@ -10,14 +10,22 @@ from flask_cors import CORS
 import os
 import sys
 
+# 절대 경로 설정
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+WEB_DIR = os.path.join(BASE_DIR, 'web')
+STATIC_DIR = os.path.join(WEB_DIR, 'static')
+
 # Emay 모듈 임포트
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'leemay', 'core'))
+sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, 'leemay', 'core'))
 
 from leemay.core.emay_brain import EmayBrain
 from emotion_mapper import detect_emotion, get_emotion_image_path
 
-app = Flask(__name__, static_folder='web/static', template_folder='web')
+# Flask 앱 초기화 (절대 경로 사용)
+app = Flask(__name__, 
+            static_folder=STATIC_DIR, 
+            template_folder=WEB_DIR)
 CORS(app)  # CORS 활성화
 
 # Emay 인스턴스 생성
@@ -25,8 +33,16 @@ emay = EmayBrain()
 
 @app.route('/')
 def index():
-    """메인 대시보드"""
-    return send_from_directory('web', 'dashboard.html')
+    """메인 대시보드 (절대 경로로 안전하게 제공)"""
+    dashboard_path = os.path.join(WEB_DIR, 'dashboard.html')
+    
+    if not os.path.exists(dashboard_path):
+        return jsonify({
+            "error": "Dashboard not found",
+            "path": dashboard_path
+        }), 404
+    
+    return send_from_directory(WEB_DIR, 'dashboard.html')
 
 @app.route('/health', methods=['GET'])
 def health():
