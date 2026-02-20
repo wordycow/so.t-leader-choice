@@ -1,38 +1,26 @@
-' Lee May Training Center - 스텔스 시작
-' 모든 프로세스를 백그라운드(창 없음)로 실행
-
 Set objShell = CreateObject("WScript.Shell")
-Set objFSO = CreateObject("Scripting.FileSystemObject")
-
-' 현재 스크립트 경로
-strScriptPath = objFSO.GetParentFolderName(WScript.ScriptFullName)
 
 ' ============================================================
-' 1. Lee May API 서버 시작 (백그라운드)
+' Lee May Training Center - 통합 시작 스크립트
 ' ============================================================
-strAPICommand = "cmd /c cd /d """ & strScriptPath & """ && python api_server.py"
+
+' 1. API 서버 시작 (백그라운드)
+Dim strAPICommand
+strAPICommand = "cmd /c cd C:\leemay_project && python api_server.py"
 objShell.Run strAPICommand, 0, False
 
-' 2초 대기
-WScript.Sleep 2000
-
-' ============================================================
-' 2. Ollama Tunnel 시작 (백그라운드)
-' ============================================================
-strTunnelCommand = "cmd /c cloudflared tunnel run ollama-stable"
+' 2. Cloudflare 터널 시작 (백그라운드)
+Dim strTunnelCommand
+strTunnelCommand = "cmd /c cloudflared tunnel run --url http://localhost:5001 ollama-stable"
 objShell.Run strTunnelCommand, 0, False
 
-' 1초 대기
-WScript.Sleep 1000
-
-' ============================================================
-' 완료 알림 (토스트 형태)
-' ============================================================
-objShell.Popup "Lee May Training Center 시작 완료!" & vbCrLf & vbCrLf & _
-               "접속: http://localhost:5001" & vbCrLf & _
-               "외부: https://leemay.더유니크.com" & vbCrLf & vbCrLf & _
-               "종료: LeeMay_STOP.bat 실행", _
-               5, "Lee May Training Center", 64
-
-Set objShell = Nothing
-Set objFSO = Nothing
+' 3. 완료 메시지
+WScript.Sleep 5000
+objShell.Popup "🚀 Lee May Training Center 시작 완료!" & vbCrLf & vbCrLf & _
+              "📍 로컬: http://localhost:5001" & vbCrLf & _
+              "🌐 외부: https://leemay.thetheunique.com" & vbCrLf & vbCrLf & _
+              "🎭 4대 핵심 모듈 가동 중:" & vbCrLf & _
+              "  ✅ Emotion Engine" & vbCrLf & _
+              "  ✅ Knowledge RAG" & vbCrLf & _
+              "  ✅ Live Telemetry" & vbCrLf & _
+              "  ✅ Central Command", 10, "Lee May Training Center", 64

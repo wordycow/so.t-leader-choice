@@ -30,6 +30,9 @@
       border-radius: 16px;
       margin-bottom: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .header h1 {
@@ -38,6 +41,23 @@
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status-healthy {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .status-degraded {
+      background: #FF9800;
+      color: white;
     }
 
     .main-grid {
@@ -90,42 +110,6 @@
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
-    }
-
-    .bot-controls {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.3s;
-    }
-
-    .btn-start {
-      background: #4CAF50;
-      color: white;
-    }
-
-    .btn-stop {
-      background: #F44336;
-      color: white;
-    }
-
-    .btn-restart {
-      background: #FF9800;
-      color: white;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     /* 중앙: 능력치 */
@@ -214,7 +198,7 @@
     }
 
     .chat-box {
-      height: 350px;
+      height: 300px;
       background: #f8f9fa;
       border-radius: 12px;
       padding: 16px;
@@ -262,6 +246,7 @@
     .chat-input {
       display: flex;
       gap: 8px;
+      margin-bottom: 16px;
     }
 
     .chat-input input {
@@ -281,6 +266,59 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    /* 유튜브 학습 섹션 */
+    .youtube-section {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .youtube-section h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .youtube-input {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .youtube-input input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .youtube-input button {
+      padding: 8px 16px;
+      background: #FF0000;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .knowledge-list {
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .knowledge-item {
+      padding: 6px;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
   </style>
 </head>
 <body>
@@ -288,6 +326,7 @@
     <!-- 헤더 -->
     <div class="header">
       <h1>🤖 Lee May Training Center</h1>
+      <div class="status-badge status-healthy" id="systemHealth">시스템 정상</div>
     </div>
 
     <!-- 메인 그리드 -->
@@ -302,11 +341,6 @@
             Lee May API
           </h3>
           <p style="font-size: 12px; color: #666;" id="info-leemay_api">상태 확인 중...</p>
-          <div class="bot-controls">
-            <button class="btn btn-start" onclick="controlBot('leemay_api', 'start')">시작</button>
-            <button class="btn btn-stop" onclick="controlBot('leemay_api', 'stop')">중지</button>
-            <button class="btn btn-restart" onclick="controlBot('leemay_api', 'restart')">재시작</button>
-          </div>
         </div>
 
         <div class="bot-item">
@@ -315,10 +349,6 @@
             Ollama Tunnel
           </h3>
           <p style="font-size: 12px; color: #666;" id="info-ollama_tunnel">상태 확인 중...</p>
-          <div class="bot-controls">
-            <button class="btn btn-start" onclick="controlBot('ollama_tunnel', 'start')">시작</button>
-            <button class="btn btn-stop" onclick="controlBot('ollama_tunnel', 'stop')">중지</button>
-          </div>
         </div>
 
         <div class="bot-item">
@@ -326,7 +356,7 @@
             <span class="status-dot" id="dot-youtube_learner"></span>
             YouTube Learner
           </h3>
-          <p style="font-size: 12px; color: #666;" id="info-youtube_learner">상태 확인 중...</p>
+          <p style="font-size: 12px; color: #666;" id="info-youtube_learner">대기 중</p>
         </div>
       </div>
 
@@ -338,23 +368,23 @@
         <div class="stats-grid">
           <div class="stat-card">
             <h3>감정 표현력</h3>
-            <div class="stat-bar"><div class="stat-fill" id="stat-emotion" style="width: 85%"></div></div>
-            <div class="stat-value" id="val-emotion">85%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-emotion" style="width: 0%"></div></div>
+            <div class="stat-value" id="val-emotion">0%</div>
           </div>
           <div class="stat-card">
             <h3>대화 이해도</h3>
-            <div class="stat-bar"><div class="stat-fill" id="stat-understanding" style="width: 72%"></div></div>
-            <div class="stat-value" id="val-understanding">72%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-understanding" style="width: 0%"></div></div>
+            <div class="stat-value" id="val-understanding">0%</div>
           </div>
           <div class="stat-card">
             <h3>기억력</h3>
-            <div class="stat-bar"><div class="stat-fill" id="stat-memory" style="width: 90%"></div></div>
-            <div class="stat-value" id="val-memory">90%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-memory" style="width: 0%"></div></div>
+            <div class="stat-value" id="val-memory">0%</div>
           </div>
           <div class="stat-card">
             <h3>유머 감각</h3>
-            <div class="stat-bar"><div class="stat-fill" id="stat-humor" style="width: 45%"></div></div>
-            <div class="stat-value" id="val-humor">45%</div>
+            <div class="stat-bar"><div class="stat-fill" id="stat-humor" style="width: 0%"></div></div>
+            <div class="stat-value" id="val-humor">0%</div>
           </div>
         </div>
 
@@ -380,10 +410,10 @@
       <div class="panel">
         <h2>💬 Lee May Chat</h2>
         
-        <!-- 감정 이미지 (36개 감정) -->
+        <!-- 감정 이미지 -->
         <div class="emotion-display">
           <img src="/image/neutral" alt="emotion" class="emotion-image" id="emotionImage" onerror="this.style.display='none'">
-          <div class="emotion-label" id="emotionLabel">중립 (36개 감정)</div>
+          <div class="emotion-label" id="emotionLabel">중립 (Neutral)</div>
         </div>
         
         <!-- 채팅 영역 -->
@@ -398,17 +428,30 @@
           <input type="text" id="chatInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.key==='Enter') sendMessage()">
           <button onclick="sendMessage()">전송</button>
         </div>
+
+        <!-- 유튜브 학습 -->
+        <div class="youtube-section">
+          <h3>📺 유튜브 학습</h3>
+          <div class="youtube-input">
+            <input type="text" id="youtubeUrl" placeholder="유튜브 URL 입력">
+            <button onclick="learnFromYoutube()">학습</button>
+          </div>
+          <div class="knowledge-list" id="knowledgeList">
+            <div style="text-align: center; color: #999; padding: 12px;">학습한 영상이 없습니다</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    // API 주소 동적 설정 (현재 접속한 주소 자동 따라감)
-    const API_BASE = window.location.origin;  // 예: https://leemay.thetheunique.com 또는 http://localhost:5001
-    
+    // API 주소 동적 설정
+    const API_BASE = window.location.origin;
     console.log('🌐 API Base URL:', API_BASE);
-    
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 봇 상태 업데이트
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     async function updateBotStatus() {
       try {
         const res = await fetch(`${API_BASE}/api/bots/status`);
@@ -418,38 +461,45 @@
           const dot = document.getElementById(`dot-${botName}`);
           const infoText = document.getElementById(`info-${botName}`);
           
-          if (info.running) {
-            dot.classList.add('online');
-            if (info.cpu !== undefined) {
-              infoText.textContent = `CPU: ${info.cpu}% | 메모리: ${info.memory}%`;
+          if (dot && infoText) {
+            if (info.running) {
+              dot.classList.add('online');
+              infoText.textContent = `실행 중 (PID: ${info.pid || 'N/A'})`;
             } else {
-              infoText.textContent = '실행 중';
+              dot.classList.remove('online');
+              infoText.textContent = '중지됨';
             }
-          } else {
-            dot.classList.remove('online');
-            infoText.textContent = '중지됨';
           }
         }
       } catch (e) {
-        console.error('상태 업데이트 실패:', e);
+        console.error('❌ 봇 상태 업데이트 실패:', e);
       }
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 시스템 정보 업데이트
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     async function updateSystemInfo() {
       try {
         const res = await fetch(`${API_BASE}/api/system/status`);
         const info = await res.json();
         
+        if (info.error) {
+          console.error('시스템 정보 오류:', info.error);
+          return;
+        }
+        
         document.getElementById('system-cpu').textContent = info.cpu.toFixed(1) + '%';
         document.getElementById('system-memory').textContent = info.memory.toFixed(1) + '%';
         document.getElementById('system-disk').textContent = info.disk.toFixed(1) + '%';
       } catch (e) {
-        console.error('시스템 정보 업데이트 실패:', e);
+        console.error('❌ 시스템 정보 업데이트 실패:', e);
       }
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 능력치 업데이트
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     async function updateStats() {
       try {
         const res = await fetch(`${API_BASE}/api/stats`);
@@ -463,7 +513,7 @@
           updateStat('humor', stats.humor);
         }
       } catch (e) {
-        console.error('능력치 업데이트 실패:', e);
+        console.error('❌ 능력치 업데이트 실패:', e);
       }
     }
 
@@ -474,27 +524,9 @@
       if (val) val.textContent = value + '%';
     }
 
-    // 봇 제어
-    async function controlBot(botName, action) {
-      try {
-        const res = await fetch(`${API_BASE}/api/bots/${botName}/${action}`, {
-          method: 'POST'
-        });
-        const result = await res.json();
-        
-        if (result.success) {
-          alert(result.message);
-        } else {
-          alert('오류: ' + result.error);
-        }
-        
-        updateBotStatus();
-      } catch (e) {
-        alert('요청 실패: ' + e);
-      }
-    }
-
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 채팅
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     async function sendMessage() {
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
@@ -533,7 +565,8 @@
         // 감정 이미지 업데이트
         if (data.emotion) {
           document.getElementById('emotionImage').src = `${API_BASE}/image/${data.emotion}`;
-          document.getElementById('emotionLabel').textContent = data.emotion;
+          document.getElementById('emotionImage').style.display = 'block';
+          document.getElementById('emotionLabel').textContent = `${data.emotion} (${data.confidence ? data.confidence.toFixed(0) : 0}% 신뢰도)`;
         }
         
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -543,30 +576,137 @@
             <div class="message-bubble" style="color: red;">오류 발생: ${e.message}</div>
           </div>
         `;
+        console.error('❌ 채팅 오류:', e);
       }
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 유튜브 학습
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function learnFromYoutube() {
+      const input = document.getElementById('youtubeUrl');
+      const url = input.value.trim();
+      
+      if (!url) {
+        alert('유튜브 URL을 입력하세요');
+        return;
+      }
+      
+      try {
+        const chatBox = document.getElementById('chatBox');
+        chatBox.innerHTML += `
+          <div class="message leemay">
+            <div class="message-bubble">📺 유튜브 영상을 분석하고 있어요... 잠시만 기다려주세요!</div>
+          </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        const res = await fetch(`${API_BASE}/api/learning/youtube`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          chatBox.innerHTML += `
+            <div class="message leemay">
+              <div class="message-bubble">
+                ✅ 학습 완료!<br>
+                언어: ${data.language}<br>
+                텍스트 길이: ${data.length}자<br>
+                이제 이 영상에 대해 물어보세요!
+              </div>
+            </div>
+          `;
+          
+          // 지식 목록 갱신
+          loadKnowledgeList();
+          input.value = '';
+        } else {
+          chatBox.innerHTML += `
+            <div class="message leemay">
+              <div class="message-bubble" style="color: red;">
+                ❌ 학습 실패: ${data.error}
+              </div>
+            </div>
+          `;
+        }
+        
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (e) {
+        console.error('❌ 유튜브 학습 오류:', e);
+        alert('학습 실패: ' + e.message);
+      }
+    }
+
+    async function loadKnowledgeList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/knowledge/list`);
+        const data = await res.json();
+        
+        const listEl = document.getElementById('knowledgeList');
+        
+        if (data.count === 0) {
+          listEl.innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">학습한 영상이 없습니다</div>';
+        } else {
+          listEl.innerHTML = data.knowledge.map(item => `
+            <div class="knowledge-item">
+              📹 ${item.video_id} (${item.language}, ${item.length}자)
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error('❌ 지식 목록 로드 실패:', e);
+      }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 시스템 진단
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function updateSystemHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/api/system/diagnose`);
+        const diagnosis = await res.json();
+        
+        const badge = document.getElementById('systemHealth');
+        if (diagnosis.health === 'healthy') {
+          badge.className = 'status-badge status-healthy';
+          badge.textContent = '시스템 정상';
+        } else {
+          badge.className = 'status-badge status-degraded';
+          badge.textContent = '시스템 저하';
+        }
+      } catch (e) {
+        const badge = document.getElementById('systemHealth');
+        badge.className = 'status-badge status-degraded';
+        badge.textContent = '시스템 오류';
+      }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 자동 업데이트 (실패 시 간격 조정)
-    let updateInterval = 5000; // 초기 5초
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let updateInterval = 5000;
     let consecutiveFailures = 0;
     const MAX_FAILURES = 3;
-    const MAX_INTERVAL = 30000; // 최대 30초
+    const MAX_INTERVAL = 30000;
     
     async function safeUpdate() {
       try {
         await Promise.all([
           updateBotStatus(),
           updateSystemInfo(),
-          updateStats()
+          updateStats(),
+          updateSystemHealth()
         ]);
-        // 성공 시 간격 리셋
+        
         consecutiveFailures = 0;
         updateInterval = 5000;
       } catch (e) {
-        console.error('⚠️ 업데이트 실패:', e);
+        console.error('⚠️  업데이트 실패:', e);
         consecutiveFailures++;
         
-        // 실패 횟수에 따라 간격 증가
         if (consecutiveFailures >= MAX_FAILURES) {
           updateInterval = Math.min(updateInterval * 2, MAX_INTERVAL);
           console.warn(`🚨 ${consecutiveFailures}회 연속 실패 - 업데이트 간격을 ${updateInterval/1000}초로 증가`);
@@ -574,16 +714,16 @@
       }
     }
     
-    // 동적 간격으로 업데이트
     function scheduleUpdate() {
       safeUpdate().then(() => {
         setTimeout(scheduleUpdate, updateInterval);
       });
     }
     
-    // 초기 로드 및 스케줄 시작
+    // 초기 로드
     safeUpdate();
     scheduleUpdate();
+    loadKnowledgeList();
   </script>
 </body>
 </html>
