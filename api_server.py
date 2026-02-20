@@ -1,603 +1,1035 @@
 # -*- coding: utf-8 -*-
 """
-🤖 Lee May Training Center - 완전 통합 API 서버
+🤖 Lee May Training Center - API Server (Full Version)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-4대 핵심 모듈 유기적 통합:
-1. 🎭 Emotion Engine (페르소나-감정-이미지 삼위일체)
-2. 📚 Knowledge RAG (유튜브 자막 추출 및 LLM 주입)
-3. 📊 Live Telemetry (실시간 시스템/트레이딩 데이터)
-4. 🔗 Central Command (모든 봇 중앙 관리)
+유송(wordycow) 시스템 방향에 맞춘 "운영 가능한" 풀버전:
+
+✅ (1) 관리자 인증/권한
+    - 헤더 토큰(X-ADMIN-TOKEN) + 세션 로그인(/api/auth/login) 둘 다 지원
+    - 위험 API(트레이딩 실행/봇 제어/감사로그 열람)는 관리자만
+
+✅ (2) 감사(Audit) 로그
+    - 관리자 페이지 버튼 클릭 기록 저장
+    - 관리자 페이지에서 "기록을 열어봤는지"(history/audit 열람) 자동 기록
+
+✅ (3) RealSimTrading (실전형 시뮬)
+    - 수수료 0.05% 적용
+    - 잔고/포지션 DB 영구 저장(재시작해도 유지)
+    - upbit_bot.db와 분리된 sim_trading.db 사용(기본)
+
+✅ (4) Emotion + Image
+    - C:\leemay_project\leemay\images (JPG) 제공
+
+✅ (5) Live Telemetry
+    - psutil 기반 실제 CPU/RAM/Disk
+
+✅ (6) Learning Jobs (유튜브 학습) - 운영 뼈대
+    - start/status/logs/stats 제공
+    - 실제 학습은 외부 스크립트 연결 가능(YT_LEARNER_CMD 환경변수)
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+환경변수(권장):
+- ADMIN_ID=wordycow
+- ADMIN_TOKEN=임의의_긴_문자열(필수 권장)
+- SECRET_KEY=임의의_긴_문자열(세션 쿠키 서명용, 필수 권장)
+- CORS_ORIGINS=http://localhost:5000,http://127.0.0.1:5500 (필요한 프론트만)
+- IMAGES_DIR=C:\\leemay_project\\leemay\\images  (기본값 동일)
+- YT_LEARNER_CMD=python C:\\leemay_project\\leemay\\learning\\youtube_learner.py
 """
 
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session
 from flask_cors import CORS
 import os
-import sys
 import json
-import psutil
-import subprocess
-import threading
+import uuid
 import time
+import sqlite3
+import threading
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
+import psutil
+
+
 # ============================================================
-# 🔧 경로 설정
+# 0) 기본 경로/환경
 # ============================================================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-WEB_DIR = os.path.join(BASE_DIR, 'web')
-STATIC_DIR = os.path.join(WEB_DIR, 'static')
-LEEMAY_DIR = os.path.join(BASE_DIR, 'leemay')
-IMAGES_DIR = os.path.join(LEEMAY_DIR, 'images')
-KNOWLEDGE_DIR = os.path.join(BASE_DIR, 'knowledge_base')
-PERSONAS_DIR = os.path.join(LEEMAY_DIR, 'personas')
 
-# 폴더 생성
-for folder in [KNOWLEDGE_DIR, PERSONAS_DIR, IMAGES_DIR]:
-    os.makedirs(folder, exist_ok=True)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+LOG_DIR = os.path.join(DATA_DIR, "logs")
+LEARNING_LOG_DIR = os.path.join(DATA_DIR, "learning_logs")
 
-# 모듈 경로 추가
-sys.path.append(BASE_DIR)
-sys.path.append(LEEMAY_DIR)
-sys.path.append(os.path.join(LEEMAY_DIR, 'core'))
+Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
+Path(LEARNING_LOG_DIR).mkdir(parents=True, exist_ok=True)
 
-# ============================================================
-# 📦 모듈 임포트
-# ============================================================
-try:
-    from leemay.core.emay_brain import EmayBrain
-    from leemay.core.memory import EmayMemory
-    from emotion_mapper import detect_emotion, get_emotion_image_path, EMOTION_KEYWORDS
-    EMAY_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️  Emay 모듈 로드 실패: {e}")
-    EMAY_AVAILABLE = False
+# 이미지 폴더(유송 PC 고정 경로 기본)
+IMAGES_DIR = os.environ.get("IMAGES_DIR", r"C:\leemay_project\leemay\images")
 
-# YouTube 자막 추출
-try:
-    from youtube_transcript_api import YouTubeTranscriptApi
-    import re
-    YOUTUBE_AVAILABLE = True
-except ImportError:
-    print("⚠️  youtube_transcript_api 없음 - pip install youtube-transcript-api")
-    YOUTUBE_AVAILABLE = False
+# 서버용 DB(감사로그/러닝잡/채팅로그)
+SERVER_DB_PATH = os.path.join(DATA_DIR, "server.db")
+
+# 시뮬 트레이딩 DB(실전봇 DB와 반드시 분리 권장)
+SIM_DB_PATH = os.environ.get("SIM_DB_PATH", os.path.join(DATA_DIR, "sim_trading.db"))
+
+ADMIN_ID = os.environ.get("ADMIN_ID", "wordycow").strip()
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "").strip()
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+
+# CORS 제한(운영은 반드시 특정 origin만 허용)
+CORS_ORIGINS = os.environ.get(
+    "CORS_ORIGINS",
+    "http://localhost:5000,http://127.0.0.1:5500,http://localhost:5173"
+).split(",")
+
+# 유튜브 학습 외부 실행 커맨드(있으면 연결, 없으면 stub)
+YT_LEARNER_CMD = os.environ.get("YT_LEARNER_CMD", "").strip()
+
+# 봇 레지스트리(프로세스 감시/제어 목록)
+BOT_REGISTRY_PATH = os.path.join(DATA_DIR, "bot_registry.json")
+
 
 # ============================================================
-# 🌐 Flask 앱 초기화
+# 1) 유틸
 # ============================================================
-app = Flask(__name__, 
-            static_folder=STATIC_DIR, 
-            template_folder=WEB_DIR)
+def now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
 
-# CORS 완전 개방
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type"],
-        "supports_credentials": True,
-        "max_age": 3600
-    }
-})
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+def safe_json(obj) -> str:
+    try:
+        return json.dumps(obj, ensure_ascii=False)
+    except Exception:
+        return "{}"
 
-@app.route('/<path:path>', methods=['OPTIONS'])
-def handle_options(path):
-    """OPTIONS 요청 처리"""
-    response = jsonify({"status": "ok"})
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+
+def get_client_ip() -> str:
+    xf = request.headers.get("X-Forwarded-For", "")
+    if xf:
+        return xf.split(",")[0].strip()
+    return request.remote_addr or ""
+
+
+def get_user_id() -> str:
+    # 우선순위: 헤더 > body > query > session
+    uid = (request.headers.get("X-USER-ID") or "").strip()
+    if not uid:
+        if request.is_json:
+            body = request.get_json(silent=True) or {}
+            uid = (body.get("user_id") or body.get("user") or "").strip()
+    if not uid:
+        uid = (request.args.get("user_id") or "").strip()
+    if not uid:
+        uid = (session.get("user_id") or "").strip()
+    return uid or "guest"
+
+
+def is_admin() -> bool:
+    uid = get_user_id()
+    # 1) 헤더 토큰 방식
+    token = (request.headers.get("X-ADMIN-TOKEN") or "").strip()
+    if uid == ADMIN_ID and ADMIN_TOKEN and token == ADMIN_TOKEN:
+        return True
+    # 2) 세션 로그인 방식
+    if uid == ADMIN_ID and session.get("is_admin") is True:
+        return True
+    return False
+
+
+def require_admin():
+    if not is_admin():
+        return jsonify({"success": False, "error": "관리자 권한이 필요합니다."}), 403
+    return None
+
 
 # ============================================================
-# 🎭 1. EMOTION ENGINE - 페르소나/감정/이미지 시스템
+# 2) 서버 DB 초기화 (감사로그/러닝잡/채팅로그)
 # ============================================================
-class EmotionEngine:
-    """감정 기반 이미지 및 페르소나 관리"""
-    
-    def __init__(self):
-        self.personas = {}
-        self.current_emotion = "neutral"
-        self.emotion_history = []
-        self.load_personas()
-        
-    def load_personas(self):
-        """페르소나 파일 로드"""
-        persona_file = os.path.join(PERSONAS_DIR, 'emay_persona.json')
-        
-        if os.path.exists(persona_file):
-            try:
-                with open(persona_file, 'r', encoding='utf-8') as f:
-                    self.personas = json.load(f)
-                print(f"✅ 페르소나 로드 완료: {len(self.personas)}개")
-            except Exception as e:
-                print(f"⚠️  페르소나 로드 실패: {e}")
-                self._create_default_persona()
+def db_server_conn():
+    conn = sqlite3.connect(SERVER_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_server_db():
+    conn = db_server_conn()
+    cur = conn.cursor()
+
+    # 감사로그: "누가/언제/어떤 화면/어떤 버튼/어떤 API를 봤는지" 남김
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT,
+        user_id TEXT,
+        is_admin INTEGER,
+        ip TEXT,
+        user_agent TEXT,
+        event_type TEXT,       -- API_CALL / UI_CLICK / VIEW / AUTH / BOT_CONTROL 등
+        event_name TEXT,       -- e.g. "OPEN_ADMIN_PAGE", "CLICK_STOP_BOT", "GET_TRADE_HISTORY"
+        path TEXT,
+        method TEXT,
+        status_code INTEGER,
+        payload_json TEXT
+    )
+    """)
+
+    # 채팅 히스토리(원하면 UI에서 불러오기 가능)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS chat_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT,
+        user_id TEXT,
+        message TEXT,
+        response TEXT,
+        emotion TEXT
+    )
+    """)
+
+    # 러닝 잡(유튜브 학습 등) 상태 관리
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS learning_jobs (
+        id TEXT PRIMARY KEY,
+        ts_created TEXT,
+        ts_started TEXT,
+        ts_finished TEXT,
+        created_by TEXT,
+        job_type TEXT,          -- "youtube"
+        payload_json TEXT,      -- {"url": "..."}
+        status TEXT,            -- created/running/done/error/stubbed
+        log_path TEXT,
+        result_json TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def audit(event_type: str, event_name: str, status_code: int = 200, payload=None):
+    # 이미지/헬스체크는 스킵
+    path = request.path or ""
+    if path.startswith("/image/") or path == "/health":
+        return
+
+    conn = db_server_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO audit_log
+        (ts, user_id, is_admin, ip, user_agent, event_type, event_name, path, method, status_code, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        now_iso(),
+        get_user_id(),
+        1 if is_admin() else 0,
+        get_client_ip(),
+        (request.headers.get("User-Agent") or "")[:300],
+        event_type,
+        event_name,
+        path,
+        request.method,
+        int(status_code),
+        safe_json(payload or {})
+    ))
+    conn.commit()
+    conn.close()
+
+
+# ============================================================
+# 3) RealSimTrading (DB 영구 저장형)
+# ============================================================
+class RealSimTrading:
+    def __init__(self, initial_krw=1000000, fee_rate=0.0005):
+        self.fee_rate = float(fee_rate)
+        self.initial_krw = float(initial_krw)
+        self._init_db()
+
+    def _conn(self):
+        conn = sqlite3.connect(SIM_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_db(self):
+        conn = self._conn()
+        cur = conn.cursor()
+
+        # 계정(원화 잔고)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS sim_account (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            krw_balance REAL,
+            updated_at TEXT
+        )
+        """)
+        # 포지션(코인별 보유/평단)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS sim_positions (
+            coin TEXT PRIMARY KEY,
+            amount REAL,
+            avg_price REAL,
+            updated_at TEXT
+        )
+        """)
+        # 거래 히스토리
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS sim_trade_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT,
+            coin TEXT,
+            side TEXT,
+            price REAL,
+            amount REAL,
+            trade_value REAL,
+            fee REAL,
+            strategy TEXT,
+            reason TEXT,
+            krw_balance_after REAL,
+            realized_pnl REAL
+        )
+        """)
+        # 계정 row 보장
+        cur.execute("SELECT krw_balance FROM sim_account WHERE id=1")
+        row = cur.fetchone()
+        if row is None:
+            cur.execute(
+                "INSERT INTO sim_account (id, krw_balance, updated_at) VALUES (1, ?, ?)",
+                (self.initial_krw, now_iso())
+            )
+        conn.commit()
+        conn.close()
+
+    def _get_balance(self) -> float:
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("SELECT krw_balance FROM sim_account WHERE id=1")
+        bal = float(cur.fetchone()[0])
+        conn.close()
+        return bal
+
+    def _set_balance(self, new_balance: float):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE sim_account SET krw_balance=?, updated_at=? WHERE id=1",
+            (float(new_balance), now_iso())
+        )
+        conn.commit()
+        conn.close()
+
+    def _get_position(self, coin: str):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("SELECT coin, amount, avg_price FROM sim_positions WHERE coin=?", (coin,))
+        row = cur.fetchone()
+        conn.close()
+        if not row:
+            return {"coin": coin, "amount": 0.0, "avg_price": 0.0}
+        return {"coin": row[0], "amount": float(row[1]), "avg_price": float(row[2])}
+
+    def _upsert_position(self, coin: str, amount: float, avg_price: float):
+        conn = self._conn()
+        cur = conn.cursor()
+        if amount <= 0:
+            cur.execute("DELETE FROM sim_positions WHERE coin=?", (coin,))
         else:
-            self._create_default_persona()
-    
-    def _create_default_persona(self):
-        """기본 페르소나 생성"""
-        self.personas = {
-            "default": {
-                "name": "Lee May",
-                "personality": "친근하고 따뜻한 친구",
-                "tone": "반말, 이모지 사용",
-                "traits": ["공감능력", "긍정적", "유머러스"]
-            }
-        }
-        
-        # 파일 저장
-        persona_file = os.path.join(PERSONAS_DIR, 'emay_persona.json')
-        with open(persona_file, 'w', encoding='utf-8') as f:
-            json.dump(self.personas, f, ensure_ascii=False, indent=2)
-        print("✅ 기본 페르소나 생성 완료")
-    
-    def analyze_emotion(self, message: str) -> dict:
-        """메시지에서 감정 분석"""
-        emotion = detect_emotion(message)
-        self.current_emotion = emotion
-        self.emotion_history.append({
-            "emotion": emotion,
-            "timestamp": datetime.now().isoformat(),
-            "message": message[:50]
-        })
-        
-        # 최근 10개만 유지
-        if len(self.emotion_history) > 10:
-            self.emotion_history = self.emotion_history[-10:]
-        
+            cur.execute("""
+                INSERT INTO sim_positions (coin, amount, avg_price, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(coin) DO UPDATE SET
+                    amount=excluded.amount,
+                    avg_price=excluded.avg_price,
+                    updated_at=excluded.updated_at
+            """, (coin, float(amount), float(avg_price), now_iso()))
+        conn.commit()
+        conn.close()
+
+    def get_snapshot(self):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("SELECT krw_balance FROM sim_account WHERE id=1")
+        bal = float(cur.fetchone()[0])
+        cur.execute("SELECT coin, amount, avg_price, updated_at FROM sim_positions ORDER BY coin ASC")
+        positions = [dict(row) for row in cur.fetchall()]
+        conn.close()
+        return {"krw_balance": round(bal, 2), "positions": positions}
+
+    def execute_trade(self, coin: str, price: float, amount: float, side: str, strategy: str, reason: str):
+        coin = (coin or "").strip().upper()
+        side = (side or "").strip().upper()
+        if side not in ("BUY", "SELL"):
+            return {"success": False, "error": "side는 BUY 또는 SELL 이어야 합니다."}
+
+        try:
+            price = float(price)
+            amount = float(amount)
+        except Exception:
+            return {"success": False, "error": "price/amount 숫자 형식이 올바르지 않습니다."}
+
+        if price <= 0 or amount <= 0:
+            return {"success": False, "error": "price/amount는 0보다 커야 합니다."}
+
+        trade_value = price * amount
+        fee = trade_value * self.fee_rate
+
+        balance = self._get_balance()
+        pos = self._get_position(coin)
+        realized_pnl = 0.0
+
+        if side == "BUY":
+            total_cost = trade_value + fee
+            if balance < total_cost:
+                return {"success": False, "error": "잔고가 부족합니다, 유송님!"}
+
+            # 신규 평단 계산
+            old_amt = pos["amount"]
+            old_avg = pos["avg_price"]
+            new_amt = old_amt + amount
+            new_avg = ((old_amt * old_avg) + trade_value) / new_amt if new_amt > 0 else 0.0
+
+            balance = balance - total_cost
+            self._set_balance(balance)
+            self._upsert_position(coin, new_amt, new_avg)
+
+        else:  # SELL
+            if pos["amount"] < amount:
+                return {"success": False, "error": "보유 수량이 부족합니다!"}
+
+            # 실현손익(평단 기준)
+            realized_pnl = (price - pos["avg_price"]) * amount - fee
+            proceeds = trade_value - fee
+
+            new_amt = pos["amount"] - amount
+            new_avg = pos["avg_price"]  # 남은 물량 평단 유지(단순 평균법)
+            balance = balance + proceeds
+
+            self._set_balance(balance)
+            self._upsert_position(coin, new_amt, new_avg)
+
+        # 히스토리 저장
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO sim_trade_history
+            (ts, coin, side, price, amount, trade_value, fee, strategy, reason, krw_balance_after, realized_pnl)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            now_iso(), coin, side, price, amount, trade_value, fee,
+            (strategy or "")[:80], (reason or "")[:400],
+            float(balance), float(realized_pnl)
+        ))
+        conn.commit()
+        conn.close()
+
         return {
-            "emotion": emotion,
-            "image_path": f"/image/{emotion}",
-            "confidence": self._calculate_confidence(message, emotion)
+            "success": True,
+            "msg": f"{coin} {side} 완료 (전략: {strategy} / 사유: {reason})",
+            "krw_balance": round(balance, 2),
+            "fee": round(fee, 2),
+            "realized_pnl": round(realized_pnl, 2),
+            "position": self._get_position(coin)
         }
-    
-    def _calculate_confidence(self, message: str, emotion: str) -> float:
-        """감정 신뢰도 계산"""
-        keywords = EMOTION_KEYWORDS.get(emotion, [])
-        matches = sum(1 for kw in keywords if kw in message.lower())
-        return min(matches / max(len(keywords), 1), 1.0) * 100
+
+    def history(self, limit=10):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT * FROM sim_trade_history
+            ORDER BY id DESC
+            LIMIT ?
+        """, (int(limit),))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+
 
 # ============================================================
-# 📚 2. KNOWLEDGE RAG - 유튜브 학습 시스템
+# 4) Emotion Engine (1차: 키워드 기반 + 확장 포인트)
 # ============================================================
-class KnowledgeRAG:
-    """유튜브 자막 추출 및 지식 저장"""
-    
-    def __init__(self):
-        self.knowledge_base = {}
-        self.load_knowledge()
-    
-    def load_knowledge(self):
-        """저장된 지식 로드"""
-        kb_file = os.path.join(KNOWLEDGE_DIR, 'knowledge_base.json')
-        
-        if os.path.exists(kb_file):
-            try:
-                with open(kb_file, 'r', encoding='utf-8') as f:
-                    self.knowledge_base = json.load(f)
-                print(f"✅ 지식 베이스 로드: {len(self.knowledge_base)}개")
-            except Exception as e:
-                print(f"⚠️  지식 베이스 로드 실패: {e}")
-    
-    def save_knowledge(self):
-        """지식 베이스 저장"""
-        kb_file = os.path.join(KNOWLEDGE_DIR, 'knowledge_base.json')
-        with open(kb_file, 'w', encoding='utf-8') as f:
-            json.dump(self.knowledge_base, f, ensure_ascii=False, indent=2)
-    
-    def extract_youtube_id(self, url: str) -> str:
-        """유튜브 URL에서 비디오 ID 추출"""
-        if not YOUTUBE_AVAILABLE:
-            return None
-        
-        patterns = [
-            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
-            r'(?:embed\/)([0-9A-Za-z_-]{11})',
-            r'(?:youtu\.be\/)([0-9A-Za-z_-]{11})',
-            r'^([0-9A-Za-z_-]{11})$'
+def get_real_emotion(message: str) -> str:
+    message = message or ""
+    joy_keys = ['행복', '좋아', '수익', '나이스', '와우', '기뻐', '대박', '승리']
+    sad_keys = ['손해', '슬퍼', '힘들어', '망함', '우울', '짜증', '불안']
+    angry_keys = ['화나', '지워', '에러', '병신', '똑바로', '열받', '빡']
+    for k in joy_keys:
+        if k in message:
+            return "happy"
+    for k in sad_keys:
+        if k in message:
+            return "sad"
+    for k in angry_keys:
+        if k in message:
+            return "angry"
+    return "neutral"
+
+
+# ============================================================
+# 5) 봇 레지스트리(프로세스 감시/제어) - 관리자 전용
+# ============================================================
+def ensure_bot_registry():
+    if os.path.exists(BOT_REGISTRY_PATH):
+        return
+    sample = {
+        "bots": [
+            {
+                "name": "signal_engine",
+                "match": "signal_engine",
+                "start": "python signal_engine.py",
+                "cwd": BASE_DIR
+            },
+            {
+                "name": "execution_engine",
+                "match": "execution_engine",
+                "start": "python execution_engine.py",
+                "cwd": BASE_DIR
+            }
         ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, url)
-            if match:
-                return match.group(1)
-        return None
-    
-    def learn_from_youtube(self, url: str) -> dict:
-        """유튜브 영상에서 학습"""
-        if not YOUTUBE_AVAILABLE:
-            return {"success": False, "error": "YouTube API 미설치"}
-        
-        video_id = self.extract_youtube_id(url)
-        if not video_id:
-            return {"success": False, "error": "올바른 유튜브 URL이 아닙니다"}
-        
+    }
+    with open(BOT_REGISTRY_PATH, "w", encoding="utf-8") as f:
+        json.dump(sample, f, ensure_ascii=False, indent=2)
+
+
+def load_bot_registry():
+    ensure_bot_registry()
+    with open(BOT_REGISTRY_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def find_processes_by_match(match: str):
+    match = (match or "").lower()
+    found = []
+    for p in psutil.process_iter(["pid", "name", "cmdline", "create_time"]):
         try:
-            # 자막 가져오기
-            try:
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-                language = "한국어"
-            except:
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                language = "영어"
-            
-            # 텍스트 결합
-            full_text = " ".join([t['text'] for t in transcript])
-            
-            # 지식 베이스에 저장
-            self.knowledge_base[video_id] = {
-                "url": url,
-                "language": language,
-                "text": full_text,
-                "length": len(full_text),
-                "timestamp": datetime.now().isoformat(),
-                "summary": full_text[:500]  # 첫 500자
-            }
-            
-            self.save_knowledge()
-            
-            return {
-                "success": True,
-                "video_id": video_id,
-                "language": language,
-                "length": len(full_text),
-                "summary": full_text[:500]
-            }
-            
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    def search_knowledge(self, query: str) -> list:
-        """지식 베이스 검색"""
-        results = []
-        query_lower = query.lower()
-        
-        for video_id, data in self.knowledge_base.items():
-            if query_lower in data['text'].lower():
-                results.append({
-                    "video_id": video_id,
-                    "url": data['url'],
-                    "summary": data['summary'],
-                    "timestamp": data['timestamp']
+            name = (p.info.get("name") or "").lower()
+            cmd = " ".join(p.info.get("cmdline") or []).lower()
+            if match and (match in name or match in cmd):
+                found.append({
+                    "pid": p.info["pid"],
+                    "name": p.info.get("name"),
+                    "cmdline": p.info.get("cmdline"),
+                    "create_time": p.info.get("create_time")
                 })
-        
-        return results
+        except Exception:
+            continue
+    return found
 
-# ============================================================
-# 📊 3. LIVE TELEMETRY - 실시간 모니터링
-# ============================================================
-class LiveTelemetry:
-    """실시간 시스템 및 트레이딩 데이터"""
-    
-    def __init__(self):
-        self.trading_data = {
-            "balance": 1000000,  # 더미 데이터
-            "profit": 0,
-            "trades": 0
-        }
-    
-    def get_system_stats(self) -> dict:
-        """실시간 시스템 리소스"""
+
+def start_bot(bot):
+    cmd = bot.get("start")
+    cwd = bot.get("cwd") or BASE_DIR
+    if not cmd:
+        return {"success": False, "error": "start 커맨드가 없습니다."}
+    # Windows에서도 동작하도록 shell=True
+    p = subprocess.Popen(cmd, cwd=cwd, shell=True)
+    return {"success": True, "pid": p.pid, "cmd": cmd}
+
+
+def stop_bot(pid: int):
+    try:
+        proc = psutil.Process(int(pid))
+        proc.terminate()
         try:
-            cpu_percent = psutil.cpu_percent(interval=0.1)
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
-            return {
-                "cpu": round(cpu_percent, 1),
-                "memory": round(memory.percent, 1),
-                "disk": round(disk.percent, 1),
-                "timestamp": datetime.now().isoformat()
-            }
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def get_trading_stats(self) -> dict:
-        """트레이딩 통계 (더미 데이터)"""
-        # TODO: 실제 트레이딩 봇 API 연동
-        return {
-            "balance": self.trading_data["balance"],
-            "profit": self.trading_data["profit"],
-            "profit_rate": (self.trading_data["profit"] / self.trading_data["balance"]) * 100,
-            "trades_today": self.trading_data["trades"],
-            "status": "running"
-        }
-
-# ============================================================
-# 🔗 4. CENTRAL COMMAND - 봇 관리 시스템
-# ============================================================
-class CentralCommand:
-    """모든 봇의 중앙 관리"""
-    
-    def __init__(self):
-        self.bots = {
-            "leemay_api": {"running": True, "pid": os.getpid()},
-            "ollama_tunnel": {"running": False, "pid": None},
-            "youtube_learner": {"running": False, "pid": None}
-        }
-    
-    def check_bot_status(self, bot_name: str) -> dict:
-        """봇 상태 확인"""
-        if bot_name == "leemay_api":
-            return {"running": True, "pid": os.getpid()}
-        
-        if bot_name == "ollama_tunnel":
-            # cloudflared 프로세스 확인
-            for proc in psutil.process_iter(['pid', 'name']):
-                try:
-                    if 'cloudflared' in proc.info['name'].lower():
-                        return {"running": True, "pid": proc.info['pid']}
-                except:
-                    pass
-        
-        return {"running": False, "pid": None}
-    
-    def self_diagnose(self) -> dict:
-        """자가 진단"""
-        diagnosis = {
-            "timestamp": datetime.now().isoformat(),
-            "modules": {},
-            "health": "healthy"
-        }
-        
-        # 각 모듈 체크
-        modules_status = {
-            "EmayBrain": EMAY_AVAILABLE,
-            "YouTube": YOUTUBE_AVAILABLE,
-            "psutil": True,
-            "Flask": True
-        }
-        
-        diagnosis["modules"] = modules_status
-        
-        if not all(modules_status.values()):
-            diagnosis["health"] = "degraded"
-        
-        return diagnosis
-
-# ============================================================
-# 🚀 글로벌 인스턴스 생성
-# ============================================================
-emotion_engine = EmotionEngine()
-knowledge_rag = KnowledgeRAG()
-live_telemetry = LiveTelemetry()
-central_command = CentralCommand()
-
-# Emay Brain (사용 가능하면)
-emay_brain = None
-if EMAY_AVAILABLE:
-    try:
-        emay_brain = EmayBrain()
-        print("✅ Emay Brain 초기화 완료")
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+        return {"success": True}
     except Exception as e:
-        print(f"⚠️  Emay Brain 초기화 실패: {e}")
+        return {"success": False, "error": str(e)}
+
 
 # ============================================================
-# 🌐 API 라우트
+# 6) Learning Jobs (유튜브 학습) - 외부 스크립트 연결형
 # ============================================================
+def learning_create_job(job_type: str, payload: dict, created_by: str) -> dict:
+    job_id = uuid.uuid4().hex
+    log_path = os.path.join(LEARNING_LOG_DIR, f"{job_id}.log")
 
-@app.route('/')
-def index():
-    """대시보드"""
-    dashboard_path = os.path.join(WEB_DIR, 'dashboard.html')
-    if os.path.exists(dashboard_path):
-        return send_from_directory(WEB_DIR, 'dashboard.html')
-    return jsonify({"error": "Dashboard not found"}), 404
+    conn = db_server_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO learning_jobs
+        (id, ts_created, ts_started, ts_finished, created_by, job_type, payload_json, status, log_path, result_json)
+        VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL)
+    """, (
+        job_id, now_iso(), created_by, job_type, safe_json(payload), "created", log_path
+    ))
+    conn.commit()
+    conn.close()
 
-@app.route('/health', methods=['GET'])
-def health():
-    """헬스체크"""
-    return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "modules": {
-            "EmayBrain": EMAY_AVAILABLE,
-            "YouTube": YOUTUBE_AVAILABLE
-        }
-    }), 200
+    # 즉시 실행(백그라운드)
+    t = threading.Thread(target=learning_run_job, args=(job_id,), daemon=True)
+    t.start()
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 🎭 Emotion Engine API
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    return {"job_id": job_id, "status": "created", "log_path": log_path}
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    """채팅 엔드포인트"""
+
+def learning_update(job_id: str, **fields):
+    conn = db_server_conn()
+    cur = conn.cursor()
+    keys = []
+    vals = []
+    for k, v in fields.items():
+        keys.append(f"{k}=?")
+        vals.append(v)
+    vals.append(job_id)
+    cur.execute(f"UPDATE learning_jobs SET {', '.join(keys)} WHERE id=?", tuple(vals))
+    conn.commit()
+    conn.close()
+
+
+def learning_append_log(log_path: str, line: str):
     try:
-        data = request.get_json()
-        message = data.get('message', '')
-        user_id = data.get('user_id', 'web_user')
-        
-        if not message:
-            return jsonify({"error": "메시지가 필요합니다"}), 400
-        
-        # 감정 분석
-        emotion_result = emotion_engine.analyze_emotion(message)
-        
-        # Emay 응답 생성
-        if emay_brain:
-            try:
-                response = emay_brain.chat(user_id, message)
-            except:
-                response = "안녕! 나는 Lee May야! 😊 무엇을 도와줄까?"
-        else:
-            response = "안녕! 나는 Lee May야! 😊 무엇을 도와줄까?"
-        
-        return jsonify({
-            "response": response,
-            "emotion": emotion_result["emotion"],
-            "image_url": emotion_result["image_path"],
-            "confidence": emotion_result["confidence"]
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{now_iso()}] {line}\n")
+    except Exception:
+        pass
 
-@app.route('/image/<emotion>', methods=['GET'])
-def get_emotion_image(emotion):
-    """감정 이미지 제공"""
-    try:
-        image_path = get_emotion_image_path(emotion)
-        
-        if os.path.exists(image_path):
-            return send_file(image_path, mimetype='image/png')
-        else:
-            # 이미지 없으면 neutral 반환
-            neutral_path = get_emotion_image_path("neutral")
-            if os.path.exists(neutral_path):
-                return send_file(neutral_path, mimetype='image/png')
+
+def learning_get(job_id: str):
+    conn = db_server_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM learning_jobs WHERE id=?", (job_id,))
+    row = cur.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def learning_run_job(job_id: str):
+    job = learning_get(job_id)
+    if not job:
+        return
+
+    learning_update(job_id, status="running", ts_started=now_iso())
+    learning_append_log(job["log_path"], f"JOB START: {job_id}")
+
+    payload = json.loads(job.get("payload_json") or "{}")
+    url = payload.get("url", "")
+
+    # 외부 learner 연결이 있으면 실행
+    if YT_LEARNER_CMD:
+        try:
+            learning_append_log(job["log_path"], f"RUN learner: {YT_LEARNER_CMD} --url {url}")
+            # stdout/stderr를 로그 파일에 붙임
+            with open(job["log_path"], "a", encoding="utf-8") as lf:
+                p = subprocess.Popen(
+                    f'{YT_LEARNER_CMD} "{url}" "{job_id}"',
+                    shell=True,
+                    stdout=lf,
+                    stderr=lf,
+                    cwd=BASE_DIR
+                )
+                code = p.wait()
+            if code == 0:
+                learning_update(job_id, status="done", ts_finished=now_iso(), result_json=safe_json({"ok": True}))
+                learning_append_log(job["log_path"], "JOB DONE (code=0)")
             else:
-                return jsonify({"error": "Image not found"}), 404
-                
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+                learning_update(job_id, status="error", ts_finished=now_iso(), result_json=safe_json({"ok": False, "code": code}))
+                learning_append_log(job["log_path"], f"JOB ERROR (code={code})")
+        except Exception as e:
+            learning_update(job_id, status="error", ts_finished=now_iso(), result_json=safe_json({"ok": False, "error": str(e)}))
+            learning_append_log(job["log_path"], f"EXCEPTION: {e}")
+    else:
+        # learner 미연결이면 stub으로 끝냄(중앙 UI 붙이는 데는 충분)
+        learning_append_log(job["log_path"], "YT_LEARNER_CMD가 없어서 STUB 처리합니다.")
+        learning_append_log(job["log_path"], f"요청 URL: {url}")
+        time.sleep(1)
+        learning_update(job_id, status="stubbed", ts_finished=now_iso(), result_json=safe_json({"ok": True, "stubbed": True}))
+        learning_append_log(job["log_path"], "JOB STUBBED DONE")
 
-@app.route('/emotions', methods=['GET'])
-def list_emotions():
-    """사용 가능한 감정 목록"""
-    emotions = list(EMOTION_KEYWORDS.keys())
+
+def learning_stats():
+    # 실제 값(가짜 금지): server.db + sim_trading.db + learning_logs 크기
+    def fsize(p):
+        try:
+            return os.path.getsize(p)
+        except Exception:
+            return 0
+
+    total_logs = 0
+    for fn in os.listdir(LEARNING_LOG_DIR):
+        total_logs += fsize(os.path.join(LEARNING_LOG_DIR, fn))
+
+    return {
+        "server_db_size": fsize(SERVER_DB_PATH),
+        "sim_db_size": fsize(SIM_DB_PATH),
+        "learning_logs_size": total_logs,
+        "timestamp": now_iso()
+    }
+
+
+# ============================================================
+# 7) Flask 앱
+# ============================================================
+app = Flask(__name__)
+# 세션 쿠키 서명키(반드시 고정)
+app.secret_key = SECRET_KEY or "CHANGE_ME_SECRET_KEY"
+
+# CORS 제한
+CORS(app, resources={r"/*": {"origins": [o.strip() for o in CORS_ORIGINS if o.strip()]}})
+
+# DB 초기화
+init_server_db()
+ensure_bot_registry()
+
+# 시뮬 인스턴스
+sim_trading = RealSimTrading(initial_krw=1000000, fee_rate=0.0005)
+
+SERVER_START_TS = time.time()
+
+
+# ============================================================
+# 8) 공통 훅: 중요한 API 호출 자동 기록
+# ============================================================
+@app.after_request
+def after(resp):
+    try:
+        path = request.path or ""
+        # 너무 자주 찍히는 건 제외
+        if path.startswith("/image/") or path == "/health":
+            return resp
+
+        # 관리자 페이지에서 "기록 조회했는지"는 자동으로 남겨야 함
+        # - trading/history, admin/audit/list 같은 엔드포인트 접근 자체가 "봤다" 증거
+        event_name = "API_CALL"
+        if path.startswith("/api/trading/history"):
+            event_name = "VIEW_TRADE_HISTORY"
+        elif path.startswith("/api/admin/audit/list"):
+            event_name = "VIEW_AUDIT_LOG"
+        elif path.startswith("/api/learning/"):
+            event_name = "LEARNING_API"
+        elif path.startswith("/api/bots/"):
+            event_name = "BOT_API"
+
+        audit("API_CALL", event_name, status_code=resp.status_code, payload={"q": request.query_string.decode("utf-8", "ignore")})
+    except Exception:
+        pass
+    return resp
+
+
+# ============================================================
+# 9) 기본/헬스
+# ============================================================
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"ok": True, "ts": now_iso()})
+
+
+# ============================================================
+# 10) 인증/권한
+# ============================================================
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or data.get("user") or "").strip() or "guest"
+    token = (data.get("admin_token") or "").strip()
+
+    session["user_id"] = user_id
+
+    # 관리자 로그인 조건: ADMIN_ID + (헤더 토큰 또는 body token 일치)
+    if user_id == ADMIN_ID and ADMIN_TOKEN and token == ADMIN_TOKEN:
+        session["is_admin"] = True
+        audit("AUTH", "ADMIN_LOGIN", payload={"user_id": user_id})
+        return jsonify({"success": True, "user_id": user_id, "is_admin": True})
+
+    session["is_admin"] = False
+    audit("AUTH", "LOGIN", payload={"user_id": user_id})
+    return jsonify({"success": True, "user_id": user_id, "is_admin": False})
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    uid = get_user_id()
+    session.clear()
+    audit("AUTH", "LOGOUT", payload={"user_id": uid})
+    return jsonify({"success": True})
+
+
+@app.route("/api/auth/whoami", methods=["GET"])
+def whoami():
+    return jsonify({"user_id": get_user_id(), "is_admin": is_admin(), "admin_id": ADMIN_ID})
+
+
+# ============================================================
+# 11) 채팅/이메이
+# ============================================================
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    uid = get_user_id()
+
+    emotion = get_real_emotion(message)
+    image_name = f"{emotion}.jpg"
+
+    response_text = f"유송님, 말씀하신 '{message}' 내용을 잘 들었어요. 분석 중입니다!"
+
+    # 채팅 저장
+    conn = db_server_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO chat_history (ts, user_id, message, response, emotion)
+        VALUES (?, ?, ?, ?, ?)
+    """, (now_iso(), uid, message[:2000], response_text[:2000], emotion))
+    conn.commit()
+    conn.close()
+
     return jsonify({
-        "emotions": emotions,
-        "count": len(emotions)
-    }), 200
+        "success": True,
+        "text": response_text,
+        "emotion": emotion,
+        "emotion_score": 0.6,   # (확장 포인트) 향후 감정 점수화
+        "image_url": f"/image/{image_name}",
+        "user_id": uid,
+        "timestamp": now_iso()
+    })
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 📚 Knowledge RAG API
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@app.route('/api/learning/youtube', methods=['POST'])
-def learn_youtube():
-    """유튜브 학습"""
-    try:
-        data = request.get_json()
-        url = data.get('url')
-        
-        if not url:
-            return jsonify({"success": False, "error": "URL이 필요합니다"}), 400
-        
-        result = knowledge_rag.learn_from_youtube(url)
-        return jsonify(result), 200
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+@app.route("/image/<filename>", methods=["GET"])
+def serve_image(filename):
+    # 보안: 파일명만 허용(경로탐색 방지)
+    filename = os.path.basename(filename)
+    return send_from_directory(IMAGES_DIR, filename)
 
-@app.route('/api/knowledge/search', methods=['POST'])
-def search_knowledge():
-    """지식 베이스 검색"""
-    try:
-        data = request.get_json()
-        query = data.get('query', '')
-        
-        results = knowledge_rag.search_knowledge(query)
-        return jsonify({"results": results, "count": len(results)}), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/knowledge/list', methods=['GET'])
-def list_knowledge():
-    """저장된 지식 목록"""
-    items = []
-    for video_id, data in knowledge_rag.knowledge_base.items():
-        items.append({
-            "video_id": video_id,
-            "url": data['url'],
-            "language": data['language'],
-            "length": data['length'],
-            "timestamp": data['timestamp']
-        })
-    
-    return jsonify({"knowledge": items, "count": len(items)}), 200
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 📊 Live Telemetry API
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-@app.route('/api/system/status', methods=['GET'])
+# ============================================================
+# 12) 시스템 상태/텔레메트리
+# ============================================================
+@app.route("/api/system/status", methods=["GET"])
 def system_status():
-    """실시간 시스템 상태"""
-    stats = live_telemetry.get_system_stats()
-    return jsonify(stats), 200
+    uptime_sec = int(time.time() - SERVER_START_TS)
 
-@app.route('/api/trading/status', methods=['GET'])
-def trading_status():
-    """트레이딩 상태"""
-    stats = live_telemetry.get_trading_stats()
-    return jsonify(stats), 200
+    # 디스크는 BASE_DIR 기준
+    disk = psutil.disk_usage(BASE_DIR)
 
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
-    """Lee May 능력치"""
-    # TODO: 실제 계산 로직
     return jsonify({
-        "leemay": {
-            "emotion_expression": 85,
-            "conversation_understanding": 72,
-            "memory": 90,
-            "humor": 45,
-            "empathy": 68
-        }
-    }), 200
+        "cpu": psutil.cpu_percent(interval=0.1),
+        "memory": psutil.virtual_memory().percent,
+        "disk_percent": disk.percent,
+        "disk_free_gb": round(disk.free / (1024**3), 2),
+        "uptime_sec": uptime_sec,
+        "server_db_size": os.path.getsize(SERVER_DB_PATH) if os.path.exists(SERVER_DB_PATH) else 0,
+        "sim_db_size": os.path.getsize(SIM_DB_PATH) if os.path.exists(SIM_DB_PATH) else 0,
+        "timestamp": now_iso()
+    })
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 🔗 Central Command API
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-@app.route('/api/bots/status', methods=['GET'])
-def bots_status():
-    """모든 봇 상태"""
-    status = {}
-    
-    for bot_name in central_command.bots.keys():
-        bot_status = central_command.check_bot_status(bot_name)
-        status[bot_name] = bot_status
-    
-    return jsonify(status), 200
-
-@app.route('/api/system/diagnose', methods=['GET'])
-def system_diagnose():
-    """시스템 자가 진단"""
-    diagnosis = central_command.self_diagnose()
-    return jsonify(diagnosis), 200
 
 # ============================================================
-# 🚀 서버 시작
+# 13) 시뮬 트레이딩(관리자 전용)
 # ============================================================
-if __name__ == '__main__':
-    print("=" * 70)
-    print("🤖 LEE MAY TRAINING CENTER - INTEGRATED API SERVER")
-    print("=" * 70)
-    print()
-    print("📍 서버 주소:")
-    print(f"   로컬:  http://localhost:5001")
-    print(f"   외부:  https://leemay.thetheunique.com")
-    print()
-    print("🎭 통합 모듈:")
-    print(f"   ✅ Emotion Engine (36개 감정)")
-    print(f"   {'✅' if YOUTUBE_AVAILABLE else '⚠️ '} Knowledge RAG (유튜브 학습)")
-    print(f"   ✅ Live Telemetry (실시간 모니터링)")
-    print(f"   ✅ Central Command (봇 관리)")
-    print()
-    print("🔗 주요 엔드포인트:")
-    print(f"   POST /chat - 채팅")
-    print(f"   GET  /image/<emotion> - 감정 이미지")
-    print(f"   POST /api/learning/youtube - 유튜브 학습")
-    print(f"   GET  /api/system/status - 시스템 상태")
-    print(f"   GET  /api/bots/status - 봇 상태")
-    print(f"   GET  /api/system/diagnose - 자가 진단")
-    print()
-    print("=" * 70)
-    print()
-    
-    app.run(host='0.0.0.0', port=5001, debug=True)
+@app.route("/api/trading/snapshot", methods=["GET"])
+def trading_snapshot():
+    guard = require_admin()
+    if guard:
+        return guard
+    return jsonify({"success": True, "data": sim_trading.get_snapshot()})
+
+
+@app.route("/api/trading/execute", methods=["POST"])
+def trade_execute():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    data = request.get_json(silent=True) or {}
+    res = sim_trading.execute_trade(
+        coin=data.get("coin"),
+        price=data.get("price"),
+        amount=data.get("amount"),
+        side=data.get("side"),
+        strategy=data.get("strategy", ""),
+        reason=data.get("reason", "")
+    )
+    audit("TRADE", "EXECUTE_SIM_TRADE", payload={"req": data, "res": res})
+    return jsonify(res)
+
+
+@app.route("/api/trading/history", methods=["GET"])
+def trade_history():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    limit = int(request.args.get("limit", "10"))
+    rows = sim_trading.history(limit=limit)
+    return jsonify({"success": True, "items": rows})
+
+
+# ============================================================
+# 14) 봇 관제/제어(관리자 전용)
+# ============================================================
+@app.route("/api/bots/list", methods=["GET"])
+def bots_list():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    reg = load_bot_registry()
+    bots = reg.get("bots", [])
+    result = []
+    for b in bots:
+        match = b.get("match", "")
+        procs = find_processes_by_match(match)
+        result.append({
+            "name": b.get("name"),
+            "match": match,
+            "running": len(procs) > 0,
+            "processes": procs
+        })
+    return jsonify({"success": True, "bots": result})
+
+
+@app.route("/api/bots/start", methods=["POST"])
+def bots_start():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+
+    reg = load_bot_registry()
+    bots = reg.get("bots", [])
+    bot = next((x for x in bots if x.get("name") == name), None)
+    if not bot:
+        return jsonify({"success": False, "error": "등록되지 않은 봇입니다."}), 400
+
+    res = start_bot(bot)
+    audit("BOT_CONTROL", "START_BOT", payload={"name": name, "res": res})
+    return jsonify(res)
+
+
+@app.route("/api/bots/stop", methods=["POST"])
+def bots_stop():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    data = request.get_json(silent=True) or {}
+    pid = data.get("pid")
+    if pid is None:
+        return jsonify({"success": False, "error": "pid가 필요합니다."}), 400
+
+    res = stop_bot(int(pid))
+    audit("BOT_CONTROL", "STOP_BOT", payload={"pid": pid, "res": res})
+    return jsonify(res)
+
+
+# ============================================================
+# 15) 러닝(유튜브 학습) - 중앙 패널용
+# ============================================================
+@app.route("/api/learning/youtube/start", methods=["POST"])
+def learning_youtube_start():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    data = request.get_json(silent=True) or {}
+    url = (data.get("url") or "").strip()
+    if not url:
+        return jsonify({"success": False, "error": "url이 필요합니다."}), 400
+
+    job = learning_create_job("youtube", {"url": url}, created_by=get_user_id())
+    audit("LEARNING", "START_YOUTUBE_LEARNING", payload=job)
+    return jsonify({"success": True, "job": job})
+
+
+@app.route("/api/learning/job/<job_id>/status", methods=["GET"])
+def learning_job_status(job_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    job = learning_get(job_id)
+    if not job:
+        return jsonify({"success": False, "error": "job이 없습니다."}), 404
+
+    return jsonify({"success": True, "job": job})
+
+
+@app.route("/api/learning/job/<job_id>/logs", methods=["GET"])
+def learning_job_logs(job_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    job = learning_get(job_id)
+    if not job:
+        return jsonify({"success": False, "error": "job이 없습니다."}), 404
+
+    log_path = job.get("log_path") or ""
+    if not log_path or not os.path.exists(log_path):
+        return jsonify({"success": True, "lines": []})
+
+    # 최근 N줄만 반환
+    n = int(request.args.get("lines", "200"))
+    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+        lines = f.readlines()
+    return jsonify({"success": True, "lines": lines[-n:]})
+
+
+@app.route("/api/learning/stats", methods=["GET"])
+def learning_stats_api():
+    guard = require_admin()
+    if guard:
+        return guard
+    return jsonify({"success": True, "stats": learning_stats()})
+
+
+# ============================================================
+# 16) 관리자 UI 이벤트/감사로그 조회
+# ============================================================
+@app.route("/api/admin/ui_event", methods=["POST"])
+def admin_ui_event():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    data = request.get_json(silent=True) or {}
+    event_name = (data.get("event_name") or "").strip() or "UI_EVENT"
+    detail = data.get("detail") or {}
+    # 버튼 클릭/페이지 이동 등 기록
+    audit("UI_CLICK", event_name, payload={"detail": detail})
+    return jsonify({"success": True})
+
+
+@app.route("/api/admin/audit/list", methods=["GET"])
+def admin_audit_list():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    limit = int(request.args.get("limit", "100"))
+    event_type = (request.args.get("event_type") or "").strip()
+
+    conn = db_server_conn()
+    cur = conn.cursor()
+
+    if event_type:
+        cur.execute("""
+            SELECT * FROM audit_log
+            WHERE event_type=?
+            ORDER BY id DESC
+            LIMIT ?
+        """, (event_type, limit))
+    else:
+        cur.execute("""
+            SELECT * FROM audit_log
+            ORDER BY id DESC
+            LIMIT ?
+        """, (limit,))
+
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    return jsonify({"success": True, "items": rows})
+
+
+# ============================================================
+# 17) 엔트리포인트
+# ============================================================
+if __name__ == "__main__":
+    print("🚀 Lee May 통합 관제 서버 가동 (Port 5001)")
+    print(f"📁 이미지 경로: {IMAGES_DIR} (JPG 모드)")
+    if not ADMIN_TOKEN:
+        print("⚠️  ADMIN_TOKEN 환경변수가 비어있음: 운영/외부접속이면 반드시 설정하세요!")
+    app.run(host="0.0.0.0", port=5001, debug=False)
