@@ -13,80 +13,64 @@
 
 <div class="card">
   <h3>전략 및 지능 제어 사령부</h3>
-  <input id="adminKey" type="password" placeholder="Admin Token (1106)" />
+  <input id="adminKey" type="password" placeholder="Admin Token (1106)" value="1106" />
   
   <div class="btn-group">
     <button id="btnRefresh" class="secondary">상태 동기화</button>
     <button id="btnAuto" class="secondary">자가 복구: ON</button>
   </div>
 
-  <div class="slider-group">
-    <div class="slabel">탐사 강도 (Intelligence Ratio)</div>
-    <input type="range" id="intelRatio" min="0" max="100" value="70">
-    <div class="row" style="justify-content: space-between; font-size: 11px;">
+  <div class="slider-group" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; margin:10px 0; border:1px solid var(--line);">
+    <div class="slabel" style="font-size:11px; color:var(--muted);">탐사 강도 (Intelligence Ratio)</div>
+    <input type="range" id="intelRatio" min="0" max="100" value="70" style="width:100%;">
+    <div style="display:flex; justify-content:space-between; font-size:11px;">
       <span>논리 집중</span><span id="ratioVal">70%</span><span>창의 집중</span>
     </div>
   </div>
 
-  <div class="btn-group" style="margin-top:15px">
-    <button id="btnControlStart">시스템 전체 가동</button>
-    <button id="btnApplyStrategy" class="btn-evolve">전략 직축 적용</button>
-  </div>
-
   <div class="btn-group">
+    <button id="btnApplyStrategy" style="background:var(--evolve); color:white;">전략 직축 적용</button>
     <button id="btnGenReport" class="secondary">지능 성장 리포트 생성</button>
-    <button id="btnScanMemory" class="secondary">기억 서버 스캔</button>
   </div>
 
   <div class="btn-group" style="margin-top:15px">
     <button id="btnBotsStart">BOTS START</button>
     <button id="btnBotsStop" class="danger">FORCE STOP</button>
+    <button id="btnToggle" class="secondary">REBOOT</button>
   </div>
 </div>
 
 <script>
-  // ... 기존 통신 로직 유지 ...
-
-  // [업그레이드 원칙 3] 자가 복구(Auto-Healing) 로직 강화
-  async function checkAndHeal(ports) {
-    if (state.auto && !ports["5000"]) {
-      console.log("⚠️ 봇 서버(5000) 정지 감지. 자가 복구 시도...");
-      showToast("봇 서버 자가 복구 중...", true);
-      await call("/api/ops/bots/start");
+  // [인증 강화] 모든 요청에 Admin Key 자동 포함
+  async function call(path, method="POST", payload=null) {
+    const key = document.getElementById("adminKey").value;
+    try {
+      const res = await fetch(API + path, {
+        method: method,
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Admin-Key": key,
+          "X-ADMIN-TOKEN": key 
+        },
+        body: payload ? JSON.stringify(payload) : null
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Request Failed");
+      showToast(data.message || "명령 수행 완료");
+      return data;
+    } catch(e) {
+      showToast("에러: " + e.message, true);
     }
   }
 
-  // [신규] 전략 파라미터 적용 함수 (strategies 폴더 저장)
-  async function applyStrategy() {
-    const ratio = $("intelRatio").value;
-    const payload = { ratio: ratio, timestamp: new Date().toISOString() };
-    // server.db 및 strategies 폴더에 동시 기록 요청
-    await call("/api/ops/strategy/apply", "POST", payload);
-    showToast(`전략 적용 완료: 강도 ${ratio}%`);
-  }
-
-  // [신규] 지능 리포트 생성 (brain/reports 폴더 저장)
-  async function generateReport() {
-    showToast("지능 성장 데이터 분석 중...");
-    await call("/api/ops/report/generate", "POST");
-    setTab("reports"); // 리포트 탭으로 자동 이동 (추가 필요)
-    loadLog();
-  }
-
-  // 이벤트 바인딩
-  $("btnApplyStrategy").onclick = applyStrategy;
-  $("btnGenReport").onclick = generateReport;
-  $("btnScanMemory").onclick = () => call("/api/ops/memory/scan", "POST");
-  $("intelRatio").oninput = (e) => $("ratioVal").textContent = e.target.value + "%";
-
-  // 상태 동기화 시 자가 복구 트리거 연결
-  const originalRefresh = refreshStatus;
-  refreshStatus = async function(silent) {
-    await originalRefresh(silent);
-    // 동기화 후 포트 상태 확인하여 자동 복구
-    const res = await fetch(API + "/api/ops/status");
-    const d = await res.json();
-    if (d.ports) checkAndHeal(d.ports);
+  // [기능 구현] 신규 폴더들과의 통신
+  document.getElementById("btnApplyStrategy").onclick = () => {
+    const ratio = document.getElementById("intelRatio").value;
+    call("/api/ops/strategy/apply", "POST", { ratio: ratio });
+  };
+  
+  document.getElementById("btnGenReport").onclick = () => {
+    call("/api/ops/report/generate", "POST");
   };
 </script>
 </head>
